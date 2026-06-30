@@ -186,7 +186,7 @@ export async function generateImageWithPlaywright(
             `${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`
           );
           await globalPlaywrightPage.goto(targetUrl, {
-            waitUntil: "networkidle",
+            waitUntil: "domcontentloaded",
           });
         }
 
@@ -283,26 +283,31 @@ export async function generateImageWithPlaywright(
             delayFn(Math.floor(Math.random() * (max - min + 1) + min));
 
           await inputLoc.click();
+          await randomDelay(200, 400);
+
+          // Select all and clear existing content using standard keyboard actions
+          await globalPlaywrightPage.keyboard.press("Control+A");
+          await randomDelay(150, 300);
+          await globalPlaywrightPage.keyboard.press("Backspace");
+          await randomDelay(200, 400);
+
+          // Insert the new prompt text
+          await globalPlaywrightPage.keyboard.insertText(targetPrompt);
           await randomDelay(300, 600);
 
-          await inputLoc.evaluate(el => {
-            if (el instanceof HTMLElement) {
-              el.innerText = "";
-              el.innerHTML = "";
-            }
-          });
-          await randomDelay(200, 450);
-
-          await globalPlaywrightPage.keyboard.insertText(targetPrompt);
-          await randomDelay(1200, 2200);
+          // Force-trigger the editor event handler using Space + Backspace trick
+          await globalPlaywrightPage.keyboard.press("Space");
+          await randomDelay(100, 200);
+          await globalPlaywrightPage.keyboard.press("Backspace");
+          await randomDelay(500, 1000);
         }
 
-        const oldCount = await globalPlaywrightPage.evaluate(() => {
+        const oldIds = await globalPlaywrightPage.evaluate(() => {
           const imgs = Array.from(document.querySelectorAll("img"));
-          const genImgs = imgs.filter(
-            (img) => img.src && img.src.includes("getMediaUrlRedirect")
-          );
-          return genImgs.length;
+          return imgs
+            .filter((img) => img.src && img.src.includes("getMediaUrlRedirect"))
+            .map((img) => (window as any).__getImgId(img.src))
+            .filter(Boolean);
         });
 
         let isBtnDisabled = true;
@@ -338,37 +343,41 @@ export async function generateImageWithPlaywright(
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
         const base64Data = await globalPlaywrightPage.waitForFunction(
-          (oldImgCount) => {
+          (oldIdsList) => {
             const imgs = Array.from(document.querySelectorAll("img"));
             const genImgs = imgs.filter(
               (img) => img.src && img.src.includes("getMediaUrlRedirect")
             );
 
-            if (genImgs.length > oldImgCount) {
-              const newImg = genImgs[genImgs.length - 1];
-              if (newImg) {
-                try {
-                  newImg.scrollIntoView({
-                    behavior: "instant",
-                    block: "center",
-                  });
-                } catch (e) { }
+            const newImg = [...genImgs]
+              .reverse()
+              .find((img) => {
+                const imgId = (window as any).__getImgId(img.src);
+                return imgId && !oldIdsList.includes(imgId);
+              });
 
-                if (!newImg.complete || newImg.naturalWidth === 0) return null;
+            if (newImg) {
+              try {
+                newImg.scrollIntoView({
+                  behavior: "instant",
+                  block: "center",
+                });
+              } catch (e) { }
 
-                const canvas = document.createElement("canvas");
-                canvas.width = newImg.naturalWidth;
-                canvas.height = newImg.naturalHeight;
-                canvas.getContext("2d")?.drawImage(newImg, 0, 0);
-                try {
-                  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-                  if (dataUrl.length > 1000) return dataUrl;
-                } catch (e) { }
-              }
+              if (!newImg.complete || newImg.naturalWidth === 0) return null;
+
+              const canvas = document.createElement("canvas");
+              canvas.width = newImg.naturalWidth;
+              canvas.height = newImg.naturalHeight;
+              canvas.getContext("2d")?.drawImage(newImg, 0, 0);
+              try {
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+                if (dataUrl.length > 1000) return dataUrl;
+              } catch (e) { }
             }
             return null;
           },
-          oldCount,
+          oldIds,
           { timeout: 60000 }
         );
 
@@ -382,7 +391,7 @@ export async function generateImageWithPlaywright(
         if (attempts < maxAttempts) {
           try {
             appLog(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
-            await globalPlaywrightPage.reload({ waitUntil: "networkidle" });
+            await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
             await globalPlaywrightPage.waitForTimeout(5000);
           } catch (reloadErr) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);

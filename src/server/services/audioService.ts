@@ -340,12 +340,30 @@ export async function initPlaywright() {
     const ctx = browser.contexts()[0];
     const page = ctx.pages()[0] || await ctx.newPage();
 
-    // Prevent "ReferenceError: __name is not defined" under tsx/esbuild
+    // Prevent "ReferenceError: __name is not defined" under tsx/esbuild & inject shared helper __getImgId
     await page.addInitScript(`
-      if (typeof window !== 'undefined' && !window.__name) {
-        window.__name = (t, v) => {
-          try { Object.defineProperty(t, "name", { value: v, configurable: true }); } catch {}
-          return t;
+      if (typeof window !== 'undefined') {
+        if (!window.__name) {
+          window.__name = (t, v) => {
+            try { Object.defineProperty(t, "name", { value: v, configurable: true }); } catch {}
+            return t;
+          };
+        }
+        window.__getImgId = (url) => {
+          if (!url) return "";
+          try {
+            const u = new URL(url);
+            const id = u.searchParams.get("id") || u.searchParams.get("docid");
+            if (id) return id;
+            u.searchParams.delete("token");
+            u.searchParams.delete("sig");
+            u.searchParams.delete("signature");
+            u.searchParams.delete("expires");
+            u.searchParams.delete("t");
+            return u.toString();
+          } catch (e) {
+            return url;
+          }
         };
       }
     `);
