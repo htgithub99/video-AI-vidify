@@ -17,12 +17,14 @@ export interface ProjectConfig {
   genre: string;
   language: 'vi' | 'en';
   duration: string; 
+  targetDuration?: string;
   rewriteLevel: number; 
   similarityReduction: number; 
   creativityLevel: number; 
   factCheck: boolean;
   audience: string;
   writingStyle: string;
+  format?: string;
 }
 
 export interface HookVersion {
@@ -187,6 +189,9 @@ export interface VideoProject {
   voiceConfig: VoiceConfig;
   visualConfig: VisualConfig;
   seoConfig?: SEOConfig;
+  output?: {
+    audioBase64?: string;
+  };
   
   
   scriptRewritten?: string;
@@ -220,6 +225,7 @@ export interface IBaseModalProps {
   onClose: () => void;
   title?: string | React.ReactNode;
   children?: React.ReactNode;
+  maxWidth?: string;
 }
 
 export interface ITooltipProps {
@@ -229,7 +235,7 @@ export interface ITooltipProps {
 }
 
 export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
   isLoading?: boolean;
 }
 

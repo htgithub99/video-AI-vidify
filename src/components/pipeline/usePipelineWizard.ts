@@ -138,17 +138,25 @@ export function usePipelineWizard(props: any) {
 
   const [infoMsg, setInfoMsg] = useState("");
 
-  const [hooksDraft, setHooksDraft] = useState<HookVersion[]>([]);
+  const [hooksDraft, setHooksDraft] = useState<HookVersion[]>(() => {
+    return initialProject?.hookConfig?.versions || [];
+  });
 
-  const [hookStrategy, setHookStrategy] = useState<string>("Auto");
+  const [hookStrategy, setHookStrategy] = useState<string>(() => {
+    return initialProject?.hookConfig?.type || "Auto";
+  });
 
-  const [hookDuration, setHookDuration] = useState<number>(10);
+  const [hookDuration, setHookDuration] = useState<number>(() => {
+    return initialProject?.hookConfig?.duration || 10;
+  });
 
-  const [hookCount, setHookCount] = useState<number>(3);
+  const [hookCount, setHookCount] = useState<number>(() => {
+    return initialProject?.hookConfig?.count || 3;
+  });
 
-  const [hookPosition, setHookPosition] = useState<"start" | "mid" | "all">(
-    "start",
-  );
+  const [hookPosition, setHookPosition] = useState<"start" | "mid" | "all">(() => {
+    return initialProject?.hookConfig?.positions || "start";
+  });
 
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
 
@@ -420,7 +428,9 @@ export function usePipelineWizard(props: any) {
 
   const [storyboardSourceMode, setStoryboardSourceMode] = useState<
     "audio" | "script"
-  >("script");
+  >(() => {
+    return (initialProject as any)?.storyboardSourceMode || "script";
+  });
 
   const [isAudioDragging, setIsAudioDragging] = useState(false);
 
@@ -876,6 +886,46 @@ export function usePipelineWizard(props: any) {
     }
   }, [currentStep]);
 
+  useEffect(() => {
+    if ((project as any).storyboardSourceMode !== storyboardSourceMode) {
+      setProject((prev) => ({ ...prev, storyboardSourceMode }));
+    }
+  }, [storyboardSourceMode]);
+
+  useEffect(() => {
+    setProject((prev) => {
+      const currentHookConfig = prev.hookConfig || {
+        type: "Auto",
+        duration: 10,
+        count: 3,
+        positions: "start",
+        versions: [],
+      };
+
+      if (
+        currentHookConfig.type === hookStrategy &&
+        currentHookConfig.duration === hookDuration &&
+        currentHookConfig.count === hookCount &&
+        currentHookConfig.positions === hookPosition &&
+        JSON.stringify(currentHookConfig.versions) === JSON.stringify(hooksDraft)
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        hookConfig: {
+          ...currentHookConfig,
+          type: hookStrategy,
+          duration: hookDuration,
+          count: hookCount,
+          positions: hookPosition,
+          versions: hooksDraft,
+        },
+      };
+    });
+  }, [hookStrategy, hookDuration, hookCount, hookPosition, hooksDraft]);
+
   const lastProjectIdRef = useRef<string | null>(null);
   const cancelBatchImageRef = useRef<boolean>(false);
 
@@ -886,51 +936,71 @@ export function usePipelineWizard(props: any) {
     lastProjectIdRef.current = initialProject.id;
 
     if (isNewProject) {
-      setProject(initialProject);
-
-      if (
-        initialProject.hookConfig &&
-        initialProject.hookConfig.versions &&
-        initialProject.hookConfig.versions.length > 0
-      ) {
-        setHooksDraft(initialProject.hookConfig.versions);
+      // 1. Restore current step and storyboard split source mode
+      if ((initialProject as any).currentStep !== undefined) {
+        setCurrentStep((initialProject as any).currentStep);
       } else {
+        setCurrentStep(0);
+      }
+
+      if ((initialProject as any).storyboardSourceMode) {
+        setStoryboardSourceMode((initialProject as any).storyboardSourceMode);
+      } else {
+        setStoryboardSourceMode("script");
+      }
+
+      // 2. Restore hook configurations
+      if (initialProject.hookConfig) {
+        setHookStrategy(initialProject.hookConfig.type || "Auto");
+        setHookDuration(initialProject.hookConfig.duration || 10);
+        setHookCount(initialProject.hookConfig.count || 3);
+        setHookPosition(initialProject.hookConfig.positions || "start");
+        setHooksDraft(initialProject.hookConfig.versions || []);
+      } else {
+        setHookStrategy("Auto");
+        setHookDuration(10);
+        setHookCount(3);
+        setHookPosition("start");
         setHooksDraft([]);
       }
 
-      if (initialProject.voiceConfig) {
-        if (initialProject.voiceConfig.audioUrl) {
-          let restoredUrl = initialProject.voiceConfig.audioUrl;
+      // 3. Rebuild binary audio blobs from Base64 for current session
+      let restoredVoiceConfig = initialProject.voiceConfig ? { ...initialProject.voiceConfig } : undefined;
+      let restoredTtsUrl: string | null = null;
+
+      if (restoredVoiceConfig) {
+        if (restoredVoiceConfig.audioUrl) {
+          restoredTtsUrl = restoredVoiceConfig.audioUrl;
           if (
-            restoredUrl === "simulated_speech" ||
-            restoredUrl.startsWith("blob:")
+            restoredTtsUrl === "simulated_speech" ||
+            restoredTtsUrl.startsWith("blob:")
           ) {
-            if (initialProject.voiceConfig.audioBase64) {
+            if (restoredVoiceConfig.audioBase64) {
               try {
-                const arr = base64ToArrayBuffer(initialProject.voiceConfig.audioBase64);
+                const arr = base64ToArrayBuffer(restoredVoiceConfig.audioBase64);
                 const blob = new Blob([arr], { type: "audio/wav" });
-                restoredUrl = URL.createObjectURL(blob);
+                restoredTtsUrl = URL.createObjectURL(blob);
               } catch (e) {
                 logger.error("FAILED_RESTORE_BLOB", e);
-                restoredUrl = "simulated";
+                restoredTtsUrl = "simulated";
               }
             } else {
-              restoredUrl = "simulated";
+              restoredTtsUrl = "simulated";
             }
           }
-          setTtsAudioUrl(restoredUrl);
+          restoredVoiceConfig.audioUrl = restoredTtsUrl;
+          setTtsAudioUrl(restoredTtsUrl);
         } else {
           setTtsAudioUrl(null);
         }
 
-        if (initialProject.voiceConfig.timingLog) {
-          setAlignmentsLog(initialProject.voiceConfig.timingLog);
+        if (restoredVoiceConfig.timingLog) {
+          setAlignmentsLog(restoredVoiceConfig.timingLog);
         } else if (
-          initialProject.voiceConfig.subtitleFiles &&
-          initialProject.voiceConfig.subtitleFiles.length > 0
+          restoredVoiceConfig.subtitleFiles &&
+          restoredVoiceConfig.subtitleFiles.length > 0
         ) {
-          setAlignmentsLog(t.alignmentLoaded,
-          );
+          setAlignmentsLog(t.alignmentLoaded);
         } else {
           setAlignmentsLog("");
         }
@@ -938,6 +1008,33 @@ export function usePipelineWizard(props: any) {
         setTtsAudioUrl(null);
         setAlignmentsLog("");
       }
+
+      // Restore scene-specific audio URLs
+      const restoredStoryboard = (initialProject.storyboard || []).map((scene) => {
+        if (scene.audioUrl && (scene.audioUrl.startsWith("blob:") || scene.audioUrl === "simulated_speech")) {
+          if (scene.audioBase64) {
+            try {
+              const arr = base64ToArrayBuffer(scene.audioBase64);
+              const blob = new Blob([arr], { type: "audio/wav" });
+              return { ...scene, audioUrl: URL.createObjectURL(blob) };
+            } catch (e) {
+              logger.error("FAILED_RESTORE_SCENE_BLOB", e);
+            }
+          }
+        }
+        return scene;
+      });
+
+      // Construct restored project
+      const restoredProject: VideoProject = {
+        ...initialProject,
+        storyboard: restoredStoryboard,
+      };
+      if (restoredVoiceConfig) {
+        restoredProject.voiceConfig = restoredVoiceConfig;
+      }
+
+      setProject(restoredProject);
     }
   }, [initialProject]);
 
@@ -970,11 +1067,15 @@ export function usePipelineWizard(props: any) {
 
     try {
       // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
-      const hookText = ""; // Không cần hook vì gọi trực tiếp từ truyện gốc
+      const selectedHook = (hooksDraft || []).find((h) => h.selected);
+      const hookText = selectedHook ? selectedHook.content : "";
       const payload = {
         originalInput: project.input.content,
         inputType: project.input.type,
-        config: project.config,
+        config: {
+          ...project.config,
+          hookConfig: project.hookConfig,
+        },
         selectedHookText: hookText,
         bypassCache: force === true,
       };
@@ -1002,9 +1103,9 @@ export function usePipelineWizard(props: any) {
         chapters: data.chapters || [],
       }));
 
-      setInfoMsg(
-        t.Generation_completed_The_,
-      );
+      const successMsg = t.Generation_completed_The_ || "Hoàn thành biên kịch.";
+      setInfoMsg(successMsg);
+      console.log(`[Script] ✅ Thành công: ${successMsg}`);
 
       if (!data.cached) {
         trackOperationCost(10, 0.0005);
@@ -1138,9 +1239,9 @@ export function usePipelineWizard(props: any) {
         }));
 
         trackOperationCost(18, 0.0012);
-        setInfoMsg(
-          t.Storyboard_coordinates_fo,
-        );
+        const successMsg = t.Storyboard_coordinates_fo || "Hoàn thành phân cảnh.";
+        setInfoMsg(successMsg);
+        console.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
         return updatedScenes;
       }
     } catch (e: any) {
@@ -1229,6 +1330,7 @@ export function usePipelineWizard(props: any) {
         });
         return { ...prev, storyboard: updated };
       });
+      console.log(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
     } catch (e: any) {
       if (!isBatch) {
         setErrorMsg(t.imagePipelineError.replace('{error}', e.message),
@@ -1279,25 +1381,74 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    setInfoMsg(t.imageUploadSuccess.replace('{sceneId}', sceneId),
-    );
+    const successMsg = t.imageUploadSuccess.replace('{sceneId}', sceneId);
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCopyPrompt = (promptText: string) => {
     logAction("handleCopyPrompt");
     navigator.clipboard.writeText(promptText);
-    setInfoMsg(
-      t.Scene_visual_prompt_copie,
-    );
+    const successMsg = t.Scene_visual_prompt_copie || "Đã sao chép prompt.";
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
+  };
+
+  const handleGenerateHooks = async (force = false) => {
+    logAction("handleGenerateHooks");
+    if (!project.input.content.trim()) {
+      setErrorMsg(t.Please_enter_script_conte || "Vui lòng nhập nội dung trước khi tạo hook.");
+      return;
+    }
+    setLoadingStates((prev) => ({ ...prev, generateHooks: true }));
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const payload = {
+        originalInput: project.input.content,
+        config: project.config,
+        hookType: hookStrategy,
+        duration: hookDuration,
+        count: hookCount,
+        language: project.config.language || "vi",
+        bypassCache: force === true,
+      };
+
+      const { success, data, error } = await safeSystemFetch(
+        "/api/pipeline/hooks",
+        payload,
+      );
+
+      if (!success || data?.error || data?.warning) {
+        throw new Error(
+          error ||
+          data?.error ||
+          data?.warning ||
+          "Failed to generate hooks."
+        );
+      }
+
+      const generatedVersions = data.versions || [];
+      setHooksDraft(generatedVersions);
+      
+      const successMsg = "Tạo hook thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
+    } catch (e: any) {
+      setErrorMsg(e.message || "Lỗi tạo hook.");
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, generateHooks: false }));
+      setLoading(false);
+    }
   };
 
   const handleCopyHook = (hookText: string) => {
     logAction("handleCopyHook");
     navigator.clipboard.writeText(hookText);
-    setInfoMsg(
-      t.Hook_content_copied_to_cl,
-    );
+    const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
   };
 
@@ -1322,9 +1473,9 @@ export function usePipelineWizard(props: any) {
       .then(() => {
         setCopiedAll(true);
         setTimeout(() => setCopiedAll(false), 3000);
-        setInfoMsg(
-          t.Pure_optimized_scene_prom,
-        );
+        const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
+        setInfoMsg(successMsg);
+        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       })
       .catch((err) => {
         logger.error("FAILED_COPY_PROMPTS", err);
@@ -1406,9 +1557,9 @@ export function usePipelineWizard(props: any) {
       }));
 
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
-      setInfoMsg(
-        t.Style_extracted_successfu,
-      );
+      const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
@@ -1456,9 +1607,9 @@ export function usePipelineWizard(props: any) {
           ...prev,
           storyboard: rewriteData.storyboard,
         }));
-        setInfoMsg(
-          t.Successfully_applied_styl,
-        );
+        const successMsg = t.Successfully_applied_styl || "Áp dụng phong cách thiết kế thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
         
         setProject((prev) => ({
@@ -1518,7 +1669,9 @@ export function usePipelineWizard(props: any) {
         }
       }));
 
-      setInfoMsg(t.charAnalyzeSuccess);
+      const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charAnalyzeFailed} ${e.message}`);
@@ -1626,7 +1779,9 @@ export function usePipelineWizard(props: any) {
         };
       });
 
-      setInfoMsg(t.charExtractSuccess);
+      const successMsg = t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
@@ -1666,7 +1821,9 @@ export function usePipelineWizard(props: any) {
           ...prev,
           storyboard: data.storyboard
         }));
-        setInfoMsg(t.charApplySuccess);
+        const successMsg = t.charApplySuccess || "Áp dụng đặc điểm nhân vật thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
         const combinedPrompt = activeChars.map((c) => c.prompt).filter(Boolean).join(", ");
         setProject((prev) => ({
@@ -1865,8 +2022,9 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    setInfoMsg(t.bulkUploadSuccess.replace('{count}', results.length.toString()),
-    );
+    const successMsg = t.bulkUploadSuccess.replace('{count}', results.length.toString());
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handlePrevSlide = (sceneId: string, max: number) => {
@@ -1977,9 +2135,9 @@ export function usePipelineWizard(props: any) {
             },
           }));
         }
-        setInfoMsg(
-          t.Thumbnail_style_extracted,
-        );
+        const successMsg = t.Thumbnail_style_extracted || "Trích xuất phong cách ảnh thu nhỏ thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       } else if (data.error) {
         setErrorMsg(data.error);
       }
@@ -2033,9 +2191,9 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    setInfoMsg(
-      t.Deleted_scene_image_succe,
-    );
+    const successMsg = t.Deleted_scene_image_succe || "Đã xóa ảnh phân cảnh thành công.";
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleDeleteAllSceneImages = () => {
@@ -2059,9 +2217,9 @@ export function usePipelineWizard(props: any) {
 
     setActiveSlideIndices({});
 
-    setInfoMsg(
-      t.deleteAllImagesSuccess,
-    );
+    const successMsg = t.deleteAllImagesSuccess || "Đã xóa toàn bộ ảnh thành công.";
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCancelBatchGenerate = () => {
@@ -2143,8 +2301,9 @@ export function usePipelineWizard(props: any) {
       }
 
       if (!cancelBatchImageRef.current && !hasError) {
-        setInfoMsg(t.batchGenSuccess.replace('{completedCount}', completedCount.toString()),
-        );
+        const successMsg = t.batchGenSuccess.replace('{completedCount}', completedCount.toString());
+        setInfoMsg(successMsg);
+        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       }
     } catch (err: any) {
       logger.error("BATCH_GEN_FAILURE", err);
@@ -2208,9 +2367,9 @@ export function usePipelineWizard(props: any) {
       
       if (data.prompt) {
         setSceneEditPrompt(data.prompt);
-        setInfoMsg(
-          t.Detailed_image_prompt_gen,
-        );
+        const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
         setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
@@ -2264,9 +2423,9 @@ export function usePipelineWizard(props: any) {
       };
     });
     setActiveSceneId(null);
-    setInfoMsg(
-      t.Scene_mod_saved_successfu,
-    );
+    const successMsg = t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
+    setInfoMsg(successMsg);
+    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleTriggerAssetAndThumbnail = async (
@@ -2340,9 +2499,9 @@ export function usePipelineWizard(props: any) {
           thumbnails: formattedThumbs,
         }));
         trackOperationCost(15, 0.0008);
-        setInfoMsg(
-          t.High_engagement_Thumbnail,
-        );
+        const successMsg = t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
+        setInfoMsg(successMsg);
+        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(t.thumbnailPipelineError.replace('{error}', e.message),
@@ -2411,9 +2570,9 @@ export function usePipelineWizard(props: any) {
         return { ...prev, thumbnails: updated };
       });
       if (isSuccess) {
-        setInfoMsg(
-          t.Mockup_thumbnail_painted_,
-        );
+        const successMsg = t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(e.message);
@@ -2453,9 +2612,9 @@ export function usePipelineWizard(props: any) {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          setInfoMsg(
-            t.Voiceover_downloaded_succ,
-          );
+          const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
+          setInfoMsg(successMsg);
+          console.log(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
           throw new Error("Missing audio URL from synthesis");
         }
@@ -2773,9 +2932,9 @@ export function usePipelineWizard(props: any) {
         },
       }));
 
-      setInfoMsg(
-        t.Synthesized_full_story_vo,
-      );
+      const successMsg = t.Synthesized_full_story_vo || "Đã tổng hợp giọng nói toàn bộ câu chuyện thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[TTS] ✅ Thành công: ${successMsg}`);
 
       setTimeout(() => {
         voicePlayerSectionRef.current?.scrollIntoView({
@@ -2880,9 +3039,9 @@ export function usePipelineWizard(props: any) {
           seo: data,
         }));
         trackOperationCost(10, 0.0005);
-        setInfoMsg(
-          t.SEO_metrics_formulated_su,
-        );
+        const successMsg = t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
+        setInfoMsg(successMsg);
+        console.log(`[SEO] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(t.seoPipelineError.replace('{error}', e.message),
@@ -2900,7 +3059,7 @@ export function usePipelineWizard(props: any) {
 
   const handleOpenExportCenter = () => {
     logAction("handleOpenExportCenter");
-    setCurrentStep(7);
+    setCurrentStep(WizardStep.Export);
     if (project.storyboard && project.storyboard.length > 0) {
       setSimActiveScene(project.storyboard[0]);
     }
@@ -2944,9 +3103,9 @@ export function usePipelineWizard(props: any) {
 
       setIsOfflineRendering(false);
       setOfflineRenderProgress(100);
-      setInfoMsg(
-        t.Cinematic_simulated_video,
-      );
+      const successMsg = t.Cinematic_simulated_video || "Đã xuất video thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (err) {
       logger.warn("OFFLINE_RENDERING_ERROR", err);
       setIsOfflineRendering(false);
@@ -4022,9 +4181,9 @@ export function usePipelineWizard(props: any) {
       
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
 
-      setInfoMsg(
-        t.Package_ZIP_created_succe,
-      );
+      const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
+      setInfoMsg(successMsg);
+      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
       setInfoMsg(
@@ -4062,6 +4221,7 @@ export function usePipelineWizard(props: any) {
       `${project.name.replace(/\s+/g, "_")}_subtitles.srt`,
     );
     dlAnchorElem.click();
+    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
   };
 
   const handleDownloadCapcutLink = () => {
@@ -4094,6 +4254,7 @@ export function usePipelineWizard(props: any) {
       `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`,
     );
     dlAnchorElem.click();
+    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
   };
 
   const handleDownloadPremiereXML = () => {
@@ -4138,6 +4299,7 @@ export function usePipelineWizard(props: any) {
       `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`,
     );
     dlAnchorElem.click();
+    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
   };
   return { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, loading, setLoading, isVoiceDialogOpen, setIsVoiceDialogOpen, loadingStates, setLoadingStates, errorMsg, setErrorMsg, infoMsg, setInfoMsg, hooksDraft, setHooksDraft, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookCount, setHookCount, hookPosition, setHookPosition, activeSceneId, setActiveSceneId, sceneEditScript, setSceneEditScript, sceneEditSubtitle, setSceneEditSubtitle, sceneEditPrompt, setSceneEditPrompt, sceneEditMotion, setSceneEditMotion, sceneEditFx, setSceneEditFx, sceneEditTransition, setSceneEditTransition, promptSetting, setPromptSetting, promptTime, setPromptTime, promptCharacter, setPromptCharacter, promptCostume, setPromptCostume, promptCameraAngle, setPromptCameraAngle, isGeneratingDetailedPrompt, setIsGeneratingDetailedPrompt, showPromptGeneratorPanel, setShowPromptGeneratorPanel, activeSlideIndices, setActiveSlideIndices, copiedAll, setCopiedAll, showGlobalConfig, setShowGlobalConfig, showAdvancedVisualConfig, setShowAdvancedVisualConfig,     bulkUploadWarning,
     setBulkUploadWarning,
@@ -4146,6 +4308,6 @@ export function usePipelineWizard(props: any) {
     isCancellingBatch,
     setIsCancellingBatch,
     batchProgressMsg,
-    setBatchProgressMsg, zoomedImage, setZoomedImage, storyboardPage, setStoryboardPage, scenesPerPage, paginatedStoryboard, getMotionLabel, sandboxConfig, setSandboxConfig, systemLogs, setSystemLogs, showLogsModal, setShowLogsModal, ttsAudioUrl, setTtsAudioUrl, ttsAudioBytes, setTtsAudioBytes, alignmentsLog, setAlignmentsLog, bulkVoiceStatus, setBulkVoiceStatus, isPlayingTts, setIsPlayingTts, audioPreviewRef, voicePlayerSectionRef, systemVoices, setSystemVoices, voiceDropdownOpen, setVoiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceHealth, setVoiceHealth, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, setPlayingVoiceURI, voiceAudioDuration, setVoiceAudioDuration, storyboardSourceMode, setStoryboardSourceMode, isAudioDragging, setIsAudioDragging, step2AudioRef, step2IsPlaying, setStep2IsPlaying, step2CurrentTime, setStep2CurrentTime, step2Duration, setStep2Duration, step2IsSimulatedPlaying, setStep2IsSimulatedPlaying, step2SimulatedCurrentTime, setStep2SimulatedCurrentTime, audioCurrentTime, setAudioCurrentTime, audioDurationState, setAudioDurationState, isPlayingRealAudio, setIsPlayingRealAudio, audioVolume, setAudioVolume, simulatedCurrentTime, setSimulatedCurrentTime, isOfflineRendering, setIsOfflineRendering, offlineRenderProgress, setOfflineRenderProgress, renderedVideoBlob, setRenderedVideoBlob, createSpeechUtterance, playVoicePreview, isPlayingSim, setIsPlayingSim, currentSimTime, setCurrentSimTime, simActiveScene, setSimActiveScene, simTimerRef, simAudioRef, lastProjectIdRef, trackOperationCost, handleProcessInputAndConfig, handleTriggerStoryboardSplit, handleRenderSceneImage, handleUploadSceneImage, handleCopyPrompt, handleCopyHook, handleCopyAllPrompts, handleReferenceImagesUpload, handleExtractStyle, handleApplyStyleToScenes, handleBulkUploadImages, handlePrevSlide, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleNextSlide, handleDeleteSceneImage, handleDeleteAllSceneImages, handleBatchGenerateAllImages, handleCancelBatchGenerate, openSceneModal, handleGenerateDetailedPrompt, handleSaveSceneEdits, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, handleDownloadVoice, handleRegenerateUnifiedVoice, handleTriggerVoiceGenerate, handleTriggerAllSceneVoices, handleTriggerStoryboardAndVoices, handleTriggerSEOBoost, handleOpenExportCenter, handleOfflineRenderWebM, startPlaybackSim, startTimerBasedSim, stopPlaybackSim, renderFallbackSceneImage, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, handleAnalyzeCharacter, handleCharacterImagesUpload, handleExtractCharacter, handleApplyCharacterToScenes, theme, currentLang, handleNextStep, handlePrevStep, getVoiceGender, isPremiumVoice, activeCloudPreviewAudio, audioRef, videoRef, simVideoRef, workspaceRef, costTracker, setCostTracker, credits, setCredits };
+    setBatchProgressMsg, zoomedImage, setZoomedImage, storyboardPage, setStoryboardPage, scenesPerPage, paginatedStoryboard, getMotionLabel, sandboxConfig, setSandboxConfig, systemLogs, setSystemLogs, showLogsModal, setShowLogsModal, ttsAudioUrl, setTtsAudioUrl, ttsAudioBytes, setTtsAudioBytes, alignmentsLog, setAlignmentsLog, bulkVoiceStatus, setBulkVoiceStatus, isPlayingTts, setIsPlayingTts, audioPreviewRef, voicePlayerSectionRef, systemVoices, setSystemVoices, voiceDropdownOpen, setVoiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceHealth, setVoiceHealth, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, setPlayingVoiceURI, voiceAudioDuration, setVoiceAudioDuration, storyboardSourceMode, setStoryboardSourceMode, isAudioDragging, setIsAudioDragging, step2AudioRef, step2IsPlaying, setStep2IsPlaying, step2CurrentTime, setStep2CurrentTime, step2Duration, setStep2Duration, step2IsSimulatedPlaying, setStep2IsSimulatedPlaying, step2SimulatedCurrentTime, setStep2SimulatedCurrentTime, audioCurrentTime, setAudioCurrentTime, audioDurationState, setAudioDurationState, isPlayingRealAudio, setIsPlayingRealAudio, audioVolume, setAudioVolume, simulatedCurrentTime, setSimulatedCurrentTime, isOfflineRendering, setIsOfflineRendering, offlineRenderProgress, setOfflineRenderProgress, renderedVideoBlob, setRenderedVideoBlob, createSpeechUtterance, playVoicePreview, isPlayingSim, setIsPlayingSim, currentSimTime, setCurrentSimTime, simActiveScene, setSimActiveScene, simTimerRef, simAudioRef, lastProjectIdRef, trackOperationCost, handleProcessInputAndConfig, handleTriggerStoryboardSplit, handleRenderSceneImage, handleUploadSceneImage, handleCopyPrompt, handleGenerateHooks, handleCopyHook, handleCopyAllPrompts, handleReferenceImagesUpload, handleExtractStyle, handleApplyStyleToScenes, handleBulkUploadImages, handlePrevSlide, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleNextSlide, handleDeleteSceneImage, handleDeleteAllSceneImages, handleBatchGenerateAllImages, handleCancelBatchGenerate, openSceneModal, handleGenerateDetailedPrompt, handleSaveSceneEdits, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, handleDownloadVoice, handleRegenerateUnifiedVoice, handleTriggerVoiceGenerate, handleTriggerAllSceneVoices, handleTriggerStoryboardAndVoices, handleTriggerSEOBoost, handleOpenExportCenter, handleOfflineRenderWebM, startPlaybackSim, startTimerBasedSim, stopPlaybackSim, renderFallbackSceneImage, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, handleAnalyzeCharacter, handleCharacterImagesUpload, handleExtractCharacter, handleApplyCharacterToScenes, theme, currentLang, handleNextStep, handlePrevStep, getVoiceGender, isPremiumVoice, activeCloudPreviewAudio, audioRef, videoRef, simVideoRef, workspaceRef, costTracker, setCostTracker, credits, setCredits };
 }
 export type PipelineWizardState = ReturnType<typeof usePipelineWizard>;

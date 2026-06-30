@@ -12,7 +12,7 @@ import {
   SceneDensity,
 } from "../../utils/sceneGeneratorHelper.js";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
-import { getBackendMsg, getPipelineLog } from "../../constants/messages.js";
+import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS } from "../../constants/messages.js";
 import { logger, getMessage, appLog, appError, appLogStep, createAppError } from "../../lib/logger.js";
 import {
   VI_GENRE_GUIDELINES,
@@ -617,10 +617,17 @@ router.post("/script", async (req: Request, res: Response) => {
 
   if (!isGeminiApiKeyAvailable()) {
     const isVi = config.language === "vi";
+    let fallbackHook = selectedHookText || "";
+    if (!fallbackHook && config.hookConfig) {
+      const type = config.hookConfig.type || "Auto";
+      fallbackHook = isVi
+        ? `[Mở đầu ${type}] Bạn đã từng nghe về câu chuyện kỳ lạ này chưa?`
+        : `[${type} Hook] Have you ever heard about this strange story?`;
+    }
     return res.json({
       rewrittenScript: isVi
-        ? `${selectedHookText || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, chúng ta không thể phủ nhận tầm quan trọng của bối cảnh và sự kiện liên quan. Các nhà nghiên cứu tin rằng mọi việc xảy ra đều chứa đựng ý nghĩa ẩn sau. Hãy phân tích ví dụ tiêu biểu mà chúng ta vừa thấy.\n\nKết luận lại, câu chuyện này mở ra góc nhìn mới đầy chiều sâu cho độc giả.`
-        : `${selectedHookText || "There is a mysterious story."} \n\nThroughout the pages of history, background details and historical analysis paint a clear scene. Modern research suggests these variables correlate directly. Let us dive deeper into the core mechanics of this story.\n\nIn conclusion, this opens an entirely new perspective.`,
+        ? `${fallbackHook || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, chúng ta không thể phủ nhận tầm quan trọng của bối cảnh và sự kiện liên quan. Các nhà nghiên cứu tin rằng mọi việc xảy ra đều chứa đựng ý nghĩa ẩn sau. Hãy phân tích ví dụ tiêu biểu mà chúng ta vừa thấy.\n\nKết luận lại, câu chuyện này mở ra góc nhìn mới đầy chiều sâu cho độc giả.`
+        : `${fallbackHook || "There is a mysterious story."} \n\nThroughout the pages of history, background details and historical analysis paint a clear scene. Modern research suggests these variables correlate directly. Let us dive deeper into the core mechanics of this story.\n\nIn conclusion, this opens an entirely new perspective.`,
       factCheckNotes: config.factCheck
         ? isVi
           ? "✓ Đã kiểm chứng: Các dòng mốc lịch sử tương thích và dữ kiện nhất quán trong kịch bản."
@@ -655,6 +662,8 @@ router.post("/script", async (req: Request, res: Response) => {
       ],
     });
   }
+
+  let activeHookText = selectedHookText || "";
 
   try {
     const isVi = config.language === "vi";
@@ -731,6 +740,34 @@ router.post("/script", async (req: Request, res: Response) => {
       appLogStep(msg, multiStepLogs);
     };
 
+    activeHookText = selectedHookText || "";
+    if (!activeHookText && config.hookConfig) {
+      logStep(isVi ? "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình..." : "🤖 Auto-generating Hook from config...");
+      try {
+        const hookType = config.hookConfig.type || "Auto";
+        const hookDuration = config.hookConfig.duration || 10;
+        const hookPrompt = getMultiStepHookPrompt(
+          originalInput,
+          config.genre || "Storytelling",
+          hookType,
+          hookDuration,
+          isVi ? "vi" : "en",
+          1
+        );
+        const hookResponse = await generateContentWithRetry({
+          contents: hookPrompt,
+          config: { responseMimeType: "application/json" },
+        });
+        const hookResult = safeParseJSON(hookResponse.text, { versions: [] });
+        if (hookResult.versions && hookResult.versions.length > 0) {
+          activeHookText = hookResult.versions[0].content || "";
+          logStep(isVi ? `✨ Đã nhúng Hook: "${activeHookText}"` : `✨ Hook embedded: "${activeHookText}"`);
+        }
+      } catch (hookErr: any) {
+        logger.error("Auto hook generation failed, falling back", hookErr);
+      }
+    }
+
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
     const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
@@ -743,11 +780,12 @@ router.post("/script", async (req: Request, res: Response) => {
       config.genre,
       config.writingStyle,
       isVi,
-      selectedHookText || "",
+      activeHookText,
       genreGuideline,
       styleGuideline,
       audienceGuideline,
-      targetChapterCount
+      targetChapterCount,
+      config.hookConfig
     );
 
     const combinedResponse = await generateContentWithRetry({
@@ -782,7 +820,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("SCRIPT_STEP3", isVi));
     const completedChapters: any[] = [];
-    let fullScript = selectedHookText ? selectedHookText + "\n\n" : "";
+    let fullScript = activeHookText ? activeHookText + "\n\n" : "";
 
     const chapters = scriptResult.chapters || [];
     const chapterWordTarget = Math.ceil(
@@ -854,11 +892,18 @@ router.post("/script", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error("ERROR_REWRITING_SCRIPT", error);
     const isVi = config?.language === "vi";
+    let finalHook = activeHookText || selectedHookText || "";
+    if (!finalHook && config?.hookConfig) {
+      const type = config.hookConfig.type || "Auto";
+      finalHook = isVi
+        ? `[Mở đầu ${type}] Bạn có biết bí mật lớn nhất đằng sau câu chuyện này?`
+        : `[${type} Hook] Did you know the biggest secret behind this story?`;
+    }
     res.json({
       warning: error.message || "API rate limits triggered",
       rewrittenScript: isVi
-        ? `${selectedHookText || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, những nhà nghiên cứu luôn tìm kiếm mảnh ghép bị lãng quên của thời đại. Các di chỉ khảo cổ gần đây đã mang lại bằng chứng đáng tin cậy hỗ trợ lý thuyết này. Nó chứng minh mối liên kết sâu xa giữa các hiện tượng trước đó. (Dự phòng tự động do lỗi API)`
-        : `${selectedHookText || "There is a mysterious story."} \n\nThroughout the pages of history, researchers search for the forgotten fragments of the age. Modern archaeological findings have contributed compelling evidence supporting this system, revealing deep connections to past events. (Auto-fallback preview)`,
+        ? `${finalHook || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, những nhà nghiên cứu luôn tìm kiếm mảnh ghép bị lãng quên của thời đại. Các di chỉ khảo cổ gần đây đã mang lại bằng chứng đáng tin cậy hỗ trợ lý thuyết này. Nó chứng minh mối liên kết sâu xa giữa các hiện tượng trước đó. (Dự phòng tự động do lỗi API)`
+        : `${finalHook || "There is a mysterious story."} \n\nThroughout the pages of history, researchers search for the forgotten fragments of the age. Modern archaeological findings have contributed compelling evidence supporting this system, revealing deep connections to past events. (Auto-fallback preview)`,
       factCheckNotes: config?.factCheck
         ? isVi
           ? "✓ [Dự phòng] Đã xác minh: Các sự kiện cơ bản phù hợp với dữ kiện lịch sử tiêu chuẩn."

@@ -9,6 +9,7 @@ export const Modal: React.FC<IBaseModalProps> = ({
   onClose,
   title,
   children,
+  maxWidth,
 }) => {
   useEffect(() => {
     if (isOpen) {
@@ -23,13 +24,16 @@ export const Modal: React.FC<IBaseModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isFullClass = maxWidth?.startsWith("max-w-");
+  const maxWidthClass = maxWidth ? (isFullClass ? maxWidth : `max-w-${maxWidth}`) : "max-w-6xl";
+
   return createPortal(
     <div
       className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-xl overflow-hidden animate-in zoom-in-95 duration-200"
+        className={`bg-slate-900 border border-slate-800 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-xl overflow-hidden animate-in zoom-in-95 duration-200`}
         onClick={stopPropagation}
       >
         {}

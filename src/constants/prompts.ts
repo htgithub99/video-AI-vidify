@@ -660,6 +660,7 @@ export const getCombinedScriptPrompt = (
   styleGuideline: string,
   audienceGuideline: string,
   targetChapterCount: number,
+  hookConfig?: { type: string; duration: number; positions: string },
 ): string => `You are an elite, professional research director and script outline planner.
 Your mission is to perform a highly unified script outline and research process for this input: "${originalInput}".
 
@@ -671,6 +672,20 @@ Your mission is to perform a highly unified script outline and research process 
 - Language: ${isVi ? "Vietnamese (Tiếng Việt)" : "English (Tiếng Anh)"}
 
 [Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
+${
+  hookConfig
+    ? `[Hook Retention Strategy]:
+- Hook Type: ${hookConfig.type}
+- Hook Duration: ${hookConfig.duration}s
+- Hook Positions: ${
+        hookConfig.positions === "start"
+          ? "The hook is placed only at the very beginning of the script."
+          : hookConfig.positions === "mid"
+          ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters."
+          : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."
+      }`
+    : ""
+}
 
 [Guidelines]:
 - Genre Guidelines: ${genreGuideline}

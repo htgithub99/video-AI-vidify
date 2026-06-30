@@ -41,11 +41,12 @@ export const getAllProjects = (req: Request, res: Response) => {
 };
 
 export const createProject = (req: Request, res: Response) => {
+  const nowStr = new Date().toISOString();
   const newProject: VideoProject = {
     ...req.body,
-    id: randomUUID(),
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    id: req.body.id || randomUUID(),
+    createdAt: req.body.createdAt || nowStr,
+    updatedAt: req.body.updatedAt || nowStr
   };
   const projects = getProjects();
   projects.push(newProject);
@@ -60,7 +61,7 @@ export const updateProject = (req: Request, res: Response) => {
   const isVi = req.query.lang !== 'en' && req.body?.language !== 'en';
 
   if (index !== -1) {
-    projects[index] = { ...projects[index], ...req.body, updatedAt: Date.now() };
+    projects[index] = { ...projects[index], ...req.body, updatedAt: new Date().toISOString() };
     saveProjects(projects);
     res.json(projects[index]);
   } else {

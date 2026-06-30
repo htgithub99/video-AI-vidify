@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
@@ -14,6 +14,29 @@ export default function App() {
     setLogLanguage(currentLang);
   }, [currentLang]);
   const [projects, setProjects] = useState<VideoProject[]>([]);
+  const pendingSavesRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const projectsRef = useRef<VideoProject[]>([]);
+
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+
+  useEffect(() => {
+    return () => {
+      // Flush any pending saves on unmount to make sure nothing is lost
+      Object.entries(pendingSavesRef.current).forEach(([id, timeout]) => {
+        clearTimeout(timeout);
+        const proj = projectsRef.current.find((p) => p.id === id);
+        if (proj) {
+          fetch(`${API_ROUTES.PROJECTS}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(proj),
+          }).catch((e) => appError("ERROR_FLUSH_SAVE_ON_UNMOUNT", e));
+        }
+      });
+    };
+  }, []);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     () => {
       const cached = localStorage.getItem("selected_project_id");
@@ -148,27 +171,38 @@ export default function App() {
         body: JSON.stringify(newProject),
       });
       if (response.ok) {
-        setProjects((prev) => [...prev, newProject]);
-        setSelectedProjectId(newProject.id);
+        const savedProject = await response.json();
+        setProjects((prev) => [...prev, savedProject]);
+        setSelectedProjectId(savedProject.id);
       }
     } catch (e) {
       appError("ERROR_CREATING_PROJECT", e);
     }
   };
 
-  const handleUpdateProject = async (updated: VideoProject) => {
+  const handleUpdateProject = useCallback((updated: VideoProject) => {
+    // Update local React state instantly for responsiveness
     setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
 
-    try {
-      await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-    } catch (e) {
-      appError("ERROR_AUTO_SAVING_PROJECT", e);
+    // Clear any previous save timeout for this project
+    if (pendingSavesRef.current[updated.id]) {
+      clearTimeout(pendingSavesRef.current[updated.id]);
     }
-  };
+
+    // Debounce the HTTP call by 1000ms
+    pendingSavesRef.current[updated.id] = setTimeout(async () => {
+      try {
+        await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        });
+        delete pendingSavesRef.current[updated.id];
+      } catch (e) {
+        appError("ERROR_AUTO_SAVING_PROJECT", e);
+      }
+    }, 1000);
+  }, []);
 
   const handleDeleteProject = async (id: string) => {
     try {

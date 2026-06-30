@@ -9,7 +9,26 @@ import { WizardStep } from '../../types';
 const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, RefreshCw, FileText, Copy, ShieldCheck, ArrowRight } = LucideIcons as any;
 
 export default function PipelineStep0(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig } = props;
+  const {
+    t,
+    project,
+    setProject,
+    setCurrentStep,
+    loadingStates,
+    setInfoMsg,
+    handleProcessInputAndConfig,
+    hooksDraft,
+    setHooksDraft,
+    hookStrategy,
+    setHookStrategy,
+    hookDuration,
+    setHookDuration,
+    hookCount,
+    setHookCount,
+    hookPosition,
+    setHookPosition,
+    handleGenerateHooks,
+  } = props;
   return (
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
@@ -95,8 +114,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
             </div>
           </div>
 
-          {}
-          <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
+          {/* Right column container */}
+          <div className="space-y-6">
+            {/* Right column */}
+            <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
             <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
@@ -435,14 +456,102 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 />
               </button>
             </div>
+
+            {/* Cấu hình Lời dẫn (Hook Settings) */}
+            <div className="pt-4 border-t border-slate-800 space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
+                <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">
+                  Cấu hình Hook
+                </h5>
+              </div>
+
+              {/* Loại Hook */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  Loại Hook
+                </span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={hookStrategy}
+                    onChange={(e) => setHookStrategy(e.target.value)}
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    {[
+                      { value: "Auto", label: "Tự động" },
+                      { value: "Mystery", label: "Kỳ bí, tò mò" },
+                      { value: "Shock", label: "Gây sốc" },
+                      { value: "Drama", label: "Kịch tính" },
+                      { value: "Curiosity", label: "Hiếu kỳ" },
+                      { value: "Emotional", label: "Cảm xúc" },
+                      { value: "Historical", label: "Lịch sử" },
+                      { value: "Statistical", label: "Thống kê" },
+                      { value: "Question", label: "Đặt câu hỏi" },
+                      { value: "Story", label: "Câu chuyện" },
+                    ].map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+              </div>
+
+              {/* Thời lượng Hook */}
+              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="text-slate-450">Thời lượng (giây)</span>
+                  <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
+                    {hookDuration}s
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="3"
+                  max="30"
+                  value={hookDuration}
+                  onChange={(e) => setHookDuration(Number(e.target.value))}
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
+                />
+              </div>
+
+              {/* Chiến thuật vị trí */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  Chiến thuật vị trí
+                </span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={hookPosition}
+                    onChange={(e) => setHookPosition(e.target.value as any)}
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    {[
+                      { value: "start", label: "Chỉ mở đầu" },
+                      { value: "mid", label: "Mở đầu & Giữa" },
+                      { value: "all", label: "Đầu, Giữa & Cuối" },
+                    ].map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
         {}
         <div className="pt-4 flex items-center justify-end">
           <button
             type="button"
-            onClick={() => handleProcessInputAndConfig()}
+            onClick={() => handleProcessInputAndConfig(true)}
             disabled={
               !!loadingStates["processInput"] ||
               !project.input.content.trim()
