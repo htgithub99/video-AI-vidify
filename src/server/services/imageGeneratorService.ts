@@ -1,0 +1,440 @@
+import { globalPlaywrightPage } from "./audioService.js";
+import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
+import { BACKEND_MESSAGES } from "../../constants/messages.js";
+import { appLog, appError, createAppError } from "../../lib/logger.js";
+import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+
+export class SimpleMutex {
+  private queue: (() => void)[] = [];
+  private locked = false;
+
+  async acquire(): Promise<() => void> {
+    return new Promise((resolve) => {
+      const release = () => {
+        if (this.queue.length > 0) {
+          const next = this.queue.shift();
+          if (next) next();
+        } else {
+          this.locked = false;
+        }
+      };
+
+      if (this.locked) {
+        this.queue.push(() => resolve(release));
+      } else {
+        this.locked = true;
+        resolve(release);
+      }
+    });
+  }
+}
+
+export const imageGenMutex = new SimpleMutex();
+
+export interface ImageGeneratorOptions {
+  prompt: string;
+  style?: string;
+  visualConfig?: {
+    chromeHeadless?: boolean;
+    generateType?: string;
+    aspectRatio?: string;
+    generateCount?: number;
+    imageGeneratorEngine?: string;
+  };
+  sandboxConfig?: {
+    projectId?: string;
+  };
+}
+
+export interface ImageGeneratorResult {
+  success: boolean;
+  base64: string | null;
+  fallbackUrl: string;
+  warning?: string;
+}
+
+export const extractKeywords = (text: string): string => {
+  if (!text) return "aesthetic,cinematic";
+  const clean = text.replace(/[^a-zA-Z0-9\s]/g, " ");
+  const words = clean
+    .split(/\s+/)
+    .map((w) => w.trim().toLowerCase())
+    .filter((w) => w.length > 3);
+  const fillerWords = [
+    "beautiful",
+    "detailed",
+    "artistic",
+    "image",
+    "generation",
+    "prompt",
+    "describing",
+    "characters",
+    "clothes",
+    "historical",
+    "accuracy",
+    "weather",
+    "camera",
+    "angle",
+    "lighting",
+    "based",
+    "style",
+    "with",
+    "what",
+    "where",
+    "photo",
+    "shot",
+    "highly",
+    "ultra",
+    "dramatic",
+    "gorgeous",
+    "scene",
+    "rendering",
+  ];
+  const filtered = words.filter((w) => !fillerWords.includes(w));
+  return filtered.slice(0, 3).join(",");
+};
+
+let lastPlaywrightConfigState: string | null = null;
+
+export async function generateImageWithPlaywright(
+  options: ImageGeneratorOptions
+): Promise<ImageGeneratorResult> {
+  const { prompt, style, visualConfig, sandboxConfig = {} } = options;
+
+  const isStickman = !!(
+    (style && STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
+    (prompt && STICKMAN_KEYWORDS.some((kw) => prompt.toLowerCase().includes(kw)))
+  );
+
+  let finalPrompt = prompt || "";
+  if (isStickman) {
+    const stickmanStyleModifiers =
+      "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
+    finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
+  }
+
+  const kws = extractKeywords(prompt);
+  const fallbackUrl = isStickman
+    ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
+    : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(
+      kws || "cinematic,landscape"
+    )}`;
+
+  const projectId = sandboxConfig.projectId || "cbcf7518-13d7-4eab-b59d-952d5814de53";
+  let cleanProjectId = projectId;
+  if (cleanProjectId.startsWith("projects/")) {
+    cleanProjectId = cleanProjectId.replace("projects/", "");
+  }
+
+  const release = await imageGenMutex.acquire();
+
+  let responseText = "";
+  let success = false;
+  let attempts = 0;
+  const maxAttempts = 2;
+
+  try {
+    if (!globalPlaywrightPage) {
+      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+    }
+
+    try {
+      await globalPlaywrightPage.evaluate(`
+        if (typeof window !== 'undefined' && !window.__name) {
+          window.__name = (target, value) => {
+            try {
+              Object.defineProperty(target, "name", { value, configurable: true });
+            } catch (e) {}
+            return target;
+          };
+        }
+      `);
+    } catch (err) {
+      appError("Failed to inject __name helper on current page context:", err);
+    }
+
+    const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${cleanProjectId}`;
+
+    while (attempts < maxAttempts && !success) {
+      attempts++;
+      appLog(
+        `${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`
+      );
+      try {
+        const SELECTOR_INPUT = '[contenteditable="true"]';
+        const submitBtnLocator = globalPlaywrightPage
+          .locator("button")
+          .filter({
+            has: globalPlaywrightPage.locator("i", {
+              hasText: "arrow_forward",
+            }),
+          })
+          .first();
+
+        let isAlreadyOnFlowPage = false;
+        try {
+          const currentUrl = globalPlaywrightPage.url();
+          if (currentUrl.includes(cleanProjectId) && currentUrl.includes("labs.google")) {
+            isAlreadyOnFlowPage = true;
+          }
+        } catch (e) {
+          isAlreadyOnFlowPage = false;
+        }
+
+        if (!isAlreadyOnFlowPage) {
+          appLog(
+            `${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`
+          );
+          await globalPlaywrightPage.goto(targetUrl, {
+            waitUntil: "networkidle",
+          });
+        }
+
+        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
+
+        const inputEl = await globalPlaywrightPage.waitForSelector(SELECTOR_INPUT, {
+          timeout: 30000,
+        });
+        if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
+
+        try {
+          const currentConfigState = JSON.stringify({
+            generateType: visualConfig?.generateType || "image",
+            aspectRatio: visualConfig?.aspectRatio || "16:9",
+            generateCount: visualConfig?.generateCount || 1,
+            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || "veo3",
+          });
+
+          if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
+            appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
+            const submitBtnWrapper = submitBtnLocator.locator("xpath=..");
+            const configBtnLoc = submitBtnWrapper.locator('button[aria-haspopup="menu"]').first();
+
+            if (await configBtnLoc.isVisible()) {
+              await configBtnLoc.click();
+              await globalPlaywrightPage.waitForTimeout(1000);
+
+              const isVideo = visualConfig?.generateType === "video";
+              const typeLabel = isVideo ? BACKEND_MESSAGES.LABS_VIDEO : BACKEND_MESSAGES.LABS_IMAGE;
+              const typeBtn = globalPlaywrightPage
+                .locator('[role="menu"] button[role="tab"]')
+                .filter({ hasText: typeLabel })
+                .first();
+              if (await typeBtn.isVisible()) await typeBtn.click();
+
+              const targetRatio = visualConfig?.aspectRatio || "16:9";
+              const ratioBtn = globalPlaywrightPage
+                .locator('[role="menu"] button[role="tab"]')
+                .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
+                .first();
+              if (await ratioBtn.isVisible()) await ratioBtn.click();
+
+              const targetCount = visualConfig?.generateCount || 1;
+              const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
+              const countBtn = globalPlaywrightPage
+                .locator('[role="menu"] button[role="tab"]')
+                .filter({ hasText: new RegExp(`^${countLabel}$`, "i") })
+                .first();
+              if (await countBtn.isVisible()) await countBtn.click();
+
+              const targetEngineKey = visualConfig?.imageGeneratorEngine || "veo3";
+              const engineMap: Record<string, string> = {
+                imagen: BACKEND_MESSAGES.LABS_IMAGEN,
+                veo3: BACKEND_MESSAGES.LABS_VEO,
+              };
+              const targetEngine = engineMap[targetEngineKey];
+              if (targetEngine) {
+                const engineDropdownBtn = globalPlaywrightPage
+                  .locator('[role="menu"] button[aria-haspopup="menu"]')
+                  .filter({ hasText: /Banana|Imagen/i })
+                  .first();
+                if (await engineDropdownBtn.isVisible()) {
+                  const currentEngineText = await engineDropdownBtn.textContent();
+                  if (currentEngineText && !currentEngineText.includes(targetEngine)) {
+                    await engineDropdownBtn.click();
+                    await globalPlaywrightPage.waitForTimeout(500);
+                    const optionBtn = globalPlaywrightPage
+                      .locator('[role="menuitem"]')
+                      .filter({ hasText: new RegExp(targetEngine, "i") })
+                      .first();
+                    if (await optionBtn.isVisible()) await optionBtn.click();
+                  }
+                }
+              }
+
+              await globalPlaywrightPage.keyboard.press("Escape");
+              await globalPlaywrightPage.waitForTimeout(500);
+
+              lastPlaywrightConfigState = currentConfigState;
+              appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SUCCESS);
+            }
+          }
+        } catch (configErr) {
+          appError(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SKIP, configErr);
+        }
+
+        const targetPrompt = finalPrompt || prompt;
+        if (targetPrompt && targetPrompt.length > 0) {
+          appLog(BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
+
+          const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
+          const delayFn = (ms: number) => new Promise((r) => setTimeout(r, ms));
+          const randomDelay = (min: number, max: number) =>
+            delayFn(Math.floor(Math.random() * (max - min + 1) + min));
+
+          await inputLoc.click();
+          await randomDelay(300, 600);
+
+          await inputLoc.evaluate(el => {
+            if (el instanceof HTMLElement) {
+              el.innerText = "";
+              el.innerHTML = "";
+            }
+          });
+          await randomDelay(200, 450);
+
+          await globalPlaywrightPage.keyboard.insertText(targetPrompt);
+          await randomDelay(1200, 2200);
+        }
+
+        const oldCount = await globalPlaywrightPage.evaluate(() => {
+          const imgs = Array.from(document.querySelectorAll("img"));
+          const genImgs = imgs.filter(
+            (img) => img.src && img.src.includes("getMediaUrlRedirect")
+          );
+          return genImgs.length;
+        });
+
+        let isBtnDisabled = true;
+        for (let i = 0; i < 6; i++) {
+          try {
+            isBtnDisabled = await submitBtnLocator.evaluate((btn) => {
+              return (
+                !btn ||
+                btn.hasAttribute("disabled") ||
+                btn.getAttribute("aria-disabled") === "true"
+              );
+            });
+          } catch (e) {
+            isBtnDisabled = true;
+          }
+          if (!isBtnDisabled) break;
+          await new Promise((r) => setTimeout(r, 500));
+        }
+
+        appLog(BACKEND_MESSAGES.PLAYWRIGHT_SUBMIT_LOG);
+        await submitBtnLocator.waitFor({ state: "visible", timeout: 5000 });
+        await submitBtnLocator.scrollIntoViewIfNeeded();
+
+        const delayFn = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        const randomDelay = (min: number, max: number) =>
+          delayFn(Math.floor(Math.random() * (max - min + 1) + min));
+        await randomDelay(200, 400);
+
+        await submitBtnLocator.hover().catch(() => { });
+        await randomDelay(300, 600);
+
+        await submitBtnLocator.click();
+
+        appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
+        const base64Data = await globalPlaywrightPage.waitForFunction(
+          (oldImgCount) => {
+            const imgs = Array.from(document.querySelectorAll("img"));
+            const genImgs = imgs.filter(
+              (img) => img.src && img.src.includes("getMediaUrlRedirect")
+            );
+
+            if (genImgs.length > oldImgCount) {
+              const newImg = genImgs[genImgs.length - 1];
+              if (newImg) {
+                try {
+                  newImg.scrollIntoView({
+                    behavior: "instant",
+                    block: "center",
+                  });
+                } catch (e) { }
+
+                if (!newImg.complete || newImg.naturalWidth === 0) return null;
+
+                const canvas = document.createElement("canvas");
+                canvas.width = newImg.naturalWidth;
+                canvas.height = newImg.naturalHeight;
+                canvas.getContext("2d")?.drawImage(newImg, 0, 0);
+                try {
+                  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+                  if (dataUrl.length > 1000) return dataUrl;
+                } catch (e) { }
+              }
+            }
+            return null;
+          },
+          oldCount,
+          { timeout: 60000 }
+        );
+
+        const finalBase64 = await base64Data.jsonValue();
+        appLog(BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
+
+        responseText = JSON.stringify({ directBase64: finalBase64 });
+        success = true;
+      } catch (err: any) {
+        appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
+        if (attempts < maxAttempts) {
+          try {
+            appLog(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
+            await globalPlaywrightPage.reload({ waitUntil: "networkidle" });
+            await globalPlaywrightPage.waitForTimeout(5000);
+          } catch (reloadErr) {
+            appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
+          }
+        } else {
+          throw err;
+        }
+      }
+    }
+  } catch (axiosErr: any) {
+    const status = axiosErr.response?.status || 500;
+    const errText = axiosErr.response?.data || axiosErr.message;
+    appError(`[Labs Sandbox Error] returned status ${status}: ${errText}`);
+
+    let warnReason = `${BACKEND_MESSAGES.PLAYWRIGHT_SANDBOX_ERR} (HTTP ${status}). ${BACKEND_MESSAGES.PLAYWRIGHT_RECAPTCHA}`;
+    try {
+      const errorJson = typeof errText === "string" ? JSON.parse(errText) : errText;
+      if (errorJson?.error?.details?.[0]?.reason) {
+        warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
+      }
+    } catch (e) { }
+
+    return {
+      success: false,
+      base64: null,
+      fallbackUrl,
+      warning: warnReason,
+    };
+  } finally {
+    release();
+  }
+
+  try {
+    const parsed = JSON.parse(responseText);
+    if (parsed.directBase64) {
+      let cleanBase64 = parsed.directBase64;
+      if (cleanBase64.includes(",")) {
+        cleanBase64 = cleanBase64.split(",")[1];
+      }
+
+      return {
+        success: true,
+        base64: cleanBase64,
+        fallbackUrl: parsed.directBase64,
+      };
+    }
+  } catch (e) { }
+
+  return {
+    success: false,
+    base64: null,
+    fallbackUrl,
+    warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
+  };
+}

@@ -324,34 +324,37 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
   };
 };
 
-export async function initPlaywright(headless?: boolean) {
+export async function initPlaywright() {
+  if (globalPlaywrightPage) {
+    try {
+      await globalPlaywrightPage.evaluate('1');
+      return;
+    } catch {
+      globalPlaywrightPage = null;
+    }
+  }
+
   try {
     appLog('PLAYWRIGHT_CONNECTING');
-
-
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
+    const ctx = browser.contexts()[0];
+    const page = ctx.pages()[0] || await ctx.newPage();
 
-
-    const defaultContext = browser.contexts()[0];
-    const page = defaultContext.pages()[0] || await defaultContext.newPage();
-
-    // Prevent "ReferenceError: __name is not defined" in page.evaluate or waitForFunction under tsx/esbuild bundling
+    // Prevent "ReferenceError: __name is not defined" under tsx/esbuild
     await page.addInitScript(`
       if (typeof window !== 'undefined' && !window.__name) {
-        window.__name = (target, value) => {
-          try {
-            Object.defineProperty(target, "name", { value, configurable: true });
-          } catch (e) {}
-          return target;
+        window.__name = (t, v) => {
+          try { Object.defineProperty(t, "name", { value: v, configurable: true }); } catch {}
+          return t;
         };
       }
     `);
 
-    page.on('request', request => {
-      const headers = request.headers();
-      if (headers['authorization'] && request.url().includes('aisandbox-pa.googleapis.com')) {
-        globalBearerToken = headers['authorization'];
-        (global as any).globalGoogleHeaders = headers;
+    page.on('request', req => {
+      const auth = req.headers()['authorization'];
+      if (auth && req.url().includes('aisandbox-pa.googleapis.com')) {
+        globalBearerToken = auth;
+        (global as any).globalGoogleHeaders = req.headers();
       }
     });
 
@@ -360,8 +363,7 @@ export async function initPlaywright(headless?: boolean) {
 
     if (!globalBearerToken) {
       appLog('PLAYWRIGHT_LOGIN_PROMPT');
-
-      page.waitForResponse(response => response.url().includes('googleapis.com'), { timeout: 300000 })
+      page.waitForResponse(res => res.url().includes('googleapis.com'), { timeout: 300000 })
         .then(() => appLog('PLAYWRIGHT_TOKEN_CAPTURED'))
         .catch(() => appLog('PLAYWRIGHT_TOKEN_TIMEOUT'));
     } else {
@@ -369,12 +371,9 @@ export async function initPlaywright(headless?: boolean) {
     }
 
     globalPlaywrightPage = page;
-  } catch (e) {
+  } catch (e: any) {
     appError('PLAYWRIGHT_CONNECT_ERR', e?.message || e);
-    appLog('PLAYWRIGHT_BORDER');
-    appLog('PLAYWRIGHT_CHROME_MANDATE');
-    appLog('PLAYWRIGHT_CHROME_COMMAND');
-    appLog('PLAYWRIGHT_BORDER_BOTTOM');
+    ['PLAYWRIGHT_BORDER', 'PLAYWRIGHT_CHROME_MANDATE', 'PLAYWRIGHT_CHROME_COMMAND', 'PLAYWRIGHT_BORDER_BOTTOM'].forEach(k => appLog(k));
   }
 }
 

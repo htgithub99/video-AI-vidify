@@ -13,7 +13,7 @@ import {
 } from "../../utils/sceneGeneratorHelper.js";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS } from "../../constants/messages.js";
-import { logger, getMessage, appLog, appError, appLogStep, createAppError } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep } from "../../lib/logger.js";
 import {
   VI_GENRE_GUIDELINES,
   VI_STYLE_GUIDELINES,
@@ -25,24 +25,10 @@ import {
 } from "../../constants/promptGuidelines.js";
 import {
   getStyleRewriteBatchPrompt,
-  getHookGeneratorPrompt,
   getChapterWriterPrompt,
   getVideoDirectorSceneSplitPrompt,
-  getSeoMarketerPrompt,
-  getThumbnailLayoutPrompt,
-  getOutlineWriterPrompt,
   getDetailedPromptBuilderPrompt,
-  getHookAnalysisPrompt,
-  getHookPolishPrompt,
-  getScriptConceptPrompt,
-  getOutlineVerifyPrompt,
-  getScriptSanitizePrompt,
   getGlobalVisualBiblePrompt,
-  getScenePromptRefinePrompt,
-  getSeoKeywordAnalysisPrompt,
-  getSeoRefinementPrompt,
-  getThumbnailConceptPrompt,
-  getThumbnailPromptRefinePrompt,
   getCharacterAnalysisPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
@@ -51,13 +37,14 @@ import {
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
 } from "../../constants/prompts.js";
-import { globalPlaywrightPage, initPlaywright } from "../services/audioService.js";
+import { generateImageWithPlaywright } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { STICKMAN_KEYWORDS } from "../../constants/data.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
 import os from "os";
+
 
 const router = express.Router();
 
@@ -2048,482 +2035,34 @@ router.post("/voice", async (req: Request, res: Response) => {
       });
   }
 });
-let lastPlaywrightConfigState: string | null = null;
-
 router.post("/generate-image", async (req: Request, res: Response) => {
-  const { prompt, style, bypassCache, visualConfig } = req.body;
-
-  const cached = checkCache(
-    "/api/pipeline/generate-image",
-    req.body,
-    bypassCache,
-  );
-  if (cached) {
-    return res.json({ ...cached, cached: true });
-  }
-
-  const isStickman = !!(
-    (style && STICKMAN_KEYWORDS.some(kw => style.toLowerCase().includes(kw))) ||
-    (prompt && STICKMAN_KEYWORDS.some(kw => prompt.toLowerCase().includes(kw)))
-  );
-
-  let finalPrompt = prompt || "";
-  if (isStickman) {
-    const stickmanStyleModifiers =
-      "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
-    // Clean up or append
-    finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
-  }
-
-  // Extract search terms to generate a highly fitting, gorgeous aesthetic stock photo from Unsplash source as an instant backup or fallback
-  const extractKeywords = (text: string): string => {
-    if (!text) return "aesthetic,cinematic";
-    const clean = text.replace(/[^a-zA-Z0-9\s]/g, " ");
-    const words = clean
-      .split(/\s+/)
-      .map((w) => w.trim().toLowerCase())
-      .filter((w) => w.length > 3);
-    const fillerWords = [
-      "beautiful",
-      "detailed",
-      "artistic",
-      "image",
-      "generation",
-      "prompt",
-      "describing",
-      "characters",
-      "clothes",
-      "historical",
-      "accuracy",
-      "weather",
-      "camera",
-      "angle",
-      "lighting",
-      "based",
-      "style",
-      "with",
-      "what",
-      "where",
-      "photo",
-      "shot",
-      "highly",
-      "ultra",
-      "dramatic",
-      "gorgeous",
-      "scene",
-      "rendering",
-    ];
-    const filtered = words.filter((w) => !fillerWords.includes(w));
-    return filtered.slice(0, 3).join(",");
-  };
-
-  const kws = extractKeywords(prompt);
-
-  const fallbackUrl = isStickman
-    ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
-    : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
-
-  const sandbox = req.body.sandboxConfig || {};
-  const projectId = sandbox.projectId || "cbcf7518-13d7-4eab-b59d-952d5814de53";
-  let cleanProjectId = projectId;
-  if (cleanProjectId.startsWith("projects/")) {
-    cleanProjectId = cleanProjectId.replace("projects/", "");
-  }
-
-  const requestedHeadless = visualConfig?.chromeHeadless !== false;
   try {
-    await initPlaywright(requestedHeadless);
-  } catch (pwErr) {
-    logger.error("Error auto-initializing Playwright with requested headless config:", pwErr);
-  }
+    const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
-  try {
-    let responseText = "";
-    let success = false;
-    let attempts = 0;
-    const maxAttempts = 3;
-    let lastError: any = null;
-
-    try {
-      if (!globalPlaywrightPage) {
-        throw new Error(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-      }
-
-      // Ensure window.__name helper is defined on browser side to avoid ReferenceError under tsx/esbuild
-      try {
-        await globalPlaywrightPage.evaluate(`
-          if (typeof window !== 'undefined' && !window.__name) {
-            window.__name = (target, value) => {
-              try {
-                Object.defineProperty(target, "name", { value, configurable: true });
-              } catch (e) {}
-              return target;
-            };
-          }
-        `);
-      } catch (err) {
-        console.warn("Failed to inject __name helper on current page context:", err);
-      }
-
-      const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${cleanProjectId}`;
-
-      while (attempts < maxAttempts && !success) {
-        attempts++;
-        console.log(
-          `${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`,
-        );
-        try {
-          if (
-            !globalPlaywrightPage.url().includes(cleanProjectId) ||
-            attempts > 1
-          ) {
-            console.log(
-              `${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`,
-            );
-            await globalPlaywrightPage.goto(targetUrl, {
-              waitUntil: "networkidle",
-            });
-          }
-
-          console.log(
-            `${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`,
-          );
-
-          const SELECTOR_INPUT = '[contenteditable="true"]';
-          const submitBtnLocator = globalPlaywrightPage
-            .locator("button")
-            .filter({
-              has: globalPlaywrightPage.locator("i", {
-                hasText: "arrow_forward",
-              }),
-            })
-            .first();
-
-          const inputEl = await globalPlaywrightPage.waitForSelector(
-            SELECTOR_INPUT,
-            { timeout: 30000 },
-          );
-          if (!inputEl)
-            throw new Error(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
-
-          try {
-            const currentConfigState = JSON.stringify({
-              generateType: visualConfig?.generateType || "image",
-              aspectRatio: visualConfig?.aspectRatio || "16:9",
-              generateCount: visualConfig?.generateCount || 1,
-              imageGeneratorEngine:
-                visualConfig?.imageGeneratorEngine || "veo3",
-            });
-
-            if (
-              currentConfigState !== lastPlaywrightConfigState ||
-              attempts > 1
-            ) {
-              console.log(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
-              const submitBtnWrapper = submitBtnLocator.locator("xpath=..");
-              const configBtnLoc = submitBtnWrapper
-                .locator('button[aria-haspopup="menu"]')
-                .first();
-
-              if (await configBtnLoc.isVisible()) {
-                await configBtnLoc.click();
-                await globalPlaywrightPage.waitForTimeout(1000);
-
-                const isVideo = visualConfig?.generateType === "video";
-                const typeLabel = isVideo
-                  ? BACKEND_MESSAGES.LABS_VIDEO
-                  : BACKEND_MESSAGES.LABS_IMAGE;
-                const typeBtn = globalPlaywrightPage
-                  .locator('[role="menu"] button[role="tab"]')
-                  .filter({ hasText: typeLabel })
-                  .first();
-                if (await typeBtn.isVisible()) await typeBtn.click();
-
-                const targetRatio = visualConfig?.aspectRatio || "16:9";
-                const ratioBtn = globalPlaywrightPage
-                  .locator('[role="menu"] button[role="tab"]')
-                  .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
-                  .first();
-                if (await ratioBtn.isVisible()) await ratioBtn.click();
-
-                const targetCount = visualConfig?.generateCount || 1;
-                const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
-                const countBtn = globalPlaywrightPage
-                  .locator('[role="menu"] button[role="tab"]')
-                  .filter({ hasText: new RegExp(`^${countLabel}$`, "i") })
-                  .first();
-                if (await countBtn.isVisible()) await countBtn.click();
-
-                const targetEngineKey =
-                  visualConfig?.imageGeneratorEngine || "veo3";
-                const engineMap: Record<string, string> = {
-                  imagen: BACKEND_MESSAGES.LABS_IMAGEN,
-                  veo3: BACKEND_MESSAGES.LABS_VEO,
-                };
-                const targetEngine = engineMap[targetEngineKey];
-                if (targetEngine) {
-                  const engineDropdownBtn = globalPlaywrightPage
-                    .locator('[role="menu"] button[aria-haspopup="menu"]')
-                    .filter({ hasText: /Banana|Imagen/i })
-                    .first();
-                  if (await engineDropdownBtn.isVisible()) {
-                    const currentEngineText =
-                      await engineDropdownBtn.textContent();
-                    if (
-                      currentEngineText &&
-                      !currentEngineText.includes(targetEngine)
-                    ) {
-                      await engineDropdownBtn.click();
-                      await globalPlaywrightPage.waitForTimeout(500);
-                      const optionBtn = globalPlaywrightPage
-                        .locator('[role="menuitem"]')
-                        .filter({ hasText: new RegExp(targetEngine, "i") })
-                        .first();
-                      if (await optionBtn.isVisible()) await optionBtn.click();
-                    }
-                  }
-                }
-
-                await globalPlaywrightPage.keyboard.press("Escape");
-                await globalPlaywrightPage.waitForTimeout(500);
-
-                lastPlaywrightConfigState = currentConfigState;
-                console.log(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SUCCESS);
-              }
-            }
-          } catch (configErr) {
-            console.warn(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SKIP, configErr);
-          }
-
-          const targetPrompt = finalPrompt || prompt;
-          if (targetPrompt && targetPrompt.length > 0) {
-            console.log(BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
-
-            const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
-
-            // Focus the input by clicking on it, simulating a real user interaction
-            await inputLoc.click();
-            await globalPlaywrightPage.waitForTimeout(100);
-
-            // Select all text natively inside contenteditable to ensure 100% OS-independent coverage
-            await globalPlaywrightPage.evaluate((selector) => {
-              const el = document.querySelector(selector) as HTMLElement;
-              if (el) {
-                el.focus();
-                const range = document.createRange();
-                range.selectNodeContents(el);
-                const sel = window.getSelection();
-                if (sel) {
-                  sel.removeAllRanges();
-                  sel.addRange(range);
-                }
-              }
-            }, SELECTOR_INPUT);
-            await globalPlaywrightPage.waitForTimeout(100);
-
-            // Press Backspace to clear the selected text natively, triggering editor clear hooks
-            await globalPlaywrightPage.keyboard.press("Backspace");
-            await globalPlaywrightPage.waitForTimeout(100);
-
-            // Paste the target prompt using keyboard.insertText
-            await globalPlaywrightPage.keyboard.insertText(targetPrompt);
-            await globalPlaywrightPage.waitForTimeout(200);
-
-            // Dispatch input events as fallback to trigger framework binding updates
-            await globalPlaywrightPage.evaluate((selector) => {
-              const el = document.querySelector(selector) as HTMLElement;
-              if (el) {
-                el.dispatchEvent(new Event("beforeinput", { bubbles: true }));
-                el.dispatchEvent(new Event("input", { bubbles: true }));
-                el.dispatchEvent(new Event("change", { bubbles: true }));
-              }
-            }, SELECTOR_INPUT);
-
-            // Press a space and backspace to trigger keypress state handlers on rich-text editors if needed
-            await globalPlaywrightPage.keyboard.press(" ");
-            await globalPlaywrightPage.waitForTimeout(50);
-            await globalPlaywrightPage.keyboard.press("Backspace");
-            await globalPlaywrightPage.waitForTimeout(100);
-          }
-          await new Promise((r) => setTimeout(r, 1000));
-
-          const oldSrcs = await globalPlaywrightPage.evaluate(() => {
-            const cleanUrl = (url: string) => {
-              if (!url) return "";
-              try {
-                const u = new URL(url);
-                const id = u.searchParams.get("id") || u.searchParams.get("docid");
-                if (id) return u.origin + u.pathname + "?id=" + id;
-                u.searchParams.delete("token");
-                u.searchParams.delete("sig");
-                u.searchParams.delete("signature");
-                u.searchParams.delete("expires");
-                u.searchParams.delete("t");
-                return u.toString();
-              } catch (e) {
-                return url;
-              }
-            };
-            const imgs = Array.from(document.querySelectorAll("img"));
-            return imgs
-              .filter(
-                (img) => img.src && img.src.includes("getMediaUrlRedirect"),
-              )
-              .map((img) => cleanUrl(img.src));
-          });
-
-          let isBtnDisabled = true;
-          for (let i = 0; i < 6; i++) {
-            try {
-              isBtnDisabled = await submitBtnLocator.evaluate((btn) => {
-                return (
-                  !btn ||
-                  btn.hasAttribute("disabled") ||
-                  btn.getAttribute("aria-disabled") === "true"
-                );
-              });
-            } catch (e) {
-              isBtnDisabled = true;
-            }
-            if (!isBtnDisabled) break;
-            await new Promise((r) => setTimeout(r, 500));
-          }
-
-          console.log(BACKEND_MESSAGES.PLAYWRIGHT_SUBMIT_LOG);
-          await submitBtnLocator.waitFor({ state: "visible", timeout: 5000 });
-          await submitBtnLocator.scrollIntoViewIfNeeded();
-          await new Promise((r) => setTimeout(r, 400));
-          await submitBtnLocator.click();
-
-          console.log(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
-          const base64Data = await globalPlaywrightPage.waitForFunction(
-            (oldSrcsList) => {
-              const cleanUrl = (url: string) => {
-                if (!url) return "";
-                try {
-                  const u = new URL(url);
-                  const id = u.searchParams.get("id") || u.searchParams.get("docid");
-                  if (id) return u.origin + u.pathname + "?id=" + id;
-                  u.searchParams.delete("token");
-                  u.searchParams.delete("sig");
-                  u.searchParams.delete("signature");
-                  u.searchParams.delete("expires");
-                  u.searchParams.delete("t");
-                  return u.toString();
-                } catch (e) {
-                  return url;
-                }
-              };
-              const imgs = Array.from(document.querySelectorAll("img"));
-              const genImgs = imgs.filter(
-                (img) => img.src && img.src.includes("getMediaUrlRedirect"),
-              );
-
-              const newImg = [...genImgs].reverse().find(
-                (img) => !oldSrcsList.includes(cleanUrl(img.src)),
-              );
-
-              if (newImg) {
-                try {
-                  newImg.scrollIntoView({
-                    behavior: "instant",
-                    block: "center",
-                  });
-                } catch (e) { }
-
-                if (!newImg.complete || newImg.naturalWidth === 0) return null;
-
-                const canvas = document.createElement("canvas");
-                canvas.width = newImg.naturalWidth;
-                canvas.height = newImg.naturalHeight;
-                canvas.getContext("2d")?.drawImage(newImg, 0, 0);
-                try {
-                  const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-                  if (dataUrl.length > 1000) return dataUrl;
-                } catch (e) { }
-              }
-              return null;
-            },
-            oldSrcs,
-            { timeout: 60000 },
-          );
-
-          const finalBase64 = await base64Data.jsonValue();
-          console.log(BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
-
-          responseText = JSON.stringify({ directBase64: finalBase64 });
-          success = true;
-        } catch (err: any) {
-          lastError = err;
-          console.warn(
-            `[Image Render] Attempt ${attempts} failed: ${err.message}`,
-          );
-          if (attempts < maxAttempts) {
-            try {
-              console.log(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
-              await globalPlaywrightPage.reload({ waitUntil: "networkidle" });
-              await globalPlaywrightPage.waitForTimeout(2000);
-            } catch (reloadErr) {
-              logger.error("FAILED_RELOAD_PAGE_RETRY", reloadErr);
-            }
-          } else {
-            throw err;
-          }
-        }
-      }
-    } catch (axiosErr: any) {
-      const status = axiosErr.response?.status || 500;
-      const errText = axiosErr.response?.data || axiosErr.message;
-      console.error(
-        `[Labs Sandbox Error] returned status ${status}: ${errText}`,
-      );
-
-      let warnReason = `${BACKEND_MESSAGES.PLAYWRIGHT_SANDBOX_ERR} (HTTP ${status}). ${BACKEND_MESSAGES.PLAYWRIGHT_RECAPTCHA}`;
-      try {
-        const errorJson =
-          typeof errText === "string" ? JSON.parse(errText) : errText;
-        if (errorJson?.error?.details?.[0]?.reason) {
-          warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
-        }
-      } catch (e) { }
-
-      return res.json({
-        success: false,
-        base64: null,
-        fallbackUrl,
-        warning: warnReason,
-      });
+    const cached = checkCache(
+      "/api/pipeline/generate-image",
+      req.body,
+      bypassCache,
+    );
+    if (cached) {
+      return res.json({ ...cached, cached: true });
     }
 
-    try {
-      const parsed = JSON.parse(responseText);
-      if (parsed.directBase64) {
-        let cleanBase64 = parsed.directBase64;
-        if (cleanBase64.includes(",")) {
-          cleanBase64 = cleanBase64.split(",")[1];
-        }
-
-        return res.json({
-          success: true,
-          base64: cleanBase64,
-          fallbackUrl: parsed.directBase64,
-        });
-      }
-    } catch (e) { }
-
-    return res.json({
-      success: false,
-      base64: null,
-      fallbackUrl,
-      warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
+    const result = await generateImageWithPlaywright({
+      prompt,
+      style,
+      visualConfig,
+      sandboxConfig,
     });
-  } catch (e: any) {
-    logger.error("LABS_SANDBOX_API_ERROR", e);
+
+    return res.json(result);
+  } catch (error: any) {
+    logger.error("GENERATE_IMAGE_ROUTE_ERROR", error);
     return res.json({
       success: false,
       base64: null,
-      fallbackUrl,
-      warning: `Kết nối HTTP ngoại lệ: ${e.message}. Vui lòng thử lại.`,
+      fallbackUrl: "",
+      warning: `Có lỗi hệ thống xảy ra: ${error.message}`,
     });
   }
 });
