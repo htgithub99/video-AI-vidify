@@ -118,3 +118,8 @@ export const stylePresetsKeywords: Record<string, string>  = {
     "8-bit retro pixel art, detailed vintage sprite design, limited color palette, clean grid pixels, nostalgic 90s arcade game look",
 };
 
+export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ['not found', '404', 'unsupported', 'Quota exceeded'];
+export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ['429', 'quota', '503', '500', '550', 'fetch failed', 'Timeout', 'undici'];
+export const STICKMAN_KEYWORDS = ["người que", "stickman", "stick figure", "hoạt hình", "stick", "que"];
+
+

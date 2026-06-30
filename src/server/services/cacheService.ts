@@ -1,5 +1,7 @@
 
 
+import { appLog } from "../../lib/logger.js";
+
 interface CacheEntry {
   timestamp: number;
   data: any;
@@ -8,18 +10,18 @@ interface CacheEntry {
 const geminiCache: Record<string, CacheEntry> = {};
 const CACHE_TTL = 30 * 60 * 1000; 
 
-function getCacheKey(endpoint: string, body: any): string {
+const getCacheKey = (endpoint: string, body: any): string => {
   const clone = { ...body };
   
   delete clone.bypassCache;
   delete clone.timestamp;
   delete clone.projectId;
   return `${endpoint}:${JSON.stringify(clone)}`;
-}
+};
 
-export function checkCache(endpoint: string, body: any, bypass = false): any | null {
+export const checkCache = (endpoint: string, body: any, bypass = false): any | null => {
   if (bypass) {
-    console.log(`[Gemini Cache] Bypass explicitly requested for ${endpoint}`);
+    appLog('CACHE_BYPASS', endpoint);
     return null;
   }
   const key = getCacheKey(endpoint, body);
@@ -27,25 +29,25 @@ export function checkCache(endpoint: string, body: any, bypass = false): any | n
   if (entry) {
     const age = Date.now() - entry.timestamp;
     if (age < CACHE_TTL) {
-      console.log(`[Gemini Cache] Hit for ${endpoint}`);
+      appLog('CACHE_HIT', endpoint);
       return entry.data;
     } else {
-      console.log(`[Gemini Cache] Evicting expired cache for ${endpoint}`);
+      appLog('CACHE_EVICT', endpoint);
       delete geminiCache[key];
     }
   }
   return null;
-}
+};
 
-export function setCache(endpoint: string, body: any, data: any) {
+export const setCache = (endpoint: string, body: any, data: any): void => {
   try {
     const key = getCacheKey(endpoint, body);
     geminiCache[key] = {
       timestamp: Date.now(),
       data,
     };
-    console.log(`[Gemini Cache] Cached new response for ${endpoint}`);
+    appLog('CACHE_NEW', endpoint);
   } catch (err) {
-    console.warn('[Gemini Cache Error] Failed to cache response:', err);
+    appLog('CACHE_ERROR', err);
   }
-}
+};

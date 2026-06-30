@@ -4,17 +4,20 @@ import { Page } from 'playwright';
 import { chromium } from 'playwright-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
+import { getBackendMsg } from '../../constants/messages.js';
+import { appLog, appError } from '../../lib/logger.js';
 chromium.use(stealthPlugin());
 
 export let globalPlaywrightPage: Page | null = null;
 export let globalBearerToken: string | null = null;
 
-export function ensureDirectoryExists(dir: string) {
+export const ensureDirectoryExists = (dir: string): void => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-}
-export function generateProceduralSpeechWav(seconds = 5): string {
+};
+
+export const generateProceduralSpeechWav = (seconds = 5): string => {
   const sampleRate = 8000;
   const numSamples = sampleRate * seconds;
   const numChannels = 1;
@@ -68,10 +71,10 @@ export function generateProceduralSpeechWav(seconds = 5): string {
   }
 
   return buffer.toString('base64');
-}
+};
 
 
-export function splitIntoTTSChunks(text: string): string[] {
+export const splitIntoTTSChunks = (text: string): string[] => {
   const paragraphs = text.split(/\n+/);
   const initialSegments: string[] = [];
 
@@ -131,10 +134,10 @@ export function splitIntoTTSChunks(text: string): string[] {
   }
 
   return absolutelyFinalChunks.filter(c => c.trim().length > 0);
-}
+};
 
 // Split text into slightly larger sentence-based chunks for Gemini TTS to prevent output length rejections or timeouts
-export function splitIntoGeminiTtsChunks(text: string): string[] {
+export const splitIntoGeminiTtsChunks = (text: string): string[] => {
   const paragraphs = text.split(/\n+/);
   const initialSegments: string[] = [];
 
@@ -209,10 +212,10 @@ export function splitIntoGeminiTtsChunks(text: string): string[] {
   }
 
   return mergedChunks.filter(c => c.trim().length > 0);
-}
+};
 
 // Fetch and stitch chunks together for seamless playback using public Google Translate TTS endpoints with deep fallbacks
-export async function getGoogleTtsVoiceBase64(text: string, lang = 'vi'): Promise<{ base64: string; mimeType: string }> {
+export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promise<{ base64: string; mimeType: string }> => {
   const targetLang = lang || "vi";
 
   const chunks = splitIntoTTSChunks(text);
@@ -291,18 +294,18 @@ export async function getGoogleTtsVoiceBase64(text: string, lang = 'vi'): Promis
   const chunkBuffers: Buffer[] = [];
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    console.log(`[Google TTS Fallback] Synthesizing chunk ${i + 1}/${chunks.length} (length: ${chunk.length} chars)`);
+    appLog('GOOGLE_TTS_FALLBACK_SYNTHESIZING', i + 1, chunks.length, chunk.length);
     try {
       const buffer = await fetchBufferWithRetry(chunk);
       chunkBuffers.push(buffer);
     } catch (err: any) {
-      console.error(`[Google TTS Fallback Warning] Failed to fetch chunk ${i + 1}:`, err);
+      appError('GOOGLE_TTS_FALLBACK_FETCH_FAILED', i + 1, err);
 
       try {
         const retryBuffer = await fetchBufferWithRetry(chunk);
         chunkBuffers.push(retryBuffer);
       } catch (retryErr) {
-        console.error(`[Google TTS Fallback Critical] Permanent failure on chunk ${i + 1}`);
+        appError('GOOGLE_TTS_FALLBACK_CRITICAL', i + 1);
 
         chunkBuffers.push(Buffer.alloc(0));
       }
@@ -319,19 +322,46 @@ export async function getGoogleTtsVoiceBase64(text: string, lang = 'vi'): Promis
     base64: stitchedBuffer.toString('base64'),
     mimeType: 'audio/mpeg'
   };
-}
+};
 
 
 
-export async function initPlaywright() {
+export let globalBrowser: any = null;
+export let globalHeadlessState: boolean | null = null;
+
+export const initPlaywright = async (headless = true): Promise<void> => {
+  if (globalPlaywrightPage && globalHeadlessState === headless) {
+    appLog('PLAYWRIGHT_ALREADY_INITIALIZED', `Headless: ${headless}`);
+    return;
+  }
+
   try {
-    console.log("🔗 Đang kết nối tới cửa sổ Chrome thật qua cổng 9222...");
+    appLog('PLAYWRIGHT_CONNECTING', `Headless: ${headless}`);
+    await closePlaywright();
 
+    let browser;
+    try {
+      appLog('PLAYWRIGHT_LAUNCHING_LOCAL', `Headless: ${headless}`);
+      browser = await chromium.launch({
+        headless: headless,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu'
+        ]
+      });
+      globalHeadlessState = headless;
+    } catch (launchErr: any) {
+      appError('PLAYWRIGHT_LAUNCH_LOCAL_FAILED', launchErr?.message || launchErr);
+      appLog('PLAYWRIGHT_FALLING_BACK_CDP');
+      browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
+      globalHeadlessState = null;
+    }
 
-    const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
-
-
-    const defaultContext = browser.contexts()[0];
+    globalBrowser = browser;
+    const defaultContext = browser.contexts()[0] || await browser.newContext();
     const page = defaultContext.pages()[0] || await defaultContext.newPage();
 
 
@@ -343,34 +373,41 @@ export async function initPlaywright() {
       }
     });
 
-    console.log("🌐 Đang truy cập Google Labs...");
+    appLog('PLAYWRIGHT_ACCESSING_LABS');
     await page.goto(EXTERNAL_URLS.GOOGLE_LABS, { waitUntil: 'networkidle' });
 
     if (!globalBearerToken) {
-      console.log("\n⚠️  [CHÚ Ý] Vui lòng đăng nhập tài khoản Google trên trình duyệt...");
+      appLog('PLAYWRIGHT_LOGIN_PROMPT');
 
       page.waitForResponse(response => response.url().includes('googleapis.com'), { timeout: 300000 })
-        .then(() => console.log("✅ Đã bắt được Bearer Token!"))
-        .catch(() => console.log("⏳ Hết thời gian chờ đăng nhập."));
+        .then(() => appLog('PLAYWRIGHT_TOKEN_CAPTURED'))
+        .catch(() => appLog('PLAYWRIGHT_TOKEN_TIMEOUT'));
     } else {
-      console.log("✅ Đã bắt được Bearer Token!");
+      appLog('PLAYWRIGHT_TOKEN_CAPTURED');
     }
 
     globalPlaywrightPage = page;
   } catch (e) {
-    console.error("❌ Lỗi kết nối tới Chrome:", e);
-    console.log("\n=======================================================");
-    console.log("⚠️  BẠN CẦN MỞ CHROME TRƯỚC BẰNG LỆNH SAU RỒI MỚI CHẠY SERVER:");
-    console.log("👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir=\"C:\\chrome_debug_profile\"");
-    console.log("=======================================================\n");
+    appError('PLAYWRIGHT_CONNECT_ERR', e);
+    appLog('----------------------------------------------------');
+    appLog('PLAYWRIGHT_CHROME_MANDATE');
+    appLog('PLAYWRIGHT_CHROME_COMMAND');
+    appLog('----------------------------------------------------');
   }
-}
+};
 
-export async function closePlaywright() {
+export const closePlaywright = async (): Promise<void> => {
   if (globalPlaywrightPage) {
     try {
       await globalPlaywrightPage.close();
     } catch (e) { }
     globalPlaywrightPage = null;
   }
-}
+  if (globalBrowser) {
+    try {
+      await globalBrowser.close();
+    } catch (e) { }
+    globalBrowser = null;
+  }
+  globalHeadlessState = null;
+};

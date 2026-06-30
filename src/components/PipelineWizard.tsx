@@ -1,4 +1,5 @@
 import React from 'react';
+import { appError } from '../lib/logger.js';
 import { usePipelineWizard } from './pipeline/usePipelineWizard';
 import PipelineStep0 from './pipeline/PipelineStep0';
 import PipelineStep1 from './pipeline/PipelineStep1';
@@ -46,7 +47,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         localStorage.setItem('favorite_voices', JSON.stringify(defaults));
       }
     } catch (e) {
-      console.error(e);
+      appError("GENERAL_ERROR", e);
     }
   }, []);
 
@@ -260,6 +261,18 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           {count === 1 ? '1x' : `x${count}`}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Chrome_Mode}</div>
+                    <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
+                      <button type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.chromeHeadless !== false ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {t.Chrome_Hidden}
+                      </button>
+                      <button type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.chromeHeadless === false ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {t.Chrome_Visible}
+                      </button>
                     </div>
                   </div>
 

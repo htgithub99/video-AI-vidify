@@ -7,7 +7,8 @@ import { randomUUID } from 'crypto';
 const PROJECTS_FILE = path.join(process.cwd(), 'projects.json');
 
 import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
-import { BACKEND_MESSAGES } from '../../constants/messages.js';
+import { getBackendMsg } from '../../constants/messages.js';
+import { appError } from '../../lib/logger.js';
 
 function getProjects(): VideoProject[] {
   try {
@@ -21,7 +22,7 @@ function getProjects(): VideoProject[] {
       return JSON.parse(cleaned);
     }
   } catch (error) {
-    console.error(BACKEND_MESSAGES.PROJECT_READ_ERR, error);
+    appError('PROJECT_READ_ERR', error);
   }
   return [];
 }
@@ -30,7 +31,7 @@ function saveProjects(projects: VideoProject[]) {
   try {
     fs.writeFileSync(PROJECTS_FILE, JSON.stringify(projects, null, 2), 'utf-8');
   } catch (error) {
-    console.error(BACKEND_MESSAGES.PROJECT_WRITE_ERR, error);
+    appError('PROJECT_WRITE_ERR', error);
   }
 }
 
@@ -56,13 +57,14 @@ export const updateProject = (req: Request, res: Response) => {
   const { id } = req.params;
   const projects = getProjects();
   const index = projects.findIndex(p => p.id === id);
+  const isVi = req.query.lang !== 'en' && req.body?.language !== 'en';
 
   if (index !== -1) {
     projects[index] = { ...projects[index], ...req.body, updatedAt: Date.now() };
     saveProjects(projects);
     res.json(projects[index]);
   } else {
-    res.status(404).json({ error: BACKEND_MESSAGES.PROJECT_NOT_FOUND });
+    res.status(404).json({ error: getBackendMsg('PROJECT_NOT_FOUND', isVi) });
   }
 };
 
@@ -71,11 +73,12 @@ export const deleteProject = (req: Request, res: Response) => {
   let projects = getProjects();
   const initialLength = projects.length;
   projects = projects.filter(p => p.id !== id);
+  const isVi = req.query.lang !== 'en';
 
   if (projects.length !== initialLength) {
     saveProjects(projects);
     res.json({ success: true });
   } else {
-    res.status(404).json({ error: BACKEND_MESSAGES.PROJECT_NOT_FOUND });
+    res.status(404).json({ error: getBackendMsg('PROJECT_NOT_FOUND', isVi) });
   }
 };

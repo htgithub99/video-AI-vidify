@@ -1,4 +1,6 @@
-export function bufferToWav(buffer: AudioBuffer): Blob {
+import { appWarn, createAppError } from "./logger.js";
+
+export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const format = 1; 
@@ -34,9 +36,9 @@ export function bufferToWav(buffer: AudioBuffer): Blob {
   floatTo16BitPCM(view, 44, result);
   
   return new Blob([arrayBuffer], { type: "audio/wav" });
-}
+};
 
-function interleave(inputL: Float32Array, inputR: Float32Array): Float32Array {
+const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array => {
   const length = inputL.length + inputR.length;
   const result = new Float32Array(length);
   let index = 0;
@@ -48,27 +50,28 @@ function interleave(inputL: Float32Array, inputR: Float32Array): Float32Array {
     inputIndex++;
   }
   return result;
-}
+};
 
-function floatTo16BitPCM(output: DataView, offset: number, input: Float32Array) {
-  for (let i = 0; i < input.length; i++, offset += 2) {
-    let s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+const floatTo16BitPCM = (output: DataView, offset: number, input: Float32Array): void => {
+  let off = offset;
+  for (let i = 0; i < input.length; i++, off += 2) {
+    const s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
   }
-}
+};
 
-function writeString(view: DataView, offset: number, string: string) {
+const writeString = (view: DataView, offset: number, string: string): void => {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
-}
+};
 
-export async function applyAudioEffects(
+export const applyAudioEffects = async (
   arrayBuffer: ArrayBuffer,
   rate: number,
   pitch: number,
   volume: number
-): Promise<Blob> {
+): Promise<Blob> => {
   
   if (Math.abs(rate - 1.0) < 0.01 && Math.abs(pitch - 1.0) < 0.01 && Math.abs(volume - 1.0) < 0.01) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
@@ -79,7 +82,7 @@ export async function applyAudioEffects(
 
   const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioContextClass) {
-    throw new Error("Web Audio API is not supported in this browser.");
+    throw createAppError("Web Audio API is not supported in this browser.");
   }
   
   const audioCtx = new AudioContextClass();
@@ -87,7 +90,7 @@ export async function applyAudioEffects(
     try {
       await audioCtx.resume();
     } catch (e) {
-      console.warn("Failed to resume audio context:", e);
+      appWarn("FAILED_RESUME_AUDIO_CONTEXT", e);
     }
   }
   
@@ -125,9 +128,9 @@ export async function applyAudioEffects(
   } finally {
     await audioCtx.close();
   }
-}
+};
 
-export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
@@ -135,9 +138,9 @@ export function base64ToArrayBuffer(base64: string): ArrayBuffer {
     bytes[i] = binaryString.charCodeAt(i);
   }
   return bytes.buffer;
-}
+};
 
-export function blobToBase64(blob: Blob): Promise<string> {
+export const blobToBase64 = (blob: Blob): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -149,15 +152,15 @@ export function blobToBase64(blob: Blob): Promise<string> {
           resolve(reader.result);
         }
       } else {
-        reject(new Error("File read error"));
+        reject(createAppError("File read error"));
       }
     };
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
-}
+};
 
-export function formatTimeHelper(secs: number): string {
+export const formatTimeHelper = (secs: number): string => {
   const minutes = Math.floor(secs / 60);
   const remainingSecs = secs % 60;
   const rSecsFormatted = remainingSecs % 1 === 0 
@@ -165,9 +168,9 @@ export function formatTimeHelper(secs: number): string {
     : parseFloat(remainingSecs.toFixed(1)).toString().padStart(2, '0');
   
   return `${minutes.toString().padStart(2, '0')}:${rSecsFormatted}`;
-}
+};
 
-export function cleanScriptText(text: string): string {
+export const cleanScriptText = (text: string): string => {
   if (!text) return '';
   let t = text;
   // Xóa văn bản thừa của AI
@@ -180,5 +183,6 @@ export function cleanScriptText(text: string): string {
   // Chuẩn hóa khoảng trắng
   t = t.replace(/\s+/g, ' ').trim();
   return t;
-}
+};
+
 

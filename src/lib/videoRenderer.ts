@@ -1,4 +1,5 @@
 import { StoryboardScene } from '../types.js';
+import { appWarn } from './logger.js';
 
 export const parseTimeToSeconds = (timeStr: string | undefined): number | null => {
   if (!timeStr) return null;
@@ -234,7 +235,7 @@ export const compileVideoToBlob = async (
       
       destNode.stream.getAudioTracks().forEach((track: MediaStreamTrack) => mixedStream.addTrack(track));
     } catch (ae) {
-      console.warn("Audio Context pipeline initialization failed, recording video-only:", ae);
+      appWarn("AUDIO_CONTEXT_INIT_FAILED", ae);
     }
   }
 
@@ -281,7 +282,7 @@ export const compileVideoToBlob = async (
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
       audioEl.src = voiceUrl || '';
       audioEl.currentTime = 0;
-      audioEl.play().catch(console.warn);
+      audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
     }
 
     const startTime = performance.now();
@@ -306,7 +307,7 @@ export const compileVideoToBlob = async (
         if (activeScene.audioUrl) {
           audioEl.src = activeScene.audioUrl;
           audioEl.currentTime = 0;
-          audioEl.play().catch(console.warn);
+          audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
         } else {
           audioEl.src = '';
         }

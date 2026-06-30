@@ -480,21 +480,6 @@ export default function PipelineStep0(props: PipelineWizardState) {
               className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch relative ${loadingStates["processInput"] && !project.scriptRewritten ? "min-h-[460px]" : ""}`}
             >
               {}
-              {loadingStates["processInput"] && (
-                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-slate-800 z-30 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                  <div className="p-4 bg-rose-500/15 rounded-full border border-rose-500/25 animate-bounce">
-                    <Sparkles className="w-8 h-8 text-rose-500 animate-pulse" />
-                  </div>
-                  <div className="space-y-1.5 max-w-sm">
-                    <p className="font-bold text-slate-100 text-sm">
-                      {t.ang_so_n_k_ch_b_n}
-                    </p>
-                    <p className="text-xs text-slate-450 leading-relaxed font-sans">
-                      {t.M_h_nh_AI_ang_ki_n_t_o_k_}
-                    </p>
-                  </div>
-                </div>
-              )}
 
               {}
               <div className="lg:col-span-2 space-y-3 flex flex-col h-full">
@@ -554,16 +539,43 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     </span>
                   </div>
                 </div>
-                <textarea
-                  value={project.scriptRewritten || ""}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      scriptRewritten: e.target.value,
-                    }))
-                  }
-                  className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm leading-relaxed focus:outline-none transition-all font-sans min-h-[380px] lg:min-h-[440px] h-full"
-                />
+                {loadingStates["processInput"] ? (
+                  <div className="w-full flex-1 bg-slate-950/60 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between min-h-[380px] lg:min-h-[440px] h-full relative overflow-hidden animate-pulse">
+                    <div className="space-y-3">
+                      <div className="h-4 bg-slate-900 rounded w-3/4 animate-pulse"></div>
+                      <div className="h-4 bg-slate-900 rounded w-5/6 animate-pulse"></div>
+                      <div className="h-4 bg-slate-900 rounded w-2/3 animate-pulse"></div>
+                      <div className="h-4 bg-slate-900 rounded w-full animate-pulse"></div>
+                      <div className="h-4 bg-slate-900 rounded w-4/5 animate-pulse"></div>
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-slate-950/30 backdrop-blur-[1px] z-10">
+                      <div className="p-3 bg-rose-500/10 rounded-full border border-rose-500/20 mb-3 animate-bounce">
+                        <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
+                      </div>
+                      <p className="font-bold text-slate-200 text-xs text-center font-mono">
+                        {t.ang_so_n_k_ch_b_n}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] text-center leading-relaxed font-sans">
+                        {t.M_h_nh_AI_ang_ki_n_t_o_k_}
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-slate-900 rounded w-1/2 animate-pulse"></div>
+                      <div className="h-4 bg-slate-900 rounded w-4/5 animate-pulse"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <textarea
+                    value={project.scriptRewritten || ""}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        scriptRewritten: e.target.value,
+                      }))
+                    }
+                    className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm leading-relaxed focus:outline-none transition-all font-sans min-h-[380px] lg:min-h-[440px] h-full"
+                  />
+                )}
               </div>
 
               {}
@@ -575,10 +587,17 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       <ShieldCheck className="w-3.5 h-3.5" />
                       {t.Fact_Check_Insight}
                     </span>
-                    <p className="text-slate-400 text-xs leading-relaxed italic max-h-[140px] overflow-y-auto">
-                      {project.factCheckNotes ||
-                        (t.Analyzing_historical_data)}
-                    </p>
+                    {loadingStates["processInput"] ? (
+                      <div className="space-y-1.5 animate-pulse py-1">
+                        <div className="h-3 bg-slate-900 rounded w-5/6"></div>
+                        <div className="h-3 bg-slate-900 rounded w-3/4"></div>
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 text-xs leading-relaxed italic max-h-[140px] overflow-y-auto">
+                        {project.factCheckNotes ||
+                          (t.Analyzing_historical_data)}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -588,37 +607,52 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     {t.Chapters_Script_Outline}
                   </span>
                   <div className="space-y-2.5 flex-1 overflow-y-auto pr-1 max-h-[350px] lg:max-h-[500px]">
-                    {(project.chapters || []).map((ch, idx) => (
-                      <div
-                        key={ch.id}
-                        className="bg-slate-900 border border-slate-800/50 p-2.5 rounded-lg space-y-1"
-                      >
-                        <span className="text-[9px] text-rose-500 font-mono font-bold uppercase">
-                          {t.Chapter}:{" "}
-                          {ch.id}
-                        </span>
-                        <input
-                          type="text"
-                          value={ch.title}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setProject((prev) => {
-                              const updated = (prev.chapters || []).map(
-                                (item) =>
-                                  item.id === ch.id
-                                    ? { ...item, title: val }
-                                    : item,
-                              );
-                              return { ...prev, chapters: updated };
-                            });
-                          }}
-                          className="w-full bg-transparent border-none text-slate-100 font-bold text-xs focus:outline-none"
-                        />
-                        <div className="text-[10px] text-slate-400">
-                          {ch.scriptSegment}
-                        </div>
+                    {loadingStates["processInput"] ? (
+                      <div className="space-y-3 py-1">
+                        {[1, 2, 3].map((num) => (
+                          <div
+                            key={num}
+                            className="bg-slate-900/50 border border-slate-800/50 p-2.5 rounded-lg space-y-2 animate-pulse"
+                          >
+                            <div className="h-2.5 bg-slate-800 rounded w-1/4"></div>
+                            <div className="h-3 bg-slate-800 rounded w-1/2"></div>
+                            <div className="h-2.5 bg-slate-800 rounded w-5/6"></div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      (project.chapters || []).map((ch, idx) => (
+                        <div
+                          key={ch.id}
+                          className="bg-slate-900 border border-slate-800/50 p-2.5 rounded-lg space-y-1"
+                        >
+                          <span className="text-[9px] text-rose-500 font-mono font-bold uppercase">
+                            {t.Chapter}:{" "}
+                            {ch.id}
+                          </span>
+                          <input
+                            type="text"
+                            value={ch.title}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setProject((prev) => {
+                                const updated = (prev.chapters || []).map(
+                                  (item) =>
+                                    item.id === ch.id
+                                      ? { ...item, title: val }
+                                      : item,
+                                );
+                                return { ...prev, chapters: updated };
+                              });
+                            }}
+                            className="w-full bg-transparent border-none text-slate-100 font-bold text-xs focus:outline-none"
+                          />
+                          <div className="text-[10px] text-slate-400">
+                            {ch.scriptSegment}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

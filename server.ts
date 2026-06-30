@@ -3,6 +3,8 @@ import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 
+import { logger } from './src/lib/logger.js';
+
 import { initPlaywright, closePlaywright } from './src/server/services/audioService.js';
 
 import mainRouter from './src/server/routes/index.js';
@@ -51,21 +53,21 @@ const startServer = async () => {
   }
 
   app.listen(port, "0.0.0.0", () => {
-    console.log(`Server running at http://localhost:${port}`);
+    logger.log('SERVER_RUNNING', port);
   });
 };
 
 startServer().catch((error) => {
-  console.error("Lỗi khi khởi động server:", error);
+  logger.error('SERVER_START_ERROR', error);
 });
 
 process.on('SIGINT', async () => {
-  console.log('Đang dọn dẹp Playwright...');
+  logger.log('PLAYWRIGHT_CLEANING');
   await closePlaywright();
   process.exit();
 });
 process.on('SIGTERM', async () => {
-  console.log('Đang dọn dẹp Playwright...');
+  logger.log('PLAYWRIGHT_CLEANING');
   await closePlaywright();
   process.exit();
 });

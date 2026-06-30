@@ -6,6 +6,13 @@ import {
 } from "react";
 import { formatCleanDuration } from "./pipeline-utils";
 import { translations } from "../../lib/lang";
+import { appLog, appError, appWarn, createAppError } from "../../lib/logger.js";
+
+const logger = {
+  log: appLog,
+  error: appError,
+  warn: appWarn,
+};
 import { EXTERNAL_URLS } from "../../constants/apiRoutes";
 import { stylePresetsKeywords } from "../../constants/data";
 import {
@@ -244,7 +251,7 @@ export function usePipelineWizard(props: any) {
         }
       }
     } catch (e) {
-      console.error("Error loading sandbox config:", e);
+      logger.error("ERROR_LOADING_SANDBOX", e);
     }
     return {
       projectId: "cbcf7518-13d7-4eab-b59d-952d5814de53",
@@ -295,7 +302,7 @@ export function usePipelineWizard(props: any) {
           }
         }
       } catch (err) {
-        console.error("Error syncing sandbox config:", err);
+        logger.error("ERROR_SYNCING_SANDBOX", err);
       }
     };
     window.addEventListener("storage", syncConfig);
@@ -657,7 +664,7 @@ export function usePipelineWizard(props: any) {
         }
       };
       await audio.play().catch((e) => {
-        console.warn("Preview URL playback failed:", e);
+        logger.warn("PREVIEW_PLAYBACK_FAILED", e);
         if (activeCloudPreviewAudio === audio) {
           setPlayingVoiceURI(null);
           activeCloudPreviewAudio = null;
@@ -723,7 +730,7 @@ export function usePipelineWizard(props: any) {
             );
             dspApplied = true;
           } catch (e) {
-            console.warn("Preview DSP failed, falling back to raw audio:", e);
+            logger.warn("PREVIEW_DSP_FAILED", e);
             blob = new Blob([bytes], { type: data.mimeType || "audio/wav" });
           }
 
@@ -754,7 +761,7 @@ export function usePipelineWizard(props: any) {
         }
       } catch (e) {
         if (activePreviewToken !== currentToken) return;
-        console.warn("Cloud preview failed, falling back to local:", e);
+        logger.warn("CLOUD_PREVIEW_FAILED", e);
       }
     }
 
@@ -840,7 +847,7 @@ export function usePipelineWizard(props: any) {
           }
         }
       } catch (err) {
-        console.error("Failed to load voices", err);
+        logger.error("FAILED_LOAD_VOICES", err);
       }
     };
 
@@ -904,7 +911,7 @@ export function usePipelineWizard(props: any) {
                 const blob = new Blob([arr], { type: "audio/wav" });
                 restoredUrl = URL.createObjectURL(blob);
               } catch (e) {
-                console.error("Failed to restore audio blob", e);
+                logger.error("FAILED_RESTORE_BLOB", e);
                 restoredUrl = "simulated";
               }
             } else {
@@ -1320,7 +1327,7 @@ export function usePipelineWizard(props: any) {
         );
       })
       .catch((err) => {
-        console.error("Failed to copy clean prompts:", err);
+        logger.error("FAILED_COPY_PROMPTS", err);
       });
   };
 
@@ -1353,7 +1360,7 @@ export function usePipelineWizard(props: any) {
         };
       });
     } catch (e) {
-      console.error("Error reading reference images", e);
+      logger.error("ERROR_READING_REF_IMAGES", e);
     }
   };
 
@@ -1404,7 +1411,7 @@ export function usePipelineWizard(props: any) {
       );
       setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
-      console.error(e);
+      logger.error("STYLE_EXTRACTION_ERR", e);
       setErrorMsg(t.styleExtractionError.replace('{error}', e.message),
       );
     } finally {
@@ -1513,7 +1520,7 @@ export function usePipelineWizard(props: any) {
 
       setInfoMsg(t.charAnalyzeSuccess);
     } catch (e: any) {
-      console.error(e);
+      logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charAnalyzeFailed} ${e.message}`);
     } finally {
       setLoadingStates((prev) => ({ ...prev, analyzeCharacter: false }));
@@ -1563,7 +1570,7 @@ export function usePipelineWizard(props: any) {
         };
       });
     } catch (e) {
-      console.error("Error reading character images", e);
+      logger.error("ERROR_READING_CHAR_IMAGES", e);
     }
   };
 
@@ -1621,7 +1628,7 @@ export function usePipelineWizard(props: any) {
 
       setInfoMsg(t.charExtractSuccess);
     } catch (e: any) {
-      console.error(e);
+      logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
     } finally {
       setLoadingStates((prev) => ({ ...prev, [`extractCharacter_${charId}`]: false }));
@@ -1757,7 +1764,7 @@ export function usePipelineWizard(props: any) {
             base64,
           });
         } catch (e) {
-          console.error("Error reading matched file:", file.name, e);
+          logger.error("ERROR_READ_MATCHED_FILE", file.name, e);
         }
       } else {
         unmatchedFiles.push(file);
@@ -1777,7 +1784,7 @@ export function usePipelineWizard(props: any) {
             results.push({ sceneId: scene.id, fileName: file.name, base64 });
             fileIdx++;
           } catch (e) {
-            console.error("Error reading sequential file:", file.name, e);
+            logger.error("ERROR_READ_SEQ_FILE", file.name, e);
           }
         }
       }
@@ -1902,7 +1909,7 @@ export function usePipelineWizard(props: any) {
         };
       });
     } catch (e) {
-      console.error("Error reading thumbnail reference images", e);
+      logger.error("ERROR_READ_THUMB_REF_IMAGES", e);
     }
   };
 
@@ -2115,7 +2122,7 @@ export function usePipelineWizard(props: any) {
           await handleRenderSceneImage(scene.id, scene.prompt, false, true);
           completedCount++;
         } catch (err: any) {
-          console.error(`Error rendering scene ${scene.id} in batch:`, err);
+          logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
           setErrorMsg(t.errorRenderingSceneBatch.replace('{sceneId}', scene.id).replace('{error}', err.message));
           hasError = true;
           break;
@@ -2140,7 +2147,7 @@ export function usePipelineWizard(props: any) {
         );
       }
     } catch (err: any) {
-      console.error("Batch generation failure:", err);
+      logger.error("BATCH_GEN_FAILURE", err);
       setErrorMsg(t.batchGenFailed.replace('{error}', err.message),
       );
     } finally {
@@ -2207,7 +2214,7 @@ export function usePipelineWizard(props: any) {
         setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
-      console.error("Error generating detailed prompt:", err);
+      logger.error("ERROR_GEN_DETAILED_PROMPT", err);
       setErrorMsg(t.promptGenError.replace('{error}', err.message),
       );
       setTimeout(() => setErrorMsg(""), 4000);
@@ -2453,7 +2460,7 @@ export function usePipelineWizard(props: any) {
           throw new Error("Missing audio URL from synthesis");
         }
       } catch (err: any) {
-        console.error("Synthesize on-the-fly failed:", err);
+        logger.error("SYNTHESIZE_ON_THE_FLY_FAILED", err);
         setErrorMsg(t.voiceSynthError.replace('{error}', err.message),
         );
       } finally {
@@ -2511,7 +2518,7 @@ export function usePipelineWizard(props: any) {
         );
       }
     } catch (e: any) {
-      console.error("Unified scene voice gen failed:", e);
+      logger.error("UNIFIED_SCENE_VOICE_GEN_FAILED", e);
       setErrorMsg(e.message || "Unified voice generation failed.");
     } finally {
       setLoadingStates((prev) => ({
@@ -2565,7 +2572,7 @@ export function usePipelineWizard(props: any) {
     try {
       await handleTriggerAllSceneVoices();
     } catch (e: any) {
-      console.error("Unified segment voice gen failed:", e);
+      logger.error("UNIFIED_SEGMENT_VOICE_GEN_FAILED", e);
       setErrorMsg(e.message || "Unified voice generation failed.");
     } finally {
       setLoadingStates((prev) => ({
@@ -2693,10 +2700,7 @@ export function usePipelineWizard(props: any) {
         const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
         totalDuration = Math.max(3, decoded.duration);
       } catch (decodeErr) {
-        console.warn(
-          "Failed to decode audio duration for unified voice:",
-          decodeErr,
-        );
+        logger.warn("FAILED_DECODE_AUDIO_DURATION", decodeErr);
       }
 
       audioCtx.close();
@@ -2782,7 +2786,7 @@ export function usePipelineWizard(props: any) {
 
       return mergedUrl;
     } catch (err: any) {
-      console.error(err);
+      logger.error("GENERAL_ERROR", err);
       setErrorMsg(t.errorGeneratingVoiceover.replace('{error}', err.message),
       );
     } finally {
@@ -2944,7 +2948,7 @@ export function usePipelineWizard(props: any) {
         t.Cinematic_simulated_video,
       );
     } catch (err) {
-      console.warn("Offline rendering error:", err);
+      logger.warn("OFFLINE_RENDERING_ERROR", err);
       setIsOfflineRendering(false);
       setErrorMsg(
         t.Failed_to_compile_video_C,
@@ -3008,10 +3012,7 @@ export function usePipelineWizard(props: any) {
       };
 
       audio.play().catch((err) => {
-        console.warn(
-          "Audio playback failed, falling back to interval timer:",
-          err,
-        );
+        logger.warn("AUDIO_PLAYBACK_FAILED", err);
         startTimerBasedSim();
       });
     } else {
@@ -3396,7 +3397,7 @@ export function usePipelineWizard(props: any) {
       try {
         coverBase64 = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
       } catch (err) {
-        console.warn("Cover image canvas capture failed, using mock", err);
+        logger.warn("COVER_IMAGE_CANVAS_CAPTURE_FAILED", err);
       }
 
       if (coverBase64) {
@@ -3427,7 +3428,7 @@ export function usePipelineWizard(props: any) {
               r.readAsDataURL(blob);
             });
           } catch (e) {
-            console.warn(`Failed to fetch scene image for scene ${sc.id}:`, e);
+            logger.warn("FAILED_FETCH_SCENE_IMAGE", sc.id, e);
           }
         }
 
@@ -3477,10 +3478,7 @@ export function usePipelineWizard(props: any) {
               r.readAsDataURL(blob);
             });
           } catch (e) {
-            console.warn(
-              "Failed to fetch narration audio file, using fallback:",
-              e,
-            );
+            logger.warn("FAILED_FETCH_NARRATION", e);
           }
         }
       }
@@ -3578,10 +3576,7 @@ export function usePipelineWizard(props: any) {
           audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
           await audioCtx.close();
         } catch (e) {
-          console.error(
-            "Failed to decode narration audio for scene-slice packaging:",
-            e,
-          );
+          logger.error("FAILED_DECODE_NARRATION_SLICE", e);
         }
       }
 
@@ -3698,10 +3693,7 @@ export function usePipelineWizard(props: any) {
               durationUs: Math.round(sc.duration * 1000000),
             });
           } catch (sliceErr) {
-            console.warn(
-              `Failed to package sliced voice for scene ${sc.id}:`,
-              sliceErr,
-            );
+            logger.warn("FAILED_PACKAGE_SLICED_VOICE", sc.id, sliceErr);
           }
         }
       }
@@ -4034,10 +4026,7 @@ export function usePipelineWizard(props: any) {
         t.Package_ZIP_created_succe,
       );
     } catch (zipError: any) {
-      console.error(
-        "Critical error while generating CapCut zip archive:",
-        zipError,
-      );
+      logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
       setInfoMsg(
         t.Error_generating_template,
       );

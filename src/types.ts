@@ -88,6 +88,7 @@ export interface VisualConfig {
   characterAnalysis?: string;
   characterExtracted?: boolean;
   characters?: CharacterConfig[];
+  chromeHeadless?: boolean;
 }
 
 export interface CharacterConfig {

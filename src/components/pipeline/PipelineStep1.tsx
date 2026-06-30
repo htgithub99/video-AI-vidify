@@ -1,5 +1,6 @@
 import { Voice } from '../../types';
 import { VoiceSelectionDialog } from '../../components/VoiceSelectionDialog';
+import { appWarn } from '../../lib/logger.js';
 import { motionLabels } from '../../constants/data';
 import { formatAudioTime, formatCleanTime, formatCleanDuration } from '../../lib/timeUtils';
 import React, { useRef, useState } from 'react';
@@ -652,10 +653,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   audioPreviewRef.current
                                     ?.play()
                                     .catch((e) =>
-                                      console.warn(
-                                        "Player play error:",
-                                        e,
-                                      ),
+                                      appWarn("AUDIO_PLAYBACK_FAILED", e),
                                     );
                                 }
                               }}
@@ -1081,7 +1079,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 onClick={() =>
                                   step2AudioRef.current
                                     ?.play()
-                                    .catch((e) => console.warn(e))
+                                    .catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))
                                 }
                                 className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center cursor-pointer transition-all shrink-0 shadow-sm active:scale-95"
                               >
@@ -1452,7 +1450,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 onClick={() =>
                                   step2AudioRef.current
                                     ?.play()
-                                    .catch((e) => console.warn(e))
+                                    .catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))
                                 }
                                 className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center cursor-pointer transition-all shrink-0 shadow-sm active:scale-95"
                               >
@@ -2459,10 +2457,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
               )}
             </div>
 
-            <div className="relative min-h-[250px] rounded-2xl overflow-hidden">
+            <div className="relative min-h-[250px] rounded-xl overflow-hidden">
               {(loadingStates["storyboardSplit_loading"] ||
                 loadingStates["bulkVoiceGenerate_loading"]) && (
-                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-2xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
+                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
                     <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
                       <Sparkles className="w-8 h-8 text-rose-500" />
                     </div>

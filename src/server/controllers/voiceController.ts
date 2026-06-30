@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 
 import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
-import { BACKEND_MESSAGES } from '../../constants/messages.js';
+import { getBackendMsg } from '../../constants/messages.js';
 import { requestContext } from '../utils/requestContext.js';
+import { appError, createAppError } from '../../lib/logger.js';
 
 export const getVoices = async (req: Request, res: Response) => {
+  const isVi = req.query.lang !== 'en';
   try {
     const queryParams = new URLSearchParams(req.query as any).toString();
     const targetUrl = `${EXTERNAL_URLS.AI33_VOICES}?${queryParams}`;
@@ -20,13 +22,13 @@ export const getVoices = async (req: Request, res: Response) => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw createAppError(`${getBackendMsg('HTTP_STATUS_ERROR', isVi)}${response.status}`);
     }
 
     const data = await response.json();
     res.json(data);
   } catch (error: any) {
-    console.error(BACKEND_MESSAGES.FETCH_VOICES_ERR, error);
+    appError('FETCH_VOICES_ERR', error);
     res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 };

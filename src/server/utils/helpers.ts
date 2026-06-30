@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { appLog } from '../../lib/logger.js';
 
 
-export function extractBalancedJSON(text: string): string | null {
+export const extractBalancedJSON = (text: string): string | null => {
   const firstBrace = text.indexOf('{');
   const firstBracket = text.indexOf('[');
   let startIdx = -1;
@@ -55,7 +56,7 @@ export function extractBalancedJSON(text: string): string | null {
 }
 
 
-export function repairUnescapedDoubleQuotes(jsonStr: string): string {
+export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
   let out = '';
   let inString = false;
   let escapeNext = false;
@@ -122,7 +123,7 @@ export function repairUnescapedDoubleQuotes(jsonStr: string): string {
 }
 
 
-export function completeCutoffJSON(jsonStr: string): string {
+export const completeCutoffJSON = (jsonStr: string): string => {
   let out = '';
   const stack: string[] = [];
   let inString = false;
@@ -181,7 +182,7 @@ export function completeCutoffJSON(jsonStr: string): string {
 }
 
 // Helper function to safely parse potentially malformed JSON or markdown codeblocks from Gemini
-export function safeParseJSON(text: string, defaultVal: any): any {
+export const safeParseJSON = (text: string, defaultVal: any): any => {
   if (!text) return defaultVal;
   let trimmed = text.trim();
   if (trimmed === '' || trimmed === 'undefined' || trimmed === 'null') {
@@ -259,6 +260,6 @@ export function safeParseJSON(text: string, defaultVal: any): any {
     if (parsed) return parsed;
   }
 
-  console.warn('[JSON Parse Warning] Failed to parse API text, using fallback:', text.substring(0, 150) + '...');
+  appLog('JSON_PARSE_WARNING', text.substring(0, 150) + '...');
   return defaultVal;
 }

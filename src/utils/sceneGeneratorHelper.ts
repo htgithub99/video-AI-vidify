@@ -1,3 +1,6 @@
+import { getSceneDensityPrompt } from "../constants/prompts.js";
+import { appWarn, createAppError } from "../lib/logger.js";
+
 export const SCENE_DENSITY_MAP = {
   THEO_TU: { maxChars: 20, label: "Theo từ" },
   CAU_NGAN: { maxChars: 75, label: "Câu ngắn" },
@@ -13,11 +16,11 @@ export interface GeneratedScene {
   [key: string]: any;
 }
 
-export function smartChunkScript(
+export const smartChunkScript = (
   script: string,
   maxChunkSize: number = 2500,
   minChunkSize: number = 2000,
-): string[] {
+): string[] => {
   if (!script || script.trim().length === 0) return [];
   if (script.length <= maxChunkSize) return [script.trim()];
 
@@ -63,35 +66,32 @@ export function smartChunkScript(
   }
 
   return chunks;
-}
+};
 
-async function retryableLlmCall<T>(
+const retryableLlmCall = async <T>(
   fn: () => Promise<T>,
   maxRetries: number = 2,
   chunkIndex: number,
-): Promise<T> {
+): Promise<T> => {
   let attempt = 0;
   while (attempt <= maxRetries) {
     try {
       return await fn();
     } catch (error) {
       attempt++;
-      console.warn(
-        `[Chunk ${chunkIndex}] Error attempt ${attempt}/${maxRetries + 1}. Retrying...`,
-        error,
-      );
+      appWarn('CHUNK_RETRY_WARNING', chunkIndex, attempt, maxRetries + 1, error);
       if (attempt > maxRetries) {
-        throw new Error(
+        throw createAppError(
           `[Chunk ${chunkIndex}] Failed after ${maxRetries + 1} attempts: ${error}`,
         );
       }
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
   }
-  throw new Error("Unable to execute LLM request.");
-}
+  throw createAppError("Unable to execute LLM request.");
+};
 
-export async function generateScenesWithChunking(
+export const generateScenesWithChunking = async (
   script: string,
   density: SceneDensity,
   llmCallFn: (
@@ -102,7 +102,7 @@ export async function generateScenesWithChunking(
   ) => Promise<GeneratedScene[]>,
   maxChunkSize: number = 1300,
   minChunkSize: number = 900,
-): Promise<GeneratedScene[]> {
+): Promise<GeneratedScene[]> => {
   const chunks = smartChunkScript(script, maxChunkSize, minChunkSize);
   const densityConfig = SCENE_DENSITY_MAP[density];
 
@@ -114,12 +114,13 @@ export async function generateScenesWithChunking(
     const minScenes = Math.floor(chunkLength / densityConfig.maxChars);
     const maxScenes = Math.floor(chunkLength / (densityConfig.maxChars * 0.8));
 
-    const targetPrompt = `
-      The provided script chunk has a total length of ${chunkLength} characters.
-      The user has selected the [${densityConfig.label}] density (equivalent to a maximum of ${densityConfig.maxChars} characters per scene).
-      STRICT MATHEMATICAL TARGET: You MUST generate a total number of scenes that falls strictly between ${minScenes} and ${maxScenes} scenes.
-      If the returned result contains fewer than ${minScenes} scenes, the system will evaluate it as a critical failure and reject the response.
-    `.trim();
+    const targetPrompt = getSceneDensityPrompt(
+      chunkLength,
+      densityConfig.label,
+      densityConfig.maxChars,
+      minScenes,
+      maxScenes,
+    );
 
     return () =>
       retryableLlmCall(() => llmCallFn(chunk, targetPrompt, index + 1, chunks.length), 2, index);
@@ -151,4 +152,5 @@ export async function generateScenesWithChunking(
   }
 
   return finalScenes;
-}
+};
+

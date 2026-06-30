@@ -610,3 +610,102 @@ Only return the list of English style keywords, with no introductory text or mar
 
 export const STICKMAN_STYLE_MODIFIERS =
   "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
+
+export const getMultiStepHookPrompt = (
+  originalInput: string,
+  genre: string,
+  hookType: string,
+  duration: number,
+  language: string,
+  count: number,
+): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
+Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
+
+[Genre Context]: ${genre || "Storytelling"}
+[Desired Hook Style]: ${hookType || "Auto"} (options: Auto, Mystery, Shock, Drama, Curiosity, Emotional, Historical, Statistical, Question, Story)
+[Target Duration Context]: ${duration || 10} seconds
+[Output Language]: ${language === "vi" ? "Vietnamese" : "English"}.
+
+Your process MUST complete all 3 steps internally:
+STEP 1: Strategic Audience & Angle Analysis
+Identify the primary target audience, core emotional triggers (curiosity, fear, nostalgia, shock, etc.), and 3 completely different narrative angles or hooks that grab attention in the first 3 seconds on social media.
+
+STEP 2: Drafting Hooks
+Generate exactly ${count || 3} different hooks based on the strategic insights and the topic.
+
+STEP 3: Polish and TTS Normalization
+Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud, and perfect for TTS voice generation. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use only basic letters and punctuation.
+
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps, no introductory text, and no backticks:
+{
+  "audience": "Description of target audience",
+  "triggers": ["trigger 1", "trigger 2"],
+  "angles": [
+    { "name": "Angle Name", "rationale": "Why this works" }
+  ],
+  "versions": [
+    { "id": "hk_1", "content": "Polished, extremely high-retention hook line", "type": "Style/Angle Name" }
+  ]
+}`;
+
+export const getCombinedScriptPrompt = (
+  originalInput: string,
+  durationText: string,
+  targetWordCount: number,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  selectedHookText: string,
+  genreGuideline: string,
+  styleGuideline: string,
+  audienceGuideline: string,
+  targetChapterCount: number,
+): string => `You are an elite, professional research director and script outline planner.
+Your mission is to perform a highly unified script outline and research process for this input: "${originalInput}".
+
+[System Configuration]:
+- Target Duration: ${durationText}
+- Target Word Count: EXACTLY ${targetWordCount} words total.
+- Video Genre: ${genre || "Storytelling"}
+- Writing Style: ${writingStyle || "Documentary"}
+- Language: ${isVi ? "Vietnamese (Tiếng Việt)" : "English (Tiếng Anh)"}
+
+[Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
+
+[Guidelines]:
+- Genre Guidelines: ${genreGuideline}
+- Writing Style Guidelines: ${styleGuideline}
+- Audience: ${audienceGuideline}
+
+Your workflow MUST execute the following steps internally:
+STEP 1: Research & Concept sheet formulation. Determine theme details, main characters visual profiles, core keywords, and preferred terms.
+STEP 2: Outline creation. Plan a pacing-optimized structure split into exactly ${targetChapterCount} chapters. Provide a clear title and description for each chapter detailing what narration must cover.
+
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+{
+  "theme": "Core theme details",
+  "characterSpecs": "Detailed visual descriptions of main characters",
+  "preferredTerms": ["preferredTerm1", "preferredTerm2"],
+  "factCheckNotes": "Polished fact checking notes of the topic",
+  "chapters": [
+    {
+      "id": "ch_1",
+      "title": "Chapter I: Title of chapter",
+      "description": "Detailed description of what this chapter must cover, scenes, events, and emotional arc"
+    }
+  ]
+}`;
+
+export const getSceneDensityPrompt = (
+  chunkLength: number,
+  label: string,
+  maxChars: number,
+  minScenes: number,
+  maxScenes: number,
+): string => `
+The provided script chunk has a total length of ${chunkLength} characters.
+The user has selected the [${label}] density (equivalent to a maximum of ${maxChars} characters per scene).
+STRICT MATHEMATICAL TARGET: You MUST generate a total number of scenes that falls strictly between ${minScenes} and ${maxScenes} scenes.
+If the returned result contains fewer than ${minScenes} scenes, the system will evaluate it as a critical failure and reject the response.
+`.trim();
+

@@ -1,4 +1,6 @@
 
+import { appLog, appError, createAppError } from "./logger";
+
 export const SYSTEM_STATUS = {
   PENDING: 'PENDING',
   PROCESSING: 'PROCESSING',
@@ -34,19 +36,19 @@ export const safeSystemFetch = async (url: string, payload: any) => {
     
     if (data && Array.isArray(data.rotationLogs)) {
       data.rotationLogs.forEach((log: string) => {
-        if (log.includes('❌') || log.includes('💀')) console.error(log);
-        else if (log.includes('⚠️') || log.includes('⏳')) console.warn(log);
-        else console.log(log);
+        if (log.includes('❌') || log.includes('💀')) appError(log);
+        else if (log.includes('⚠️') || log.includes('⏳')) appLog(log);
+        else appLog(log);
       });
     }
 
     if (!response.ok) {
-      throw new Error(data?.error || `API Error: ${response.status}`);
+      throw createAppError(data?.error || `API Error: ${response.status}`);
     }
     
     return { success: true, data };
   } catch (error: any) {
-    console.error(`[System Flow Error] ${url}:`, error);
+    appError('SYSTEM_FLOW_ERROR', url, error);
     return { success: false, error: error.message };
   }
 };
@@ -54,6 +56,6 @@ export const safeSystemFetch = async (url: string, payload: any) => {
 export const delayAsync = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export const logSystemAction = (actionName: string) => {
-  const prefix = "[System Action] Bắt đầu thực thi: ";
-  console.log(prefix + actionName);
+  appLog('SYSTEM_ACTION_START', actionName);
 };
+

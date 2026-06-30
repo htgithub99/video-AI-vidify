@@ -12,6 +12,7 @@ import {
 import { Modal } from "./ui/Modal";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
+import { appError } from "../lib/logger.js";
 
 export interface Voice {
   voice_id: string;
@@ -133,7 +134,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
         setHasMore(false);
       }
     } catch (error) {
-      console.error("Failed to fetch voices:", error);
+      appError("FAILED_FETCH_VOICES_REGISTRY", error);
       setHasMore(false);
     } finally {
       setLoading(false);
@@ -190,7 +191,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
 
     const audio = new Audio(voice.preview_url);
     audio.onended = () => setPlayingId(null);
-    audio.play().catch((e) => console.error("Audio playback failed", e));
+    audio.play().catch((e) => appError("AUDIO_PLAYBACK_FAILED", e));
     audioRef.current = audio;
     setPlayingId(voice.voice_id);
   };

@@ -4,10 +4,15 @@ import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
 import { VideoProject } from "./types.js";
 import { Lang } from "./lib/lang.js";
+import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES } from "./constants/apiRoutes.js";
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>("vi");
+
+  useEffect(() => {
+    setLogLanguage(currentLang);
+  }, [currentLang]);
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     () => {
@@ -68,7 +73,7 @@ export default function App() {
           }
           return JSON.parse(text);
         } catch (e) {
-          console.error("Error parsing projects data:", e);
+          appError("ERROR_PARSING_PROJECTS", e);
           return [];
         }
       })
@@ -77,7 +82,7 @@ export default function App() {
           setProjects(data);
         }
       })
-      .catch((err) => console.error("Error fetching databases projects:", err));
+      .catch((err) => appError("ERROR_FETCHING_PROJECTS", err));
   }, []);
 
   const handleCreateProject = async (name: string, desc: string) => {
@@ -147,7 +152,7 @@ export default function App() {
         setSelectedProjectId(newProject.id);
       }
     } catch (e) {
-      console.error("Error creating project in db:", e);
+      appError("ERROR_CREATING_PROJECT", e);
     }
   };
 
@@ -161,7 +166,7 @@ export default function App() {
         body: JSON.stringify(updated),
       });
     } catch (e) {
-      console.error("Error auto-saving project:", e);
+      appError("ERROR_AUTO_SAVING_PROJECT", e);
     }
   };
 
@@ -175,7 +180,7 @@ export default function App() {
         }
       }
     } catch (e) {
-      console.error("Error deleting project:", e);
+      appError("ERROR_DELETING_PROJECT", e);
     }
   };
 
@@ -202,7 +207,7 @@ export default function App() {
         body: JSON.stringify(updated),
       });
     } catch (e) {
-      console.error("Error updating project:", e);
+      appError("ERROR_UPDATING_PROJECT", e);
     }
   };
 

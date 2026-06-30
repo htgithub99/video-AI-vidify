@@ -12,7 +12,8 @@ import {
   SceneDensity,
 } from "../../utils/sceneGeneratorHelper.js";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
-import { BACKEND_MESSAGES, PIPELINE_LOGS } from "../../constants/messages.js";
+import { getBackendMsg, getPipelineLog } from "../../constants/messages.js";
+import { logger, getMessage, appLog, appError, appLogStep, createAppError } from "../../lib/logger.js";
 import {
   VI_GENRE_GUIDELINES,
   VI_STYLE_GUIDELINES,
@@ -47,9 +48,13 @@ import {
   getCharacterRewriteBatchPrompt,
   STYLE_EXTRACTION_PROMPT,
   STICKMAN_STYLE_MODIFIERS,
+  getMultiStepHookPrompt,
+  getCombinedScriptPrompt,
 } from "../../constants/prompts.js";
-import { globalPlaywrightPage } from "../services/audioService.js";
+import { globalPlaywrightPage, initPlaywright } from "../services/audioService.js";
 import { requestContext } from "../utils/requestContext.js";
+import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
 import os from "os";
@@ -57,14 +62,15 @@ import os from "os";
 const router = express.Router();
 
 router.post("/extract-style", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
   try {
     const { images } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: BACKEND_MESSAGES.IMAGES_REQUIRED });
+      return res.status(400).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: BACKEND_MESSAGES.GEMINI_NOT_INIT });
+      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const parts: any[] = [];
@@ -99,39 +105,35 @@ router.post("/extract-style", async (req: Request, res: Response) => {
       let extracted = response.text.trim();
 
       const lower = extracted.toLowerCase();
-      if (
-        lower.includes("stickman") ||
-        lower.includes("stick figure") ||
-        lower.includes("người que") ||
-        lower.includes("stick") ||
-        lower.includes("que")
-      ) {
+      if (STICKMAN_KEYWORDS.some(kw => lower.includes(kw))) {
         extracted = STICKMAN_STYLE_MODIFIERS;
       }
       return res.json({ style: extracted });
     } else {
-      throw new Error(BACKEND_MESSAGES.STYLE_EXTRACTION_ERR);
+      throw new Error(getBackendMsg("STYLE_EXTRACTION_ERR", isVi));
     }
   } catch (error: any) {
-    console.error("Style extraction error:", error);
+    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    logger.error("STYLE_EXTRACTION_ERROR", error);
     return res
       .status(500)
       .json({
-        error: error.message || BACKEND_MESSAGES.STYLE_EXTRACTION_ERR,
+        error: error.message || getBackendMsg("STYLE_EXTRACTION_ERR", isVi),
         rotationLogs: error.rotationLogs,
       });
   }
 });
 
 router.post("/rewrite-prompts", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
   const { storyboard, newStyle } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
     return res
       .status(400)
-      .json({ error: BACKEND_MESSAGES.STORYBOARD_REQUIRED });
+      .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
   if (!newStyle) {
-    return res.status(400).json({ error: BACKEND_MESSAGES.NEW_STYLE_REQUIRED });
+    return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -179,7 +181,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
           }
         }
       } catch (err) {
-        console.error("Batch style rewrite failed for chunk:", err);
+        logger.error("BATCH_STYLE_REWRITE_FAILED_CHUNK", err);
       }
 
       // Smooth out requests for free tier
@@ -201,7 +203,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
-    console.error("Rewrite prompts error:", error);
+    logger.error("REWRITE_PROMPTS_ERROR", error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -209,14 +211,15 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 });
 
 router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
   const { thumbnails, newStyle } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
     return res
       .status(400)
-      .json({ error: BACKEND_MESSAGES.THUMBNAILS_REQUIRED });
+      .json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
   if (!newStyle) {
-    return res.status(400).json({ error: BACKEND_MESSAGES.NEW_STYLE_REQUIRED });
+    return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -248,7 +251,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
           }
         }
       } catch (err) {
-        console.error("Batch style rewrite failed for thumbnails:", err);
+        logger.error("BATCH_STYLE_REWRITE_FAILED_THUMBNAILS", err);
       }
 
       for (let i = 0; i < updatedThumbnails.length; i++) {
@@ -263,21 +266,22 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 
     res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (error: any) {
-    console.error("Rewrite thumbnails error:", error);
+    logger.error("REWRITE_THUMBNAILS_ERROR", error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 router.post("/analyze-character", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
   try {
     const { script } = req.body;
     if (!script) {
-      return res.status(400).json({ error: BACKEND_MESSAGES.SCRIPT_REQUIRED });
+      return res.status(400).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: BACKEND_MESSAGES.GEMINI_NOT_INIT });
+      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const prompt = getCharacterAnalysisPrompt(script);
@@ -291,25 +295,27 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     const characters = (Array.isArray(parsed) ? parsed : []).slice(0, 3);
     return res.json({ characters });
   } catch (error: any) {
-    console.error("Character analysis error:", error);
+    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    logger.error("CHARACTER_ANALYSIS_ERROR", error);
     return res
       .status(500)
       .json({
-        error: error.message || BACKEND_MESSAGES.CHARACTER_ANALYZE_FAIL,
+        error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
         rotationLogs: error.rotationLogs,
       });
   }
 });
 
 router.post("/extract-character", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
   try {
     const { images, characterDescription } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: BACKEND_MESSAGES.IMAGES_REQUIRED });
+      return res.status(400).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: BACKEND_MESSAGES.GEMINI_NOT_INIT });
+      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const parts: any[] = [];
@@ -343,14 +349,15 @@ router.post("/extract-character", async (req: Request, res: Response) => {
     if (response && response.text) {
       return res.json({ characterPrompt: response.text.trim() });
     } else {
-      throw new Error(BACKEND_MESSAGES.CHARACTER_EXTRACT_FAIL);
+      throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
     }
   } catch (error: any) {
-    console.error("Character extraction error:", error);
+    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    logger.error("CHARACTER_EXTRACTION_ERROR", error);
     return res
       .status(500)
       .json({
-        error: error.message || BACKEND_MESSAGES.CHARACTER_EXTRACT_FAIL,
+        error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
         rotationLogs: error.rotationLogs,
       });
   }
@@ -359,11 +366,12 @@ router.post("/extract-character", async (req: Request, res: Response) => {
 router.post(
   "/rewrite-prompts-character",
   async (req: Request, res: Response) => {
+    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
     const { storyboard, characterPrompt, characters } = req.body;
     if (!storyboard || !Array.isArray(storyboard)) {
       return res
         .status(400)
-        .json({ error: BACKEND_MESSAGES.STORYBOARD_INVALID });
+        .json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
     }
 
     let finalCharacters = characters;
@@ -377,7 +385,7 @@ router.post(
       } else {
         return res
           .status(400)
-          .json({ error: BACKEND_MESSAGES.CHARACTER_PROMPT_REQUIRED });
+          .json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
       }
     }
 
@@ -426,7 +434,7 @@ router.post(
             }
           }
         } catch (err) {
-          console.error("Batch character rewrite failed for chunk:", err);
+          logger.error("BATCH_CHARACTER_REWRITE_FAILED_CHUNK", err);
         }
 
         // Smooth out requests for free tier
@@ -457,7 +465,7 @@ router.post(
 
       res.json({ success: true, storyboard: updatedStoryboard });
     } catch (error: any) {
-      console.error("Rewrite prompts character error:", error);
+      logger.error("REWRITE_PROMPTS_CHARACTER_ERROR", error);
       res
         .status(500)
         .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -507,43 +515,22 @@ router.post("/hooks", async (req: Request, res: Response) => {
   }
 
   const multiStepLogs: string[] = [];
+  const isVi = language === "vi" || config?.language === "vi";
   const logStep = (msg: string) => {
-    console.log(msg);
-    multiStepLogs.push(msg);
+    appLogStep(msg, multiStepLogs);
   };
 
   try {
-    logStep(PIPELINE_LOGS.HOOK_STEP1);
+    logStep(getPipelineLog("HOOK_STEP1", isVi));
 
-    const combinedPrompt = `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
-Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
-
-[Genre Context]: ${config.genre || "Storytelling"}
-[Desired Hook Style]: ${hookType || "Auto"} (options: Auto, Mystery, Shock, Drama, Curiosity, Emotional, Historical, Statistical, Question, Story)
-[Target Duration Context]: ${duration || 10} seconds
-[Output Language]: ${language === "vi" ? "Vietnamese" : "English"}.
-
-Your process MUST complete all 3 steps internally:
-STEP 1: Strategic Audience & Angle Analysis
-Identify the primary target audience, core emotional triggers (curiosity, fear, nostalgia, shock, etc.), and 3 completely different narrative angles or hooks that grab attention in the first 3 seconds on social media.
-
-STEP 2: Drafting Hooks
-Generate exactly ${count || 3} different hooks based on the strategic insights and the topic.
-
-STEP 3: Polish and TTS Normalization
-Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud, and perfect for TTS voice generation. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use only basic letters and punctuation.
-
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps, no introductory text, and no backticks:
-{
-  "audience": "Description of target audience",
-  "triggers": ["trigger 1", "trigger 2"],
-  "angles": [
-    { "name": "Angle Name", "rationale": "Why this works" }
-  ],
-  "versions": [
-    { "id": "hk_1", "content": "Polished, extremely high-retention hook line", "type": "Style/Angle Name" }
-  ]
-}`;
+    const combinedPrompt = getMultiStepHookPrompt(
+      originalInput,
+      config.genre,
+      hookType,
+      duration,
+      language,
+      count
+    );
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedPrompt,
@@ -558,17 +545,17 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     });
 
     logStep(
-      `${PIPELINE_LOGS.HOOK_STEP1_DONE} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`,
+      `${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`,
     );
     if (combinedResponse.rotationLogs)
       multiStepLogs.push(...combinedResponse.rotationLogs);
 
-    logStep(PIPELINE_LOGS.HOOK_STEP2);
+    logStep(getPipelineLog("HOOK_STEP2", isVi));
     logStep(
-      `${PIPELINE_LOGS.HOOK_STEP2_DONE} ${(combinedResult.versions || []).length || 0} hooks.`,
+      `${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`,
     );
 
-    logStep(PIPELINE_LOGS.HOOK_STEP3);
+    logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
     if (Array.isArray(versions)) {
       versions = versions.map((v: any, idx: number) => ({
@@ -579,12 +566,12 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
       }));
     }
 
-    logStep(PIPELINE_LOGS.HOOK_STEP3_DONE);
+    logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
     const output = { versions, rotationLogs: multiStepLogs };
     setCache("/api/pipeline/hooks", req.body, output);
     res.json(output);
   } catch (error: any) {
-    console.error("Error generating hooks via Multi-step Flow:", error);
+    logger.error("ERROR_GENERATING_HOOKS", error);
     const isVi = language === "vi" || config?.language === "vi";
     const errorLogs = error.rotationLogs
       ? [...multiStepLogs, ...error.rotationLogs]
@@ -741,50 +728,27 @@ router.post("/script", async (req: Request, res: Response) => {
 
     const multiStepLogs: string[] = [];
     const logStep = (msg: string) => {
-      console.log(msg);
-      multiStepLogs.push(msg);
+      appLogStep(msg, multiStepLogs);
     };
 
-    logStep(PIPELINE_LOGS.SCRIPT_STEP1);
+    logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
     const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
 
     // Call 1: Unified Research, Fact-Check, and Chapter Outlining
-    const combinedScriptPrompt = `You are an elite, professional research director and script outline planner.
-Your mission is to perform a highly unified script outline and research process for this input: "${originalInput}".
-
-[System Configuration]:
-- Target Duration: ${durationText}
-- Target Word Count: EXACTLY ${targetWordCount} words total.
-- Video Genre: ${config.genre || "Storytelling"}
-- Writing Style: ${config.writingStyle || "Documentary"}
-- Language: ${isVi ? "Vietnamese (Tiếng Việt)" : "English (Tiếng Anh)"}
-
-[Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
-
-[Guidelines]:
-- Genre Guidelines: ${genreGuideline}
-- Writing Style Guidelines: ${styleGuideline}
-- Audience: ${audienceGuideline}
-
-Your workflow MUST execute the following steps internally:
-STEP 1: Research & Concept sheet formulation. Determine theme details, main characters visual profiles, core keywords, and preferred terms.
-STEP 2: Outline creation. Plan a pacing-optimized structure split into exactly ${targetChapterCount} chapters. Provide a clear title and description for each chapter detailing what narration must cover.
-
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
-{
-  "theme": "Core theme details",
-  "characterSpecs": "Detailed visual descriptions of main characters",
-  "preferredTerms": ["preferredTerm1", "preferredTerm2"],
-  "factCheckNotes": "Polished fact checking notes of the topic",
-  "chapters": [
-    {
-      "id": "ch_1",
-      "title": "Chapter I: Title of chapter",
-      "description": "Detailed description of what this chapter must cover, scenes, events, and emotional arc"
-    }
-  ]
-}`;
+    const combinedScriptPrompt = getCombinedScriptPrompt(
+      originalInput,
+      durationText,
+      targetWordCount,
+      config.genre,
+      config.writingStyle,
+      isVi,
+      selectedHookText || "",
+      genreGuideline,
+      styleGuideline,
+      audienceGuideline,
+      targetChapterCount
+    );
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedScriptPrompt,
@@ -803,20 +767,20 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     });
 
     logStep(
-      `${PIPELINE_LOGS.SCRIPT_STEP1_DONE} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`,
+      `${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`,
     );
     if (combinedResponse.rotationLogs)
       multiStepLogs.push(...combinedResponse.rotationLogs);
 
-    logStep(PIPELINE_LOGS.SCRIPT_STEP2A);
+    logStep(getPipelineLog("SCRIPT_STEP2A", isVi));
     logStep(
-      `${PIPELINE_LOGS.SCRIPT_STEP2A_DONE} ${(scriptResult.chapters || []).length} chapters.`,
+      `${getPipelineLog("SCRIPT_STEP2A_DONE", isVi)} ${(scriptResult.chapters || []).length} chapters.`,
     );
 
-    logStep(PIPELINE_LOGS.SCRIPT_STEP2B);
-    logStep(`${PIPELINE_LOGS.SCRIPT_STEP2B_DONE} ${(scriptResult.chapters || []).length}.`);
+    logStep(getPipelineLog("SCRIPT_STEP2B", isVi));
+    logStep(`${getPipelineLog("SCRIPT_STEP2B_DONE", isVi)} ${(scriptResult.chapters || []).length}.`);
 
-    logStep(PIPELINE_LOGS.SCRIPT_STEP3);
+    logStep(getPipelineLog("SCRIPT_STEP3", isVi));
     const completedChapters: any[] = [];
     let fullScript = selectedHookText ? selectedHookText + "\n\n" : "";
 
@@ -829,7 +793,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       logStep(
-        `${PIPELINE_LOGS.SCRIPT_STEP3_PROGRESS} ${i + 1}/${chapters.length}: ${chapter.title}...`,
+        `${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`,
       );
 
       const chapterPrompt = getChapterWriterPrompt(
@@ -874,8 +838,8 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
         multiStepLogs.push(...chapterResponse.rotationLogs);
     }
 
-    logStep(PIPELINE_LOGS.SCRIPT_STEP4);
-    logStep(PIPELINE_LOGS.SCRIPT_STEP4_DONE);
+    logStep(getPipelineLog("SCRIPT_STEP4", isVi));
+    logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
     const finalCleanScript = fullScript.trim();
 
@@ -888,7 +852,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     setCache("/api/pipeline/script", req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    console.error("Error rewriting script:", error);
+    logger.error("ERROR_REWRITING_SCRIPT", error);
     const isVi = config?.language === "vi";
     res.json({
       warning: error.message || "API rate limits triggered",
@@ -1219,7 +1183,7 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     const detailedPrompt = response.text?.trim() || sceneScript;
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
-    console.error("Detailed prompt error:", error);
+    logger.error("DETAILED_PROMPT_ERROR", error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -1337,7 +1301,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       storyboardLogs.push(msg);
     };
 
-    logStoryboardStep(PIPELINE_LOGS.STORY_STEP1);
+    logStoryboardStep(getPipelineLog("STORY_STEP1", isVi));
     const visualBiblePrompt = getGlobalVisualBiblePrompt(
       rewrittenScript,
       genre,
@@ -1382,12 +1346,12 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       lightingMood: "",
     });
     logStoryboardStep(
-      `${PIPELINE_LOGS.STORY_STEP1_DONE} ${visualBible.colorPalette}. Spec: ${visualBible.characterSpecs}`,
+      `${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Spec: ${visualBible.characterSpecs}`,
     );
     if (bibleResponse.rotationLogs)
       storyboardLogs.push(...bibleResponse.rotationLogs);
 
-    logStoryboardStep(`${PIPELINE_LOGS.STORY_STEP2} ${mappedDensity}...`);
+    logStoryboardStep(`${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`);
     let allScenes: any[] = [];
 
     try {
@@ -1461,24 +1425,24 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         },
       );
     } catch (e: any) {
-      console.error("Error generating storyboard via chunking helper:", e);
+      logger.error("ERROR_GENERATING_STORYBOARD_CHUNKING", e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
     }
 
-    logStoryboardStep(PIPELINE_LOGS.STORY_STEP3);
+    logStoryboardStep(getPipelineLog("STORY_STEP3", isVi));
     if (allScenes.length > 0) {
       try {
         logStoryboardStep(
-          `${PIPELINE_LOGS.STORY_REFINE_SUCCESS} ${allScenes.length} prompts.`,
+          `${getPipelineLog("STORY_REFINE_SUCCESS", isVi)} ${allScenes.length} prompts.`,
         );
       } catch (refineErr: any) {
         logStoryboardStep(
-          `${PIPELINE_LOGS.STORY_REFINE_ERROR} ${refineErr.message}.`,
+          `${getPipelineLog("STORY_REFINE_ERROR", isVi)} ${refineErr.message}.`,
         );
       }
     }
 
-    logStoryboardStep(PIPELINE_LOGS.STORY_DONE_ALL);
+    logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
     let data: any = { scenes: allScenes, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || data.scenes.length === 0) {
@@ -1530,7 +1494,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     setCache("/api/pipeline/storyboard", req.body, data);
     res.json(data);
   } catch (error: any) {
-    console.error("Error generating storyboard via Gemini:", error);
+    logger.error("ERROR_GENERATING_STORYBOARD_GEMINI", error);
 
     const fallbackData: any = generateMockStoryboard(
       rewrittenScript,
@@ -1675,7 +1639,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     setCache("/api/pipeline/seo", req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    console.error("Error generating SEO pack:", error);
+    logger.error("ERROR_GENERATING_SEO", error);
     const isVi = config?.language === "vi";
     res.json({
       warning: error.message || "API rate limits triggered",
@@ -1880,7 +1844,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     setCache("/api/pipeline/thumbnails", req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    console.error("Error generating thumbnails prompts:", error);
+    logger.error("ERROR_GENERATING_THUMBNAILS_PROMPTS", error);
     const isVi = config?.language === "vi";
     res.json({
       warning: error.message || "API rate limits triggered",
@@ -1971,14 +1935,12 @@ router.post("/voice", async (req: Request, res: Response) => {
 
     if (!ttsRes.ok) {
       const err = await ttsRes.text();
-      throw new Error("TTS API Error: " + err);
+      throw new Error(getMessage("TTS_API_ERROR_MSG", undefined, err));
     }
 
     const ttsData = await ttsRes.json();
     if (!ttsData.success || !ttsData.task_id) {
-      throw new Error(
-        "TTS API did not return a task_id: " + JSON.stringify(ttsData),
-      );
+      throw new Error(getMessage("TTS_NO_TASK_ID", undefined, JSON.stringify(ttsData)));
     }
 
     const taskId = ttsData.task_id;
@@ -1998,25 +1960,25 @@ router.post("/voice", async (req: Request, res: Response) => {
       });
 
       if (!pollRes.ok)
-        throw new Error("Task poll failed: " + (await pollRes.text()));
+        throw new Error(getMessage("TTS_POLL_FAILED", undefined, await pollRes.text()));
       const pollData = await pollRes.json();
 
       if (pollData.status === "done") {
         audioUrl = pollData.metadata?.audio_url;
         break;
       } else if (pollData.status === "error") {
-        throw new Error("TTS Task Error: " + pollData.error_message);
+        throw new Error(getMessage("TTS_TASK_ERROR_MSG", undefined, pollData.error_message));
       }
       attempts++;
     }
 
     if (!audioUrl) {
-      throw new Error("TTS Task timed out.");
+      throw new Error(getMessage("TTS_TASK_TIMED_OUT"));
     }
 
     console.log(`${BACKEND_MESSAGES.TTS_COMPLETE}${audioUrl}`);
     const audioRes = await fetch(audioUrl);
-    if (!audioRes.ok) throw new Error("Failed to download generated audio");
+    if (!audioRes.ok) throw new Error(getMessage("FAILED_DOWNLOAD_AUDIO"));
 
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -2031,7 +1993,7 @@ router.post("/voice", async (req: Request, res: Response) => {
       provider: "AI33",
     });
   } catch (error: any) {
-    console.error("[TTS Pipeline] Error:", error);
+    logger.error("TTS_PIPELINE_ERROR", error);
     res
       .status(500)
       .json({
@@ -2056,16 +2018,8 @@ router.post("/generate-image", async (req: Request, res: Response) => {
   }
 
   const isStickman = !!(
-    (style &&
-      (style.toLowerCase().includes("người que") ||
-        style.toLowerCase().includes("stickman") ||
-        style.toLowerCase().includes("stick figure") ||
-        style.toLowerCase().includes("hoạt hình"))) ||
-    (prompt &&
-      (prompt.toLowerCase().includes("người que") ||
-        prompt.toLowerCase().includes("stickman") ||
-        prompt.toLowerCase().includes("stick figure") ||
-        prompt.toLowerCase().includes("hoạt hình")))
+    (style && STICKMAN_KEYWORDS.some(kw => style.toLowerCase().includes(kw))) ||
+    (prompt && STICKMAN_KEYWORDS.some(kw => prompt.toLowerCase().includes(kw)))
   );
 
   let finalPrompt = prompt || "";
@@ -2129,6 +2083,13 @@ router.post("/generate-image", async (req: Request, res: Response) => {
   let cleanProjectId = projectId;
   if (cleanProjectId.startsWith("projects/")) {
     cleanProjectId = cleanProjectId.replace("projects/", "");
+  }
+
+  const requestedHeadless = visualConfig?.chromeHeadless !== false;
+  try {
+    await initPlaywright(requestedHeadless);
+  } catch (pwErr) {
+    logger.error("Error auto-initializing Playwright with requested headless config:", pwErr);
   }
 
   try {
@@ -2410,7 +2371,7 @@ router.post("/generate-image", async (req: Request, res: Response) => {
               await globalPlaywrightPage.reload({ waitUntil: "networkidle" });
               await globalPlaywrightPage.waitForTimeout(2000);
             } catch (reloadErr) {
-              console.error("Failed to reload page on retry:", reloadErr);
+              logger.error("FAILED_RELOAD_PAGE_RETRY", reloadErr);
             }
           } else {
             throw err;
@@ -2464,7 +2425,7 @@ router.post("/generate-image", async (req: Request, res: Response) => {
       warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
     });
   } catch (e: any) {
-    console.error("[Labs Sandbox API error] HTTP connection exception:", e);
+    logger.error("LABS_SANDBOX_API_ERROR", e);
     return res.json({
       success: false,
       base64: null,
@@ -2524,12 +2485,12 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
 
           res.json({ success: true, audioBase64: base64Audio });
         } catch (e) {
-          console.error("Error reading merged audio:", e);
+          logger.error("ERROR_READ_MERGED_AUDIO", e);
           res.status(500).json({ error: "Failed to read merged audio file" });
         }
       })
       .on("error", (err) => {
-        console.error("Error during ffmpeg merge:", err);
+        logger.error("ERROR_FFMPEG_MERGE", err);
 
         filePaths.forEach((p) => fs.existsSync(p) && fs.unlinkSync(p));
         fs.existsSync(listPath) && fs.unlinkSync(listPath);
@@ -2540,7 +2501,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
       })
       .save(outputPath);
   } catch (err: any) {
-    console.error("Unexpected error in merge-audio:", err);
+    logger.error("UNEXPECTED_ERROR_MERGE_AUDIO", err);
     res.status(500).json({ error: "Internal server error: " + err.message });
   }
 });

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
+import { appError } from "../lib/logger.js";
 import {
   Video,
   Coins,
@@ -162,7 +163,7 @@ export default function Header({
       );
       setTimeout(() => setCurlFeedback(null), 5000);
     } catch (e) {
-      console.error(e);
+      appError("GENERAL_ERROR", e);
       setCurlFeedback(
         t.Failed_to_parse_cURL_comm,
       );
@@ -194,7 +195,7 @@ export default function Header({
         }
       }
     } catch (e) {
-      console.error("Error parsing sandbox config in header:", e);
+      appError("ERROR_PARSING_SANDBOX_HEADER", e);
     }
     return {
       projectId: "cbcf7518-13d7-4eab-b59d-952d5814de53",
