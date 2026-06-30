@@ -1,0 +1,81 @@
+import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
+import { VideoProject } from '../../types.js';
+import { randomUUID } from 'crypto';
+
+const PROJECTS_FILE = path.join(process.cwd(), 'projects.json');
+
+import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
+import { BACKEND_MESSAGES } from '../../constants/messages.js';
+
+function getProjects(): VideoProject[] {
+  try {
+    if (fs.existsSync(PROJECTS_FILE)) {
+      const data = fs.readFileSync(PROJECTS_FILE, 'utf-8');
+      
+      const cleaned = data.replace(/https:\/\/images\.unsplash\.com\/featured\/800x450\/\?([a-zA-Z0-9%_,\-\+]+)/g, (match, query) => {
+        const decoded = decodeURIComponent(query).replace(/%2C/g, ',').replace(/\+/g, ',').replace(/,/g, ',');
+        return `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${decoded}`;
+      });
+      return JSON.parse(cleaned);
+    }
+  } catch (error) {
+    console.error(BACKEND_MESSAGES.PROJECT_READ_ERR, error);
+  }
+  return [];
+}
+
+function saveProjects(projects: VideoProject[]) {
+  try {
+    fs.writeFileSync(PROJECTS_FILE, JSON.stringify(projects, null, 2), 'utf-8');
+  } catch (error) {
+    console.error(BACKEND_MESSAGES.PROJECT_WRITE_ERR, error);
+  }
+}
+
+export const getAllProjects = (req: Request, res: Response) => {
+  const projects = getProjects();
+  res.json(projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+};
+
+export const createProject = (req: Request, res: Response) => {
+  const newProject: VideoProject = {
+    ...req.body,
+    id: randomUUID(),
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  const projects = getProjects();
+  projects.push(newProject);
+  saveProjects(projects);
+  res.status(201).json(newProject);
+};
+
+export const updateProject = (req: Request, res: Response) => {
+  const { id } = req.params;
+  const projects = getProjects();
+  const index = projects.findIndex(p => p.id === id);
+
+  if (index !== -1) {
+    projects[index] = { ...projects[index], ...req.body, updatedAt: Date.now() };
+    saveProjects(projects);
+    res.json(projects[index]);
+  } else {
+    res.status(404).json({ error: BACKEND_MESSAGES.PROJECT_NOT_FOUND });
+  }
+};
+
+export const deleteProject = (req: Request, res: Response) => {
+  const { id } = req.params;
+  let projects = getProjects();
+  const initialLength = projects.length;
+  projects = projects.filter(p => p.id !== id);
+
+  if (projects.length !== initialLength) {
+    saveProjects(projects);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: BACKEND_MESSAGES.PROJECT_NOT_FOUND });
+  }
+};

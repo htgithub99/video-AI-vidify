@@ -1,0 +1,71 @@
+import express from 'express';
+import cors from 'cors';
+import { createServer as createViteServer } from 'vite';
+import path from 'path';
+
+import { initPlaywright, closePlaywright } from './src/server/services/audioService.js';
+
+import mainRouter from './src/server/routes/index.js';
+import pipelineRouter from './src/server/controllers/pipelineController.js';
+
+import { API_ROUTES } from './src/constants/apiRoutes.js';
+
+const app = express();
+const port = 3000;
+
+import { requestContext } from './src/server/utils/requestContext.js';
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-gemini-api-key', 'x-ai33-api-key']
+}));
+
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
+
+app.use((req, res, next) => {
+  const geminiKey = (req.headers['x-gemini-api-key'] as string) || '';
+  const ai33Key = (req.headers['x-ai33-api-key'] as string) || '';
+  requestContext.run({ geminiKey, ai33Key }, next);
+});
+
+app.use(API_ROUTES.BASE_API, mainRouter);
+app.use(API_ROUTES.PIPELINE, pipelineRouter);
+
+const startServer = async () => {
+  await initPlaywright();
+
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+};
+
+startServer().catch((error) => {
+  console.error("Lỗi khi khởi động server:", error);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Đang dọn dẹp Playwright...');
+  await closePlaywright();
+  process.exit();
+});
+process.on('SIGTERM', async () => {
+  console.log('Đang dọn dẹp Playwright...');
+  await closePlaywright();
+  process.exit();
+});
