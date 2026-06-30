@@ -4,8 +4,8 @@ import { Page } from 'playwright';
 import { chromium } from 'playwright-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
-import { getBackendMsg } from '../../constants/messages.js';
 import { appLog, appError } from '../../lib/logger.js';
+import { getBackendMsg } from '../../constants/messages.js';
 chromium.use(stealthPlugin());
 
 export let globalPlaywrightPage: Page | null = null;
@@ -251,7 +251,7 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
             const arrBuf = await response.arrayBuffer();
             return Buffer.from(arrBuf);
           } else {
-            throw new Error(`Fetch status ${response.status}`);
+            throw new Error(`${getBackendMsg('HTTP_STATUS_ERROR', targetLang === 'vi')}${response.status}`);
           }
         } catch (fetchErr) {
           lastError = fetchErr;
@@ -272,7 +272,7 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
                   resHttps.on('data', (c) => chunksH.push(c));
                   resHttps.on('end', () => resolveNoFetch(Buffer.concat(chunksH)));
                 } else {
-                  rejectNoFetch(new Error(`Status ${resHttps.statusCode}`));
+                  rejectNoFetch(new Error(`${getBackendMsg('HTTP_STATUS_ERROR', targetLang === 'vi')}${resHttps.statusCode}`));
                 }
               });
               req.on('error', (e) => rejectNoFetch(e));
@@ -288,7 +288,7 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
         }
       }
     }
-    throw new Error(`Google TTS failed for chunk: ${lastError?.message}`);
+    throw new Error(getBackendMsg('GOOGLE_TTS_FAILED', targetLang === 'vi').replace('{0}', lastError?.message || ''));
   };
 
   const chunkBuffers: Buffer[] = [];
@@ -299,7 +299,7 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
       const buffer = await fetchBufferWithRetry(chunk);
       chunkBuffers.push(buffer);
     } catch (err: any) {
-      appError('GOOGLE_TTS_FALLBACK_FETCH_FAILED', i + 1, err);
+      appError('GOOGLE_TTS_FALLBACK_FETCH_FAILED', i + 1, err?.message || err);
 
       try {
         const retryBuffer = await fetchBufferWithRetry(chunk);
@@ -324,46 +324,28 @@ export const getGoogleTtsVoiceBase64 = async (text: string, lang = 'vi'): Promis
   };
 };
 
-
-
-export let globalBrowser: any = null;
-export let globalHeadlessState: boolean | null = null;
-
-export const initPlaywright = async (headless = true): Promise<void> => {
-  if (globalPlaywrightPage && globalHeadlessState === headless) {
-    appLog('PLAYWRIGHT_ALREADY_INITIALIZED', `Headless: ${headless}`);
-    return;
-  }
-
+export async function initPlaywright(headless?: boolean) {
   try {
-    appLog('PLAYWRIGHT_CONNECTING', `Headless: ${headless}`);
-    await closePlaywright();
+    appLog('PLAYWRIGHT_CONNECTING');
 
-    let browser;
-    try {
-      appLog('PLAYWRIGHT_LAUNCHING_LOCAL', `Headless: ${headless}`);
-      browser = await chromium.launch({
-        headless: headless,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu'
-        ]
-      });
-      globalHeadlessState = headless;
-    } catch (launchErr: any) {
-      appError('PLAYWRIGHT_LAUNCH_LOCAL_FAILED', launchErr?.message || launchErr);
-      appLog('PLAYWRIGHT_FALLING_BACK_CDP');
-      browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
-      globalHeadlessState = null;
-    }
 
-    globalBrowser = browser;
-    const defaultContext = browser.contexts()[0] || await browser.newContext();
+    const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
+
+
+    const defaultContext = browser.contexts()[0];
     const page = defaultContext.pages()[0] || await defaultContext.newPage();
 
+    // Prevent "ReferenceError: __name is not defined" in page.evaluate or waitForFunction under tsx/esbuild bundling
+    await page.addInitScript(`
+      if (typeof window !== 'undefined' && !window.__name) {
+        window.__name = (target, value) => {
+          try {
+            Object.defineProperty(target, "name", { value, configurable: true });
+          } catch (e) {}
+          return target;
+        };
+      }
+    `);
 
     page.on('request', request => {
       const headers = request.headers();
@@ -388,26 +370,19 @@ export const initPlaywright = async (headless = true): Promise<void> => {
 
     globalPlaywrightPage = page;
   } catch (e) {
-    appError('PLAYWRIGHT_CONNECT_ERR', e);
-    appLog('----------------------------------------------------');
+    appError('PLAYWRIGHT_CONNECT_ERR', e?.message || e);
+    appLog('PLAYWRIGHT_BORDER');
     appLog('PLAYWRIGHT_CHROME_MANDATE');
     appLog('PLAYWRIGHT_CHROME_COMMAND');
-    appLog('----------------------------------------------------');
+    appLog('PLAYWRIGHT_BORDER_BOTTOM');
   }
-};
+}
 
-export const closePlaywright = async (): Promise<void> => {
+export async function closePlaywright() {
   if (globalPlaywrightPage) {
     try {
       await globalPlaywrightPage.close();
     } catch (e) { }
     globalPlaywrightPage = null;
   }
-  if (globalBrowser) {
-    try {
-      await globalBrowser.close();
-    } catch (e) { }
-    globalBrowser = null;
-  }
-  globalHeadlessState = null;
-};
+}

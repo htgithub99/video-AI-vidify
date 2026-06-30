@@ -6,7 +6,7 @@ import {
   GEMINI_UNSUPPORTED_ERROR_KEYWORDS,
   GEMINI_RETRYABLE_ERROR_KEYWORDS,
 } from '../../constants/data.js';
-import { logger, getMessage, appLog, appLogStep, createAppError } from '../../lib/logger.js';
+import { getMessage, appLog, appLogStep, createAppError } from '../../lib/logger.js';
 
 export { GoogleGenAI };
 
@@ -43,12 +43,12 @@ export const generateContentWithRetry = async (params: {
   let lastError: any = null;
   const startIndex = currentModelIndex;
   const rotationLogs: string[] = [];
-  
+
   const logStep = (key: string, ...args: any[]) => {
     const msg = getMessage(key, undefined, ...args);
     appLogStep(msg, rotationLogs);
   };
-  
+
   logStep('GEMINI_START_ROTATION', AVAILABLE_MODELS.length, startIndex);
 
   for (let i = 0; i < AVAILABLE_MODELS.length; i++) {
@@ -72,13 +72,13 @@ export const generateContentWithRetry = async (params: {
         });
 
         logStep('GEMINI_SUCCESS', model, attempt + 1);
-        
+
         currentModelIndex = modelIndex;
-        
+
         if (modelIndex !== 0) {
           setTimeout(() => {
             currentModelIndex = 0;
-          }, 3 * 60 * 1000); 
+          }, 3 * 60 * 1000);
         }
 
         (response as any).rotationLogs = rotationLogs;
@@ -89,7 +89,7 @@ export const generateContentWithRetry = async (params: {
 
         const errorStr = error?.toString() || '';
         const errorMessage = error?.message || '';
-        
+
         logStep('GEMINI_ERROR', model, attempt, errorMessage);
 
         const isUnsupportedModel = GEMINI_UNSUPPORTED_ERROR_KEYWORDS.some(
@@ -98,7 +98,7 @@ export const generateContentWithRetry = async (params: {
 
         if (isUnsupportedModel) {
           logStep('GEMINI_UNSUPPORTED_FALLBACK', model);
-          break; 
+          break;
         }
 
         const isRetryable = error?.status === 'RESOURCE_EXHAUSTED' || error?.status === 'UNAVAILABLE' ||
@@ -109,12 +109,12 @@ export const generateContentWithRetry = async (params: {
         if (attempt <= retries && isRetryable) {
           logStep('GEMINI_RETRYABLE_ERROR', model, delayMs);
           await new Promise((resolve) => setTimeout(resolve, delayMs));
-          delayMs *= 1.5; 
+          delayMs *= 1.5;
           continue;
         }
 
         logStep('GEMINI_MODEL_FAILED', model);
-        break; 
+        break;
       }
     }
 

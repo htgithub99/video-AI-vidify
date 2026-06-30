@@ -25,6 +25,7 @@ export interface ProjectConfig {
   audience: string;
   writingStyle: string;
   format?: string;
+  splitStrategy?: string;
 }
 
 export interface HookVersion {
@@ -44,7 +45,7 @@ export interface HookConfig {
 
 export interface VoiceConfig {
   provider: string; 
-  audioType: 'tts' | 'clone' | 'upload';
+  audioType: 'tts' | 'clone' | 'upload' | 'generated' | 'simulated';
   voiceName?: string;
   gender: 'male' | 'female' | 'neutral';
   age: 'child' | 'teen' | 'adult' | 'senior';

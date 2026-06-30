@@ -1,5 +1,4 @@
 import { genreLabels, audLabels, styleLabels } from '../../constants/data';
-import React from 'react';
 import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
 import { WizardStep } from '../../types';
@@ -17,17 +16,12 @@ export default function PipelineStep0(props: PipelineWizardState) {
     loadingStates,
     setInfoMsg,
     handleProcessInputAndConfig,
-    hooksDraft,
-    setHooksDraft,
     hookStrategy,
     setHookStrategy,
     hookDuration,
     setHookDuration,
-    hookCount,
-    setHookCount,
     hookPosition,
     setHookPosition,
-    handleGenerateHooks,
   } = props;
   return (
     <>
@@ -44,7 +38,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {}
+          { }
           <div className="lg:col-span-2 flex flex-col gap-5 h-full justify-stretch">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">
@@ -95,7 +89,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </div>
             </div>
 
-            {}
+            { }
             <div className="space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">
                 {t.N_i_dung_c_t_truy_n}
@@ -118,436 +112,436 @@ export default function PipelineStep0(props: PipelineWizardState) {
           <div className="space-y-6">
             {/* Right column */}
             <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
-              <Settings2 className="w-4 h-4 text-rose-500 shrink-0" />
-              <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">
-                {t.C_u_h_nh_K_ch_b_n}
-              </h4>
-            </div>
-
-            {}
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                {t.Th_lo_i_video}
-              </span>
-              <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                <Layers className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                <select
-                  value={project.config.genre}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      config: { ...prev.config, genre: e.target.value },
-                    }))
-                  }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  {[
-                    "Storytelling",
-                    "History",
-                    "Documentary",
-                    "Explanation",
-                    "Review",
-                    "Education",
-                    "News",
-                    "Top List",
-                    "True Crime",
-                    "Science",
-                    "Psychology",
-                    "Philosophy",
-                  ].map((genre) => {
-
-                    return (
-                      <option
-                        key={genre}
-                        value={genre}
-                        className="bg-slate-950 text-slate-300"
-                      >
-                        {genreLabels[genre] || genre}
-                      </option>
-                    );
-                  })}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-              </div>
-            </div>
-
-            {}
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                {t.Ng_n_ng_u_ra}
-              </span>
-              <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                <Check className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                <select
-                  value={project.config.language}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      config: {
-                        ...prev.config,
-                        language: e.target.value as "vi" | "en",
-                      },
-                    }))
-                  }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  <option
-                    value="vi"
-                    className="bg-slate-950 text-slate-300"
-                  >
-                    {t.Ti_ng_Vi_t}
-                  </option>
-                  <option
-                    value="en"
-                    className="bg-slate-950 text-slate-300"
-                  >
-                    {t.Ti_ng_Anh}
-                  </option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-              </div>
-            </div>
-
-            {}
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                {t.C_u_h_nh_S_l_ng_t_Th_i_l_}
-              </span>
-              <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                <Clock className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                <select
-                  value={project.config.duration}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      config: {
-                        ...prev.config,
-                        duration: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  {[
-                    { val: "2m", label: "300 từ (~2 phút)" },
-                    { val: "5m", label: "750 từ (~5 phút)" },
-                    { val: "10m", label: "1500 từ (~10 phút)" },
-                    { val: "15m", label: "2250 từ (~15 phút)" },
-                  ].map((item) => (
-                    <option
-                      key={item.val}
-                      value={item.val}
-                      className="bg-slate-950 text-slate-300"
-                    >
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-              </div>
-              <p className="text-[10px] text-slate-500 leading-normal pl-1">
-                {t.AI_s_bu_c_ph_i_m_r_ng_n_i}
-              </p>
-            </div>
-
-            {}
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                {t.Kh_n_gi_m_c_ti_u}
-              </span>
-              <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                <select
-                  value={project.config.audience}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      config: {
-                        ...prev.config,
-                        audience: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  {[
-                    "General Audience",
-                    "Kids",
-                    "Teenagers",
-                    "Adults",
-                    "Seniors",
-                  ].map((aud) => {
-
-                    return (
-                      <option
-                        key={aud}
-                        value={aud}
-                        className="bg-slate-950 text-slate-300"
-                      >
-                        {audLabels[aud] || aud}
-                      </option>
-                    );
-                  })}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-              </div>
-            </div>
-
-            {}
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                {t.Phong_c_ch_h_nh_v_n}
-              </span>
-              <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                <select
-                  value={project.config.writingStyle}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      config: {
-                        ...prev.config,
-                        writingStyle: e.target.value,
-                      },
-                    }))
-                  }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  {[
-                    "Professional",
-                    "Documentary",
-                    "Viral",
-                    "Mystery",
-                    "Drama",
-                    "Educational",
-                    "Scientific",
-                  ].map((style) => {
-
-                    return (
-                      <option
-                        key={style}
-                        value={style}
-                        className="bg-slate-950 text-slate-300"
-                      >
-                        {styleLabels[style] || style}
-                      </option>
-                    );
-                  })}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-              </div>
-            </div>
-
-            {}
-            <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
-              <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                <span className="text-slate-450">
-                  {t.C_ng_Vi_t_l_i}
-                </span>
-                <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
-                  {project.config.rewriteLevel}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={project.config.rewriteLevel}
-                onChange={(e) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    config: {
-                      ...prev.config,
-                      rewriteLevel: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
-              />
-            </div>
-
-            {}
-            <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
-              <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                <span className="text-slate-450">{t.Gi_m_tr_ng_l_p}</span>
-                <span className="text-amber-450 bg-amber-500/10 border border-amber-500/10 px-2 py-0.5 rounded-full">
-                  {project.config.similarityReduction}/10
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={project.config.similarityReduction}
-                onChange={(e) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    config: {
-                      ...prev.config,
-                      similarityReduction: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
-              />
-            </div>
-
-            {}
-            <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
-              <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                <span className="text-slate-450">{t.s_ng_t_o}</span>
-                <span className="text-sky-450 bg-sky-500/10 border border-sky-500/10 px-2 py-0.5 rounded-full">
-                  {project.config.creativityLevel}/10
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={project.config.creativityLevel}
-                onChange={(e) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    config: {
-                      ...prev.config,
-                      creativityLevel: Number(e.target.value),
-                    },
-                  }))
-                }
-                className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500 focus:outline-none"
-              />
-            </div>
-
-            {}
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
-              <div className="flex flex-col max-w-[70%]">
-                <span className="text-[11px] font-bold text-slate-200">
-                  {t.X_c_th_c_th_ng_tin_Fact_c}
-                </span>
-                <span className="text-[10px] text-slate-500 leading-normal mt-0.5">
-                  {t.T_ng_ph_n_t_ch_v_x_c_minh}
-                </span>
+              <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
+                <Settings2 className="w-4 h-4 text-rose-500 shrink-0" />
+                <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">
+                  {t.C_u_h_nh_K_ch_b_n}
+                </h4>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setProject((prev) => ({
-                    ...prev,
-                    config: {
-                      ...prev.config,
-                      factCheck: !prev.config.factCheck,
-                    },
-                  }))
-                }
-                className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 ${project.config.factCheck
-                  ? "bg-rose-600"
-                  : "bg-slate-800"
-                  }`}
-              >
-                <div
-                  className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck
-                    ? "translate-x-5"
-                    : "translate-x-0"
-                    }`}
-                />
-              </button>
-            </div>
-
-            {/* Cấu hình Lời dẫn (Hook Settings) */}
-            <div className="pt-4 border-t border-slate-800 space-y-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
-                <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">
-                  Cấu hình Hook
-                </h5>
-              </div>
-
-              {/* Loại Hook */}
+              { }
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                  Loại Hook
+                  {t.Th_lo_i_video}
                 </span>
                 <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
-                  <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <Layers className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
                   <select
-                    value={hookStrategy}
-                    onChange={(e) => setHookStrategy(e.target.value)}
+                    value={project.config.genre}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: { ...prev.config, genre: e.target.value },
+                      }))
+                    }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {[
-                      { value: "Auto", label: "Tự động" },
-                      { value: "Mystery", label: "Kỳ bí, tò mò" },
-                      { value: "Shock", label: "Gây sốc" },
-                      { value: "Drama", label: "Kịch tính" },
-                      { value: "Curiosity", label: "Hiếu kỳ" },
-                      { value: "Emotional", label: "Cảm xúc" },
-                      { value: "Historical", label: "Lịch sử" },
-                      { value: "Statistical", label: "Thống kê" },
-                      { value: "Question", label: "Đặt câu hỏi" },
-                      { value: "Story", label: "Câu chuyện" },
-                    ].map((opt) => (
-                      <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
-                        {opt.label}
-                      </option>
-                    ))}
+                      "Storytelling",
+                      "History",
+                      "Documentary",
+                      "Explanation",
+                      "Review",
+                      "Education",
+                      "News",
+                      "Top List",
+                      "True Crime",
+                      "Science",
+                      "Psychology",
+                      "Philosophy",
+                    ].map((genre) => {
+
+                      return (
+                        <option
+                          key={genre}
+                          value={genre}
+                          className="bg-slate-950 text-slate-300"
+                        >
+                          {genreLabels[genre] || genre}
+                        </option>
+                      );
+                    })}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
               </div>
 
-              {/* Thời lượng Hook */}
-              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                  <span className="text-slate-450">Thời lượng (giây)</span>
-                  <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
-                    {hookDuration}s
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="3"
-                  max="30"
-                  value={hookDuration}
-                  onChange={(e) => setHookDuration(Number(e.target.value))}
-                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
-                />
-              </div>
-
-              {/* Chiến thuật vị trí */}
+              { }
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                  Chiến thuật vị trí
+                  {t.Ng_n_ng_u_ra}
+                </span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Check className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={project.config.language}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: {
+                          ...prev.config,
+                          language: e.target.value as "vi" | "en",
+                        },
+                      }))
+                    }
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    <option
+                      value="vi"
+                      className="bg-slate-950 text-slate-300"
+                    >
+                      {t.Ti_ng_Vi_t}
+                    </option>
+                    <option
+                      value="en"
+                      className="bg-slate-950 text-slate-300"
+                    >
+                      {t.Ti_ng_Anh}
+                    </option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+              </div>
+
+              { }
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  {t.C_u_h_nh_S_l_ng_t_Th_i_l_}
+                </span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Clock className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={project.config.duration}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: {
+                          ...prev.config,
+                          duration: e.target.value,
+                        },
+                      }))
+                    }
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    {[
+                      { val: "2m", label: "300 từ (~2 phút)" },
+                      { val: "5m", label: "750 từ (~5 phút)" },
+                      { val: "10m", label: "1500 từ (~10 phút)" },
+                      { val: "15m", label: "2250 từ (~15 phút)" },
+                    ].map((item) => (
+                      <option
+                        key={item.val}
+                        value={item.val}
+                        className="bg-slate-950 text-slate-300"
+                      >
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+                <p className="text-[10px] text-slate-500 leading-normal pl-1">
+                  {t.AI_s_bu_c_ph_i_m_r_ng_n_i}
+                </p>
+              </div>
+
+              { }
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  {t.Kh_n_gi_m_c_ti_u}
                 </span>
                 <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                   <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
                   <select
-                    value={hookPosition}
-                    onChange={(e) => setHookPosition(e.target.value as any)}
+                    value={project.config.audience}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: {
+                          ...prev.config,
+                          audience: e.target.value,
+                        },
+                      }))
+                    }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {[
-                      { value: "start", label: "Chỉ mở đầu" },
-                      { value: "mid", label: "Mở đầu & Giữa" },
-                      { value: "all", label: "Đầu, Giữa & Cuối" },
-                    ].map((opt) => (
-                      <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
-                        {opt.label}
-                      </option>
-                    ))}
+                      "General Audience",
+                      "Kids",
+                      "Teenagers",
+                      "Adults",
+                      "Seniors",
+                    ].map((aud) => {
+
+                      return (
+                        <option
+                          key={aud}
+                          value={aud}
+                          className="bg-slate-950 text-slate-300"
+                        >
+                          {audLabels[aud] || aud}
+                        </option>
+                      );
+                    })}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+              </div>
+
+              { }
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                  {t.Phong_c_ch_h_nh_v_n}
+                </span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={project.config.writingStyle}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: {
+                          ...prev.config,
+                          writingStyle: e.target.value,
+                        },
+                      }))
+                    }
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    {[
+                      "Professional",
+                      "Documentary",
+                      "Viral",
+                      "Mystery",
+                      "Drama",
+                      "Educational",
+                      "Scientific",
+                    ].map((style) => {
+
+                      return (
+                        <option
+                          key={style}
+                          value={style}
+                          className="bg-slate-950 text-slate-300"
+                        >
+                          {styleLabels[style] || style}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
+              </div>
+
+              { }
+              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="text-slate-450">
+                    {t.C_ng_Vi_t_l_i}
+                  </span>
+                  <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
+                    {project.config.rewriteLevel}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={project.config.rewriteLevel}
+                  onChange={(e) =>
+                    setProject((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        rewriteLevel: Number(e.target.value),
+                      },
+                    }))
+                  }
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
+                />
+              </div>
+
+              { }
+              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="text-slate-450">{t.Gi_m_tr_ng_l_p}</span>
+                  <span className="text-amber-450 bg-amber-500/10 border border-amber-500/10 px-2 py-0.5 rounded-full">
+                    {project.config.similarityReduction}/10
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={project.config.similarityReduction}
+                  onChange={(e) =>
+                    setProject((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        similarityReduction: Number(e.target.value),
+                      },
+                    }))
+                  }
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
+                />
+              </div>
+
+              { }
+              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
+                  <span className="text-slate-450">{t.s_ng_t_o}</span>
+                  <span className="text-sky-450 bg-sky-500/10 border border-sky-500/10 px-2 py-0.5 rounded-full">
+                    {project.config.creativityLevel}/10
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={project.config.creativityLevel}
+                  onChange={(e) =>
+                    setProject((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        creativityLevel: Number(e.target.value),
+                      },
+                    }))
+                  }
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500 focus:outline-none"
+                />
+              </div>
+
+              { }
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
+                <div className="flex flex-col max-w-[70%]">
+                  <span className="text-[11px] font-bold text-slate-200">
+                    {t.X_c_th_c_th_ng_tin_Fact_c}
+                  </span>
+                  <span className="text-[10px] text-slate-500 leading-normal mt-0.5">
+                    {t.T_ng_ph_n_t_ch_v_x_c_minh}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setProject((prev) => ({
+                      ...prev,
+                      config: {
+                        ...prev.config,
+                        factCheck: !prev.config.factCheck,
+                      },
+                    }))
+                  }
+                  className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 ${project.config.factCheck
+                    ? "bg-rose-600"
+                    : "bg-slate-800"
+                    }`}
+                >
+                  <div
+                    className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                      }`}
+                  />
+                </button>
+              </div>
+
+              {/* Cấu hình Lời dẫn (Hook Settings) */}
+              <div className="pt-4 border-t border-slate-800 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
+                  <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">
+                    Cấu hình Hook
+                  </h5>
+                </div>
+
+                {/* Loại Hook */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                    Loại Hook
+                  </span>
+                  <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                    <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                    <select
+                      value={hookStrategy}
+                      onChange={(e) => setHookStrategy(e.target.value)}
+                      className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    >
+                      {[
+                        { value: "Auto", label: "Tự động" },
+                        { value: "Mystery", label: "Kỳ bí, tò mò" },
+                        { value: "Shock", label: "Gây sốc" },
+                        { value: "Drama", label: "Kịch tính" },
+                        { value: "Curiosity", label: "Hiếu kỳ" },
+                        { value: "Emotional", label: "Cảm xúc" },
+                        { value: "Historical", label: "Lịch sử" },
+                        { value: "Statistical", label: "Thống kê" },
+                        { value: "Question", label: "Đặt câu hỏi" },
+                        { value: "Story", label: "Câu chuyện" },
+                      ].map((opt) => (
+                        <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Thời lượng Hook */}
+                <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
+                    <span className="text-slate-450">Thời lượng (giây)</span>
+                    <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
+                      {hookDuration}s
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="3"
+                    max="30"
+                    value={hookDuration}
+                    onChange={(e) => setHookDuration(Number(e.target.value))}
+                    className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
+                  />
+                </div>
+
+                {/* Chiến thuật vị trí */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                    Chiến thuật vị trí
+                  </span>
+                  <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                    <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                    <select
+                      value={hookPosition}
+                      onChange={(e) => setHookPosition(e.target.value as any)}
+                      className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    >
+                      {[
+                        { value: "start", label: "Chỉ mở đầu" },
+                        { value: "mid", label: "Mở đầu & Giữa" },
+                        { value: "all", label: "Đầu, Giữa & Cuối" },
+                      ].map((opt) => (
+                        <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-        {}
+        { }
         <div className="pt-4 flex items-center justify-end">
           <button
             type="button"
@@ -575,7 +569,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
           </button>
         </div>
 
-        {}
+        { }
         {(project.scriptRewritten || loadingStates["processInput"]) && (
           <div className="pt-6 border-t border-slate-800 space-y-6">
             <div className="flex items-center justify-between">
@@ -588,9 +582,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
             <div
               className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch relative ${loadingStates["processInput"] && !project.scriptRewritten ? "min-h-[460px]" : ""}`}
             >
-              {}
+              { }
 
-              {}
+              { }
               <div className="lg:col-span-2 space-y-3 flex flex-col h-full">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -687,9 +681,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 )}
               </div>
 
-              {}
+              { }
               <div className="space-y-4 flex flex-col h-full">
-                {}
+                { }
                 {project.config.factCheck && (
                   <div className="bg-slate-950 border border-slate-800/80 p-4 rounded-xl space-y-2 shrink-0">
                     <span className="text-[10px] bg-emerald-500/10 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/20 font-mono inline-flex items-center gap-1">
@@ -710,7 +704,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   </div>
                 )}
 
-                {}
+                { }
                 <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 flex-1 flex flex-col min-h-[260px]">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold shrink-0">
                     {t.Chapters_Script_Outline}

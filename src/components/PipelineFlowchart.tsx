@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PipelineNode, pipelineNodes } from '../constants/data.js';
 import { Lang, translations } from '../lib/lang.js';
 import { HelpCircle, Activity, Sparkles } from 'lucide-react';
 
 interface PipelineFlowchartProps {
   currentLang: Lang;
-  activeStepIndex: number; 
+  activeStepIndex: number;
   onNavigateStep?: (stepIdx: number) => void;
 }
 
@@ -55,13 +55,13 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
               key={node.id}
               onClick={() => setSelectedNode(node)}
               className={`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer ${isActiveGroup
-                  ? 'bg-blue-950/20 border-blue-500 text-blue-100 shadow-sm scale-[1.02] ring-1 ring-blue-500/30'
-                  : isPassedGroup
-                    ? 'bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400'
-                    : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800'
+                ? 'bg-blue-950/20 border-blue-500 text-blue-100 shadow-sm scale-[1.02] ring-1 ring-blue-500/30'
+                : isPassedGroup
+                  ? 'bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400'
+                  : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800'
                 }`}
             >
-              {}
+              { }
               {isActiveGroup && (
                 <span className="absolute top-1 right-1 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -86,7 +86,7 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
         })}
       </div>
 
-      {}
+      { }
       {selectedNode && (
         <div className="mt-4 bg-slate-950 border border-slate-800 rounded p-4 animate-fadeIn flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { appError } from "../lib/logger.js";
@@ -310,8 +310,8 @@ export default function Header({
             <button
               onClick={() => setLang("vi")}
               className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "vi"
-                  ? "bg-slate-700 text-slate-100 shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                ? "bg-slate-700 text-slate-100 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
                 }`}
             >
               {t.VI}
@@ -319,8 +319,8 @@ export default function Header({
             <button
               onClick={() => setLang("en")}
               className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "en"
-                  ? "bg-slate-700 text-slate-100 shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
+                ? "bg-slate-700 text-slate-100 shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
                 }`}
             >
               {t.EN}

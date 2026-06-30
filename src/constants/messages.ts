@@ -62,7 +62,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     FAILED_READ_MERGED_AUDIO: "Không thể đọc file âm thanh đã ghép",
     FFMPEG_PROCESSING_ERROR: "Lỗi xử lý FFmpeg: ",
     INTERNAL_SERVER_ERROR: "Lỗi máy chủ nội bộ: ",
-    HTTP_STATUS_ERROR: "Lỗi trạng thái HTTP! trạng thái: "
+    HTTP_STATUS_ERROR: "Lỗi trạng thái HTTP! trạng thái: ",
+    GOOGLE_TTS_FAILED: "Chuyển đổi Google TTS thất bại cho phân đoạn: {0}",
+    PLAYWRIGHT_BORDER: "\n=======================================================",
+    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n"
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -127,7 +130,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     FAILED_READ_MERGED_AUDIO: "Failed to read merged audio file",
     FFMPEG_PROCESSING_ERROR: "FFmpeg processing error: ",
     INTERNAL_SERVER_ERROR: "Internal server error: ",
-    HTTP_STATUS_ERROR: "HTTP error! status: "
+    HTTP_STATUS_ERROR: "HTTP error! status: ",
+    GOOGLE_TTS_FAILED: "Google TTS failed for chunk: {0}",
+    PLAYWRIGHT_BORDER: "\n=======================================================",
+    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n"
   }
 };
 
@@ -960,6 +966,18 @@ export const LOG_DICTIONARY = {
   GENERAL_SUCCESS: {
     en: "Success:",
     vi: "Thành công:"
+  },
+  GOOGLE_TTS_FAILED: {
+    en: "Google TTS failed for chunk: {0}",
+    vi: "Chuyển đổi Google TTS thất bại cho phân đoạn: {0}"
+  },
+  PLAYWRIGHT_BORDER: {
+    en: "\n=======================================================",
+    vi: "\n======================================================="
+  },
+  PLAYWRIGHT_BORDER_BOTTOM: {
+    en: "=======================================================\n",
+    vi: "=======================================================\n"
   }
 };
 

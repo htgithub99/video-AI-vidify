@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { appLog } from '../../lib/logger.js';
 
 
@@ -222,25 +220,25 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     }
   };
 
-  
+
   let parsed = tryParseClean(trimmed);
   if (parsed) return parsed;
 
-  
+
   const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (match && match[1]) {
     parsed = tryParseClean(match[1].trim());
     if (parsed) return parsed;
   }
 
-  
+
   const balanced = extractBalancedJSON(trimmed);
   if (balanced) {
     parsed = tryParseClean(balanced);
     if (parsed) return parsed;
   }
 
-  
+
   const firstBrace = trimmed.indexOf('{');
   const firstBracket = trimmed.indexOf('[');
   let startIdx = -1;

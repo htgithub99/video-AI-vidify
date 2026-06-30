@@ -2149,6 +2149,22 @@ router.post("/generate-image", async (req: Request, res: Response) => {
         throw new Error(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
       }
 
+      // Ensure window.__name helper is defined on browser side to avoid ReferenceError under tsx/esbuild
+      try {
+        await globalPlaywrightPage.evaluate(`
+          if (typeof window !== 'undefined' && !window.__name) {
+            window.__name = (target, value) => {
+              try {
+                Object.defineProperty(target, "name", { value, configurable: true });
+              } catch (e) {}
+              return target;
+            };
+          }
+        `);
+      } catch (err) {
+        console.warn("Failed to inject __name helper on current page context:", err);
+      }
+
       const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${cleanProjectId}`;
 
       while (attempts < maxAttempts && !success) {
@@ -2332,12 +2348,28 @@ router.post("/generate-image", async (req: Request, res: Response) => {
           await new Promise((r) => setTimeout(r, 1000));
 
           const oldSrcs = await globalPlaywrightPage.evaluate(() => {
+            const cleanUrl = (url: string) => {
+              if (!url) return "";
+              try {
+                const u = new URL(url);
+                const id = u.searchParams.get("id") || u.searchParams.get("docid");
+                if (id) return u.origin + u.pathname + "?id=" + id;
+                u.searchParams.delete("token");
+                u.searchParams.delete("sig");
+                u.searchParams.delete("signature");
+                u.searchParams.delete("expires");
+                u.searchParams.delete("t");
+                return u.toString();
+              } catch (e) {
+                return url;
+              }
+            };
             const imgs = Array.from(document.querySelectorAll("img"));
             return imgs
               .filter(
                 (img) => img.src && img.src.includes("getMediaUrlRedirect"),
               )
-              .map((img) => img.src);
+              .map((img) => cleanUrl(img.src));
           });
 
           let isBtnDisabled = true;
@@ -2366,13 +2398,29 @@ router.post("/generate-image", async (req: Request, res: Response) => {
           console.log(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
           const base64Data = await globalPlaywrightPage.waitForFunction(
             (oldSrcsList) => {
+              const cleanUrl = (url: string) => {
+                if (!url) return "";
+                try {
+                  const u = new URL(url);
+                  const id = u.searchParams.get("id") || u.searchParams.get("docid");
+                  if (id) return u.origin + u.pathname + "?id=" + id;
+                  u.searchParams.delete("token");
+                  u.searchParams.delete("sig");
+                  u.searchParams.delete("signature");
+                  u.searchParams.delete("expires");
+                  u.searchParams.delete("t");
+                  return u.toString();
+                } catch (e) {
+                  return url;
+                }
+              };
               const imgs = Array.from(document.querySelectorAll("img"));
               const genImgs = imgs.filter(
                 (img) => img.src && img.src.includes("getMediaUrlRedirect"),
               );
 
-              const newImg = genImgs.find(
-                (img) => !oldSrcsList.includes(img.src),
+              const newImg = [...genImgs].reverse().find(
+                (img) => !oldSrcsList.includes(cleanUrl(img.src)),
               );
 
               if (newImg) {
