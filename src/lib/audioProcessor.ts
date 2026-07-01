@@ -3,38 +3,38 @@ import { appWarn, createAppError } from "./logger.js";
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
-  const format = 1; 
+  const format = 1;
   const bitDepth = 16;
-  
+
   let result: Float32Array;
   if (numOfChan === 2) {
     result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
   } else {
     result = buffer.getChannelData(0);
   }
-  
-  const bufferLength = result.length * 2; 
+
+  const bufferLength = result.length * 2;
   const totalLength = 44 + bufferLength;
   const arrayBuffer = new ArrayBuffer(totalLength);
   const view = new DataView(arrayBuffer);
-  
-    writeString(view, 0, 'RIFF');
-    view.setUint32(4, totalLength - 8, true);
-    writeString(view, 8, 'WAVE');
-    writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, format, true);
-    view.setUint16(22, numOfChan, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
-    view.setUint16(32, numOfChan * (bitDepth / 8), true);
-    view.setUint16(34, bitDepth, true);
-    writeString(view, 36, 'data');
-    view.setUint32(40, bufferLength, true);
-  
-  
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, totalLength - 8, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numOfChan, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
+  view.setUint16(32, numOfChan * (bitDepth / 8), true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, bufferLength, true);
+
+
   floatTo16BitPCM(view, 44, result);
-  
+
   return new Blob([arrayBuffer], { type: "audio/wav" });
 };
 
@@ -43,7 +43,7 @@ const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array =>
   const result = new Float32Array(length);
   let index = 0;
   let inputIndex = 0;
-  
+
   while (index < length) {
     result[index++] = inputL[inputIndex];
     result[index++] = inputR[inputIndex];
@@ -72,10 +72,10 @@ export const applyAudioEffects = async (
   pitch: number,
   volume: number
 ): Promise<Blob> => {
-  
+
   if (Math.abs(rate - 1.0) < 0.01 && Math.abs(pitch - 1.0) < 0.01 && Math.abs(volume - 1.0) < 0.01) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
-    const isWav = uint8[0] === 0x52 && uint8[1] === 0x49 && uint8[2] === 0x46 && uint8[3] === 0x46; 
+    const isWav = uint8[0] === 0x52 && uint8[1] === 0x49 && uint8[2] === 0x46 && uint8[3] === 0x46;
     const mimeType = isWav ? "audio/wav" : "audio/mpeg";
     return new Blob([arrayBuffer], { type: mimeType });
   }
@@ -84,7 +84,7 @@ export const applyAudioEffects = async (
   if (!AudioContextClass) {
     throw createAppError("Web Audio API is not supported in this browser.");
   }
-  
+
   const audioCtx = new AudioContextClass();
   if (audioCtx.state === 'suspended') {
     try {
@@ -93,37 +93,37 @@ export const applyAudioEffects = async (
       appWarn("FAILED_RESUME_AUDIO_CONTEXT", e);
     }
   }
-  
+
   try {
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    
-    
-    
+
+
+
     const combinedRate = Math.max(0.5, Math.min(2.0, rate * pitch));
-    
+
     const targetLength = Math.max(1, Math.ceil(decodedBuffer.length / combinedRate));
-    
+
     const OfflineAudioCtxClass = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
     const offlineCtx = new OfflineAudioCtxClass(
       decodedBuffer.numberOfChannels,
       targetLength,
       decodedBuffer.sampleRate
     );
-    
+
     const source = offlineCtx.createBufferSource();
     source.buffer = decodedBuffer;
     source.playbackRate.value = combinedRate;
-    
+
     const gainNode = offlineCtx.createGain();
     gainNode.gain.setValueAtTime(volume, 0);
-    
+
     source.connect(gainNode);
     gainNode.connect(offlineCtx.destination);
-    
+
     source.start(0);
-    
+
     const finalBuffer = await offlineCtx.startRendering();
-    
+
     return bufferToWav(finalBuffer);
   } finally {
     await audioCtx.close();
@@ -158,16 +158,6 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
-};
-
-export const formatTimeHelper = (secs: number): string => {
-  const minutes = Math.floor(secs / 60);
-  const remainingSecs = secs % 60;
-  const rSecsFormatted = remainingSecs % 1 === 0 
-    ? remainingSecs.toFixed(0).padStart(2, '0') 
-    : parseFloat(remainingSecs.toFixed(1)).toString().padStart(2, '0');
-  
-  return `${minutes.toString().padStart(2, '0')}:${rSecsFormatted}`;
 };
 
 export const cleanScriptText = (text: string): string => {

@@ -7,7 +7,7 @@ import { useRef, useState } from 'react';
 import { PipelineWizardState } from './usePipelineWizard';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { WizardStep } from '../../types';
+import { WizardStep, AudioType, Gender } from '../../types';
 
 import * as LucideIcons from 'lucide-react';
 
@@ -153,7 +153,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           previewUrl: voice.preview_url,
 
                           gender:
-                            voice.gender === "male" ? "male" : "female",
+                            voice.gender === "male" ? Gender.Male : Gender.Female,
                         },
                       }));
                       setIsVoiceDialogOpen(false);
@@ -980,18 +980,18 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       ...prev,
                       voiceConfig: {
                         ...prev.voiceConfig,
-                        audioType: "generated",
+                        audioType: AudioType.Generated,
                         audioUrl: ttsAudioUrl || "simulated_speech",
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType !== "upload"
+                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType !== AudioType.Upload
                     ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
                     : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
                     }`}
                 >
                   <Sparkles
-                    className={`w-3 h-3 ${project.voiceConfig.audioType !== "upload" ? "text-amber-400" : "text-slate-500"}`}
+                    className={`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`}
                   />
                   <span>
                     {t.AI_Speech}
@@ -1004,20 +1004,20 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       ...prev,
                       voiceConfig: {
                         ...prev.voiceConfig,
-                        audioType: "upload",
+                        audioType: AudioType.Upload,
                         audioUrl: project.voiceConfig.uploadedAudioName
                           ? project.voiceConfig.audioUrl
                           : undefined,
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType === "upload"
+                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType === AudioType.Upload
                     ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
                     : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
                     }`}
                 >
                   <Upload
-                    className={`w-3 h-3 ${project.voiceConfig.audioType === "upload" ? "text-emerald-400" : "text-slate-500"}`}
+                    className={`w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`}
                   />
                   <span>
                     {t.External_Audio}
@@ -1027,7 +1027,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
               { }
               <div className="relative z-10 min-h-[110px] font-sans">
-                {project.voiceConfig.audioType !== "upload" ? (
+                {project.voiceConfig.audioType !== AudioType.Upload ? (
                   <div className="space-y-3">
                     {ttsAudioUrl && ttsAudioUrl !== "simulated" ? (
 
@@ -1283,7 +1283,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                     voiceConfig: {
                                       ...prev.voiceConfig,
                                       audioUrl: undefined,
-                                      audioType: "generated",
+                                      audioType: AudioType.Generated,
                                     },
                                   }));
                                 }}
@@ -1379,7 +1379,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 ...prev,
                                 voiceConfig: {
                                   ...prev.voiceConfig,
-                                  audioType: "simulated",
+                                  audioType: AudioType.Simulated,
                                   uploadedAudioName:
                                     t.Sample_Speech,
                                   audioUrl: "simulated_speech",
@@ -1500,7 +1500,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       ...prev,
                                       voiceConfig: {
                                         ...prev.voiceConfig,
-                                        audioType: "upload",
+                                        audioType: AudioType.Upload,
                                         uploadedAudioName: file.name,
                                         audioUrl: objectUrl,
                                       },
@@ -1604,7 +1604,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               ...prev,
                               voiceConfig: {
                                 ...prev.voiceConfig,
-                                audioType: "upload",
+                                audioType: AudioType.Upload,
                                 uploadedAudioName: file.name,
                                 audioUrl: objectUrl,
                               },
@@ -1648,7 +1648,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ...prev,
                                   voiceConfig: {
                                     ...prev.voiceConfig,
-                                    audioType: "upload",
+                                    audioType: AudioType.Upload,
                                     uploadedAudioName: file.name,
                                     audioUrl: objectUrl,
                                   },

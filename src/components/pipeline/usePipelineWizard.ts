@@ -5,7 +5,9 @@ import {
   useMemo,
 } from "react";
 import { formatCleanDuration } from "./pipeline-utils";
+import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
+
 import { appLog, appError, appWarn, createAppError } from "../../lib/logger.js";
 
 const logger = {
@@ -21,6 +23,9 @@ import {
   StoryboardScene,
   ThumbnailItem,
   WizardStep,
+  ImageGeneratorEngine,
+  ProjectLanguage,
+  HookPosition,
 } from "../../types";
 import {
   applyAudioEffects,
@@ -154,7 +159,7 @@ export function usePipelineWizard(props: any) {
     return initialProject?.hookConfig?.count || 3;
   });
 
-  const [hookPosition, setHookPosition] = useState<"start" | "mid" | "all">(() => {
+  const [hookPosition, setHookPosition] = useState<HookPosition>(() => {
     return initialProject?.hookConfig?.positions || "start";
   });
 
@@ -954,13 +959,13 @@ export function usePipelineWizard(props: any) {
         setHookStrategy(initialProject.hookConfig.type || "Auto");
         setHookDuration(initialProject.hookConfig.duration || 10);
         setHookCount(initialProject.hookConfig.count || 3);
-        setHookPosition(initialProject.hookConfig.positions || "start");
+        setHookPosition(initialProject.hookConfig.positions || HookPosition.Start);
         setHooksDraft(initialProject.hookConfig.versions || []);
       } else {
         setHookStrategy("Auto");
         setHookDuration(10);
         setHookCount(3);
-        setHookPosition("start");
+        setHookPosition(HookPosition.Start);
         setHooksDraft([]);
       }
 
@@ -1285,7 +1290,7 @@ export function usePipelineWizard(props: any) {
           style: project.visualConfig.style,
           resolution: project.visualConfig.quality,
           bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || "veo3",
+          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
           sandboxConfig: sandboxConfig,
           visualConfig: project.visualConfig,
         }),
@@ -1411,7 +1416,7 @@ export function usePipelineWizard(props: any) {
         hookType: hookStrategy,
         duration: hookDuration,
         count: hookCount,
-        language: project.config.language || "vi",
+        language: project.config.language || ProjectLanguage.VI,
         bypassCache: force === true,
       };
 
@@ -2292,9 +2297,9 @@ export function usePipelineWizard(props: any) {
         }
 
         if (currentIndex < totalToProcess - 1) {
-          setBatchProgressMsg(t.waitingBetweenScenes,
-          );
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          const randomCooldown = Math.floor(Math.random() * 15000 + 15000); // Ngẫu nhiên từ 15s đến 30s
+          setBatchProgressMsg(t.waitingBetweenScenes || `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`);
+          await new Promise((resolve) => setTimeout(resolve, randomCooldown));
         }
 
         currentIndex++;
@@ -2537,7 +2542,7 @@ export function usePipelineWizard(props: any) {
           style: styleText,
           resolution: "Standard",
           bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || "veo3",
+          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
           sandboxConfig: sandboxConfig,
           visualConfig: project.visualConfig,
         }),
@@ -2882,11 +2887,6 @@ export function usePipelineWizard(props: any) {
       if (totalTextLength === 0) totalTextLength = 1;
 
       let currentSecs = 0;
-      const formatTimeHelper = (secs: number) => {
-        const minutes = Math.floor(secs / 60);
-        const remainingSecs = Math.round(secs % 60);
-        return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
-      };
 
       for (let i = 0; i < updatedScenes.length; i++) {
         const scene = updatedScenes[i];

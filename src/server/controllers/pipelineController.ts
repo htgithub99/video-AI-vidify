@@ -6,7 +6,7 @@ import {
   isGeminiApiKeyAvailable,
 } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
-import { safeParseJSON } from "../utils/helpers.js";
+import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import {
   generateScenesWithChunking,
   SceneDensity,
@@ -1148,13 +1148,6 @@ function generateMockStoryboard(
     const endTimeSeconds = currentTime + duration;
     currentTime = endTimeSeconds;
 
-    const formatTime = (secs: number) => {
-      const totalSecs = Math.round(secs);
-      const minutes = Math.floor(totalSecs / 60);
-      const remainingSecs = totalSecs % 60;
-      return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
-    };
-
     const motions = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Static"];
     const motion = motions[i % motions.length];
 
@@ -1265,13 +1258,6 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
-
-  const formatTime = (secs: number) => {
-    const totalSecs = Math.round(secs);
-    const minutes = Math.floor(totalSecs / 60);
-    const remainingSecs = totalSecs % 60;
-    return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
-  };
 
   if (!isGeminiApiKeyAvailable()) {
     return res.json(

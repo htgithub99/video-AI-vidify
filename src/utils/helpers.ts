@@ -27,3 +27,14 @@ export const stopPropagation = (e: React.MouseEvent | React.TouchEvent | React.K
 export const preventDefault = (e: React.MouseEvent | React.TouchEvent | React.KeyboardEvent) => {
   e.preventDefault();
 };
+
+export const formatTimeHelper = (secs: number): string => {
+  const minutes = Math.floor(secs / 60);
+  const remainingSecs = secs % 60;
+  const rSecsFormatted = remainingSecs % 1 === 0 
+    ? remainingSecs.toFixed(0).padStart(2, '0') 
+    : parseFloat(remainingSecs.toFixed(1)).toString().padStart(2, '0');
+  
+  return `${minutes.toString().padStart(2, '0')}:${rSecsFormatted}`;
+};
+

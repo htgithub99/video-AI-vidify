@@ -65,7 +65,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     HTTP_STATUS_ERROR: "Lỗi trạng thái HTTP! trạng thái: ",
     GOOGLE_TTS_FAILED: "Chuyển đổi Google TTS thất bại cho phân đoạn: {0}",
     PLAYWRIGHT_BORDER: "\n=======================================================",
-    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n"
+    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
+    PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Trình duyệt sinh ảnh đã bị đóng hoặc chưa khởi tạo. Đang kết nối lại...",
+    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT: "[Playwright] Trình duyệt đã bị đóng ở lần thử trước. Đang kết nối lại...",
+    PLAYWRIGHT_CLOSED_DETECTED_RESET: "[Playwright] Phát hiện trình duyệt bị đóng. Đang giải phóng và reset kết nối..."
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -133,7 +136,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     HTTP_STATUS_ERROR: "HTTP error! status: ",
     GOOGLE_TTS_FAILED: "Google TTS failed for chunk: {0}",
     PLAYWRIGHT_BORDER: "\n=======================================================",
-    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n"
+    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
+    PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Browser page is closed or not initialized. Re-initializing...",
+    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT: "[Playwright] Page was closed in previous attempt. Re-initializing...",
+    PLAYWRIGHT_CLOSED_DETECTED_RESET: "[Playwright] Detect closed page/context. Resetting Playwright instance..."
   }
 };
 

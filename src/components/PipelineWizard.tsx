@@ -6,7 +6,13 @@ import PipelineStep1 from './pipeline/PipelineStep1';
 import PipelineStep2 from './pipeline/PipelineStep2';
 import PipelineStep3 from './pipeline/PipelineStep3';
 import PipelineStep4 from './pipeline/PipelineStep4';
-import { PipelineWizardProps, WizardStep } from '../types';
+import {
+  PipelineWizardProps,
+  WizardStep,
+  GenerateType,
+  PromptInputMethod,
+  ImageGeneratorEngine,
+} from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { Modal } from './ui/Modal';
@@ -222,10 +228,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className="absolute top-full right-[50px] mt-2 w-[300px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden">
                 <div className="p-4 space-y-4">
                   <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                    <button onClick={() => updateVisualConfig({ generateType: 'image' })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType !== 'video' ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <button onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType !== GenerateType.Video ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                       <ImageIcon className="w-3.5 h-3.5" /> {t.Image}
                     </button>
-                    <button onClick={() => updateVisualConfig({ generateType: 'video' })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType === 'video' ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                    <button onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType === GenerateType.Video ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                       <Video className="w-3.5 h-3.5" /> {t.Video}
                     </button>
                   </div>
@@ -244,10 +250,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Input_Method_Labs}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      <button onClick={() => updateVisualConfig({ promptInputMethod: 'type' })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod === 'type' ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                      <button onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                         <Type className="w-3 h-3" /> {t.Type_Text}
                       </button>
-                      <button onClick={() => updateVisualConfig({ promptInputMethod: 'paste' })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod !== 'type' ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                      <button onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                         <ClipboardPaste className="w-3 h-3" /> {t.Quick_Paste}
                       </button>
                     </div>
@@ -277,10 +283,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   </div>
 
                   <div className="relative">
-                    <select value={project.visualConfig.imageGeneratorEngine || 'veo3'} onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })} className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-xs text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer">
-                      <option value="imagen">{t.Imagen_3}</option>
-                      <option value="veo3">{t.Nano_Banana_2}</option>
-                      <option value="labs-sandbox">{t.Labs_Sandbox}</option>
+                    <select value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3} onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })} className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-xs text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer">
+                      <option value={ImageGeneratorEngine.Imagen}>{t.Imagen_3}</option>
+                      <option value={ImageGeneratorEngine.Veo3}>{t.Nano_Banana_2}</option>
+                      <option value={ImageGeneratorEngine.LabsSandbox}>{t.Labs_Sandbox}</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>

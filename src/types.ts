@@ -8,14 +8,79 @@ export enum WizardStep {
   Export = 4,
 }
 
+export enum ProjectInputType {
+  Script = 'script',
+  Idea = 'idea',
+}
+
+export enum ProjectLanguage {
+  VI = 'vi',
+  EN = 'en',
+}
+
+export enum HookPosition {
+  Start = 'start',
+  Mid = 'mid',
+  All = 'all',
+}
+
+export enum AudioType {
+  TTS = 'tts',
+  Clone = 'clone',
+  Upload = 'upload',
+  Generated = 'generated',
+  Simulated = 'simulated',
+}
+
+export enum Gender {
+  Male = 'male',
+  Female = 'female',
+  Neutral = 'neutral',
+}
+
+export enum AgeGroup {
+  Child = 'child',
+  Teen = 'teen',
+  Adult = 'adult',
+  Senior = 'senior',
+}
+
+export enum AssetsMode {
+  UserOnly = 'user_only',
+  UserFirst = 'user_first',
+  Mixed = 'mixed',
+}
+
+export enum ImageGeneratorEngine {
+  Imagen = 'imagen',
+  Veo3 = 'veo3',
+  LabsSandbox = 'labs-sandbox',
+}
+
+export enum GenerateType {
+  Image = 'image',
+  Video = 'video',
+}
+
+export enum PromptInputMethod {
+  Type = 'type',
+  Paste = 'paste',
+}
+
+export type AssetType = 'image' | 'video';
+
+export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+
 export interface ProjectInput {
-  type: 'script' | 'idea';
+  type: ProjectInputType;
   content: string;
 }
 
 export interface ProjectConfig {
   genre: string;
-  language: 'vi' | 'en';
+  language: ProjectLanguage;
   duration: string; 
   targetDuration?: string;
   rewriteLevel: number; 
@@ -39,16 +104,16 @@ export interface HookConfig {
   type: string; 
   duration: number; 
   count: number; 
-  positions: 'start' | 'mid' | 'all';
+  positions: HookPosition;
   versions: HookVersion[];
 }
 
 export interface VoiceConfig {
   provider: string; 
-  audioType: 'tts' | 'clone' | 'upload' | 'generated' | 'simulated';
+  audioType: AudioType;
   voiceName?: string;
-  gender: 'male' | 'female' | 'neutral';
-  age: 'child' | 'teen' | 'adult' | 'senior';
+  gender: Gender;
+  age: AgeGroup;
   emotion: string; 
   speed: number; 
   pitch?: number; 
@@ -68,14 +133,14 @@ export interface VisualConfig {
   quality: string; 
   density: number; 
   characterConsistency: boolean;
-  assetsMode: 'user_only' | 'user_first' | 'mixed';
+  assetsMode: AssetsMode;
   stylePreset?: string;
   aspectRatio?: string;
   imageQuality?: string;
   characterConsistencyLevel?: string;
   contextConsistencyLevel?: string;
   negativePrompt?: string;
-  imageGeneratorEngine?: 'imagen' | 'veo3' | 'labs-sandbox';
+  imageGeneratorEngine?: ImageGeneratorEngine;
   thumbnailCount?: number;
   thumbnailReferenceImage?: string;
   thumbnailReferenceImages?: string[];
@@ -83,9 +148,9 @@ export interface VisualConfig {
   referenceImage?: string;
   referenceImages?: string[];
   referencePrompt?: string;
-  generateType?: 'image' | 'video';
+  generateType?: GenerateType;
   generateCount?: number;
-  promptInputMethod?: 'type' | 'paste';
+  promptInputMethod?: PromptInputMethod;
   characterImages?: string[];
   characterPrompt?: string;
   characterAnalysis?: string;
@@ -119,7 +184,7 @@ export interface StoryboardScene {
   subtitle: string;
   prompt: string;
   assetName?: string;
-  assetType?: 'image' | 'video';
+  assetType?: AssetType;
   assetUrl?: string; 
   assetUrls?: string[]; 
   audioUrl?: string; 
@@ -232,11 +297,11 @@ export interface IBaseModalProps {
 export interface ITooltipProps {
   content: string;
   children: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: TooltipPosition;
 }
 
 export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+  variant?: ButtonVariant;
   isLoading?: boolean;
 }
 

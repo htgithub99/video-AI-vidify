@@ -1,7 +1,17 @@
-import { genreLabels, audLabels, styleLabels } from '../../constants/data';
+import {
+  genreLabels,
+  audLabels,
+  styleLabels,
+  GENRE_OPTIONS,
+  AUDIENCE_OPTIONS,
+  WRITING_STYLE_OPTIONS,
+  HOOK_STRATEGY_OPTIONS,
+  HOOK_POSITION_OPTIONS,
+  DURATION_OPTIONS,
+} from '../../constants/data';
 import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
-import { WizardStep } from '../../types';
+import { WizardStep, ProjectInputType, ProjectLanguage } from '../../types';
 
 
 
@@ -50,10 +60,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
-                      input: { ...prev.input, type: "script" },
+                      input: { ...prev.input, type: ProjectInputType.Script },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === "script"
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === ProjectInputType.Script
                     ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]"
                     : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                     }`}
@@ -71,10 +81,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
-                      input: { ...prev.input, type: "idea" },
+                      input: { ...prev.input, type: ProjectInputType.Idea },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === "idea"
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === ProjectInputType.Idea
                     ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]"
                     : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                     }`}
@@ -138,21 +148,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    {[
-                      "Storytelling",
-                      "History",
-                      "Documentary",
-                      "Explanation",
-                      "Review",
-                      "Education",
-                      "News",
-                      "Top List",
-                      "True Crime",
-                      "Science",
-                      "Psychology",
-                      "Philosophy",
-                    ].map((genre) => {
-
+                    {GENRE_OPTIONS.map((genre) => {
                       return (
                         <option
                           key={genre}
@@ -182,20 +178,20 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         ...prev,
                         config: {
                           ...prev.config,
-                          language: e.target.value as "vi" | "en",
+                          language: e.target.value as ProjectLanguage,
                         },
                       }))
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     <option
-                      value="vi"
+                      value={ProjectLanguage.VI}
                       className="bg-slate-950 text-slate-300"
                     >
                       {t.Ti_ng_Vi_t}
                     </option>
                     <option
-                      value="en"
+                      value={ProjectLanguage.EN}
                       className="bg-slate-950 text-slate-300"
                     >
                       {t.Ti_ng_Anh}
@@ -225,12 +221,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    {[
-                      { val: "2m", label: "300 từ (~2 phút)" },
-                      { val: "5m", label: "750 từ (~5 phút)" },
-                      { val: "10m", label: "1500 từ (~10 phút)" },
-                      { val: "15m", label: "2250 từ (~15 phút)" },
-                    ].map((item) => (
+                    {DURATION_OPTIONS.map((item) => (
                       <option
                         key={item.val}
                         value={item.val}
@@ -267,14 +258,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    {[
-                      "General Audience",
-                      "Kids",
-                      "Teenagers",
-                      "Adults",
-                      "Seniors",
-                    ].map((aud) => {
-
+                    {AUDIENCE_OPTIONS.map((aud) => {
                       return (
                         <option
                           key={aud}
@@ -292,7 +276,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
               { }
               <div className="space-y-1.5">
-                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                <span className="text-[10px] text-slate-450 font-mono font-bold uppercase tracking-wider block">
                   {t.Phong_c_ch_h_nh_v_n}
                 </span>
                 <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
@@ -310,16 +294,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    {[
-                      "Professional",
-                      "Documentary",
-                      "Viral",
-                      "Mystery",
-                      "Drama",
-                      "Educational",
-                      "Scientific",
-                    ].map((style) => {
-
+                    {WRITING_STYLE_OPTIONS.map((style) => {
                       return (
                         <option
                           key={style}
@@ -472,18 +447,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       onChange={(e) => setHookStrategy(e.target.value)}
                       className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                     >
-                      {[
-                        { value: "Auto", label: "Tự động" },
-                        { value: "Mystery", label: "Kỳ bí, tò mò" },
-                        { value: "Shock", label: "Gây sốc" },
-                        { value: "Drama", label: "Kịch tính" },
-                        { value: "Curiosity", label: "Hiếu kỳ" },
-                        { value: "Emotional", label: "Cảm xúc" },
-                        { value: "Historical", label: "Lịch sử" },
-                        { value: "Statistical", label: "Thống kê" },
-                        { value: "Question", label: "Đặt câu hỏi" },
-                        { value: "Story", label: "Câu chuyện" },
-                      ].map((opt) => (
+                      {HOOK_STRATEGY_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                           {opt.label}
                         </option>
@@ -523,11 +487,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       onChange={(e) => setHookPosition(e.target.value as any)}
                       className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                     >
-                      {[
-                        { value: "start", label: "Chỉ mở đầu" },
-                        { value: "mid", label: "Mở đầu & Giữa" },
-                        { value: "all", label: "Đầu, Giữa & Cuối" },
-                      ].map((opt) => (
+                      {HOOK_POSITION_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                           {opt.label}
                         </option>

@@ -1,8 +1,64 @@
-import { globalPlaywrightPage } from "./audioService.js";
+import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+import { GenerateType, ImageGeneratorEngine, PromptInputMethod } from "../../types.js";
+import { Locator, Page } from "playwright";
+
+export async function smoothMouseMove(page: Page, locator: Locator) {
+  try {
+    const box = await locator.boundingBox();
+    if (!box) return;
+
+    const startX = Math.floor(Math.random() * 800 + 100);
+    const startY = Math.floor(Math.random() * 600 + 100);
+    const targetX = Math.floor(box.x + box.width / 2 + (Math.random() - 0.5) * 10);
+    const targetY = Math.floor(box.y + box.height / 2 + (Math.random() - 0.5) * 5);
+
+    await page.mouse.move(startX, startY);
+    
+    const steps = Math.floor(Math.random() * 5 + 8);
+    for (let step = 1; step <= steps; step++) {
+      const t = step / steps;
+      const currentX = startX + (targetX - startX) * t;
+      const currentY = startY + (targetY - startY) * t + Math.sin(t * Math.PI) * (Math.random() - 0.5) * 15;
+      await page.mouse.move(currentX, currentY);
+      await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 10 + 5)));
+    }
+    
+    await page.mouse.move(targetX, targetY);
+    await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 150 + 100)));
+  } catch (e) {
+    await locator.hover().catch(() => {});
+  }
+}
+
+export async function humanType(page: Page, text: string) {
+  const chars = text.split("");
+  const pauseChars = [" ", ",", "."];
+  for (const char of chars) {
+    await page.keyboard.type(char);
+    let delay = Math.floor(Math.random() * 25 + 10);
+    if (pauseChars.includes(char)) {
+      delay += Math.floor(Math.random() * 50 + 30);
+    }
+    await new Promise((r) => setTimeout(r, delay));
+  }
+}
+
+export const getImgIdSafe = (url: string): string => {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    const id = u.searchParams.get("id") || u.searchParams.get("docid");
+    if (id) return id;
+    ["token", "sig", "signature", "expires", "t"].forEach((p) => u.searchParams.delete(p));
+    return u.toString();
+  } catch (e) {
+    return url;
+  }
+};
 
 export class SimpleMutex {
   private queue: (() => void)[] = [];
@@ -36,10 +92,11 @@ export interface ImageGeneratorOptions {
   style?: string;
   visualConfig?: {
     chromeHeadless?: boolean;
-    generateType?: string;
+    generateType?: GenerateType;
     aspectRatio?: string;
     generateCount?: number;
-    imageGeneratorEngine?: string;
+    imageGeneratorEngine?: ImageGeneratorEngine;
+    promptInputMethod?: PromptInputMethod;
   };
   sandboxConfig?: {
     projectId?: string;
@@ -134,23 +191,32 @@ export async function generateImageWithPlaywright(
   const maxAttempts = 2;
 
   try {
+    if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+      appLog(BACKEND_MESSAGES.PLAYWRIGHT_PAGE_CLOSED_REINIT);
+      await initPlaywright();
+    }
     if (!globalPlaywrightPage) {
       throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
     }
 
     try {
-      await globalPlaywrightPage.evaluate(`
-        if (typeof window !== 'undefined' && !window.__name) {
-          window.__name = (target, value) => {
-            try {
-              Object.defineProperty(target, "name", { value, configurable: true });
-            } catch (e) {}
-            return target;
-          };
+      await globalPlaywrightPage.evaluate(({ getImgIdStr }) => {
+        if (typeof window !== 'undefined') {
+          if (!(window as any).__name) {
+            (window as any).__name = (target: any, value: any) => {
+              try {
+                Object.defineProperty(target, "name", { value, configurable: true });
+              } catch (e) {}
+              return target;
+            };
+          }
+          if (!(window as any).__getImgId) {
+            (window as any).__getImgId = new Function("return " + getImgIdStr)();
+          }
         }
-      `);
+      }, { getImgIdStr: getImgIdSafe.toString() });
     } catch (err) {
-      appError("Failed to inject __name helper on current page context:", err);
+      appError("Failed to inject helpers on current page context:", err);
     }
 
     const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${cleanProjectId}`;
@@ -161,6 +227,13 @@ export async function generateImageWithPlaywright(
         `${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`
       );
       try {
+        if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+          appLog(BACKEND_MESSAGES.PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT);
+          await initPlaywright();
+        }
+        if (!globalPlaywrightPage) {
+          throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+        }
         const SELECTOR_INPUT = '[contenteditable="true"]';
         const submitBtnLocator = globalPlaywrightPage
           .locator("button")
@@ -174,7 +247,7 @@ export async function generateImageWithPlaywright(
         let isAlreadyOnFlowPage = false;
         try {
           const currentUrl = globalPlaywrightPage.url();
-          if (currentUrl.includes(cleanProjectId) && currentUrl.includes("labs.google")) {
+          if ([cleanProjectId, "labs.google"].every(kw => currentUrl.includes(kw))) {
             isAlreadyOnFlowPage = true;
           }
         } catch (e) {
@@ -275,40 +348,50 @@ export async function generateImageWithPlaywright(
 
         const targetPrompt = finalPrompt || prompt;
         if (targetPrompt && targetPrompt.length > 0) {
-          appLog(BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
+          const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
+          appLog(inputMethod === PromptInputMethod.Type ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
 
           const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
           const delayFn = (ms: number) => new Promise((r) => setTimeout(r, ms));
           const randomDelay = (min: number, max: number) =>
             delayFn(Math.floor(Math.random() * (max - min + 1) + min));
 
+          await smoothMouseMove(globalPlaywrightPage, inputLoc);
           await inputLoc.click();
           await randomDelay(200, 400);
 
-          // Select all and clear existing content using standard keyboard actions
           await globalPlaywrightPage.keyboard.press("Control+A");
           await randomDelay(150, 300);
           await globalPlaywrightPage.keyboard.press("Backspace");
           await randomDelay(200, 400);
 
-          // Insert the new prompt text
-          await globalPlaywrightPage.keyboard.insertText(targetPrompt);
-          await randomDelay(300, 600);
+          if (inputMethod === PromptInputMethod.Type) {
+            await humanType(globalPlaywrightPage, targetPrompt);
+          } else {
+            await globalPlaywrightPage.keyboard.insertText(targetPrompt);
+          }
+          await randomDelay(400, 800);
 
-          // Force-trigger the editor event handler using Space + Backspace trick
           await globalPlaywrightPage.keyboard.press("Space");
           await randomDelay(100, 200);
           await globalPlaywrightPage.keyboard.press("Backspace");
-          await randomDelay(500, 1000);
+          
+          await randomDelay(1500, 3000);
         }
 
-        const oldIds = await globalPlaywrightPage.evaluate(() => {
+        const oldIds = await globalPlaywrightPage.evaluate((getImgIdStr) => {
+          const getImgId = new Function("return " + getImgIdStr)();
           const imgs = Array.from(document.querySelectorAll("img"));
           return imgs
             .filter((img) => img.src && img.src.includes("getMediaUrlRedirect"))
-            .map((img) => (window as any).__getImgId(img.src))
+            .map((img) => {
+              if (typeof (window as any).__getImgId === "function") {
+                return (window as any).__getImgId(img.src);
+              }
+              return getImgId(img.src);
+            })
             .filter(Boolean);
-        });
+        }, getImgIdSafe.toString());
 
         let isBtnDisabled = true;
         for (let i = 0; i < 6; i++) {
@@ -331,19 +414,15 @@ export async function generateImageWithPlaywright(
         await submitBtnLocator.waitFor({ state: "visible", timeout: 5000 });
         await submitBtnLocator.scrollIntoViewIfNeeded();
 
-        const delayFn = (ms: number) => new Promise((r) => setTimeout(r, ms));
-        const randomDelay = (min: number, max: number) =>
-          delayFn(Math.floor(Math.random() * (max - min + 1) + min));
-        await randomDelay(200, 400);
-
-        await submitBtnLocator.hover().catch(() => { });
-        await randomDelay(300, 600);
-
+        await smoothMouseMove(globalPlaywrightPage, submitBtnLocator);
+        const delayFnSubmit = (ms: number) => new Promise((r) => setTimeout(r, ms));
+        await delayFnSubmit(Math.floor(Math.random() * 400 + 400));
         await submitBtnLocator.click();
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
         const base64Data = await globalPlaywrightPage.waitForFunction(
-          (oldIdsList) => {
+          ([oldIdsList, getImgIdStr]) => {
+            const getImgId = new Function("return " + getImgIdStr)();
             const imgs = Array.from(document.querySelectorAll("img"));
             const genImgs = imgs.filter(
               (img) => img.src && img.src.includes("getMediaUrlRedirect")
@@ -352,7 +431,7 @@ export async function generateImageWithPlaywright(
             const newImg = [...genImgs]
               .reverse()
               .find((img) => {
-                const imgId = (window as any).__getImgId(img.src);
+                const imgId = getImgId(img.src);
                 return imgId && !oldIdsList.includes(imgId);
               });
 
@@ -377,8 +456,8 @@ export async function generateImageWithPlaywright(
             }
             return null;
           },
-          oldIds,
-          { timeout: 60000 }
+          [oldIds, getImgIdSafe.toString()] as const,
+          { timeout: 150000 }
         );
 
         const finalBase64 = await base64Data.jsonValue();
@@ -388,13 +467,28 @@ export async function generateImageWithPlaywright(
         success = true;
       } catch (err: any) {
         appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
+        
+        const closedKeywords = ["closed", "close", "context"];
+        const isClosedError = closedKeywords.some((kw) =>
+          err.message?.toLowerCase().includes(kw)
+        );
+        if (isClosedError) {
+          appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
+          await closePlaywright().catch(() => {});
+        }
+
         if (attempts < maxAttempts) {
           try {
-            appLog(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
-            await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
-            await globalPlaywrightPage.waitForTimeout(5000);
-          } catch (reloadErr) {
+            if (globalPlaywrightPage && !globalPlaywrightPage.isClosed()) {
+              appLog(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
+              await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
+              await globalPlaywrightPage.waitForTimeout(5000);
+            }
+          } catch (reloadErr: any) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
+            if (closedKeywords.some((kw) => reloadErr.message?.toLowerCase().includes(kw))) {
+              await closePlaywright().catch(() => {});
+            }
           }
         } else {
           throw err;

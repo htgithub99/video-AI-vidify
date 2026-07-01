@@ -261,3 +261,11 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   appLog('JSON_PARSE_WARNING', text.substring(0, 150) + '...');
   return defaultVal;
 }
+
+export const formatTime = (secs: number): string => {
+  const totalSecs = Math.round(secs);
+  const minutes = Math.floor(totalSecs / 60);
+  const remainingSecs = totalSecs % 60;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
+};
+

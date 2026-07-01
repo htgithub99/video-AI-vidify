@@ -2,7 +2,19 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
-import { VideoProject } from "./types.js";
+import {
+  VideoProject,
+  ProjectInputType,
+  ProjectLanguage,
+  HookPosition,
+  AudioType,
+  Gender,
+  AgeGroup,
+  AssetsMode,
+  ImageGeneratorEngine,
+  GenerateType,
+  PromptInputMethod,
+} from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES } from "./constants/apiRoutes.js";
@@ -116,12 +128,12 @@ export default function App() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       input: {
-        type: "script",
+        type: ProjectInputType.Script,
         content: "",
       },
       config: {
         genre: "Storytelling",
-        language: currentLang,
+        language: currentLang as unknown as ProjectLanguage,
         duration: "2m",
         rewriteLevel: 50,
         similarityReduction: 5,
@@ -134,14 +146,14 @@ export default function App() {
         type: "Auto",
         duration: 10,
         count: 3,
-        positions: "start",
+        positions: HookPosition.Start,
         versions: [],
       },
       voiceConfig: {
         provider: "Gemini Speech",
-        audioType: "tts",
-        gender: "male",
-        age: "adult",
+        audioType: AudioType.TTS,
+        gender: Gender.Male,
+        age: AgeGroup.Adult,
         emotion: "Normal",
         speed: 1.0,
         pitch: 1.0,
@@ -154,11 +166,11 @@ export default function App() {
         quality: "Standard",
         density: 5,
         characterConsistency: true,
-        assetsMode: "mixed",
-        imageGeneratorEngine: "veo3",
-        generateType: "image",
+        assetsMode: AssetsMode.Mixed,
+        imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+        generateType: GenerateType.Image,
         aspectRatio: "16:9",
-        promptInputMethod: "paste",
+        promptInputMethod: PromptInputMethod.Paste,
         generateCount: 1,
       },
       creditsUsed: 0,

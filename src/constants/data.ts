@@ -122,4 +122,64 @@ export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ['not found', '404', 'unsupport
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ['429', 'quota', '503', '500', '550', 'fetch failed', 'Timeout', 'undici'];
 export const STICKMAN_KEYWORDS = ["người que", "stickman", "stick figure", "hoạt hình", "stick", "que"];
 
+export const GENRE_OPTIONS = [
+  "Storytelling",
+  "History",
+  "Documentary",
+  "Explanation",
+  "Review",
+  "Education",
+  "News",
+  "Top List",
+  "True Crime",
+  "Science",
+  "Psychology",
+  "Philosophy",
+];
+
+export const AUDIENCE_OPTIONS = [
+  "General Audience",
+  "Kids",
+  "Teenagers",
+  "Adults",
+  "Seniors",
+];
+
+export const WRITING_STYLE_OPTIONS = [
+  "Professional",
+  "Documentary",
+  "Viral",
+  "Mystery",
+  "Drama",
+  "Educational",
+  "Scientific",
+];
+
+export const HOOK_STRATEGY_OPTIONS = [
+  { value: "Auto", label: "Tự động" },
+  { value: "Mystery", label: "Kỳ bí, tò mò" },
+  { value: "Shock", label: "Gây sốc" },
+  { value: "Drama", label: "Kịch tính" },
+  { value: "Curiosity", label: "Hiếu kỳ" },
+  { value: "Emotional", label: "Cảm xúc" },
+  { value: "Historical", label: "Lịch sử" },
+  { value: "Statistical", label: "Thống kê" },
+  { value: "Question", label: "Đặt câu hỏi" },
+  { value: "Story", label: "Câu chuyện" },
+];
+
+export const HOOK_POSITION_OPTIONS = [
+  { value: "start", label: "Chỉ mở đầu" },
+  { value: "mid", label: "Mở đầu & Giữa" },
+  { value: "all", label: "Đầu, Giữa & Cuối" },
+];
+
+export const DURATION_OPTIONS = [
+  { val: "2m", label: "300 từ (~2 phút)" },
+  { val: "5m", label: "750 từ (~5 phút)" },
+  { val: "10m", label: "1500 từ (~10 phút)" },
+  { val: "15m", label: "2250 từ (~15 phút)" },
+];
+
+
 
