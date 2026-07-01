@@ -62,29 +62,32 @@ startServer().catch((error) => {
   logger.error('SERVER_START_ERROR', error);
 });
 
+// npx kill-port 3000
 process.on('SIGINT', async () => {
   logger.log('PLAYWRIGHT_CLEANING');
-  await closePlaywright();
+  setTimeout(() => process.exit(0), 3000);
+  try { await closePlaywright(); } catch (e) { }
   if (process.platform === 'win32') {
     exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
-      process.exit();
+      process.exit(0);
     });
   } else {
     exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
-      process.exit();
+      process.exit(0);
     });
   }
 });
 process.on('SIGTERM', async () => {
   logger.log('PLAYWRIGHT_CLEANING');
-  await closePlaywright();
+  setTimeout(() => process.exit(0), 3000);
+  try { await closePlaywright(); } catch (e) { }
   if (process.platform === 'win32') {
     exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
-      process.exit();
+      process.exit(0);
     });
   } else {
     exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
-      process.exit();
+      process.exit(0);
     });
   }
 });
