@@ -1,4 +1,3 @@
-import React from 'react';
 import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
 import { WizardStep } from '../../types';
@@ -50,7 +49,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
           </button>
         </div>
 
-        {}
+        { }
         <div className="bg-slate-950/45 border border-slate-805 p-5 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
             <label className="text-xs text-slate-400 font-mono font-bold uppercase block">
@@ -75,7 +74,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
           />
         </div>
 
-        {}
+        { }
         <div className="pb-6 border-b border-slate-800">
           <div className="space-y-1.5 max-w-sm">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
@@ -118,7 +117,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
           {" "}
-          {}
+          { }
           <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-950/20 p-5 rounded-xl border border-slate-800">
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
@@ -184,7 +183,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       </button>
                     </div>
 
-                    {}
+                    { }
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-500">
@@ -259,7 +258,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
             </div>
 
-            {}
+            { }
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
                 {t.Description_Options}
@@ -310,10 +309,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
             </div>
           </div>
-          {}
+          { }
           <div className="space-y-5">
             <div className="bg-slate-955 border border-slate-800 p-5 rounded-xl space-y-4">
-              {}
+              { }
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">
@@ -365,7 +364,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 </div>
               </div>
 
-              {}
+              { }
               <div className="space-y-2 pt-3 border-t border-slate-900">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">

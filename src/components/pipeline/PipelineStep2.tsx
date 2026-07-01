@@ -1,4 +1,3 @@
-import React from 'react';
 import { PipelineWizardState } from './usePipelineWizard';
 
 import * as LucideIcons from 'lucide-react';
@@ -515,11 +514,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             )
                           }
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn disabled:opacity-75 disabled:cursor-not-allowed ${
-                            thumb.imageUrl
+                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn disabled:opacity-75 disabled:cursor-not-allowed ${thumb.imageUrl
                               ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 shadow border border-slate-200 dark:border-slate-700/50"
                               : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
-                          } active:scale-95`}
+                            } active:scale-95`}
                           title={t.Render_YouTube_mockup_thu}
                         >
                           {loadingStates["renderThumb_" + thumb.id] ? (
