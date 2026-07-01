@@ -45,9 +45,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         setFavoriteVoices(JSON.parse(stored));
       } else {
         const defaults = [
-          { id: '1', name: 'Giọng Nam miền Bắc', voiceURI: 'preset-vi-bac-male', channelName: 'Gemini Speech' },
-          { id: '2', name: 'Giọng Nữ miền Bắc', voiceURI: 'preset-vi-bac-female', channelName: 'Gemini Speech' },
-          { id: '3', name: 'Giọng Nữ miền Nam', voiceURI: 'preset-vi-nam-female', channelName: 'Gemini Speech' }
+          { id: '1', name: 'Brian - Deep, Resonant and Comforting', voiceURI: 'nPczCjzI2devNBz1zQrb', channelName: 'Mystic Frontiers' },
         ];
         setFavoriteVoices(defaults);
         localStorage.setItem('favorite_voices', JSON.stringify(defaults));
@@ -337,8 +335,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           <div
                             key={item.id}
                             className={`group flex flex-col justify-between p-2 rounded-lg border transition-all ${isCurrent
-                                ? 'bg-rose-550/[0.04] border-rose-500/30'
-                                : 'bg-slate-950/40 border-slate-850 hover:border-slate-700 hover:bg-slate-900/30'
+                              ? 'bg-rose-550/[0.04] border-rose-500/30'
+                              : 'bg-slate-950/40 border-slate-850 hover:border-slate-700 hover:bg-slate-900/30'
                               }`}
                           >
                             {isEditing ? (
