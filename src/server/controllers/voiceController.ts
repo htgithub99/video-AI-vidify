@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
 import { getBackendMsg } from '../../constants/messages.js';
 import { requestContext } from '../utils/requestContext.js';
-import { appError, appWarn, createAppError } from '../../lib/logger.js';
+import { appWarn, createAppError } from '../../lib/logger.js';
 
 const FALLBACK_VOICES = [
   // Vietnamese Voices (Northern & Southern, Male & Female)
@@ -185,10 +185,10 @@ export const getVoices = async (req: Request, res: Response) => {
     res.json(data);
   } catch (error: any) {
     appWarn('FETCH_VOICES_ERR', 'External voice registry load failed. Falling back to high-quality local voices database.', error);
-    
+
     // Graceful fallback logic matching filter query parameters
     let filtered = [...FALLBACK_VOICES];
-    
+
     const reqLang = req.query.language as string;
     const reqGender = req.query.gender as string;
     const reqAge = req.query.age as string;
@@ -207,8 +207,8 @@ export const getVoices = async (req: Request, res: Response) => {
     }
     if (reqSearch) {
       const q = reqSearch.toLowerCase();
-      filtered = filtered.filter(v => 
-        v.name.toLowerCase().includes(q) || 
+      filtered = filtered.filter(v =>
+        v.name.toLowerCase().includes(q) ||
         v.description.toLowerCase().includes(q) ||
         v.voice_id.toLowerCase().includes(q) ||
         v.tags.some(t => t.toLowerCase().includes(q))
