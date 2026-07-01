@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import { exec } from 'child_process';
 
 import { logger } from './src/lib/logger.js';
 
@@ -64,10 +65,26 @@ startServer().catch((error) => {
 process.on('SIGINT', async () => {
   logger.log('PLAYWRIGHT_CLEANING');
   await closePlaywright();
-  process.exit();
+  if (process.platform === 'win32') {
+    exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
+      process.exit();
+    });
+  } else {
+    exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
+      process.exit();
+    });
+  }
 });
 process.on('SIGTERM', async () => {
   logger.log('PLAYWRIGHT_CLEANING');
   await closePlaywright();
-  process.exit();
+  if (process.platform === 'win32') {
+    exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
+      process.exit();
+    });
+  } else {
+    exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
+      process.exit();
+    });
+  }
 });
