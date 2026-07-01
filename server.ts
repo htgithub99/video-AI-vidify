@@ -1,34 +1,45 @@
-import express from 'express';
-import cors from 'cors';
-import { createServer as createViteServer } from 'vite';
-import path from 'path';
+import express from "express";
+import cors from "cors";
+import { createServer as createViteServer } from "vite";
+import path from "path";
 
-import { logger } from './src/lib/logger.js';
+import { logger } from "./src/lib/logger.js";
 
-import { initPlaywright, closePlaywright } from './src/server/services/audioService.js';
+import {
+  initPlaywright,
+  closePlaywright,
+} from "./src/server/services/audioService.js";
 
-import mainRouter from './src/server/routes/index.js';
-import pipelineRouter from './src/server/controllers/pipelineController.js';
+import mainRouter from "./src/server/routes/index.js";
+import pipelineRouter from "./src/server/controllers/pipelineController.js";
 
-import { API_ROUTES } from './src/constants/apiRoutes.js';
+import { API_ROUTES } from "./src/constants/apiRoutes.js";
 
 const app = express();
-const port = 3000;
+const port = 3002;
 
-import { requestContext } from './src/server/utils/requestContext.js';
+import { requestContext } from "./src/server/utils/requestContext.js";
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-gemini-api-key', 'x-ai33-api-key']
-}));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-api-key",
+      "x-gemini-api-key",
+      "x-ai33-api-key",
+    ],
+  }),
+);
 
-app.use(express.json({ limit: '500mb' }));
-app.use(express.urlencoded({ limit: '500mb', extended: true }));
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
 app.use((req, res, next) => {
-  const geminiKey = (req.headers['x-gemini-api-key'] as string) || '';
-  const ai33Key = (req.headers['x-ai33-api-key'] as string) || '';
+  const geminiKey = (req.headers["x-gemini-api-key"] as string) || "";
+  const ai33Key = (req.headers["x-ai33-api-key"] as string) || "";
   requestContext.run({ geminiKey, ai33Key }, next);
 });
 
@@ -38,36 +49,36 @@ app.use(API_ROUTES.PIPELINE, pipelineRouter);
 const startServer = async () => {
   await initPlaywright();
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'spa',
+      appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
   app.listen(port, "0.0.0.0", () => {
-    logger.log('SERVER_RUNNING', port);
+    logger.log("SERVER_RUNNING", port);
   });
 };
 
 startServer().catch((error) => {
-  logger.error('SERVER_START_ERROR', error);
+  logger.error("SERVER_START_ERROR", error);
 });
 
-process.on('SIGINT', async () => {
-  logger.log('PLAYWRIGHT_CLEANING');
+process.on("SIGINT", async () => {
+  logger.log("PLAYWRIGHT_CLEANING");
   await closePlaywright();
   process.exit();
 });
-process.on('SIGTERM', async () => {
-  logger.log('PLAYWRIGHT_CLEANING');
+process.on("SIGTERM", async () => {
+  logger.log("PLAYWRIGHT_CLEANING");
   await closePlaywright();
   process.exit();
 });

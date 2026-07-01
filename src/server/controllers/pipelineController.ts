@@ -184,7 +184,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       }
       return {
         ...scene,
-        prompt: `${scene.prompt || ""} [Style: ${newStyle}]`.trim(),
+        prompt: scene.prompt || "",
       };
     });
 
@@ -246,7 +246,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
         if (rewrittenMap.has(thumb.id)) {
           thumb.prompt = rewrittenMap.get(thumb.id);
         } else if (thumb.prompt) {
-          thumb.prompt = `${thumb.prompt} [Style: ${newStyle}]`.trim();
+          thumb.prompt = thumb.prompt;
         }
       }
     }
@@ -443,7 +443,7 @@ router.post(
           if (combinedPrompt) {
             return {
               ...scene,
-              prompt: `${scene.prompt.trim().replace(/,+$/, "")}, ${combinedPrompt}`,
+              prompt: scene.prompt,
             };
           }
         }

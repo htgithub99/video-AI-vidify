@@ -238,11 +238,10 @@ export async function generateImageWithPlaywright(
         const submitBtnLocator = globalPlaywrightPage
           .locator("button")
           .filter({
-            has: globalPlaywrightPage.locator("i", {
-              hasText: "arrow_forward",
-            }),
+            has: globalPlaywrightPage.locator("i").filter({ hasText: /^(arrow_forward|add_2|send)$/i })
           })
-          .first();
+          .filter({ hasText: /(Tạo|Create|Generate)/i })
+          .last();
 
         let isAlreadyOnFlowPage = false;
         try {
@@ -280,62 +279,56 @@ export async function generateImageWithPlaywright(
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
-            const submitBtnWrapper = submitBtnLocator.locator("xpath=..");
-            const configBtnLoc = submitBtnWrapper.locator('button[aria-haspopup="menu"]').first();
+            const configBtnLoc = globalPlaywrightPage.locator("button").filter({
+                has: globalPlaywrightPage.locator("i").filter({ hasText: "tune" })
+            }).first();
 
             if (await configBtnLoc.isVisible()) {
               await configBtnLoc.click();
               await globalPlaywrightPage.waitForTimeout(1000);
 
               const isVideo = visualConfig?.generateType === "video";
-              const typeLabel = isVideo ? BACKEND_MESSAGES.LABS_VIDEO : BACKEND_MESSAGES.LABS_IMAGE;
-              const typeBtn = globalPlaywrightPage
-                .locator('[role="menu"] button[role="tab"]')
-                .filter({ hasText: typeLabel })
-                .first();
-              if (await typeBtn.isVisible()) await typeBtn.click();
+              const sectionKeyword = isVideo ? /(tạo video|video generation|video)/i : /(tạo hình ảnh|image generation|image)/i;
+              const sectionSpan = globalPlaywrightPage.locator("span").filter({ hasText: sectionKeyword }).last();
+              
+              if (await sectionSpan.isVisible()) {
+                const sectionDiv = sectionSpan.locator("xpath=..");
 
-              const targetRatio = visualConfig?.aspectRatio || "16:9";
-              const ratioBtn = globalPlaywrightPage
-                .locator('[role="menu"] button[role="tab"]')
-                .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
-                .first();
-              if (await ratioBtn.isVisible()) await ratioBtn.click();
+                const targetRatio = visualConfig?.aspectRatio || "16:9";
+                const ratioBtn = sectionDiv.locator('[role="tab"]').filter({ hasText: new RegExp(`^${targetRatio}$`, "i") }).first();
+                if (await ratioBtn.isVisible()) await ratioBtn.click();
 
-              const targetCount = visualConfig?.generateCount || 1;
-              const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
-              const countBtn = globalPlaywrightPage
-                .locator('[role="menu"] button[role="tab"]')
-                .filter({ hasText: new RegExp(`^${countLabel}$`, "i") })
-                .first();
-              if (await countBtn.isVisible()) await countBtn.click();
+                const targetCount = visualConfig?.generateCount || 1;
+                const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
+                const countBtn = sectionDiv.locator('[role="tab"]').filter({ hasText: new RegExp(`^${countLabel}$`, "i") }).first();
+                if (await countBtn.isVisible()) await countBtn.click();
 
-              const targetEngineKey = visualConfig?.imageGeneratorEngine || "veo3";
-              const engineMap: Record<string, string> = {
-                imagen: BACKEND_MESSAGES.LABS_IMAGEN,
-                veo3: BACKEND_MESSAGES.LABS_VEO,
-              };
-              const targetEngine = engineMap[targetEngineKey];
-              if (targetEngine) {
-                const engineDropdownBtn = globalPlaywrightPage
-                  .locator('[role="menu"] button[aria-haspopup="menu"]')
-                  .filter({ hasText: /Banana|Imagen/i })
-                  .first();
+                const targetEngineKey = visualConfig?.imageGeneratorEngine || "veo3";
+                const isVeo = targetEngineKey.toLowerCase() === "veo3";
+                const exactEngineRegex = isVeo ? /(veo|omni flash)/i : /(imagen|banana pro)/i;
+                const fallbackEngineRegex = isVeo ? /(veo|omni flash)/i : /(imagen|banana)/i;
+                const engineDropdownBtn = sectionDiv.locator('button[aria-haspopup="menu"]').first();
+                
                 if (await engineDropdownBtn.isVisible()) {
                   const currentEngineText = await engineDropdownBtn.textContent();
-                  if (currentEngineText && !currentEngineText.includes(targetEngine)) {
-                    await engineDropdownBtn.click();
+                  if (currentEngineText && !exactEngineRegex.test(currentEngineText)) {
+                    await engineDropdownBtn.click({ force: true });
                     await globalPlaywrightPage.waitForTimeout(500);
-                    const optionBtn = globalPlaywrightPage
-                      .locator('[role="menuitem"]')
-                      .filter({ hasText: new RegExp(targetEngine, "i") })
-                      .first();
-                    if (await optionBtn.isVisible()) await optionBtn.click();
+                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: exactEngineRegex }).first();
+                    if (!(await optionBtn.isVisible())) {
+                        optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: fallbackEngineRegex }).first();
+                    }
+                    if (await optionBtn.isVisible()) await optionBtn.click({ force: true });
                   }
                 }
               }
 
-              await globalPlaywrightPage.keyboard.press("Escape");
+              const saveBtn = globalPlaywrightPage.locator("button:visible").filter({ hasText: /^(Lưu|Save)$/i }).first();
+              if (await saveBtn.isVisible()) {
+                  await saveBtn.click();
+              } else {
+                  await globalPlaywrightPage.keyboard.press("Escape");
+              }
               await globalPlaywrightPage.waitForTimeout(500);
 
               lastPlaywrightConfigState = currentConfigState;

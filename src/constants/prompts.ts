@@ -12,6 +12,8 @@ Original Prompt: "${promptText}"
 New Target Style: "${newStyle}"
 
 Combine the core meaning of the original prompt with the visual aesthetics of the new target style.
+STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
@@ -25,6 +27,8 @@ DO NOT change the core narrative or semantic meaning of the scenes. ONLY adapt t
 New Target Style: "${newStyle}"
 
 Combine the core meaning of the original prompts with the visual aesthetics of the new target style.
+STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
 IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
 
@@ -93,6 +97,17 @@ export const getImagePromptDesignerPrompt = (
   genre: string,
   rewrittenScript: string,
 ): string => `You are an elite AI Image Prompt Designer.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
 Based on the genre "${genre}" and the provided full story script below:
 ---
 ${rewrittenScript}
@@ -102,10 +117,15 @@ Your task is to write ONE highly detailed, standalone image prompt that captures
 CRITICAL VISUAL DIRECTIVE (For ${genre} genre):
 If the genre is Historical, Documentary, or Science, you MUST prioritize ultra-realistic, historically accurate, or scientifically precise depictions. Emphasize era-specific clothing, authentic environments, and correct anatomical or physical proportions. Avoid cartoonish, overly stylized, or fantasy elements unless the genre explicitly demands it. Include keywords like "cinematic realism", "historical accuracy", "photorealistic", and "authentic textures".
 
-DO NOT use character names (like "John" or "Sarah"). Describe their physical appearance instead (e.g., "a tall man with short blonde hair wearing a red jacket").
+DO NOT use character names (like "John" or "Sarah"). Describe their physical appearance instead.
+STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
+[Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+- Use strong verbs and visual adjectives. Avoid vague terms like "beautiful" or "awesome". Describe physical reality.
+- Use spatial awareness to position elements ("In the foreground", "Centred").
+- Embed the emotional mood/atmosphere directly into the scene description ("melancholy", "suspenseful", "mysterious").
+- FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT draw a "history textbook" or an "open book". Instead, draw the actual "Battle of the Little Bighorn" itself (e.g., soldiers and warriors on a dusty battlefield). Focus directly on the actual event/entity, never on abstract metaphors.
 ${NO_FRAME_RULE}
-Focus on lighting, camera angle, subject, action, background, and cinematic mood.
-Return ONLY the prompt text, no explanations, no quotes.`;
+Return ONLY the prompt text in English, no explanations, no quotes.`;
 
 export const getVideoDirectorSceneSplitPrompt = (
   chunkIndex: number,
@@ -122,6 +142,16 @@ export const getVideoDirectorSceneSplitPrompt = (
   referenceCharacters?: string,
 ): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes.
 
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
 [MULTI-STEP SYSTEM FLOW MANDATE]
 You are processing chunk ${chunkIndex} of ${totalChunks}.
 Video Genre Theme: ${genre}.
@@ -132,12 +162,21 @@ ${splitInstruction}
 
 Requirements:
 1. Strict Sequencing: Traverse the ENTIRE script segment from beginning to end. DO NOT STOP until the segment is translated into scenes. Every word must be covered.
-2. Highly Descriptive Prompts & Hard Contextual Alignment: Generate optimized, highly descriptive image prompts for text-to-image generators using the visual style: "${visualStyle || "Cinematic"}". ${referenceStyle ? 'CRITICAL STYLE REQUIREMENT: The user has extracted a specific art style: "' + referenceStyle + '". You MUST deeply integrate and blend these exact stylistic keywords into every single prompt you generate.' : ""} ${referenceCharacters ? "CRITICAL CHARACTER CONSISTENCY: The main characters have specific visual references: " + referenceCharacters + ". For each scene, if a character is present in the scene script, you MUST weave their exact physical characteristics and outfit description into the prompt." : ""}
-   - MANDATORY ACTION-FIRST PROMPTING: The "prompt" field MUST start directly with a concrete visual description of the core action, subjects, and objects described in that specific scene's script segment. NEVER start with generic styling words, camera types, or presets (e.g. do NOT start with "Cinematic photo of...", "8k resolution..."). Start directly with the main event: "A weary blacksmith in a leather apron hammering glowing orange iron on a heavy anvil...". Style, lighting, and camera specifications must only be appended after the core action is fully described.
-   - CONCRETE VISUAL TRANSLATION: Translate abstract narration, thoughts, or emotions into a visible, concrete action scene. If the script says "he felt lonely and cold", describe the visual: "A man sitting alone on a wooden bench in an empty park under a streetlamp, shivering as fog rolls in".
-   - NO GENERIC COPIES: Every scene prompt must be completely unique and highly specific to its script segment. Do not let the visual style presets or reference style wash out the distinct action and subjects of the scene. The unique narrative action must occupy at least the first 65% of the prompt.
-   - STRICT PROMPT RICHNESS & DETAIL MANDATE: To prevent AI laziness and ensure highly immersive, gorgeous images, the "prompt" field MUST be extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject (face, facial expression, clothing, posture, detailed action), the precise setting/background environment, the lighting (chiaroscuro, dramatic rim lighting, soft volumetric rays), the atmosphere/mood, and camera specifications (close-up, medium shot, extremely sharp focus, blurry depth of field, 8k resolution, cinematic style).
-   - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image. Do not use generic descriptions.
+2. Highly Descriptive Prompts & Hard Contextual Alignment: Generate optimized, highly descriptive image prompts for text-to-image generators.
+   - STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this exact structural formula from left to right:
+     [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+   - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave and rewrite them into the structure:
+     * [Main Subject] & [Action]: If characters exist in the scene, use these exact physical traits to describe them: ${referenceCharacters ? referenceCharacters : "(Use the script's character descriptions)"}.
+     * [Background], [Lighting] & [Style]: Completely embody this exact art style and aesthetic in your descriptions: ${referenceStyle ? referenceStyle : visualStyle || "Cinematic"}.
+   - THE 3 SECRETS TO A CINEMATIC PROMPT:
+     1. Use strong verbs and visual adjectives. Avoid vague terms like "beautiful" or "awesome". Describe physical reality (e.g., "drops of rain rolling down an angular face").
+     2. Use spatial awareness to position elements ("In the foreground", "In the background", "Centred").
+     3. Embed the emotional mood/atmosphere directly into the scene description ("melancholy", "suspenseful", "mysterious").
+   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING:
+     Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. 
+   - NO GENERIC COPIES: Every scene prompt must be highly specific to its script segment. The unique narrative action must occupy the majority of the prompt.
+   - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
+   - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
    - ${NO_FRAME_RULE}
 3. Dynamic Motion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static), video effects, and transitions.
 ${customSplitRules ? "4. CUSTOM USER RULE: " + customSplitRules : ""}
@@ -155,7 +194,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "duration": 5,
       "script": "The exact single sentence from the rewritten script.",
       "subtitle": "The exact single sentence from the rewritten script.",
-      "prompt": "Highly detailed image prompt in English. MUST start directly with the visual action, subjects, and objects from the scene's script (e.g., 'A scientist looking through a microscope with a look of awe'). Followed by style specifications: ${visualStyle} ${referenceStyle ? "and style keywords: " + referenceStyle : ""} ${referenceCharacters ? "and character details: " + referenceCharacters : ""}. THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH, regardless of the script's language.",
+      "prompt": "Highly detailed image prompt strictly following the blueprint: [Main Subject] + [Action] + [Background] + [Lighting] + [Style]. Example: 'A cinematic close-up of a weary scientist with thick round glasses looking through a glowing microscope, in a dark dusty laboratory, volumetric lighting hitting the dust, photorealistic 8k.' THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH.",
       "cameraMotion": "Zoom In",
       "effects": "Lighting details matching style and mood",
       "transition": "Fade out to black"
@@ -199,13 +238,28 @@ export const getThumbnailLayoutPrompt = (
   thumbnailCount: number,
   refImageStr: string,
   isVi: boolean,
-): string => `You are an elite, viral YouTube and social media thumbnail layout director. Based on this script: "${rewrittenScript}",
+): string => `You are an elite, viral YouTube and social media thumbnail layout director.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
+Based on this script: "${rewrittenScript}",
 generate exactly ${thumbnailCount} distinct creative thumbnail designs that follow professional layout standards for maximum Click-Through Rate (CTR) on platforms like YouTube and Facebook.
 
 ${refImageStr}
 
 CRITICAL THUMBNAIL LAYOUT DIRECTIVES (conforming to modern platform standards for maximum clickability):
-1. STRICT PROMPT RICHNESS & DETAIL MANDATE: To prevent AI laziness and ensure highly engaging, click-worthy covers, the "prompt" field MUST be incredibly detailed, vivid, and descriptive (minimum of 35-50 words). Do NOT write simple or generic prompts. Describe the expressive focal subject in high detail, the dramatic lighting (such as strong neon rim-lights, backlight glowing effects), the high-contrast color scheme, the blurred bokeh background, and the intense cinematic composition that triggers instant curiosity.
+1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style]. 
+   - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave the provided reference image details (character appearance and art style) directly into the [Main Subject], [Lighting], and [Style] sections of the blueprint.
+   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script talks about a historical battle, do NOT draw a textbook, screen, or narrator. Draw the actual high-contrast dramatic battle scene itself.
+   - Describe the expressive focal subject in high detail, use strong action verbs, specify spatial awareness (e.g., 'Centred', 'In the foreground'), set dramatic mood (e.g., 'suspenseful', 'mysterious'), and end with cinematic lighting/style keywords. Minimum 35-50 words.
 2. Aspect Ratio & Composition: Always design with a 16:9 full-bleed cinematic landscape canvas in mind.
 3. High CTR Focal Subject: Visual designs must trigger immediate curiosity, surprise, awe, or tension. A single, dominant, extreme focal subject (such as a close-up of a highly expressive/shocked face, or a glowing mysterious object) must stand out. Backgrounds must be heavily blurred (extreme shallow depth of field) to make the subject pop instantly.
 4. Strict Minimal Text Rule (Avoid Clutter): The cover image must NOT contain excessive text.
@@ -288,6 +342,17 @@ export const getDetailedPromptBuilderPrompt = (
   camera: string,
   style: string,
 ): string => `You are an elite AI Image Prompt Designer.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
 Your task is to take the user's inputs and create a highly detailed, cinematic image generation prompt.
 Base Narrative: "${sceneScript}"
 Setting/Environment: "${setting || "Not specified"}"
@@ -298,6 +363,10 @@ Camera Angle/Composition: "${camera || "Not specified"}"
 Visual Style: "${style || "Cinematic"}"
 
 Combine all these elements smoothly into a single, highly descriptive prompt optimized for Midjourney or Veo.
+STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
+[Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+SEAMLESS INTEGRATION RULE: Do NOT simply append the inputs at the end of the prompt. You MUST seamlessly weave character, costume, setting, time, camera, and style into the blueprint structure.
+FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text.
 IMPORTANT MANDATE: The final output prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the inputs.
 DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw prompt string in English.`;
 
@@ -408,6 +477,16 @@ export const getGlobalVisualBiblePrompt = (
   referenceCharacters?: string,
 ): string => {
   let prompt = `You are a cinematic concept artist. Analyze the video script to establish a cohesive Visual Bible.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual specifications, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT establish "history textbooks" or "libraries" in your visual specs. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke) to establish environment specifications.
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT establish visual specifications for "history textbooks" or "libraries". Instead, establish specifications for the actual historical entities/events: "the Battle of the Little Bighorn" itself (e.g., Lakota warriors, cavalry soldiers, dusty grassy battlefields).
+* If the script says "Statistics show that depression is rising...", do NOT establish charts, graphs, or screens. Establish specs for a sad/depressed person.
+FAILURE TO FOLLOW THIS AND SPECIFYING TEXTBOOKS, SCREENS, OR LIBRARIES INSTEAD OF THE ACTUAL NARRATIVE EVENT WILL CAUSE CRITICAL FAILURE.
+
 Script:
 """
 ${script}
@@ -442,6 +521,16 @@ export const getScenePromptRefinePrompt = (
   visualBibleJson: string,
 ): string => `You are an elite Image Prompt Refiner. Your goal is to apply a global Visual Bible to individual scene prompts to ensure perfect character and visual consistency across the entire storyboard.
 
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
 Visual Bible:
 ${visualBibleJson}
 
@@ -449,9 +538,10 @@ Scenes list to refine (JSON):
 ${scenesJson}
 
 Rules:
-1. For each scene, refine the "prompt" field to integrate the Visual Bible's color palette, character appearance, and lighting.
-2. Put core entities (like characters, key actions) at the very beginning of the prompt with high weight, followed by style/bible details.
-3. ${NO_FRAME_RULE}
+1. STRUCTURE MANDATE: The refined "prompt" MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+2. SEAMLESS INTEGRATION RULE: Do NOT simply append the Visual Bible details at the end of the prompt. You MUST seamlessly weave and rewrite them directly into the blueprint structure (e.g., weave character appearance into [Main Subject], color/lighting into [Lighting & Colors]).
+3. FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text (e.g., do not draw textbooks/screens when discussing historical battles).
+4. ${NO_FRAME_RULE}
 4. Keep the prompt entirely in English.
 4. Do not alter the script or timings.
 5. Return ONLY the raw JSON array matching this format (no markdown code blocks):
@@ -528,7 +618,19 @@ Output a raw JSON object (no markdown wrapping):
 export const getThumbnailPromptRefinePrompt = (
   draftThumbsJson: string,
   conceptsJson: string,
-): string => `You are an expert thumbnail layout editor. Refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
+): string => `You are an expert thumbnail layout editor.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
+* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
+* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
+* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
+* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
+  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
+* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
+FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+
+Refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
 
 Draft Thumbnails:
 ${draftThumbsJson}
@@ -537,7 +639,10 @@ Concepts:
 ${conceptsJson}
 
 Rules:
-1. For each draft thumbnail, refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design that maximizes click-through rate (CTR). It must specify a clear, dominant focal subject (such as a highly expressive shocked/afraid face or glowing/mysterious object), blurred background (shallow depth of field), and high-contrast dramatic lighting (like backlighting or glowing accents).
+1. For each draft thumbnail, refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design that maximizes click-through rate (CTR). It MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+   - SEAMLESS INTEGRATION RULE: Do NOT simply append composition or character references at the end. You MUST seamlessly weave the concept's composition, subject focus, and lighting suggestions directly into the corresponding sections of the blueprint.
+   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Avoid drawing framing elements like books, TV screens, or narrators when the core concept represents a physical action or event. Draw the actual event/entity directly.
+   - Specify a clear, dominant focal subject (such as a highly expressive shocked/afraid face), use strong visual adjectives, specify spatial awareness, set an emotional mood, and detail high-contrast dramatic lighting (like backlighting or glowing accents).
 2. STRICTOR TEXT MINIMALISM: Do NOT include excessive text on the cover. Any text overlay ("textText") must strictly be 1 to 3 words maximum (no full sentences, no clutter). The "prompt" itself must NOT describe rendering written text or letters to prevent generating garbled text.
 3. DO NOT place any key visual detail, text overlay, or main subject in the bottom-right corner of the image because that is where video platform timestamps are overlayed.
 4. At least one design in the array MUST remain completely WITHOUT a text overlay (where 'hasText' is false, 'textText' is "", and layout/typography/colorSuggestion are ""). Do not add text parameters to it.
@@ -586,9 +691,9 @@ ${charactersJson}
 
 For each scene, identify which characters are present (by their names or descriptions in the scene text/script), and rewrite the scene prompt to naturally incorporate their specific visual design prompts.
 Rules:
-1. Ensure the characters' physical descriptions, clothing, and details from their prompt are woven naturally into each scene prompt where they appear.
-2. Keep the scene's original action, background, setting, lighting, camera angle, and mood.
-3. Do NOT change the overall style.
+1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint.
+3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
 5. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 

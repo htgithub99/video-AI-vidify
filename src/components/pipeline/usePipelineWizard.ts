@@ -1,14 +1,9 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-} from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { formatCleanDuration } from "./pipeline-utils";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { appLog, appError, appWarn, createAppError } from "../../lib/logger.js";
+import { appLog, appError, appWarn } from "../../lib/logger.js";
 
 const logger = {
   log: appLog,
@@ -16,7 +11,6 @@ const logger = {
   warn: appWarn,
 };
 import { EXTERNAL_URLS } from "../../constants/apiRoutes";
-import { stylePresetsKeywords } from "../../constants/data";
 import {
   VideoProject,
   HookVersion,
@@ -34,17 +28,22 @@ import {
   cleanScriptText,
 } from "../../lib/audioProcessor";
 import {
-
   getSceneTimeRanges,
   compileVideoToBlob,
 } from "../../lib/videoRenderer";
 import JSZip from "jszip";
-import { safeSystemFetch, logSystemAction, getStoredApiKey } from "../../lib/shared-utils";
+import {
+  safeSystemFetch,
+  logSystemAction,
+  getStoredApiKey,
+} from "../../lib/shared-utils";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
-const getVoiceGender = (voice: any) => voice?.gender?.toLowerCase() || 'neutral';
-const isPremiumVoice = (voice: any) => voice?.name?.includes('Premium') || false;
+const getVoiceGender = (voice: any) =>
+  voice?.gender?.toLowerCase() || "neutral";
+const isPremiumVoice = (voice: any) =>
+  voice?.name?.includes("Premium") || false;
 const getVoiceModifiers = (
   voiceURI: string,
   baseSpeed: number = 1.0,
@@ -101,18 +100,33 @@ const getVoiceModifiers = (
 
   return { finalSpeed, finalPitch };
 };
-const safeResponseJson = async (r: any, f: any) => { try { return await r.json(); } catch (e) { return f; } };
+const safeResponseJson = async (r: any, f: any) => {
+  try {
+    return await r.json();
+  } catch (e) {
+    return f;
+  }
+};
 const fallbackImageCache = new Map<string, string>();
 const getTargetDurationSeconds = (d: any) => 15;
-let handleNextStep = () => { };
-let handlePrevStep = () => { };
+let handleNextStep = () => {};
+let handlePrevStep = () => {};
 let audioRef: any = null;
 let videoRef: any = null;
 let simVideoRef: any = null;
 let workspaceRef: any = null;
 
 export function usePipelineWizard(props: any) {
-  const { theme, currentLang, project: initialProject, onSaveProject, costTracker, setCostTracker, credits, setCredits } = props;
+  const {
+    theme,
+    currentLang,
+    project: initialProject,
+    onSaveProject,
+    costTracker,
+    setCostTracker,
+    credits,
+    setCredits,
+  } = props;
   const t = translations[currentLang];
 
   const logAction = (actionName: string) => {
@@ -322,7 +336,9 @@ export function usePipelineWizard(props: any) {
     return () => window.removeEventListener("storage", syncConfig);
   }, []);
 
-  const [systemLogs, setSystemLogs] = useState<{ time: string, type: string, msg: string }[]>(() => {
+  const [systemLogs, setSystemLogs] = useState<
+    { time: string; type: string; msg: string }[]
+  >(() => {
     try {
       const savedLogs = sessionStorage.getItem("pipeline_system_logs");
       if (savedLogs) return JSON.parse(savedLogs);
@@ -343,32 +359,61 @@ export function usePipelineWizard(props: any) {
 
     const captureLog = (type: string, args: any[]) => {
       try {
-        const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+        const msg = args
+          .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+          .join(" ");
 
         let enrichedType = type;
         const msgLower = msg.toLowerCase();
 
-        
-        if (msgLower.includes('thành công') || msgLower.includes('success') || msgLower.includes('hoàn thành')) {
-          enrichedType = 'success';
-        } else if (msgLower.includes('bắt đầu thực thi') || msgLower.includes('pending') || msgLower.includes('đang xử lý') || msgLower.includes('trigger')) {
-          enrichedType = 'pending';
-        } else if (type === 'log' && (msgLower.includes('cảnh báo') || msgLower.includes('warning') || msgLower.includes('warn'))) {
-          enrichedType = 'warn';
-        } else if (type === 'log' && (msgLower.includes('lỗi') || msgLower.includes('error') || msgLower.includes('fail'))) {
-          enrichedType = 'error';
+        if (
+          msgLower.includes("thành công") ||
+          msgLower.includes("success") ||
+          msgLower.includes("hoàn thành")
+        ) {
+          enrichedType = "success";
+        } else if (
+          msgLower.includes("bắt đầu thực thi") ||
+          msgLower.includes("pending") ||
+          msgLower.includes("đang xử lý") ||
+          msgLower.includes("trigger")
+        ) {
+          enrichedType = "pending";
+        } else if (
+          type === "log" &&
+          (msgLower.includes("cảnh báo") ||
+            msgLower.includes("warning") ||
+            msgLower.includes("warn"))
+        ) {
+          enrichedType = "warn";
+        } else if (
+          type === "log" &&
+          (msgLower.includes("lỗi") ||
+            msgLower.includes("error") ||
+            msgLower.includes("fail"))
+        ) {
+          enrichedType = "error";
         }
 
         const time = new Date().toLocaleTimeString();
-        setSystemLogs(prev => [...prev, { time, type: enrichedType, msg }].slice(-200)); 
-      } catch (e) {
-        
-      }
+        setSystemLogs((prev) =>
+          [...prev, { time, type: enrichedType, msg }].slice(-200),
+        );
+      } catch (e) {}
     };
 
-    console.log = (...args) => { captureLog('log', args); originalLog(...args); };
-    console.warn = (...args) => { captureLog('warn', args); originalWarn(...args); };
-    console.error = (...args) => { captureLog('error', args); originalError(...args); };
+    console.log = (...args) => {
+      captureLog("log", args);
+      originalLog(...args);
+    };
+    console.warn = (...args) => {
+      captureLog("warn", args);
+      originalWarn(...args);
+    };
+    console.error = (...args) => {
+      captureLog("error", args);
+      originalError(...args);
+    };
 
     return () => {
       console.log = originalLog;
@@ -531,9 +576,6 @@ export function usePipelineWizard(props: any) {
   }, [isPlayingTts, ttsAudioUrl, voiceAudioDuration]);
 
   useEffect(() => {
-    
-    
-    
     if (audioPreviewRef.current) {
       audioPreviewRef.current.playbackRate = 1.0;
     }
@@ -693,10 +735,8 @@ export function usePipelineWizard(props: any) {
       ? "Xin chào, đây là âm thanh nghe thử của tôi."
       : "Hello, this is a quick audio preview of my voice.";
 
-    
     const useCloudVoice = isPremiumVoice(voiceURI);
 
-    
     const { finalSpeed, finalPitch } = getVoiceModifiers(
       voiceURI,
       speed || 1.0,
@@ -711,7 +751,7 @@ export function usePipelineWizard(props: any) {
           body: JSON.stringify({
             text: sampleText,
             voiceURI: voiceURI,
-            voice_id: voiceURI, 
+            voice_id: voiceURI,
             gender: gender,
             speed: finalSpeed,
             pitch: finalPitch,
@@ -719,7 +759,7 @@ export function usePipelineWizard(props: any) {
         });
 
         if (activePreviewToken !== currentToken) {
-          return; 
+          return;
         }
 
         const data = await res.json();
@@ -736,7 +776,6 @@ export function usePipelineWizard(props: any) {
           let blob;
           let dspApplied = false;
           try {
-            
             blob = await applyAudioEffects(
               bytes.buffer.slice(0),
               finalSpeed,
@@ -755,7 +794,6 @@ export function usePipelineWizard(props: any) {
           const tempAudio = new Audio(url);
           activeCloudPreviewAudio = tempAudio;
 
-          
           tempAudio.playbackRate = dspApplied ? 1.0 : finalSpeed;
 
           tempAudio.onended = () => {
@@ -839,15 +877,13 @@ export function usePipelineWizard(props: any) {
   };
 
   useEffect(() => {
-
-
     const loadVoices = async () => {
       try {
         const response = await fetch("/api/voices?provider=edge", {
           headers: {
-            'x-ai33-api-key': getStoredApiKey('AI33_API_KEY')
-          }
-        }); 
+            "x-ai33-api-key": getStoredApiKey("AI33_API_KEY"),
+          },
+        });
         if (response.ok) {
           const json = await response.json();
           if (json.success && json.data) {
@@ -912,7 +948,8 @@ export function usePipelineWizard(props: any) {
         currentHookConfig.duration === hookDuration &&
         currentHookConfig.count === hookCount &&
         currentHookConfig.positions === hookPosition &&
-        JSON.stringify(currentHookConfig.versions) === JSON.stringify(hooksDraft)
+        JSON.stringify(currentHookConfig.versions) ===
+          JSON.stringify(hooksDraft)
       ) {
         return prev;
       }
@@ -959,7 +996,9 @@ export function usePipelineWizard(props: any) {
         setHookStrategy(initialProject.hookConfig.type || "Auto");
         setHookDuration(initialProject.hookConfig.duration || 10);
         setHookCount(initialProject.hookConfig.count || 3);
-        setHookPosition(initialProject.hookConfig.positions || HookPosition.Start);
+        setHookPosition(
+          initialProject.hookConfig.positions || HookPosition.Start,
+        );
         setHooksDraft(initialProject.hookConfig.versions || []);
       } else {
         setHookStrategy("Auto");
@@ -970,7 +1009,9 @@ export function usePipelineWizard(props: any) {
       }
 
       // 3. Rebuild binary audio blobs from Base64 for current session
-      let restoredVoiceConfig = initialProject.voiceConfig ? { ...initialProject.voiceConfig } : undefined;
+      let restoredVoiceConfig = initialProject.voiceConfig
+        ? { ...initialProject.voiceConfig }
+        : undefined;
       let restoredTtsUrl: string | null = null;
 
       if (restoredVoiceConfig) {
@@ -982,7 +1023,9 @@ export function usePipelineWizard(props: any) {
           ) {
             if (restoredVoiceConfig.audioBase64) {
               try {
-                const arr = base64ToArrayBuffer(restoredVoiceConfig.audioBase64);
+                const arr = base64ToArrayBuffer(
+                  restoredVoiceConfig.audioBase64,
+                );
                 const blob = new Blob([arr], { type: "audio/wav" });
                 restoredTtsUrl = URL.createObjectURL(blob);
               } catch (e) {
@@ -1015,20 +1058,26 @@ export function usePipelineWizard(props: any) {
       }
 
       // Restore scene-specific audio URLs
-      const restoredStoryboard = (initialProject.storyboard || []).map((scene) => {
-        if (scene.audioUrl && (scene.audioUrl.startsWith("blob:") || scene.audioUrl === "simulated_speech")) {
-          if (scene.audioBase64) {
-            try {
-              const arr = base64ToArrayBuffer(scene.audioBase64);
-              const blob = new Blob([arr], { type: "audio/wav" });
-              return { ...scene, audioUrl: URL.createObjectURL(blob) };
-            } catch (e) {
-              logger.error("FAILED_RESTORE_SCENE_BLOB", e);
+      const restoredStoryboard = (initialProject.storyboard || []).map(
+        (scene) => {
+          if (
+            scene.audioUrl &&
+            (scene.audioUrl.startsWith("blob:") ||
+              scene.audioUrl === "simulated_speech")
+          ) {
+            if (scene.audioBase64) {
+              try {
+                const arr = base64ToArrayBuffer(scene.audioBase64);
+                const blob = new Blob([arr], { type: "audio/wav" });
+                return { ...scene, audioUrl: URL.createObjectURL(blob) };
+              } catch (e) {
+                logger.error("FAILED_RESTORE_SCENE_BLOB", e);
+              }
             }
           }
-        }
-        return scene;
-      });
+          return scene;
+        },
+      );
 
       // Construct restored project
       const restoredProject: VideoProject = {
@@ -1054,18 +1103,13 @@ export function usePipelineWizard(props: any) {
 
   const handleProcessInputAndConfig = async (force = false) => {
     logAction("handleProcessInputAndConfig");
-    
+
     if (!project.input.content.trim()) {
-      setErrorMsg(
-        t.Please_enter_script_conte,
-      );
+      setErrorMsg(t.Please_enter_script_conte);
       return;
     }
 
-    
-    setInfoMsg(
-      t.MULTI_STEP_SYSTEM_FLOW_Dr,
-    );
+    setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Dr);
     setLoadingStates((prev) => ({ ...prev, processInput: true }));
     setLoading(true);
     setErrorMsg("");
@@ -1090,17 +1134,15 @@ export function usePipelineWizard(props: any) {
         payload,
       );
 
-      
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-          data?.error ||
-          data?.warning ||
-          "System pipeline rejected the request.",
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
         );
       }
 
-      
       setProject((prev) => ({
         ...prev,
         scriptRewritten: data.rewrittenScript || "",
@@ -1116,10 +1158,8 @@ export function usePipelineWizard(props: any) {
         trackOperationCost(10, 0.0005);
       }
     } catch (e: any) {
-      setErrorMsg(t.scriptPipelineError.replace('{error}', e.message),
-      );
+      setErrorMsg(t.scriptPipelineError.replace("{error}", e.message));
     } finally {
-      
       setLoadingStates((prev) => ({ ...prev, processInput: false }));
       setLoading(false);
     }
@@ -1131,23 +1171,18 @@ export function usePipelineWizard(props: any) {
     isFromAutoGenerateAll = false,
   ) => {
     logAction("handleTriggerStoryboardSplit");
-    
+
     const isForce = force === true;
     if (project.storyboard && project.storyboard.length > 0 && !isForce) {
-      setInfoMsg(
-        t.Loaded_current_scenes_sto,
-      );
+      setInfoMsg(t.Loaded_current_scenes_sto);
       return project.storyboard;
     }
 
     if (!project.scriptRewritten) {
-      setErrorMsg(
-        t.Missing_detailed_script_f,
-      );
+      setErrorMsg(t.Missing_detailed_script_f);
       return;
     }
 
-    
     if (!isFromAutoGenerateAll) {
       setLoadingStates((prev) => ({
         ...prev,
@@ -1157,9 +1192,7 @@ export function usePipelineWizard(props: any) {
     }
     setLoading(true);
     setErrorMsg("");
-    setInfoMsg(
-      t.MULTI_STEP_SYSTEM_FLOW_Fo,
-    );
+    setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Fo);
 
     try {
       // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
@@ -1180,9 +1213,14 @@ export function usePipelineWizard(props: any) {
         visualStyle: project.visualConfig.style || "Cinematic",
         referenceImages: project.visualConfig.referenceImages || [],
         referenceStyle: project.visualConfig.referencePrompt,
-        referenceCharacters: project.visualConfig.characters && project.visualConfig.characters.length > 0
-          ? project.visualConfig.characters.map(c => ({ name: c.name, prompt: c.prompt || c.description }))
-          : undefined,
+        referenceCharacters:
+          project.visualConfig.characters &&
+          project.visualConfig.characters.length > 0
+            ? project.visualConfig.characters.map((c) => ({
+                name: c.name,
+                prompt: c.prompt || c.description,
+              }))
+            : undefined,
         referenceCharacter: project.visualConfig.characterPrompt || undefined,
         visualDensity: project.visualConfig.density || 5,
         voiceDuration:
@@ -1197,39 +1235,39 @@ export function usePipelineWizard(props: any) {
         payload,
       );
 
-      
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-          data?.error ||
-          data?.warning ||
-          "System pipeline rejected the request.",
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
         );
       }
 
-      
       if (data.scenes) {
-        
-        const preset = project.visualConfig.stylePreset || "Cinematic";
-        const keywords = stylePresetsKeywords[preset] || "";
-
         const updatedScenes = data.scenes.map((scene: any) => {
-          let basePrompt = scene.prompt || "";
-          if (
-            keywords &&
-            !basePrompt.toLowerCase().includes(preset.toLowerCase())
-          ) {
-            basePrompt = `${basePrompt.trim().replace(/,+$/, "")}, ${keywords}`;
-          }
-          return { ...scene, prompt: basePrompt };
+          return { ...scene, prompt: scene.prompt || "" };
         });
 
-        // Tự động sinh nhật ký đồng bộ mới dựa trên các phân cảnh vừa dàn dựng
-        const totalDuration = updatedScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
-        let syncLogText = t.syncLedgerSuccess.replace('{totalDuration}', totalDuration.toFixed(1));
+        const totalDuration = updatedScenes.reduce(
+          (sum: number, s: any) => sum + (s.duration || 0),
+          0,
+        );
+        let syncLogText = t.syncLedgerSuccess.replace(
+          "{totalDuration}",
+          totalDuration.toFixed(1),
+        );
 
         updatedScenes.forEach((scene: any, idx: number) => {
-          syncLogText += t.syncLedgerItem.replace('{index}', (idx + 1).toString()).replace('{startTime}', scene.startTime).replace('{endTime}', scene.endTime).replace('{duration}', scene.duration.toString()).replace('{script}', (scene.script || scene.subtitle || "").substring(0, 35));
+          syncLogText += t.syncLedgerItem
+            .replace("{index}", (idx + 1).toString())
+            .replace("{startTime}", scene.startTime)
+            .replace("{endTime}", scene.endTime)
+            .replace("{duration}", scene.duration.toString())
+            .replace(
+              "{script}",
+              (scene.script || scene.subtitle || "").substring(0, 35),
+            );
         });
 
         setAlignmentsLog(syncLogText);
@@ -1244,16 +1282,15 @@ export function usePipelineWizard(props: any) {
         }));
 
         trackOperationCost(18, 0.0012);
-        const successMsg = t.Storyboard_coordinates_fo || "Hoàn thành phân cảnh.";
+        const successMsg =
+          t.Storyboard_coordinates_fo || "Hoàn thành phân cảnh.";
         setInfoMsg(successMsg);
         console.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
         return updatedScenes;
       }
     } catch (e: any) {
-      setErrorMsg(t.storyboardPipelineError.replace('{error}', e.message),
-      );
+      setErrorMsg(t.storyboardPipelineError.replace("{error}", e.message));
     } finally {
-      
       if (!isFromAutoGenerateAll) {
         setLoadingStates((prev) => ({
           ...prev,
@@ -1290,7 +1327,9 @@ export function usePipelineWizard(props: any) {
           style: project.visualConfig.style,
           resolution: project.visualConfig.quality,
           bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+          engine:
+            project.visualConfig.imageGeneratorEngine ||
+            ImageGeneratorEngine.Veo3,
           sandboxConfig: sandboxConfig,
           visualConfig: project.visualConfig,
         }),
@@ -1326,6 +1365,7 @@ export function usePipelineWizard(props: any) {
           if (sc.id === sceneId) {
             return {
               ...sc,
+              prompt: customPrompt,
               assetUrl: imageUrl,
               assetUrls: [imageUrl],
               isGenerated: true,
@@ -1335,11 +1375,12 @@ export function usePipelineWizard(props: any) {
         });
         return { ...prev, storyboard: updated };
       });
-      console.log(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
+      console.log(
+        `[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`,
+      );
     } catch (e: any) {
       if (!isBatch) {
-        setErrorMsg(t.imagePipelineError.replace('{error}', e.message),
-        );
+        setErrorMsg(t.imagePipelineError.replace("{error}", e.message));
       } else {
         throw e;
       }
@@ -1386,7 +1427,7 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    const successMsg = t.imageUploadSuccess.replace('{sceneId}', sceneId);
+    const successMsg = t.imageUploadSuccess.replace("{sceneId}", sceneId);
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -1403,7 +1444,10 @@ export function usePipelineWizard(props: any) {
   const handleGenerateHooks = async (force = false) => {
     logAction("handleGenerateHooks");
     if (!project.input.content.trim()) {
-      setErrorMsg(t.Please_enter_script_conte || "Vui lòng nhập nội dung trước khi tạo hook.");
+      setErrorMsg(
+        t.Please_enter_script_conte ||
+          "Vui lòng nhập nội dung trước khi tạo hook.",
+      );
       return;
     }
     setLoadingStates((prev) => ({ ...prev, generateHooks: true }));
@@ -1427,19 +1471,18 @@ export function usePipelineWizard(props: any) {
 
       if (!success || data?.error || data?.warning) {
         throw new Error(
-          error ||
-          data?.error ||
-          data?.warning ||
-          "Failed to generate hooks."
+          error || data?.error || data?.warning || "Failed to generate hooks.",
         );
       }
 
       const generatedVersions = data.versions || [];
       setHooksDraft(generatedVersions);
-      
+
       const successMsg = "Tạo hook thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
+      console.log(
+        `[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`,
+      );
     } catch (e: any) {
       setErrorMsg(e.message || "Lỗi tạo hook.");
     } finally {
@@ -1451,7 +1494,8 @@ export function usePipelineWizard(props: any) {
   const handleCopyHook = (hookText: string) => {
     logAction("handleCopyHook");
     navigator.clipboard.writeText(hookText);
-    const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
+    const successMsg =
+      t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
@@ -1461,9 +1505,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleCopyAllPrompts");
     const storyboard = project.storyboard || [];
     if (storyboard.length === 0) {
-      setInfoMsg(
-        t.No_scenes_available_to_co,
-      );
+      setInfoMsg(t.No_scenes_available_to_co);
       return;
     }
 
@@ -1478,7 +1520,8 @@ export function usePipelineWizard(props: any) {
       .then(() => {
         setCopiedAll(true);
         setTimeout(() => setCopiedAll(false), 3000);
-        const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
+        const successMsg =
+          t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
         setInfoMsg(successMsg);
         console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       })
@@ -1522,17 +1565,14 @@ export function usePipelineWizard(props: any) {
 
   const handleExtractStyle = async () => {
     logAction("handleExtractStyle");
-    
+
     const images = project.visualConfig?.referenceImages;
     if (!images || images.length === 0) return;
 
-    
     setLoadingStates((prev) => ({ ...prev, extractStyle: true }));
     setLoading(true);
     setErrorMsg("");
-    setInfoMsg(
-      t.MULTI_STEP_SYSTEM_FLOW_Ex,
-    );
+    setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
       // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
@@ -1543,7 +1583,6 @@ export function usePipelineWizard(props: any) {
         error: extractError,
       } = await safeSystemFetch("/api/pipeline/extract-style", extractPayload);
 
-      
       if (!extractSuccess || extractData?.error) {
         throw new Error(
           extractError || extractData?.error || "Style extraction failed",
@@ -1552,7 +1591,6 @@ export function usePipelineWizard(props: any) {
 
       const extractedStyle = extractData.style;
 
-      
       setProject((prev) => ({
         ...prev,
         visualConfig: {
@@ -1562,16 +1600,16 @@ export function usePipelineWizard(props: any) {
       }));
 
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
-      const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
+      const successMsg =
+        t.Style_extracted_successfu ||
+        "Trích xuất phong cách thiết kế thành công.";
       setInfoMsg(successMsg);
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
-      setErrorMsg(t.styleExtractionError.replace('{error}', e.message),
-      );
+      setErrorMsg(t.styleExtractionError.replace("{error}", e.message));
     } finally {
-      
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
       setLoading(false);
     }
@@ -1592,9 +1630,7 @@ export function usePipelineWizard(props: any) {
     setLoadingStates((prev) => ({ ...prev, applyStyle: true }));
     setLoading(true);
     setErrorMsg("");
-    setInfoMsg(
-      t.Applying_style_to_scenes,
-    );
+    setInfoMsg(t.Applying_style_to_scenes);
 
     try {
       const rewritePayload = {
@@ -1602,33 +1638,30 @@ export function usePipelineWizard(props: any) {
         newStyle: currentStyle,
       };
       const { success: rewriteSuccess, data: rewriteData } =
-        await safeSystemFetch(
-          "/api/pipeline/rewrite-prompts",
-          rewritePayload,
-        );
+        await safeSystemFetch("/api/pipeline/rewrite-prompts", rewritePayload);
 
       if (rewriteSuccess && rewriteData?.storyboard) {
         setProject((prev) => ({
           ...prev,
           storyboard: rewriteData.storyboard,
         }));
-        const successMsg = t.Successfully_applied_styl || "Áp dụng phong cách thiết kế thành công.";
+        const successMsg =
+          t.Successfully_applied_styl ||
+          "Áp dụng phong cách thiết kế thành công.";
         setInfoMsg(successMsg);
         console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
-        
         setProject((prev) => ({
           ...prev,
           storyboard: (prev.storyboard || []).map((scene) => ({
             ...scene,
-            prompt: `${scene.prompt || ""} [Style: ${currentStyle}]`.trim(),
+            prompt: scene.prompt || "",
           })),
         }));
         setInfoMsg(t.Applied_style_fallback_mo);
       }
     } catch (err: any) {
-      setErrorMsg(t.applyStyleError.replace('{error}', err.message),
-      );
+      setErrorMsg(t.applyStyleError.replace("{error}", err.message));
     } finally {
       setLoadingStates((prev) => ({ ...prev, applyStyle: false }));
       setLoading(false);
@@ -1649,7 +1682,10 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.charAnalyzing);
 
     try {
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/analyze-character", { script });
+      const { success, data, error } = await safeSystemFetch(
+        "/api/pipeline/analyze-character",
+        { script },
+      );
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character analysis failed");
       }
@@ -1661,7 +1697,7 @@ export function usePipelineWizard(props: any) {
         description: c.description,
         images: [],
         prompt: "",
-        extracted: false
+        extracted: false,
       }));
 
       setProject((prev) => ({
@@ -1669,12 +1705,15 @@ export function usePipelineWizard(props: any) {
         visualConfig: {
           ...prev.visualConfig,
           characters: chars,
-          characterAnalysis: rawCharacters.map((c: any) => `${c.name}: ${c.description}`).join("\n"),
-          characterExtracted: false
-        }
+          characterAnalysis: rawCharacters
+            .map((c: any) => `${c.name}: ${c.description}`)
+            .join("\n"),
+          characterExtracted: false,
+        },
       }));
 
-      const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
+      const successMsg =
+        t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
       setInfoMsg(successMsg);
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
@@ -1686,7 +1725,10 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleCharacterImagesUpload = async (charId: string, files: FileList | null) => {
+  const handleCharacterImagesUpload = async (
+    charId: string,
+    files: FileList | null,
+  ) => {
     logAction("handleCharacterImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
@@ -1710,7 +1752,7 @@ export function usePipelineWizard(props: any) {
           if (c.id === charId) {
             return {
               ...c,
-              images: [...(c.images || []), ...newBase64Images]
+              images: [...(c.images || []), ...newBase64Images],
             };
           }
           return c;
@@ -1723,7 +1765,7 @@ export function usePipelineWizard(props: any) {
           visualConfig: {
             ...prev.visualConfig,
             characters: updatedChars,
-            characterImages: firstCharImages
+            characterImages: firstCharImages,
           },
         };
       });
@@ -1742,7 +1784,10 @@ export function usePipelineWizard(props: any) {
       return;
     }
 
-    setLoadingStates((prev) => ({ ...prev, [`extractCharacter_${charId}`]: true }));
+    setLoadingStates((prev) => ({
+      ...prev,
+      [`extractCharacter_${charId}`]: true,
+    }));
     setLoading(true);
     setErrorMsg("");
     setInfoMsg(t.charExtracting);
@@ -1750,9 +1795,12 @@ export function usePipelineWizard(props: any) {
     try {
       const payload = {
         images,
-        characterDescription: char.description
+        characterDescription: char.description,
       };
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/extract-character", payload);
+      const { success, data, error } = await safeSystemFetch(
+        "/api/pipeline/extract-character",
+        payload,
+      );
 
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character extraction failed");
@@ -1765,7 +1813,7 @@ export function usePipelineWizard(props: any) {
             return {
               ...c,
               prompt: data.characterPrompt,
-              extracted: true
+              extracted: true,
             };
           }
           return c;
@@ -1779,19 +1827,23 @@ export function usePipelineWizard(props: any) {
             ...prev.visualConfig,
             characters: updatedChars,
             characterPrompt: firstChar?.prompt || "",
-            characterExtracted: firstChar?.extracted || false
-          }
+            characterExtracted: firstChar?.extracted || false,
+          },
         };
       });
 
-      const successMsg = t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
+      const successMsg =
+        t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
       setInfoMsg(successMsg);
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
     } finally {
-      setLoadingStates((prev) => ({ ...prev, [`extractCharacter_${charId}`]: false }));
+      setLoadingStates((prev) => ({
+        ...prev,
+        [`extractCharacter_${charId}`]: false,
+      }));
       setLoading(false);
     }
   };
@@ -1817,26 +1869,31 @@ export function usePipelineWizard(props: any) {
     try {
       const payload = {
         storyboard: project.storyboard,
-        characters: activeChars.map((c) => ({ name: c.name, prompt: c.prompt || c.description }))
+        characters: activeChars.map((c) => ({
+          name: c.name,
+          prompt: c.prompt || c.description,
+        })),
       };
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/rewrite-prompts-character", payload);
-
+      const { success, data, error } = await safeSystemFetch(
+        "/api/pipeline/rewrite-prompts-character",
+        payload,
+      );
       if (success && data?.storyboard) {
         setProject((prev) => ({
           ...prev,
-          storyboard: data.storyboard
+          storyboard: data.storyboard,
         }));
-        const successMsg = t.charApplySuccess || "Áp dụng đặc điểm nhân vật thành công.";
+        const successMsg =
+          t.charApplySuccess || "Áp dụng đặc điểm nhân vật thành công.";
         setInfoMsg(successMsg);
         console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
-        const combinedPrompt = activeChars.map((c) => c.prompt).filter(Boolean).join(", ");
         setProject((prev) => ({
           ...prev,
           storyboard: (prev.storyboard || []).map((scene) => ({
             ...scene,
-            prompt: `${scene.prompt || ""}, character visual details: ${combinedPrompt}`.trim()
-          }))
+            prompt: scene.prompt || "",
+          })),
         }));
         setInfoMsg(t.charApplyFallback);
       }
@@ -1852,7 +1909,6 @@ export function usePipelineWizard(props: any) {
     logAction("handleBulkUploadImages");
     if (!files || files.length === 0) return;
 
-    
     const sortedFiles = Array.from(files).sort((a, b) =>
       a.name.localeCompare(b.name, undefined, {
         numeric: true,
@@ -1863,7 +1919,6 @@ export function usePipelineWizard(props: any) {
     const storyboard = project.storyboard || [];
     if (storyboard.length === 0) return;
 
-    
     const readFileAsBase64 = (file: File): Promise<string> => {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1882,7 +1937,6 @@ export function usePipelineWizard(props: any) {
     const results: { sceneId: string; fileName: string; base64: string }[] = [];
     const unmatchedFiles: File[] = [];
 
-    
     for (const file of sortedFiles) {
       const cleanName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // remove extension
       const normFile = cleanName.replace(/[^a-z0-9]/g, "");
@@ -1953,9 +2007,7 @@ export function usePipelineWizard(props: any) {
     }
 
     if (results.length === 0) {
-      setInfoMsg(
-        t.No_matching_image_files_f,
-      );
+      setInfoMsg(t.No_matching_image_files_f);
       return;
     }
 
@@ -1987,10 +2039,12 @@ export function usePipelineWizard(props: any) {
       });
 
       if (missingIds.length > 0) {
-        warnings = t.missingImagesWarning.replace('{ids}', missingIds.join(", "));
+        warnings = t.missingImagesWarning.replace(
+          "{ids}",
+          missingIds.join(", "),
+        );
       }
 
-      
       const outOfOrderMatches = results.filter((r) => {
         const numericPart = r.fileName.match(/\d+/);
         if (numericPart) {
@@ -2000,7 +2054,9 @@ export function usePipelineWizard(props: any) {
       });
 
       if (outOfOrderMatches.length > 0) {
-        const warningDetail = t.mismatchImagesWarning.replace('{fileName}', outOfOrderMatches[0].fileName).replace('{sceneId}', outOfOrderMatches[0].sceneId);
+        const warningDetail = t.mismatchImagesWarning
+          .replace("{fileName}", outOfOrderMatches[0].fileName)
+          .replace("{sceneId}", outOfOrderMatches[0].sceneId);
         warnings = warnings ? `${warnings} | ${warningDetail}` : warningDetail;
       }
 
@@ -2027,7 +2083,10 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    const successMsg = t.bulkUploadSuccess.replace('{count}', results.length.toString());
+    const successMsg = t.bulkUploadSuccess.replace(
+      "{count}",
+      results.length.toString(),
+    );
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2091,9 +2150,7 @@ export function usePipelineWizard(props: any) {
       const data = await response.json();
       if (data.style) {
         if (project.thumbnails && project.thumbnails.length > 0) {
-          setInfoMsg(
-            t.Rewriting_thumbnail_promp,
-          );
+          setInfoMsg(t.Rewriting_thumbnail_promp);
           const rewritePayload = {
             thumbnails: project.thumbnails,
             newStyle: data.style,
@@ -2118,7 +2175,7 @@ export function usePipelineWizard(props: any) {
               const updatedThumbnails = (prev.thumbnails || []).map(
                 (thumb) => ({
                   ...thumb,
-                  prompt: `${thumb.prompt || ""} [Style: ${data.style}]`.trim(),
+                  prompt: thumb.prompt || "",
                 }),
               );
               return {
@@ -2140,7 +2197,9 @@ export function usePipelineWizard(props: any) {
             },
           }));
         }
-        const successMsg = t.Thumbnail_style_extracted || "Trích xuất phong cách ảnh thu nhỏ thành công.";
+        const successMsg =
+          t.Thumbnail_style_extracted ||
+          "Trích xuất phong cách ảnh thu nhỏ thành công.";
         setInfoMsg(successMsg);
         console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       } else if (data.error) {
@@ -2196,7 +2255,8 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    const successMsg = t.Deleted_scene_image_succe || "Đã xóa ảnh phân cảnh thành công.";
+    const successMsg =
+      t.Deleted_scene_image_succe || "Đã xóa ảnh phân cảnh thành công.";
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2222,7 +2282,8 @@ export function usePipelineWizard(props: any) {
 
     setActiveSlideIndices({});
 
-    const successMsg = t.deleteAllImagesSuccess || "Đã xóa toàn bộ ảnh thành công.";
+    const successMsg =
+      t.deleteAllImagesSuccess || "Đã xóa toàn bộ ảnh thành công.";
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2241,9 +2302,7 @@ export function usePipelineWizard(props: any) {
 
     const scenes = project.storyboard || [];
     if (scenes.length === 0) {
-      setErrorMsg(
-        t.No_storyboard_scenes_foun,
-      );
+      setErrorMsg(t.No_storyboard_scenes_foun);
       return;
     }
 
@@ -2256,9 +2315,8 @@ export function usePipelineWizard(props: any) {
       targetScenes = [...scenes];
     }
 
-    
     setIsBatchGenerating(true);
-    setLoading(false); 
+    setLoading(false);
     setErrorMsg("");
 
     const totalToProcess = targetScenes.length;
@@ -2269,11 +2327,20 @@ export function usePipelineWizard(props: any) {
       let currentIndex = 0;
       for (const scene of targetScenes) {
         if (cancelBatchImageRef.current) {
-          setInfoMsg(t.batchGenCancelled.replace('{completedCount}', completedCount.toString()));
+          setInfoMsg(
+            t.batchGenCancelled.replace(
+              "{completedCount}",
+              completedCount.toString(),
+            ),
+          );
           break;
         }
 
-        setBatchProgressMsg(t.generatingSceneBatch.replace('{sceneId}', scene.id).replace('{currentIndex}', (currentIndex + 1).toString()).replace('{totalToProcess}', totalToProcess.toString()),
+        setBatchProgressMsg(
+          t.generatingSceneBatch
+            .replace("{sceneId}", scene.id)
+            .replace("{currentIndex}", (currentIndex + 1).toString())
+            .replace("{totalToProcess}", totalToProcess.toString()),
         );
 
         setLoadingStates((prev) => ({
@@ -2286,7 +2353,11 @@ export function usePipelineWizard(props: any) {
           completedCount++;
         } catch (err: any) {
           logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
-          setErrorMsg(t.errorRenderingSceneBatch.replace('{sceneId}', scene.id).replace('{error}', err.message));
+          setErrorMsg(
+            t.errorRenderingSceneBatch
+              .replace("{sceneId}", scene.id)
+              .replace("{error}", err.message),
+          );
           hasError = true;
           break;
         } finally {
@@ -2298,7 +2369,10 @@ export function usePipelineWizard(props: any) {
 
         if (currentIndex < totalToProcess - 1) {
           const randomCooldown = Math.floor(Math.random() * 15000 + 15000); // Ngẫu nhiên từ 15s đến 30s
-          setBatchProgressMsg(t.waitingBetweenScenes || `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`);
+          setBatchProgressMsg(
+            t.waitingBetweenScenes ||
+              `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`,
+          );
           await new Promise((resolve) => setTimeout(resolve, randomCooldown));
         }
 
@@ -2306,14 +2380,16 @@ export function usePipelineWizard(props: any) {
       }
 
       if (!cancelBatchImageRef.current && !hasError) {
-        const successMsg = t.batchGenSuccess.replace('{completedCount}', completedCount.toString());
+        const successMsg = t.batchGenSuccess.replace(
+          "{completedCount}",
+          completedCount.toString(),
+        );
         setInfoMsg(successMsg);
         console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       }
     } catch (err: any) {
       logger.error("BATCH_GEN_FAILURE", err);
-      setErrorMsg(t.batchGenFailed.replace('{error}', err.message),
-      );
+      setErrorMsg(t.batchGenFailed.replace("{error}", err.message));
     } finally {
       setIsBatchGenerating(false);
       setIsCancellingBatch(false);
@@ -2341,7 +2417,7 @@ export function usePipelineWizard(props: any) {
 
   const handleGenerateDetailedPrompt = async () => {
     logAction("handleGenerateDetailedPrompt");
-    
+
     setIsGeneratingDetailedPrompt(true);
     setErrorMsg("");
 
@@ -2362,25 +2438,32 @@ export function usePipelineWizard(props: any) {
         payload,
       );
 
-      
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error || data?.error || data?.warning || "Prompt generation failed",
         );
       }
 
-      
       if (data.prompt) {
         setSceneEditPrompt(data.prompt);
-        const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
+        setProject((prev) => {
+          const updated = (prev.storyboard || []).map((sc) => {
+            if (sc.id === activeSceneId) {
+              return { ...sc, prompt: data.prompt };
+            }
+            return sc;
+          });
+          return { ...prev, storyboard: updated };
+        });
+        const successMsg =
+          t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
         setInfoMsg(successMsg);
         console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
         setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
       logger.error("ERROR_GEN_DETAILED_PROMPT", err);
-      setErrorMsg(t.promptGenError.replace('{error}', err.message),
-      );
+      setErrorMsg(t.promptGenError.replace("{error}", err.message));
       setTimeout(() => setErrorMsg(""), 4000);
     } finally {
       // ĐẢM BẢO DỌN DẸP TRẠNG THÁI
@@ -2407,15 +2490,27 @@ export function usePipelineWizard(props: any) {
         return sc;
       });
 
-      
-      const totalDuration = updated.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
-      let syncLogText = t.syncLedgerSuccess.replace('{totalDuration}', totalDuration.toFixed(1));
+      const totalDuration = updated.reduce(
+        (sum: number, s: any) => sum + (s.duration || 0),
+        0,
+      );
+      let syncLogText = t.syncLedgerSuccess.replace(
+        "{totalDuration}",
+        totalDuration.toFixed(1),
+      );
 
       updated.forEach((scene: any, idx: number) => {
-        syncLogText += t.syncLedgerItem.replace('{index}', (idx + 1).toString()).replace('{startTime}', scene.startTime).replace('{endTime}', scene.endTime).replace('{duration}', scene.duration.toString()).replace('{script}', (scene.script || scene.subtitle || "").substring(0, 35));
+        syncLogText += t.syncLedgerItem
+          .replace("{index}", (idx + 1).toString())
+          .replace("{startTime}", scene.startTime)
+          .replace("{endTime}", scene.endTime)
+          .replace("{duration}", scene.duration.toString())
+          .replace(
+            "{script}",
+            (scene.script || scene.subtitle || "").substring(0, 35),
+          );
       });
 
-      
       setAlignmentsLog(syncLogText);
 
       return {
@@ -2428,7 +2523,8 @@ export function usePipelineWizard(props: any) {
       };
     });
     setActiveSceneId(null);
-    const successMsg = t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
+    const successMsg =
+      t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2438,23 +2534,18 @@ export function usePipelineWizard(props: any) {
     btnPosition = "top",
   ) => {
     logAction("handleTriggerAssetAndThumbnail");
-    
+
     const isForce = force === true;
     if (project.thumbnails && project.thumbnails.length > 0 && !isForce) {
-      setInfoMsg(
-        t.Loaded_current_Thumbnail_,
-      );
+      setInfoMsg(t.Loaded_current_Thumbnail_);
       return;
     }
 
     if (!project.scriptRewritten) {
-      setErrorMsg(
-        t.Missing_detailed_script_f_1,
-      );
+      setErrorMsg(t.Missing_detailed_script_f_1);
       return;
     }
 
-    
     setLoadingStates((prev) => ({
       ...prev,
       [`assetAndThumbnail_${btnPosition}`]: true,
@@ -2462,9 +2553,7 @@ export function usePipelineWizard(props: any) {
     }));
     setLoading(true);
     setErrorMsg("");
-    setInfoMsg(
-      t.MULTI_STEP_SYSTEM_FLOW_De,
-    );
+    setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_De);
 
     try {
       // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
@@ -2480,17 +2569,15 @@ export function usePipelineWizard(props: any) {
         payload,
       );
 
-      
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-          data?.error ||
-          data?.warning ||
-          "System pipeline rejected the request.",
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
         );
       }
 
-      
       if (data.thumbnails) {
         const formattedThumbs = data.thumbnails.map((th: ThumbnailItem) => {
           return {
@@ -2504,15 +2591,14 @@ export function usePipelineWizard(props: any) {
           thumbnails: formattedThumbs,
         }));
         trackOperationCost(15, 0.0008);
-        const successMsg = t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
+        const successMsg =
+          t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
         setInfoMsg(successMsg);
         console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
-      setErrorMsg(t.thumbnailPipelineError.replace('{error}', e.message),
-      );
+      setErrorMsg(t.thumbnailPipelineError.replace("{error}", e.message));
     } finally {
-      
       setLoadingStates((prev) => ({
         ...prev,
         [`assetAndThumbnail_${btnPosition}`]: false,
@@ -2542,7 +2628,9 @@ export function usePipelineWizard(props: any) {
           style: styleText,
           resolution: "Standard",
           bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+          engine:
+            project.visualConfig.imageGeneratorEngine ||
+            ImageGeneratorEngine.Veo3,
           sandboxConfig: sandboxConfig,
           visualConfig: project.visualConfig,
         }),
@@ -2575,7 +2663,8 @@ export function usePipelineWizard(props: any) {
         return { ...prev, thumbnails: updated };
       });
       if (isSuccess) {
-        const successMsg = t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
+        const successMsg =
+          t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
         setInfoMsg(successMsg);
         console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
@@ -2595,15 +2684,11 @@ export function usePipelineWizard(props: any) {
     if (!ttsAudioUrl) return;
 
     if (ttsAudioUrl === "simulated") {
-      setInfoMsg(
-        t.Generating_and_preparing_,
-      );
+      setInfoMsg(t.Generating_and_preparing_);
       try {
         setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: true }));
         if (!project.storyboard || project.storyboard.length === 0) {
-          throw new Error(
-            t.You_must_generate_the_sto,
-          );
+          throw new Error(t.You_must_generate_the_sto);
         }
         const mergedUrl = await handleTriggerAllSceneVoices(
           project.storyboard,
@@ -2617,7 +2702,8 @@ export function usePipelineWizard(props: any) {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
+          const successMsg =
+            t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
           setInfoMsg(successMsg);
           console.log(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
@@ -2625,13 +2711,11 @@ export function usePipelineWizard(props: any) {
         }
       } catch (err: any) {
         logger.error("SYNTHESIZE_ON_THE_FLY_FAILED", err);
-        setErrorMsg(t.voiceSynthError.replace('{error}', err.message),
-        );
+        setErrorMsg(t.voiceSynthError.replace("{error}", err.message));
       } finally {
         setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: false }));
       }
     } else {
-      
       const a = document.createElement("a");
       a.href = ttsAudioUrl;
       a.download = `voiceover_${project.voiceConfig.gender || "speaker"}.wav`;
@@ -2665,9 +2749,7 @@ export function usePipelineWizard(props: any) {
     setLoading(true);
     setErrorMsg("");
     setInfoMsg("");
-    setBulkVoiceStatus(
-      t.MULTI_STEP_SYSTEM_FLOW_Ge,
-    );
+    setBulkVoiceStatus(t.MULTI_STEP_SYSTEM_FLOW_Ge);
 
     try {
       if (project.storyboard && project.storyboard.length > 0) {
@@ -2677,9 +2759,7 @@ export function usePipelineWizard(props: any) {
           voiceConfigOverride,
         );
       } else {
-        throw new Error(
-          t.You_must_generate_the_sto_2,
-        );
+        throw new Error(t.You_must_generate_the_sto_2);
       }
     } catch (e: any) {
       logger.error("UNIFIED_SCENE_VOICE_GEN_FAILED", e);
@@ -2700,7 +2780,7 @@ export function usePipelineWizard(props: any) {
     btnPosition = "top",
   ) => {
     logAction("handleTriggerVoiceGenerate");
-    
+
     if (simAudioRef.current) {
       simAudioRef.current.pause();
       simAudioRef.current.currentTime = 0;
@@ -2757,14 +2837,9 @@ export function usePipelineWizard(props: any) {
     logAction("handleTriggerAllSceneVoices");
     stopPlaybackSim();
 
-    
-    
-    
     const scenes = providedScenes || project.storyboard || [];
     if (scenes.length === 0) {
-      setErrorMsg(
-        t.No_scenes_to_generate_voi,
-      );
+      setErrorMsg(t.No_scenes_to_generate_voi);
       return;
     }
 
@@ -2796,14 +2871,10 @@ export function usePipelineWizard(props: any) {
       }
 
       if (!fullScript.trim()) {
-        throw new Error(
-          t.Script_is_empty,
-        );
+        throw new Error(t.Script_is_empty);
       }
 
-      setBulkVoiceStatus(
-        t.MULTI_STEP_SYSTEM_FLOW_Ge_3,
-      );
+      setBulkVoiceStatus(t.MULTI_STEP_SYSTEM_FLOW_Ge_3);
 
       const voiceURI = vConfig.voiceURI || "preset-vi-bac-female";
       const { finalSpeed, finalPitch } = getVoiceModifiers(
@@ -2812,9 +2883,6 @@ export function usePipelineWizard(props: any) {
         vConfig.pitch || 1.0,
       );
 
-      
-      
-      
       const response = await fetch("/api/pipeline/voice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2872,9 +2940,6 @@ export function usePipelineWizard(props: any) {
       setTtsAudioUrl(mergedUrl);
       setTtsAudioBytes(processedBase64);
 
-      
-      
-      
       let totalTextLength = 0;
       updatedScenes.forEach((sc) => {
         const text = cleanScriptText(sc.script || sc.subtitle || "");
@@ -2910,17 +2975,25 @@ export function usePipelineWizard(props: any) {
       // ==========================================
       // STEP 5: Stitching Log Generation
       // ==========================================
-      let syncLogText = t.syncLedgerSuccess.replace('{totalDuration}', totalDuration.toFixed(1));
+      let syncLogText = t.syncLedgerSuccess.replace(
+        "{totalDuration}",
+        totalDuration.toFixed(1),
+      );
 
       updatedScenes.forEach((scene: any, idx: number) => {
-        syncLogText += t.syncLedgerItem.replace('{index}', (idx + 1).toString()).replace('{startTime}', scene.startTime).replace('{endTime}', scene.endTime).replace('{duration}', scene.duration.toString()).replace('{script}', (scene.script || scene.subtitle || "").substring(0, 35));
+        syncLogText += t.syncLedgerItem
+          .replace("{index}", (idx + 1).toString())
+          .replace("{startTime}", scene.startTime)
+          .replace("{endTime}", scene.endTime)
+          .replace("{duration}", scene.duration.toString())
+          .replace(
+            "{script}",
+            (scene.script || scene.subtitle || "").substring(0, 35),
+          );
       });
 
       setAlignmentsLog(syncLogText);
 
-      
-      
-      
       setProject((prev) => ({
         ...prev,
         storyboard: updatedScenes,
@@ -2932,7 +3005,9 @@ export function usePipelineWizard(props: any) {
         },
       }));
 
-      const successMsg = t.Synthesized_full_story_vo || "Đã tổng hợp giọng nói toàn bộ câu chuyện thành công.";
+      const successMsg =
+        t.Synthesized_full_story_vo ||
+        "Đã tổng hợp giọng nói toàn bộ câu chuyện thành công.";
       setInfoMsg(successMsg);
       console.log(`[TTS] ✅ Thành công: ${successMsg}`);
 
@@ -2946,8 +3021,7 @@ export function usePipelineWizard(props: any) {
       return mergedUrl;
     } catch (err: any) {
       logger.error("GENERAL_ERROR", err);
-      setErrorMsg(t.errorGeneratingVoiceover.replace('{error}', err.message),
-      );
+      setErrorMsg(t.errorGeneratingVoiceover.replace("{error}", err.message));
     } finally {
       if (!isFromAutoGenerateAll) {
         setLoadingStates((prev) => ({
@@ -2984,23 +3058,18 @@ export function usePipelineWizard(props: any) {
 
   const handleTriggerSEOBoost = async (force = false, btnPosition = "top") => {
     logAction("handleTriggerSEOBoost");
-    
+
     const isForce = force === true;
     if (project.seo?.titles && project.seo.titles.length > 0 && !isForce) {
-      setInfoMsg(
-        t.Loaded_current_SEO_draft,
-      );
+      setInfoMsg(t.Loaded_current_SEO_draft);
       return;
     }
 
     if (!project.scriptRewritten) {
-      setErrorMsg(
-        t.Missing_detailed_script_f_4,
-      );
+      setErrorMsg(t.Missing_detailed_script_f_4);
       return;
     }
 
-    
     setLoadingStates((prev) => ({
       ...prev,
       [`seoBoost_${btnPosition}`]: true,
@@ -3008,9 +3077,7 @@ export function usePipelineWizard(props: any) {
     }));
     setLoading(true);
     setErrorMsg("");
-    setInfoMsg(
-      t.MULTI_STEP_SYSTEM_FLOW_An,
-    );
+    setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An);
 
     try {
       // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
@@ -3027,27 +3094,24 @@ export function usePipelineWizard(props: any) {
       });
       const data = await safeResponseJson(response, {});
 
-      
       if (data.error || data.warning) {
         throw new Error(data.error || data.warning);
       }
 
-      
       if (data.titles) {
         setProject((prev) => ({
           ...prev,
           seo: data,
         }));
         trackOperationCost(10, 0.0005);
-        const successMsg = t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
+        const successMsg =
+          t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
         setInfoMsg(successMsg);
         console.log(`[SEO] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
-      setErrorMsg(t.seoPipelineError.replace('{error}', e.message),
-      );
+      setErrorMsg(t.seoPipelineError.replace("{error}", e.message));
     } finally {
-      
       setLoadingStates((prev) => ({
         ...prev,
         [`seoBoost_${btnPosition}`]: false,
@@ -3067,12 +3131,10 @@ export function usePipelineWizard(props: any) {
 
   const handleOfflineRenderWebM = async () => {
     logAction("handleOfflineRenderWebM");
-    stopPlaybackSim(); 
+    stopPlaybackSim();
     setIsOfflineRendering(true);
     setOfflineRenderProgress(0);
-    setInfoMsg(
-      t.Preparing_rendering,
-    );
+    setInfoMsg(t.Preparing_rendering);
 
     try {
       const blob = await compileVideoToBlob(
@@ -3103,15 +3165,14 @@ export function usePipelineWizard(props: any) {
 
       setIsOfflineRendering(false);
       setOfflineRenderProgress(100);
-      const successMsg = t.Cinematic_simulated_video || "Đã xuất video thành công.";
+      const successMsg =
+        t.Cinematic_simulated_video || "Đã xuất video thành công.";
       setInfoMsg(successMsg);
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (err) {
       logger.warn("OFFLINE_RENDERING_ERROR", err);
       setIsOfflineRendering(false);
-      setErrorMsg(
-        t.Failed_to_compile_video_C,
-      );
+      setErrorMsg(t.Failed_to_compile_video_C);
     }
   };
 
@@ -3121,7 +3182,6 @@ export function usePipelineWizard(props: any) {
     setCurrentSimTime(0);
     setSimActiveScene(project.storyboard[0]);
 
-    
     if (
       project.voiceConfig.audioUrl === "simulated_speech" &&
       "speechSynthesis" in window
@@ -3255,25 +3315,21 @@ export function usePipelineWizard(props: any) {
     canvas.height = 720;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      
-      ctx.fillStyle = "#f8fafc"; 
+      ctx.fillStyle = "#f8fafc";
       ctx.fillRect(0, 0, 1280, 720);
 
-      
-      ctx.fillStyle = "#94a3b8"; 
+      ctx.fillStyle = "#94a3b8";
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
       const topLabel = `SCENE ID: ${sc.id || "N/A"} | DURATION: ${formatCleanDuration(sc.duration || 5)}s`;
       ctx.fillText(topLabel.toUpperCase(), 640, 45);
 
-      
       const rect_w = 280;
       const rect_h = 170;
       const x = 640 - rect_w / 2;
-      const y = 310 - rect_h / 2; 
-      const r = 24; 
+      const y = 310 - rect_h / 2;
+      const r = 24;
 
-      
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + rect_w - r, y);
@@ -3286,10 +3342,9 @@ export function usePipelineWizard(props: any) {
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
       ctx.lineWidth = 10;
-      ctx.strokeStyle = "#cbd5e1"; 
+      ctx.strokeStyle = "#cbd5e1";
       ctx.stroke();
 
-      
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -3304,45 +3359,39 @@ export function usePipelineWizard(props: any) {
       ctx.closePath();
       ctx.clip();
 
-      
       ctx.beginPath();
       ctx.moveTo(x + 5, y + rect_h + 10);
       ctx.lineTo(x + 90, y + 60);
       ctx.lineTo(x + 185, y + rect_h + 10);
       ctx.closePath();
-      ctx.fillStyle = "#cbd5e1"; 
+      ctx.fillStyle = "#cbd5e1";
       ctx.fill();
 
-      
       ctx.beginPath();
       ctx.moveTo(x + 130, y + rect_h + 10);
       ctx.lineTo(x + 205, y + 100);
       ctx.lineTo(x + 275, y + rect_h + 10);
       ctx.closePath();
 
-      
       ctx.strokeStyle = "#f8fafc";
       ctx.lineWidth = 10;
       ctx.stroke();
 
-      ctx.fillStyle = "#cbd5e1"; 
+      ctx.fillStyle = "#cbd5e1";
       ctx.fill();
 
-      
       ctx.beginPath();
       ctx.arc(x + 175, y + 55, 18, 0, Math.PI * 2);
-      ctx.fillStyle = "#cbd5e1"; 
+      ctx.fillStyle = "#cbd5e1";
       ctx.fill();
 
-      ctx.restore(); 
+      ctx.restore();
 
-      
       const subtitleText = sc.subtitle || sc.script || "";
       if (subtitleText.trim()) {
         ctx.font = "bold 24px sans-serif";
         ctx.textAlign = "center";
 
-        
         const words = subtitleText.split(" ");
         const lines: string[] = [];
         let currentLine = "";
@@ -3409,15 +3458,10 @@ export function usePipelineWizard(props: any) {
           );
         });
       } else {
-        
         ctx.fillStyle = "#94a3b8";
         ctx.font = "italic 16px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(
-          t.No_subtitles_or_descripti,
-          640,
-          560,
-        );
+        ctx.fillText(t.No_subtitles_or_descripti, 640, 560);
       }
     }
     return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
@@ -3447,25 +3491,20 @@ export function usePipelineWizard(props: any) {
 
   const handleDownloadJSONProject = async () => {
     logAction("handleDownloadJSONProject");
-    stopPlaybackSim(); 
-    setInfoMsg(
-      t.Packaging_project,
-    );
+    stopPlaybackSim();
+    setInfoMsg(t.Packaging_project);
 
     try {
       let activeVideoBlob = renderedVideoBlob;
       if (!activeVideoBlob) {
-        setInfoMsg(
-          t.Rendering_video,
-        );
+        setInfoMsg(t.Rendering_video);
         activeVideoBlob = await compileVideoToBlob(
           project.storyboard || [],
           getSceneImageUrl,
           project.voiceConfig,
           ttsAudioUrl,
           (prog) => {
-            setInfoMsg(t.renderingProgress.replace('{prog}', prog.toString()),
-            );
+            setInfoMsg(t.renderingProgress.replace("{prog}", prog.toString()));
           },
         );
         setRenderedVideoBlob(activeVideoBlob);
@@ -3473,7 +3512,6 @@ export function usePipelineWizard(props: any) {
 
       const zip = new JSZip();
 
-      
       const activeFolderUuid = "517bd185-0d13-49a4-8227-e73216acc7a9";
       const folderKey = `{${activeFolderUuid}}`;
 
@@ -3481,11 +3519,9 @@ export function usePipelineWizard(props: any) {
       const videoExt = isMp4 ? "mp4" : "webm";
       const videoFileName = `rendered_video.${videoExt}`;
 
-      
       zip.file(`${folderKey}/${videoFileName}`, activeVideoBlob);
       zip.file(videoFileName, activeVideoBlob);
 
-      
       zip.folder(folderKey);
       zip.folder(`${folderKey}/adjust_mask`);
       zip.folder(`${folderKey}/common_attachment`);
@@ -3496,7 +3532,6 @@ export function usePipelineWizard(props: any) {
       zip.folder(`${folderKey}/subdraft`);
       zip.folder(`${folderKey}/Timelines`);
 
-      
       const canvas = document.createElement("canvas");
       canvas.width = 600;
       canvas.height = 400;
@@ -3567,46 +3602,47 @@ export function usePipelineWizard(props: any) {
         zip.file(`${folderKey}/draft_cover.jpg`, "Mock Cover Binary Space");
       }
 
-      
-      const sceneImagePromises = (project.storyboard || []).map(async (sc, index) => {
-        let imgBase64 = "";
-        const targetUrl = getSceneImageUrl(sc);
-        if (targetUrl && targetUrl.startsWith("data:")) {
-          imgBase64 = targetUrl.split(",")[1];
-        } else if (targetUrl) {
-          try {
-            const response = await fetch(targetUrl);
-            const blob = await response.blob();
-            imgBase64 = await new Promise<string>((resolve, reject) => {
-              const r = new FileReader();
-              r.onloadend = () => {
-                const res = r.result as string;
-                resolve(res.split(",")[1]);
-              };
-              r.onerror = reject;
-              r.readAsDataURL(blob);
-            });
-          } catch (e) {
-            logger.warn("FAILED_FETCH_SCENE_IMAGE", sc.id, e);
+      const sceneImagePromises = (project.storyboard || []).map(
+        async (sc, index) => {
+          let imgBase64 = "";
+          const targetUrl = getSceneImageUrl(sc);
+          if (targetUrl && targetUrl.startsWith("data:")) {
+            imgBase64 = targetUrl.split(",")[1];
+          } else if (targetUrl) {
+            try {
+              const response = await fetch(targetUrl);
+              const blob = await response.blob();
+              imgBase64 = await new Promise<string>((resolve, reject) => {
+                const r = new FileReader();
+                r.onloadend = () => {
+                  const res = r.result as string;
+                  resolve(res.split(",")[1]);
+                };
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+              });
+            } catch (e) {
+              logger.warn("FAILED_FETCH_SCENE_IMAGE", sc.id, e);
+            }
           }
-        }
 
-        if (!imgBase64) {
-          imgBase64 = renderFallbackSceneImage(sc);
-        }
+          if (!imgBase64) {
+            imgBase64 = renderFallbackSceneImage(sc);
+          }
 
-        // Put into zip folders as real assets inside active draft Resources folder & backup root Resources only
-        const itemFileName = `${index + 1}_image.jpg`;
-        zip.file(`${folderKey}/Resources/${itemFileName}`, imgBase64, {
-          base64: true,
-        });
-        zip.file(`Resources/${itemFileName}`, imgBase64, { base64: true });
+          // Put into zip folders as real assets inside active draft Resources folder & backup root Resources only
+          const itemFileName = `${index + 1}_image.jpg`;
+          zip.file(`${folderKey}/Resources/${itemFileName}`, imgBase64, {
+            base64: true,
+          });
+          zip.file(`Resources/${itemFileName}`, imgBase64, { base64: true });
 
-        return {
-          id: sc.id,
-          fileName: itemFileName,
-        };
-      });
+          return {
+            id: sc.id,
+            fileName: itemFileName,
+          };
+        },
+      );
 
       const processedImages = await Promise.all(sceneImagePromises);
 
@@ -3675,31 +3711,30 @@ export function usePipelineWizard(props: any) {
           }
         };
 
-        
         writeString(view, 0, "RIFF");
-        
+
         view.setUint32(4, 36 + dataSize, true);
-        
+
         writeString(view, 8, "WAVE");
-        
+
         writeString(view, 12, "fmt ");
-        
+
         view.setUint32(16, 16, true);
-        
+
         view.setUint16(20, 1, true);
-        
+
         view.setUint16(22, numChannels, true);
-        
+
         view.setUint32(24, sampleRate, true);
-        
+
         view.setUint32(28, byteRate, true);
-        
+
         view.setUint16(32, blockAlign, true);
-        
+
         view.setUint16(34, 16, true);
-        
+
         writeString(view, 36, "data");
-        
+
         view.setUint32(40, dataSize, true);
 
         let offset = 44;
@@ -3721,7 +3756,6 @@ export function usePipelineWizard(props: any) {
         return new Blob([view], { type: "audio/wav" });
       };
 
-      
       let audioBuffer: AudioBuffer | null = null;
       if (ttsBase64) {
         try {
@@ -3765,7 +3799,6 @@ export function usePipelineWizard(props: any) {
         zip.file(`audio_narration.wav`, placeholderText);
       }
 
-      
       const capcutMaterials: any = {
         audios: [],
         beats: [],
@@ -3794,7 +3827,6 @@ export function usePipelineWizard(props: any) {
       const subtitleTrackSegments: any[] = [];
       const audioTrackSegments: any[] = [];
 
-      
       const sceneRanges = getSceneTimeRanges(project.storyboard || []);
       const parsedScenesTimings = sceneRanges.map((sc) => {
         return {
@@ -3819,9 +3851,7 @@ export function usePipelineWizard(props: any) {
       }[] = [];
 
       if (audioBuffer) {
-        setInfoMsg(
-          t.Syncing_scene_voices,
-        );
+        setInfoMsg(t.Syncing_scene_voices);
         for (let index = 0; index < sceneRanges.length; index++) {
           const sc = sceneRanges[index];
           try {
@@ -3872,7 +3902,6 @@ export function usePipelineWizard(props: any) {
         }
       }
 
-      
       sceneAudios.forEach((sa, idx) => {
         const scRange =
           sceneRanges.find((r) => r.id === sa.id) || sceneRanges[idx];
@@ -3904,7 +3933,6 @@ export function usePipelineWizard(props: any) {
         });
       });
 
-      
       capcutMaterials.videos.push({
         id: "material_rendered_video_main",
         type: "video",
@@ -3913,12 +3941,6 @@ export function usePipelineWizard(props: any) {
         local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/${videoFileName}`,
       });
 
-      
-      
-      
-      
-
-      
       parsedScenesTimings.forEach((timing, index) => {
         const imgMatId = `material_image_${timing.id}`;
 
@@ -3929,7 +3951,6 @@ export function usePipelineWizard(props: any) {
           local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/${index + 1}_image.jpg`,
         });
 
-        
         videoTrackSegments.push({
           id: `seg_backup_video_slide_${timing.id}`,
           material_id: imgMatId,
@@ -4003,7 +4024,6 @@ export function usePipelineWizard(props: any) {
 
       const draftContentStr = JSON.stringify(draftContentObj, null, 2);
 
-      
       const writeDraftFile = (name: string, content: string) => {
         zip.file(name, content);
         zip.file(`${folderKey}/${name}`, content);
@@ -4167,10 +4187,8 @@ export function usePipelineWizard(props: any) {
         ),
       );
 
-      
       const content = await zip.generateAsync({ type: "blob" });
 
-      
       const fileName = `${project.name.replace(/\s+/g, "_")}_CapCut_Project_Bundle.zip`;
       const url = window.URL.createObjectURL(content);
       const dlAnchorElem = document.createElement("a");
@@ -4178,17 +4196,15 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("download", fileName);
       dlAnchorElem.click();
 
-      
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
 
-      const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
+      const successMsg =
+        t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
       setInfoMsg(successMsg);
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
-      setInfoMsg(
-        t.Error_generating_template,
-      );
+      setInfoMsg(t.Error_generating_template);
     }
   };
 
@@ -4254,7 +4270,9 @@ export function usePipelineWizard(props: any) {
       `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`,
     );
     dlAnchorElem.click();
-    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
+    console.log(
+      `[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`,
+    );
   };
 
   const handleDownloadPremiereXML = () => {
@@ -4273,8 +4291,8 @@ export function usePipelineWizard(props: any) {
  <video>
  <track>
  ${sceneRanges
-        .map(
-          (sc) => `
+   .map(
+     (sc) => `
  <clipitem id="clip-${sc.id}">
  <name>${sc.assetName || "Image_" + sc.id}</name>
  <duration>${Math.round(sc.duration * 24)}</duration>
@@ -4284,8 +4302,8 @@ export function usePipelineWizard(props: any) {
  <name>${sc.cameraMotion}</name>
  </effect>
  </clipitem>`,
-        )
-        .join("")}
+   )
+   .join("")}
  </track>
  </video>
  </media>
@@ -4299,15 +4317,232 @@ export function usePipelineWizard(props: any) {
       `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`,
     );
     dlAnchorElem.click();
-    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
+    console.log(
+      `[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`,
+    );
   };
-  return { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, loading, setLoading, isVoiceDialogOpen, setIsVoiceDialogOpen, loadingStates, setLoadingStates, errorMsg, setErrorMsg, infoMsg, setInfoMsg, hooksDraft, setHooksDraft, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookCount, setHookCount, hookPosition, setHookPosition, activeSceneId, setActiveSceneId, sceneEditScript, setSceneEditScript, sceneEditSubtitle, setSceneEditSubtitle, sceneEditPrompt, setSceneEditPrompt, sceneEditMotion, setSceneEditMotion, sceneEditFx, setSceneEditFx, sceneEditTransition, setSceneEditTransition, promptSetting, setPromptSetting, promptTime, setPromptTime, promptCharacter, setPromptCharacter, promptCostume, setPromptCostume, promptCameraAngle, setPromptCameraAngle, isGeneratingDetailedPrompt, setIsGeneratingDetailedPrompt, showPromptGeneratorPanel, setShowPromptGeneratorPanel, activeSlideIndices, setActiveSlideIndices, copiedAll, setCopiedAll, showGlobalConfig, setShowGlobalConfig, showAdvancedVisualConfig, setShowAdvancedVisualConfig,     bulkUploadWarning,
+  return {
+    t,
+    project,
+    setProject,
+    currentStep,
+    setCurrentStep,
+    leftSidebarOpen,
+    setLeftSidebarOpen,
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    loading,
+    setLoading,
+    isVoiceDialogOpen,
+    setIsVoiceDialogOpen,
+    loadingStates,
+    setLoadingStates,
+    errorMsg,
+    setErrorMsg,
+    infoMsg,
+    setInfoMsg,
+    hooksDraft,
+    setHooksDraft,
+    hookStrategy,
+    setHookStrategy,
+    hookDuration,
+    setHookDuration,
+    hookCount,
+    setHookCount,
+    hookPosition,
+    setHookPosition,
+    activeSceneId,
+    setActiveSceneId,
+    sceneEditScript,
+    setSceneEditScript,
+    sceneEditSubtitle,
+    setSceneEditSubtitle,
+    sceneEditPrompt,
+    setSceneEditPrompt,
+    sceneEditMotion,
+    setSceneEditMotion,
+    sceneEditFx,
+    setSceneEditFx,
+    sceneEditTransition,
+    setSceneEditTransition,
+    promptSetting,
+    setPromptSetting,
+    promptTime,
+    setPromptTime,
+    promptCharacter,
+    setPromptCharacter,
+    promptCostume,
+    setPromptCostume,
+    promptCameraAngle,
+    setPromptCameraAngle,
+    isGeneratingDetailedPrompt,
+    setIsGeneratingDetailedPrompt,
+    showPromptGeneratorPanel,
+    setShowPromptGeneratorPanel,
+    activeSlideIndices,
+    setActiveSlideIndices,
+    copiedAll,
+    setCopiedAll,
+    showGlobalConfig,
+    setShowGlobalConfig,
+    showAdvancedVisualConfig,
+    setShowAdvancedVisualConfig,
+    bulkUploadWarning,
     setBulkUploadWarning,
     isBatchGenerating,
     setIsBatchGenerating,
     isCancellingBatch,
     setIsCancellingBatch,
     batchProgressMsg,
-    setBatchProgressMsg, zoomedImage, setZoomedImage, storyboardPage, setStoryboardPage, scenesPerPage, paginatedStoryboard, getMotionLabel, sandboxConfig, setSandboxConfig, systemLogs, setSystemLogs, showLogsModal, setShowLogsModal, ttsAudioUrl, setTtsAudioUrl, ttsAudioBytes, setTtsAudioBytes, alignmentsLog, setAlignmentsLog, bulkVoiceStatus, setBulkVoiceStatus, isPlayingTts, setIsPlayingTts, audioPreviewRef, voicePlayerSectionRef, systemVoices, setSystemVoices, voiceDropdownOpen, setVoiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceHealth, setVoiceHealth, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, setPlayingVoiceURI, voiceAudioDuration, setVoiceAudioDuration, storyboardSourceMode, setStoryboardSourceMode, isAudioDragging, setIsAudioDragging, step2AudioRef, step2IsPlaying, setStep2IsPlaying, step2CurrentTime, setStep2CurrentTime, step2Duration, setStep2Duration, step2IsSimulatedPlaying, setStep2IsSimulatedPlaying, step2SimulatedCurrentTime, setStep2SimulatedCurrentTime, audioCurrentTime, setAudioCurrentTime, audioDurationState, setAudioDurationState, isPlayingRealAudio, setIsPlayingRealAudio, audioVolume, setAudioVolume, simulatedCurrentTime, setSimulatedCurrentTime, isOfflineRendering, setIsOfflineRendering, offlineRenderProgress, setOfflineRenderProgress, renderedVideoBlob, setRenderedVideoBlob, createSpeechUtterance, playVoicePreview, isPlayingSim, setIsPlayingSim, currentSimTime, setCurrentSimTime, simActiveScene, setSimActiveScene, simTimerRef, simAudioRef, lastProjectIdRef, trackOperationCost, handleProcessInputAndConfig, handleTriggerStoryboardSplit, handleRenderSceneImage, handleUploadSceneImage, handleCopyPrompt, handleGenerateHooks, handleCopyHook, handleCopyAllPrompts, handleReferenceImagesUpload, handleExtractStyle, handleApplyStyleToScenes, handleBulkUploadImages, handlePrevSlide, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleNextSlide, handleDeleteSceneImage, handleDeleteAllSceneImages, handleBatchGenerateAllImages, handleCancelBatchGenerate, openSceneModal, handleGenerateDetailedPrompt, handleSaveSceneEdits, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, handleDownloadVoice, handleRegenerateUnifiedVoice, handleTriggerVoiceGenerate, handleTriggerAllSceneVoices, handleTriggerStoryboardAndVoices, handleTriggerSEOBoost, handleOpenExportCenter, handleOfflineRenderWebM, startPlaybackSim, startTimerBasedSim, stopPlaybackSim, renderFallbackSceneImage, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, handleAnalyzeCharacter, handleCharacterImagesUpload, handleExtractCharacter, handleApplyCharacterToScenes, theme, currentLang, handleNextStep, handlePrevStep, getVoiceGender, isPremiumVoice, activeCloudPreviewAudio, audioRef, videoRef, simVideoRef, workspaceRef, costTracker, setCostTracker, credits, setCredits };
+    setBatchProgressMsg,
+    zoomedImage,
+    setZoomedImage,
+    storyboardPage,
+    setStoryboardPage,
+    scenesPerPage,
+    paginatedStoryboard,
+    getMotionLabel,
+    sandboxConfig,
+    setSandboxConfig,
+    systemLogs,
+    setSystemLogs,
+    showLogsModal,
+    setShowLogsModal,
+    ttsAudioUrl,
+    setTtsAudioUrl,
+    ttsAudioBytes,
+    setTtsAudioBytes,
+    alignmentsLog,
+    setAlignmentsLog,
+    bulkVoiceStatus,
+    setBulkVoiceStatus,
+    isPlayingTts,
+    setIsPlayingTts,
+    audioPreviewRef,
+    voicePlayerSectionRef,
+    systemVoices,
+    setSystemVoices,
+    voiceDropdownOpen,
+    setVoiceDropdownOpen,
+    handleCloseVoiceModal,
+    voiceSearch,
+    setVoiceSearch,
+    voiceTypeFilter,
+    setVoiceTypeFilter,
+    voiceHealth,
+    setVoiceHealth,
+    voiceLangFilter,
+    setVoiceLangFilter,
+    selectedGenderFilter,
+    setSelectedGenderFilter,
+    playingVoiceURI,
+    setPlayingVoiceURI,
+    voiceAudioDuration,
+    setVoiceAudioDuration,
+    storyboardSourceMode,
+    setStoryboardSourceMode,
+    isAudioDragging,
+    setIsAudioDragging,
+    step2AudioRef,
+    step2IsPlaying,
+    setStep2IsPlaying,
+    step2CurrentTime,
+    setStep2CurrentTime,
+    step2Duration,
+    setStep2Duration,
+    step2IsSimulatedPlaying,
+    setStep2IsSimulatedPlaying,
+    step2SimulatedCurrentTime,
+    setStep2SimulatedCurrentTime,
+    audioCurrentTime,
+    setAudioCurrentTime,
+    audioDurationState,
+    setAudioDurationState,
+    isPlayingRealAudio,
+    setIsPlayingRealAudio,
+    audioVolume,
+    setAudioVolume,
+    simulatedCurrentTime,
+    setSimulatedCurrentTime,
+    isOfflineRendering,
+    setIsOfflineRendering,
+    offlineRenderProgress,
+    setOfflineRenderProgress,
+    renderedVideoBlob,
+    setRenderedVideoBlob,
+    createSpeechUtterance,
+    playVoicePreview,
+    isPlayingSim,
+    setIsPlayingSim,
+    currentSimTime,
+    setCurrentSimTime,
+    simActiveScene,
+    setSimActiveScene,
+    simTimerRef,
+    simAudioRef,
+    lastProjectIdRef,
+    trackOperationCost,
+    handleProcessInputAndConfig,
+    handleTriggerStoryboardSplit,
+    handleRenderSceneImage,
+    handleUploadSceneImage,
+    handleCopyPrompt,
+    handleGenerateHooks,
+    handleCopyHook,
+    handleCopyAllPrompts,
+    handleReferenceImagesUpload,
+    handleExtractStyle,
+    handleApplyStyleToScenes,
+    handleBulkUploadImages,
+    handlePrevSlide,
+    handleThumbnailReferenceImagesUpload,
+    handleExtractThumbnailStyle,
+    handleNextSlide,
+    handleDeleteSceneImage,
+    handleDeleteAllSceneImages,
+    handleBatchGenerateAllImages,
+    handleCancelBatchGenerate,
+    openSceneModal,
+    handleGenerateDetailedPrompt,
+    handleSaveSceneEdits,
+    handleTriggerAssetAndThumbnail,
+    handleRenderThumbnailImage,
+    handleDownloadVoice,
+    handleRegenerateUnifiedVoice,
+    handleTriggerVoiceGenerate,
+    handleTriggerAllSceneVoices,
+    handleTriggerStoryboardAndVoices,
+    handleTriggerSEOBoost,
+    handleOpenExportCenter,
+    handleOfflineRenderWebM,
+    startPlaybackSim,
+    startTimerBasedSim,
+    stopPlaybackSim,
+    renderFallbackSceneImage,
+    getSceneImageUrl,
+    handleDownloadJSONProject,
+    handleDownloadSRT,
+    handleDownloadCapcutLink,
+    handleDownloadPremiereXML,
+    handleAnalyzeCharacter,
+    handleCharacterImagesUpload,
+    handleExtractCharacter,
+    handleApplyCharacterToScenes,
+    theme,
+    currentLang,
+    handleNextStep,
+    handlePrevStep,
+    getVoiceGender,
+    isPremiumVoice,
+    activeCloudPreviewAudio,
+    audioRef,
+    videoRef,
+    simVideoRef,
+    workspaceRef,
+    costTracker,
+    setCostTracker,
+    credits,
+    setCredits,
+  };
 }
 export type PipelineWizardState = ReturnType<typeof usePipelineWizard>;
