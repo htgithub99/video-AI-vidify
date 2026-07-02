@@ -1,14 +1,16 @@
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
 export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES:
-1. CHARACTER DETAILS (MANDATORY & MOST IMPORTANT): Every prompt must detail who appears in the frame:
-   - Appearance: Age group, gender, hair style/color, physical build.
-   - Costumes/Clothing: Specific garments, accessories, colors (e.g., "long brown wool coat, wearing a fedora hat").
-   - Expression & Pose: Emotional state (joyful, sad, panicked), body posture (bent over, reaching out), and eye gaze direction.
-2. ACTIONS & INTERACTIONS: Describe exactly what the character is doing at that moment using highly active, visual verbs. (e.g., instead of "searching", use "shining a flashlight into a dark corner while clutching a crumpled map").
-3. BACKGROUND & ENVIRONMENT (SETTING): Detail the environment, location (e.g., "cramped kitchen", "dense pine forest"), time and weather (e.g., "golden hour dawn", "stormy midnight rain", "thick fog"), and narrative-relevant props.
-4. CAMERA ANGLE & COMPOSITION (CINEMATOGRAPHY): Ensure a filmic look. Specify camera shots (e.g., "close-up shot", "wide shot", "low angle", "bird's-eye view") and focus (e.g., "shallow depth of field, sharp focus on the character with a softly blurred background").
-5. LIGHTING & MOOD: Set the emotional tone. Detail lighting (e.g., "cinematic lighting", "natural light", "neon glows", "high-contrast harsh shadows") and atmosphere (e.g., "moody", "romantic", "suspenseful", "bright").`;
+1. SUBJECT-FIRST START (MANDATORY): Always begin the prompt directly with the main subject and their immediate action. Do NOT use filler intros like "This is a photo of", "An image showcasing", or "We see". Start directly (e.g., "A weathered 19th-century gold miner clutching a wooden pan...").
+2. CHARACTER DETAILS: Detail every character present in the frame:
+   - Appearance: Age group, gender, hair style/color, facial features, physical build.
+   - Costumes/Clothing: Specific garments, textures, colors (e.g., "worn brown canvas trousers, a dusty blue flannel shirt").
+   - Expression & Pose: Emotional state (intense focus, panicked, serene), precise body posture (crouching, pointing, running), and eye gaze direction (looking directly into the lens, staring at a map).
+3. ACTIONS & INTERACTIONS: Describe the action with active, visual verbs. Show movement, tension, or interaction with props (e.g., instead of "thinking", use "tapping a pen against a dusty desk while staring intently at a handwritten letter").
+4. BACKGROUND & ENVIRONMENT (SETTING): Detail the setting, era, specific location (e.g., "inside a dimly lit log cabin", "a misty mountain peak"), time of day, weather conditions (e.g., "harsh afternoon sun", "foggy twilight"), and physical props that enrich the story.
+5. CAMERA ANGLE & COMPOSITION (CINEMATOGRAPHY): Ensure a highly filmic look. Specify camera shots (e.g., "low-angle wide shot", "dramatic close-up shot", "medium two-shot") and focus specifications (e.g., "shallow depth of field, sharp focus on the subject's expression, softly blurred background").
+6. LIGHTING & MOOD: Detail lighting style (e.g., "moody chiaroscuro lighting", "soft warm golden hour backlight", "harsh volumetric beams") and emotional atmosphere (e.g., "intense, suspenseful", "serene, nostalgic").
+7. NO ABSTRACTION OR METAPHORS: Describe only tangible, physical things that can actually be drawn. Never use symbolic language or abstract concepts.`;
 
 export const getSceneStyleRewritePrompt = (
   promptText: string,
@@ -178,11 +180,17 @@ Requirements:
    - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave and rewrite them into the structure:
      * [Main Subject] & [Action]: If characters exist in the scene, use these exact physical traits to describe them: ${referenceCharacters ? referenceCharacters : "(Use the script's character descriptions)"}.
      * [Background], [Lighting] & [Style]: Completely embody this exact art style and aesthetic in your descriptions: ${referenceStyle ? referenceStyle : visualStyle || "Cinematic"}.
+   - SCENE-TO-SCENE VISUAL CONTINUITY & PROGRESSION (CRITICAL): The storyboard is a sequential timeline. Successive scenes (e.g., sc_1 to sc_2 to sc_3) must have a strong visual connection to feel like a cohesive movie, while maintaining progression:
+      * Character Consistency: If a character appears in consecutive scenes, you MUST maintain their visual descriptors (e.g., age, hair style, clothing type/color) exactly, but update their action, expression, or posture to match the narrative progression.
+      * Environmental & Temporal Continuity: The background elements, location, weather, and time of day (e.g., twilight, dawn, midday) must remain identical between consecutive scenes unless the script explicitly indicates a transition to a new location or a passage of time.
+      * Camera Shot Progression & Visual Rhythm: Avoid using the same camera shot type (e.g., close-up, medium, wide) consecutively. Use a dynamic cinematic progression to guide the viewer's eyes: e.g., Scene 1: Wide shot (establishing the environment) -> Scene 2: Medium shot (showing the character's action in that environment) -> Scene 3: Close-up shot (focusing on their reaction or a key prop).
+      * Action Continuity: The action in scene N must flow logically from scene N-1 (e.g., if scene N-1 describes a character walking towards a wooden door, scene N should describe them reaching out and turning the brass doorknob).
+      * Avoid Visual Jumps: Ensure there are no sudden, unexplained shifts in color, style, or background unless the chapter or scene transitions to a new setting.
    - CINEMATIC PROMPT RULES:
      ${CINEMATIC_PROMPT_RULES}
    - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING:
      Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. 
-   - NO GENERIC COPIES: Every scene prompt must be highly specific to its script segment. The unique narrative action must occupy the majority of the prompt.
+   - NO GENERIC COPIES & STRICT VISUAL PROGRESSION: Every scene prompt must be highly specific to its script segment. Successive or adjacent scenes MUST NOT have identical or near-identical prompts. Even if the character or location remains the same, you MUST vary the camera shot/distance (e.g., alternate between close-up shot, medium shot, wide shot), camera angle, lighting, or the character's precise action or pose to ensure a clear visual progression and avoid generating identical images.
    - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
    - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
    - ${NO_FRAME_RULE}
@@ -553,9 +561,10 @@ Rules:
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the Visual Bible details at the end of the prompt. You MUST seamlessly weave and rewrite them directly into the blueprint structure (e.g., weave character appearance into [Main Subject], color/lighting into [Lighting & Colors]).
 3. FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text (e.g., do not draw textbooks/screens when discussing historical battles).
 4. ${NO_FRAME_RULE}
-4. Keep the prompt entirely in English.
-4. Do not alter the script or timings.
-5. Return ONLY the raw JSON array matching this format (no markdown code blocks):
+5. SCENE-TO-SCENE CONTINUITY (CRITICAL): When refining prompts sequentially, ensure that consecutive scenes preserve identical character traits (clothing, face, hair) and environment background features. Only progress the camera shot, angle, and the character's precise action. Prevent sudden, jarring color, lighting, or setting jumps unless the script indicates a shift.
+6. Keep the prompt entirely in English.
+7. Do not alter the script or timings.
+8. Return ONLY the raw JSON array matching this format (no markdown code blocks):
 [
   {
     "id": "sc_1",

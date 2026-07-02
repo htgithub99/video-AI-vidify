@@ -927,12 +927,45 @@ router.post("/script", async (req: Request, res: Response) => {
   }
 });
 
-function countSentences(text: string): number {
-  if (!text) return 0;
-  return text
-    .split(/[.!?\n]+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0).length;
+function diversifyDuplicatePrompts(scenes: any[]): any[] {
+  if (!scenes || scenes.length <= 1) return scenes;
+
+  const cameraAngles = [
+    "low-angle shot, looking up",
+    "high-angle shot, looking down",
+    "close-up portrait shot focusing on expression",
+    "wide-angle panoramic view establishing the environment",
+    "medium shot from side profile",
+    "dramatic over-the-shoulder shot",
+    "extreme close-up shot focusing on details",
+    "three-quarter angle shot showing action"
+  ];
+
+  for (let i = 1; i < scenes.length; i++) {
+    const currentPrompt = scenes[i].prompt?.trim();
+    const prevPrompt = scenes[i - 1].prompt?.trim();
+
+    if (currentPrompt && prevPrompt) {
+      const normCurrent = currentPrompt.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normPrev = prevPrompt.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+      if (normCurrent === normPrev) {
+        const selectedAngle = cameraAngles[i % cameraAngles.length];
+        const borderlessKeyword = "borderless, no frame, no borders";
+        const lowerPrompt = currentPrompt.toLowerCase();
+
+        if (lowerPrompt.includes(borderlessKeyword)) {
+          const index = lowerPrompt.lastIndexOf(borderlessKeyword);
+          const basePart = currentPrompt.substring(0, index).trim().replace(/,+$/, "");
+          const endPart = currentPrompt.substring(index);
+          scenes[i].prompt = `${basePart}, alternate camera shot: ${selectedAngle}, distinct scene progression, ${endPart}`;
+        } else {
+          scenes[i].prompt = `${currentPrompt}, alternate camera shot: ${selectedAngle}, distinct scene progression`;
+        }
+      }
+    }
+  }
+  return scenes;
 }
 
 function generateMockStoryboard(
@@ -1480,6 +1513,10 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
+    if (!!data?.scenes?.length) {
+      data.scenes = diversifyDuplicatePrompts(data.scenes);
+    }
+
     if (chosenDuration && data.scenes && data.scenes.length > 0) {
       const scenes = data.scenes;
       const wordCounts = scenes.map(
@@ -1523,6 +1560,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       chosenDuration,
       splitStrategy,
     );
+    if (!!fallbackData?.scenes?.length) {
+      fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
+    }
     if (error.rotationLogs) {
       fallbackData.rotationLogs = error.rotationLogs;
     }
