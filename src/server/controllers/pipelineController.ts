@@ -6,7 +6,7 @@ import {
   isGeminiApiKeyAvailable,
 } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
-import { safeParseJSON, formatTime } from "../utils/helpers.js";
+import { safeParseJSON, formatTime, cleanMarkdownText } from "../utils/helpers.js";
 import {
   generateScenesWithChunking,
   SceneDensity,
@@ -85,11 +85,14 @@ router.post("/extract-style", async (req: Request, res: Response) => {
     });
 
     const response = await generateContentWithRetry({
-      contents: parts,
+      contents: [{
+        role: "user",
+        parts: parts,
+      }],
     });
 
     if (response && response.text) {
-      let extracted = response.text.trim();
+      let extracted = cleanMarkdownText(response.text);
 
       const lower = extracted.toLowerCase();
       if (STICKMAN_KEYWORDS.some(kw => lower.includes(kw))) {
@@ -330,11 +333,14 @@ router.post("/extract-character", async (req: Request, res: Response) => {
     });
 
     const response = await generateContentWithRetry({
-      contents: parts,
+      contents: [{
+        role: "user",
+        parts: parts,
+      }],
     });
 
     if (response && response.text) {
-      return res.json({ characterPrompt: response.text.trim() });
+      return res.json({ characterPrompt: cleanMarkdownText(response.text) });
     } else {
       throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
     }
@@ -424,7 +430,6 @@ router.post(
           logger.error("BATCH_CHARACTER_REWRITE_FAILED_CHUNK", err);
         }
 
-        // Smooth out requests for free tier
         if (i < chunks.length - 1) {
           await new Promise((res) => setTimeout(res, 1500));
         }
@@ -443,7 +448,7 @@ router.post(
           if (combinedPrompt) {
             return {
               ...scene,
-              prompt: scene.prompt,
+              prompt: `${scene.prompt}, ${combinedPrompt}`,
             };
           }
         }

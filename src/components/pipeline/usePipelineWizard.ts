@@ -1819,15 +1819,15 @@ export function usePipelineWizard(props: any) {
           return c;
         });
 
-        const firstChar = updatedChars[0];
+        const targetChar = updatedChars.find((c) => c.id === charId);
 
         return {
           ...prev,
           visualConfig: {
             ...prev.visualConfig,
             characters: updatedChars,
-            characterPrompt: firstChar?.prompt || "",
-            characterExtracted: firstChar?.extracted || false,
+            characterPrompt: targetChar?.prompt || "",
+            characterExtracted: targetChar?.extracted || false,
           },
         };
       });

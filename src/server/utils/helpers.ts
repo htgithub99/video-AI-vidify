@@ -161,12 +161,10 @@ export const completeCutoffJSON = (jsonStr: string): string => {
     }
   }
 
-  // If we are left inside a string value, close it
   if (inString) {
     out += '"';
   }
 
-  // Close unclosed structures in reverse order
   while (stack.length > 0) {
     const last = stack.pop();
     if (last === '{') {
@@ -179,7 +177,6 @@ export const completeCutoffJSON = (jsonStr: string): string => {
   return out;
 }
 
-// Helper function to safely parse potentially malformed JSON or markdown codeblocks from Gemini
 export const safeParseJSON = (text: string, defaultVal: any): any => {
   if (!text) return defaultVal;
   let trimmed = text.trim();
@@ -267,5 +264,13 @@ export const formatTime = (secs: number): string => {
   const minutes = Math.floor(totalSecs / 60);
   const remainingSecs = totalSecs % 60;
   return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
+};
+
+export const cleanMarkdownText = (text: string): string => {
+  if (!text) return "";
+  let clean = text.trim();
+  clean = clean.replace(/```[a-zA-Z]*\n?([\s\S]*?)\n?```/g, "$1");
+  clean = clean.replace(/^["'`]+|["'`]+$/g, "");
+  return clean.trim();
 };
 
