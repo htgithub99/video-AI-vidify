@@ -24,6 +24,7 @@ export const EXTERNAL_URLS = {
   PLAYWRIGHT_CDP: 'http://127.0.0.1:9222',
   GOOGLE_LABS: 'https://labs.google/',
   GOOGLE_LABS_FLOW: 'https://labs.google/fx/vi/tools/flow/project',
+  GEMINI_CHAT: 'https://gemini.google.com/app',
   AI33_VOICES: 'https://api.ai33.pro/v3/voices',
   AI33_TTS: 'https://api.ai33.pro/v3/text-to-speech',
   AI33_TASK: 'https://api.ai33.pro/v1/task',

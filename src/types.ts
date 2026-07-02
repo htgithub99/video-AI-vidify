@@ -57,6 +57,11 @@ export enum ImageGeneratorEngine {
   LabsSandbox = 'labs-sandbox',
 }
 
+export enum ImageGenerationMode {
+  LabsFlow = 'labs-flow',
+  GeminiChat = 'gemini-chat',
+}
+
 export enum GenerateType {
   Image = 'image',
   Video = 'video',
@@ -157,6 +162,7 @@ export interface VisualConfig {
   characterExtracted?: boolean;
   characters?: CharacterConfig[];
   chromeHeadless?: boolean;
+  generationMode?: ImageGenerationMode;
 }
 
 export interface CharacterConfig {
@@ -306,3 +312,31 @@ export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
 }
 
 export interface Voice { voiceURI: string; name: string; lang: string; localService: boolean; default: boolean; gender?: string; [key: string]: any; }
+
+export enum GeminiChatModelName {
+  Pro = 'Pro',
+  Flash = 'Flash',
+  FlashLite = 'Flash-Lite',
+}
+
+export enum GeminiChatSelector {
+  Input = 'div.ql-editor[contenteditable="true"]',
+  InputTextarea = 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
+  ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button.input-area-switch',
+  PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="công cụ" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button',
+  MenuOptions = '.cdk-overlay-pane button, mat-menu button, [role="menuitem"]',
+  PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper',
+}
+
+export enum GeminiChatTextOption {
+  CreateVideoVi = 'Tạo video',
+  CreateImageVi = 'Tạo hình ảnh',
+  CreateVideoRegexStr = 'Tạo video|Create video|Generate video|video',
+  CreateImageRegexStr = 'Tạo hình ảnh|Create image|Generate image|image',
+}
+
+export enum ImageModelLabel {
+  Veo3 = "VEO 3.0 FLUID",
+  Imagen = "IMAGEN 3 BATCH",
+  LabsSandbox = "LABS SANDBOX",
+}

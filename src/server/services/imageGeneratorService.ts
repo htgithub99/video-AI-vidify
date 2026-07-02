@@ -7,10 +7,15 @@ import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+import { STICKMAN_STYLE_MODIFIERS } from "../../constants/prompts.js";
 import {
   GenerateType,
   ImageGeneratorEngine,
   PromptInputMethod,
+  ImageGenerationMode,
+  GeminiChatModelName,
+  GeminiChatSelector,
+  GeminiChatTextOption,
 } from "../../types.js";
 import { Locator, Page } from "playwright";
 
@@ -118,6 +123,7 @@ export interface ImageGeneratorOptions {
     generateCount?: number;
     imageGeneratorEngine?: ImageGeneratorEngine;
     promptInputMethod?: PromptInputMethod;
+    generationMode?: ImageGenerationMode;
   };
   sandboxConfig?: {
     projectId?: string;
@@ -173,11 +179,17 @@ export const extractKeywords = (text: string): string => {
 };
 
 let lastPlaywrightConfigState: string | null = null;
+let consecutiveGeminiErrors = 0;
+let lastGeminiConfigState: string | null = null;
 
 export async function generateImageWithPlaywright(
   options: ImageGeneratorOptions,
 ): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig, sandboxConfig = {} } = options;
+
+  if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) {
+    return generateImageWithGeminiChat(options);
+  }
 
   const isStickman = !!(
     (style &&
@@ -638,3 +650,485 @@ export async function generateImageWithPlaywright(
     warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
   };
 }
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const randomDelay = (min: number, max: number) => delay(Math.floor(Math.random() * (max - min + 1) + min));
+
+export async function generateImageWithGeminiChat(
+  options: ImageGeneratorOptions,
+): Promise<ImageGeneratorResult> {
+  const { prompt, style, visualConfig } = options;
+
+  const isStickman = !!(
+    (style &&
+      STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
+    (prompt &&
+      STICKMAN_KEYWORDS.some((kw) => prompt.toLowerCase().includes(kw)))
+  );
+
+  let finalPrompt = prompt || "";
+  if (isStickman) {
+    finalPrompt = `${finalPrompt}, ${STICKMAN_STYLE_MODIFIERS}`;
+  }
+
+  const kws = extractKeywords(prompt);
+  const fallbackUrl = isStickman
+    ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
+    : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(
+      kws || "cinematic,landscape",
+    )}`;
+
+  const release = await imageGenMutex.acquire();
+  await randomDelay(1000, 4000);
+  let success = false;
+  let base64Result: string | null = null;
+  let roomAttempts = 0;
+  const maxRoomAttempts = 2;
+
+  try {
+    while (roomAttempts < maxRoomAttempts && !success) {
+      roomAttempts++;
+
+      let needNewRoom = false;
+      if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+        needNewRoom = true;
+      } else {
+        const currentUrl = globalPlaywrightPage.url();
+        if (!currentUrl.includes("gemini.google.com")) {
+          needNewRoom = true;
+        } else if (consecutiveGeminiErrors >= 2) {
+          needNewRoom = true;
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
+        }
+      }
+
+      if (needNewRoom) {
+        appLog(
+          BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM
+            .replace("{0}", roomAttempts.toString())
+            .replace("{1}", maxRoomAttempts.toString()),
+        );
+        try {
+          if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+            await initPlaywright();
+          }
+          if (!globalPlaywrightPage) {
+            throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+          }
+
+          await globalPlaywrightPage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+            waitUntil: "domcontentloaded",
+          });
+          await randomDelay(3000, 5000);
+          consecutiveGeminiErrors = 0;
+        } catch (err: any) {
+          appError(
+            BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", err.message),
+          );
+          if (roomAttempts >= maxRoomAttempts) {
+            throw err;
+          }
+          continue;
+        }
+      } else {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
+      }
+
+      let reloadAttempts = 0;
+      const maxReloadAttempts = 3;
+
+      while (reloadAttempts < maxReloadAttempts && !success) {
+        reloadAttempts++;
+        if (reloadAttempts > 1) {
+          appLog(
+            BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(
+              "{0}",
+              (reloadAttempts - 1).toString(),
+            ),
+          );
+          try {
+            await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
+            await randomDelay(3000, 5000);
+          } catch (reloadErr: any) {
+            appError(
+              BACKEND_MESSAGES.GEMINI_CHAT_RELOAD_FAILED.replace(
+                "{0}",
+                reloadErr.message,
+              ),
+            );
+            continue;
+          }
+        }
+
+        try {
+          const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
+          await inputLoc.waitFor({ state: "visible", timeout: 25000 });
+
+          const currentConfigState = JSON.stringify({
+            generateType: visualConfig?.generateType || GenerateType.Image,
+            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+          });
+          const isConfigChanged = currentConfigState !== lastGeminiConfigState;
+          const forceSetting = needNewRoom || isConfigChanged;
+
+          await configureGeminiModel(globalPlaywrightPage, visualConfig, forceSetting);
+          await configureGeminiGenerateType(globalPlaywrightPage, visualConfig, forceSetting);
+
+          if (forceSetting) {
+            lastGeminiConfigState = currentConfigState;
+          }
+
+          await enterGeminiPrompt(globalPlaywrightPage, finalPrompt, visualConfig);
+
+          await globalPlaywrightPage.keyboard.press("Enter");
+          await randomDelay(1200, 2200);
+
+          base64Result = await waitForDownloadAndGetBase64(globalPlaywrightPage, visualConfig);
+          if (base64Result) {
+            success = true;
+            consecutiveGeminiErrors = 0;
+          } else {
+            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
+          }
+        } catch (err: any) {
+          consecutiveGeminiErrors++;
+          appError(
+            BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED
+              .replace("{0}", reloadAttempts.toString())
+              .replace("{1}", roomAttempts.toString())
+              .replace("{2}", err.message),
+          );
+        }
+      }
+    }
+  } catch (err: any) {
+    appError(
+      BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(
+        "{0}",
+        err.message,
+      ),
+    );
+  } finally {
+    release();
+  }
+
+  if (success && base64Result) {
+    return {
+      success: true,
+      base64: base64Result,
+      fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
+    };
+  }
+
+  return {
+    success: false,
+    base64: null,
+    fallbackUrl,
+    warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
+  };
+}
+
+async function configureGeminiModel(page: Page, visualConfig: any, forceSetting: boolean) {
+  const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
+  let targetModelText = GeminiChatModelName.Pro;
+  if (engine === ImageGeneratorEngine.LabsSandbox) {
+    targetModelText = GeminiChatModelName.FlashLite;
+  } else if (engine === ImageGeneratorEngine.Veo3) {
+    targetModelText = GeminiChatModelName.Flash;
+  }
+
+  const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
+  if (!await modelPickerBtn.isVisible()) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+    return;
+  }
+
+  if (forceSetting) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace("{0}", targetModelText));
+    const currentText = await modelPickerBtn.textContent();
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
+    
+    let isCorrect = false;
+    if (targetModelText === GeminiChatModelName.FlashLite && currentText?.includes('Lite')) {
+      isCorrect = true;
+    } else if (targetModelText === GeminiChatModelName.Flash && currentText?.includes('Flash') && !currentText?.includes('Lite')) {
+      isCorrect = true;
+    } else if (targetModelText === GeminiChatModelName.Pro && currentText?.includes('Pro')) {
+      isCorrect = true;
+    }
+
+    if (isCorrect) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
+      return;
+    }
+
+    await randomDelay(800, 1500);
+    await modelPickerBtn.click();
+    await randomDelay(1000, 1800);
+
+    const optionBtn = page.locator(GeminiChatSelector.MenuOptions).filter({ hasText: new RegExp(targetModelText, 'i') }).first();
+    if (await optionBtn.isVisible()) {
+      await randomDelay(500, 1000);
+      await optionBtn.click();
+      await randomDelay(1200, 2000);
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_SUCCESS.replace("{0}", targetModelText));
+    } else {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_NOT_FOUND.replace("{0}", targetModelText));
+      await page.keyboard.press("Escape");
+      await randomDelay(500, 800);
+    }
+  } else {
+    if (Math.random() < 0.3) {
+      try {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_MOCK_CHECK);
+        await randomDelay(600, 1200);
+        await modelPickerBtn.click();
+        await randomDelay(1000, 1800);
+        await page.keyboard.press("Escape");
+        await randomDelay(600, 1200);
+      } catch (e) {}
+    }
+  }
+}
+
+async function configureGeminiGenerateType(page: Page, visualConfig: any, forceSetting: boolean) {
+  const isVideo = visualConfig?.generateType === GenerateType.Video;
+  const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
+  const targetRegex = isVideo
+    ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, 'i')
+    : new RegExp(GeminiChatTextOption.CreateImageRegexStr, 'i');
+
+  const plusBtn = page.locator(GeminiChatSelector.PlusButton).first();
+  if (!await plusBtn.isVisible()) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_NOT_FOUND);
+    return;
+  }
+
+  if (forceSetting) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_GEN_TYPE.replace("{0}", targetText));
+    await randomDelay(800, 1500);
+    await plusBtn.click();
+    await randomDelay(1000, 1800);
+
+    const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions)
+      .filter({ hasText: targetRegex }).first();
+    
+    if (await optionBtn.isVisible()) {
+      await randomDelay(500, 1000);
+      await optionBtn.click();
+      await randomDelay(1200, 2000);
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS.replace("{0}", targetText));
+    } else {
+      const optionBtnFallback = page.locator('button').filter({ hasText: targetRegex }).first();
+      if (await optionBtnFallback.isVisible()) {
+        await randomDelay(500, 1000);
+        await optionBtnFallback.click();
+        await randomDelay(1200, 2000);
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK.replace("{0}", targetText));
+      } else {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", targetText));
+        await page.keyboard.press("Escape");
+        await randomDelay(500, 800);
+      }
+    }
+  } else {
+    if (Math.random() < 0.3) {
+      try {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_MOCK_CHECK);
+        await randomDelay(600, 1200);
+        await plusBtn.click();
+        await randomDelay(1200, 2000);
+        await page.keyboard.press("Escape");
+        await randomDelay(600, 1200);
+      } catch (e) {}
+    }
+  }
+}
+
+async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: any) {
+  const inputLoc = page.locator(GeminiChatSelector.InputTextarea).first();
+  await smoothMouseMove(page, inputLoc);
+  await inputLoc.focus();
+  await randomDelay(300, 600);
+  await inputLoc.click();
+  await randomDelay(400, 800);
+
+  const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
+  if (inputMethod === PromptInputMethod.Type) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_TYPING_PROMPT);
+    await humanType(page, promptText);
+  } else {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_PASTING_PROMPT);
+    try {
+      const context = page.context();
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => { });
+      const clipboardSuccess = await page.evaluate(async (text) => {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }, promptText);
+
+      if (clipboardSuccess) {
+        await page.keyboard.press("Control+V");
+      } else {
+        await page.keyboard.insertText(promptText);
+      }
+    } catch (pasteErr) {
+      await page.keyboard.insertText(promptText);
+    }
+  }
+  await randomDelay(1500, 3000);
+}
+
+async function waitForGeminiFinished(page: Page, timeoutMs = 150000) {
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
+  try {
+    await page.locator('thinking-overlay').waitFor({ state: 'detached', timeout: 30000 });
+  } catch (e) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
+  }
+
+  const latestResponse = page.locator('model-response').last();
+  try {
+    await latestResponse.waitFor({ state: 'visible', timeout: 30000 });
+  } catch (e) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_RESPONSE);
+  }
+
+  try {
+    const busyDiv = latestResponse.locator('message-content div[aria-busy="true"]').first();
+    if (await busyDiv.isVisible()) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
+      await latestResponse.locator('message-content div[aria-busy="false"]').first().waitFor({ state: 'attached', timeout: timeoutMs });
+    }
+  } catch (e) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_TIMEOUT);
+  }
+
+  try {
+    const imageContainer = latestResponse.locator('.attachment-container.generated-images, download-generated-image-button, img.loaded').first();
+    await imageContainer.waitFor({ state: 'attached', timeout: 45000 });
+  } catch (e) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
+  }
+
+  await page.waitForTimeout(3000);
+}
+
+async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<string | null> {
+  try {
+    const tagName = await mediaElement.evaluate((el: HTMLElement) => el.tagName.toLowerCase());
+    
+    let src = '';
+    for (let i = 0; i < 30; i++) {
+      src = await mediaElement.evaluate((el: any) => el.src || el.getAttribute('src') || '');
+      if (src.startsWith('blob:') || src.startsWith('http') || src.startsWith('data:')) {
+        break;
+      }
+      await page.waitForTimeout(500);
+    }
+
+    if (!src) {
+      appError(BACKEND_MESSAGES.GEMINI_CHAT_NO_SRC);
+      return null;
+    }
+    
+    if (src.startsWith('data:')) {
+      const parts = src.split(',');
+      return parts[1] || null;
+    }
+
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACTING_MEDIA.replace("{0}", tagName).replace("{1}", src));
+
+    if (tagName === 'img') {
+      const base64Data = await mediaElement.evaluate(async (imgEl) => {
+        try {
+          const img = imgEl as HTMLImageElement;
+          if (!img.complete || img.naturalWidth === 0) {
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              setTimeout(reject, 15000);
+            });
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return 'ERROR:Could not get canvas context';
+          ctx.drawImage(img, 0, 0);
+          return canvas.toDataURL("image/jpeg", 0.95).split(',')[1];
+        } catch (e: any) {
+          try {
+            const res = await fetch((imgEl as HTMLImageElement).src || imgEl.getAttribute('src') || '');
+            const blob = await res.blob();
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve((reader.result as string).split(',')[1]);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (fetchErr: any) {
+            return 'ERROR:' + fetchErr.message;
+          }
+        }
+      });
+
+      if (base64Data && !base64Data.startsWith('ERROR:')) {
+        return base64Data;
+      } else {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
+      }
+    } else {
+      const base64Data = await mediaElement.evaluate(async (videoEl) => {
+        try {
+          const res = await fetch((videoEl as HTMLVideoElement).src || videoEl.getAttribute('src') || '');
+          const blob = await res.blob();
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve((reader.result as string).split(',')[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (e: any) {
+          return 'ERROR:' + e.message;
+        }
+      });
+
+      if (base64Data && !base64Data.startsWith('ERROR:')) {
+        return base64Data;
+      } else {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
+      }
+    }
+  } catch (e: any) {
+    appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERROR.replace("{0}", e.message));
+  }
+  return null;
+}
+
+async function waitForDownloadAndGetBase64(page: Page, visualConfig: any): Promise<string | null> {
+  await waitForGeminiFinished(page);
+
+  const latestResponse = page.locator('model-response').last();
+  await latestResponse.waitFor({ state: 'visible', timeout: 30000 });
+
+  const mediaLoc = latestResponse.locator('img, video').first();
+  await mediaLoc.waitFor({ state: 'visible', timeout: 30000 });
+
+  const base64 = await getBase64FromBlobUrl(page, mediaLoc);
+  if (base64) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
+    return base64;
+  }
+
+  throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
+}
+
