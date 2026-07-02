@@ -1,5 +1,15 @@
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
+export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES:
+1. CHARACTER DETAILS (MANDATORY & MOST IMPORTANT): Every prompt must detail who appears in the frame:
+   - Appearance: Age group, gender, hair style/color, physical build.
+   - Costumes/Clothing: Specific garments, accessories, colors (e.g., "long brown wool coat, wearing a fedora hat").
+   - Expression & Pose: Emotional state (joyful, sad, panicked), body posture (bent over, reaching out), and eye gaze direction.
+2. ACTIONS & INTERACTIONS: Describe exactly what the character is doing at that moment using highly active, visual verbs. (e.g., instead of "searching", use "shining a flashlight into a dark corner while clutching a crumpled map").
+3. BACKGROUND & ENVIRONMENT (SETTING): Detail the environment, location (e.g., "cramped kitchen", "dense pine forest"), time and weather (e.g., "golden hour dawn", "stormy midnight rain", "thick fog"), and narrative-relevant props.
+4. CAMERA ANGLE & COMPOSITION (CINEMATOGRAPHY): Ensure a filmic look. Specify camera shots (e.g., "close-up shot", "wide shot", "low angle", "bird's-eye view") and focus (e.g., "shallow depth of field, sharp focus on the character with a softly blurred background").
+5. LIGHTING & MOOD: Set the emotional tone. Detail lighting (e.g., "cinematic lighting", "natural light", "neon glows", "high-contrast harsh shadows") and atmosphere (e.g., "moody", "romantic", "suspenseful", "bright").`;
+
 export const getSceneStyleRewritePrompt = (
   promptText: string,
   newStyle: string,
@@ -13,6 +23,7 @@ New Target Style: "${newStyle}"
 
 Combine the core meaning of the original prompt with the visual aesthetics of the new target style.
 STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+${CINEMATIC_PROMPT_RULES}
 SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
@@ -28,6 +39,7 @@ New Target Style: "${newStyle}"
 
 Combine the core meaning of the original prompts with the visual aesthetics of the new target style.
 STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+${CINEMATIC_PROMPT_RULES}
 SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
 IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
@@ -120,9 +132,7 @@ If the genre is Historical, Documentary, or Science, you MUST prioritize ultra-r
 DO NOT use character names (like "John" or "Sarah"). Describe their physical appearance instead.
 STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
 [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
-- Use strong verbs and visual adjectives. Avoid vague terms like "beautiful" or "awesome". Describe physical reality.
-- Use spatial awareness to position elements ("In the foreground", "Centred").
-- Embed the emotional mood/atmosphere directly into the scene description ("melancholy", "suspenseful", "mysterious").
+${CINEMATIC_PROMPT_RULES}
 - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT draw a "history textbook" or an "open book". Instead, draw the actual "Battle of the Little Bighorn" itself (e.g., soldiers and warriors on a dusty battlefield). Focus directly on the actual event/entity, never on abstract metaphors.
 ${NO_FRAME_RULE}
 Return ONLY the prompt text in English, no explanations, no quotes.`;
@@ -168,10 +178,8 @@ Requirements:
    - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave and rewrite them into the structure:
      * [Main Subject] & [Action]: If characters exist in the scene, use these exact physical traits to describe them: ${referenceCharacters ? referenceCharacters : "(Use the script's character descriptions)"}.
      * [Background], [Lighting] & [Style]: Completely embody this exact art style and aesthetic in your descriptions: ${referenceStyle ? referenceStyle : visualStyle || "Cinematic"}.
-   - THE 3 SECRETS TO A CINEMATIC PROMPT:
-     1. Use strong verbs and visual adjectives. Avoid vague terms like "beautiful" or "awesome". Describe physical reality (e.g., "drops of rain rolling down an angular face").
-     2. Use spatial awareness to position elements ("In the foreground", "In the background", "Centred").
-     3. Embed the emotional mood/atmosphere directly into the scene description ("melancholy", "suspenseful", "mysterious").
+   - CINEMATIC PROMPT RULES:
+     ${CINEMATIC_PROMPT_RULES}
    - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING:
      Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. 
    - NO GENERIC COPIES: Every scene prompt must be highly specific to its script segment. The unique narrative action must occupy the majority of the prompt.
@@ -257,9 +265,10 @@ ${refImageStr}
 
 CRITICAL THUMBNAIL LAYOUT DIRECTIVES (conforming to modern platform standards for maximum clickability):
 1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style]. 
+   - CINEMATIC PROMPT RULES:
+     ${CINEMATIC_PROMPT_RULES}
    - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave the provided reference image details (character appearance and art style) directly into the [Main Subject], [Lighting], and [Style] sections of the blueprint.
    - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script talks about a historical battle, do NOT draw a textbook, screen, or narrator. Draw the actual high-contrast dramatic battle scene itself.
-   - Describe the expressive focal subject in high detail, use strong action verbs, specify spatial awareness (e.g., 'Centred', 'In the foreground'), set dramatic mood (e.g., 'suspenseful', 'mysterious'), and end with cinematic lighting/style keywords. Minimum 35-50 words.
 2. Aspect Ratio & Composition: Always design with a 16:9 full-bleed cinematic landscape canvas in mind.
 3. High CTR Focal Subject: Visual designs must trigger immediate curiosity, surprise, awe, or tension. A single, dominant, extreme focal subject (such as a close-up of a highly expressive/shocked face, or a glowing mysterious object) must stand out. Backgrounds must be heavily blurred (extreme shallow depth of field) to make the subject pop instantly.
 4. Strict Minimal Text Rule (Avoid Clutter): The cover image must NOT contain excessive text.
@@ -365,6 +374,7 @@ Visual Style: "${style || "Cinematic"}"
 Combine all these elements smoothly into a single, highly descriptive prompt optimized for Midjourney or Veo.
 STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
 [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+${CINEMATIC_PROMPT_RULES}
 SEAMLESS INTEGRATION RULE: Do NOT simply append the inputs at the end of the prompt. You MUST seamlessly weave character, costume, setting, time, camera, and style into the blueprint structure.
 FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text.
 IMPORTANT MANDATE: The final output prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the inputs.
@@ -539,6 +549,7 @@ ${scenesJson}
 
 Rules:
 1. STRUCTURE MANDATE: The refined "prompt" MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+   ${CINEMATIC_PROMPT_RULES}
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the Visual Bible details at the end of the prompt. You MUST seamlessly weave and rewrite them directly into the blueprint structure (e.g., weave character appearance into [Main Subject], color/lighting into [Lighting & Colors]).
 3. FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text (e.g., do not draw textbooks/screens when discussing historical battles).
 4. ${NO_FRAME_RULE}
@@ -640,9 +651,10 @@ ${conceptsJson}
 
 Rules:
 1. For each draft thumbnail, refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design that maximizes click-through rate (CTR). It MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+   - CINEMATIC PROMPT RULES:
+     ${CINEMATIC_PROMPT_RULES}
    - SEAMLESS INTEGRATION RULE: Do NOT simply append composition or character references at the end. You MUST seamlessly weave the concept's composition, subject focus, and lighting suggestions directly into the corresponding sections of the blueprint.
    - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Avoid drawing framing elements like books, TV screens, or narrators when the core concept represents a physical action or event. Draw the actual event/entity directly.
-   - Specify a clear, dominant focal subject (such as a highly expressive shocked/afraid face), use strong visual adjectives, specify spatial awareness, set an emotional mood, and detail high-contrast dramatic lighting (like backlighting or glowing accents).
 2. STRICTOR TEXT MINIMALISM: Do NOT include excessive text on the cover. Any text overlay ("textText") must strictly be 1 to 3 words maximum (no full sentences, no clutter). The "prompt" itself must NOT describe rendering written text or letters to prevent generating garbled text.
 3. DO NOT place any key visual detail, text overlay, or main subject in the bottom-right corner of the image because that is where video platform timestamps are overlayed.
 4. At least one design in the array MUST remain completely WITHOUT a text overlay (where 'hasText' is false, 'textText' is "", and layout/typography/colorSuggestion are ""). Do not add text parameters to it.
@@ -692,6 +704,7 @@ ${charactersJson}
 For each scene, identify which characters are present (by their names or descriptions in the scene text/script), and rewrite the scene prompt to naturally incorporate their specific visual design prompts.
 Rules:
 1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+   ${CINEMATIC_PROMPT_RULES}
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint.
 3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
