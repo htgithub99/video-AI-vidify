@@ -124,7 +124,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reload lại room (Lần reload: {1})...",
     GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload thất bại: {1}",
     GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Lỗi tạo ảnh (Lần thử {1} trong room): {2}",
-    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Thất bại hoàn toàn sau các lượt thử room: {1}"
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Thất bại hoàn toàn sau các lượt thử room: {1}",
+    UNKNOWN_ERROR: "Lỗi không xác định.",
+    BATCH_GEN_NO_ITEMS: "Không có items để tạo ảnh",
+    BATCH_GEN_SYSTEM_ERROR: "Có lỗi hệ thống xảy ra: {0}",
+    STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này."
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -251,7 +255,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reloading room (Reload: {1})...",
     GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload failed: {1}",
     GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Error rendering image (Attempt {1} in room): {2}",
-    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Failed completely after room attempts: {1}"
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Failed completely after room attempts: {1}",
+    UNKNOWN_ERROR: "Unknown error.",
+    BATCH_GEN_NO_ITEMS: "No items to generate images.",
+    BATCH_GEN_SYSTEM_ERROR: "A system error occurred: {0}",
+    STREAM_NOT_SUPPORTED: "Data stream is not supported by this browser."
   }
 };
 

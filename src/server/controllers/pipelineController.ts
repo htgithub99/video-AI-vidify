@@ -2098,19 +2098,28 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
     const { items, visualConfig, style } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, results: [], warning: "Không có items để tạo ảnh" });
+      return res.status(400).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
     }
 
-    const results = await generateBatchImagesWithGeminiChat(items, visualConfig, style);
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Transfer-Encoding", "chunked");
 
-    return res.json({ success: true, results });
+    await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
+      res.write(JSON.stringify(progressResult) + "\n");
+    });
+
+    res.end();
   } catch (error: any) {
     logger.error("GENERATE_BATCH_IMAGES_ROUTE_ERROR", error);
-    return res.json({
-      success: false,
-      results: [],
-      warning: `Có lỗi hệ thống xảy ra: ${error.message}`,
-    });
+    if (!res.headersSent) {
+      return res.json({
+        success: false,
+        results: [],
+        warning: BACKEND_MESSAGES.BATCH_GEN_SYSTEM_ERROR.replace("{0}", error.message),
+      });
+    } else {
+      res.end();
+    }
   }
 });
 

@@ -23,6 +23,9 @@ export const translations = {
     "projectName": "Name",
     "projectDesc": "Description",
     "cancel": "Cancel",
+    "confirm": "Recreate",
+    "confirmRecreateTitle": "Recreate All Images",
+    "confirmRecreateMessage": "All scenes already have images. Do you want to recreate all of them?",
     "create": "Create",
     "saving": "Saving...",
     "save": "Save",
@@ -778,7 +781,8 @@ export const translations = {
     "totalScenesCount": "Total Scenes: {count}",
     "pageIndicator": "Page {current} of {total}",
     "noPhotoRenderedYet": "No photo rendered yet for SCENE {sceneId}. Go back and render!",
-    "offlineRenderProgressText": "Rendering progress: {progress}%..."
+    "offlineRenderProgressText": "Rendering progress: {progress}%...",
+    "streamNotSupported": "Data stream is not supported by this browser."
 },
   vi: {
     "appTitle": "Dựng Phim AI",
@@ -802,6 +806,9 @@ export const translations = {
     "projectName": "Tên",
     "projectDesc": "Mô tả",
     "cancel": "Hủy",
+    "confirm": "Tạo lại",
+    "confirmRecreateTitle": "Tạo lại toàn bộ ảnh",
+    "confirmRecreateMessage": "Tất cả các phân cảnh đều đã có hình ảnh. Bạn có muốn tạo lại toàn bộ hình ảnh không?",
     "create": "Tạo",
     "saving": "Đang lưu...",
     "save": "Lưu",
@@ -1557,6 +1564,7 @@ export const translations = {
     "totalScenesCount": "Tổng số phân cảnh: {count}",
     "pageIndicator": "Trang {current} / {total}",
     "noPhotoRenderedYet": "Chưa có hình ảnh được tạo cho PHÂN CẢNH {sceneId}. Hãy quay lại bước phân cảnh để tạo!",
-    "offlineRenderProgressText": "Đang kết xuất: {progress}%..."
+    "offlineRenderProgressText": "Đang kết xuất: {progress}%...",
+    "streamNotSupported": "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này."
 }
 };

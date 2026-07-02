@@ -6,7 +6,7 @@ import {
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
-import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+import { STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS } from "../../constants/data.js";
 import { STICKMAN_STYLE_MODIFIERS } from "../../constants/prompts.js";
 import {
   GenerateType,
@@ -17,6 +17,7 @@ import {
   GeminiChatSelector,
   GeminiChatTextOption,
   GeminiChatSpeed,
+  GEMINI_CHAT_SPEED_TAB_COUNT,
 } from "../../types.js";
 import { Locator, Page } from "playwright";
 
@@ -862,21 +863,34 @@ export async function generateBatchImagesWithGeminiChat(
   items: BatchImageItem[],
   visualConfig: any,
   style?: string,
+  onProgress?: (result: BatchImageResult) => void,
 ): Promise<BatchImageResult[]> {
   if (!items || items.length === 0) {
     return [];
   }
 
-  if (items.length === 1) {
-    const result = await generateImageWithGeminiChat({
-      prompt: items[0].prompt,
-      style,
-      visualConfig,
-    });
-    return [{
-      sceneId: items[0].sceneId,
-      ...result,
-    }];
+  const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Slow;
+  const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || 1;
+  const maxTabs = Math.min(items.length, concurrency);
+
+  if (maxTabs === 1) {
+    const results: BatchImageResult[] = [];
+    for (const item of items) {
+      const result = await generateImageWithGeminiChat({
+        prompt: item.prompt,
+        style,
+        visualConfig,
+      });
+      const batchRes = {
+        sceneId: item.sceneId,
+        ...result,
+      };
+      results.push(batchRes);
+      if (onProgress) {
+        onProgress(batchRes);
+      }
+    }
+    return results;
   }
 
   const release = await imageGenMutex.acquire();
@@ -902,19 +916,19 @@ export async function generateBatchImagesWithGeminiChat(
 
     globalBatchPages = globalBatchPages.filter(p => !p.isClosed());
 
-    if (globalBatchPages.length < items.length) {
-      const needed = items.length - globalBatchPages.length;
+    if (globalBatchPages.length < maxTabs) {
+      const needed = maxTabs - globalBatchPages.length;
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
       for (let i = 0; i < needed; i++) {
         const newPage = await context.newPage();
         await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
         await randomDelay(2000, 4000);
         globalBatchPages.push(newPage);
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", (globalBatchPages.length).toString()).replace("{1}", items.length.toString()));
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", (globalBatchPages.length).toString()).replace("{1}", maxTabs.toString()));
       }
     }
 
-    const activePages = globalBatchPages.slice(0, items.length);
+    const activePages = globalBatchPages.slice(0, maxTabs);
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const isStickman = !!(
@@ -930,7 +944,7 @@ export async function generateBatchImagesWithGeminiChat(
       const kws = extractKeywords(item.prompt);
       const fallbackUrl = isStickman
         ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
-        : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
+        : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`;
 
       let success = false;
       let base64Result: string | null = null;
@@ -1052,24 +1066,38 @@ export async function generateBatchImagesWithGeminiChat(
       };
     };
 
-    const tabPromises = activePages.map((page, idx) => generateOnTab(page, items[idx], idx));
-    const tabResults = await Promise.allSettled(tabPromises);
+    const queue = [...items];
 
-    for (let i = 0; i < tabResults.length; i++) {
-      const result = tabResults[i];
-      if (result.status === "fulfilled") {
-        results.push(result.value);
-      } else {
-        const kws = extractKeywords(items[i].prompt);
-        results.push({
-          sceneId: items[i].sceneId,
-          success: false,
-          base64: null,
-          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`,
-          warning: result.reason?.message || "Unknown error",
-        });
+    const runWorker = async (page: Page, tabIndex: number) => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (!item) break;
+
+        try {
+          const res = await generateOnTab(page, item, tabIndex);
+          results.push(res);
+          if (onProgress) {
+            onProgress(res);
+          }
+        } catch (err: any) {
+          const kws = extractKeywords(item.prompt);
+          const res = {
+            sceneId: item.sceneId,
+            success: false,
+            base64: null,
+            fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`,
+            warning: err.message || BACKEND_MESSAGES.UNKNOWN_ERROR,
+          };
+          results.push(res);
+          if (onProgress) {
+            onProgress(res);
+          }
+        }
       }
-    }
+    };
+
+    const workers = activePages.map((page, idx) => runWorker(page, idx));
+    await Promise.all(workers);
 
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", results.filter(r => r.success).length.toString()).replace("{1}", items.length.toString()));
   } catch (err: any) {
@@ -1077,13 +1105,17 @@ export async function generateBatchImagesWithGeminiChat(
     for (const item of items) {
       if (!results.find(r => r.sceneId === item.sceneId)) {
         const kws = extractKeywords(item.prompt);
-        results.push({
+        const res = {
           sceneId: item.sceneId,
           success: false,
           base64: null,
-          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`,
+          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`,
           warning: err.message,
-        });
+        };
+        results.push(res);
+        if (onProgress) {
+          onProgress(res);
+        }
       }
     }
   } finally {

@@ -181,5 +181,7 @@ export const DURATION_OPTIONS = [
   { val: "15m", label: "2250 từ (~15 phút)" },
 ];
 
+export const DEFAULT_IMAGE_KEYWORDS = "cinematic,landscape";
+
 
 

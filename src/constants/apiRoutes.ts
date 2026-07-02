@@ -12,6 +12,8 @@ export const API_ROUTES = {
   PIPELINE_SEO: '/api/pipeline/seo',
   PIPELINE_THUMBNAILS: '/api/pipeline/thumbnails',
   PIPELINE_GENERATE_IMAGE: '/api/pipeline/generate-image',
+  PIPELINE_GENERATE_BATCH_IMAGES: '/api/pipeline/generate-batch-images',
+  PIPELINE_CLEAN_BATCH_IMAGES: '/api/pipeline/clean-batch-images',
   PIPELINE_DETAILED_PROMPT: '/api/pipeline/detailed-prompt',
   PIPELINE_VOICE: '/api/pipeline/voice',
 };
