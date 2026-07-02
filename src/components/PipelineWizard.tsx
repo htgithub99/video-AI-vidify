@@ -13,6 +13,7 @@ import {
   PromptInputMethod,
   ImageGeneratorEngine,
   ImageGenerationMode,
+  GeminiChatSpeed,
 } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
@@ -295,6 +296,33 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       </button>
                     </div>
                   </div>
+
+                  {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Speed}</div>
+                      <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
+                        {([
+                          { value: GeminiChatSpeed.Slow, label: t.GeminiSpeed_1 || '1' },
+                          { value: GeminiChatSpeed.Normal, label: t.GeminiSpeed_3 || '3' },
+                          { value: GeminiChatSpeed.Fast, label: t.GeminiSpeed_5 || '5' },
+                          { value: GeminiChatSpeed.SuperFast, label: t.GeminiSpeed_7 || '7' },
+                          { value: GeminiChatSpeed.HyperFast, label: t.GeminiSpeed_10 || '10' }
+                        ]).map((opt) => {
+                          const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value })}
+                              className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${isActive ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Drawing_Model || "Mô hình vẽ"}</div>

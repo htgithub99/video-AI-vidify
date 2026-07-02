@@ -16,6 +16,7 @@ import {
   GeminiChatModelName,
   GeminiChatSelector,
   GeminiChatTextOption,
+  GeminiChatSpeed,
 } from "../../types.js";
 import { Locator, Page } from "playwright";
 
@@ -124,6 +125,7 @@ export interface ImageGeneratorOptions {
     imageGeneratorEngine?: ImageGeneratorEngine;
     promptInputMethod?: PromptInputMethod;
     generationMode?: ImageGenerationMode;
+    geminiChatSpeed?: GeminiChatSpeed;
   };
   sandboxConfig?: {
     projectId?: string;
@@ -181,6 +183,7 @@ export const extractKeywords = (text: string): string => {
 let lastPlaywrightConfigState: string | null = null;
 let consecutiveGeminiErrors = 0;
 let lastGeminiConfigState: string | null = null;
+let globalBatchPages: Page[] = [];
 
 export async function generateImageWithPlaywright(
   options: ImageGeneratorOptions,
@@ -827,6 +830,199 @@ export async function generateImageWithGeminiChat(
     warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
   };
 }
+
+export interface BatchImageItem {
+  sceneId: string;
+  prompt: string;
+}
+
+export interface BatchImageResult {
+  sceneId: string;
+  success: boolean;
+  base64: string | null;
+  fallbackUrl: string;
+  warning?: string;
+}
+
+export async function closeAllBatchPages() {
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_CLOSE_TABS.replace("{0}", globalBatchPages.length.toString()));
+  for (const page of globalBatchPages) {
+    try {
+      if (!page.isClosed()) {
+        await page.close();
+      }
+    } catch (e) {}
+  }
+  globalBatchPages = [];
+}
+
+export async function generateBatchImagesWithGeminiChat(
+  items: BatchImageItem[],
+  visualConfig: any,
+  style?: string,
+): Promise<BatchImageResult[]> {
+  if (!items || items.length === 0) {
+    return [];
+  }
+
+  if (items.length === 1) {
+    const result = await generateImageWithGeminiChat({
+      prompt: items[0].prompt,
+      style,
+      visualConfig,
+    });
+    return [{
+      sceneId: items[0].sceneId,
+      ...result,
+    }];
+  }
+
+  const release = await imageGenMutex.acquire();
+  const results: BatchImageResult[] = [];
+
+  try {
+    if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+      await initPlaywright();
+    }
+    if (!globalPlaywrightPage) {
+      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+    }
+
+    const browser = globalPlaywrightPage.context().browser();
+    if (!browser) {
+      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+    }
+
+    const context = browser.contexts()[0];
+    if (!context) {
+      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+    }
+
+    globalBatchPages = globalBatchPages.filter(p => !p.isClosed());
+
+    if (globalBatchPages.length < items.length) {
+      const needed = items.length - globalBatchPages.length;
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
+      for (let i = 0; i < needed; i++) {
+        const newPage = await context.newPage();
+        await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+        await randomDelay(2000, 4000);
+        globalBatchPages.push(newPage);
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", (globalBatchPages.length).toString()).replace("{1}", items.length.toString()));
+      }
+    }
+
+    const activePages = globalBatchPages.slice(0, items.length);
+
+    const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
+      const isStickman = !!(
+        (style && STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
+        (item.prompt && STICKMAN_KEYWORDS.some((kw) => item.prompt.toLowerCase().includes(kw)))
+      );
+
+      let finalPrompt = item.prompt || "";
+      if (isStickman) {
+        finalPrompt = `${finalPrompt}, ${STICKMAN_STYLE_MODIFIERS}`;
+      }
+
+      const kws = extractKeywords(item.prompt);
+      const fallbackUrl = isStickman
+        ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
+        : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
+
+      try {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
+
+        const currentUrl = page.url();
+        if (!currentUrl.includes("gemini.google.com")) {
+          await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+          await randomDelay(2000, 4000);
+        }
+
+        const inputLoc = page.locator(GeminiChatSelector.Input).first();
+        await inputLoc.waitFor({ state: "visible", timeout: 25000 });
+
+        await configureGeminiModel(page, visualConfig, true);
+        await configureGeminiGenerateType(page, visualConfig, true);
+        await enterGeminiPrompt(page, finalPrompt, visualConfig);
+
+        await page.keyboard.press("Enter");
+        await randomDelay(1200, 2200);
+
+        const base64Result = await waitForDownloadAndGetBase64(page, visualConfig);
+        if (base64Result) {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_SUCCESS.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
+          return {
+            sceneId: item.sceneId,
+            success: true,
+            base64: base64Result,
+            fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
+          };
+        }
+
+        throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
+      } catch (err: any) {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_ERROR.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId).replace("{2}", err.message));
+        
+        try {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_RECOVERY.replace("{0}", (tabIndex + 1).toString()));
+          await page.reload({ waitUntil: "domcontentloaded" });
+          await randomDelay(2000, 4000);
+        } catch (reloadErr) {
+          await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" }).catch(() => {});
+        }
+
+        return {
+          sceneId: item.sceneId,
+          success: false,
+          base64: null,
+          fallbackUrl,
+          warning: err.message,
+        };
+      }
+    };
+
+    const tabPromises = activePages.map((page, idx) => generateOnTab(page, items[idx], idx));
+    const tabResults = await Promise.allSettled(tabPromises);
+
+    for (let i = 0; i < tabResults.length; i++) {
+      const result = tabResults[i];
+      if (result.status === "fulfilled") {
+        results.push(result.value);
+      } else {
+        const kws = extractKeywords(items[i].prompt);
+        results.push({
+          sceneId: items[i].sceneId,
+          success: false,
+          base64: null,
+          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`,
+          warning: result.reason?.message || "Unknown error",
+        });
+      }
+    }
+
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", results.filter(r => r.success).length.toString()).replace("{1}", items.length.toString()));
+  } catch (err: any) {
+    appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", err.message));
+    for (const item of items) {
+      if (!results.find(r => r.sceneId === item.sceneId)) {
+        const kws = extractKeywords(item.prompt);
+        results.push({
+          sceneId: item.sceneId,
+          success: false,
+          base64: null,
+          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`,
+          warning: err.message,
+        });
+      }
+    }
+  } finally {
+    release();
+  }
+
+  return results;
+}
+
 
 async function configureGeminiModel(page: Page, visualConfig: any, forceSetting: boolean) {
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;

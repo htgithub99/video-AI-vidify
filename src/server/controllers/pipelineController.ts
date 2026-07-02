@@ -37,7 +37,7 @@ import {
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
 } from "../../constants/prompts.js";
-import { generateImageWithPlaywright } from "../services/imageGeneratorService.js";
+import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
 import { STICKMAN_KEYWORDS } from "../../constants/data.js";
 
@@ -2050,6 +2050,37 @@ router.post("/generate-image", async (req: Request, res: Response) => {
       fallbackUrl: "",
       warning: `Có lỗi hệ thống xảy ra: ${error.message}`,
     });
+  }
+});
+
+router.post("/generate-batch-images", async (req: Request, res: Response) => {
+  try {
+    const { items, visualConfig, style } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, results: [], warning: "Không có items để tạo ảnh" });
+    }
+
+    const results = await generateBatchImagesWithGeminiChat(items, visualConfig, style);
+
+    return res.json({ success: true, results });
+  } catch (error: any) {
+    logger.error("GENERATE_BATCH_IMAGES_ROUTE_ERROR", error);
+    return res.json({
+      success: false,
+      results: [],
+      warning: `Có lỗi hệ thống xảy ra: ${error.message}`,
+    });
+  }
+});
+
+router.post("/clean-batch-images", async (req: Request, res: Response) => {
+  try {
+    await closeAllBatchPages();
+    return res.json({ success: true });
+  } catch (error: any) {
+    logger.error("CLEAN_BATCH_IMAGES_ROUTE_ERROR", error);
+    return res.json({ success: false, error: error.message });
   }
 });
 

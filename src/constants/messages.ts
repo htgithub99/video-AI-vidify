@@ -105,7 +105,16 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Lấy đa phương tiện thành công trực tiếp từ nguồn URL trình duyệt!",
     GEMINI_CHAT_EXTRACT_ERR_THROW: "Không thể trích xuất dữ liệu ảnh/video từ URL trình duyệt.",
     GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra menu Plus..."
+    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra menu Plus...",
+    GEMINI_CHAT_BATCH_START: "[Batch Gemini] Mở {0} tab song song để tạo ảnh...",
+    GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} đã mở thành công.",
+    GEMINI_CHAT_BATCH_TAB_START: "[Batch Gemini] Tab {0}: Bắt đầu tạo ảnh cho scene \"{1}\"...",
+    GEMINI_CHAT_BATCH_TAB_SUCCESS: "[Batch Gemini] Tab {0}: ✅ Tạo ảnh thành công cho scene \"{1}\".",
+    GEMINI_CHAT_BATCH_TAB_ERROR: "[Batch Gemini] Tab {0}: ❌ Lỗi scene \"{1}\": {2}",
+    GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Tự động reload tab gặp lỗi để phục hồi...",
+    GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Hoàn thành batch: {0}/{1} thành công.",
+    GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Lỗi khởi tạo batch: {0}",
+    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Đóng tất cả {0} tab phụ đang chạy..."
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -213,7 +222,16 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Successfully retrieved media directly from browser URL!",
     GEMINI_CHAT_EXTRACT_ERR_THROW: "Could not extract image/video data from browser URL.",
     GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Simulating click to check Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Simulating click to check menu Plus..."
+    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Simulating click to check menu Plus...",
+    GEMINI_CHAT_BATCH_START: "[Batch Gemini] Opening {0} parallel tabs to generate images...",
+    GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} opened successfully.",
+    GEMINI_CHAT_BATCH_TAB_START: "[Batch Gemini] Tab {0}: Starting image generation for scene \"{1}\"...",
+    GEMINI_CHAT_BATCH_TAB_SUCCESS: "[Batch Gemini] Tab {0}: ✅ Successfully generated image for scene \"{1}\".",
+    GEMINI_CHAT_BATCH_TAB_ERROR: "[Batch Gemini] Tab {0}: ❌ Error for scene \"{1}\": {2}",
+    GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Automatically reloading tab due to error to recover...",
+    GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Completed batch: {0}/{1} successful.",
+    GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Batch initialization error: {0}",
+    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Closing all {0} active batch tabs..."
   }
 };
 

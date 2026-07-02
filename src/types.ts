@@ -163,6 +163,7 @@ export interface VisualConfig {
   characters?: CharacterConfig[];
   chromeHeadless?: boolean;
   generationMode?: ImageGenerationMode;
+  geminiChatSpeed?: GeminiChatSpeed;
 }
 
 export interface CharacterConfig {
@@ -312,6 +313,22 @@ export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
 }
 
 export interface Voice { voiceURI: string; name: string; lang: string; localService: boolean; default: boolean; gender?: string; [key: string]: any; }
+
+export enum GeminiChatSpeed {
+  Slow = '1',
+  Normal = '3',
+  Fast = '5',
+  SuperFast = '7',
+  HyperFast = '10',
+}
+
+export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
+  [GeminiChatSpeed.Slow]: 1,
+  [GeminiChatSpeed.Normal]: 3,
+  [GeminiChatSpeed.Fast]: 5,
+  [GeminiChatSpeed.SuperFast]: 7,
+  [GeminiChatSpeed.HyperFast]: 10,
+};
 
 export enum GeminiChatModelName {
   Pro = 'Pro',

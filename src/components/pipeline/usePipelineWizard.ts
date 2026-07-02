@@ -20,6 +20,9 @@ import {
   ImageGeneratorEngine,
   ProjectLanguage,
   HookPosition,
+  ImageGenerationMode,
+  GeminiChatSpeed,
+  GEMINI_CHAT_SPEED_TAB_COUNT,
 } from "../../types";
 import {
   applyAudioEffects,
@@ -2323,9 +2326,14 @@ export function usePipelineWizard(props: any) {
     let completedCount = 0;
     let hasError = false;
 
+    const isGeminiChat = project.visualConfig.generationMode === ImageGenerationMode.GeminiChat;
+    const speed = project.visualConfig.geminiChatSpeed || GeminiChatSpeed.Slow;
+    const concurrency = isGeminiChat ? GEMINI_CHAT_SPEED_TAB_COUNT[speed] : 1;
+
     try {
       let currentIndex = 0;
-      for (const scene of targetScenes) {
+
+      while (currentIndex < targetScenes.length && !hasError) {
         if (cancelBatchImageRef.current) {
           setInfoMsg(
             t.batchGenCancelled.replace(
@@ -2336,47 +2344,116 @@ export function usePipelineWizard(props: any) {
           break;
         }
 
+        const batchScenes = targetScenes.slice(currentIndex, currentIndex + concurrency);
+
         setBatchProgressMsg(
           t.generatingSceneBatch
-            .replace("{sceneId}", scene.id)
+            .replace("{sceneId}", batchScenes.map(s => s.id).join(", "))
             .replace("{currentIndex}", (currentIndex + 1).toString())
             .replace("{totalToProcess}", totalToProcess.toString()),
         );
 
-        setLoadingStates((prev) => ({
-          ...prev,
-          ["renderScene_" + scene.id]: true,
-        }));
-
-        try {
-          await handleRenderSceneImage(scene.id, scene.prompt, false, true);
-          completedCount++;
-        } catch (err: any) {
-          logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
-          setErrorMsg(
-            t.errorRenderingSceneBatch
-              .replace("{sceneId}", scene.id)
-              .replace("{error}", err.message),
-          );
-          hasError = true;
-          break;
-        } finally {
+        for (const scene of batchScenes) {
           setLoadingStates((prev) => ({
             ...prev,
-            ["renderScene_" + scene.id]: false,
+            ["renderScene_" + scene.id]: true,
           }));
         }
 
-        if (currentIndex < totalToProcess - 1) {
-          const randomCooldown = Math.floor(Math.random() * 15000 + 15000); // Ngẫu nhiên từ 15s đến 30s
+        if (concurrency > 1 && isGeminiChat) {
+          try {
+            const batchItems = batchScenes.map(s => ({ sceneId: s.id, prompt: s.prompt }));
+            const response = await fetch("/api/pipeline/generate-batch-images", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                items: batchItems,
+                visualConfig: project.visualConfig,
+                style: project.visualConfig.style,
+              }),
+            });
+            const data = await response.json();
+
+            if (data.results && Array.isArray(data.results)) {
+              for (const result of data.results) {
+                if (result.success && result.base64) {
+                  const imageUrl = `data:image/jpeg;base64,${result.base64}`;
+                  setProject((prev) => {
+                    const updated = (prev.storyboard || []).map((sc) => {
+                      if (sc.id === result.sceneId) {
+                        return {
+                          ...sc,
+                          assetUrl: imageUrl,
+                          assetUrls: [imageUrl],
+                          isGenerated: true,
+                        };
+                      }
+                      return sc;
+                    });
+                    return { ...prev, storyboard: updated };
+                  });
+                  completedCount++;
+                } else {
+                  logger.error("BATCH_SCENE_FAILED", result.sceneId, result.warning);
+                }
+
+                setLoadingStates((prev) => ({
+                  ...prev,
+                  ["renderScene_" + result.sceneId]: false,
+                }));
+              }
+            }
+
+            const failedResults = (data.results || []).filter((r: any) => !r.success);
+            if (failedResults.length > 0) {
+              setErrorMsg(
+                t.errorRenderingSceneBatch
+                  .replace("{sceneId}", failedResults.map((r: any) => r.sceneId).join(", "))
+                  .replace("{error}", failedResults[0].warning || "Unknown"),
+              );
+            }
+          } catch (batchErr: any) {
+            logger.error("BATCH_API_CALL_FAILED", batchErr);
+            setErrorMsg(t.batchGenFailed.replace("{error}", batchErr.message));
+            hasError = true;
+            for (const scene of batchScenes) {
+              setLoadingStates((prev) => ({
+                ...prev,
+                ["renderScene_" + scene.id]: false,
+              }));
+            }
+          }
+        } else {
+          const scene = batchScenes[0];
+          try {
+            await handleRenderSceneImage(scene.id, scene.prompt, false, true);
+            completedCount++;
+          } catch (err: any) {
+            logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
+            setErrorMsg(
+              t.errorRenderingSceneBatch
+                .replace("{sceneId}", scene.id)
+                .replace("{error}", err.message),
+            );
+            hasError = true;
+          } finally {
+            setLoadingStates((prev) => ({
+              ...prev,
+              ["renderScene_" + scene.id]: false,
+            }));
+          }
+        }
+
+        currentIndex += batchScenes.length;
+
+        if (currentIndex < targetScenes.length && !hasError && !cancelBatchImageRef.current) {
+          const randomCooldown = Math.floor(Math.random() * 15000 + 15000);
           setBatchProgressMsg(
             t.waitingBetweenScenes ||
               `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`,
           );
           await new Promise((resolve) => setTimeout(resolve, randomCooldown));
         }
-
-        currentIndex++;
       }
 
       if (!cancelBatchImageRef.current && !hasError) {
@@ -2385,7 +2462,6 @@ export function usePipelineWizard(props: any) {
           completedCount.toString(),
         );
         setInfoMsg(successMsg);
-        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       }
     } catch (err: any) {
       logger.error("BATCH_GEN_FAILURE", err);
@@ -2394,6 +2470,9 @@ export function usePipelineWizard(props: any) {
       setIsBatchGenerating(false);
       setIsCancellingBatch(false);
       setBatchProgressMsg("");
+      if (isGeminiChat && concurrency > 1) {
+        fetch("/api/pipeline/clean-batch-images", { method: "POST" }).catch(() => {});
+      }
     }
   };
 
