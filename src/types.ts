@@ -57,6 +57,11 @@ export enum ImageGeneratorEngine {
   LabsSandbox = 'labs-sandbox',
 }
 
+export enum ImageGenerationMode {
+  LabsFlow = 'labs-flow',
+  GeminiChat = 'gemini-chat',
+}
+
 export enum GenerateType {
   Image = 'image',
   Video = 'video',
@@ -157,6 +162,7 @@ export interface VisualConfig {
   characterExtracted?: boolean;
   characters?: CharacterConfig[];
   chromeHeadless?: boolean;
+  generationMode?: ImageGenerationMode;
 }
 
 export interface CharacterConfig {

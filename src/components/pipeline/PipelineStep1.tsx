@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
-import { WizardStep, AudioType, Gender } from "../../types";
+import { WizardStep, AudioType, Gender, ImageGenerationMode } from "../../types";
 
 import * as LucideIcons from "lucide-react";
 
@@ -1760,10 +1760,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <Sliders className="w-4 h-4 text-rose-500 animate-pulse" />
               {t.Veo_3_Creative_Studio_Dec}
               <span className="text-[9px] uppercase font-mono font-medium tracking-wide px-2 py-0.5 bg-rose-950/45 border border-rose-500/10 text-rose-400 rounded">
-                {(project.visualConfig?.imageGeneratorEngine || "veo3") ===
-                "veo3"
+                {project.visualConfig?.generationMode === ImageGenerationMode.GeminiChat ? "GEMINI ROOM • " : ""}
+                {(project.visualConfig?.imageGeneratorEngine || "veo3") === "veo3"
                   ? "VEO 3.0 FLUID"
-                  : "IMAGEN 3 BATCH"}
+                  : (project.visualConfig?.imageGeneratorEngine === "imagen"
+                    ? "IMAGEN 3 BATCH"
+                    : "LABS SANDBOX")}
               </span>
             </button>
             <button

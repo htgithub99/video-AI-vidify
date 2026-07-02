@@ -12,6 +12,7 @@ import {
   GenerateType,
   PromptInputMethod,
   ImageGeneratorEngine,
+  ImageGenerationMode,
 } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
@@ -235,15 +236,29 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Mode || "Chế độ sinh"}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      {['16:9', '4:3', '1:1', '3:4', '9:16'].map(ratio => (
-                        <button key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === '16:9') ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
-                          {ratio}
-                        </button>
-                      ))}
+                      <button type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {t.Labs_Flow_Mode}
+                      </button>
+                      <button type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                        {t.Gemini_Chat_Mode}
+                      </button>
                     </div>
                   </div>
+
+                  {project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
+                      <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
+                        {['16:9', '4:3', '1:1', '3:4', '9:16'].map(ratio => (
+                          <button key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === '16:9') ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                            {ratio}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Input_Method_Labs}</div>
@@ -257,16 +272,18 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Sample_Count}</div>
-                    <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      {[1, 2, 3, 4].map(count => (
-                        <button key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
-                          {count === 1 ? '1x' : `x${count}`}
-                        </button>
-                      ))}
+                  {project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Sample_Count}</div>
+                      <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
+                        {[1, 2, 3, 4].map(count => (
+                          <button key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                            {count === 1 ? '1x' : `x${count}`}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Chrome_Mode}</div>
@@ -282,9 +299,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
                   <div className="relative">
                     <select value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3} onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })} className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-xs text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer">
-                      <option value={ImageGeneratorEngine.Imagen}>{t.Imagen_3}</option>
-                      <option value={ImageGeneratorEngine.Veo3}>{t.Nano_Banana_2}</option>
-                      <option value={ImageGeneratorEngine.LabsSandbox}>{t.Labs_Sandbox}</option>
+                      {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? (
+                        <>
+                          <option value={ImageGeneratorEngine.Imagen}>{t.Gemini_Pro}</option>
+                          <option value={ImageGeneratorEngine.Veo3}>{t.Gemini_Flash}</option>
+                          <option value={ImageGeneratorEngine.LabsSandbox}>{t.Gemini_Flash_Lite}</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value={ImageGeneratorEngine.Imagen}>{t.Imagen_3}</option>
+                          <option value={ImageGeneratorEngine.Veo3}>{t.Nano_Banana_2}</option>
+                          <option value={ImageGeneratorEngine.LabsSandbox}>{t.Labs_Sandbox}</option>
+                        </>
+                      )}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                   </div>

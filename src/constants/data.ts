@@ -121,6 +121,7 @@ export const stylePresetsKeywords: Record<string, string>  = {
 export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ['not found', '404', 'unsupported', 'Quota exceeded'];
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ['429', 'quota', '503', '500', '550', 'fetch failed', 'Timeout', 'undici'];
 export const STICKMAN_KEYWORDS = ["người que", "stickman", "stick figure", "hoạt hình", "stick", "que"];
+export const STICKMAN_STYLE_MODIFIERS = "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
 
 export const GENRE_OPTIONS = [
   "Storytelling",
