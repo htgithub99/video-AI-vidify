@@ -36,8 +36,6 @@ const {
   Copy,
   Layers,
   HelpCircle,
-  ChevronLeft,
-  ChevronRight,
   Trash,
   ArrowLeft,
   ArrowRight,
@@ -169,9 +167,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
     handleExtractStyle,
     handleApplyStyleToScenes,
     handleBulkUploadImages,
-    handlePrevSlide,
-    handleNextSlide,
     handleDeleteSceneImage,
+    isDeletingImage,
+    isUploadingImage,
     handleDeleteAllSceneImages,
     handleBatchGenerateAllImages,
     handleCancelBatchGenerate,
@@ -2753,14 +2751,16 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </label>
 
                         <div className="aspect-[16/9] bg-slate-955 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center shadow-inner">
-                          <img
-                            referrerPolicy="no-referrer"
-                            src={displayUrl}
-                            alt={
-                              activeScene.assetName || `Scene ${activeScene.id}`
-                            }
-                            className="w-full h-full object-cover"
-                          />
+                          {hasAsset && (
+                            <img
+                              referrerPolicy="no-referrer"
+                              src={displayUrl}
+                              alt={
+                                activeScene.assetName || `Scene ${activeScene.id}`
+                              }
+                              className="w-full h-full object-cover"
+                            />
+                          )}
 
                           {!hasAsset && (
                             <div className="absolute inset-0 bg-slate-950/20 flex flex-col items-center justify-center p-4 text-center pointer-events-none">
@@ -2769,41 +2769,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               </span>
                             </div>
                           )}
-
-                          {}
-                          {urls.length > 1 && (
-                            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handlePrevSlide(activeScene.id, urls.length);
-                                }}
-                                className="w-8 h-8 bg-slate-950/90 hover:bg-slate-900/90 text-slate-200 rounded-full transition flex items-center justify-center border border-slate-800 shadow cursor-pointer"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleNextSlide(activeScene.id, urls.length);
-                                }}
-                                className="w-8 h-8 bg-slate-950/90 hover:bg-slate-900/90 text-slate-200 rounded-full transition flex items-center justify-center border border-slate-800 shadow cursor-pointer"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-
-                          {}
-                          {urls.length > 1 && (
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-950/85 text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
-                              {activeImgIdx + 1} / {urls.length}
-                            </div>
-                          )}
                         </div>
                       </div>
 
-                      {}
+                      {/* Nút thao tác ảnh */}
                       <div className="grid grid-cols-2 gap-2.5">
                         <button
                           type="button"
@@ -2814,7 +2783,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             )
                           }
                           disabled={
-                            !!loadingStates["renderScene_" + activeScene.id]
+                            !!loadingStates["renderScene_" + activeScene.id] || isDeletingImage || isUploadingImage
                           }
                           className="flex items-center justify-center gap-1.5 text-xs font-bold text-rose-450 hover:text-white bg-rose-500/10 hover:bg-rose-600 px-3 py-2.5 rounded-xl border border-rose-500/20 cursor-pointer transition shadow-sm active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
                           title={t.Render_AI_image_matching_}
@@ -2833,13 +2802,18 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </span>
                         </button>
 
-                        <label className="flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center">
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>{t.Upload_file}</span>
+                        <label className={`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates["renderScene_" + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}>
+                          {isUploadingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isUploadingImage ? "Đang tải lên..." : t.Upload_file}</span>
                           <input
                             type="file"
                             accept="image/*"
                             className="hidden"
+                            disabled={isUploadingImage || isDeletingImage || !!loadingStates["renderScene_" + activeScene.id]}
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
@@ -2865,10 +2839,15 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           onClick={() =>
                             handleDeleteSceneImage(activeScene.id, activeImgIdx)
                           }
-                          className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-red-500 hover:text-white bg-red-500/10 hover:bg-red-650 px-3 py-2 rounded-xl border border-red-500/20 transition cursor-pointer"
+                          disabled={isDeletingImage || isUploadingImage || !!loadingStates["renderScene_" + activeScene.id]}
+                          className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-red-500 hover:text-white bg-red-500/10 hover:bg-red-655 px-3 py-2 rounded-xl border border-red-500/20 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Trash className="w-3.5 h-3.5" />
-                          <span>{t.Delete_Image}</span>
+                          {isDeletingImage ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash className="w-3.5 h-3.5" />
+                          )}
+                          <span>{isDeletingImage ? "Đang xóa..." : t.Delete_Image}</span>
                         </button>
                       )}
 

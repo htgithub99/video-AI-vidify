@@ -112,9 +112,19 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_TAB_SUCCESS: "[Batch Gemini] Tab {0}: ✅ Tạo ảnh thành công cho scene \"{1}\".",
     GEMINI_CHAT_BATCH_TAB_ERROR: "[Batch Gemini] Tab {0}: ❌ Lỗi scene \"{1}\": {2}",
     GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Tự động reload tab gặp lỗi để phục hồi...",
+    GEMINI_CHAT_BATCH_TAB_REDIRECT: "[Batch Gemini] Tab {0}: Chuyển hướng về trang chủ Gemini để khởi tạo phiên chat mới...",
     GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Hoàn thành batch: {0}/{1} thành công.",
     GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Lỗi khởi tạo batch: {0}",
-    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Đóng tất cả {0} tab phụ đang chạy..."
+    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Đóng tất cả {0} tab phụ đang chạy...",
+    GEMINI_CHAT_PAGE_CLOSED: "Trình duyệt đã bị đóng hoặc chưa khởi tạo.",
+    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM: "[Batch Gemini] Tab {0}: Bắt buộc tạo room mới do lỗi liên tục ({1} lần)",
+    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT: "[Batch Gemini] Tab {0}: Đang chuyển hướng về trang chủ để tạo room mới (Lần thử {1}/{2})...",
+    GEMINI_CHAT_BATCH_REDIRECT_FAILED: "[Batch Gemini] Tab {0}: Chuyển hướng thất bại: {1}",
+    GEMINI_CHAT_BATCH_ROOM_REUSE: "[Batch Gemini] Tab {0}: Tái sử dụng room chat hiện tại",
+    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reload lại room (Lần reload: {1})...",
+    GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload thất bại: {1}",
+    GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Lỗi tạo ảnh (Lần thử {1} trong room): {2}",
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Thất bại hoàn toàn sau các lượt thử room: {1}"
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -229,9 +239,19 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_TAB_SUCCESS: "[Batch Gemini] Tab {0}: ✅ Successfully generated image for scene \"{1}\".",
     GEMINI_CHAT_BATCH_TAB_ERROR: "[Batch Gemini] Tab {0}: ❌ Error for scene \"{1}\": {2}",
     GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Automatically reloading tab due to error to recover...",
+    GEMINI_CHAT_BATCH_TAB_REDIRECT: "[Batch Gemini] Tab {0}: Redirecting to Gemini homepage to initialize a new chat session...",
     GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Completed batch: {0}/{1} successful.",
     GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Batch initialization error: {0}",
-    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Closing all {0} active batch tabs..."
+    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Closing all {0} active batch tabs...",
+    GEMINI_CHAT_PAGE_CLOSED: "Browser page is closed or not initialized.",
+    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM: "[Batch Gemini] Tab {0}: Forced to create a new room due to consecutive errors ({1} times)",
+    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT: "[Batch Gemini] Tab {0}: Redirecting to homepage to create a new room (Attempt {1}/{2})...",
+    GEMINI_CHAT_BATCH_REDIRECT_FAILED: "[Batch Gemini] Tab {0}: Redirect failed: {1}",
+    GEMINI_CHAT_BATCH_ROOM_REUSE: "[Batch Gemini] Tab {0}: Reusing the current chat room",
+    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reloading room (Reload: {1})...",
+    GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload failed: {1}",
+    GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Error rendering image (Attempt {1} in room): {2}",
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Failed completely after room attempts: {1}"
   }
 };
 

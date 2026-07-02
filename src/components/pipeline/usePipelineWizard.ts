@@ -112,8 +112,8 @@ const safeResponseJson = async (r: any, f: any) => {
 };
 const fallbackImageCache = new Map<string, string>();
 const getTargetDurationSeconds = (d: any) => 15;
-let handleNextStep = () => {};
-let handlePrevStep = () => {};
+let handleNextStep = () => { };
+let handlePrevStep = () => { };
 let audioRef: any = null;
 let videoRef: any = null;
 let simVideoRef: any = null;
@@ -206,6 +206,9 @@ export function usePipelineWizard(props: any) {
 
   const [isGeneratingDetailedPrompt, setIsGeneratingDetailedPrompt] =
     useState(false);
+
+  const [isDeletingImage, setIsDeletingImage] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const [showPromptGeneratorPanel, setShowPromptGeneratorPanel] =
     useState(false);
@@ -345,7 +348,7 @@ export function usePipelineWizard(props: any) {
     try {
       const savedLogs = sessionStorage.getItem("pipeline_system_logs");
       if (savedLogs) return JSON.parse(savedLogs);
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
@@ -402,7 +405,7 @@ export function usePipelineWizard(props: any) {
         setSystemLogs((prev) =>
           [...prev, { time, type: enrichedType, msg }].slice(-200),
         );
-      } catch (e) {}
+      } catch (e) { }
     };
 
     console.log = (...args) => {
@@ -952,7 +955,7 @@ export function usePipelineWizard(props: any) {
         currentHookConfig.count === hookCount &&
         currentHookConfig.positions === hookPosition &&
         JSON.stringify(currentHookConfig.versions) ===
-          JSON.stringify(hooksDraft)
+        JSON.stringify(hooksDraft)
       ) {
         return prev;
       }
@@ -1140,9 +1143,9 @@ export function usePipelineWizard(props: any) {
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-            data?.error ||
-            data?.warning ||
-            "System pipeline rejected the request.",
+          data?.error ||
+          data?.warning ||
+          "System pipeline rejected the request.",
         );
       }
 
@@ -1218,11 +1221,11 @@ export function usePipelineWizard(props: any) {
         referenceStyle: project.visualConfig.referencePrompt,
         referenceCharacters:
           project.visualConfig.characters &&
-          project.visualConfig.characters.length > 0
+            project.visualConfig.characters.length > 0
             ? project.visualConfig.characters.map((c) => ({
-                name: c.name,
-                prompt: c.prompt || c.description,
-              }))
+              name: c.name,
+              prompt: c.prompt || c.description,
+            }))
             : undefined,
         referenceCharacter: project.visualConfig.characterPrompt || undefined,
         visualDensity: project.visualConfig.density || 5,
@@ -1241,9 +1244,9 @@ export function usePipelineWizard(props: any) {
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-            data?.error ||
-            data?.warning ||
-            "System pipeline rejected the request.",
+          data?.error ||
+          data?.warning ||
+          "System pipeline rejected the request.",
         );
       }
 
@@ -1398,19 +1401,19 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleUploadSceneImage = (sceneId: string, base64DataUrl: string) => {
+  const handleUploadSceneImage = async (sceneId: string, base64DataUrl: string) => {
     logAction("handleUploadSceneImage");
+    setIsUploadingImage(true);
+    await new Promise((resolve) => setTimeout(resolve, 600));
     setProject((prev) => {
       const updatedScenes = (prev.storyboard || []).map((sc) => {
         if (sc.id === sceneId) {
-          const existingUrls =
-            sc.assetUrls || (sc.assetUrl ? [sc.assetUrl] : []);
-          const newUrls = [...existingUrls, base64DataUrl];
+          const newUrls = [base64DataUrl];
           return {
             ...sc,
             assetUrl: base64DataUrl,
             assetUrls: newUrls,
-            assetName: `Scene_${sceneId}_uploaded_${newUrls.length}.jpg`,
+            assetName: `Scene_${sceneId}_uploaded.jpg`,
             assetType: "image" as const,
           };
         }
@@ -1419,17 +1422,12 @@ export function usePipelineWizard(props: any) {
       return { ...prev, storyboard: updatedScenes };
     });
 
-    setProject((prev) => {
-      const scene = (prev.storyboard || []).find((s) => s.id === sceneId);
-      if (scene && scene.assetUrls) {
-        setActiveSlideIndices((indices) => ({
-          ...indices,
-          [sceneId]: scene.assetUrls!.length - 1,
-        }));
-      }
-      return prev;
-    });
+    setActiveSlideIndices((indices) => ({
+      ...indices,
+      [sceneId]: 0,
+    }));
 
+    setIsUploadingImage(false);
     const successMsg = t.imageUploadSuccess.replace("{sceneId}", sceneId);
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
@@ -1449,7 +1447,7 @@ export function usePipelineWizard(props: any) {
     if (!project.input.content.trim()) {
       setErrorMsg(
         t.Please_enter_script_conte ||
-          "Vui lòng nhập nội dung trước khi tạo hook.",
+        "Vui lòng nhập nội dung trước khi tạo hook.",
       );
       return;
     }
@@ -2224,8 +2222,11 @@ export function usePipelineWizard(props: any) {
     });
   };
 
-  const handleDeleteSceneImage = (sceneId: string, imgIdx: number) => {
+  const handleDeleteSceneImage = async (sceneId: string, imgIdx: number) => {
     logAction("handleDeleteSceneImage");
+    setIsDeletingImage(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     setProject((prev) => {
       const updatedStoryboard = (prev.storyboard || []).map((sc) => {
         if (sc.id === sceneId) {
@@ -2236,7 +2237,7 @@ export function usePipelineWizard(props: any) {
             ...sc,
             assetUrls: newUrls,
             assetUrl:
-              newUrls.length > 0 ? newUrls[newUrls.length - 1] : undefined,
+              newUrls.length > 0 ? newUrls[newUrls.length - 1] : "",
           };
         }
         return sc;
@@ -2258,10 +2259,7 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    const successMsg =
-      t.Deleted_scene_image_succe || "Đã xóa ảnh phân cảnh thành công.";
-    setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    setIsDeletingImage(false);
   };
 
   const handleDeleteAllSceneImages = () => {
@@ -2285,8 +2283,7 @@ export function usePipelineWizard(props: any) {
 
     setActiveSlideIndices({});
 
-    const successMsg =
-      t.deleteAllImagesSuccess || "Đã xóa toàn bộ ảnh thành công.";
+    const successMsg = t.deleteAllImagesSuccess;
     setInfoMsg(successMsg);
     console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2450,7 +2447,7 @@ export function usePipelineWizard(props: any) {
           const randomCooldown = Math.floor(Math.random() * 15000 + 15000);
           setBatchProgressMsg(
             t.waitingBetweenScenes ||
-              `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`,
+            `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`,
           );
           await new Promise((resolve) => setTimeout(resolve, randomCooldown));
         }
@@ -2471,7 +2468,7 @@ export function usePipelineWizard(props: any) {
       setIsCancellingBatch(false);
       setBatchProgressMsg("");
       if (isGeminiChat && concurrency > 1) {
-        fetch("/api/pipeline/clean-batch-images", { method: "POST" }).catch(() => {});
+        fetch("/api/pipeline/clean-batch-images", { method: "POST" }).catch(() => { });
       }
     }
   };
@@ -2651,9 +2648,9 @@ export function usePipelineWizard(props: any) {
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error ||
-            data?.error ||
-            data?.warning ||
-            "System pipeline rejected the request.",
+          data?.error ||
+          data?.warning ||
+          "System pipeline rejected the request.",
         );
       }
 
@@ -4370,8 +4367,8 @@ export function usePipelineWizard(props: any) {
  <video>
  <track>
  ${sceneRanges
-   .map(
-     (sc) => `
+        .map(
+          (sc) => `
  <clipitem id="clip-${sc.id}">
  <name>${sc.assetName || "Image_" + sc.id}</name>
  <duration>${Math.round(sc.duration * 24)}</duration>
@@ -4381,8 +4378,8 @@ export function usePipelineWizard(props: any) {
  <name>${sc.cameraMotion}</name>
  </effect>
  </clipitem>`,
-   )
-   .join("")}
+        )
+        .join("")}
  </track>
  </video>
  </media>
@@ -4444,6 +4441,8 @@ export function usePipelineWizard(props: any) {
     setSceneEditFx,
     sceneEditTransition,
     setSceneEditTransition,
+    isDeletingImage,
+    isUploadingImage,
     promptSetting,
     setPromptSetting,
     promptTime,

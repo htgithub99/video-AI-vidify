@@ -25,6 +25,7 @@ export const EXTERNAL_URLS = {
   GOOGLE_LABS: 'https://labs.google/',
   GOOGLE_LABS_FLOW: 'https://labs.google/fx/vi/tools/flow/project',
   GEMINI_CHAT: 'https://gemini.google.com/app',
+  GEMINI_CHAT_BASE: 'https://gemini.google.com',
   AI33_VOICES: 'https://api.ai33.pro/v3/voices',
   AI33_TTS: 'https://api.ai33.pro/v3/text-to-speech',
   AI33_TASK: 'https://api.ai33.pro/v1/task',

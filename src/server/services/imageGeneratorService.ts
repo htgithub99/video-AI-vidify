@@ -55,7 +55,7 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
       setTimeout(r, Math.floor(Math.random() * 150 + 100)),
     );
   } catch (e) {
-    await locator.hover().catch(() => {});
+    await locator.hover().catch(() => { });
   }
 }
 
@@ -184,6 +184,8 @@ let lastPlaywrightConfigState: string | null = null;
 let consecutiveGeminiErrors = 0;
 let lastGeminiConfigState: string | null = null;
 let globalBatchPages: Page[] = [];
+const batchPagesErrors = new WeakMap<Page, number>();
+const batchPagesConfigs = new WeakMap<Page, string>();
 
 export async function generateImageWithPlaywright(
   options: ImageGeneratorOptions,
@@ -212,8 +214,8 @@ export async function generateImageWithPlaywright(
   const fallbackUrl = isStickman
     ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
     : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(
-        kws || "cinematic,landscape",
-      )}`;
+      kws || "cinematic,landscape",
+    )}`;
 
   const projectId =
     sandboxConfig.projectId || "cbcf7518-13d7-4eab-b59d-952d5814de53";
@@ -249,7 +251,7 @@ export async function generateImageWithPlaywright(
                     value,
                     configurable: true,
                   });
-                } catch (e) {}
+                } catch (e) { }
                 return target;
               };
             }
@@ -546,7 +548,7 @@ export async function generateImageWithPlaywright(
                   behavior: "instant",
                   block: "center",
                 });
-              } catch (e) {}
+              } catch (e) { }
 
               if (!newImg.complete || newImg.naturalWidth === 0) return null;
 
@@ -557,7 +559,7 @@ export async function generateImageWithPlaywright(
               try {
                 const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
                 if (dataUrl.length > 1000) return dataUrl;
-              } catch (e) {}
+              } catch (e) { }
             }
             return null;
           },
@@ -579,7 +581,7 @@ export async function generateImageWithPlaywright(
         );
         if (isClosedError) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
-          await closePlaywright().catch(() => {});
+          await closePlaywright().catch(() => { });
         }
 
         if (attempts < maxAttempts) {
@@ -598,7 +600,7 @@ export async function generateImageWithPlaywright(
                 reloadErr.message?.toLowerCase().includes(kw),
               )
             ) {
-              await closePlaywright().catch(() => {});
+              await closePlaywright().catch(() => { });
             }
           }
         } else {
@@ -618,7 +620,7 @@ export async function generateImageWithPlaywright(
       if (errorJson?.error?.details?.[0]?.reason) {
         warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return {
       success: false,
@@ -644,7 +646,7 @@ export async function generateImageWithPlaywright(
         fallbackUrl: parsed.directBase64,
       };
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return {
     success: false,
@@ -738,7 +740,7 @@ export async function generateImageWithGeminiChat(
       }
 
       let reloadAttempts = 0;
-      const maxReloadAttempts = 3;
+      const maxReloadAttempts = 4;
 
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
@@ -851,7 +853,7 @@ export async function closeAllBatchPages() {
       if (!page.isClosed()) {
         await page.close();
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   globalBatchPages = [];
 }
@@ -930,56 +932,124 @@ export async function generateBatchImagesWithGeminiChat(
         ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
         : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
 
+      let success = false;
+      let base64Result: string | null = null;
+      let roomAttempts = 0;
+      const maxRoomAttempts = 2;
+
       try {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
+        while (roomAttempts < maxRoomAttempts && !success) {
+          roomAttempts++;
 
-        const currentUrl = page.url();
-        if (!currentUrl.includes("gemini.google.com")) {
-          await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
-          await randomDelay(2000, 4000);
+          if (page.isClosed()) {
+            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_PAGE_CLOSED);
+          }
+
+          const currentUrl = page.url();
+          const consecutiveErrors = batchPagesErrors.get(page) || 0;
+          let needNewRoom = false;
+
+          if (!currentUrl.includes("gemini.google.com")) {
+            needNewRoom = true;
+          } else if (consecutiveErrors >= 2) {
+            needNewRoom = true;
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_FORCED_NEW_ROOM.replace("{0}", (tabIndex + 1).toString()).replace("{1}", consecutiveErrors.toString()));
+          }
+
+          if (needNewRoom) {
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT.replace("{0}", (tabIndex + 1).toString()).replace("{1}", roomAttempts.toString()).replace("{2}", maxRoomAttempts.toString()));
+            try {
+              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+              await randomDelay(2000, 4000);
+              batchPagesErrors.set(page, 0);
+            } catch (err: any) {
+              appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", err.message));
+              if (roomAttempts >= maxRoomAttempts) {
+                throw err;
+              }
+              continue;
+            }
+          } else {
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_ROOM_REUSE.replace("{0}", (tabIndex + 1).toString()));
+          }
+
+          let reloadAttempts = 0;
+          const maxReloadAttempts = 4;
+
+          while (reloadAttempts < maxReloadAttempts && !success) {
+            reloadAttempts++;
+            if (reloadAttempts > 1) {
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_ATTEMPT.replace("{0}", (tabIndex + 1).toString()).replace("{1}", (reloadAttempts - 1).toString()));
+              try {
+                await page.reload({ waitUntil: "domcontentloaded" });
+                await randomDelay(3000, 5000);
+              } catch (reloadErr: any) {
+                appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", reloadErr.message));
+                continue;
+              }
+            }
+
+            try {
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
+
+              const inputLoc = page.locator(GeminiChatSelector.Input).first();
+              await inputLoc.waitFor({ state: "visible", timeout: 25000 });
+
+              const currentConfigState = JSON.stringify({
+                generateType: visualConfig?.generateType || GenerateType.Image,
+                imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+              });
+
+              const lastConfig = batchPagesConfigs.get(page);
+              const isConfigChanged = currentConfigState !== lastConfig;
+              const forceSetting = needNewRoom || isConfigChanged;
+
+              await configureGeminiModel(page, visualConfig, forceSetting);
+              await configureGeminiGenerateType(page, visualConfig, forceSetting);
+
+              if (forceSetting) {
+                batchPagesConfigs.set(page, currentConfigState);
+              }
+
+              await enterGeminiPrompt(page, finalPrompt, visualConfig);
+
+              await page.keyboard.press("Enter");
+              await randomDelay(1200, 2200);
+
+              base64Result = await waitForDownloadAndGetBase64(page, visualConfig);
+              if (base64Result) {
+                success = true;
+                batchPagesErrors.set(page, 0);
+              } else {
+                throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
+              }
+            } catch (err: any) {
+              batchPagesErrors.set(page, (batchPagesErrors.get(page) || 0) + 1);
+              appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RENDER_ERROR.replace("{0}", (tabIndex + 1).toString()).replace("{1}", reloadAttempts.toString()).replace("{2}", err.message));
+            }
+          }
         }
-
-        const inputLoc = page.locator(GeminiChatSelector.Input).first();
-        await inputLoc.waitFor({ state: "visible", timeout: 25000 });
-
-        await configureGeminiModel(page, visualConfig, true);
-        await configureGeminiGenerateType(page, visualConfig, true);
-        await enterGeminiPrompt(page, finalPrompt, visualConfig);
-
-        await page.keyboard.press("Enter");
-        await randomDelay(1200, 2200);
-
-        const base64Result = await waitForDownloadAndGetBase64(page, visualConfig);
-        if (base64Result) {
-          appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_SUCCESS.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
-          return {
-            sceneId: item.sceneId,
-            success: true,
-            base64: base64Result,
-            fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
-          };
-        }
-
-        throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
       } catch (err: any) {
-        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_ERROR.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId).replace("{2}", err.message));
-        
-        try {
-          appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_RECOVERY.replace("{0}", (tabIndex + 1).toString()));
-          await page.reload({ waitUntil: "domcontentloaded" });
-          await randomDelay(2000, 4000);
-        } catch (reloadErr) {
-          await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" }).catch(() => {});
-        }
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_FAILED_COMPLETELY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", err.message));
+      }
 
+      if (success && base64Result) {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_SUCCESS.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
         return {
           sceneId: item.sceneId,
-          success: false,
-          base64: null,
-          fallbackUrl,
-          warning: err.message,
+          success: true,
+          base64: base64Result,
+          fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
         };
       }
+
+      return {
+        sceneId: item.sceneId,
+        success: false,
+        base64: null,
+        fallbackUrl,
+        warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
+      };
     };
 
     const tabPromises = activePages.map((page, idx) => generateOnTab(page, items[idx], idx));
@@ -1043,7 +1113,7 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace("{0}", targetModelText));
     const currentText = await modelPickerBtn.textContent();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
-    
+
     let isCorrect = false;
     if (targetModelText === GeminiChatModelName.FlashLite && currentText?.includes('Lite')) {
       isCorrect = true;
@@ -1082,7 +1152,7 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
         await randomDelay(1000, 1800);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -1108,7 +1178,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
 
     const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions)
       .filter({ hasText: targetRegex }).first();
-    
+
     if (await optionBtn.isVisible()) {
       await randomDelay(500, 1000);
       await optionBtn.click();
@@ -1136,7 +1206,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
         await randomDelay(1200, 2000);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -1217,7 +1287,7 @@ async function waitForGeminiFinished(page: Page, timeoutMs = 150000) {
 async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<string | null> {
   try {
     const tagName = await mediaElement.evaluate((el: HTMLElement) => el.tagName.toLowerCase());
-    
+
     let src = '';
     for (let i = 0; i < 30; i++) {
       src = await mediaElement.evaluate((el: any) => el.src || el.getAttribute('src') || '');
@@ -1231,7 +1301,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
       appError(BACKEND_MESSAGES.GEMINI_CHAT_NO_SRC);
       return null;
     }
-    
+
     if (src.startsWith('data:')) {
       const parts = src.split(',');
       return parts[1] || null;
