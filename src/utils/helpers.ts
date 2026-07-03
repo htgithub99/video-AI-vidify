@@ -31,10 +31,10 @@ export const preventDefault = (e: React.MouseEvent | React.TouchEvent | React.Ke
 export const formatTimeHelper = (secs: number): string => {
   const minutes = Math.floor(secs / 60);
   const remainingSecs = secs % 60;
-  const rSecsFormatted = remainingSecs % 1 === 0 
-    ? remainingSecs.toFixed(0).padStart(2, '0') 
-    : parseFloat(remainingSecs.toFixed(1)).toString().padStart(2, '0');
-  
-  return `${minutes.toString().padStart(2, '0')}:${rSecsFormatted}`;
+  const roundedSecs = Math.round(remainingSecs * 1000) / 1000;
+  const parts = roundedSecs.toString().split('.');
+  const integerPart = parts[0].padStart(2, '0');
+  const decimalPart = parts[1] ? `.${parts[1]}` : '';
+  return `${minutes.toString().padStart(2, '0')}:${integerPart}${decimalPart}`;
 };
 

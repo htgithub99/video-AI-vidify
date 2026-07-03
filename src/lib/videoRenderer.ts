@@ -27,11 +27,11 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   return storyboard.map((sc) => {
     const startSec = parseTimeToSeconds(sc.startTime || '');
     const endSec = parseTimeToSeconds(sc.endTime || '');
-    
+
     const start = (sc.startTime && startSec !== null && startSec >= 0) ? startSec : elapsed;
     const duration = sc.duration || 5;
     const end = (sc.endTime && endSec !== null && endSec > start) ? endSec : start + duration;
-    
+
     const actualDuration = end - start;
     elapsed = end;
     return {
@@ -56,13 +56,13 @@ export const drawSceneFrameToContext = (
 ) => {
   const w = 1280;
   const h = 720;
-  
+
   ctx.clearRect(0, 0, w, h);
-  
+
   const progress = Math.min(elapsedTimeInScene / (totalSceneDuration || 1), 1.0);
-  
+
   ctx.save();
-  
+
   let scale = 1.0;
   let dx = 0;
   let dy = 0;
@@ -133,7 +133,7 @@ export const drawSceneFrameToContext = (
     });
     ctx.fillText(currentLine, 80, startY);
   }
-  
+
   ctx.restore();
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -143,11 +143,11 @@ export const drawSceneFrameToContext = (
   ctx.font = 'bold 22px sans-serif';
   ctx.textAlign = 'center';
   const subText = sc.subtitle || sc.script || '';
-  
+
   let currentSubLine = '';
   let subLines: string[] = [];
   const maxLineLength = 90;
-  
+
   subText.split(' ').forEach((w: string) => {
     if ((currentSubLine + w).length > maxLineLength) {
       subLines.push(currentSubLine);
@@ -180,7 +180,7 @@ export const compileVideoToBlob = async (
   onProgress(5);
   const loadedImages: Record<string, HTMLImageElement> = {};
   let loadedCount = 0;
-  
+
   await Promise.all(
     scenes.map((sc) => {
       return new Promise<void>((resolve) => {
@@ -222,24 +222,24 @@ export const compileVideoToBlob = async (
   const hasGlobalAudio = voiceUrl && voiceUrl !== 'simulated' && voiceUrl !== 'simulated_speech';
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
-  
+
   if (hasAudioRecording) {
     try {
       audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       destNode = audioCtx.createMediaStreamDestination();
-      
+
       audioEl = new Audio();
       audioEl.crossOrigin = "anonymous";
       const sourceNode = audioCtx.createMediaElementSource(audioEl);
       sourceNode.connect(destNode);
-      
+
       destNode.stream.getAudioTracks().forEach((track: MediaStreamTrack) => mixedStream.addTrack(track));
     } catch (ae) {
       appWarn("AUDIO_CONTEXT_INIT_FAILED", ae);
     }
   }
 
-  
+
   const supportedTypes = [
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
@@ -279,20 +279,26 @@ export const compileVideoToBlob = async (
     };
 
     recorder.start();
+
+    const MAX_EXPORT_TIME = 5;
+    const speedFactor = totalDuration > MAX_EXPORT_TIME ? (totalDuration / MAX_EXPORT_TIME) : 1;
+
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
       audioEl.src = voiceUrl || '';
       audioEl.currentTime = 0;
+      audioEl.playbackRate = speedFactor <= 4.0 ? speedFactor : 4.0;
       audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
     }
 
     const startTime = performance.now();
     let lastSceneId: string | null = null;
-    
+
     const renderFrame = () => {
       const now = performance.now();
-      const elapsed = (now - startTime) / 1000;
-      
-      if (elapsed >= totalDuration) {
+      const realElapsed = (now - startTime) / 1000;
+      const elapsed = realElapsed * speedFactor;
+
+      if (elapsed >= totalDuration || realElapsed >= MAX_EXPORT_TIME) {
         recorder.stop();
         if (audioEl) audioEl.pause();
         if (audioCtx) audioCtx.close();
@@ -307,15 +313,16 @@ export const compileVideoToBlob = async (
         if (activeScene.audioUrl) {
           audioEl.src = activeScene.audioUrl;
           audioEl.currentTime = 0;
+          audioEl.playbackRate = speedFactor <= 4.0 ? speedFactor : 4.0;
           audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
         } else {
           audioEl.src = '';
         }
       }
-      
+
       const timeInScene = elapsed - matchingRange.start;
       const sceneDuration = matchingRange.duration;
-      
+
       const imgEl = loadedImages[activeScene.id];
       drawSceneFrameToContext(ctx, activeScene, imgEl, timeInScene, sceneDuration);
 

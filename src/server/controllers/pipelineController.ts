@@ -11,8 +11,8 @@ import {
   generateScenesWithChunking,
   SceneDensity,
 } from "../../utils/sceneGeneratorHelper.js";
-import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
-import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS } from "../../constants/messages.js";
+import { EXTERNAL_URLS, ALIGN_CONFIG } from "../../constants/apiRoutes.js";
+import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS } from "../../constants/messages.js";
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
 import {
   VI_GENRE_GUIDELINES,
@@ -44,7 +44,7 @@ import { STICKMAN_KEYWORDS } from "../../constants/data.js";
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
 import os from "os";
-
+import { exec } from "child_process";
 
 const router = express.Router();
 
@@ -2200,6 +2200,115 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
       .save(outputPath);
   } catch (err: any) {
     logger.error("UNEXPECTED_ERROR_MERGE_AUDIO", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+});
+
+router.post("/align-voice", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  try {
+    const { audioBase64, scenes } = req.body;
+    if (!audioBase64) {
+      return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
+    }
+    if (!scenes || !Array.isArray(scenes) || scenes.length === 0) {
+      return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
+    }
+
+    const tempDir = path.join(process.cwd(), ALIGN_CONFIG.TEMP_DIR);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const sessionId = randomUUID();
+    const audioPath = path.join(tempDir, `audio_${sessionId}.wav`);
+    const scenesPath = path.join(tempDir, `scenes_${sessionId}.json`);
+    const outputPath = path.join(tempDir, `output_${sessionId}.json`);
+
+    const audioBuffer = Buffer.from(audioBase64, "base64");
+    fs.writeFileSync(audioPath, audioBuffer);
+
+    fs.writeFileSync(scenesPath, JSON.stringify(scenes, null, 2), "utf-8");
+
+    const scriptPath = path.join(process.cwd(), ALIGN_CONFIG.SCRIPT_FILE);
+
+    const checkCmd = `python -c "import whisper"`;
+    logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
+    
+    exec(checkCmd, (checkError) => {
+      if (checkError) {
+        logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
+        const installCmd = `python -m pip install openai-whisper`;
+        
+        exec(installCmd, (installError, installStdout, installStderr) => {
+          if (installError) {
+            logger.error(`Failed to install openai-whisper: ${installError.message}`);
+            try {
+              if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+              if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
+            } catch (cleanupErr) {}
+            return res.status(500).json({
+              success: false,
+              error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message)
+            });
+          }
+          
+          logger.log(VOICE_ALIGN_LOGS.WHISPER_INSTALL_SUCCESS);
+          runAligner();
+        });
+      } else {
+        logger.log(VOICE_ALIGN_LOGS.WHISPER_ALREADY_INSTALLED);
+        runAligner();
+      }
+    });
+
+    function runAligner() {
+      const cmd = `python "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
+      logger.log(`Running voice aligner command: ${cmd}`);
+
+      exec(cmd, (error, stdout, stderr) => {
+        try {
+          if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+          if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
+        } catch (err) {
+          logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
+        }
+
+        if (error) {
+          logger.error(`Error running voice_aligner.py: ${error.message}`);
+          logger.error(`Python script stderr: ${stderr}`);
+          return res.status(500).json({ 
+            success: false, 
+            error: error.message
+          });
+        }
+
+        try {
+          if (!fs.existsSync(outputPath)) {
+            throw new Error(getBackendMsg("VOICE_ALIGN_MISSING_OUTPUT", isVi));
+          }
+
+          const rawResult = fs.readFileSync(outputPath, "utf-8");
+          const result = JSON.parse(rawResult);
+
+          fs.unlinkSync(outputPath);
+
+          return res.json(result);
+        } catch (err: any) {
+          logger.error(`Error parsing voice_aligner.py output: ${err.message}`);
+          if (fs.existsSync(outputPath)) {
+            try { fs.unlinkSync(outputPath); } catch (e) {}
+          }
+          return res.status(500).json({ 
+            success: false, 
+            error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message)
+          });
+        }
+      });
+    }
+
+  } catch (err: any) {
+    logger.error(VOICE_ALIGN_LOGS.ERR_UNEXPECTED_ALIGN, err);
     res.status(500).json({ error: "Internal server error: " + err.message });
   }
 });

@@ -16,6 +16,7 @@ export const API_ROUTES = {
   PIPELINE_CLEAN_BATCH_IMAGES: '/api/pipeline/clean-batch-images',
   PIPELINE_DETAILED_PROMPT: '/api/pipeline/detailed-prompt',
   PIPELINE_VOICE: '/api/pipeline/voice',
+  PIPELINE_ALIGN_VOICE: '/api/pipeline/align-voice',
 };
 
 export const EXTERNAL_URLS = {
@@ -33,4 +34,9 @@ export const EXTERNAL_URLS = {
   AI33_TASK: 'https://api.ai33.pro/v1/task',
   LOREM_FLICKR: 'https://loremflickr.com',
   PLACEHOLD_CO: 'https://placehold.co',
+};
+
+export const ALIGN_CONFIG = {
+  TEMP_DIR: 'temp_align',
+  SCRIPT_FILE: 'voice_aligner.py',
 };

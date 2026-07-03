@@ -782,7 +782,12 @@ export const translations = {
     "pageIndicator": "Page {current} of {total}",
     "noPhotoRenderedYet": "No photo rendered yet for SCENE {sceneId}. Go back and render!",
     "offlineRenderProgressText": "Rendering progress: {progress}%...",
-    "streamNotSupported": "Data stream is not supported by this browser."
+    "streamNotSupported": "Data stream is not supported by this browser.",
+    "aligningVoiceWithWhisper": "Syncing audio via Whisper AI...",
+    "voiceAlignSuccess": "Successfully aligned scene durations 1-1 with real voice (Whisper AI)!",
+    "voiceAlignNoValidResult": "No valid analysis result returned from Whisper AI.",
+    "voiceAlignSceneNotFound": "Synchronization data not found for scene {sceneId}.",
+    "voiceAlignError": "Voice synchronization via Whisper AI failed. Please check your Python/Whisper installation."
 },
   vi: {
     "appTitle": "Dựng Phim AI",
@@ -1565,6 +1570,11 @@ export const translations = {
     "pageIndicator": "Trang {current} / {total}",
     "noPhotoRenderedYet": "Chưa có hình ảnh được tạo cho PHÂN CẢNH {sceneId}. Hãy quay lại bước phân cảnh để tạo!",
     "offlineRenderProgressText": "Đang kết xuất: {progress}%...",
-    "streamNotSupported": "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này."
+    "streamNotSupported": "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
+    "aligningVoiceWithWhisper": "Đang đồng bộ âm thanh bằng Whisper AI...",
+    "voiceAlignSuccess": "Đã đồng bộ thời lượng các phân cảnh khớp 1-1 theo giọng nói thật (Whisper AI)!",
+    "voiceAlignNoValidResult": "Không nhận được kết quả phân tích hợp lệ từ Whisper AI.",
+    "voiceAlignSceneNotFound": "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
+    "voiceAlignError": "Lỗi đồng bộ giọng nói bằng Whisper AI. Vui lòng kiểm tra cài đặt Python/Whisper."
 }
 };

@@ -11,6 +11,7 @@ const logger = {
   warn: appWarn,
 };
 import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
+import { VOICE_ALIGN_LOGS } from "../../constants/messages";
 import {
   VideoProject,
   HookVersion,
@@ -3058,30 +3059,54 @@ export function usePipelineWizard(props: any) {
       // Prevent division by zero
       if (totalTextLength === 0) totalTextLength = 1;
 
-      let currentSecs = 0;
+      setBulkVoiceStatus(t.aligningVoiceWithWhisper);
+      try {
+        const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audioBase64: processedBase64,
+            scenes: updatedScenes.map((sc) => ({
+              id: sc.id,
+              script: sc.narrationText || sc.script || sc.subtitle || "",
+            })),
+          }),
+        });
 
-      for (let i = 0; i < updatedScenes.length; i++) {
-        const scene = updatedScenes[i];
-        const sceneRatio = scene.textLength / totalTextLength;
-        const sceneDur = Math.max(1, Math.round(totalDuration * sceneRatio));
+        if (!alignResponse.ok) {
+          const errData = await alignResponse.json().catch(() => ({}));
+          throw new Error(errData.error || `API align-voice error status: ${alignResponse.status}`);
+        }
 
-        scene.duration = sceneDur;
-        scene.script = scene.narrationText;
-        scene.subtitle = scene.narrationText;
-        // remove scene specific audio since we use unified audio
-        scene.audioUrl = undefined;
-        scene.audioBase64 = undefined;
+        const alignData = await alignResponse.json();
+        if (alignData && alignData.success && Array.isArray(alignData.alignments)) {
+          console.log(VOICE_ALIGN_LOGS.ALIGN_SUCCESS, alignData.alignments);
+          for (let i = 0; i < updatedScenes.length; i++) {
+            const scene = updatedScenes[i];
+            const align = alignData.alignments.find((a: any) => a.id === scene.id);
+            
+            scene.script = scene.narrationText;
+            scene.subtitle = scene.narrationText;
+            scene.audioUrl = undefined;
+            scene.audioBase64 = undefined;
 
-        const startSecs = currentSecs;
-        const endSecs = currentSecs + scene.duration;
-        currentSecs = endSecs;
-        scene.startTime = formatTimeHelper(startSecs);
-        scene.endTime = formatTimeHelper(endSecs);
+            if (align) {
+              scene.duration = align.duration;
+              scene.startTime = formatTimeHelper(align.start);
+              scene.endTime = formatTimeHelper(align.end);
+            } else {
+              throw new Error(t.voiceAlignSceneNotFound ? t.voiceAlignSceneNotFound.replace("{sceneId}", scene.id.toString()) : `Không tìm thấy thông tin đồng bộ cho phân cảnh ${scene.id}.`);
+            }
+          }
+          setInfoMsg(t.voiceAlignSuccess);
+        } else {
+          throw new Error(alignData.error || t.voiceAlignNoValidResult);
+        }
+      } catch (alignErr: any) {
+        logger.error(VOICE_ALIGN_LOGS.ALIGN_FAILED, alignErr);
+        throw new Error(alignErr.message || t.voiceAlignError);
       }
 
-      // ==========================================
-      // STEP 5: Stitching Log Generation
-      // ==========================================
       let syncLogText = t.syncLedgerSuccess.replace(
         "{totalDuration}",
         totalDuration.toFixed(1),
@@ -3751,10 +3776,10 @@ export function usePipelineWizard(props: any) {
         },
       );
 
-      const processedImages = await Promise.all(sceneImagePromises);
+      await Promise.all(sceneImagePromises);
 
       // Append project voice narration if built
-      let ttsBase64 = project.output?.audioBase64 || "";
+      let ttsBase64 = project.voiceConfig?.audioBase64 || project.output?.audioBase64 || "";
       if (ttsBase64.startsWith("data:")) {
         ttsBase64 = ttsBase64.split(",")[1];
       }

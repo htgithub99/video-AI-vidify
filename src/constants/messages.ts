@@ -128,7 +128,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     UNKNOWN_ERROR: "Lỗi không xác định.",
     BATCH_GEN_NO_ITEMS: "Không có items để tạo ảnh",
     BATCH_GEN_SYSTEM_ERROR: "Có lỗi hệ thống xảy ra: {0}",
-    STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này."
+    STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
+    VOICE_ALIGN_NO_AUDIO: "Không tìm thấy dữ liệu âm thanh.",
+    VOICE_ALIGN_NO_SCENES: "Không tìm thấy danh sách phân cảnh.",
+    VOICE_ALIGN_MISSING_OUTPUT: "Không nhận được file kết quả từ script Python.",
+    VOICE_ALIGN_INSTALL_ERR: "Môi trường Python thiếu thư viện 'openai-whisper' và không thể tự động cài đặt. Vui lòng tự chạy lệnh 'pip install openai-whisper' trên Terminal. Lỗi: {0}",
+    VOICE_ALIGN_PARSE_ERR: "Lỗi đọc kết quả đồng bộ: {0}"
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -259,7 +264,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     UNKNOWN_ERROR: "Unknown error.",
     BATCH_GEN_NO_ITEMS: "No items to generate images.",
     BATCH_GEN_SYSTEM_ERROR: "A system error occurred: {0}",
-    STREAM_NOT_SUPPORTED: "Data stream is not supported by this browser."
+    STREAM_NOT_SUPPORTED: "Data stream is not supported by this browser.",
+    VOICE_ALIGN_NO_AUDIO: "No audio data found.",
+    VOICE_ALIGN_NO_SCENES: "No scenes found.",
+    VOICE_ALIGN_MISSING_OUTPUT: "No output file received from Python script.",
+    VOICE_ALIGN_INSTALL_ERR: "Python environment lacks 'openai-whisper' library and automatic installation failed. Please run 'pip install openai-whisper' manually on Terminal. Error: {0}",
+    VOICE_ALIGN_PARSE_ERR: "Error reading synchronization results: {0}"
   }
 };
 
@@ -1108,3 +1118,14 @@ export const LOG_DICTIONARY = {
 };
 
 export type LogKey = keyof typeof LOG_DICTIONARY;
+
+export const VOICE_ALIGN_LOGS = {
+  ALIGN_SUCCESS: "[Whisper Alignment] ✅ Đồng bộ thành công:",
+  ALIGN_FAILED: "[Whisper Alignment] ❌ Đồng bộ thất bại:",
+  CHECK_WHISPER: "Checking if openai-whisper is installed...",
+  WHISPER_NOT_INSTALLED: "openai-whisper is not installed. Attempting to install automatically via pip...",
+  WHISPER_INSTALL_SUCCESS: "Successfully installed openai-whisper. Running voice aligner...",
+  WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...",
+  ERR_DELETE_TEMP_FILES: "Error deleting temp files",
+  ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE",
+};
