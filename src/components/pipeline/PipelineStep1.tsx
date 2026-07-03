@@ -1565,16 +1565,21 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    const objectUrl = URL.createObjectURL(file);
-                                    setProject((prev) => ({
-                                      ...prev,
-                                      voiceConfig: {
-                                        ...prev.voiceConfig,
-                                        audioType: AudioType.Upload,
-                                        uploadedAudioName: file.name,
-                                        audioUrl: objectUrl,
-                                      },
-                                    }));
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      const dataUrl = reader.result as string;
+                                      setProject((prev) => ({
+                                        ...prev,
+                                        voiceConfig: {
+                                          ...prev.voiceConfig,
+                                          audioType: AudioType.Upload,
+                                          uploadedAudioName: file.name,
+                                          audioUrl: dataUrl,
+                                          audioBase64: dataUrl.split(",")[1],
+                                        },
+                                      }));
+                                    };
+                                    reader.readAsDataURL(file);
                                   }
                                 }}
                               />
@@ -1667,19 +1672,24 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           setIsAudioDragging(false);
                           const file = e.dataTransfer.files?.[0];
                           if (file && file.type.startsWith("audio/")) {
-                            const objectUrl = URL.createObjectURL(file);
-                            setProject((prev) => ({
-                              ...prev,
-                              voiceConfig: {
-                                ...prev.voiceConfig,
-                                audioType: AudioType.Upload,
-                                uploadedAudioName: file.name,
-                                audioUrl: objectUrl,
-                              },
-                            }));
-                            setInfoMsg(
-                              t.loadedFile.replace("{name}", file.name),
-                            );
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              const dataUrl = reader.result as string;
+                              setProject((prev) => ({
+                                ...prev,
+                                voiceConfig: {
+                                  ...prev.voiceConfig,
+                                  audioType: AudioType.Upload,
+                                  uploadedAudioName: file.name,
+                                  audioUrl: dataUrl,
+                                  audioBase64: dataUrl.split(",")[1],
+                                },
+                              }));
+                              setInfoMsg(
+                                t.loadedFile.replace("{name}", file.name),
+                              );
+                            };
+                            reader.readAsDataURL(file);
                           }
                         }}
                         className="relative z-10"
@@ -1710,16 +1720,21 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const objectUrl = URL.createObjectURL(file);
-                                setProject((prev) => ({
-                                  ...prev,
-                                  voiceConfig: {
-                                    ...prev.voiceConfig,
-                                    audioType: AudioType.Upload,
-                                    uploadedAudioName: file.name,
-                                    audioUrl: objectUrl,
-                                  },
-                                }));
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  const dataUrl = reader.result as string;
+                                  setProject((prev) => ({
+                                    ...prev,
+                                    voiceConfig: {
+                                      ...prev.voiceConfig,
+                                      audioType: AudioType.Upload,
+                                      uploadedAudioName: file.name,
+                                      audioUrl: dataUrl,
+                                      audioBase64: dataUrl.split(",")[1],
+                                    },
+                                  }));
+                                };
+                                reader.readAsDataURL(file);
                               }
                             }}
                           />
