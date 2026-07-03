@@ -3660,6 +3660,9 @@ export function usePipelineWizard(props: any) {
       zip.folder(`${folderKey}/matting`);
       zip.folder(`${folderKey}/qr_upload`);
       zip.folder(`${folderKey}/Resources`);
+      zip.folder(`${folderKey}/Resources/voices`);
+      zip.folder(`${folderKey}/Resources/images`);
+      zip.folder(`${folderKey}/Resources/voiceImages`);
       zip.folder(`${folderKey}/smart_crop`);
       zip.folder(`${folderKey}/subdraft`);
       zip.folder(`${folderKey}/Timelines`);
@@ -3764,10 +3767,15 @@ export function usePipelineWizard(props: any) {
 
           // Put into zip folders as real assets inside active draft Resources folder & backup root Resources only
           const itemFileName = `${index + 1}_image.jpg`;
-          zip.file(`${folderKey}/Resources/${itemFileName}`, imgBase64, {
+          zip.file(`${folderKey}/Resources/images/${itemFileName}`, imgBase64, {
             base64: true,
           });
-          zip.file(`Resources/${itemFileName}`, imgBase64, { base64: true });
+          zip.file(`Resources/images/${itemFileName}`, imgBase64, { base64: true });
+
+          zip.file(`${folderKey}/Resources/voiceImages/${itemFileName}`, imgBase64, {
+            base64: true,
+          });
+          zip.file(`Resources/voiceImages/${itemFileName}`, imgBase64, { base64: true });
 
           return {
             id: sc.id,
@@ -4001,10 +4009,17 @@ export function usePipelineWizard(props: any) {
             );
             const filename = `${index + 1}_voice.wav`;
 
-            zip.file(`${folderKey}/Resources/${filename}`, voiceSegmentBase64, {
+            zip.file(`${folderKey}/Resources/voices/${filename}`, voiceSegmentBase64, {
               base64: true,
             });
-            zip.file(`Resources/${filename}`, voiceSegmentBase64, {
+            zip.file(`Resources/voices/${filename}`, voiceSegmentBase64, {
+              base64: true,
+            });
+
+            zip.file(`${folderKey}/Resources/voiceImages/${filename}`, voiceSegmentBase64, {
+              base64: true,
+            });
+            zip.file(`Resources/voiceImages/${filename}`, voiceSegmentBase64, {
               base64: true,
             });
 
@@ -4024,8 +4039,11 @@ export function usePipelineWizard(props: any) {
           const sc = sceneRanges[index];
           const filename = `${index + 1}_voice.wav`;
           const dummyText = "Mock Audio Stream Segment Placeholder";
-          zip.file(`${folderKey}/Resources/${filename}`, dummyText);
-          zip.file(`Resources/${filename}`, dummyText);
+          zip.file(`${folderKey}/Resources/voices/${filename}`, dummyText);
+          zip.file(`Resources/voices/${filename}`, dummyText);
+
+          zip.file(`${folderKey}/Resources/voiceImages/${filename}`, dummyText);
+          zip.file(`Resources/voiceImages/${filename}`, dummyText);
           sceneAudios.push({
             id: sc.id,
             fileName: filename,
@@ -4046,7 +4064,7 @@ export function usePipelineWizard(props: any) {
           type: "audio",
           duration: durationUs,
           source_platform: "AI Video Factory TTS Segmented",
-          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/${sa.fileName}`,
+          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/voices/${sa.fileName}`,
         });
 
         audioTrackSegments.push({
@@ -4080,7 +4098,7 @@ export function usePipelineWizard(props: any) {
           id: imgMatId,
           type: "image",
           duration: timing.durationUs,
-          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/${index + 1}_image.jpg`,
+          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/images/${index + 1}_image.jpg`,
         });
 
         videoTrackSegments.push({
