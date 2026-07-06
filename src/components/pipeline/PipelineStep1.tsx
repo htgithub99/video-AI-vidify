@@ -198,6 +198,31 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
   const [showConfirmRecreateModal, setShowConfirmRecreateModal] = useState(false);
 
+  const handleUpdateCharacter = (
+    charId: string,
+    field: "name" | "description" | "prompt",
+    value: string,
+  ) => {
+    setProject((prev) => {
+      const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
+        if (c.id === charId) {
+          return {
+            ...c,
+            [field]: value,
+          };
+        }
+        return c;
+      });
+      return {
+        ...prev,
+        visualConfig: {
+          ...prev.visualConfig,
+          characters: updatedChars,
+        },
+      };
+    });
+  };
+
   const onAudioFileSelected = (file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -2072,11 +2097,15 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               <div className="flex-1 min-w-0 flex flex-col justify-between">
                                 <div>
                                   <div className="flex items-center justify-between gap-1">
-                                    <h4 className="text-[11px] font-bold text-rose-350 flex items-center gap-1 min-w-0">
+                                    <h4 className="text-[11px] font-bold text-rose-350 flex items-center gap-1 min-w-0 flex-1">
                                       <User className="w-3 h-3 text-rose-500 shrink-0" />
-                                      <span className="truncate">
-                                        {char.name}
-                                      </span>
+                                      <input
+                                        type="text"
+                                        value={char.name}
+                                        onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)}
+                                        className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
+                                        placeholder="Tên nhân vật"
+                                      />
                                     </h4>
                                     <button
                                       type="button"
@@ -2093,12 +2122,13 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       <Copy className="w-2.5 h-2.5" />
                                     </button>
                                   </div>
-                                  <p
-                                    className="text-[9px] text-slate-400 mt-1 leading-relaxed bg-slate-900/30 p-1.5 rounded border border-slate-855/50 line-clamp-3"
+                                  <textarea
+                                    value={char.description}
+                                    onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
+                                    className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
+                                    placeholder="Mô tả tiểu sử nhân vật..."
                                     title={char.description}
-                                  >
-                                    {char.description}
-                                  </p>
+                                  />
                                 </div>
                               </div>
 
@@ -2216,32 +2246,33 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             { }
                             <div className="border-t border-slate-900/60 pt-2 space-y-2">
                               {char.prompt && (
-                                <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-1 flex items-center justify-between gap-1.5">
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className="text-emerald-400 font-bold text-[8px] mb-0.5 uppercase tracking-wider flex items-center gap-1">
-                                      <Sparkles className="w-2 h-2" />{" "}
+                                <div className="bg-emerald-950/15 border border-emerald-500/20 rounded p-1.5 flex flex-col gap-1">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-emerald-400 font-bold text-[8px] uppercase tracking-wider flex items-center gap-1">
+                                      <Sparkles className="w-2 h-2 text-emerald-400" />{" "}
                                       {t.charPromptTitle}
                                     </h4>
-                                    <p
-                                      className="text-slate-350 text-[8px] leading-relaxed italic line-clamp-1"
-                                      title={char.prompt}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(
+                                          char.prompt || "",
+                                        );
+                                        setInfoMsg(t.charCopied);
+                                        setTimeout(() => setInfoMsg(""), 3000);
+                                      }}
+                                      className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors cursor-pointer"
                                     >
-                                      {char.prompt}
-                                    </p>
+                                      <Copy className="w-2.5 h-2.5" />
+                                    </button>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(
-                                        char.prompt || "",
-                                      );
-                                      setInfoMsg(t.charCopied);
-                                      setTimeout(() => setInfoMsg(""), 3000);
-                                    }}
-                                    className="shrink-0 p-1 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors cursor-pointer"
-                                  >
-                                    <Copy className="w-2.5 h-2.5" />
-                                  </button>
+                                  <textarea
+                                    value={char.prompt}
+                                    onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
+                                    className="w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900"
+                                    placeholder="Đặc tả nhân vật..."
+                                    title={char.prompt}
+                                  />
                                 </div>
                               )}
 
