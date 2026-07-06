@@ -321,7 +321,7 @@ export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false) => ([
   {
     id: isFallback ? "th_fallback_1" : "th_1",
     prompt:
-      "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. MrBeast high-contrast style. (Resilient Fallback)",
+      "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. At the bottom, a bold red text overlay reading 'BÍ MẬT!' with a thick black border. MrBeast high-contrast style. (Resilient Fallback)",
     style: "MrBeast",
     hasText: true,
     textText: isVi ? "BÍ MẬT!" : "SECRET!",
@@ -333,10 +333,13 @@ export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false) => ([
   {
     id: isFallback ? "th_fallback_2" : "th_2",
     prompt:
-      "An archaeological dig site uncovered at dusk, golden ray light beams shooting out of the ground, history channel look, dramatic angle, high details.",
+      "An archaeological dig site uncovered at dusk, golden ray light beams shooting out of the ground. At the bottom, a giant bold white text overlay reading 'BÍ ẨN!' with a thick black drop shadow. History channel look, dramatic angle, high details.",
     style: "History Channel",
-    hasText: false,
-    layout: "None",
+    hasText: true,
+    textText: isVi ? "BÍ ẨN!" : "MYSTERY!",
+    layout: "Bottom center text",
+    typography: "Impact Bold Sans",
+    colorSuggestion: "Bright white text with thick black drop shadow",
     subjectFocus: isVi
       ? "Những tia sáng rực rỡ chiếu ra từ một ngôi mộ cổ"
       : "Luminous light beams out of an ancient tomb",

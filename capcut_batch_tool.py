@@ -3475,7 +3475,7 @@ except Exception as e:
 
         self.btn_ultra_upload = ctk.CTkButton(
             left_frame, 
-            text="📁 1. CHỌN FILE DRAFT_CONTENT.JSON GỐC", 
+            text="📁 Chọn dự án", 
             font=ctk.CTkFont(weight="bold"),
             height=40,
             command=select_file
@@ -3501,7 +3501,7 @@ except Exception as e:
         
         self.btn_ultra_sfx = ctk.CTkButton(
             left_frame, 
-            text="🎵 3. CHỌN THƯ MỤC SOUND EFFECTS (Tùy chọn)", 
+            text="🎵 Chọn Folder SFX", 
             font=ctk.CTkFont(weight="bold"),
             height=40,
             fg_color="#8b5cf6",
@@ -3597,7 +3597,7 @@ except Exception as e:
 
         self.btn_ultra_run = ctk.CTkButton(
             left_frame, 
-            text="🚀 KÍCH HOẠT XỬ LÝ (RUN TOOL)", 
+            text="🚀 CHẠY QUY TRÌNH", 
             font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="#ef4444", 
             hover_color="#dc2626",

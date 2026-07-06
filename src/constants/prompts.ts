@@ -408,7 +408,8 @@ export const getThumbnailLayoutPrompt = (
   refImageStr: string,
   isVi: boolean,
 ): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
-Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast 16:9 visual thumbnail designs:
+Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast 16:9 visual thumbnail designs.
+
 ---
 ${rewrittenScript}
 ---
@@ -417,12 +418,22 @@ ${refImageStr}
 
 Your process MUST complete all steps internally:
 1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
-2. Layout & Composition Diversity: You MUST utilize highly viral YouTube thumbnail layouts, varying them across the generated thumbnails. Use layouts such as:
-   - "Split-Screen Confrontation": Two opposing subjects on the left and right, separated by a torn paper effect, lightning, or a giant bold symbol (like a red question mark) in the center, with a contextual background revealing the story.
-   - "Extreme Close-Up Reaction": A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half.
-   - "The Hidden Secret": A mysterious glowing object or silhouette in the foreground, with blurred cinematic depth behind it.
-3. Minimalist Typography: If text is used, keep it to an ABSOLUTE MINIMUM (1 to 3 words MAX). Use powerful, click-inducing words in ${isVi ? "Vietnamese" : "English"} (e.g., "WHAT IF?", "THE TRUTH", "SỰ THẬT!"). Text must be massive, bold, with high contrast (e.g., White and Red) usually at the bottom or center. Avoid the bottom-right corner. One design MUST have hasText: false.
-4. Prompt Refinement: Refine the prompt descriptions to be highly cinematic, professional, sharp, and detailed. All visual prompts MUST be written in English.
+2. Layout & Composition (Inspired by high-converting duel/confrontation style):
+   - You MUST utilize highly viral YouTube thumbnail layouts, varying them across the generated thumbnails.
+   - Dual/Confrontation Layout: Design a split-screen or high-contrast comparison (e.g., two opposing subjects, factions, or choices on the left and right). In the middle/divider of the split-screen, there must be a giant, striking, vibrant symbol to create curiosity, such as a giant red painted question mark (?), a glowing lightning bolt, a fiery rift, or a bold 'VS' symbol.
+   - Extreme Close-up Reaction: A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half.
+   - The Hidden Secret: A mysterious glowing object or silhouette in the foreground, with blurred cinematic depth behind it.
+3. Typography & Text Overlay (100% MANDATORY REQUIREMENT):
+   - EVERY single design in the array MUST have hasText: true.
+   - The textText must be a highly relevant, click-bait text hook derived from the video script, written in ${isVi ? "Vietnamese (e.g., 'QUYẾT ĐỊNH!', 'SỰ THẬT!', 'SAI LẦM!')" : "English (e.g., 'THE TRUTH!', 'DECISION!', 'WHAT IF?')"} in uppercase, keep it extremely short (1 to 4 words maximum) to avoid clutter.
+   - Typography should suggest massive, bold, high-contrast block fonts (like Impact, Arial Black, Montserrat Bold).
+   - Underneath the main text, optionally add choice options or direction-pointing indicators (e.g., "ATTACK NOW" -> "WAIT & WIN" or Vietnamese equivalent) to simulate interactive interest.
+4. Prompt Design & Text Integration (CRITICAL FOR IMAGE GENERATION):
+   - You MUST write the visual image generation prompts in English.
+   - CRITICAL DIRECTIVE: You MUST explicitly describe the text overlay and its visual details directly inside the "prompt" field so the AI image generator (like Flux, Midjourney, or Veo) actually renders the text onto the generated image.
+   - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay at the bottom reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow...".
+   - If there are choices or secondary labels (e.g., 'ATTACK NOW' and 'WAIT & WIN' with arrows), describe them in the prompt: "...at the very bottom edge, there are two interactive-style option banners reading 'OPTION A' and 'OPTION B' with a small arrow pointing between them...".
+   - The overall image style must be highly cinematic, dramatic lighting, high contrast, sharp details, shallow depth of field, with strong color contrast (e.g. warm sunset/dust tones vs. cold shadows).
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
 {
@@ -432,14 +443,14 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "thumbnails": [
     {
       "id": "th_1",
-      "prompt": "Highly detailed 16:9 thumbnail prompt in English, describing elements, cinematic lighting, and sharp subject focus",
-      "style": "MrBeast",
+      "prompt": "Highly detailed 16:9 thumbnail prompt in English. Must describe all visual elements, cinematic lighting, and explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator.",
+      "style": "Dramatic Cinematic",
       "hasText": true,
-      "textText": "${isVi ? "BÍ MẬT!" : "SECRET!"}",
-      "layout": "Left vertical text",
+      "textText": "${isVi ? "SỰ THẬT!" : "THE TRUTH!"}",
+      "layout": "Split-screen confrontation with a giant red question mark (?) in the center",
       "typography": "Impact Bold Sans",
-      "colorSuggestion": "Vibrant glowing neon yellow text with thick black borders",
-      "subjectFocus": "Focal character looking surprised on the right side"
+      "colorSuggestion": "Vibrant white text with thick black borders, and secondary choices at the bottom",
+      "subjectFocus": "Opposing commanders on left and right sides"
     }
   ]
 }`;
@@ -798,9 +809,9 @@ CRITICAL THUMBNAIL LAYOUT RULES:
    - CINEMATIC PROMPT RULES:
      ${CINEMATIC_PROMPT_RULES}
    - SEAMLESS INTEGRATION RULE: Do NOT simply append composition or character references at the end. You MUST seamlessly weave the concept's composition, subject focus, and lighting suggestions directly into the corresponding sections of the blueprint.
-2. STRICTOR TEXT MINIMALISM: Do NOT include excessive text on the cover. Any text overlay ("textText") must strictly be 1 to 3 words maximum. The "prompt" itself must NOT describe rendering written text or letters to prevent generating garbled text.
+2. Typography & Text Overlay (100% MANDATORY): EVERY design in the array MUST have hasText: true. The textText must be a highly relevant, click-bait text hook derived from the concepts, written in uppercase, strictly 1 to 4 words max. You MUST explicitly describe the text overlay (e.g. '...a bold massive white text overlay at the bottom that reads "[TEXT]" with a thick black outline...') directly inside the English 'prompt' so the AI image generator renders it on the image.
 3. DO NOT place any key visual detail, text overlay, or main subject in the bottom-right corner of the image because that is where video platform timestamps are overlayed.
-4. At least one design in the array MUST remain completely WITHOUT a text overlay (where 'hasText' is false, 'textText' is "", and layout/typography/colorSuggestion are "").
+4. EVERY design in the array MUST have a text overlay (where 'hasText' is true, and layout/typography/colorSuggestion are specified).
 5. ${NO_FRAME_RULE}
 6. Prompts MUST be in English.
 
@@ -808,7 +819,7 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
 [
   {
     "id": "th_unique_id",
-    "prompt": "Refined English 16:9 thumbnail prompt...",
+    "prompt": "Refined English 16:9 thumbnail prompt... (Must explicitly describe the typography text overlay, e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...')",
     "style": "Style Name",
     "hasText": true,
     "textText": "Clickable text",
