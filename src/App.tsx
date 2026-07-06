@@ -45,27 +45,19 @@ export default function App() {
             method: HTTP_METHODS.PUT,
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: JSON.stringify(proj),
+            keepalive: true,
           }).catch((e) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, e));
         }
       });
     };
   }, []);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    () => {
-      const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
-      if (!cached || cached === COMMON_STRINGS.UNDEFINED || cached === COMMON_STRINGS.NULL) {
-        return null;
-      }
-      return cached;
-    },
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
+    const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    return (!cached || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cached)) ? null : cached;
+  });
 
   useEffect(() => {
-    if (
-      selectedProjectId &&
-      selectedProjectId !== COMMON_STRINGS.UNDEFINED &&
-      selectedProjectId !== COMMON_STRINGS.NULL
-    ) {
+    if (selectedProjectId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(selectedProjectId)) {
       localStorage.setItem(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
       localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
@@ -103,16 +95,11 @@ export default function App() {
       .then(async (res) => {
         try {
           const text = await res.text();
-          if (
-            !text ||
-            text.trim() === "" ||
-            text.trim() === COMMON_STRINGS.UNDEFINED ||
-            text.trim() === COMMON_STRINGS.NULL
-          ) {
+          if (!text?.trim() || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(text?.trim())) {
             return [];
           }
           const list = JSON.parse(text);
-          if (cachedId && cachedId !== COMMON_STRINGS.UNDEFINED && cachedId !== COMMON_STRINGS.NULL) {
+          if (cachedId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cachedId)) {
             const hasProj = list.some((p: any) => p.id === cachedId);
             if (hasProj) {
               try {
@@ -345,6 +332,7 @@ export default function App() {
       <main className="flex-1 w-full flex flex-col min-h-0 overflow-hidden relative">
         {selectedProjectId && activeProject ? (
           <PipelineWizard
+            key={selectedProjectId}
             theme={theme}
             currentLang={currentLang}
             project={activeProject}

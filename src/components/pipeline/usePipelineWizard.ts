@@ -196,70 +196,73 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     if (normalizedInitialProject) {
       setProject((prev) => {
-        if (!prev) return normalizedInitialProject;
+        if (!prev || (prev.id !== normalizedInitialProject.id)) return normalizedInitialProject;
 
         const mergedStoryboard = (prev.storyboard || []).map((localScene) => {
-          const serverScene = (normalizedInitialProject.storyboard || []).find((s) => s.id === localScene.id);
-
-          if (localScene.assetUrl === '') {
-            return localScene;
-          }
-
-          if (serverScene && serverScene.assetUrl && serverScene.assetUrl.startsWith('/assets/')) {
-            return {
-              ...localScene,
-              assetUrl: serverScene.assetUrl,
-              assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
-            };
-          }
-          return localScene;
+          if (localScene.assetUrl === '') return localScene;
+          const serverScene = normalizedInitialProject.storyboard?.find((s) => s.id === localScene.id);
+          return serverScene?.assetUrl?.startsWith('/assets/')
+            ? { ...localScene, assetUrl: serverScene.assetUrl, assetUrls: serverScene.assetUrls || [serverScene.assetUrl] }
+            : localScene;
         });
 
         const mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
-          const serverThumb = (normalizedInitialProject.thumbnails || []).find((t) => t.id === localThumb.id);
-          if (serverThumb && serverThumb.imageUrl && serverThumb.imageUrl.startsWith('/assets/')) {
-            return {
-              ...localThumb,
-              imageUrl: serverThumb.imageUrl,
-            };
-          }
-          return localThumb;
+          const serverThumb = normalizedInitialProject.thumbnails?.find((t) => t.id === localThumb.id);
+          return serverThumb?.imageUrl?.startsWith('/assets/')
+            ? { ...localThumb, imageUrl: serverThumb.imageUrl }
+            : localThumb;
         });
 
-        const shouldUpdateVoiceConfig =
-          normalizedInitialProject.voiceConfig &&
-          (prev.voiceConfig?.audioUrl !== normalizedInitialProject.voiceConfig.audioUrl ||
-            prev.voiceConfig?.audioBase64 !== normalizedInitialProject.voiceConfig.audioBase64 ||
-            prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig.timingLog);
+        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig
+          ? ['audioUrl', 'audioBase64', 'timingLog'].some(key => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any])
+          : false;
 
-        const voiceConfig = shouldUpdateVoiceConfig && normalizedInitialProject.voiceConfig
-          ? {
-            ...(prev.voiceConfig || {}),
-            audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
-            audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
-            timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
-          }
-          : prev.voiceConfig;
+        const isServerUpdate = normalizedInitialProject.updatedAt !== prev.updatedAt;
 
-        const scriptRewritten = prev.scriptRewritten !== normalizedInitialProject.scriptRewritten
-          ? normalizedInitialProject.scriptRewritten
-          : prev.scriptRewritten;
+        const syncField = (key: keyof VideoProject, fallback: any = undefined, checkEmptyArray = false) => {
+          const serverVal = normalizedInitialProject[key];
+          const localVal = prev[key];
+          const isEmpty = checkEmptyArray ? !(localVal as any)?.length : !localVal;
+          return (isServerUpdate || isEmpty) ? (serverVal ?? fallback) : localVal;
+        };
 
-        const chapters = JSON.stringify(prev.chapters) !== JSON.stringify(normalizedInitialProject.chapters)
-          ? normalizedInitialProject.chapters
-          : prev.chapters;
+        const voiceConfig = isServerUpdate
+          ? (normalizedInitialProject.voiceConfig || prev.voiceConfig)
+          : (shouldUpdateVoiceConfig && normalizedInitialProject.voiceConfig
+            ? {
+              ...(prev.voiceConfig || {}),
+              audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
+              audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
+              timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
+            }
+            : prev.voiceConfig);
 
-        const seoConfig = JSON.stringify(prev.seoConfig) !== JSON.stringify(normalizedInitialProject.seoConfig)
-          ? normalizedInitialProject.seoConfig
-          : prev.seoConfig;
+        const scriptRewritten = syncField('scriptRewritten', "");
+        const chapters = syncField('chapters', [], true);
+        const seoConfig = syncField('seoConfig');
+        const seo = syncField('seo');
+        const assets = syncField('assets', [], true);
 
-        const seo = JSON.stringify(prev.seo) !== JSON.stringify(normalizedInitialProject.seo)
-          ? normalizedInitialProject.seo
-          : prev.seo;
+        const compareItems = [
+          [prev.storyboard, mergedStoryboard, true],
+          [prev.thumbnails, mergedThumbnails, true],
+          [prev.voiceConfig, voiceConfig, true],
+          [prev.chapters, chapters, true],
+          [prev.seoConfig, seoConfig, true],
+          [prev.seo, seo, true],
+          [prev.assets, assets, true],
+          [prev.scriptRewritten, scriptRewritten],
+          [prev.name, normalizedInitialProject.name],
+          [prev.description, normalizedInitialProject.description],
+          [prev.updatedAt, normalizedInitialProject.updatedAt],
+          [prev.currentStep, normalizedInitialProject.currentStep],
+          [prev.creditsUsed, normalizedInitialProject.creditsUsed],
+        ];
+        const hasChanges = compareItems.some(([a, b, isJson]) => isJson ? JSON.stringify(a) !== JSON.stringify(b) : a !== b);
 
-        const assets = JSON.stringify(prev.assets) !== JSON.stringify(normalizedInitialProject.assets)
-          ? normalizedInitialProject.assets
-          : prev.assets;
+        if (!hasChanges) {
+          return prev;
+        }
 
         return {
           ...prev,
@@ -1229,18 +1232,14 @@ export function usePipelineWizard(props: any) {
         versions: [],
       };
 
-      if (
-        currentHookConfig.type === hookStrategy &&
-        currentHookConfig.duration === hookDuration &&
-        currentHookConfig.count === hookCount &&
-        currentHookConfig.positions === hookPosition &&
-        JSON.stringify(currentHookConfig.versions) ===
-        JSON.stringify(hooksDraft)
-      ) {
-        return prev;
-      }
+      const isHookUnchanged = [
+        [currentHookConfig.type, hookStrategy],
+        [currentHookConfig.duration, hookDuration],
+        [currentHookConfig.count, hookCount],
+        [currentHookConfig.positions, hookPosition]
+      ].every(([a, b]) => a === b) && JSON.stringify(currentHookConfig.versions) === JSON.stringify(hooksDraft);
 
-      return {
+      return isHookUnchanged ? prev : {
         ...prev,
         hookConfig: {
           ...currentHookConfig,

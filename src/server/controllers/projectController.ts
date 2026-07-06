@@ -174,7 +174,8 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         const anyScene = scene as any;
-        if (anyScene.audioBase64 && typeof anyScene.audioBase64 === 'string' && anyScene.audioBase64.length > 100 && !anyScene.audioBase64.startsWith('/') && !anyScene.audioBase64.startsWith('http')) {
+        const hasBase64Audio = typeof anyScene.audioBase64 === 'string' && anyScene.audioBase64.length > 100 && !['/', 'http'].some(prefix => anyScene.audioBase64?.startsWith(prefix));
+        if (hasBase64Audio) {
           const fileName = `scene_${scene.id}.wav`;
           const filePath = path.join(audioDir, fileName);
           try {
@@ -238,7 +239,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 
     let voiceConfigUpdated = false;
     let voiceConfig = project.voiceConfig;
-    if (voiceConfig && (voiceConfig as any).audioBase64 && typeof (voiceConfig as any).audioBase64 === 'string' && (voiceConfig as any).audioBase64.length > 100) {
+    if (typeof (voiceConfig as any)?.audioBase64 === 'string' && (voiceConfig as any).audioBase64.length > 100) {
       const fileName = COMMON_STRINGS.UNIFIED_WAV;
       const filePath = path.join(audioDir, fileName);
       try {

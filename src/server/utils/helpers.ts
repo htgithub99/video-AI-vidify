@@ -183,7 +183,7 @@ export const completeCutoffJSON = (jsonStr: string): string => {
 export const safeParseJSON = (text: string, defaultVal: any): any => {
   if (!text) return defaultVal;
   let trimmed = text.trim();
-  if (trimmed === '' || trimmed === 'undefined' || trimmed === 'null') {
+  if (['', 'undefined', 'null'].includes(trimmed)) {
     return defaultVal;
   }
 
