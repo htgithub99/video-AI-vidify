@@ -16,11 +16,9 @@ import {
   AspectRatio,
   BatchDelayOption,
 } from '../types';
-import { APP_TEXTS } from '../constants/texts';
-import {
-  GEMINI_CHAT_SPEED_OPTIONS,
-  BATCH_DELAY_OPTIONS
-} from '../constants/data.js';
+import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS } from '../constants';
+
+
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { Modal } from './ui/Modal';

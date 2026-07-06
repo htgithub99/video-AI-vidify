@@ -2,7 +2,8 @@ import fs from 'fs';
 import { Page } from 'playwright';
 import { chromium } from 'playwright-extra';
 import stealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
+import { EXTERNAL_URLS } from '../../constants';
+
 import { appLog, appError } from '../../lib/logger.js';
 chromium.use(stealthPlugin());
 

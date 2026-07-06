@@ -3,24 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { VideoProject } from '../../types.js';
 import { randomUUID } from 'crypto';
-import {
-  EXTERNAL_URLS,
-  UNSPLASH_IMAGE_REGEX,
-  ASSETS_DIR_NAME,
-  PROJECTS_DIR_NAME,
-  IMAGES_DIR_NAME,
-  VOICES_DIR_NAME
-} from '../../constants/apiRoutes.js';
-import { getBackendMsg } from '../../constants/messages.js';
+import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX } from '../../constants';
 import { appError, appLog } from '../../lib/logger.js';
-import { ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES } from '../../constants/texts.js';
-import {
-  VIETNAMESE_ACCENT_MARKS_REGEX,
-  VIETNAMESE_D_LETTER_REGEX,
-  SAFE_FOLDER_CHARS_REGEX,
-  MULTIPLE_SPACES_REGEX,
-  BASE64_IMAGE_MIME_REGEX
-} from '../../constants/regexes.js';
 import {
   getProjectsListFromDb,
   getProjectDetailFromDb,

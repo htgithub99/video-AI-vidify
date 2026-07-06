@@ -1,15 +1,7 @@
 
 import { appLog, appError, createAppError } from "./logger";
-import { STORAGE_KEYS } from "../constants/storageKeys";
+import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, SYSTEM_STATUS } from '../constants';
 import { BatchDelayOption } from "../types";
-import { LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS } from "../constants/data";
-
-export const SYSTEM_STATUS = {
-  PENDING: 'PENDING',
-  PROCESSING: 'PROCESSING',
-  SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED'
-};
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY): string => {
   if (typeof window !== 'undefined') {

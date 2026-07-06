@@ -1,23 +1,8 @@
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
-import { STORAGE_KEYS } from "../constants/storageKeys";
+import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX } from '../constants';
 import { appError } from "../lib/logger.js";
-import {
-  DEFAULT_PROJECT_ID,
-  DEFAULT_SESSION_ID
-} from "../constants/data.js";
-import {
-  CURL_AUTHORIZATION_BEARER_REGEX,
-  CURL_AUTHORIZATION_JSON_REGEX,
-  CURL_BEARER_TOKEN_REGEX,
-  CURL_PROJECT_ID_BODY_REGEX,
-  CURL_PROJECT_ID_URL_REGEX,
-  CURL_CLIENT_SESSION_ID_REGEX,
-  CURL_SESSION_ID_REGEX,
-  CURL_RECAPTCHA_TOKEN_REGEX,
-  CURL_AGENT_SESSION_ID_REGEX
-} from "../constants/regexes.js";
 import {
   Video,
   Coins,

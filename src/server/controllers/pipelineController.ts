@@ -13,38 +13,17 @@ import {
   smartSplitSentences,
   splitSentenceSafely,
 } from "../../utils/sceneGeneratorHelper.js";
-import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES } from "../../constants/apiRoutes.js";
-import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS } from "../../constants/messages.js";
+import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getVideoDirectorSceneSplitPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, STYLE_EXTRACTION_PROMPT, STICKMAN_STYLE_MODIFIERS, getMultiStepHookPrompt, getCombinedScriptPrompt, STICKMAN_KEYWORDS, SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS, SCENE_SPLIT_PROMPTS, MARKDOWN_REGEX, EMOJI_REGEX, LogEvent, ErrorMessage } from '../../constants';
+
+
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
-import {
-  VI_GENRE_GUIDELINES,
-  VI_STYLE_GUIDELINES,
-  VI_AUDIENCE_GUIDELINES,
-  EN_GENRE_GUIDELINES,
-  EN_STYLE_GUIDELINES,
-  EN_AUDIENCE_GUIDELINES,
-  PROMPT_CONTEXT,
-} from "../../constants/promptGuidelines.js";
-import {
-  getStyleRewriteBatchPrompt,
-  getOptimizePromptsBatchPrompt,
-  getChapterWriterPrompt,
-  getVideoDirectorSceneSplitPrompt,
-  getDetailedPromptBuilderPrompt,
-  getGlobalVisualBiblePrompt,
-  getCharacterAnalysisPrompt,
-  getCharacterExtractPrompt,
-  getCharacterRewriteBatchPrompt,
-  STYLE_EXTRACTION_PROMPT,
-  STICKMAN_STYLE_MODIFIERS,
-  getMultiStepHookPrompt,
-  getCombinedScriptPrompt,
-} from "../../constants/prompts.js";
+
+
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
-import { STICKMAN_KEYWORDS, SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../../constants/data.js";
-import { SCENE_SPLIT_PROMPTS } from "../../constants/texts.js";
-import { MARKDOWN_REGEX, EMOJI_REGEX } from "../../constants/regexes.js";
+
+
+
 import { AspectRatio } from "../../types.js";
 
 import ffmpeg from "fluent-ffmpeg";
@@ -107,7 +86,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
-    logger.error("STYLE_EXTRACTION_ERROR", error);
+    logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
     return res
       .status(500)
       .json({
@@ -175,7 +154,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
           }
         }
       } catch (err) {
-        logger.error("BATCH_STYLE_REWRITE_FAILED_CHUNK", err);
+        logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
       }
 
       
@@ -197,7 +176,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
-    logger.error("REWRITE_PROMPTS_ERROR", error);
+    logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -268,7 +247,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
           }
         }
       } catch (err) {
-        logger.error("BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK", err);
+        logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, err);
       }
 
       if (i < chunks.length - 1) {
@@ -289,7 +268,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
-    logger.error("OPTIMIZE_PROMPTS_ERROR", error);
+    logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -337,7 +316,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
           }
         }
       } catch (err) {
-        logger.error("BATCH_STYLE_REWRITE_FAILED_THUMBNAILS", err);
+        logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_THUMBNAILS, err);
       }
 
       for (let i = 0; i < updatedThumbnails.length; i++) {
@@ -352,7 +331,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 
     res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (error: any) {
-    logger.error("REWRITE_THUMBNAILS_ERROR", error);
+    logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -382,7 +361,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     return res.json({ characters });
   } catch (error: any) {
     const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
-    logger.error("CHARACTER_ANALYSIS_ERROR", error);
+    logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
     return res
       .status(500)
       .json({
@@ -439,7 +418,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
-    logger.error("CHARACTER_EXTRACTION_ERROR", error);
+    logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
     return res
       .status(500)
       .json({
@@ -521,7 +500,7 @@ router.post(
             }
           }
         } catch (err) {
-          logger.error("BATCH_CHARACTER_REWRITE_FAILED_CHUNK", err);
+          logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
         }
 
         
@@ -552,7 +531,7 @@ router.post(
 
       res.json({ success: true, storyboard: updatedStoryboard });
     } catch (error: any) {
-      logger.error("REWRITE_PROMPTS_CHARACTER_ERROR", error);
+      logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
       res
         .status(500)
         .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -658,7 +637,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
     setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
     res.json(output);
   } catch (error: any) {
-    logger.error("ERROR_GENERATING_HOOKS", error);
+    logger.error(LogEvent.ERROR_GENERATING_HOOKS, error);
     const isVi = language === "vi" || config?.language === "vi";
     const errorLogs = error.rotationLogs
       ? [...multiStepLogs, ...error.rotationLogs]
@@ -834,7 +813,7 @@ router.post("/script", async (req: Request, res: Response) => {
           logStep(isVi ? `✨ Đã nhúng Hook: "${activeHookText}"` : `✨ Hook embedded: "${activeHookText}"`);
         }
       } catch (hookErr: any) {
-        logger.error("Auto hook generation failed, falling back", hookErr);
+        logger.error(LogEvent.AUTO_HOOK_GENERATION_FAILED_FALLING_BACK, hookErr);
       }
     }
 
@@ -957,7 +936,7 @@ router.post("/script", async (req: Request, res: Response) => {
     setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    logger.error("ERROR_REWRITING_SCRIPT", error);
+    logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === "vi";
     let finalHook = activeHookText || selectedHookText || "";
     if (!finalHook && config?.hookConfig) {
@@ -1048,181 +1027,7 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
   return scenes;
 }
 
-function generateMockStoryboard(
-  rewrittenScript: string,
-  chapters: any[],
-  isVi: boolean,
-  style: string,
-  density: number,
-  voiceDuration?: number,
-  splitStrategy?: string,
-  aspectRatio: string = AspectRatio.SixteenNine,
-) {
-  interface SegmentWithContext {
-    text: string;
-    context: string;
-  }
-  let pList: SegmentWithContext[] = [];
 
-  if (splitStrategy === "multi_prompt") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 12);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "ultradense" || splitStrategy === "word") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 6);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (
-    splitStrategy === "hyperdense" ||
-    splitStrategy === "short_sentence"
-  ) {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 10);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "highpaced") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 15);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "dramatic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 2) {
-      const chunk = sentences.slice(i, i + 2).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "paragraph") {
-    const paragraphs = (rewrittenScript || "")
-      .split(/\n+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 10);
-    
-    for (const para of paragraphs) {
-      pList.push({ text: para, context: para });
-    }
-
-    if (pList.length < 3) {
-      const sentences = smartSplitSentences(rewrittenScript || "");
-      pList = [];
-      for (let i = 0; i < sentences.length; i += 3) {
-        const chunk = sentences.slice(i, i + 3).join(". ");
-        pList.push({ text: chunk, context: chunk });
-      }
-    }
-  } else if (splitStrategy === "epic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 4) {
-      const chunk = sentences.slice(i, i + 4).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "cinematic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 5) {
-      const chunk = sentences.slice(i, i + 5).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "artistic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 6) {
-      const chunk = sentences.slice(i, i + 6).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "slowpaced") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 7) {
-      const chunk = sentences.slice(i, i + 7).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "super_slow") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 10) {
-      const chunk = sentences.slice(i, i + 10).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of sentences) {
-      pList.push({ text: sent, context: sent });
-    }
-  }
-
-  const totalWords = pList.reduce(
-    (acc, p) => acc + p.text.split(/\s+/).filter(Boolean).length,
-    0,
-  );
-
-  let maxScenes = 250;
-
-  const scenesCount = Math.min(maxScenes, pList.length > 0 ? pList.length : 8);
-  const scenes: any[] = [];
-  let currentTime = 0;
-
-  const styleStr = style || "Realistic";
-  const defaultChapters =
-    chapters && chapters.length > 0
-      ? chapters
-      : [{ id: "ch_1", title: "Chapter 1" }];
-
-  const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
-
-  for (let i = 0; i < scenesCount; i++) {
-    const chapter = defaultChapters[i % defaultChapters.length];
-    const segment = pList[i];
-    const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(i + 1);
-    const contextText = segment ? segment.context : scriptText;
-
-    const wordsCount = scriptText.split(/\s+/).filter(Boolean).length;
-    let duration = 5;
-    if (voiceDuration && totalWords > 0) {
-      duration = Math.round((wordsCount / totalWords) * voiceDuration);
-      if (duration < 3) duration = 3;
-    } else {
-      duration = Math.max(5, Math.min(20, Math.ceil(wordsCount / 2.2)));
-    }
-
-    if (voiceDuration && i === scenesCount - 1) {
-      duration = Math.max(3, voiceDuration - currentTime);
-    }
-
-    const startTimeSeconds = currentTime;
-    const endTimeSeconds = currentTime + duration;
-    currentTime = endTimeSeconds;
-
-    const motion = SCENE_SPLIT_MOTIONS[i % SCENE_SPLIT_MOTIONS.length];
-    const effects = promptConfig.EFFECTS(styleStr);
-    const transition = SCENE_SPLIT_TRANSITIONS[i % SCENE_SPLIT_TRANSITIONS.length];
-
-    scenes.push({
-      id: `sc_${i + 1}`,
-      chapterId: chapter.id,
-      startTime: formatTime(startTimeSeconds),
-      endTime: formatTime(endTimeSeconds),
-      duration,
-      script: scriptText,
-      subtitle: scriptText,
-      prompt: promptConfig.PROMPT(contextText, styleStr, aspectRatio),
-      cameraMotion: motion,
-      effects,
-      transition,
-    });
-  }
-
-  return { scenes };
-}
 
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
   const {
@@ -1239,7 +1044,7 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     currentPrompt,
   } = req.body;
   if (!sceneScript) {
-    return res.status(400).json({ error: "Missing scene script" });
+    return res.status(400).json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
   }
 
   try {
@@ -1264,7 +1069,7 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     const detailedPrompt = response.text?.trim() || sceneScript;
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
-    logger.error("DETAILED_PROMPT_ERROR", error);
+    logger.error(LogEvent.DETAILED_PROMPT_ERROR, error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -1370,11 +1175,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 - Maintain context consistency and ensure the image details align with a ${genre} theme.`;
     }
 
-    const storyboardLogs: string[] = [];
-    const logStoryboardStep = (msg: string) => {
-      console.log(msg);
-      storyboardLogs.push(msg);
-    };
+    const storyboardLogger = new StepLogger();
+    const storyboardLogs = storyboardLogger.getLogs();
+    const logStoryboardStep = (msg: string) => storyboardLogger.log(msg);
 
     logStoryboardStep(getPipelineLog("STORY_STEP1", isVi));
     const visualBiblePrompt = getGlobalVisualBiblePrompt(
@@ -1504,7 +1307,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         },
       );
     } catch (e: any) {
-      logger.error("ERROR_GENERATING_STORYBOARD_CHUNKING", e);
+      logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_CHUNKING, e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
     }
 
@@ -1578,7 +1381,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
   } catch (error: any) {
-    logger.error("ERROR_GENERATING_STORYBOARD_GEMINI", error);
+    logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
     const fallbackData: any = generateMockStoryboard(
       rewrittenScript,
@@ -1655,11 +1458,9 @@ router.post("/seo", async (req: Request, res: Response) => {
     });
   }
 
-  const seoLogs: string[] = [];
-  const logSeoStep = (msg: string) => {
-    console.log(msg);
-    seoLogs.push(msg);
-  };
+  const seoLogger = new StepLogger();
+    const seoLogs = seoLogger.getLogs();
+    const logSeoStep = (msg: string) => seoLogger.log(msg);
 
   try {
     const isVi = config.language === "vi";
@@ -1726,7 +1527,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     setCache(API_ROUTES.PIPELINE_SEO, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    logger.error("ERROR_GENERATING_SEO", error);
+    logger.error(LogEvent.ERROR_GENERATING_SEO, error);
     const isVi = config?.language === "vi";
     res.json({
       warning: error.message || "API rate limits triggered",
@@ -1829,11 +1630,9 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     });
   }
 
-  const thumbLogs: string[] = [];
-  const logThumbStep = (msg: string) => {
-    console.log(msg);
-    thumbLogs.push(msg);
-  };
+  const thumbLogger = new StepLogger();
+    const thumbLogs = thumbLogger.getLogs();
+    const logThumbStep = (msg: string) => thumbLogger.log(msg);
 
   try {
     const isVi = config.language === "vi";
@@ -1931,7 +1730,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     setCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
-    logger.error("ERROR_GENERATING_THUMBNAILS_PROMPTS", error);
+    logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
     const isVi = config?.language === "vi";
     res.json({
       warning: error.message || "API rate limits triggered",
@@ -2080,7 +1879,7 @@ router.post("/voice", async (req: Request, res: Response) => {
       provider: "AI33",
     });
   } catch (error: any) {
-    logger.error("TTS_PIPELINE_ERROR", error);
+    logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
     res
       .status(500)
       .json({
@@ -2112,7 +1911,7 @@ router.post("/generate-image", async (req: Request, res: Response) => {
 
     return res.json(result);
   } catch (error: any) {
-    logger.error("GENERATE_IMAGE_ROUTE_ERROR", error);
+    logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
     return res.json({
       success: false,
       base64: null,
@@ -2139,7 +1938,7 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
 
     res.end();
   } catch (error: any) {
-    logger.error("GENERATE_BATCH_IMAGES_ROUTE_ERROR", error);
+    logger.error(LogEvent.GENERATE_BATCH_IMAGES_ROUTE_ERROR, error);
     if (!res.headersSent) {
       return res.json({
         success: false,
@@ -2157,7 +1956,7 @@ router.post("/clean-batch-images", async (req: Request, res: Response) => {
     await closeAllBatchPages();
     return res.json({ success: true });
   } catch (error: any) {
-    logger.error("CLEAN_BATCH_IMAGES_ROUTE_ERROR", error);
+    logger.error(LogEvent.CLEAN_BATCH_IMAGES_ROUTE_ERROR, error);
     return res.json({ success: false, error: error.message });
   }
 });
@@ -2166,7 +1965,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   try {
     const { chunks } = req.body;
     if (!chunks || !Array.isArray(chunks) || chunks.length === 0) {
-      return res.status(400).json({ error: "No audio chunks provided" });
+      return res.status(400).json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
     }
 
     const tempDir = os.tmpdir();
@@ -2212,12 +2011,12 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
 
           res.json({ success: true, audioBase64: base64Audio });
         } catch (e) {
-          logger.error("ERROR_READ_MERGED_AUDIO", e);
-          res.status(500).json({ error: "Failed to read merged audio file" });
+          logger.error(LogEvent.ERROR_READ_MERGED_AUDIO, e);
+          res.status(500).json({ error: ErrorMessage.FAILED_TO_READ_MERGED_AUDIO_FILE });
         }
       })
       .on("error", (err) => {
-        logger.error("ERROR_FFMPEG_MERGE", err);
+        logger.error(LogEvent.ERROR_FFMPEG_MERGE, err);
 
         filePaths.forEach((p) => fs.existsSync(p) && fs.unlinkSync(p));
         fs.existsSync(listPath) && fs.unlinkSync(listPath);
@@ -2228,8 +2027,8 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
       })
       .save(outputPath);
   } catch (err: any) {
-    logger.error("UNEXPECTED_ERROR_MERGE_AUDIO", err);
-    res.status(500).json({ error: "Internal server error: " + err.message });
+    logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, err);
+    res.status(500).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 
@@ -2341,7 +2140,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
   } catch (err: any) {
     logger.error(VOICE_ALIGN_LOGS.ERR_UNEXPECTED_ALIGN, err);
-    res.status(500).json({ error: "Internal server error: " + err.message });
+    res.status(500).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 

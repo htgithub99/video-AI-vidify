@@ -1,6 +1,7 @@
 import { VoiceSelectionDialog } from "../../components/VoiceSelectionDialog";
 import { appWarn } from "../../lib/logger.js";
-import { motionLabels } from "../../constants/data";
+import { motionLabels, LOADING_KEYS, BASE64_DATA_URL_REGEX } from '../../constants';
+
 import {
   formatAudioTime,
   formatCleanTime,
@@ -10,9 +11,9 @@ import { useRef, useState } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
-import { LOADING_KEYS } from "../../constants/loading";
+
 import { WizardStep, AudioType, Gender, ImageGenerationMode, ImageGeneratorEngine, ImageModelLabel } from "../../types";
-import { BASE64_DATA_URL_REGEX } from "../../constants/regexes";
+
 
 import * as LucideIcons from "lucide-react";
 

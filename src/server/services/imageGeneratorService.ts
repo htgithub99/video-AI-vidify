@@ -3,22 +3,13 @@ import {
   initPlaywright,
   closePlaywright,
 } from "./audioService.js";
-import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
-import { BACKEND_MESSAGES } from "../../constants/messages.js";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX } from '../../constants';
+
+
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
-import {
-  STICKMAN_KEYWORDS,
-  DEFAULT_IMAGE_KEYWORDS,
-  PROMPT_FILLER_WORDS,
-  STICKMAN_STYLE_MODIFIERS,
-  DEFAULT_PROJECT_ID,
-} from "../../constants/data.js";
-import {
-  NON_ALPHANUMERIC_SPACE_REGEX,
-  PLAYWRIGHT_SUBMIT_ICON_REGEX,
-  PLAYWRIGHT_SUBMIT_TEXT_REGEX,
-} from "../../constants/regexes.js";
+
+
 import {
   GenerateType,
   ImageGeneratorEngine,

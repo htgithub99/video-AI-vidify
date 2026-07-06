@@ -35,3 +35,9 @@ export const BASE64_IMAGE_MIME_REGEX = /^data:image\/([a-zA-Z0-9+]+);base64,(.+)
 
 export const BASE64_DATA_URL_REGEX = /^data:([^;]+);base64,(.+)$/;
 
+export const AUDIO_CLEAN_PREFIX_REGEX = /^(Dưới đây là|Đây là|Tuyệt vời|Chắc chắn|Sau đây là|Tôi đã tạo|Hãy cùng xem|Chào bạn|Chắc chắn rồi|Vâng|Được chứ).*?:?\n?/i;
+export const AUDIO_CLEAN_MARKDOWN_REGEX = /[\*\#\_\-\[\]\(\)]/g;
+export const AUDIO_CLEAN_EMOJI_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+export const FILE_EXTENSION_REGEX = /\.[^/.]+$/;
+export const WHITESPACE_REGEX = /\s+/g;
+export const VIETNAMESE_VALID_CHARS_REGEX = /[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g;

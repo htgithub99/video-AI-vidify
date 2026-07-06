@@ -14,11 +14,7 @@ import { Modal } from "./ui/Modal";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { appError } from "../lib/logger.js";
-import {
-  VOICE_PROVIDER_OPTIONS,
-  VOICE_LANGUAGE_OPTIONS,
-  VOICE_AGE_OPTIONS
-} from "../constants/data.js";
+import { VOICE_PROVIDER_OPTIONS, VOICE_LANGUAGE_OPTIONS, VOICE_AGE_OPTIONS, ErrorMessage } from '../constants';
 
 export interface Voice {
   voice_id: string;
@@ -124,7 +120,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
           'x-ai33-api-key': getStoredApiKey('AI33_API_KEY')
         }
       });
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) throw new Error(ErrorMessage.FAILED_TO_FETCH);
       const json = await res.json();
 
       if (json.success && json.data) {

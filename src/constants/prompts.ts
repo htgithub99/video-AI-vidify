@@ -221,11 +221,10 @@ ${genreGuideline}
 ${styleGuideline}
 
 [CRITICAL REQUIREMENT - LENGTH & TTS SAFE]:
-${
-  isVi
+${isVi
     ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
     : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
-}
+  }
 
 Provide strict output complying EXACTLY with this JSON structure:
 {
@@ -909,9 +908,6 @@ If the image shows a stick figure character style (simple sketch with black outl
 For other images: Extract and describe the style entirely in English, using short phrases separated by commas, max 3 words per phrase (e.g., "3D animation, bright colors, thick black outlines, flat colors").
 Only return the list of English style keywords, with no introductory text or markdown.`;
 
-export const STICKMAN_STYLE_MODIFIERS =
-  "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
-
 export const getMultiStepHookPrompt = (
   originalInput: string,
   genre: string,
@@ -973,20 +969,18 @@ Your mission is to perform a highly unified script outline and research process 
 - Language: ${isVi ? "Vietnamese (Tiếng Việt)" : "English (Tiếng Anh)"}
 
 [Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
-${
-  hookConfig
+${hookConfig
     ? `[Hook Retention Strategy]:
 - Hook Type: ${hookConfig.type}
 - Hook Duration: ${hookConfig.duration}s
-- Hook Positions: ${
-        hookConfig.positions === "start"
-          ? "The hook is placed only at the very beginning of the script."
-          : hookConfig.positions === "mid"
-          ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters."
-          : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."
-      }`
+- Hook Positions: ${hookConfig.positions === "start"
+      ? "The hook is placed only at the very beginning of the script."
+      : hookConfig.positions === "mid"
+        ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters."
+        : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."
+    }`
     : ""
-}
+  }
 
 [Guidelines]:
 - Genre Guidelines: ${genreGuideline}

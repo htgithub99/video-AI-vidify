@@ -1,3 +1,4 @@
+import { ErrorMessage } from './constants';
 import { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import ProjectList from "./components/ProjectList.tsx";
@@ -18,18 +19,7 @@ import {
 } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES } from "./constants/apiRoutes.js";
-import { STORAGE_KEYS } from "./constants/storageKeys.ts";
-import { LOADING_CONFIG } from "./constants/loading.js";
-import {
-  HTTP_METHODS,
-  CONTENT_TYPES,
-  ERROR_MESSAGES,
-  CONTENT_TYPE_HEADER,
-  THEME_VALUES,
-  COMMON_STRINGS,
-  DEFAULT_PROJECT_CONFIGS
-} from "./constants/texts.ts";
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from './constants';
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -181,7 +171,7 @@ export default function App() {
     if (project && !project.input) {
       try {
         const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`);
-        if (!res.ok) throw new Error("Lỗi tải chi tiết dự án");
+        if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
         const detailData = await res.json();
         setProjects((prev) =>
           prev.map((p) => (p.id === id ? detailData : p))

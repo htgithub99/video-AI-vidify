@@ -1,4 +1,5 @@
 import { appWarn, createAppError } from "./logger.js";
+import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
 
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
@@ -130,48 +131,19 @@ export const applyAudioEffects = async (
   }
 };
 
-export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-  const binaryString = window.atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-};
 
-export const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        const base64 = reader.result.split(',')[1];
-        if (base64) {
-          resolve(base64);
-        } else {
-          resolve(reader.result);
-        }
-      } else {
-        reject(createAppError("File read error"));
-      }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-};
 
 export const cleanScriptText = (text: string): string => {
   if (!text) return '';
   let t = text;
   
-  t = t.replace(/^(Dưới đây là|Đây là|Tuyệt vời|Chắc chắn|Sau đây là|Tôi đã tạo|Hãy cùng xem|Chào bạn).*:?\n?/i, '');
-  t = t.replace(/(Chắc chắn rồi|Vâng|Được chứ).*?\n/i, '');
+  t = t.replace(AUDIO_CLEAN_PREFIX_REGEX, '');
   
-  t = t.replace(/[\*\#\_\-\[\]\(\)]/g, ' ');
+  t = t.replace(AUDIO_CLEAN_MARKDOWN_REGEX, ' ');
   
-  t = t.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+  t = t.replace(AUDIO_CLEAN_EMOJI_REGEX, '');
   
-  t = t.replace(/\s+/g, ' ').trim();
+  t = t.replace(WHITESPACE_REGEX, ' ').trim();
   return t;
 };
 

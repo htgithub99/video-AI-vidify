@@ -1,3 +1,5 @@
+import { base64ToArrayBuffer, blobToBase64 } from "./fileUtils.js";
+import { ErrorMessage, supportedTypes } from '../constants';
 import { StoryboardScene } from '../types.js';
 import { appWarn } from './logger.js';
 import { parseTimeToSeconds, formatCleanDuration } from './timeUtils.js';
@@ -153,7 +155,7 @@ export const compileVideoToBlob = async (
   onProgress: (percent: number) => void
 ): Promise<Blob> => {
   if (scenes.length === 0) {
-    throw new Error("No scenes to render");
+    throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }
 
   
@@ -187,7 +189,7 @@ export const compileVideoToBlob = async (
   canvas.width = 1280;
   canvas.height = 720;
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error("Could not initialize 2D context");
+  if (!ctx) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
 
   let mixedStream = new MediaStream();
   const canvasStream = canvas.captureStream(30);
@@ -220,12 +222,6 @@ export const compileVideoToBlob = async (
   }
 
 
-  const supportedTypes = [
-    'video/webm;codecs=vp9,opus',
-    'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4'
-  ];
   let selectedType = '';
   for (const t of supportedTypes) {
     if (MediaRecorder.isTypeSupported(t)) {

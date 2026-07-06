@@ -1,9 +1,4 @@
-import {
-  LogLang,
-  getFriendlyActionName,
-  LOG_DICTIONARY,
-  LogKey
-} from '../constants/messages.js';
+import { LogLang, getFriendlyActionName, LOG_DICTIONARY, LogKey } from '../constants';
 
 let currentLang: LogLang = 'vi'; 
 

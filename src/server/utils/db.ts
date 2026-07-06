@@ -3,9 +3,8 @@ import { open, Database } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
 import { VideoProject } from '../../types.js';
-import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME } from '../../constants/apiRoutes.js';
+import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg } from '../../constants';
 import { appError } from '../../lib/logger.js';
-import { getBackendMsg } from '../../constants/messages.js';
 
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 const dbPath = path.join(process.cwd(), SQLITE_DB_NAME);

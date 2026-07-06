@@ -2,14 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 dotenv.config();
 import { requestContext } from '../utils/requestContext.js';
-import {
-  GEMINI_UNSUPPORTED_ERROR_KEYWORDS,
-  GEMINI_RETRYABLE_ERROR_KEYWORDS,
-  AVAILABLE_MODELS,
-  GEMINI_RETRYABLE_STATUSES,
-  GEMINI_QUOTA_STATUSES,
-  GEMINI_RETRY_REGEX,
-} from '../../constants/data.js';
+import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, AVAILABLE_MODELS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from '../../constants';
 import { getMessage, appLog, appLogStep, createAppError } from '../../lib/logger.js';
 
 export const isGeminiApiKeyAvailable = (): boolean => {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PipelineNode, pipelineNodes } from '../constants/data.js';
+import { PipelineNode, pipelineNodes } from '../constants';
 import { Lang, translations } from '../lib/lang.js';
 import { HelpCircle, Activity, Sparkles } from 'lucide-react';
 

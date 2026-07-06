@@ -1,3 +1,4 @@
+import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { formatCleanDuration } from "./pipeline-utils";
 import { formatTimeHelper } from "../../utils/helpers";
@@ -49,8 +50,8 @@ import {
 } from "../../types";
 import {
   applyAudioEffects,
-  base64ToArrayBuffer,
-  blobToBase64,
+
+
   cleanScriptText,
 } from "../../lib/audioProcessor";
 import {
@@ -66,6 +67,8 @@ import {
   getBatchDelayMs,
 } from "../../lib/shared-utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
+
+import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -83,52 +86,15 @@ const getVoiceModifiers = (
 
   if (!voiceURI) return { finalSpeed, finalPitch };
 
-  if (voiceURI === "preset-vi-bac-female") {
-    finalSpeed = 1.0;
-    finalPitch = 1.04;
-  } else if (voiceURI === "preset-vi-bac-male") {
-    finalSpeed = 0.95;
-    finalPitch = 0.9;
-  } else if (voiceURI === "preset-vi-trung-female") {
-    finalSpeed = 1.02;
-    finalPitch = 1.05;
-  } else if (voiceURI === "preset-vi-trung-male") {
-    finalSpeed = 0.95;
-    finalPitch = 0.92;
-  } else if (voiceURI === "preset-vi-nam-female") {
-    finalSpeed = 1.05;
-    finalPitch = 1.05;
-  } else if (voiceURI === "preset-vi-nam-male") {
-    finalSpeed = 0.98;
-    finalPitch = 0.95;
-  } else if (voiceURI === "preset-vi-kid" || voiceURI.includes("child")) {
-    finalSpeed = 1.05;
-    finalPitch = 1.22;
-  } else if (voiceURI === "elevenlabs-cloud-vi") {
-    finalSpeed = 0.95;
-    finalPitch = 0.98;
-  } else if (voiceURI === "azure-cloud-vi-hoaimy") {
-    finalSpeed = 1.05;
-    finalPitch = 1.1;
-  } else if (voiceURI === "azure-cloud-vi-namminh") {
-    finalSpeed = 0.98;
-    finalPitch = 0.9;
-  } else if (voiceURI === "google-cloud-vi-a") {
-    finalSpeed = 1.0;
-    finalPitch = 1.03;
-  } else if (voiceURI === "google-cloud-vi-b") {
-    finalSpeed = 1.02;
-    finalPitch = 0.95;
-  } else if (voiceURI === "openai-tts-alloy") {
-    finalSpeed = 1.0;
-    finalPitch = 1.0;
-  } else if (voiceURI === "openai-tts-nova") {
-    finalSpeed = 1.05;
-    finalPitch = 1.15;
+  const modifiers = VOICE_MODIFIERS[voiceURI] || (voiceURI.includes("child") ? VOICE_MODIFIERS["preset-vi-kid"] : null);
+  if (modifiers) {
+    finalSpeed = modifiers.speed;
+    finalPitch = modifiers.pitch;
   }
 
   return { finalSpeed, finalPitch };
 };
+
 const safeResponseJson = async (r: any, f: any) => {
   try {
     return await r.json();

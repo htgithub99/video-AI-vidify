@@ -1,15 +1,5 @@
-import {
-  genreLabels,
-  audLabels,
-  styleLabels,
-  GENRE_OPTIONS,
-  AUDIENCE_OPTIONS,
-  WRITING_STYLE_OPTIONS,
-  HOOK_STRATEGY_OPTIONS,
-  HOOK_POSITION_OPTIONS,
-  DURATION_OPTIONS,
-  PROJECT_LANGUAGE_OPTIONS,
-} from '../../constants/data';
+import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS } from '../../constants';
+
 import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
 import { WizardStep, ProjectInputType, ProjectLanguage } from '../../types';
