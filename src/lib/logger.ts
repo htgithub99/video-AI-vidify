@@ -5,7 +5,7 @@ import {
   LogKey
 } from '../constants/messages.js';
 
-let currentLang: LogLang = 'vi'; // Default to Vietnamese
+let currentLang: LogLang = 'vi'; 
 
 export const setLogLanguage = (lang: LogLang) => {
   currentLang = lang;
@@ -15,9 +15,7 @@ export const getLogLanguage = (): LogLang => {
   return currentLang;
 };
 
-/**
- * Formats a message template by replacing placeholders like {0}, {1} with provided arguments.
- */
+
 export const formatLogMessage = (template: string, ...args: any[]): string => {
   let result = template;
   args.forEach((arg, index) => {
@@ -27,10 +25,7 @@ export const formatLogMessage = (template: string, ...args: any[]): string => {
   return result;
 };
 
-/**
- * Retrieves the message for a given key, matching the specified or current language.
- * Falls back to English, then the key itself if not found.
- */
+
 export const getMessage = (key: LogKey | string, lang?: LogLang, ...args: any[]): string => {
   const dictionaryKey = key as LogKey;
   if (LOG_DICTIONARY[dictionaryKey]) {
@@ -47,10 +42,7 @@ export const getMessage = (key: LogKey | string, lang?: LogLang, ...args: any[])
   return formatLogMessage(String(key), ...args);
 };
 
-/**
- * Gets a bilingual message displaying both English and Vietnamese representation.
- * Useful for terminal/server outputs.
- */
+
 export const getBilingualMessage = (key: LogKey | string, ...args: any[]): string => {
   const dictionaryKey = key as LogKey;
   if (LOG_DICTIONARY[dictionaryKey]) {
@@ -70,12 +62,10 @@ export const getBilingualMessage = (key: LogKey | string, ...args: any[]): strin
 };
 
 
-/**
- * Advanced unified logging utility supporting translation dictionary
- */
+
 export const logger = {
   log: (key: LogKey | string, ...args: any[]) => {
-    // If the key is in our dictionary and we are server-side or requested, log bilingual
+    
     if (typeof window === 'undefined') {
       console.log(getBilingualMessage(key, ...args));
     } else {
@@ -103,40 +93,32 @@ export const logger = {
       console.error(getMessage(key, undefined, ...args));
     }
   },
-  // Explicitly logging standard language (Vietnamese)
+  
   logVi: (key: LogKey | string, ...args: any[]) => {
     console.log(getMessage(key, 'vi', ...args));
   },
-  // Explicitly logging standard language (English)
+  
   logEn: (key: LogKey | string, ...args: any[]) => {
     console.log(getMessage(key, 'en', ...args));
   }
 };
 
-/**
- * Common logging function wrapping console.log / logger.log
- */
+
 export const appLog = (keyOrMessage: LogKey | string, ...args: any[]): void => {
   logger.log(keyOrMessage, ...args);
 };
 
-/**
- * Common logging function wrapping console.error / logger.error
- */
+
 export const appError = (keyOrMessage: LogKey | string, ...args: any[]): void => {
   logger.error(keyOrMessage, ...args);
 };
 
-/**
- * Common logging function wrapping logger.warn
- */
+
 export const appWarn = (keyOrMessage: LogKey | string, ...args: any[]): void => {
   logger.warn(keyOrMessage, ...args);
 };
 
-/**
- * Common step logger function that logs the message and optionally collects it into a given logs array.
- */
+
 export const appLogStep = (message: string, logsArray?: string[]): void => {
   appLog(message);
   if (logsArray && Array.isArray(logsArray)) {
@@ -144,10 +126,7 @@ export const appLogStep = (message: string, logsArray?: string[]): void => {
   }
 };
 
-/**
- * Common error factory that logs an error via appError and returns a new Error instance.
- * Usage: throw createAppError('ERROR_KEY', arg1, arg2);
- */
+
 export const createAppError = (keyOrMessage: LogKey | string, ...args: any[]): Error => {
   const errMsg = typeof keyOrMessage === 'string' && LOG_DICTIONARY[keyOrMessage as LogKey]
     ? getMessage(keyOrMessage, undefined, ...args)

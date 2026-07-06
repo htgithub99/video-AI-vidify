@@ -39,6 +39,12 @@ ERROR_READ_JSON = "Lỗi đọc JSON kịch bản: {error}"
 ERROR_WHISPER_RUN = "Lỗi khi chạy Whisper AI: {error}"
 ERROR_WRITE_JSON = "Lỗi ghi file kết quả JSON: {error}"
 SUCCESS_MESSAGE = "✅ Đồng bộ hóa mốc thời gian hoàn tất!"
+ERROR_FFMPEG_MISSING = "Hệ thống thiếu phần mềm FFmpeg (Bắt buộc cho Whisper). Vui lòng cài đặt FFmpeg (https://ffmpeg.org/download.html) và thêm vào PATH Windows."
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 
 warnings.filterwarnings(WARNING_ACTION, category=UserWarning)
 warnings.filterwarnings(WARNING_ACTION, category=FutureWarning)
@@ -52,8 +58,8 @@ def normalize_text(text):
 
 def main():
     if len(sys.argv) < 4:
-        print(ERROR_MISSING_ARGS)
-        print(ERROR_USAGE)
+        print(ERROR_MISSING_ARGS, file=sys.stderr, flush=True)
+        print(ERROR_USAGE, file=sys.stderr, flush=True)
         sys.exit(1)
 
     audio_path = sys.argv[1]
@@ -61,24 +67,24 @@ def main():
     output_json_path = sys.argv[3]
 
     if not os.path.exists(audio_path):
-        print(ERROR_AUDIO_NOT_FOUND.format(path=audio_path))
+        print(ERROR_AUDIO_NOT_FOUND.format(path=audio_path), file=sys.stderr, flush=True)
         sys.exit(1)
 
     if not os.path.exists(scenes_json_path):
-        print(ERROR_SCENES_NOT_FOUND.format(path=scenes_json_path))
+        print(ERROR_SCENES_NOT_FOUND.format(path=scenes_json_path), file=sys.stderr, flush=True)
         sys.exit(1)
 
     try:
         import whisper
     except ImportError:
-        print(ERROR_WHISPER_NOT_INSTALLED)
+        print(ERROR_WHISPER_NOT_INSTALLED, file=sys.stderr, flush=True)
         sys.exit(1)
 
     try:
         with open(scenes_json_path, FILE_READ_MODE, encoding=FILE_ENCODING) as f:
             raw_scenes = json.load(f)
     except Exception as e:
-        print(ERROR_READ_JSON.format(error=str(e)))
+        print(ERROR_READ_JSON.format(error=str(e)), file=sys.stderr, flush=True)
         sys.exit(1)
 
     scenes = []
@@ -93,7 +99,10 @@ def main():
         model = whisper.load_model(MODEL_NAME)
         result = model.transcribe(audio_path, word_timestamps=True)
     except Exception as e:
-        print(ERROR_WHISPER_RUN.format(error=str(e)))
+        error_msg = str(e)
+        if "WinError 2" in error_msg or "ffmpeg" in error_msg.lower() or "not found" in error_msg.lower():
+            error_msg = ERROR_FFMPEG_MISSING
+        print(ERROR_WHISPER_RUN.format(error=error_msg), file=sys.stderr, flush=True)
         sys.exit(1)
 
     ai_words = []
@@ -205,7 +214,7 @@ def main():
             json.dump({KEY_SUCCESS: True, KEY_ALIGNMENTS: scene_cuts}, f, ensure_ascii=False, indent=2)
         print(SUCCESS_MESSAGE)
     except Exception as e:
-        print(ERROR_WRITE_JSON.format(error=str(e)))
+        print(ERROR_WRITE_JSON.format(error=str(e)), file=sys.stderr, flush=True)
         sys.exit(1)
 
 if __name__ == "__main__":

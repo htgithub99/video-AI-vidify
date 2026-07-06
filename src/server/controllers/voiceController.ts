@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
 
-import { EXTERNAL_URLS } from '../../constants/apiRoutes.js';
+import { EXTERNAL_URLS, DEFAULT_AI33_API_KEY, FALLBACK_VOICES_PREVIEWS } from '../../constants/apiRoutes.js';
 import { getBackendMsg } from '../../constants/messages.js';
 import { requestContext } from '../utils/requestContext.js';
 import { appWarn, createAppError } from '../../lib/logger.js';
+import { COMMON_STRINGS } from '../../constants/texts.js';
 
 const FALLBACK_VOICES = [
-  // Vietnamese Voices (Northern & Southern, Male & Female)
+  
   {
     voice_id: "edge_vi-VN-HoaiMyNeural",
     name: "Hoài My (Southern Female)",
@@ -20,7 +21,7 @@ const FALLBACK_VOICES = [
     use_cases: ["Audiobook", "Podcast", "Storytelling"],
     descriptives: ["Warm", "Soft", "Emotional"],
     tags: ["edge", "female", "vi-VN", "Southern"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Chào+bạn,+đây+là+giọng+nữ+miền+Nam+Hoài+My+ấm+áp."
+    preview_url: FALLBACK_VOICES_PREVIEWS.HOAI_MY
   },
   {
     voice_id: "edge_vi-VN-NamMinhNeural",
@@ -35,7 +36,7 @@ const FALLBACK_VOICES = [
     use_cases: ["News", "Documentary", "Education"],
     descriptives: ["Professional", "Clear", "Confident"],
     tags: ["edge", "male", "vi-VN", "Northern"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Kính+chào+quý+vị,+đây+là+bản+tin+thử+nghiệm+từ+Nam+Minh."
+    preview_url: FALLBACK_VOICES_PREVIEWS.NAM_MINH
   },
   {
     voice_id: "gcp-vi-female",
@@ -50,7 +51,7 @@ const FALLBACK_VOICES = [
     use_cases: ["Advertising", "Vlog", "Review"],
     descriptives: ["Bright", "Friendly", "Clear"],
     tags: ["gcp", "female", "vi-VN", "Southern"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Chào+mừng+bạn+đến+với+trình+tạo+video+tự+động+Thùy+Vy."
+    preview_url: FALLBACK_VOICES_PREVIEWS.THUY_VY
   },
   {
     voice_id: "gcp-vi-male",
@@ -65,7 +66,7 @@ const FALLBACK_VOICES = [
     use_cases: ["Documentary", "History", "Podcast"],
     descriptives: ["Deep", "Warm", "Serious"],
     tags: ["gcp", "male", "vi-VN", "Northern"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Khám+phá+những+câu+chuyện+lịch+sử+kỳ+bí+cùng+giọng+đọc+Duy+Linh."
+    preview_url: FALLBACK_VOICES_PREVIEWS.DUY_LINH
   },
   {
     voice_id: "preset-vi-trung-female",
@@ -80,7 +81,7 @@ const FALLBACK_VOICES = [
     use_cases: ["Vlog", "Storytelling", "Poetry"],
     descriptives: ["Soft", "Sincere", "Gentle"],
     tags: ["preset", "female", "vi-VN", "Central"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Em+xin+gửi+lời+chào+thân+thương+nhất+tới+mọi+người+từ+Khánh+Chi."
+    preview_url: FALLBACK_VOICES_PREVIEWS.KHANH_CHI
   },
   {
     voice_id: "preset-vi-kid",
@@ -95,10 +96,10 @@ const FALLBACK_VOICES = [
     use_cases: ["Animation", "Kids", "Games"],
     descriptives: ["Cute", "Cheerful", "Playful"],
     tags: ["preset", "female", "vi-VN", "Child"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=Con+chào+ông+bà,+chào+các+bạn!+Con+là+Bé+Mai+đây+ạ."
+    preview_url: FALLBACK_VOICES_PREVIEWS.BE_MAI
   },
 
-  // English Voices
+  
   {
     voice_id: "edge_en-US-AriaNeural",
     name: "Aria (US Female)",
@@ -112,7 +113,7 @@ const FALLBACK_VOICES = [
     use_cases: ["Podcast", "E-learning", "Assistant"],
     descriptives: ["Natural", "Friendly", "Conversational"],
     tags: ["edge", "female", "en-US"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=Hello!+This+is+Aria,+your+conversational+narrator."
+    preview_url: FALLBACK_VOICES_PREVIEWS.ARIA
   },
   {
     voice_id: "edge_en-US-GuyNeural",
@@ -127,7 +128,7 @@ const FALLBACK_VOICES = [
     use_cases: ["News", "Presentation", "Documentary"],
     descriptives: ["Confident", "Professional", "Clear"],
     tags: ["edge", "male", "en-US"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=Welcome+to+the+automated+news+and+media+studio.+I+am+Guy."
+    preview_url: FALLBACK_VOICES_PREVIEWS.GUY
   },
   {
     voice_id: "edge_en-GB-SoniaNeural",
@@ -142,7 +143,7 @@ const FALLBACK_VOICES = [
     use_cases: ["E-learning", "Audiobook", "Documentary"],
     descriptives: ["Elegant", "Formal", "Clear"],
     tags: ["edge", "female", "en-GB"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-gb&client=tw-ob&q=Good+day.+This+is+Sonia,+providing+an+elegant+British+narration."
+    preview_url: FALLBACK_VOICES_PREVIEWS.SONIA
   },
   {
     voice_id: "edge_en-GB-RyanNeural",
@@ -157,17 +158,17 @@ const FALLBACK_VOICES = [
     use_cases: ["Audiobook", "Podcast", "Storytelling"],
     descriptives: ["Warm", "Authoritative", "Rich"],
     tags: ["edge", "male", "en-GB"],
-    preview_url: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-gb&client=tw-ob&q=Hello.+My+name+is+Ryan,+a+warm+and+authoritative+voice+from+the+UK."
+    preview_url: FALLBACK_VOICES_PREVIEWS.RYAN
   }
 ];
 
 export const getVoices = async (req: Request, res: Response) => {
-  const isVi = req.query.lang !== 'en';
+  const isVi = req.query.lang !== COMMON_STRINGS.EN;
   try {
     const queryParams = new URLSearchParams(req.query as any).toString();
     const targetUrl = `${EXTERNAL_URLS.AI33_VOICES}?${queryParams}`;
     const store = requestContext.getStore();
-    const apiKey = store?.ai33Key || process.env.AI33_API_KEY || 'eyJhbGciOiJIUzI1NiIsImtpZCI6ImZ0UTF2dE1kNHArNG41SUYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3hwa2NhcHFxYnJraHNwcmJxb2NiLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxYTFlZjhjOC1hN2Q4LTRkYzMtYmRjMy1kYmZjODI1MGMzZmMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzgyOTc1MDQyLCJpYXQiOjE3ODIzNzAyNDIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZ29vZ2xlIiwicHJvdmlkZXJzIjpbImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmdWxsX25hbWUiOiJUb8OgbiBMZW8iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJuYW1lIjoiVG_DoG4gTGVvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsInByb3ZpZGVyX2lkIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIiwic3ViIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib2F1dGgiLCJ0aW1lc3RhbXAiOjE3NjQ5OTMyNzB9XSwic2Vzc2lvbl9pZCI6IjY0ZjhjZDllLTMzNTItNDI5Zi1hYTYyLWZhMjg5OWNhNWUzNCIsImlzX2Fub255bW91cyI6ZmFsc2V9.Rsut9S1qJEUqimObZXDTd4a7QLwMVhHTBvfxWy9FjY0';
+    const apiKey = store?.ai33Key || process.env.AI33_API_KEY || DEFAULT_AI33_API_KEY;
 
     const response = await fetch(targetUrl, {
       method: 'GET',
@@ -186,7 +187,7 @@ export const getVoices = async (req: Request, res: Response) => {
   } catch (error: any) {
     appWarn('FETCH_VOICES_ERR', 'External voice registry load failed. Falling back to high-quality local voices database.', error);
 
-    // Graceful fallback logic matching filter query parameters
+    
     let filtered = [...FALLBACK_VOICES];
 
     const reqLang = req.query.language as string;
@@ -207,12 +208,7 @@ export const getVoices = async (req: Request, res: Response) => {
     }
     if (reqSearch) {
       const q = reqSearch.toLowerCase();
-      filtered = filtered.filter(v =>
-        v.name.toLowerCase().includes(q) ||
-        v.description.toLowerCase().includes(q) ||
-        v.voice_id.toLowerCase().includes(q) ||
-        v.tags.some(t => t.toLowerCase().includes(q))
-      );
+      filtered = filtered.filter(v => [v.name, v.description, v.voice_id].some(field => field.toLowerCase().includes(q)) || v.tags.some(t => t.toLowerCase().includes(q)));
     }
 
     const startIndex = (reqPage - 1) * reqPageSize;

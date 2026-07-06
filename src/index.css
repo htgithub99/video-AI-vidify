@@ -2,7 +2,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Merienda", "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-logo: "Merienda", cursive;
   --font-mono: "JetBrains Mono", monospace;
 
   /* Redefine Slate for the High Density theme (Google Labs Dark Mode) */
@@ -368,4 +369,6 @@ input.accent-amber-500::-moz-range-thumb {
   background-color: #f59e0b !important;
 }
 
-
+.font-logo {
+  font-family: var(--font-logo), var(--font-sans) !important;
+}

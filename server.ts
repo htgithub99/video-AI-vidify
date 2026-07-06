@@ -44,6 +44,7 @@ app.use((req, res, next) => {
   requestContext.run({ geminiKey, ai33Key }, next);
 });
 
+app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
 app.use(API_ROUTES.BASE_API, mainRouter);
 app.use(API_ROUTES.PIPELINE, pipelineRouter);
 

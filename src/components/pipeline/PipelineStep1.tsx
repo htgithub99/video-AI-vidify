@@ -10,7 +10,9 @@ import { useRef, useState } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
+import { LOADING_KEYS } from "../../constants/loading";
 import { WizardStep, AudioType, Gender, ImageGenerationMode, ImageGeneratorEngine, ImageModelLabel } from "../../types";
+import { BASE64_DATA_URL_REGEX } from "../../constants/regexes";
 
 import * as LucideIcons from "lucide-react";
 
@@ -40,6 +42,8 @@ const {
   ArrowLeft,
   ArrowRight,
   User,
+  Palette,
+  ShieldCheck,
 } = LucideIcons as any;
 
 export default function PipelineStep1(props: PipelineWizardState) {
@@ -166,6 +170,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
     handleReferenceImagesUpload,
     handleExtractStyle,
     handleApplyStyleToScenes,
+    handleOptimizeAllPrompts,
+    handleSaveCurrentStyle,
     handleBulkUploadImages,
     handleDeleteSceneImage,
     isDeletingImage,
@@ -178,15 +184,29 @@ export default function PipelineStep1(props: PipelineWizardState) {
     handleSaveSceneEdits,
     handleDownloadVoice,
     handleTriggerAllSceneVoices,
+    handleProcessExternalAudio,
     getSceneImageUrl,
     currentLang,
     handleAnalyzeCharacter,
     handleCharacterImagesUpload,
     handleExtractCharacter,
     handleApplyCharacterToScenes,
+    favoriteVoices,
+    handleToggleFavoriteVoice,
   } = props;
 
   const [showConfirmRecreateModal, setShowConfirmRecreateModal] = useState(false);
+
+  const onAudioFileSelected = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const match = dataUrl.match(BASE64_DATA_URL_REGEX);
+      const base64 = match ? match[2] : "";
+      handleProcessExternalAudio(file.name, dataUrl, base64);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleBatchGenerateClick = () => {
     const scenes = project.storyboard || [];
@@ -287,6 +307,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     onClose={() => setIsVoiceDialogOpen(false)}
                     currentLang={currentLang}
                     selectedVoiceId={project.voiceConfig.voiceURI}
+                    favoriteVoices={favoriteVoices}
+                    onToggleFavoriteVoice={handleToggleFavoriteVoice}
                     onSelectVoice={(voice) => {
                       setProject((prev) => ({
                         ...prev,
@@ -621,8 +643,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 : `${baseCurve}px`,
                             }}
                             className={`w-0.5 rounded-full transition-all duration-300 ${isMainPlaying
-                                ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]"
-                                : "bg-slate-800"
+                              ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]"
+                              : "bg-slate-800"
                               }`}
                           />
                         );
@@ -782,8 +804,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           type="button"
                           onClick={handleDownloadVoice}
                           className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer shadow-md active:scale-95 h-8 font-bold ${ttsAudioUrl === "simulated"
-                              ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 text-slate-300"
-                              : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 text-white border-rose-500/10"
+                            ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 text-slate-300"
+                            : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 text-white border-rose-500/10"
                             }`}
                           title={t.Download_voiceover_file}
                         >
@@ -946,15 +968,15 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setInfoMsg(t.Switching_to_Audio_Voice_);
               }}
               className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer group flex flex-col justify-between min-h-[90px] ${storyboardSourceMode === "audio"
-                  ? "border-rose-500/35 bg-rose-950/15 shadow-md shadow-rose-950/10"
-                  : "border-slate-800/80 hover:border-slate-700 bg-slate-900/20"
+                ? "border-rose-500/35 bg-rose-950/15 shadow-md shadow-rose-950/10"
+                : "border-slate-800/80 hover:border-slate-700 bg-slate-900/20"
                 }`}
             >
               { }
               <div
                 className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "audio"
-                    ? "bg-rose-500 text-white scale-100"
-                    : "bg-slate-800 text-transparent scale-75"
+                  ? "bg-rose-500 text-white scale-100"
+                  : "bg-slate-800 text-transparent scale-75"
                   }`}
               >
                 <Check className="w-2.5 h-2.5" />
@@ -963,8 +985,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="flex items-start gap-3">
                 <div
                   className={`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "audio"
-                      ? "bg-rose-500/10 border-rose-500/20 text-rose-450"
-                      : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-450"
+                    : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"
                     }`}
                 >
                   <Music className="w-4 h-4" />
@@ -993,15 +1015,15 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setInfoMsg(t.Switching_to_full_text_sc);
               }}
               className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer group flex flex-col justify-between min-h-[90px] ${storyboardSourceMode === "script"
-                  ? "border-rose-500/35 bg-rose-950/15 shadow-md shadow-rose-950/10"
-                  : "border-slate-800/80 hover:border-slate-700 bg-slate-900/20"
+                ? "border-rose-500/35 bg-rose-950/15 shadow-md shadow-rose-950/10"
+                : "border-slate-800/80 hover:border-slate-700 bg-slate-900/20"
                 }`}
             >
               { }
               <div
                 className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "script"
-                    ? "bg-rose-500 text-white scale-100"
-                    : "bg-slate-800 text-transparent scale-75"
+                  ? "bg-rose-500 text-white scale-100"
+                  : "bg-slate-800 text-transparent scale-75"
                   }`}
               >
                 <Check className="w-2.5 h-2.5" />
@@ -1010,8 +1032,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="flex items-start gap-3">
                 <div
                   className={`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "script"
-                      ? "bg-rose-500/10 border-rose-500/20 text-rose-450"
-                      : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-450"
+                    : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"
                     }`}
                 >
                   <FileText className="w-4 h-4" />
@@ -1084,8 +1106,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     }));
                   }}
                   className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType !== AudioType.Upload
-                      ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                    ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
                     }`}
                 >
                   <Sparkles
@@ -1108,8 +1130,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     }));
                   }}
                   className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer border ${project.voiceConfig.audioType === AudioType.Upload
-                      ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
-                      : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
+                    ? "bg-slate-800 text-slate-100 border-slate-700/50 shadow-sm"
+                    : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"
                     }`}
                 >
                   <Upload
@@ -1565,21 +1587,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      const dataUrl = reader.result as string;
-                                      setProject((prev) => ({
-                                        ...prev,
-                                        voiceConfig: {
-                                          ...prev.voiceConfig,
-                                          audioType: AudioType.Upload,
-                                          uploadedAudioName: file.name,
-                                          audioUrl: dataUrl,
-                                          audioBase64: dataUrl.split(",")[1],
-                                        },
-                                      }));
-                                    };
-                                    reader.readAsDataURL(file);
+                                    onAudioFileSelected(file);
                                   }
                                 }}
                               />
@@ -1672,32 +1680,15 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           setIsAudioDragging(false);
                           const file = e.dataTransfer.files?.[0];
                           if (file && file.type.startsWith("audio/")) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              const dataUrl = reader.result as string;
-                              setProject((prev) => ({
-                                ...prev,
-                                voiceConfig: {
-                                  ...prev.voiceConfig,
-                                  audioType: AudioType.Upload,
-                                  uploadedAudioName: file.name,
-                                  audioUrl: dataUrl,
-                                  audioBase64: dataUrl.split(",")[1],
-                                },
-                              }));
-                              setInfoMsg(
-                                t.loadedFile.replace("{name}", file.name),
-                              );
-                            };
-                            reader.readAsDataURL(file);
+                            onAudioFileSelected(file);
                           }
                         }}
                         className="relative z-10"
                       >
                         <label
                           className={`w-full min-h-[95px] py-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-slate-955/40 ${isAudioDragging
-                              ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]"
-                              : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"
+                            ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]"
+                            : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"
                             }`}
                         >
                           <Upload
@@ -1720,21 +1711,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  const dataUrl = reader.result as string;
-                                  setProject((prev) => ({
-                                    ...prev,
-                                    voiceConfig: {
-                                      ...prev.voiceConfig,
-                                      audioType: AudioType.Upload,
-                                      uploadedAudioName: file.name,
-                                      audioUrl: dataUrl,
-                                      audioBase64: dataUrl.split(",")[1],
-                                    },
-                                  }));
-                                };
-                                reader.readAsDataURL(file);
+                                onAudioFileSelected(file);
                               }
                             }}
                           />
@@ -1980,6 +1957,16 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               )}
                             </button>
                           )}
+                        {project.visualConfig?.referencePrompt && (
+                          <button
+                            type="button"
+                            onClick={handleSaveCurrentStyle}
+                            className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer active:scale-95 border border-rose-500/30"
+                          >
+                            <Palette className="w-3 h-3 text-rose-100" />
+                            <span>{t.saveCurrentStyle}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -1990,7 +1977,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </div>
               </div>
 
-              {/* Character Reference Divider & Block */}
+              { }
               <div className="border-t border-slate-800/80 my-2 pt-2" />
 
               <div className="flex items-center justify-between mb-2">
@@ -2004,7 +1991,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </label>
               </div>
 
-              {/* Step 1: Character script analysis / list */}
+              { }
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-inner">
                 {!project.visualConfig?.characters ||
                   project.visualConfig.characters.length === 0 ? (
@@ -2028,7 +2015,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Header with re-analyze and apply options */}
+                    { }
                     <div className="flex items-center justify-between border-b border-slate-850 pb-2">
                       <span className="text-[10px] text-slate-400 font-mono">
                         {t.charDetectedCount.replace(
@@ -2069,7 +2056,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
 
-                    {/* Characters Loop */}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {project.visualConfig.characters.map((char) => {
                         const isExtracting =
@@ -2080,7 +2067,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             className="bg-slate-955/65 rounded-xl p-3 border border-slate-850 flex flex-col justify-between gap-2.5 relative shadow-md"
                           >
                             <div className="flex flex-row gap-3 items-stretch">
-                              {/* Left column: Text details */}
+                              { }
                               <div className="flex-1 min-w-0 flex flex-col justify-between">
                                 <div>
                                   <div className="flex items-center justify-between gap-1">
@@ -2114,10 +2101,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 </div>
                               </div>
 
-                              {/* Divider inside card */}
+                              { }
                               <div className="w-[1px] bg-slate-800/80 my-1 self-stretch" />
 
-                              {/* Right column: Upload & Previews */}
+                              { }
                               <div className="w-24 sm:w-28 shrink-0 flex flex-col gap-1.5 justify-between">
                                 <div
                                   className="bg-slate-900/40 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded p-1.5 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer h-[42px]"
@@ -2160,7 +2147,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   </span>
                                 </div>
 
-                                {/* Preview Thumbnails */}
+                                { }
                                 <div className="min-w-0 w-full">
                                   {char.images && char.images.length > 0 ? (
                                     <div className="flex flex-wrap gap-1 max-h-[32px] overflow-y-auto p-0.5 bg-slate-900/10 rounded border border-slate-900/30">
@@ -2225,7 +2212,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               </div>
                             </div>
 
-                            {/* Prompt Spec & Extraction Actions at bottom */}
+                            { }
                             <div className="border-t border-slate-900/60 pt-2 space-y-2">
                               {char.prompt && (
                                 <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-1 flex items-center justify-between gap-1.5">
@@ -2324,8 +2311,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <button
                 onClick={handleCopyAllPrompts}
                 className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${copiedAll
-                    ? "bg-emerald-600 text-white"
-                    : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"
+                  ? "bg-emerald-600 text-white"
+                  : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"
                   }`}
               >
                 {copiedAll ? (
@@ -2431,7 +2418,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="flex items-center gap-2 w-full md:w-auto justify-center">
                 <div className="flex items-center gap-3 bg-slate-900 border border-rose-500/20 px-4 py-2.5 rounded-lg text-xs font-mono text-rose-300">
                   <RefreshCw className="w-4 h-4 animate-spin text-rose-500 shrink-0" />
-                  <span>{batchProgressMsg}</span>
+                  <span>{batchProgressMsg || t.initializingBatchGen}</span>
                 </div>
                 <button
                   type="button"
@@ -2449,18 +2436,43 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={handleBatchGenerateClick}
-                disabled={
-                  isBatchGenerating || (project.storyboard || []).length === 0
-                }
-                className="w-full md:w-auto bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition shadow-lg active:scale-95"
-                title={t.Trigger_batch_AI_renderin}
-              >
-                <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
-                <span>{t.BATCH_RENDER}</span>
-              </button>
+              <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleOptimizeAllPrompts}
+                  disabled={
+                    isBatchGenerating ||
+                    !!loadingStates["optimizePrompts"] ||
+                    (project.storyboard || []).length === 0
+                  }
+                  className="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition shadow-lg active:scale-95"
+                  title={t.OPTIMIZE_PROMPTS}
+                >
+                  {loadingStates["optimizePrompts"] ? (
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-200 shrink-0" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4 text-emerald-200 shrink-0" />
+                  )}
+                  <span>
+                    {loadingStates["optimizePrompts"]
+                      ? (t.optimizingPrompts)
+                      : (t.OPTIMIZE_PROMPTS)}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBatchGenerateClick}
+                  disabled={
+                    isBatchGenerating || (project.storyboard || []).length === 0
+                  }
+                  className="w-full md:w-auto bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition shadow-lg active:scale-95"
+                  title={t.Trigger_batch_AI_renderin}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
+                  <span>{t.BATCH_RENDER}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -2619,7 +2631,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/30 opacity-90 group-hover:opacity-100 transition-opacity" />
 
                       { }
-                      {loadingStates["renderScene_" + scene.id] && (
+                      {loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + scene.id] && (
                         <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
                           <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
                           <span className="text-[10px] font-mono text-rose-300 font-bold tracking-wider uppercase">
@@ -2789,10 +2801,18 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               </span>
                             </div>
                           )}
+
+                          {loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] && (
+                            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-4 text-center space-y-2 animate-fadeIn animate-duration-200">
+                              <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
+                              <span className="text-xs font-mono text-rose-300 font-bold tracking-wider uppercase">
+                                {t.Drawing}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Nút thao tác ảnh */}
                       <div className="grid grid-cols-2 gap-2.5">
                         <button
                           type="button"
@@ -2803,18 +2823,18 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             )
                           }
                           disabled={
-                            !!loadingStates["renderScene_" + activeScene.id] || isDeletingImage || isUploadingImage
+                            !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] || isDeletingImage || isUploadingImage
                           }
                           className="flex items-center justify-center gap-1.5 text-xs font-bold text-rose-450 hover:text-white bg-rose-500/10 hover:bg-rose-600 px-3 py-2.5 rounded-xl border border-rose-500/20 cursor-pointer transition shadow-sm active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
                           title={t.Render_AI_image_matching_}
                         >
-                          {loadingStates["renderScene_" + activeScene.id] ? (
+                          {loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                           )}
                           <span>
-                            {loadingStates["renderScene_" + activeScene.id]
+                            {loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id]
                               ? t.Drawing
                               : urls.length > 0
                                 ? t.Regen_AI
@@ -2822,7 +2842,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </span>
                         </button>
 
-                        <label className={`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates["renderScene_" + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}>
+                        <label className={`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}>
                           {isUploadingImage ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                           ) : (
@@ -2833,7 +2853,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            disabled={isUploadingImage || isDeletingImage || !!loadingStates["renderScene_" + activeScene.id]}
+                            disabled={isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id]}
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
@@ -2859,7 +2879,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           onClick={() =>
                             handleDeleteSceneImage(activeScene.id, activeImgIdx)
                           }
-                          disabled={isDeletingImage || isUploadingImage || !!loadingStates["renderScene_" + activeScene.id]}
+                          disabled={isDeletingImage || isUploadingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id]}
                           className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-red-500 hover:text-white bg-red-500/10 hover:bg-red-655 px-3 py-2 rounded-xl border border-red-500/20 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isDeletingImage ? (

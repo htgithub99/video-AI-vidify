@@ -5,10 +5,12 @@ import { requestContext } from '../utils/requestContext.js';
 import {
   GEMINI_UNSUPPORTED_ERROR_KEYWORDS,
   GEMINI_RETRYABLE_ERROR_KEYWORDS,
+  AVAILABLE_MODELS,
+  GEMINI_RETRYABLE_STATUSES,
+  GEMINI_QUOTA_STATUSES,
+  GEMINI_RETRY_REGEX,
 } from '../../constants/data.js';
 import { getMessage, appLog, appLogStep, createAppError } from '../../lib/logger.js';
-
-export { GoogleGenAI };
 
 export const isGeminiApiKeyAvailable = (): boolean => {
   const store = requestContext.getStore();
@@ -16,11 +18,6 @@ export const isGeminiApiKeyAvailable = (): boolean => {
 };
 
 let currentModelIndex = 0;
-const AVAILABLE_MODELS = [
-  'gemini-3.5-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-3.1-pro-preview',
-];
 
 export const generateContentWithRetry = async (params: {
   contents: string | any;
@@ -92,24 +89,27 @@ export const generateContentWithRetry = async (params: {
 
         logStep('GEMINI_ERROR', model, attempt, errorMessage);
 
-        const isUnsupportedModel = GEMINI_UNSUPPORTED_ERROR_KEYWORDS.some(
-          term => errorMessage.includes(term) || errorStr.includes(term)
-        );
+        const isUnsupportedModel = GEMINI_UNSUPPORTED_ERROR_KEYWORDS.some(term => [errorMessage, errorStr].some(str => str.toLowerCase().includes(term.toLowerCase())));
 
         if (isUnsupportedModel) {
           logStep('GEMINI_UNSUPPORTED_FALLBACK', model);
           break;
         }
 
-        const isRetryable = error?.status === 'RESOURCE_EXHAUSTED' || error?.status === 'UNAVAILABLE' ||
-          GEMINI_RETRYABLE_ERROR_KEYWORDS.some(
-            term => errorMessage.includes(term) || errorStr.includes(term)
-          );
+        const isRetryable = (GEMINI_RETRYABLE_STATUSES as readonly any[]).includes(error?.status) || GEMINI_RETRYABLE_ERROR_KEYWORDS.some(term => [errorMessage, errorStr].some(str => str.toLowerCase().includes(term.toLowerCase())));
+
+        let waitTime = delayMs;
+        const retryMatch = errorMessage.match(GEMINI_RETRY_REGEX) || errorStr.match(GEMINI_RETRY_REGEX);
+        if (retryMatch) {
+          waitTime = Math.ceil((parseFloat(retryMatch[1]) + 1.5) * 1000);
+        } else if ((GEMINI_QUOTA_STATUSES as readonly any[]).includes(error?.status) || [errorMessage, errorStr].some(str => str.toLowerCase().includes('quota'))) {
+          waitTime = 8000;
+        }
 
         if (attempt <= retries && isRetryable) {
-          logStep('GEMINI_RETRYABLE_ERROR', model, delayMs);
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          delayMs *= 1.5;
+          logStep('GEMINI_RETRYABLE_ERROR', model, waitTime);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          delayMs = Math.max(delayMs * 1.5, waitTime * 1.2);
           continue;
         }
 
@@ -126,6 +126,7 @@ export const generateContentWithRetry = async (params: {
 
   const finalError = lastError || createAppError('GEMINI_GENERATION_FAILED_ALL');
   finalError.rotationLogs = rotationLogs;
+  finalError.noRetry = true;
   logStep('GEMINI_ALL_FAILED', AVAILABLE_MODELS.length);
   throw finalError;
 };

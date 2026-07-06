@@ -161,12 +161,12 @@ export const completeCutoffJSON = (jsonStr: string): string => {
     }
   }
 
-  // If we are left inside a string value, close it
+  
   if (inString) {
     out += '"';
   }
 
-  // Close unclosed structures in reverse order
+  
   while (stack.length > 0) {
     const last = stack.pop();
     if (last === '{') {
@@ -179,7 +179,7 @@ export const completeCutoffJSON = (jsonStr: string): string => {
   return out;
 }
 
-// Helper function to safely parse potentially malformed JSON or markdown codeblocks from Gemini
+
 export const safeParseJSON = (text: string, defaultVal: any): any => {
   if (!text) return defaultVal;
   let trimmed = text.trim();

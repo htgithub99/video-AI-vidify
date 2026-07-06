@@ -3,7 +3,31 @@ import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
 
 
-const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight } = LucideIcons as any;
+const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download } = LucideIcons as any;
+
+const handleDownloadImage = async (url: string, filename: string) => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("Lỗi khi tải ảnh:", error);
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+};
 
 import { WizardStep } from '../../types';
 
@@ -49,12 +73,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
               </>
             )}
           </button>
-        </div>
-
-        { }
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-          { }
-          <div className="lg:col-span-3 bg-slate-950/45 border border-slate-800 p-5 rounded-xl flex flex-col space-y-3">
+        </div>        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">          <div className="lg:col-span-3 bg-slate-950/45 border border-slate-800 p-5 rounded-xl flex flex-col space-y-3">
             <div className="flex justify-between items-center">
               <label className="text-xs text-slate-400 font-mono font-bold uppercase block">
                 {t.Thumbnail_Prompts_Input}
@@ -76,10 +95,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
               }
               className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-3 w-full text-xs text-slate-300 leading-relaxed font-sans outline-none focus:border-rose-500 min-h-[120px] custom-scrollbar resize-none"
             />
-          </div>
-
-          { }
-          <div className="lg:col-span-2 space-y-4 flex flex-col">
+          </div>          <div className="lg:col-span-2 space-y-4 flex flex-col">
             <div className="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-slate-800/80">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-2">
                 {t.Batch_Count}
@@ -312,10 +328,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
               </div>
             </div>
           </div>
-        </div>
-
-        { }
-        <div className="border-t border-slate-800 pt-5 space-y-4">
+        </div>        <div className="border-t border-slate-800 pt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <Layout className="w-5 h-5 text-rose-500" />
@@ -409,32 +422,43 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   <div
                     key={thumb.id}
                     className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700/80 transition-all duration-500 group flex flex-col"
-                  >
-                    {/* Header Image Area */}
-                    <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                  >                    <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                       {thumb.imageUrl ? (
-                        <img
-                          referrerPolicy="no-referrer"
-                          src={thumb.imageUrl}
-                          alt={t.thumbnail}
-                          className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-700"
-                          onClick={() =>
-                            setZoomedImage({
-                              url: thumb.imageUrl!,
-                              title: `Thumbnail (${thumb.style} Look)`,
-                              prompt: thumb.prompt,
-                            })
-                          }
-                        />
+                        <>
+                          <img
+                            referrerPolicy="no-referrer"
+                            src={thumb.imageUrl}
+                            alt={t.thumbnail}
+                            className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-700"
+                            onClick={() =>
+                              setZoomedImage({
+                                url: thumb.imageUrl!,
+                                title: `Thumbnail (${thumb.style} Look)`,
+                                prompt: thumb.prompt,
+                              })
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadImage(
+                                thumb.imageUrl!,
+                                `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`,
+                              );
+                            }}
+                            className="absolute top-3 right-3 bg-black/60 hover:bg-slate-800 border border-white/10 backdrop-blur-md text-slate-100 hover:text-white p-2 rounded-full shadow-lg transition-all active:scale-90 cursor-pointer z-10"
+                            title={t.Download_Image || "Tải ảnh về"}
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none">
                           <ImageIcon className="w-8 h-8 text-rose-500/50 mb-2" />
                           <span className="text-slate-500/50 font-mono text-[10px] tracking-widest uppercase">{t.No_Render_Done}</span>
                         </div>
-                      )}
-
-                      {/* Badges Overlay */}
-                      <div className="absolute top-3 left-3 flex gap-2 flex-wrap z-10">
+                      )}                      <div className="absolute top-3 left-3 flex gap-2 flex-wrap z-10">
                         <span className="bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
                           {thumb.style} {t.Look}
                         </span>
@@ -443,14 +467,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             {t.withText}
                           </span>
                         )}
-                      </div>
-
-                      {/* Inner Bottom Gradient for seamless text transition */}
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 to-transparent opacity-90 pointer-events-none"></div>
-                    </div>
-
-                    {/* Body Content */}
-                    <div className="p-5 flex-1 flex flex-col relative z-10 -mt-2">
+                      </div>                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 to-transparent opacity-90 pointer-events-none"></div>
+                    </div>                    <div className="p-5 flex-1 flex flex-col relative z-10 -mt-2">
                       {thumb.hasText && thumb.textText && (
                         <h3
                           className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-rose-600 dark:from-amber-200 dark:to-rose-300 font-black text-[13px] uppercase tracking-wide mb-2.5 line-clamp-2 drop-shadow-sm"
@@ -501,10 +519,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.subjectFocus}</span>
                           </div>
                         )}
-                      </div>
-
-                      {/* Render Button Footer */}
-                      <div className={!thumb.hasText ? "mt-auto pt-2" : "pt-1"}>
+                      </div>                      <div className={!thumb.hasText ? "mt-auto pt-2" : "pt-1"}>
                         <button
                           onClick={() =>
                             handleRenderThumbnailImage(

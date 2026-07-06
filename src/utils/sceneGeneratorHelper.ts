@@ -1,12 +1,13 @@
 import { getSceneDensityPrompt } from "../constants/prompts.js";
 import { appWarn, createAppError } from "../lib/logger.js";
+import { ABBREVIATIONS, CONJUNCTIONS } from "../constants/data.js";
 
 export const SCENE_DENSITY_MAP = {
-  THEO_TU: { maxChars: 20, label: "Theo từ" },
-  CAU_NGAN: { maxChars: 75, label: "Câu ngắn" },
-  DA_PHAN_CANH: { maxChars: 100, label: "Đa phân cảnh / Câu" },
-  CAU_DAI: { maxChars: 150, label: "Câu dài" },
-  THEO_DOAN: { maxChars: 300, label: "Theo đoạn" },
+  THEO_TU: { maxChars: 20, label: "Word-based (Ultra-dense)" },
+  CAU_NGAN: { maxChars: 75, label: "Short sentence (Hyper-dense)" },
+  DA_PHAN_CANH: { maxChars: 100, label: "Multi-scene (Clause-based)" },
+  CAU_DAI: { maxChars: 150, label: "Long sentence (Standard)" },
+  THEO_DOAN: { maxChars: 300, label: "Paragraph-based (Slow-paced)" },
 } as const;
 
 export type SceneDensity = keyof typeof SCENE_DENSITY_MAP;
@@ -80,10 +81,8 @@ const retryableLlmCall = async <T>(
     } catch (error) {
       attempt++;
       appWarn('CHUNK_RETRY_WARNING', chunkIndex, attempt, maxRetries + 1, error);
-      if (attempt > maxRetries) {
-        throw createAppError(
-          `[Chunk ${chunkIndex}] Failed after ${maxRetries + 1} attempts: ${error}`,
-        );
+      if (error?.noRetry || attempt > maxRetries) {
+        throw error;
       }
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
@@ -107,7 +106,7 @@ export const generateScenesWithChunking = async (
   const densityConfig = SCENE_DENSITY_MAP[density];
 
   const chunkResults: GeneratedScene[][] = [];
-  const chunkSize = 1; // Pure sequential for free tier safety
+  const chunkSize = 1;
 
   const chunkTasks = chunks.map((chunk, index) => {
     const chunkLength = chunk.length;
@@ -131,7 +130,6 @@ export const generateScenesWithChunking = async (
     const batchResults = await Promise.all(chunkBatch.map((fn) => fn()));
     chunkResults.push(...batchResults);
 
-    // Smooth out requests for free tier (15 RPM limit)
     if (i + chunkSize < chunkTasks.length) {
       await new Promise((res) => setTimeout(res, 1500));
     }
@@ -152,5 +150,103 @@ export const generateScenesWithChunking = async (
   }
 
   return finalScenes;
+};
+
+export const smartSplitSentences = (text: string): string[] => {
+  if (!text) return [];
+  const sentences: string[] = [];
+  let currentSentence = "";
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    currentSentence += char;
+
+    if (char === '.' || char === '?' || char === '!' || char === '\n') {
+      if (char === '.') {
+        if (i > 0 && i < text.length - 1 && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
+          continue;
+        }
+
+        const lastWordMatch = currentSentence.slice(0, -1).match(/(\b[a-zA-ZÀ-ỹ]+)$/);
+        if (lastWordMatch) {
+          const lastWord = lastWordMatch[1].toLowerCase();
+          if ((ABBREVIATIONS as readonly string[]).includes(lastWord)) {
+            continue;
+          }
+        }
+      }
+
+      if (char === '\n' || i === text.length - 1 || /\s/.test(text[i + 1])) {
+        const trimmed = currentSentence.trim();
+        if (trimmed) {
+          sentences.push(trimmed);
+        }
+        currentSentence = "";
+      }
+    }
+  }
+
+  if (currentSentence.trim()) {
+    sentences.push(currentSentence.trim());
+  }
+
+  return sentences;
+};
+
+export const splitSentenceSafely = (sent: string, maxWords: number = 12): string[] => {
+  const words = sent.split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) {
+    return [sent];
+  }
+
+  const len = words.length;
+  const startIdx = Math.floor(len * 0.3);
+  const endIdx = Math.ceil(len * 0.7);
+
+  const abbrSet = new Set<string>(ABBREVIATIONS);
+
+  for (let i = startIdx; i <= endIdx; i++) {
+    const word = words[i];
+    if (/[伤害,.;:—\-\s]+$/.test(word)) {
+      if (word.endsWith('.')) {
+        const cleanWord = word.slice(0, -1).toLowerCase().replace(/[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g, "");
+        if (abbrSet.has(cleanWord)) {
+          continue;
+        }
+        if (/\d$/.test(cleanWord) && i < len - 1 && /^\d/.test(words[i + 1])) {
+          continue;
+        }
+      }
+
+      const part1 = words.slice(0, i + 1).join(" ");
+      const part2 = words.slice(i + 1).join(" ");
+      return [
+        ...splitSentenceSafely(part1, maxWords),
+        ...splitSentenceSafely(part2, maxWords)
+      ];
+    }
+  }
+
+  const conjSet = new Set<string>(CONJUNCTIONS);
+
+  for (let i = startIdx; i <= endIdx; i++) {
+    const word = words[i].toLowerCase().replace(/[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g, "");
+    if (conjSet.has(word)) {
+      const part1 = words.slice(0, i).join(" ");
+      const part2 = words.slice(i).join(" ");
+      return [
+        ...splitSentenceSafely(part1, maxWords),
+        ...splitSentenceSafely(part2, maxWords)
+      ];
+    }
+  }
+
+  const mid = Math.ceil(len / 2);
+  const part1 = words.slice(0, mid).join(" ");
+  const part2 = words.slice(mid).join(" ");
+  return [
+    ...splitSentenceSafely(part1, maxWords),
+    ...splitSentenceSafely(part2, maxWords)
+  ];
 };
 

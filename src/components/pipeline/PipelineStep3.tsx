@@ -6,7 +6,7 @@ import { WizardStep } from '../../types';
 const { Sparkles, RefreshCw, Sliders, ChevronDown, Search, Copy, ArrowLeft, ArrowRight } = LucideIcons as any;
 
 export default function PipelineStep3(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleTriggerSEOBoost } = props;
+  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleTriggerSEOBoost, onSaveProject } = props;
   return (
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
@@ -47,10 +47,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </>
             )}
           </button>
-        </div>
-
-        { }
-        <div className="bg-slate-950/45 border border-slate-805 p-5 rounded-xl space-y-3">
+        </div>        <div className="bg-slate-950/45 border border-slate-805 p-5 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
             <label className="text-xs text-slate-400 font-mono font-bold uppercase block">
               {t.SEO_Optimization_Input}
@@ -72,10 +69,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
             }
             className="bg-slate-900 border border-slate-800 rounded-lg p-3 w-full text-xs text-slate-300 leading-relaxed font-sans outline-none focus:border-rose-500 min-h-[120px] max-h-60 custom-scrollbar resize-y"
           />
-        </div>
-
-        { }
-        <div className="pb-6 border-b border-slate-800">
+        </div>        <div className="pb-6 border-b border-slate-800">
           <div className="space-y-1.5 max-w-sm">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
               {t.Number_of_Title_Variants_}
@@ -86,16 +80,18 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 value={project.seoConfig?.numTitles || 3}
                 onChange={(e) => {
                   const val = parseInt(e.target.value) || 3;
-                  setProject((prev) => ({
-                    ...prev,
+                  const updatedProject = {
+                    ...project,
                     seoConfig: {
-                      ...(prev.seoConfig || {}),
+                      ...(project.seoConfig || {}),
                       numTitles: val,
                       numDescriptions: 1,
                       numHashtags: 5,
                       numTags: 10,
                     },
-                  }));
+                  };
+                  setProject(updatedProject);
+                  onSaveProject(updatedProject, true);
                 }}
                 className="flex-1 bg-transparent border-none text-slate-205 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
               >
@@ -116,9 +112,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {" "}
-          { }
-          <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-950/20 p-5 rounded-xl border border-slate-800">
+          {" "}          <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-950/20 p-5 rounded-xl border border-slate-800">
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
                 {t.Titles_Options_Group}
@@ -181,10 +175,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       >
                         <Copy className="w-4 h-4" />
                       </button>
-                    </div>
-
-                    { }
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
+                    </div>                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-500">
                           <span>
@@ -256,10 +247,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   </div>
                 ))}
               </div>
-            </div>
-
-            { }
-            <div className="space-y-3">
+            </div>            <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
                 {t.Description_Options}
               </span>
@@ -308,12 +296,8 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 ))}
               </div>
             </div>
-          </div>
-          { }
-          <div className="space-y-5">
-            <div className="bg-slate-955 border border-slate-800 p-5 rounded-xl space-y-4">
-              { }
-              <div className="space-y-2">
+          </div>          <div className="space-y-5">
+            <div className="bg-slate-955 border border-slate-800 p-5 rounded-xl space-y-4">              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">
                     {t.hashtags}
@@ -362,10 +346,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     </span>
                   ))}
                 </div>
-              </div>
-
-              { }
-              <div className="space-y-2 pt-3 border-t border-slate-900">
+              </div>              <div className="space-y-2 pt-3 border-t border-slate-900">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">
                     {t.tags}

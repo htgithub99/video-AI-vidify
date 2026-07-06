@@ -10,8 +10,10 @@ import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import {
   generateScenesWithChunking,
   SceneDensity,
+  smartSplitSentences,
+  splitSentenceSafely,
 } from "../../utils/sceneGeneratorHelper.js";
-import { EXTERNAL_URLS, ALIGN_CONFIG } from "../../constants/apiRoutes.js";
+import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS } from "../../constants/messages.js";
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
 import {
@@ -25,6 +27,7 @@ import {
 } from "../../constants/promptGuidelines.js";
 import {
   getStyleRewriteBatchPrompt,
+  getOptimizePromptsBatchPrompt,
   getChapterWriterPrompt,
   getVideoDirectorSceneSplitPrompt,
   getDetailedPromptBuilderPrompt,
@@ -39,7 +42,10 @@ import {
 } from "../../constants/prompts.js";
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
-import { STICKMAN_KEYWORDS } from "../../constants/data.js";
+import { STICKMAN_KEYWORDS, SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../../constants/data.js";
+import { SCENE_SPLIT_PROMPTS } from "../../constants/texts.js";
+import { MARKDOWN_REGEX, EMOJI_REGEX } from "../../constants/regexes.js";
+import { AspectRatio } from "../../types.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
@@ -113,7 +119,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
 
 router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
-  const { storyboard, newStyle } = req.body;
+  const { storyboard, newStyle, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
     return res
       .status(400)
@@ -152,6 +158,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       const prompt = getStyleRewriteBatchPrompt(
         newStyle,
         JSON.stringify(chunk),
+        aspectRatio || AspectRatio.SixteenNine,
       );
 
       try {
@@ -171,7 +178,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
         logger.error("BATCH_STYLE_REWRITE_FAILED_CHUNK", err);
       }
 
-      // Smooth out requests for free tier
+      
       if (i < chunks.length - 1) {
         await new Promise((res) => setTimeout(res, 1500));
       }
@@ -191,6 +198,98 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error("REWRITE_PROMPTS_ERROR", error);
+    res
+      .status(500)
+      .json({ error: error.message, rotationLogs: error.rotationLogs });
+  }
+});
+
+router.post("/optimize-prompts", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const { storyboard, visualConfig, aspectRatio } = req.body;
+  if (!storyboard || !Array.isArray(storyboard)) {
+    return res
+      .status(400)
+      .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+  }
+
+  if (!isGeminiApiKeyAvailable()) {
+    return res.json({ storyboard });
+  }
+
+  try {
+    const scenesToOptimize = storyboard
+      .map((s: any) => ({
+        id: s.id,
+        prompt: s.prompt || "",
+        script: s.script || s.subtitle || "",
+      }))
+      .filter((s: any) => s.prompt || s.script);
+
+    if (scenesToOptimize.length === 0) {
+      return res.json({ success: true, storyboard });
+    }
+
+    const visualStyle = visualConfig?.style || "Cinematic";
+    const referenceStyle = visualConfig?.referencePrompt || "";
+    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0
+      ? JSON.stringify(visualConfig.characters)
+      : undefined;
+
+    const chunkSize = 8;
+    const chunks = [];
+    for (let i = 0; i < scenesToOptimize.length; i += chunkSize) {
+      chunks.push(scenesToOptimize.slice(i, i + chunkSize));
+    }
+
+    const optimizedMap = new Map<string, string>();
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const prompt = getOptimizePromptsBatchPrompt(
+        visualStyle,
+        referenceStyle,
+        JSON.stringify(chunk),
+        aspectRatio || AspectRatio.SixteenNine,
+        charactersJson
+      );
+
+      try {
+        const response = await generateContentWithRetry({
+          contents: prompt,
+          config: { responseMimeType: "application/json" },
+        });
+        const parsed = safeParseJSON(response.text, []);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item.id && item.prompt) {
+              optimizedMap.set(item.id, item.prompt);
+            }
+          }
+        }
+      } catch (err) {
+        logger.error("BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK", err);
+      }
+
+      if (i < chunks.length - 1) {
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+    }
+
+    const updatedStoryboard = storyboard.map((scene: any) => {
+      const optimized = optimizedMap.get(scene.id);
+      if (optimized) {
+        return { ...scene, prompt: optimized };
+      }
+      return {
+        ...scene,
+        prompt: scene.prompt || "",
+      };
+    });
+
+    res.json({ success: true, storyboard: updatedStoryboard });
+  } catch (error: any) {
+    logger.error("OPTIMIZE_PROMPTS_ERROR", error);
     res
       .status(500)
       .json({ error: error.message, rotationLogs: error.rotationLogs });
@@ -354,7 +453,7 @@ router.post(
   "/rewrite-prompts-character",
   async (req: Request, res: Response) => {
     const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
-    const { storyboard, characterPrompt, characters } = req.body;
+    const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
     if (!storyboard || !Array.isArray(storyboard)) {
       return res
         .status(400)
@@ -405,6 +504,7 @@ router.post(
         const prompt = getCharacterRewriteBatchPrompt(
           JSON.stringify(finalCharacters),
           JSON.stringify(chunk),
+          aspectRatio || AspectRatio.SixteenNine,
         );
 
         try {
@@ -424,7 +524,7 @@ router.post(
           logger.error("BATCH_CHARACTER_REWRITE_FAILED_CHUNK", err);
         }
 
-        // Smooth out requests for free tier
+        
         if (i < chunks.length - 1) {
           await new Promise((res) => setTimeout(res, 1500));
         }
@@ -471,7 +571,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
     bypassCache,
   } = req.body;
 
-  const cached = checkCache("/api/pipeline/hooks", req.body, bypassCache);
+  const cached = checkCache(API_ROUTES.PIPELINE_HOOKS, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
@@ -555,7 +655,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
     const output = { versions, rotationLogs: multiStepLogs };
-    setCache("/api/pipeline/hooks", req.body, output);
+    setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
     res.json(output);
   } catch (error: any) {
     logger.error("ERROR_GENERATING_HOOKS", error);
@@ -591,13 +691,12 @@ router.post("/hooks", async (req: Request, res: Response) => {
 router.post("/script", async (req: Request, res: Response) => {
   const {
     originalInput,
-    inputType,
     config = {},
     selectedHookText,
     bypassCache,
   } = req.body;
 
-  const cached = checkCache("/api/pipeline/script", req.body, bypassCache);
+  const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
@@ -680,15 +779,9 @@ router.post("/script", async (req: Request, res: Response) => {
 
     const targetWordCountMin = Math.floor(targetWordCount * 0.95);
 
-    const inputTypeContext =
-      inputType === "idea"
-        ? PROMPT_CONTEXT.VI_IDEA_INPUT
-        : PROMPT_CONTEXT.VI_DRAFT_INPUT;
-
     let genreGuideline = "";
     let styleGuideline = "";
     let audienceGuideline = "";
-    let coefficientsGuideline = "";
 
     if (isVi) {
       genreGuideline =
@@ -700,11 +793,6 @@ router.post("/script", async (req: Request, res: Response) => {
       audienceGuideline =
         VI_AUDIENCE_GUIDELINES[config.audience] ||
         PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "Đại chúng");
-      coefficientsGuideline = PROMPT_CONTEXT.VI_COEFFICIENTS(
-        config.creativityLevel || 7,
-        config.rewriteLevel || 80,
-        config.similarityReduction || 5,
-      );
     } else {
       genreGuideline =
         EN_GENRE_GUIDELINES[config.genre] ||
@@ -715,11 +803,6 @@ router.post("/script", async (req: Request, res: Response) => {
       audienceGuideline =
         EN_AUDIENCE_GUIDELINES[config.audience] ||
         PROMPT_CONTEXT.EN_AUDIENCE_DEFAULT(config.audience || "General");
-      coefficientsGuideline = PROMPT_CONTEXT.EN_COEFFICIENTS(
-        config.creativityLevel || 7,
-        config.rewriteLevel || 80,
-        config.similarityReduction || 5,
-      );
     }
 
     const multiStepLogs: string[] = [];
@@ -759,7 +842,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
 
-    // Call 1: Unified Research, Fact-Check, and Chapter Outlining
+    
     const combinedScriptPrompt = getCombinedScriptPrompt(
       originalInput,
       durationText,
@@ -814,7 +897,7 @@ router.post("/script", async (req: Request, res: Response) => {
       targetWordCount / Math.max(1, chapters.length),
     );
 
-    // Call 2 (Loop): Focused Chapter Writing to completely eliminate AI Laziness and ensure deep narration
+    
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       logStep(
@@ -846,11 +929,8 @@ router.post("/script", async (req: Request, res: Response) => {
 
       let cleanedSegment = chapterData.scriptSegment || "";
       cleanedSegment = cleanedSegment
-        .replace(/[*#_\[\]`~>|\/\-\\]/g, "")
-        .replace(
-          /[\u{1F600}-\u{1F6FF}\u{1F300}-\u{1F5FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1FA00}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/gu,
-          "",
-        );
+        .replace(MARKDOWN_REGEX, "")
+        .replace(EMOJI_REGEX, "");
 
       completedChapters.push({
         id: chapter.id || `ch_${i + 1}`,
@@ -874,7 +954,7 @@ router.post("/script", async (req: Request, res: Response) => {
       chapters: completedChapters,
       rotationLogs: multiStepLogs,
     };
-    setCache("/api/pipeline/script", req.body, parsedData);
+    setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error("ERROR_REWRITING_SCRIPT", error);
@@ -976,176 +1056,117 @@ function generateMockStoryboard(
   density: number,
   voiceDuration?: number,
   splitStrategy?: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
 ) {
-  let pList: string[] = [];
+  interface SegmentWithContext {
+    text: string;
+    context: string;
+  }
+  let pList: SegmentWithContext[] = [];
 
   if (splitStrategy === "multi_prompt") {
-    const rawSentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 4);
+    const rawSentences = smartSplitSentences(rewrittenScript || "");
     for (const sent of rawSentences) {
-      const words = sent.split(/\s+/).filter(Boolean);
-      if (words.length > 12) {
-        const clauses = sent
-          .split(/[,;—\-]+/)
-          .map((c) => c.trim())
-          .filter((c) => c.length > 3);
-        if (clauses.length >= 2) {
-          pList.push(...clauses);
-        } else {
-          const mid = Math.ceil(words.length / 2);
-          pList.push(words.slice(0, mid).join(" "));
-          pList.push(words.slice(mid).join(" "));
-        }
-      } else {
-        pList.push(sent);
+      const clauses = splitSentenceSafely(sent, 12);
+      for (const clause of clauses) {
+        pList.push({ text: clause, context: sent });
       }
     }
   } else if (splitStrategy === "ultradense" || splitStrategy === "word") {
-    pList = (rewrittenScript || "")
-      .split(/[.,\n?!\r;—\-]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 3);
-
-    // Target scene count for ultra-dense is around 125 for an 8-minute video (480 seconds).
-    // Let's compute a dynamic target count based on voice duration or default to 125.
-    const targetCount = voiceDuration
-      ? Math.max(12, Math.round(voiceDuration / 3.7))
-      : 125;
-
-    if (pList.length < targetCount && pList.length > 0) {
-      let refined: string[] = [];
-      for (const segment of pList) {
-        const words = segment.split(/\s+/).filter(Boolean);
-        if (words.length > 8 && refined.length < targetCount) {
-          const mid = Math.ceil(words.length / 2);
-          refined.push(words.slice(0, mid).join(" "));
-          refined.push(words.slice(mid).join(" "));
-        } else {
-          refined.push(segment);
-        }
+    const rawSentences = smartSplitSentences(rewrittenScript || "");
+    for (const sent of rawSentences) {
+      const clauses = splitSentenceSafely(sent, 6);
+      for (const clause of clauses) {
+        pList.push({ text: clause, context: sent });
       }
-      pList = refined.filter((p) => p.length > 2);
     }
   } else if (
     splitStrategy === "hyperdense" ||
     splitStrategy === "short_sentence"
   ) {
-    const rawSentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 4);
+    const rawSentences = smartSplitSentences(rewrittenScript || "");
     for (const sent of rawSentences) {
-      const words = sent.split(/\s+/).filter(Boolean);
-      if (words.length > 10) {
-        const mid = Math.ceil(words.length / 2);
-        pList.push(words.slice(0, mid).join(" "));
-        pList.push(words.slice(mid).join(" "));
-      } else {
-        pList.push(sent);
+      const clauses = splitSentenceSafely(sent, 10);
+      for (const clause of clauses) {
+        pList.push({ text: clause, context: sent });
       }
     }
   } else if (splitStrategy === "highpaced") {
-    const rawSentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 4);
+    const rawSentences = smartSplitSentences(rewrittenScript || "");
     for (const sent of rawSentences) {
-      const words = sent.split(/\s+/).filter(Boolean);
-      if (words.length > 15) {
-        const mid = Math.ceil(words.length / 2);
-        pList.push(words.slice(0, mid).join(" "));
-        pList.push(words.slice(mid).join(" "));
-      } else {
-        pList.push(sent);
+      const clauses = splitSentenceSafely(sent, 15);
+      for (const clause of clauses) {
+        pList.push({ text: clause, context: sent });
       }
     }
   } else if (splitStrategy === "dramatic") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 2) {
-      pList.push(sentences.slice(i, i + 2).join(". "));
+      const chunk = sentences.slice(i, i + 2).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else if (splitStrategy === "paragraph") {
-    pList = (rewrittenScript || "")
+    const paragraphs = (rewrittenScript || "")
       .split(/\n+/)
       .map((p) => p.trim())
       .filter((p) => p.length > 10);
+    
+    for (const para of paragraphs) {
+      pList.push({ text: para, context: para });
+    }
+
     if (pList.length < 3) {
-      const sentences = (rewrittenScript || "")
-        .split(/[.\n?!\r;]+/)
-        .map((p) => p.trim())
-        .filter((p) => p.length > 6);
+      const sentences = smartSplitSentences(rewrittenScript || "");
       pList = [];
       for (let i = 0; i < sentences.length; i += 3) {
-        pList.push(sentences.slice(i, i + 3).join(". "));
+        const chunk = sentences.slice(i, i + 3).join(". ");
+        pList.push({ text: chunk, context: chunk });
       }
     }
   } else if (splitStrategy === "epic") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 4) {
-      pList.push(sentences.slice(i, i + 4).join(". "));
+      const chunk = sentences.slice(i, i + 4).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else if (splitStrategy === "cinematic") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 5) {
-      pList.push(sentences.slice(i, i + 5).join(". "));
+      const chunk = sentences.slice(i, i + 5).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else if (splitStrategy === "artistic") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 6) {
-      pList.push(sentences.slice(i, i + 6).join(". "));
+      const chunk = sentences.slice(i, i + 6).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else if (splitStrategy === "slowpaced") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 7) {
-      pList.push(sentences.slice(i, i + 7).join(". "));
+      const chunk = sentences.slice(i, i + 7).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else if (splitStrategy === "super_slow") {
-    const sentences = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
-    pList = [];
+    const sentences = smartSplitSentences(rewrittenScript || "");
     for (let i = 0; i < sentences.length; i += 10) {
-      pList.push(sentences.slice(i, i + 10).join(". "));
+      const chunk = sentences.slice(i, i + 10).join(". ");
+      pList.push({ text: chunk, context: chunk });
     }
   } else {
-    pList = (rewrittenScript || "")
-      .split(/[.\n?!\r;]+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 6);
+    const sentences = smartSplitSentences(rewrittenScript || "");
+    for (const sent of sentences) {
+      pList.push({ text: sent, context: sent });
+    }
   }
 
   const totalWords = pList.reduce(
-    (acc, p) => acc + p.split(/\s+/).filter(Boolean).length,
+    (acc, p) => acc + p.text.split(/\s+/).filter(Boolean).length,
     0,
   );
 
-  // To allow every single sentence to have its own scene, set maxScenes to a very high safe value of 250
   let maxScenes = 250;
 
-  // Each individual sentence in pList gets its own scene
   const scenesCount = Math.min(maxScenes, pList.length > 0 ? pList.length : 8);
   const scenes: any[] = [];
   let currentTime = 0;
@@ -1156,13 +1177,13 @@ function generateMockStoryboard(
       ? chapters
       : [{ id: "ch_1", title: "Chapter 1" }];
 
+  const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
+
   for (let i = 0; i < scenesCount; i++) {
     const chapter = defaultChapters[i % defaultChapters.length];
-    const scriptText =
-      pList[i] ||
-      (isVi
-        ? `Chi tiết cốt truyện hấp dẫn phần ${i + 1} tiếp nối mạch truyện đầy lôi cuốn.`
-        : `Interesting plot detail part ${i + 1} continuing the engaging narrative.`);
+    const segment = pList[i];
+    const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(i + 1);
+    const contextText = segment ? segment.context : scriptText;
 
     const wordsCount = scriptText.split(/\s+/).filter(Boolean).length;
     let duration = 5;
@@ -1181,20 +1202,9 @@ function generateMockStoryboard(
     const endTimeSeconds = currentTime + duration;
     currentTime = endTimeSeconds;
 
-    const motions = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Static"];
-    const motion = motions[i % motions.length];
-
-    const effects = isVi
-      ? `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${styleStr}`
-      : `Soft light leaks overlays adhering to ${styleStr} feel`;
-    const transitions = [
-      "Cross Dissolve",
-      "Fade out to black",
-      "Cut",
-      "Wipe",
-      "Zoom transition",
-    ];
-    const transition = transitions[i % transitions.length];
+    const motion = SCENE_SPLIT_MOTIONS[i % SCENE_SPLIT_MOTIONS.length];
+    const effects = promptConfig.EFFECTS(styleStr);
+    const transition = SCENE_SPLIT_TRANSITIONS[i % SCENE_SPLIT_TRANSITIONS.length];
 
     scenes.push({
       id: `sc_${i + 1}`,
@@ -1204,9 +1214,7 @@ function generateMockStoryboard(
       duration,
       script: scriptText,
       subtitle: scriptText,
-      prompt: isVi
-        ? `Tạo hình ảnh chi tiết chân thực tuyệt đẹp mô tả cảnh: ${scriptText}. Phong cách thiết kế ${styleStr}, bố cục điện ảnh cinematic, góc máy chuyên nghiệp, ánh sáng dramatic, chất lượng 8k.`
-        : `Stunning high-quality design depicting: ${scriptText}. Adhering to ${styleStr} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece.`,
+      prompt: promptConfig.PROMPT(contextText, styleStr, aspectRatio),
       cameraMotion: motion,
       effects,
       transition,
@@ -1217,8 +1225,19 @@ function generateMockStoryboard(
 }
 
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
-  const { sceneScript, setting, time, character, costume, camera, style } =
-    req.body;
+  const {
+    sceneScript,
+    setting,
+    time,
+    character,
+    costume,
+    camera,
+    style,
+    aspectRatio,
+    characterPrompt,
+    referencePrompt,
+    currentPrompt,
+  } = req.body;
   if (!sceneScript) {
     return res.status(400).json({ error: "Missing scene script" });
   }
@@ -1232,6 +1251,10 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
       costume,
       camera,
       style,
+      aspectRatio || AspectRatio.SixteenNine,
+      characterPrompt,
+      referencePrompt,
+      currentPrompt,
     );
 
     const response = await generateContentWithRetry({
@@ -1259,7 +1282,6 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     referenceCharacters,
     referenceImages,
     visualDensity,
-    targetDuration,
     bypassCache,
     voiceDuration,
   } = req.body;
@@ -1287,7 +1309,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (chosenDuration < 10) chosenDuration = 10;
   }
 
-  const cached = checkCache("/api/pipeline/storyboard", req.body, bypassCache);
+  const cached = checkCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
@@ -1302,6 +1324,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         density,
         chosenDuration,
         splitStrategy,
+        config?.aspectRatio || AspectRatio.SixteenNine,
       ),
     );
   }
@@ -1327,6 +1350,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (genre === "History") {
       genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - HISTORY GENRE:
 - Strict Historical Accuracy: Image prompts must precisely reflect the historical period mentioned in the scene text. Describe historically accurate clothing (e.g., armor, robes, wool tunics), architecture (e.g., wooden huts, stone castles, roman pillars), and technology of the era.
+- Historical Context Enrichment: For every scene under a historical theme, the prompt must explicitly specify the historical context, such as the name of the battle or war, the specific era or year (if available), the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures involved. This ensures the AI accurately generates period-specific clothing, weapons, flags/banners, insignia, vehicles, and distinct characteristics of the era, preventing confusion between different wars or military forces.
 - Character Pinning/Consistency: If specific historical figures, rulers, or classes of people (e.g., Roman legionaries, Victorian ladies, ancient farmers) are mentioned, describe their iconic features and clothing consistently across scenes.
 - Settings: Ensure settings match the historical timeline. No modern objects, modern light sources, or modern tools should appear.`;
     } else if (genre === "True Crime") {
@@ -1394,10 +1418,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const visualBible = safeParseJSON(bibleResponse.text, {
       colorPalette: "",
       characterSpecs: "",
+      landscapeSpecs: "",
       lightingMood: "",
     });
     logStoryboardStep(
-      `${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Spec: ${visualBible.characterSpecs}`,
+      `${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`,
     );
     if (bibleResponse.rotationLogs)
       storyboardLogs.push(...bibleResponse.rotationLogs);
@@ -1412,25 +1437,25 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         async (chunkText, targetPrompt, chunkIndex, totalChunks) => {
           let splitInstruction = ``;
           if (splitStrategy === "ultradense" || splitStrategy === "word") {
-            splitInstruction = `CRITICAL STYLING / ULTRA-DENSE SPLITTING MANDATE: You MUST divide the script into ultra-short rhythmic scenes (roughly 2-4 seconds each) to achieve maximum image alignment with every spoken phrase or clause. Every single scene MUST contain only a brief phrase, a single clause, or 3-8 words of text. NEVER combine sentences, and do NOT skip or summarize any segment of the script. This ensures the output images fit every word and sentence perfectly step-by-step.\nBẮT BUỘC: Dù là chia theo từ hay câu ngắn, hình ảnh thiết kế phải bám sát nội dung chính xác của cụm từ/câu đó. TUYỆT ĐỐI KHÔNG LƯỜI BIẾNG VÀ KHÔNG ĐƯỢC GỘP CÂU.`;
+            splitInstruction = `CRITICAL STYLING / ULTRA-DENSE SPLITTING MANDATE: You MUST divide the script into ultra-short rhythmic scenes (roughly 2-4 seconds each) to achieve maximum image alignment with every spoken phrase or clause. Every single scene MUST contain only a brief phrase, a single clause, or 3-8 words of text. NEVER combine sentences, and do NOT skip or summarize any segment of the script. This ensures the output images fit every word and sentence perfectly step-by-step. MANDATORY: The visual design MUST strictly align with the exact content of that phrase or short sentence. ABSOLUTELY NO LAZINESS AND NO COMBINING OF CLAUSES.`;
           } else if (
             splitStrategy === "hyperdense" ||
             splitStrategy === "short_sentence"
           ) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: To make the video extremely dynamic and high-paced, split the script into thin scene chunks of 2-4 seconds each. Divide sentences in half if they are long.\nBẮT BUỘC: Hình ảnh thiết kế phải bám sát nội dung chính xác của câu ngắn đó. KHÔNG ĐƯỢC GỘP CÁC CÂU LẠI VỚI NHAU.`;
+            splitInstruction = `CRITICAL SPLITTING MANDATE: To make the video extremely dynamic and high-paced, split the script into thin scene chunks of 2-4 seconds each. Divide sentences in half if they are long. MANDATORY: The visual design MUST strictly align with the exact content of that short sentence. DO NOT COMBINE SENTENCES TOGETHER.`;
           } else if (splitStrategy === "multi_prompt") {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes.\nBẮT BUỘC: Mỗi câu tối thiểu 1 prompt, nếu câu nào dài phải tách thành 2 - 3 phân cảnh chuyển động liên tục.`;
+            splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes. MANDATORY: Generate at least 1 prompt per sentence. If a sentence is long, split it into 2-3 continuous moving sub-scenes.`;
           } else if (splitStrategy === "highpaced") {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a swift, modern pacing of 4-6 seconds per scene. Cut precisely at punctuation boundaries or short sentence blocks.`;
           } else if (
             splitStrategy === "sentence" ||
             splitStrategy === "long_sentence"
           ) {
-            splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script.\nBẮT BUỘC: Không bao giờ gộp nhiều câu vào một phân cảnh. Việc gộp câu sẽ làm hỏng nhịp điệu.`;
+            splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script. MANDATORY: Never combine multiple sentences into a single scene. Combining sentences will ruin the pacing and rhythm.`;
           } else if (splitStrategy === "dramatic") {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a punchy, dramatic pacing of 8-10 seconds per scene. Focus heavily on suspenseful chapter transitions and key narrative beats.`;
           } else if (splitStrategy === "paragraph") {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part.\nBẮT BUỘC: Hình ảnh thiết kế phải bám sát nội dung chính xác của đoạn văn đó.`;
+            splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part. MANDATORY: The visual design MUST strictly align with the exact content of that paragraph.`;
           } else if (splitStrategy === "epic") {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo.`;
           } else if (splitStrategy === "cinematic") {
@@ -1446,7 +1471,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           }
 
           const combinedInstruction = `${targetPrompt}\n\n${splitInstruction}`;
-          const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Main character/subject visual guidelines: ${visualBible.characterSpecs}. Lighting mood: ${visualBible.lightingMood}`;
+          const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Lighting mood: ${visualBible.lightingMood}`;
           const prompt = getVideoDirectorSceneSplitPrompt(
             chunkIndex,
             totalChunks,
@@ -1460,6 +1485,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
             chunkText,
             JSON.stringify(chapters),
             characterRef,
+            config?.aspectRatio || AspectRatio.SixteenNine,
+            visualBible.characterSpecs,
+            visualBible.landscapeSpecs,
           );
 
           const response = await generateContentWithRetry({
@@ -1509,6 +1537,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         density,
         chosenDuration,
         splitStrategy,
+        config?.aspectRatio || AspectRatio.SixteenNine,
       );
       if (oldLogs) data.rotationLogs = oldLogs;
     }
@@ -1546,7 +1575,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       }
     }
 
-    setCache("/api/pipeline/storyboard", req.body, data);
+    setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
   } catch (error: any) {
     logger.error("ERROR_GENERATING_STORYBOARD_GEMINI", error);
@@ -1559,6 +1588,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       density,
       chosenDuration,
       splitStrategy,
+      config?.aspectRatio || AspectRatio.SixteenNine,
     );
     if (!!fallbackData?.scenes?.length) {
       fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
@@ -1572,14 +1602,13 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
 router.post("/seo", async (req: Request, res: Response) => {
   const {
-    originalInput,
     config = {},
     seoConfig = {},
     rewrittenScript,
     bypassCache,
   } = req.body;
 
-  const cached = checkCache("/api/pipeline/seo", req.body, bypassCache);
+  const cached = checkCache(API_ROUTES.PIPELINE_SEO, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
@@ -1694,7 +1723,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
       rotationLogs: seoLogs,
     };
 
-    setCache("/api/pipeline/seo", req.body, parsedData);
+    setCache(API_ROUTES.PIPELINE_SEO, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error("ERROR_GENERATING_SEO", error);
@@ -1766,7 +1795,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     bypassCache,
   } = req.body;
 
-  const cached = checkCache("/api/pipeline/thumbnails", req.body, bypassCache);
+  const cached = checkCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
@@ -1899,7 +1928,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
       rotationLogs: thumbLogs,
     };
 
-    setCache("/api/pipeline/thumbnails", req.body, parsedData);
+    setCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error("ERROR_GENERATING_THUMBNAILS_PROMPTS", error);
@@ -2066,7 +2095,7 @@ router.post("/generate-image", async (req: Request, res: Response) => {
     const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
     const cached = checkCache(
-      "/api/pipeline/generate-image",
+      API_ROUTES.PIPELINE_GENERATE_IMAGE,
       req.body,
       bypassCache,
     );
@@ -2275,11 +2304,14 @@ router.post("/align-voice", async (req: Request, res: Response) => {
         }
 
         if (error) {
-          logger.error(`Error running voice_aligner.py: ${error.message}`);
-          logger.error(`Python script stderr: ${stderr}`);
+          logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
+          if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
+          if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
+          
+          const pythonError = stderr || stdout;
           return res.status(500).json({ 
             success: false, 
-            error: error.message
+            error: pythonError ? pythonError : error.message
           });
         }
 

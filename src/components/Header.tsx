@@ -1,7 +1,23 @@
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
+import { STORAGE_KEYS } from "../constants/storageKeys";
 import { appError } from "../lib/logger.js";
+import {
+  DEFAULT_PROJECT_ID,
+  DEFAULT_SESSION_ID
+} from "../constants/data.js";
+import {
+  CURL_AUTHORIZATION_BEARER_REGEX,
+  CURL_AUTHORIZATION_JSON_REGEX,
+  CURL_BEARER_TOKEN_REGEX,
+  CURL_PROJECT_ID_BODY_REGEX,
+  CURL_PROJECT_ID_URL_REGEX,
+  CURL_CLIENT_SESSION_ID_REGEX,
+  CURL_SESSION_ID_REGEX,
+  CURL_RECAPTCHA_TOKEN_REGEX,
+  CURL_AGENT_SESSION_ID_REGEX
+} from "../constants/regexes.js";
 import {
   Video,
   Coins,
@@ -48,7 +64,7 @@ export default function Header({
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
 
-  // Common config saver helper to avoid duplicate code
+  
   const saveConfigHelper = (
     keysToSave: Record<string, string>,
     setSavingState: (saving: boolean) => void,
@@ -70,7 +86,7 @@ export default function Header({
 
   const handleSaveConfig = () => {
     saveConfigHelper(
-      { "api_sandbox_config": JSON.stringify(config) },
+      { [STORAGE_KEYS.API_SANDBOX_CONFIG]: JSON.stringify(config) },
       setIsSaving,
       setSavedSuccess
     );
@@ -79,8 +95,8 @@ export default function Header({
   const handleSaveKeys = () => {
     saveConfigHelper(
       {
-        "GEMINI_API_KEY": geminiKey.trim(),
-        "AI33_API_KEY": ai33Key.trim()
+        [STORAGE_KEYS.GEMINI_API_KEY]: geminiKey.trim(),
+        [STORAGE_KEYS.AI33_API_KEY]: ai33Key.trim()
       },
       setIsSavingKeys,
       setKeysSavedSuccess
@@ -92,53 +108,44 @@ export default function Header({
     if (!val.trim()) return;
 
     try {
-      const authRegex = /-H\s+['"]authorization:\s*(Bearer\s+[^'"]+)['"]/i;
-      const authMatch = val.match(authRegex);
+      const authMatch = val.match(CURL_AUTHORIZATION_BEARER_REGEX);
       let parsedAuthToken = "";
       if (authMatch) {
         parsedAuthToken = authMatch[1].trim();
       } else {
-        const rawAuthRegex = /"authorization"\s*:\s*"([^"]+)"/i;
-        const rawMatch = val.match(rawAuthRegex);
+        const rawMatch = val.match(CURL_AUTHORIZATION_JSON_REGEX);
         if (rawMatch) parsedAuthToken = rawMatch[1].trim();
       }
 
       if (!parsedAuthToken) {
-        const bearerRegex = /(Bearer\s+ya29\.[a-zA-Z0-9_\-]+)/i;
-        const bearerMatch = val.match(bearerRegex);
+        const bearerMatch = val.match(CURL_BEARER_TOKEN_REGEX);
         if (bearerMatch) parsedAuthToken = bearerMatch[1].trim();
       }
 
       let parsedProjectId = "";
-      const projRegexBody = /"projectId"\s*:\s*"(projects\/)?([^"]+)"/;
-      const projMatchBody = val.match(projRegexBody);
+      const projMatchBody = val.match(CURL_PROJECT_ID_BODY_REGEX);
       if (projMatchBody) {
         parsedProjectId = projMatchBody[2];
       } else {
-        const urlProjRegex = /projects\/([^/]+)/;
-        const urlProjMatch = val.match(urlProjRegex);
+        const urlProjMatch = val.match(CURL_PROJECT_ID_URL_REGEX);
         if (urlProjMatch) parsedProjectId = urlProjMatch[1];
       }
 
       let parsedSessionId = "";
-      const sessRegex = /"clientSessionId"\s*:\s*"([^"]+)"/i;
-      const sessMatch = val.match(sessRegex);
+      const sessMatch = val.match(CURL_CLIENT_SESSION_ID_REGEX);
       if (sessMatch) {
         parsedSessionId = sessMatch[1];
       } else {
-        const sessRegex2 = /"sessionId"\s*:\s*"([^"]+)"/i;
-        const sessMatch2 = val.match(sessRegex2);
+        const sessMatch2 = val.match(CURL_SESSION_ID_REGEX);
         if (sessMatch2) parsedSessionId = sessMatch2[1];
       }
 
       let parsedRecaptcha = "";
-      const recaptchaRegex = /"token"\s*:\s*"([^"]+)"/i;
-      const recaptchaMatch = val.match(recaptchaRegex);
+      const recaptchaMatch = val.match(CURL_RECAPTCHA_TOKEN_REGEX);
       if (recaptchaMatch) parsedRecaptcha = recaptchaMatch[1];
 
       let parsedAgentSessionId = "";
-      const agentSessRegex = /"agentSessionId"\s*:\s*"([^"]+)"/i;
-      const agentSessMatch = val.match(agentSessRegex);
+      const agentSessMatch = val.match(CURL_AGENT_SESSION_ID_REGEX);
       if (agentSessMatch) parsedAgentSessionId = agentSessMatch[1];
 
       const isStreamChat =
@@ -172,7 +179,7 @@ export default function Header({
 
   const [config, setConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem("api_sandbox_config");
+      const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
       if (
         saved &&
         saved.trim() !== "undefined" &&
@@ -183,10 +190,10 @@ export default function Header({
         if (parsed && typeof parsed === "object") {
           return {
             projectId:
-              parsed.projectId || "cbcf7518-13d7-4eab-b59d-952d5814de53",
+              parsed.projectId || DEFAULT_PROJECT_ID,
             authToken: parsed.authToken || "",
             recaptchaToken: parsed.recaptchaToken || "",
-            sessionId: parsed.sessionId || ";1781857807598",
+            sessionId: parsed.sessionId || DEFAULT_SESSION_ID,
             imageModelName: parsed.imageModelName || "NARWHAL",
             agentSessionId: parsed.agentSessionId || "",
             isStreamChat:
@@ -198,7 +205,7 @@ export default function Header({
       appError("ERROR_PARSING_SANDBOX_HEADER", e);
     }
     return {
-      projectId: "cbcf7518-13d7-4eab-b59d-952d5814de53",
+      projectId: DEFAULT_PROJECT_ID,
       authToken: "",
       recaptchaToken: "",
       sessionId: "",
@@ -209,13 +216,13 @@ export default function Header({
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
       <div className="w-full max-w-[100vw] xl:max-w-screen-2xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 relative">
-        {/* Brand Logo */}
+        {}
         <div className="flex items-center gap-3">
           <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
             <Video className="w-4 h-4 sm:w-5 sm:h-5 text-slate-100" />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2">
+            <h1 className="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2 font-logo">
               {t.appTitle}
               <span className="text-[10px] bg-blue-500/10 text-blue-400 font-bold px-1.5 py-0.5 rounded border border-blue-500/20 tracking-tighter">
                 {t.v2_4_PRO}
@@ -227,9 +234,9 @@ export default function Header({
           </div>
         </div>
 
-        {/* Action Controls */}
+        {}
         <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1 overflow-x-auto no-scrollbar">
-          {/* Sync Status */}
+          {}
           <div className="hidden md:flex items-center gap-2 mr-2">
             <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse"></div>
             <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">
@@ -237,7 +244,7 @@ export default function Header({
             </span>
           </div>
 
-          {/* Points Balance */}
+          {}
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs">
             <Coins className="w-3.5 h-3.5 text-blue-400" />
             <span className="font-mono font-medium text-blue-400">
@@ -245,7 +252,7 @@ export default function Header({
             </span>
           </div>
 
-          {/* Cost Tracker */}
+          {}
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs">
             <TrendingUp className="w-3.5 h-3.5 text-green-400" />
             <span className="font-mono font-medium text-green-400">
@@ -253,7 +260,7 @@ export default function Header({
             </span>
           </div>
 
-          {/* API Keys Configuration Button */}
+          {}
           <button
             onClick={() => {
               setShowKeysConfig(!showKeysConfig);
@@ -273,7 +280,7 @@ export default function Header({
             )}
           </button>
 
-          {/* Sandbox Config Button */}
+          {}
           <button
             onClick={() => {
               setShowConfig(!showConfig);
@@ -293,7 +300,7 @@ export default function Header({
             )}
           </button>
 
-          {/* Theme Toggle Button */}
+          {}
           <button
             onClick={toggleTheme}
             className="p-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:text-slate-100 hover:bg-slate-700 text-slate-400 cursor-pointer transition-all shrink-0"
@@ -305,7 +312,7 @@ export default function Header({
             )}
           </button>
 
-          {/* Language Selection */}
+          {}
           <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-lg p-0.5 shrink-0">
             <button
               onClick={() => setLang("vi")}
@@ -328,9 +335,9 @@ export default function Header({
           </div>
         </div>
 
-        {/* Floating Dropdown Panels (Placed outside buttons layout to prevent clipping) */}
+        {}
         <AnimatePresence>
-          {/* Sandbox Config Dropdown */}
+          {}
           {showConfig && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -459,7 +466,7 @@ export default function Header({
         </AnimatePresence>
 
         <AnimatePresence>
-          {/* API Keys Config Dropdown */}
+          {}
           {showKeysConfig && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}

@@ -1,26 +1,6 @@
 import { StoryboardScene } from '../types.js';
 import { appWarn } from './logger.js';
-
-export const parseTimeToSeconds = (timeStr: string | undefined): number | null => {
-  if (!timeStr) return null;
-  const parts = timeStr.trim().split(':');
-  let secs = 0;
-  if (parts.length === 3) {
-    secs = parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-  } else if (parts.length === 2) {
-    secs = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-  } else if (parts.length === 1) {
-    secs = parseFloat(parts[0]);
-  }
-  return isNaN(secs) ? null : secs;
-};
-
-export const formatCleanDuration = (val: any): string => {
-  if (val === undefined || val === null) return '5';
-  const num = typeof val === 'number' ? val : parseFloat(val);
-  if (isNaN(num)) return '5';
-  return num % 1 === 0 ? num.toFixed(0) : parseFloat(num.toFixed(1)).toString();
-};
+import { parseTimeToSeconds, formatCleanDuration } from './timeUtils.js';
 
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
@@ -176,7 +156,7 @@ export const compileVideoToBlob = async (
     throw new Error("No scenes to render");
   }
 
-  // STEP 1: LOAD ALL ASSETS
+  
   onProgress(5);
   const loadedImages: Record<string, HTMLImageElement> = {};
   let loadedCount = 0;
@@ -202,7 +182,7 @@ export const compileVideoToBlob = async (
     })
   );
 
-  // STEP 2: INITIALIZE CANVAS & STREAM
+  
   const canvas = document.createElement('canvas');
   canvas.width = 1280;
   canvas.height = 720;
@@ -267,7 +247,7 @@ export const compileVideoToBlob = async (
   const ranges = getSceneTimeRanges(scenes);
   const totalDuration = ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
 
-  // STEP 5: RENDER VIDEO WITH ASYNC PROGRESS TRACKING
+  
   return new Promise<Blob>((resolve, reject) => {
     recorder.onstop = () => {
       const finalBlob = new Blob(chunks, { type: selectedType || 'video/webm' });

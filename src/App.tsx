@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
@@ -14,13 +14,25 @@ import {
   ImageGeneratorEngine,
   GenerateType,
   PromptInputMethod,
+  AspectRatio,
 } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES } from "./constants/apiRoutes.js";
+import { STORAGE_KEYS } from "./constants/storageKeys.ts";
+import { LOADING_CONFIG } from "./constants/loading.js";
+import {
+  HTTP_METHODS,
+  CONTENT_TYPES,
+  ERROR_MESSAGES,
+  CONTENT_TYPE_HEADER,
+  THEME_VALUES,
+  COMMON_STRINGS,
+  DEFAULT_PROJECT_CONFIGS
+} from "./constants/texts.ts";
 
 export default function App() {
-  const [currentLang, setLang] = useState<Lang>("vi");
+  const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
 
   useEffect(() => {
     setLogLanguage(currentLang);
@@ -35,24 +47,23 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      // Flush any pending saves on unmount to make sure nothing is lost
       Object.entries(pendingSavesRef.current).forEach(([id, timeout]) => {
         clearTimeout(timeout);
         const proj = projectsRef.current.find((p) => p.id === id);
         if (proj) {
           fetch(`${API_ROUTES.PROJECTS}/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            method: HTTP_METHODS.PUT,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: JSON.stringify(proj),
-          }).catch((e) => appError("ERROR_FLUSH_SAVE_ON_UNMOUNT", e));
+          }).catch((e) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, e));
         }
       });
     };
   }, []);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     () => {
-      const cached = localStorage.getItem("selected_project_id");
-      if (!cached || cached === "undefined" || cached === "null") {
+      const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+      if (!cached || cached === COMMON_STRINGS.UNDEFINED || cached === COMMON_STRINGS.NULL) {
         return null;
       }
       return cached;
@@ -62,67 +73,131 @@ export default function App() {
   useEffect(() => {
     if (
       selectedProjectId &&
-      selectedProjectId !== "undefined" &&
-      selectedProjectId !== "null"
+      selectedProjectId !== COMMON_STRINGS.UNDEFINED &&
+      selectedProjectId !== COMMON_STRINGS.NULL
     ) {
-      localStorage.setItem("selected_project_id", selectedProjectId);
+      localStorage.setItem(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
-      localStorage.removeItem("selected_project_id");
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
     }
   }, [selectedProjectId]);
 
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("app_theme") as "dark" | "light") || "light";
+    return (localStorage.getItem(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;
   });
 
   useEffect(() => {
-    localStorage.setItem("app_theme", theme);
-    if (theme === "light") {
-      document.documentElement.classList.add("light");
-      document.documentElement.classList.remove("dark");
+    localStorage.setItem(STORAGE_KEYS.APP_THEME, theme);
+    if (theme === THEME_VALUES.LIGHT) {
+      document.documentElement.classList.add(THEME_VALUES.LIGHT);
+      document.documentElement.classList.remove(THEME_VALUES.DARK);
     } else {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
+      document.documentElement.classList.add(THEME_VALUES.DARK);
+      document.documentElement.classList.remove(THEME_VALUES.LIGHT);
     }
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    setTheme((prev) => (prev === THEME_VALUES.DARK ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
   };
 
   const [credits, setCredits] = useState<number>(10000);
   const [costTracker, setCostTracker] = useState<number>(0.0);
 
   useEffect(() => {
-    fetch(API_ROUTES.PROJECTS)
+    let active = true;
+    let timerId: NodeJS.Timeout;
+
+    const cachedId = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const fetchProjects = fetch(API_ROUTES.PROJECTS)
       .then(async (res) => {
         try {
           const text = await res.text();
           if (
             !text ||
             text.trim() === "" ||
-            text.trim() === "undefined" ||
-            text.trim() === "null"
+            text.trim() === COMMON_STRINGS.UNDEFINED ||
+            text.trim() === COMMON_STRINGS.NULL
           ) {
             return [];
           }
-          return JSON.parse(text);
+          const list = JSON.parse(text);
+          if (cachedId && cachedId !== COMMON_STRINGS.UNDEFINED && cachedId !== COMMON_STRINGS.NULL) {
+            const hasProj = list.some((p: any) => p.id === cachedId);
+            if (hasProj) {
+              try {
+                const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
+                if (detailRes.ok) {
+                  const detailData = await detailRes.json();
+                  return list.map((p: any) => p.id === cachedId ? detailData : p);
+                }
+              } catch (e) {
+                appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
+              }
+            }
+          }
+          return list;
         } catch (e) {
-          appError("ERROR_PARSING_PROJECTS", e);
+          appError(ERROR_MESSAGES.PARSING_PROJECTS, e);
           return [];
         }
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProjects(data);
+      });
+
+    const fontTimeout = new Promise((resolve) => setTimeout(resolve, LOADING_CONFIG.FONT_TIMEOUT_MS));
+    const fontReady = document.fonts ? document.fonts.ready : Promise.resolve();
+    const waitForFonts = Promise.race([fontReady, fontTimeout]);
+
+    Promise.all([fetchProjects, waitForFonts])
+      .then(([projectsData]) => {
+        if (active && Array.isArray(projectsData)) {
+          setProjects(projectsData);
         }
       })
-      .catch((err) => appError("ERROR_FETCHING_PROJECTS", err));
+      .catch((err) => appError(ERROR_MESSAGES.FETCHING_PROJECTS, err))
+      .finally(() => {
+        if (active) {
+          const loader = document.getElementById(LOADING_CONFIG.ELEMENT_ID);
+          if (loader) {
+            loader.classList.add(LOADING_CONFIG.FADE_OUT_CLASS);
+            timerId = setTimeout(() => {
+              loader.remove();
+            }, LOADING_CONFIG.REMOVE_DELAY_MS);
+          }
+        }
+      });
+
+    return () => {
+      active = false;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, []);
+
+  const handleSelectProject = useCallback(async (id: string | null) => {
+    if (!id) {
+      setSelectedProjectId(null);
+      return;
+    }
+    const project = projectsRef.current.find((p) => p.id === id);
+    if (project && !project.input) {
+      try {
+        const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`);
+        if (!res.ok) throw new Error("Lỗi tải chi tiết dự án");
+        const detailData = await res.json();
+        setProjects((prev) =>
+          prev.map((p) => (p.id === id ? detailData : p))
+        );
+        setSelectedProjectId(id);
+      } catch (err) {
+        appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
+      }
+    } else {
+      setSelectedProjectId(id);
+    }
   }, []);
 
   const handleCreateProject = async (name: string, desc: string) => {
     const newProject: VideoProject = {
-      id: "proj_" + Math.random().toString(36).substring(2, 11),
+      id: COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(36).substring(2, 11),
       name: name,
       description: desc,
       createdAt: new Date().toISOString(),
@@ -132,44 +207,44 @@ export default function App() {
         content: "",
       },
       config: {
-        genre: "Storytelling",
+        genre: DEFAULT_PROJECT_CONFIGS.GENRE,
         language: currentLang as unknown as ProjectLanguage,
-        duration: "2m",
+        duration: DEFAULT_PROJECT_CONFIGS.DURATION,
         rewriteLevel: 50,
         similarityReduction: 5,
         creativityLevel: 6,
         factCheck: true,
-        audience: "General Audience",
-        writingStyle: "Professional",
+        audience: DEFAULT_PROJECT_CONFIGS.AUDIENCE,
+        writingStyle: DEFAULT_PROJECT_CONFIGS.WRITING_STYLE,
       },
       hookConfig: {
-        type: "Auto",
+        type: DEFAULT_PROJECT_CONFIGS.HOOK_TYPE,
         duration: 10,
         count: 3,
         positions: HookPosition.Start,
         versions: [],
       },
       voiceConfig: {
-        provider: "Gemini Speech",
+        provider: DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER,
         audioType: AudioType.TTS,
         gender: Gender.Male,
         age: AgeGroup.Adult,
-        emotion: "Normal",
+        emotion: DEFAULT_PROJECT_CONFIGS.VOICE_EMOTION,
         speed: 1.0,
         pitch: 1.0,
         volume: 1.0,
-        voiceURI: "preset-vi-bac",
+        voiceURI: DEFAULT_PROJECT_CONFIGS.VOICE_URI,
       },
       visualConfig: {
-        source: "AI Auto",
-        style: "Realistic",
-        quality: "Standard",
+        source: DEFAULT_PROJECT_CONFIGS.VISUAL_SOURCE,
+        style: DEFAULT_PROJECT_CONFIGS.VISUAL_STYLE,
+        quality: DEFAULT_PROJECT_CONFIGS.VISUAL_QUALITY,
         density: 5,
         characterConsistency: true,
         assetsMode: AssetsMode.Mixed,
         imageGeneratorEngine: ImageGeneratorEngine.Veo3,
         generateType: GenerateType.Image,
-        aspectRatio: "16:9",
+        aspectRatio: AspectRatio.SixteenNine,
         promptInputMethod: PromptInputMethod.Paste,
         generateCount: 1,
       },
@@ -178,8 +253,8 @@ export default function App() {
 
     try {
       const response = await fetch(API_ROUTES.PROJECTS, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: JSON.stringify(newProject),
       });
       if (response.ok) {
@@ -188,45 +263,54 @@ export default function App() {
         setSelectedProjectId(savedProject.id);
       }
     } catch (e) {
-      appError("ERROR_CREATING_PROJECT", e);
+      appError(ERROR_MESSAGES.CREATING_PROJECT, e);
     }
   };
 
-  const handleUpdateProject = useCallback((updated: VideoProject) => {
-    // Update local React state instantly for responsiveness
+  const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
     setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
 
-    // Clear any previous save timeout for this project
     if (pendingSavesRef.current[updated.id]) {
       clearTimeout(pendingSavesRef.current[updated.id]);
     }
 
-    // Debounce the HTTP call by 1000ms
-    pendingSavesRef.current[updated.id] = setTimeout(async () => {
+    const doSave = async () => {
       try {
-        await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+        const response = await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
+          method: HTTP_METHODS.PUT,
+          headers: { "Content-Type": CONTENT_TYPES.JSON },
           body: JSON.stringify(updated),
         });
+        if (!response.ok) {
+          throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
+        }
+        const savedProject = await response.json();
+        setProjects((prev) => prev.map((p) => (p.id === savedProject.id ? savedProject : p)));
         delete pendingSavesRef.current[updated.id];
       } catch (e) {
-        appError("ERROR_AUTO_SAVING_PROJECT", e);
+        appError(ERROR_MESSAGES.AUTO_SAVE_ERR, e);
       }
-    }, 1000);
+    };
+
+    if (immediate) {
+      delete pendingSavesRef.current[updated.id];
+      doSave();
+    } else {
+      pendingSavesRef.current[updated.id] = setTimeout(doSave, 1000);
+    }
   }, []);
 
   const handleDeleteProject = async (id: string) => {
     try {
-      const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, { method: HTTP_METHODS.DELETE });
       if (res.ok) {
         setProjects((prev) => prev.filter((p) => p.id !== id));
         if (selectedProjectId === id) {
-          setSelectedProjectId(null);
+          handleSelectProject(null);
         }
       }
     } catch (e) {
-      appError("ERROR_DELETING_PROJECT", e);
+      appError(ERROR_MESSAGES.DELETING_PROJECT, e);
     }
   };
 
@@ -248,12 +332,12 @@ export default function App() {
     setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
     try {
       await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: HTTP_METHODS.PUT,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: JSON.stringify(updated),
       });
     } catch (e) {
-      appError("ERROR_UPDATING_PROJECT", e);
+      appError(ERROR_MESSAGES.UPDATING_PROJECT, e);
     }
   };
 
@@ -269,14 +353,14 @@ export default function App() {
       />
 
       <main className="flex-1 w-full flex flex-col min-h-0 overflow-hidden relative">
-        {activeProject ? (
+        {selectedProjectId && activeProject ? (
           <PipelineWizard
             theme={theme}
             currentLang={currentLang}
             project={activeProject}
             onSaveProject={handleUpdateProject}
             setProject={handleUpdateProject}
-            onBackToDashboard={() => setSelectedProjectId(null)}
+            onBackToDashboard={() => handleSelectProject(null)}
             costTracker={costTracker}
             setCostTracker={setCostTracker}
             credits={credits}
@@ -287,7 +371,7 @@ export default function App() {
             <ProjectList
               currentLang={currentLang}
               projects={projects}
-              onSelectProject={(p) => setSelectedProjectId(p.id)}
+              onSelectProject={(p) => handleSelectProject(p.id)}
               onCreateProject={handleCreateProject}
               onUpdateProject={handleUpdateProjectDetails}
               onDeleteProject={handleDeleteProject}

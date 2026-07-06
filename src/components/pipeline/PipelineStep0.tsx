@@ -8,6 +8,7 @@ import {
   HOOK_STRATEGY_OPTIONS,
   HOOK_POSITION_OPTIONS,
   DURATION_OPTIONS,
+  PROJECT_LANGUAGE_OPTIONS,
 } from '../../constants/data';
 import { PipelineWizardState } from './usePipelineWizard';
 import * as LucideIcons from 'lucide-react';
@@ -47,9 +48,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          { }
-          <div className="lg:col-span-2 flex flex-col gap-5 h-full justify-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">          <div className="lg:col-span-2 flex flex-col gap-5 h-full justify-stretch">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">
                 {t.sourceType}
@@ -60,10 +59,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
-                      input: { ...prev.input, type: ProjectInputType.Script },
+                      input: {
+                        type: ProjectInputType.Script,
+                        content: prev.input?.content || "",
+                      },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === ProjectInputType.Script
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input?.type === ProjectInputType.Script
                     ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]"
                     : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                     }`}
@@ -81,10 +83,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
-                      input: { ...prev.input, type: ProjectInputType.Idea },
+                      input: {
+                        type: ProjectInputType.Idea,
+                        content: prev.input?.content || "",
+                      },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input.type === ProjectInputType.Idea
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input?.type === ProjectInputType.Idea
                     ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]"
                     : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                     }`}
@@ -97,31 +102,26 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   </span>
                 </button>
               </div>
-            </div>
-
-            { }
-            <div className="space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]">
+            </div>            <div className="space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">
                 {t.N_i_dung_c_t_truy_n}
               </label>
               <textarea
-                value={project.input.content}
+                value={project.input?.content || ""}
                 onChange={(e) =>
                   setProject((prev) => ({
                     ...prev,
-                    input: { ...prev.input, content: e.target.value },
+                    input: {
+                      type: prev.input?.type || ProjectInputType.Script,
+                      content: e.target.value,
+                    },
                   }))
                 }
                 placeholder={t.Nh_p_n_i_dung_k_ch_b_n_nh}
                 className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-none min-h-[250px]"
               />
             </div>
-          </div>
-
-          {/* Right column container */}
-          <div className="space-y-6">
-            {/* Right column */}
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
+          </div>          <div className="space-y-6">            <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
@@ -129,10 +129,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">
                   {t.C_u_h_nh_K_ch_b_n}
                 </h4>
-              </div>
-
-              { }
-              <div className="space-y-1.5">
+              </div>              <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   {t.Th_lo_i_video}
                 </span>
@@ -162,10 +159,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
-              </div>
-
-              { }
-              <div className="space-y-1.5">
+              </div>              <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   {t.Ng_n_ng_u_ra}
                 </span>
@@ -184,25 +178,19 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    <option
-                      value={ProjectLanguage.VI}
-                      className="bg-slate-950 text-slate-300"
-                    >
-                      {t.Ti_ng_Vi_t}
-                    </option>
-                    <option
-                      value={ProjectLanguage.EN}
-                      className="bg-slate-950 text-slate-300"
-                    >
-                      {t.Ti_ng_Anh}
-                    </option>
+                    {PROJECT_LANGUAGE_OPTIONS.map((opt) => (
+                      <option
+                        key={opt.value}
+                        value={opt.value}
+                        className="bg-slate-950 text-slate-300"
+                      >
+                        {t[opt.labelKey as keyof typeof t] || opt.value}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
-              </div>
-
-              { }
-              <div className="space-y-1.5">
+              </div>              <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   {t.C_u_h_nh_S_l_ng_t_Th_i_l_}
                 </span>
@@ -236,10 +224,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 <p className="text-[10px] text-slate-500 leading-normal pl-1">
                   {t.AI_s_bu_c_ph_i_m_r_ng_n_i}
                 </p>
-              </div>
-
-              { }
-              <div className="space-y-1.5">
+              </div>              <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
                   {t.Kh_n_gi_m_c_ti_u}
                 </span>
@@ -272,10 +257,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
-              </div>
-
-              { }
-              <div className="space-y-1.5">
+              </div>              <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-450 font-mono font-bold uppercase tracking-wider block">
                   {t.Phong_c_ch_h_nh_v_n}
                 </span>
@@ -308,10 +290,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
-              </div>
-
-              { }
-              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+              </div>              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
                   <span className="text-slate-450">
                     {t.C_ng_Vi_t_l_i}
@@ -336,10 +315,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   }
                   className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
                 />
-              </div>
-
-              { }
-              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+              </div>              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
                   <span className="text-slate-450">{t.Gi_m_tr_ng_l_p}</span>
                   <span className="text-amber-450 bg-amber-500/10 border border-amber-500/10 px-2 py-0.5 rounded-full">
@@ -362,10 +338,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   }
                   className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
                 />
-              </div>
-
-              { }
-              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+              </div>              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
                   <span className="text-slate-450">{t.s_ng_t_o}</span>
                   <span className="text-sky-450 bg-sky-500/10 border border-sky-500/10 px-2 py-0.5 rounded-full">
@@ -388,10 +361,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   }
                   className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500 focus:outline-none"
                 />
-              </div>
-
-              { }
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
+              </div>              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
                 <div className="flex flex-col max-w-[70%]">
                   <span className="text-[11px] font-bold text-slate-200">
                     {t.X_c_th_c_th_ng_tin_Fact_c}
@@ -424,21 +394,15 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       }`}
                   />
                 </button>
-              </div>
-
-              {/* Cấu hình Lời dẫn (Hook Settings) */}
-              <div className="pt-4 border-t border-slate-800 space-y-4">
+              </div>              <div className="pt-4 border-t border-slate-800 space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
                   <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">
-                    Cấu hình Hook
+                    {t.hookConfigTitle || "Cấu hình Hook"}
                   </h5>
-                </div>
-
-                {/* Loại Hook */}
-                <div className="space-y-1.5">
+                </div>                <div className="space-y-1.5">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                    Loại Hook
+                    {t.hookType || "Loại Hook"}
                   </span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
@@ -455,12 +419,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                   </div>
-                </div>
-
-                {/* Thời lượng Hook */}
-                <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
+                </div>                <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                   <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                    <span className="text-slate-450">Thời lượng (giây)</span>
+                    <span className="text-slate-450">{t.hookDuration || "Thời lượng (giây)"}</span>
                     <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
                       {hookDuration}s
                     </span>
@@ -473,12 +434,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     onChange={(e) => setHookDuration(Number(e.target.value))}
                     className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
                   />
-                </div>
-
-                {/* Chiến thuật vị trí */}
-                <div className="space-y-1.5">
+                </div>                <div className="space-y-1.5">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                    Chiến thuật vị trí
+                    {t.hookPositions || "Chiến thuật vị trí"}
                   </span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
@@ -499,16 +457,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </div>
             </div>
           </div>
-        </div>
-
-        { }
-        <div className="pt-4 flex items-center justify-end">
+        </div>        <div className="pt-4 flex items-center justify-end">
           <button
             type="button"
             onClick={() => handleProcessInputAndConfig(true)}
             disabled={
               !!loadingStates["processInput"] ||
-              !project.input.content.trim()
+              !(project.input?.content || "").trim()
             }
             className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md cursor-pointer active:scale-95"
             title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
@@ -527,10 +482,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </>
             )}
           </button>
-        </div>
-
-        { }
-        {(project.scriptRewritten || loadingStates["processInput"]) && (
+        </div>        {(project.scriptRewritten || loadingStates["processInput"]) && (
           <div className="pt-6 border-t border-slate-800 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -541,11 +493,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
             <div
               className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch relative ${loadingStates["processInput"] && !project.scriptRewritten ? "min-h-[460px]" : ""}`}
-            >
-              { }
-
-              { }
-              <div className="lg:col-span-2 space-y-3 flex flex-col h-full">
+            >              <div className="lg:col-span-2 space-y-3 flex flex-col h-full">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold font-mono text-slate-400">
@@ -639,12 +587,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm leading-relaxed focus:outline-none transition-all font-sans min-h-[380px] lg:min-h-[440px] h-full"
                   />
                 )}
-              </div>
-
-              { }
-              <div className="space-y-4 flex flex-col h-full">
-                { }
-                {project.config.factCheck && (
+              </div>              <div className="space-y-4 flex flex-col h-full">                {project.config.factCheck && (
                   <div className="bg-slate-950 border border-slate-800/80 p-4 rounded-xl space-y-2 shrink-0">
                     <span className="text-[10px] bg-emerald-500/10 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/20 font-mono inline-flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
@@ -662,10 +605,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       </p>
                     )}
                   </div>
-                )}
-
-                { }
-                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 flex-1 flex flex-col min-h-[260px]">
+                )}                <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-3 flex-1 flex flex-col min-h-[260px]">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold shrink-0">
                     {t.Chapters_Script_Outline}
                   </span>

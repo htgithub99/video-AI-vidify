@@ -1,54 +1,179 @@
+import { AspectRatio } from "../types.js";
+
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
-export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES:
-1. SUBJECT-FIRST START (MANDATORY): Always begin the prompt directly with the main subject and their immediate action. Do NOT use filler intros like "This is a photo of", "An image showcasing", or "We see". Start directly (e.g., "A weathered 19th-century gold miner clutching a wooden pan...").
-2. CHARACTER DETAILS: Detail every character present in the frame:
-   - Appearance: Age group, gender, hair style/color, facial features, physical build.
-   - Costumes/Clothing: Specific garments, textures, colors (e.g., "worn brown canvas trousers, a dusty blue flannel shirt").
-   - Expression & Pose: Emotional state (intense focus, panicked, serene), precise body posture (crouching, pointing, running), and eye gaze direction (looking directly into the lens, staring at a map).
-3. ACTIONS & INTERACTIONS: Describe the action with active, visual verbs. Show movement, tension, or interaction with props (e.g., instead of "thinking", use "tapping a pen against a dusty desk while staring intently at a handwritten letter").
-4. BACKGROUND & ENVIRONMENT (SETTING): Detail the setting, era, specific location (e.g., "inside a dimly lit log cabin", "a misty mountain peak"), time of day, weather conditions (e.g., "harsh afternoon sun", "foggy twilight"), and physical props that enrich the story.
-5. CAMERA ANGLE & COMPOSITION (CINEMATOGRAPHY): Ensure a highly filmic look. Specify camera shots (e.g., "low-angle wide shot", "dramatic close-up shot", "medium two-shot") and focus specifications (e.g., "shallow depth of field, sharp focus on the subject's expression, softly blurred background").
-6. LIGHTING & MOOD: Detail lighting style (e.g., "moody chiaroscuro lighting", "soft warm golden hour backlight", "harsh volumetric beams") and emotional atmosphere (e.g., "intense, suspenseful", "serene, nostalgic").
-7. NO ABSTRACTION OR METAPHORS: Describe only tangible, physical things that can actually be drawn. Never use symbolic language or abstract concepts.`;
+export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To translate narration/storyline into visual prompts):
+1. NARRATION ALIGNMENT PIPELINE (CRITICAL):
+   To ensure the generated image perfectly matches the narration, you MUST follow this three-step pipeline:
+   - Step 1: Deep Narration Analysis: Carefully analyze the narration/script segment to identify the exact setting (where and when), and the character details if present (who they are, what they are doing, and their precise emotional state/expression).
+   - Step 2: Storyline Fidelity: Strictly adhere to the core storyline. Do NOT invent, add, or introduce foreign visual details or characters that dilute, distract, or diverge from the main narration narrative.
+   - Step 3: Prompt Visual Optimization: Generate image prompts rich in highly descriptive, concrete visual keywords. Ensure that when a viewer looks at the generated image, they can instantly recognize and connect it directly to the exact spoken words and content of that scene's narration.
+
+2. STRUCTURAL FORMULA MANDATE (CRITICAL - ALWAYS PUT ART STYLE/MEDIUM FIRST):
+   To ensure consistent visual styling and prevent style drift (especially in close-ups or character-focused shots), the prompt MUST follow this strict order of priority from left to right:
+   - IF the scene contains characters: [Art style/Medium (e.g., "An oil painting of", "A cinematic photorealistic shot of")] + [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   - IF the scene does NOT contain characters (e.g., landscapes, objects, abstract events, scenery): [Art style/Medium (e.g., "An oil painting of", "A cinematic photorealistic shot of")] + [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+
+3. CHARACTER CONDITIONAL MANDATE (CRITICAL):
+   - Do NOT force or invent a character in the scene if they are not explicitly mentioned in the scene's narration/script or logically required.
+   - If a scene is describing scenery, weather, a close-up of an object, or an event with no characters, the Main Subject MUST be that object, environment, or event. You MUST NOT inject or describe any human characters or character physical traits.
+   - ONLY when a character is explicitly present in the narration should you include character descriptions, actions, expressions, and clothing.
+
+4. STEPS TO DECONSTRUCT STORYLINE INTO VISUAL PROMPTS:
+   - Step 1: Determine if there is a character in the scene based on the narration text.
+   - Step 2: Extract visual keywords from the text (Colors, sizes & shapes, space/environment).
+   - Step 3: Specialize the main subject:
+     * If character exists: Detail their age, gender, ethnicity/race (e.g., "A young Asian woman, around 20 years old"), facial expression, clothing, and traits.
+     * If NO character exists: Detail the key object, environment, landscape, or event itself. Do NOT say generic things. Describe textures, states, or specific forms (e.g., "an ancient moss-covered stone sundial").
+   - Step 4: Establish setting and lighting. Light defines 80% of the emotion:
+     * Lighting style (e.g., "neon lights reflecting on wet puddles").
+     * Atmosphere/Theme (e.g., "Moody atmosphere, cyberpunk aesthetic").
+   - Step 5: Define Art Style/Medium and Camera. Specify:
+     * Realistic/Cinematic: "A cinematic photorealistic 8k shot on 35mm lens of..."
+     * Animation/Comic: "A Studio Ghibli style anime illustration of...", "A dark fantasy comic book art of..."
+
+5. REFERENCE EXAMPLES (Story to English Prompt translation):
+   - Example 1 (With Character):
+     * Story/Script: "Under the heavy rain of the futuristic city, a girl named Linh stands holding a bright red umbrella."
+     * Target English Prompt: "A cinematic photorealistic 8k shot of a young Asian woman holding a bright red umbrella, standing in a rainy cyberpunk city street. She has a sad and longing expression on her face. Heavy rain, neon lights reflecting on wet puddles on the ground. Cinematic lighting, moody atmosphere, cyberpunk aesthetic. --ar 16:9"
+   - Example 2 (Without Character):
+     * Story/Script: "Lightning flashes across the dark storm clouds, illuminating the ancient castle on the cliff."
+     * Target English Prompt: "An epic wide-angle oil painting of an ancient stone castle perched precariously on a jagged cliff, with fierce lightning flashing across dark, churning storm clouds in the background. Dramatic high-contrast lighting, visible textured brushstrokes. --ar 16:9"
+
+ 6. STRICT ALIGNMENT WITH NARRATION (MANDATORY): The generated visual prompt MUST strictly align and match the literal meaning and core subjects of the scene's narration text. Do NOT deviate from the storyline or introduce foreign elements. Every visual element described in the prompt must serve to visually represent the spoken words of that scene. Do NOT generalize or skip key visual facts from the narration. Ensure that when looking at the image, the viewer immediately understands the content of the narration.
+ 7. NO METAPHORICAL, ABSTRACT, OR INVISIBLE CONCEPTS (CRITICAL): Translate abstract narration, emotional states, and invisible/metaphorical concepts into tangible, physically drawable objects, actions, and body language. Never use words like "invisible", "unseen", or abstract concepts (e.g., avoid "engaged in a conversation with an invisible party", "invisible force", "loss of opportunity"). Instead, describe physical signs and observable details: for conversation with an unseen party, use "looking slightly off-camera, gesturing with a hand as if speaking to someone just out of frame"; for "loss of opportunity", describe concrete items like "a broken military sword half-buried in dry dust next to an abandoned uniform".
+ 8. NO FRAMES OR BORDERS: The prompt must yield full-bleed images.
+ 9. CHARACTER DIVERSITY (MANDATORY): Characters within the same scene must not look identical. Create reasonable distinctions in face, age, body build, hair, facial hair, clothing, and gear (appropriate to the context) while remaining context-appropriate.
+ 10. CLEARLY DEFINE COMBATANTS IN CONFLICT SCENES (MANDATORY): When a scene involves battle, combat, or conflict, you MUST clearly define the opposing sides so that the image generator creates the correct characters, clothing, uniforms, armor, weapons, formations, and settings for each respective side.
+ 11. MANDATORY LANDSCAPE EXTRACTION & ENVIRONMENT DETAIL (100% REQUIREMENT): Every single image prompt must strictly incorporate landscape extraction, ensuring the environment, terrain, background, weather, lighting, and overall setting are fully described in detail, even for close-ups. Never omit the environmental context.
+ 12. HISTORICAL CONTEXT ENRICHMENT & ACCURACY (MANDATORY): For historical themes, you MUST explicitly specify the historical context, such as the conflict/war, the era or specific year, the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures. Costumes, weapons, flags, insignia, vehicles, architecture, and cultural details must strictly adhere to the historical facts of the specified context, with absolutely no mixing of periods or countries.
+ 13. CHARACTER REFERENCE & CONSISTENCY (MANDATORY): Every single scene containing a character MUST include their detailed character description and strictly apply Character Reference. If a character has appeared in previous scenes, you MUST maintain consistent identifying features including face, age, gender, body build, hair style, clothing, accessories, and other key identifying traits. Only modify these traits when explicitly required by the narrative progression or a clear scene transition.
+ 14. SCENE-TO-SCENE VISUAL CONTINUITY & PROGRESSION: Successive scenes must maintain consistency in characters, environment, time of day, weather, lighting, clothing, environmental damage, and key props. Only change these elements during explicit scene transitions or logical narrative progression.
+ 15. CINEMATIC QUALITY & CAMERA DIRECTION: Always prioritize cinematic visual quality by describing camera angles, shot size, composition, focus point, depth of field, lighting, and the emotional tone of the scene to ensure an engaging and cohesive cinematic flow.
+ 16. VISUAL STYLE & ARTISTIC CONSISTENCY: All scenes within the same video must maintain a highly unified art style, color palette, lighting scheme, level of detail, and overall image quality to avoid abrupt or disruptive stylistic shifts.
+ 17. SEAMLESS TRANSITION LINKING: When consecutive scenes depict the same location or event, keep key elements (character positions, movement direction, composition, lighting, weather) consistent to ensure smooth and natural video editing transitions.
+ 18. FOCUS ON THE CORE SUBJECT: The prompt must focus strictly on the main subject and action of the scene. Avoid adding unrelated minor details that could distract the image generator and dilute the core visual focus.
+ 19. STRICT HISTORICAL ACCURACY & ANACHRONISM PREVENTION: Do not mix costumes, weapons, vehicles, architecture, flags, symbols, military ranks, or technology from different eras or countries, unless explicitly required by the story.
+ 20. DYNAMIC ACTION & EXPRESSION: When characters are present, always describe their specific actions, direction of gaze, facial expressions, and physical interaction with the environment to create a dynamic, lifelike feel instead of static poses.
+ 21. ANATOMICAL FIDELITY & QUANTITY STRICTNESS (CRITICAL): Prevent extra limbs, floating arms, or merged/fused bodies. Ensure the number of main characters generated strictly matches the singular or plural count specified in the scene's script. If the script describes 'a panicked soldier' (singular), do NOT generate two or more soldiers in the foreground. Maintain a clear, physical separation between characters to prevent the AI from fusing their torsos, shoulders, or clothing. Maintain realistic scale and proportions.
+ 22. CONSISTENT TIME OF DAY: If the narrative flows continuously, maintain a consistent time of day (e.g., dawn, midday, sunset, night) across consecutive scenes, and only change it when a new timeframe is explicitly introduced in the script.
+ 23. EDIT-FRIENDLY COMPOSITION: Each prompt should be designed like a single film frame with a clear focal point, minimal clutter, and sufficient detail to ensure that consecutive clips can be stitched together into a smooth, seamless video.
+ 24. PROMPT BLOAT PREVENTION & ARTISTIC CONCISENESS: Do NOT repeat general art styles, camera lens specs, or border rules multiple times in a single prompt. State them exactly once. Eliminate redundant style synonyms (e.g., write "oil-on-canvas painting style" instead of "oil painting, painterly texture, canvas art, oil-on-canvas finish"). Avoid repeating long physical descriptions of the same character multiple times in a single prompt; define key features once and clearly to prevent token bloat and AI confusion.
+ 25. SHOT SIZE VARIATION & VISUAL PROGRESSION (CRITICAL): Prevent consecutive scenes from yielding near-identical images by explicitly altering camera shot sizes and perspectives (e.g., alternate "close-up shot", "medium shot", "wide-angle cinematic shot", "low-angle shot", "over-the-shoulder shot") and shifting the character's precise pose, hand gestures, head tilt, or facial expressions.
+ 26. CROWD ANATOMY DEFECT PREVENTION (LARGE-SCALE SCENES): In massive scene battles or large crowds (e.g., "hundreds of soldiers clashing", "thousands of tents"), establish a clear foreground focus on 1 to 3 distinct, well-drawn characters or key objects. Describe the vast crowd/army in the background using terms like "silhouettes in the distant hazy dust", "indistinct figures obscured by gunpowder smoke", or "soft-focus background" to prevent mutated limbs or facial distortions.
+ 27. AVOID COMPLEX DIVERGENT OR MULTI-DIRECTIONAL ACTIONS (CRITICAL): Do not ask the image generator to depict multiple characters or groups performing different or opposite actions simultaneously (e.g., "two groups of soldiers riding away from each other in opposite directions"). AI generators struggle with dual-subject focus and will merge the directions. Instead, focus the prompt on one primary direction of movement or a single focal group's perspective (e.g., "A group of soldiers riding away down a ravine, seen from the perspective of another group stationary on a hill").`;
 
 export const getSceneStyleRewritePrompt = (
   promptText: string,
   newStyle: string,
   isThumbnail: boolean = false,
+  aspectRatio: string = AspectRatio.SixteenNine,
 ): string => `You are an elite AI Image Prompt Designer.
-Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it so that it perfectly aligns with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, and actions intact. 
-DO NOT change the core narrative or semantic meaning${!isThumbnail ? " of the scene" : ""}. ONLY adapt the artistic/stylistic descriptors to match the requested style.
+Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it to perfectly align with the new visual style, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
-Original Prompt: "${promptText}"
-New Target Style: "${newStyle}"
+[VISUAL REFERENCE SOURCE MATERIALS]
+- Original Image Prompt: "${promptText}"
+- New Target Style: "${newStyle}"
 
-Combine the core meaning of the original prompt with the visual aesthetics of the new target style.
-STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+[SOFT STYLE ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character & Environment Retention (Soft Alignment):
+   Keep all main subjects, characters, actions, facial expressions, and landscape/background details from the original prompt. You MUST NOT delete, ignore, or alter them. Only adapt the artistic styling, rendering descriptors, colors, and lighting to match the new style.
+2. Seamless Style Integration:
+   Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Art style/Medium] and [Lighting/Atmosphere] sections of the blueprint.
+3. No Metaphorical Elements: Keep the visualization literal and clear.
+
+STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural formula:
+- If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
-SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
+- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
 export const getStyleRewriteBatchPrompt = (
   newStyle: string,
   chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
 ): string => `You are an elite AI Image Prompt Designer.
-Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, and actions intact. 
-DO NOT change the core narrative or semantic meaning of the scenes. ONLY adapt the artistic/stylistic descriptors to match the requested style.
+Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
-New Target Style: "${newStyle}"
+[VISUAL REFERENCE SOURCE MATERIALS]
+- New Target Style: "${newStyle}"
 
-Combine the core meaning of the original prompts with the visual aesthetics of the new target style.
-STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+[SOFT STYLE ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character & Environment Retention (Soft Alignment):
+   Keep all main subjects, characters, actions, facial expressions, and landscape/background details from each original prompt intact. Only adapt the artistic styling, rendering descriptors, colors, and lighting to match the new style.
+2. Seamless Style Integration:
+   Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Art style/Medium] and [Lighting/Atmosphere] sections of each prompt.
+
+STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural formula:
+- If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
-SEAMLESS INTEGRATION RULE: Do NOT simply append the new style at the end. You MUST seamlessly weave the aesthetic of the new target style into the [Lighting & Colors] and [Camera Angle & Art Style] sections of the blueprint.
 ${NO_FRAME_RULE}
+- ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}"). Every prompt in the JSON array must strictly end with this parameter.
 IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
 
 Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt in English"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input scenes:
+${chunkJson}`;
+
+export const getOptimizePromptsBatchPrompt = (
+  visualStyle: string,
+  referenceStyle: string,
+  chunkJson: string,
+  aspectRatio: string = AspectRatio.SixteenNine,
+  charactersJson?: string,
+): string => `You are an elite AI Image Prompt Designer.
+Your task is to analyze, rewrite, and optimize a list of image generation prompts for a video storyboard. You must review the current prompts, correct any style conflicts or formatting issues, clean up redundant keywords, and upgrade them to look highly detailed, cinematic, and visually consistent.
+
+[STYLE & REFERENCE SPECIFICATIONS]
+- Overall Visual Style: "${visualStyle}"
+- Reference Style / Color Palette: "${referenceStyle || "Not specified"}"
+${charactersJson ? `- Character Reference Specs:\n${charactersJson}\n` : ""}
+
+[STRICT OPTIMIZATION DIRECTIVES]
+1. NARRATION ALIGNMENT & STORY INTEGRITY (CRITICAL TO PREVENT INACCURACIES):
+   - Each input scene contains its 'id', the current 'prompt' (which may be simple or empty), and the 'script' (the exact spoken narration or dialogue for that scene).
+   - Your optimized prompt MUST be a direct visual translation of the 'script'.
+   - Do NOT introduce foreign visual details, locations, or characters that deviate from or are not mentioned in the 'script'.
+   - If the current 'prompt' has elements that contradict the 'script', you MUST correct them to match the 'script'.
+   - Every physical object, character action, and setting described in your optimized prompt must serve to visually represent the spoken words of that scene.
+
+2. STYLE INTEGRITY & RESOLUTION OF CONFLICTS (CRITICAL):
+   - You MUST seamlessly apply the target visual style ("${visualStyle}") and reference style/palette ("${referenceStyle}") to every rewritten prompt.
+   - RESOLVE STYLE CONFLICTS: Detect and remove any contradictory visual styles. For example, if the overall visual style is an "oil painting" or "watercolor", you MUST NOT use photorealistic buzzwords (e.g. "photorealistic", "hyperrealistic", "realistic 8k photo", "shot on 35mm lens") because painting mediums and photography styles are mutually exclusive. Instead, use artistic descriptors (e.g. "thick impasto texture", "expressive brushstrokes", "rich oil pigments", "textured canvas").
+   - IF the style is "Cinematic" or "Photorealistic", you may use photography specs (e.g., "shot on 35mm lens, photorealistic 8k, shallow depth of field").
+
+3. PROMPT CLEANUP & REDUNDANCY ELIMINATION:
+   - Remove any general instruction phrases or duplicate tags.
+   - Clean up terms like "borderless, no frame, no borders" from the middle of the prompt. You will enforce the "NO FRAME OR BORDER" rule exclusively by appending it at the very end of the prompt.
+   - Eliminate redundant synonyms (e.g. "oil painting, painterly canvas, oil art style" -> "oil painting style").
+
+4. VISUAL RICHNESS & STORYBOARD PROGRESSION:
+   - Ensure each prompt is rich, highly detailed (35-50 words), describing the subject, precise setting, dynamic action/expression, lighting, and camera composition.
+   - Vary the shot sizes (e.g. close-up shot, medium shot, wide cinematic shot) between adjacent scenes to create a compelling visual progression and avoid visual monotony.
+
+5. CHARACTER & ENVIRONMENT CONSISTENCY (SOFT ALIGNMENT):
+   - If characters are specified, weave their visual traits (e.g. hair style/color, key clothing details) into scenes where they appear, adjusting their pose, action, and facial expression to match the narration.
+   - Maintain the environmental backdrop and time of day, but feel free to vary the lighting or camera angles to match the dramatic mood.
+
+6. STRUCTURE MANDATE (THE BLUEPRINT): Every optimized prompt MUST follow this exact structural format from left to right:
+   - If it has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   - If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+
+7. NO METAPHORICAL OR ABSTRACT CONCEPTS: Translate all emotions, abstract concepts, or symbols into tangible, physically renderable actions, expressions, and objects.
+
+${NO_FRAME_RULE}
+
+- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
+
+IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
+
+Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "optimized prompt in English"}]. Do not include markdown tags, code blocks, or explanatory text.
+
+Input scenes to optimize (includes current prompt and script):
 ${chunkJson}`;
 
 export const getHookGeneratorPrompt = (
@@ -98,8 +223,8 @@ ${styleGuideline}
 [CRITICAL REQUIREMENT - LENGTH & TTS SAFE]:
 ${
   isVi
-    ? `Hãy viết [${chapterTitle}] của kịch bản dựa trên dàn ý trên. Yêu cầu bắt buộc: Phần này phải đạt tối thiểu ${chapterWordTarget} từ. Viết lời thoại chi tiết, triển khai sâu nội dung, không tóm tắt chung chung. ĐÂY LÀ VĂN BẢN ĐỂ ĐỌC TTS, TUYỆT ĐỐI KHÔNG DÙNG: ký tự đặc biệt (*, #, _, -, [, ], /), emoji, hay markdown phức tạp. Chỉ dùng chữ cái và dấu câu cơ bản.`
-    : `Write [${chapterTitle}] based on the outline. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
+    ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
+    : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
 }
 
 Provide strict output complying EXACTLY with this JSON structure:
@@ -110,32 +235,27 @@ Provide strict output complying EXACTLY with this JSON structure:
 export const getImagePromptDesignerPrompt = (
   genre: string,
   rewrittenScript: string,
-): string => `You are an elite AI Image Prompt Designer.
+): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
 
-[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
-You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
-* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
-* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
-* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
-* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
-  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
-* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
-FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+[VISUAL REFERENCE SOURCE MATERIALS]
+- Genre Theme: ${genre}
+- Story Script:
+  """
+  ${rewrittenScript}
+  """
 
-Based on the genre "${genre}" and the provided full story script below:
----
-${rewrittenScript}
----
-Your task is to write ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of this entire story. This image will be used as a master reference storyboard visual.
+[SOFT STYLE ALIGNMENT & GENRE DIRECTIVES]
+1. Genre-Adaptive Realism & Details:
+   If the genre is Historical, Documentary, or Science, prioritize visual realism and authentic textures (e.g. era-appropriate outfits, correct technology, proper environment settings). For other genres, adapt accordingly to capture the specific aesthetic mood.
+2. Character & Environment Alignment (Soft Alignment):
+   Ensure that any main character or primary location mentioned in the script is visualised with clear, distinctive, yet natural features (no generic models). If multiple scenes follow, these visual features must remain recognizable.
+3. No Metaphorical Framing: Focus strictly on the physical, visual action of the event. Avoid placing textbooks, screens, or book frames.
 
-CRITICAL VISUAL DIRECTIVE (For ${genre} genre):
-If the genre is Historical, Documentary, or Science, you MUST prioritize ultra-realistic, historically accurate, or scientifically precise depictions. Emphasize era-specific clothing, authentic environments, and correct anatomical or physical proportions. Avoid cartoonish, overly stylized, or fantasy elements unless the genre explicitly demands it. Include keywords like "cinematic realism", "historical accuracy", "photorealistic", and "authentic textures".
-
-DO NOT use character names (like "John" or "Sarah"). Describe their physical appearance instead.
 STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
-[Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+- If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
-- FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT draw a "history textbook" or an "open book". Instead, draw the actual "Battle of the Little Bighorn" itself (e.g., soldiers and warriors on a dusty battlefield). Focus directly on the actual event/entity, never on abstract metaphors.
+- FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
 ${NO_FRAME_RULE}
 Return ONLY the prompt text in English, no explanations, no quotes.`;
 
@@ -152,7 +272,34 @@ export const getVideoDirectorSceneSplitPrompt = (
   chunkScript: string,
   chaptersStr: string,
   referenceCharacters?: string,
-): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes.
+  aspectRatio: string = AspectRatio.SixteenNine,
+  characterSpecs?: string,
+  landscapeSpecs?: string,
+): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes and design high-quality, consistent image prompts.
+
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+Use the following visual specifications as your core style and identity reference:
+- Color Palette & General Style: ${visualStyle} (Reference Style: ${referenceStyle ? referenceStyle : "Not specified"})
+- Primary Landscape/Environment Specs:
+  ${landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive the environment, setting, and background details directly from the scene's narration context."}
+- Character Specs (Visual Identity Blueprint):
+  * Manual/Ref Characters: ${referenceCharacters ? referenceCharacters : "None provided"}
+  * Auto-extracted Character Specs: ${characterSpecs ? characterSpecs : "None provided"}
+  (If both are provided, merge them logically. If neither is available, dynamically design the character's physical appearance appropriate to the theme).
+
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+You MUST apply these alignment rules to ensure visual consistency without restricting natural artistic variety:
+1. Character Visual Continuity (Soft Alignment):
+   When a scene involves any character specified above, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the scene's image prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression (e.g., happy, shocked, intense, pointing, walking) to match the exact narration.
+2. Environment Visual Continuity (Soft Alignment):
+   Weave the landscape specifications into the background of the image prompt. You are encouraged to adjust lighting, weather, or time of day (e.g. sunrise, foggy night, storm, bright daylight) to fit the dynamic mood of the current scene, while keeping the core setting (e.g. library, castle, lab) consistent.
+3. Genre-Adaptive Visualization:
+   Embody this specific guideline for the "${genre}" genre:
+   ${genreVisualGuideline}
+
+[STRICT NARRATIVE RELEVANCY & ANCHORING (CRITICAL TO PREVENT DRIFT & OUTLIERS)]
+- You MUST only describe settings, landscapes, and objects that are directly mentioned or logically required by the current scene's script segment.
+- NEVER invent random fantasy settings, primeval forests, ancient moss-covered ruins, or abstract celestial reliefs if they are not explicitly written in the script segment. Every visual detail MUST serve as an exact, relevant representation of the narration.
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
 You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
@@ -164,36 +311,37 @@ You MUST always translate the core subject matter of the narration into the visu
 * If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
 FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
 
+[FEW-SHOT VISUALIZATION EXAMPLE]
+Below is an example of how to combine the Reference Materials and the Scene Script into a natural, highly descriptive English image prompt:
+- Reference Character Spec: "An old wizard with a long grey beard, wearing a patched brown robe and round spectacles."
+- Reference Landscape Spec: "A dark damp stone library with towering wooden bookshelves filled with glowing ancient books."
+- Scene Script: "He carefully reached for the magical book on the shelf."
+- Target English Prompt: "A medium shot of the old wizard with a long grey beard, wearing a patched brown robe and round spectacles, as he carefully reaches his hand towards a glowing magical book on a wooden shelf. He is in the dark damp stone library with towering wooden bookshelves in the background. Cinematic lighting, soft dust particles floating in the air, highly detailed, photorealistic 8k. --ar ${aspectRatio}"
+(Notice how the prompt naturally integrates the wizard's appearance and the library setting while specifying a concrete camera composition and physical action).
+
 [MULTI-STEP SYSTEM FLOW MANDATE]
 You are processing chunk ${chunkIndex} of ${totalChunks}.
-Video Genre Theme: ${genre}.
-${genreVisualGuideline}
 You MUST process EVERY SINGLE WORD of this script chunk. DO NOT SKIP, DROP, OR SUMMARIZE ANY PART OF THE NARRATION. The output scenes must perfectly re-assemble into the full script without missing a single word.
 
 ${splitInstruction}
 
 Requirements:
 1. Strict Sequencing: Traverse the ENTIRE script segment from beginning to end. DO NOT STOP until the segment is translated into scenes. Every word must be covered.
-2. Highly Descriptive Prompts & Hard Contextual Alignment: Generate optimized, highly descriptive image prompts for text-to-image generators.
-   - STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this exact structural formula from left to right:
-     [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
-   - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave and rewrite them into the structure:
-     * [Main Subject] & [Action]: If characters exist in the scene, use these exact physical traits to describe them: ${referenceCharacters ? referenceCharacters : "(Use the script's character descriptions)"}.
-     * [Background], [Lighting] & [Style]: Completely embody this exact art style and aesthetic in your descriptions: ${referenceStyle ? referenceStyle : visualStyle || "Cinematic"}.
-   - SCENE-TO-SCENE VISUAL CONTINUITY & PROGRESSION (CRITICAL): The storyboard is a sequential timeline. Successive scenes (e.g., sc_1 to sc_2 to sc_3) must have a strong visual connection to feel like a cohesive movie, while maintaining progression:
-      * Character Consistency: If a character appears in consecutive scenes, you MUST maintain their visual descriptors (e.g., age, hair style, clothing type/color) exactly, but update their action, expression, or posture to match the narrative progression.
-      * Environmental & Temporal Continuity: The background elements, location, weather, and time of day (e.g., twilight, dawn, midday) must remain identical between consecutive scenes unless the script explicitly indicates a transition to a new location or a passage of time.
-      * Camera Shot Progression & Visual Rhythm: Avoid using the same camera shot type (e.g., close-up, medium, wide) consecutively. Use a dynamic cinematic progression to guide the viewer's eyes: e.g., Scene 1: Wide shot (establishing the environment) -> Scene 2: Medium shot (showing the character's action in that environment) -> Scene 3: Close-up shot (focusing on their reaction or a key prop).
-      * Action Continuity: The action in scene N must flow logically from scene N-1 (e.g., if scene N-1 describes a character walking towards a wooden door, scene N should describe them reaching out and turning the brass doorknob).
-      * Avoid Visual Jumps: Ensure there are no sudden, unexplained shifts in color, style, or background unless the chapter or scene transitions to a new setting.
-   - CINEMATIC PROMPT RULES:
-     ${CINEMATIC_PROMPT_RULES}
-   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING:
-     Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. 
-   - NO GENERIC COPIES & STRICT VISUAL PROGRESSION: Every scene prompt must be highly specific to its script segment. Successive or adjacent scenes MUST NOT have identical or near-identical prompts. Even if the character or location remains the same, you MUST vary the camera shot/distance (e.g., alternate between close-up shot, medium shot, wide shot), camera angle, lighting, or the character's precise action or pose to ensure a clear visual progression and avoid generating identical images.
-   - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
-   - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
-   - ${NO_FRAME_RULE}
+2. Highly Descriptive Prompts & Hard Contextual Alignment:
+    - STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this exact structural formula from left to right:
+      - If the scene has a character: [Art style/Medium] of [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+      - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+    - STRICT ALIGNMENT WITH NARRATION (CRITICAL): The generated prompt for each scene MUST strictly align with the literal text of the scene's script segment. Do NOT deviate from the storyline or introduce foreign elements. The prompt must be a direct visual translation of the narration.
+    - CONTEXT PRESERVATION & SEMANTIC INTEGRITY FOR SPLIT SCENES (CRITICAL): If a sentence is divided into multiple sub-scenes to fit density constraints, the narration (script & subtitle) for each scene must only contain that specific phrase/clause. However, the image prompt (prompt) for EACH sub-scene must contain the FULL context of the original complete sentence (subject, action, main setting) so that the generated image is not vague or generic.
+      * Example: If the sentence is "In a medieval library, the old wizard reads a glowing book and slowly casts a spell." and it is split into two sub-scenes:
+        - Sub-scene 1: Narration: "In a medieval library, the old wizard reads a glowing book" -> Prompt: "A close-up shot of an old wizard with a long white beard reading a glowing leather-bound book in a medieval library filled with tall bookshelves. Cinematic lighting, photorealistic 8k. --ar ${aspectRatio}"
+        - Sub-scene 2: Narration: "and slowly casts a spell." -> Prompt: "A medium shot of the old wizard in the medieval library, holding his hand over the glowing book as blue magical particles float in the air. Cinematic lighting, photorealistic 8k. --ar ${aspectRatio}" (Notice that even though sub-scene 2's narration is just "and slowly casts a spell", the image prompt explicitly carries over the wizard, library, and book to preserve context and prevent a vague image of random hands casting a spell).
+      * NEVER generate an image prompt like "glowing particles" or "hands casting a spell" which is extremely vague and lacks a clear subject/setting.
+    - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
+    - NO GENERIC COPIES & STRICT VISUAL PROGRESSION: Every scene prompt must be highly specific to its script segment. Successive or adjacent scenes MUST NOT have identical or near-identical prompts. Even if the character or location remains the same, you MUST vary the camera shot/distance (e.g., alternate between close-up shot, medium shot, wide shot), camera angle, lighting, or the character's precise action or pose to ensure a clear visual progression and avoid generating identical images.
+    - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
+    - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
+    - ${NO_FRAME_RULE}
 3. Dynamic Motion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static), video effects, and transitions.
 ${customSplitRules ? "4. CUSTOM USER RULE: " + customSplitRules : ""}
 
@@ -210,7 +358,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "duration": 5,
       "script": "The exact single sentence from the rewritten script.",
       "subtitle": "The exact single sentence from the rewritten script.",
-      "prompt": "Highly detailed image prompt strictly following the blueprint: [Main Subject] + [Action] + [Background] + [Lighting] + [Style]. Example: 'A cinematic close-up of a weary scientist with thick round glasses looking through a glowing microscope, in a dark dusty laboratory, volumetric lighting hitting the dust, photorealistic 8k.' THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH.",
+      "prompt": "Highly detailed image prompt strictly following the blueprint. If character exists: '[Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. If no character exists: '[Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. Example of non-character prompt: 'An oil painting of an ancient massive redwood tree standing in the center of a dense misty forest, sunbeams filtering through the foliage, damp moss-covered ground, cinematic wide shot, photorealistic 8k. --ar ${aspectRatio}' THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH.",
       "cameraMotion": "Zoom In",
       "effects": "Lighting details matching style and mood",
       "transition": "Fade out to black"
@@ -254,37 +402,33 @@ export const getThumbnailLayoutPrompt = (
   thumbnailCount: number,
   refImageStr: string,
   isVi: boolean,
-): string => `You are an elite, viral YouTube and social media thumbnail layout director.
+): string => `You are an elite, viral YouTube and social media thumbnail layout director. Your mission is to generate exactly ${thumbnailCount} distinct creative thumbnail designs that follow professional layout standards for maximum Click-Through Rate (CTR).
 
-[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
-You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
-* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
-* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
-* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
-* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
-  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
-* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
-FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+- Base Video Script: "${rewrittenScript}"
+- Reference Visual details (Style/Character specifications):
+  ${refImageStr ? refImageStr : "Not specified"}
 
-Based on this script: "${rewrittenScript}",
-generate exactly ${thumbnailCount} distinct creative thumbnail designs that follow professional layout standards for maximum Click-Through Rate (CTR) on platforms like YouTube and Facebook.
-
-${refImageStr}
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character Visual Continuity (Soft Alignment):
+   If there is a main character specified in the reference materials, you MUST weave their primary visual markers (e.g. hair color/style, clothing colors, identifying features) into the thumbnail prompts to keep them recognizable. You MUST adjust their pose, action, and facial expression (e.g., extremely shocked face, curiosity, fear, awe) to maximize emotional engagement and clickability.
+2. High CTR Focal Subject:
+   Every design must feature a single, dominant, extreme focal subject (like a close-up of a highly expressive face or a glowing mysterious object) that stands out instantly. The background should be heavily blurred (shallow depth of field) to draw attention to the subject.
+3. No Metaphorical Framing: Focus strictly on the literal visual representation of the scene. Avoid framed images, books, or generic screens.
 
 CRITICAL THUMBNAIL LAYOUT DIRECTIVES (conforming to modern platform standards for maximum clickability):
-1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style]. 
+1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula from left to right:
+   - If it has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   - If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
    - CINEMATIC PROMPT RULES:
      ${CINEMATIC_PROMPT_RULES}
-   - SEAMLESS INTEGRATION RULE: Do NOT simply append style or character references at the end. You MUST seamlessly weave the provided reference image details (character appearance and art style) directly into the [Main Subject], [Lighting], and [Style] sections of the blueprint.
-   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words. For example: If the script talks about a historical battle, do NOT draw a textbook, screen, or narrator. Draw the actual high-contrast dramatic battle scene itself.
 2. Aspect Ratio & Composition: Always design with a 16:9 full-bleed cinematic landscape canvas in mind.
-3. High CTR Focal Subject: Visual designs must trigger immediate curiosity, surprise, awe, or tension. A single, dominant, extreme focal subject (such as a close-up of a highly expressive/shocked face, or a glowing mysterious object) must stand out. Backgrounds must be heavily blurred (extreme shallow depth of field) to make the subject pop instantly.
-4. Strict Minimal Text Rule (Avoid Clutter): The cover image must NOT contain excessive text.
-   - For designs with text, "textText" MUST BE A MAXIMUM OF 1 TO 3 WORDS ONLY (e.g., "SỰ THẬT!", "CẢNH BÁO!", "BÍ MẬT!"). Long sentences or dense descriptions are strictly forbidden as they degrade click-through rates.
-   - The image "prompt" itself should focus entirely on visual details. Do NOT ask the AI image generator to render written text or words inside the picture to avoid garbled/gibberish letters. Describe the scene purely visually.
-5. Timestamp Blocking Prevention: NEVER place any critical subject details, facial features, or text overlays in the bottom-right corner. The platform's video duration badge (time stamp overlay) is located there and will block any visual element or text in that zone. Keep the bottom-right corner empty or neutral.
-6. Rule of Thirds or Splits: Position key focal subjects on either the left-third or right-third line to leave clean space for visual balance or typography on the opposite side. Alternatively, suggest a clean vertical split-screen comparing two high-contrast scenes.
-7. High Contrast & Saturation: Emphasize rich, highly saturated color contrasts, dramatic backlight/rim light, or vivid glows to make the thumbnail readable at a very small size on mobile devices.
+3. Strict Minimal Text Rule (Avoid Clutter): The cover image must NOT contain excessive text.
+   - For designs with text, "textText" MUST BE A MAXIMUM OF 1 TO 3 WORDS ONLY (e.g., "SỰ THẬT!", "CẢNH BÁO!", "BÍ MẬT!"). Long sentences or dense descriptions are strictly forbidden.
+   - The image "prompt" itself should focus entirely on visual details. Do NOT ask the AI image generator to render written text or letters inside the picture.
+4. Timestamp Blocking Prevention: NEVER place any critical subject details, facial features, or text overlays in the bottom-right corner. The platform's video duration badge (time stamp overlay) is located there. Keep the bottom-right corner empty or neutral.
+5. Rule of Thirds or Splits: Position key focal subjects on either the left-third or right-third line.
+6. High Contrast & Saturation: Emphasize rich, highly saturated color contrasts, dramatic backlight/rim light, or vivid glows.
 
 MANDATORY TITLE OVERLAY REQUIREMENT:
 - OUT OF THE ${thumbnailCount} DESIGNS, AT LEAST ONE DESIGN MUST BE ENTIRELY WITHOUT A TEXT OVERLAY.
@@ -358,34 +502,39 @@ export const getDetailedPromptBuilderPrompt = (
   costume: string,
   camera: string,
   style: string,
-): string => `You are an elite AI Image Prompt Designer.
+  aspectRatio: string = AspectRatio.SixteenNine,
+  characterPrompt?: string,
+  referencePrompt?: string,
+  currentPrompt?: string,
+): string => `You are an elite AI Image Prompt Designer. Your task is to take the user's detailed inputs and combine/refine them into a single, highly descriptive cinematic image generation prompt in English.
 
-[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
-You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
-* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
-* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
-* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
-* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
-  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
-* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
-FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
+[VISUAL REFERENCE SOURCE MATERIALS]
+- Base Narrative/Script: "${sceneScript}"
+- Current Image Prompt (to refine/regenerate): "${currentPrompt || "Not specified"}"
+- Setting/Environment: "${setting || "Not specified"}"
+- Time/Lighting: "${time || "Not specified"}"
+- Characters/Expression: "${character || "Not specified"}"
+- Costumes/Props: "${costume || "Not specified"}"
+- Camera Angle/Composition: "${camera || "Not specified"}"
+- Visual StylePreset: "${style || "Cinematic"}"
+- Global Character Specs (Visual Identity Blueprint): "${characterPrompt || "Not specified"}"
+- Global Style/Color Palette Reference: "${referencePrompt || "Not specified"}"
 
-Your task is to take the user's inputs and create a highly detailed, cinematic image generation prompt.
-Base Narrative: "${sceneScript}"
-Setting/Environment: "${setting || "Not specified"}"
-Time/Lighting: "${time || "Not specified"}"
-Characters/Expression: "${character || "Not specified"}"
-Costumes/Props: "${costume || "Not specified"}"
-Camera Angle/Composition: "${camera || "Not specified"}"
-Visual Style: "${style || "Cinematic"}"
+[SOFT STYLE ALIGNMENT DIRECTIVES]
+1. Seamless Element Integration & Refinement:
+   - Do NOT simply append the inputs or references at the end of the prompt. You MUST seamlessly weave character details, costumes, setting, time, camera, and style into the blueprint structure below.
+   - If "Current Image Prompt" is specified, use its visual ideas, core subjects, and detailed descriptions as the foundation. Your goal is to improve, expand, and refine it, rather than throwing it away.
+2. Character Visual Consistency (Soft Alignment):
+   Ensure character physical specifications and costume markers from "Global Character Specs" (if specified) are aligned nicely with the action and environment. AI can adjust facial expression and body posture to naturally fit the narrative context of the "Base Narrative/Script".
+3. Style Consistency (Soft Alignment):
+   If "Global Style/Color Palette Reference" is specified, incorporate its color tones, lighting, rendering quality, and visual mood into the atmosphere.
+4. No Metaphorical Framing: Focus strictly on the physical, literal visual representation of the scene. Avoid bookshelves, screens, or book frames.
 
-Combine all these elements smoothly into a single, highly descriptive prompt optimized for Midjourney or Veo.
 STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow this exact structural formula from left to right:
-[Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+- If it has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
-SEAMLESS INTEGRATION RULE: Do NOT simply append the inputs at the end of the prompt. You MUST seamlessly weave character, costume, setting, time, camera, and style into the blueprint structure.
-FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text.
-IMPORTANT MANDATE: The final output prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the inputs.
+- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the generated prompt.
 DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw prompt string in English.`;
 
 export const getHookAnalysisPrompt = (
@@ -480,7 +629,7 @@ ${rawScript}
 Rules:
 1. REMOVE all markdown formatting, including bold (**), italics (*), headers (#), lists (-), blockquotes (>), brackets ([]), backticks (\`), and slashes.
 2. REMOVE all emojis and special symbols.
-3. SCRIPT EXPANSION: Expand any abbreviation or numeric figure into its full spoken word equivalent in ${isVi ? "Vietnamese" : "English"} (e.g. "100%" to "một trăm phần trăm" or "one hundred percent", "AI" to "trí tuệ nhân tạo" or "artificial intelligence" depending on context, "vs" to "với" or "versus").
+3. SCRIPT EXPANSION: Expand any abbreviation or numeric figure into its full spoken word equivalent in ${isVi ? "Vietnamese" : "English"} (e.g., if language is Vietnamese, expand "100%" to "một trăm phần trăm" and "AI" to "trí tuệ nhân tạo"; if English, expand "100%" to "one hundred percent" and "AI" to "artificial intelligence").
 4. Maintain the exact flow and paragraph structure.
 Output a raw JSON object matching this schema (no markdown wrapping):
 {
@@ -523,11 +672,13 @@ Genre: "${genre}"`;
   prompt += `\n\nEstablish:
 1. Color Palette: A harmonious color palette (e.g., "dark obsidian tones with accents of electric amber").
 2. Character/Subject Appearance: Specific, detailed, consistent descriptions of key characters, objects, or subjects mentioned (e.g. "an old man with thick silver hair, a weathered brown leather vest, round spectacles").
-3. Environment & Lighting: Unified lighting style (e.g., "dramatic chiaroscuro lighting, soft volumetric dust particles").
+3. Landscape & Environment: Specific, detailed descriptions of key locations, backgrounds, or settings mentioned in the script (e.g., "a misty dense pine forest with towering trees", "a futuristic cyberpunk street with glowing signs").
+4. Environment & Lighting: Unified lighting style (e.g., "dramatic chiaroscuro lighting, soft volumetric dust particles").
 Output a raw JSON object matching this schema (no markdown wrapping):
 {
   "colorPalette": "Description of color palette",
   "characterSpecs": "Consistent appearance descriptors of main subjects (no proper names, just descriptions)",
+  "landscapeSpecs": "Consistent description of primary landscapes, environments, and locations",
   "lightingMood": "Volumetric lighting, environment mood descriptions"
 }`;
 
@@ -542,26 +693,28 @@ export const getScenePromptRefinePrompt = (
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
 You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
 * SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
-* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
-* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
-* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
-  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
-* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
-FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
-
-Visual Bible:
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+- Visual Bible Blueprint:
 ${visualBibleJson}
 
-Scenes list to refine (JSON):
-${scenesJson}
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character Visual Continuity (Soft Alignment):
+   When a scene involves any character specified in the Visual Bible ("characterSpecs"), you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the scene's image prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression to match the exact scene narration.
+2. Environment Visual Continuity (Soft Alignment):
+   Weave the landscape/environment specifications ("landscapeSpecs") into the background of the image prompt. You are encouraged to adjust lighting, weather, or time of day to fit the dynamic mood of the current scene, while keeping the core setting consistent.
+3. Seamless Blueprint Integration:
+   Do NOT simply append the Visual Bible details at the end of the prompt. You MUST seamlessly weave them directly into the blueprint structure:
+   - Weave character details ("characterSpecs") into the [Main Subject] and [Action] sections ONLY if a character is present in the scene. If "characterSpecs" is empty, dynamically derive character features.
+   - Weave landscape details ("landscapeSpecs") into the [Surrounding background] section.
+   - Weave color palette ("colorPalette") and lighting mood ("lightingMood") into the [Lighting/Atmosphere] and [Art style/Camera] sections.
 
-Rules:
-1. STRUCTURE MANDATE: The refined "prompt" MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
-   ${CINEMATIC_PROMPT_RULES}
-2. SEAMLESS INTEGRATION RULE: Do NOT simply append the Visual Bible details at the end of the prompt. You MUST seamlessly weave and rewrite them directly into the blueprint structure (e.g., weave character appearance into [Main Subject], color/lighting into [Lighting & Colors]).
-3. FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text (e.g., do not draw textbooks/screens when discussing historical battles).
-4. ${NO_FRAME_RULE}
-5. SCENE-TO-SCENE CONTINUITY (CRITICAL): When refining prompts sequentially, ensure that consecutive scenes preserve identical character traits (clothing, face, hair) and environment background features. Only progress the camera shot, angle, and the character's precise action. Prevent sudden, jarring color, lighting, or setting jumps unless the script indicates a shift.
+STRUCTURE MANDATE: The refined "prompt" MUST strictly follow this exact structural formula from left to right:
+- If the scene has a character: [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Art style/Camera].
+- If the scene does NOT have a character: [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Art style/Camera].
+${CINEMATIC_PROMPT_RULES}
+- FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Focus directly on the actual core events or entities, ignoring metaphorical, introductory, or framing text.
+${NO_FRAME_RULE}
+5. SCENE-TO-SCENE CONTINUITY (CRITICAL): Ensure consecutive scenes preserve identical character traits (clothing, face, hair) and environment background features. Only progress the camera shot, angle, and action.
 6. Keep the prompt entirely in English.
 7. Do not alter the script or timings.
 8. Return ONLY the raw JSON array matching this format (no markdown code blocks):
@@ -638,38 +791,35 @@ Output a raw JSON object (no markdown wrapping):
 export const getThumbnailPromptRefinePrompt = (
   draftThumbsJson: string,
   conceptsJson: string,
-): string => `You are an expert thumbnail layout editor.
+): string => `You are an expert thumbnail layout editor. Your task is to refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
 
-[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
-You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
-* SHIFT THE FOCUS: Move the focus entirely from the physical representation of framing words (like "textbooks", "open books", "screens", "charts") to the actual real-world action or historical event being discussed.
-* SYMBOLIC USE OF FRAMING WORDS: If a word like "frame" is used in the script (e.g., "often frame the Battle of the Little Bighorn"), do NOT draw a physical frame or book. Instead, interpret "frame" symbolically/compositionally using natural framing elements in the scene (such as camera angles, terrain, silhouettes of trees, rocks, or dust/smoke).
-* DYNAMIC & IMPACTFUL ACTIONS: Emphasize the emotional intensity, chaos, and movement of the actual event rather than static academic setups.
-* CRITICAL EXAMPLE: If the script says "History textbooks often frame the Battle of the Little Bighorn", do NOT generate a prompt describing "an open antique history textbook showing an illustration of a battlefield map" or "history books on a desk". Instead, draw the actual battle itself:
-  - Good Example: "A wide-angle, low-angle shot of the Battle of the Little Bighorn. In the foreground, a dense thicket of sagebrush and silhouettes of fallen horses create a natural frame around the central action. Beyond this natural frame, Lakota warriors on horseback charge down rolling hills towards US Cavalry soldiers on a dusty ridge. Cinematic lighting, dramatic smoke."
-* If the script says "Statistics show that depression is rising...", do NOT draw a bar chart or paper graph. Draw the physical subject matter of those statistics, using composition (like many repeating silhouettes or scale contrast) to symbolically convey the statistical density.
-FAILURE TO FOLLOW THIS AND VISUALIZING LITERAL BOOKSHELVES, TEXTBOOKS, OR SCREENS WILL RESULT IN CRITICAL FAILURE.
-
-Refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
-
-Draft Thumbnails:
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+- Draft Thumbnails to refine:
 ${draftThumbsJson}
-
-Concepts:
+- High-CTR Concepts to apply:
 ${conceptsJson}
 
-Rules:
-1. For each draft thumbnail, refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design that maximizes click-through rate (CTR). It MUST strictly follow this structural formula: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character Visual Continuity (Soft Alignment):
+   Ensure that any character specifications present in the concepts/drafts are woven into the prompts using consistent visual markers (hair color, outfits). AI must adjust pose, action, and facial expression (e.g., extremely shocked face, excitement, curiosity) to fit the specific concept and maximize clickability.
+2. High CTR Focal Subject:
+   Refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design. It must feature a single, dominant focal subject (subject focus) with a blurred background.
+3. No Metaphorical Framing: Focus strictly on the literal visual representation of the concept. Avoid framed elements, bookshelves, or TV frames.
+
+CRITICAL THUMBNAIL LAYOUT RULES:
+1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula:
+   - If it has a character: [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Art style/Camera].
+   - If it does NOT have a character: [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Art style/Camera].
    - CINEMATIC PROMPT RULES:
      ${CINEMATIC_PROMPT_RULES}
    - SEAMLESS INTEGRATION RULE: Do NOT simply append composition or character references at the end. You MUST seamlessly weave the concept's composition, subject focus, and lighting suggestions directly into the corresponding sections of the blueprint.
-   - FOCUS ON NARRATIVE ACTION, AVOID METAPHORICAL FRAMING: Avoid drawing framing elements like books, TV screens, or narrators when the core concept represents a physical action or event. Draw the actual event/entity directly.
-2. STRICTOR TEXT MINIMALISM: Do NOT include excessive text on the cover. Any text overlay ("textText") must strictly be 1 to 3 words maximum (no full sentences, no clutter). The "prompt" itself must NOT describe rendering written text or letters to prevent generating garbled text.
+2. STRICTOR TEXT MINIMALISM: Do NOT include excessive text on the cover. Any text overlay ("textText") must strictly be 1 to 3 words maximum. The "prompt" itself must NOT describe rendering written text or letters to prevent generating garbled text.
 3. DO NOT place any key visual detail, text overlay, or main subject in the bottom-right corner of the image because that is where video platform timestamps are overlayed.
-4. At least one design in the array MUST remain completely WITHOUT a text overlay (where 'hasText' is false, 'textText' is "", and layout/typography/colorSuggestion are ""). Do not add text parameters to it.
+4. At least one design in the array MUST remain completely WITHOUT a text overlay (where 'hasText' is false, 'textText' is "", and layout/typography/colorSuggestion are "").
 5. ${NO_FRAME_RULE}
 6. Prompts MUST be in English.
-7. Return ONLY a raw JSON array matching this format (no markdown wrapping, no extra brackets, do not duplicate curly braces):
+
+Return ONLY a raw JSON array matching this format (no markdown wrapping, no extra brackets, do not duplicate curly braces):
 [
   {
     "id": "th_unique_id",
@@ -686,8 +836,19 @@ Rules:
 
 export const getCharacterAnalysisPrompt = (
   script: string,
-): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance). For each character, identify their name, gender, age group, appearance details mentioned (like hair color, clothing style, facial features), and write a concise description in English.
-Output ONLY a valid JSON array matching the structure: [{"name": "Character Name", "description": "Character description (1-2 sentences) in English"}], containing at most 3 elements. Do not include markdown tags, code blocks, or explanatory text.
+): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance).
+For each character, identify their name, gender, age group, appearance details mentioned (like hair color, clothing style, facial features), write a concise description in English, and extract/generate a detailed character design prompt in English consisting of keywords and descriptive phrases (max 30 words in total, separated by commas) that can be used directly for AI image generators.
+
+Output ONLY a valid JSON array matching the structure: 
+[
+  {
+    "name": "Character Name", 
+    "description": "Character description (1-2 sentences) in English",
+    "prompt": "Detailed character design prompt keywords in English (e.g. 'a middle-aged military officer with short dark hair, a mustache, wearing a rumpled blue wool uniform')"
+  }
+]
+containing at most 3 elements. Do not include markdown tags, code blocks, or explanatory text.
+
 Script:
 ${script}`;
 
@@ -706,18 +867,30 @@ Keep the output as a set of keywords or descriptive phrases separated by commas,
 export const getCharacterRewriteBatchPrompt = (
   charactersJson: string,
   chunkJson: string,
-): string => `You are an expert prompt engineer for AI image generators.
-We have a list of scene prompts and a list of characters with their visual design prompts:
+  aspectRatio: string = AspectRatio.SixteenNine,
+): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
+
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+- Character Visual Blueprints:
 ${charactersJson}
 
-For each scene, identify which characters are present (by their names or descriptions in the scene text/script), and rewrite the scene prompt to naturally incorporate their specific visual design prompts.
-Rules:
-1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right: [Main Subject] + [Action & Subject Details] + [Background/Environment] + [Lighting & Colors] + [Camera Angle & Art Style].
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character Visual Continuity (Soft Alignment):
+   For each scene, identify which characters are present (by their names or descriptions in the scene text/script). If a character is present, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the rewritten prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression to match the scene's action.
+2. Character Exclusion Rule:
+   If a scene does not contain any characters, do NOT force or incorporate any character description; instead, rewrite it to focus purely on the scene's environment, object, or action.
+3. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
+
+RULES:
+1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right:
+   - If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
    ${CINEMATIC_PROMPT_RULES}
-2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint.
+2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint (ONLY if the character is present).
 3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
-5. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
+5. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+6. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input scenes:
 ${chunkJson}`;

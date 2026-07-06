@@ -11,7 +11,25 @@ const logger = {
   warn: appWarn,
 };
 import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
-import { VOICE_ALIGN_LOGS } from "../../constants/messages";
+import { LOADING_KEYS } from "../../constants/loading";
+import { VOICE_ALIGN_LOGS, getPipelineLog } from "../../constants/messages";
+import { EXPORT_TYPES } from "../../constants/enums";
+import {
+  LOG_SUCCESS_KEYWORDS,
+  LOG_PENDING_KEYWORDS,
+  LOG_WARN_KEYWORDS,
+  LOG_ERROR_KEYWORDS,
+} from "../../constants/data";
+import {
+  APP_TEXTS,
+  AUDIO_MIME_TYPE,
+  SIMULATED_SPEECH_VAL,
+  BLOB_PREFIX,
+  RESTORE_SCENE_BLOB_ERR,
+  RESTORE_BLOB_ERR,
+  COMMON_STRINGS,
+  EXTERNAL_AUDIO_TEXTS,
+} from "../../constants/texts";
 import {
   VideoProject,
   HookVersion,
@@ -24,6 +42,10 @@ import {
   ImageGenerationMode,
   GeminiChatSpeed,
   GEMINI_CHAT_SPEED_TAB_COUNT,
+  AudioType,
+  Gender,
+  AgeGroup,
+  ProjectInputType,
 } from "../../types";
 import {
   applyAudioEffects,
@@ -40,7 +62,10 @@ import {
   safeSystemFetch,
   logSystemAction,
   getStoredApiKey,
+  randomDelay,
+  getBatchDelayMs,
 } from "../../lib/shared-utils";
+import { STORAGE_KEYS } from "../../constants/storageKeys";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -120,6 +145,57 @@ let videoRef: any = null;
 let simVideoRef: any = null;
 let workspaceRef: any = null;
 
+const defaultVoiceConfig = {
+  provider: "edge",
+  audioType: AudioType.TTS,
+  gender: Gender.Male,
+  age: AgeGroup.Adult,
+  emotion: "neutral",
+  speed: 1.0,
+  pitch: 1.0,
+  volume: 1.0,
+  voiceURI: "preset-vi-bac-female",
+};
+
+const defaultProjectInput = {
+  type: ProjectInputType.Script,
+  content: "",
+};
+
+const defaultProjectConfig = {
+  genre: "Tâm lý",
+  language: "vi" as any,
+  duration: "15",
+  rewriteLevel: 50,
+  similarityReduction: 5,
+  creativityLevel: 6,
+  factCheck: true,
+  audience: "Đại chúng",
+  writingStyle: "Tự nhiên",
+};
+
+const defaultHookConfig = {
+  type: "Auto",
+  duration: 10,
+  count: 3,
+  positions: "start" as any,
+  versions: [],
+};
+
+const defaultVisualConfig = {
+  source: "imagen",
+  style: "Cinematic",
+  quality: "1080p",
+  density: 5,
+  characterConsistency: true,
+  assetsMode: "mixed" as any,
+  imageGeneratorEngine: "veo3" as any,
+  generateType: "image" as any,
+  aspectRatio: "16:9",
+  promptInputMethod: "paste" as any,
+  generateCount: 1,
+};
+
 export function usePipelineWizard(props: any) {
   const {
     theme,
@@ -137,7 +213,107 @@ export function usePipelineWizard(props: any) {
     logSystemAction(actionName);
   };
 
-  const [project, setProject] = useState<VideoProject>(initialProject);
+  const normalizedInitialProject = useMemo(() => {
+    if (!initialProject) return initialProject;
+    return {
+      ...initialProject,
+      voiceConfig: initialProject.voiceConfig || defaultVoiceConfig,
+      input: initialProject.input || defaultProjectInput,
+      config: initialProject.config || defaultProjectConfig,
+      hookConfig: initialProject.hookConfig || defaultHookConfig,
+      visualConfig: initialProject.visualConfig || defaultVisualConfig,
+    };
+  }, [initialProject]);
+
+  const [project, setProject] = useState<VideoProject>(normalizedInitialProject);
+
+  useEffect(() => {
+    if (normalizedInitialProject) {
+      setProject((prev) => {
+        if (!prev) return normalizedInitialProject;
+
+        const mergedStoryboard = (prev.storyboard || []).map((localScene) => {
+          const serverScene = (normalizedInitialProject.storyboard || []).find((s) => s.id === localScene.id);
+
+          if (localScene.assetUrl === '') {
+            return localScene;
+          }
+
+          if (serverScene && serverScene.assetUrl && serverScene.assetUrl.startsWith('/assets/')) {
+            return {
+              ...localScene,
+              assetUrl: serverScene.assetUrl,
+              assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
+            };
+          }
+          return localScene;
+        });
+
+        const mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
+          const serverThumb = (normalizedInitialProject.thumbnails || []).find((t) => t.id === localThumb.id);
+          if (serverThumb && serverThumb.imageUrl && serverThumb.imageUrl.startsWith('/assets/')) {
+            return {
+              ...localThumb,
+              imageUrl: serverThumb.imageUrl,
+            };
+          }
+          return localThumb;
+        });
+
+        const shouldUpdateVoiceConfig =
+          normalizedInitialProject.voiceConfig &&
+          (prev.voiceConfig?.audioUrl !== normalizedInitialProject.voiceConfig.audioUrl ||
+            prev.voiceConfig?.audioBase64 !== normalizedInitialProject.voiceConfig.audioBase64 ||
+            prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig.timingLog);
+
+        const voiceConfig = shouldUpdateVoiceConfig && normalizedInitialProject.voiceConfig
+          ? {
+            ...(prev.voiceConfig || {}),
+            audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
+            audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
+            timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
+          }
+          : prev.voiceConfig;
+
+        const scriptRewritten = prev.scriptRewritten !== normalizedInitialProject.scriptRewritten
+          ? normalizedInitialProject.scriptRewritten
+          : prev.scriptRewritten;
+
+        const chapters = JSON.stringify(prev.chapters) !== JSON.stringify(normalizedInitialProject.chapters)
+          ? normalizedInitialProject.chapters
+          : prev.chapters;
+
+        const seoConfig = JSON.stringify(prev.seoConfig) !== JSON.stringify(normalizedInitialProject.seoConfig)
+          ? normalizedInitialProject.seoConfig
+          : prev.seoConfig;
+
+        const seo = JSON.stringify(prev.seo) !== JSON.stringify(normalizedInitialProject.seo)
+          ? normalizedInitialProject.seo
+          : prev.seo;
+
+        const assets = JSON.stringify(prev.assets) !== JSON.stringify(normalizedInitialProject.assets)
+          ? normalizedInitialProject.assets
+          : prev.assets;
+
+        return {
+          ...prev,
+          storyboard: mergedStoryboard,
+          thumbnails: mergedThumbnails,
+          voiceConfig,
+          scriptRewritten,
+          chapters,
+          seoConfig,
+          seo,
+          assets,
+          name: normalizedInitialProject.name,
+          description: normalizedInitialProject.description,
+          updatedAt: normalizedInitialProject.updatedAt,
+          currentStep: normalizedInitialProject.currentStep,
+          creditsUsed: normalizedInitialProject.creditsUsed,
+        };
+      });
+    }
+  }, [normalizedInitialProject]);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
     return (initialProject as any).currentStep !== undefined
@@ -205,8 +381,18 @@ export function usePipelineWizard(props: any) {
 
   const [promptCameraAngle, setPromptCameraAngle] = useState("");
 
-  const [isGeneratingDetailedPrompt, setIsGeneratingDetailedPrompt] =
-    useState(false);
+  const isGeneratingDetailedPrompt = activeSceneId ? !!loadingStates[LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId] : false;
+  const setIsGeneratingDetailedPrompt = (val: boolean | ((prev: boolean) => boolean)) => {
+    if (!activeSceneId) return;
+    setLoadingStates((prev) => {
+      const currentVal = !!prev[LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId];
+      const newVal = typeof val === 'function' ? val(currentVal) : val;
+      return {
+        ...prev,
+        [LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId]: newVal,
+      };
+    });
+  };
 
   const [isDeletingImage, setIsDeletingImage] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -237,6 +423,127 @@ export function usePipelineWizard(props: any) {
     title: string;
     prompt?: string;
   } | null>(null);
+
+  const [favoriteStyles, setFavoriteStyles] = useState<any[]>([]);
+  const [showFavStyles, setShowFavStyles] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FAVORITE_STYLES);
+      setFavoriteStyles(stored ? JSON.parse(stored) : [
+        { id: "style_1", name: "Cinematic Realistic", prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast" }
+      ]);
+    } catch (e) {
+      logger.error("GENERAL_ERROR", e);
+    }
+  }, []);
+
+  const saveFavoriteStyles = (list: any[]) => {
+    setFavoriteStyles(list);
+    localStorage.setItem(STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
+  };
+
+  const handleAddFavoriteStyle = (name: string, promptText: string) => {
+    if (!name.trim() || !promptText.trim()) return;
+    saveFavoriteStyles([...favoriteStyles, { id: `style_${Date.now()}`, name: name.trim(), prompt: promptText.trim() }]);
+    setInfoMsg(t.saveStyleSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const handleDeleteFavoriteStyle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    saveFavoriteStyles(favoriteStyles.filter(item => item.id !== id));
+  };
+
+  const handleSaveEditStyle = (id: string, name: string, promptText: string) => {
+    if (!name.trim() || !promptText.trim()) return;
+    saveFavoriteStyles(favoriteStyles.map(item => item.id === id ? { ...item, name: name.trim(), prompt: promptText.trim() } : item));
+    setInfoMsg(t.updateStyleSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const handleSaveCurrentStyle = () => {
+    const curStyle = project.visualConfig?.referencePrompt;
+    if (!curStyle) return;
+    if (favoriteStyles.some(s => s.prompt === curStyle)) {
+      setInfoMsg(t.saveStyleSuccess);
+      setTimeout(() => setInfoMsg(""), 3000);
+      return;
+    }
+    saveFavoriteStyles([...favoriteStyles, { id: `style_${Date.now()}`, name: curStyle.substring(0, 15) + "...", prompt: curStyle }]);
+    setInfoMsg(t.saveStyleSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const handleApplyFavoriteStyle = (promptText: string) => {
+    setProject((prev) => ({ ...prev, visualConfig: { ...prev.visualConfig, referencePrompt: promptText } }));
+    setInfoMsg(t.applyStyleSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const [favoriteVoices, setFavoriteVoices] = useState<any[]>([]);
+  const [showFavVoices, setShowFavVoices] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.FAVORITE_VOICES);
+      setFavoriteVoices(stored ? JSON.parse(stored) : [
+        { id: 'fav_1', name: 'Brian - Deep, Resonant and Comforting', voiceURI: 'nPczCjzI2devNBz1zQrb', channelName: 'Mystic Frontiers' }
+      ]);
+    } catch (e) {
+      logger.error("GENERAL_ERROR", e);
+    }
+  }, []);
+
+  const saveFavoriteVoices = (list: any[]) => {
+    setFavoriteVoices(list);
+    localStorage.setItem(STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
+  };
+
+  const handleAddFavoriteVoice = (name: string, voiceURI: string, channelName?: string) => {
+    if (!name.trim() || !voiceURI.trim()) return;
+    saveFavoriteVoices([...favoriteVoices, {
+      id: `fav_${Date.now()}`,
+      name: name.trim(),
+      voiceURI: voiceURI.trim(),
+      channelName: channelName?.trim() || 'Custom'
+    }]);
+    setInfoMsg(t.saveVoiceSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const handleDeleteFavoriteVoice = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    saveFavoriteVoices(favoriteVoices.filter(item => item.id !== id));
+  };
+
+  const handleSaveEditVoice = (id: string, name: string, voiceURI: string, channelName?: string) => {
+    if (!name.trim() || !voiceURI.trim()) return;
+    saveFavoriteVoices(favoriteVoices.map(item => item.id === id ? {
+      ...item,
+      name: name.trim(),
+      voiceURI: voiceURI.trim(),
+      channelName: channelName?.trim() || item.channelName
+    } : item));
+    setInfoMsg(t.updateVoiceSuccess);
+    setTimeout(() => setInfoMsg(""), 3000);
+  };
+
+  const handleToggleFavoriteVoice = (voiceId: string, name: string, providerName?: string) => {
+    const exists = favoriteVoices.some(v => v.voiceURI === voiceId);
+    if (exists) {
+      saveFavoriteVoices(favoriteVoices.filter(v => v.voiceURI !== voiceId));
+    } else {
+      saveFavoriteVoices([...favoriteVoices, {
+        id: `fav_${Date.now()}`,
+        name: name.trim(),
+        voiceURI: voiceId.trim(),
+        channelName: providerName || 'Custom'
+      }]);
+      setInfoMsg(t.saveVoiceSuccess);
+      setTimeout(() => setInfoMsg(""), 3000);
+    }
+  };
 
   const [storyboardPage, setStoryboardPage] = useState(1);
 
@@ -272,7 +579,7 @@ export function usePipelineWizard(props: any) {
 
   const [sandboxConfig, setSandboxConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem("api_sandbox_config");
+      const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
       if (
         saved &&
         saved.trim() !== "undefined" &&
@@ -298,7 +605,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      localStorage.setItem("api_sandbox_config", JSON.stringify(sandboxConfig));
+      localStorage.setItem(STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
     }
   }, [sandboxConfig]);
 
@@ -323,7 +630,7 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     const syncConfig = () => {
       try {
-        const saved = localStorage.getItem("api_sandbox_config");
+        const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
         if (
           saved &&
           saved.trim() !== "undefined" &&
@@ -354,7 +661,16 @@ export function usePipelineWizard(props: any) {
   });
 
   useEffect(() => {
-    sessionStorage.setItem("pipeline_system_logs", JSON.stringify(systemLogs));
+    try {
+      sessionStorage.setItem("pipeline_system_logs", JSON.stringify(systemLogs));
+    } catch (e: any) {
+      if (e.name === "QuotaExceededError") {
+        const reduced = systemLogs.slice(-100);
+        try {
+          sessionStorage.setItem("pipeline_system_logs", JSON.stringify(reduced));
+        } catch (err) { }
+      }
+    }
   }, [systemLogs]);
 
   const [showLogsModal, setShowLogsModal] = useState(false);
@@ -373,32 +689,13 @@ export function usePipelineWizard(props: any) {
         let enrichedType = type;
         const msgLower = msg.toLowerCase();
 
-        if (
-          msgLower.includes("thành công") ||
-          msgLower.includes("success") ||
-          msgLower.includes("hoàn thành")
-        ) {
+        if (LOG_SUCCESS_KEYWORDS.some(term => msgLower.includes(term))) {
           enrichedType = "success";
-        } else if (
-          msgLower.includes("bắt đầu thực thi") ||
-          msgLower.includes("pending") ||
-          msgLower.includes("đang xử lý") ||
-          msgLower.includes("trigger")
-        ) {
+        } else if (LOG_PENDING_KEYWORDS.some(term => msgLower.includes(term))) {
           enrichedType = "pending";
-        } else if (
-          type === "log" &&
-          (msgLower.includes("cảnh báo") ||
-            msgLower.includes("warning") ||
-            msgLower.includes("warn"))
-        ) {
+        } else if (type === "log" && LOG_WARN_KEYWORDS.some(term => msgLower.includes(term))) {
           enrichedType = "warn";
-        } else if (
-          type === "log" &&
-          (msgLower.includes("lỗi") ||
-            msgLower.includes("error") ||
-            msgLower.includes("fail"))
-        ) {
+        } else if (type === "log" && LOG_ERROR_KEYWORDS.some(term => msgLower.includes(term))) {
           enrichedType = "error";
         }
 
@@ -507,7 +804,7 @@ export function usePipelineWizard(props: any) {
     let interval: any = null;
     if (
       step2IsSimulatedPlaying &&
-      project.voiceConfig.audioUrl === "simulated_speech"
+      project.voiceConfig?.audioUrl === "simulated_speech"
     ) {
       interval = setInterval(() => {
         setStep2SimulatedCurrentTime((prev) => {
@@ -532,7 +829,7 @@ export function usePipelineWizard(props: any) {
     };
   }, [
     step2IsSimulatedPlaying,
-    project.voiceConfig.audioUrl,
+    project.voiceConfig?.audioUrl,
     voiceAudioDuration,
   ]);
 
@@ -544,7 +841,7 @@ export function usePipelineWizard(props: any) {
     setStep2CurrentTime(0);
     setStep2IsSimulatedPlaying(false);
     setStep2SimulatedCurrentTime(0);
-  }, [project.voiceConfig.audioUrl]);
+  }, [project.voiceConfig?.audioUrl]);
 
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
 
@@ -586,11 +883,13 @@ export function usePipelineWizard(props: any) {
     if (audioPreviewRef.current) {
       audioPreviewRef.current.playbackRate = 1.0;
     }
-  }, [project.voiceConfig.speed, ttsAudioUrl]);
+  }, [project.voiceConfig?.speed, ttsAudioUrl]);
 
   const [isOfflineRendering, setIsOfflineRendering] = useState(false);
 
   const [offlineRenderProgress, setOfflineRenderProgress] = useState(0);
+
+  const [loadingExportType, setLoadingExportType] = useState<EXPORT_TYPES | null>(null);
 
   const [renderedVideoBlob, setRenderedVideoBlob] = useState<Blob | null>(null);
 
@@ -637,19 +936,19 @@ export function usePipelineWizard(props: any) {
   const createSpeechUtterance = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = project.config.language === "vi" ? "vi-VN" : "en-US";
-    utterance.rate = project.voiceConfig.speed || 1.0;
+    utterance.rate = project.voiceConfig?.speed || 1.0;
     utterance.pitch =
-      project.voiceConfig.pitch !== undefined ? project.voiceConfig.pitch : 1.0;
+      project.voiceConfig?.pitch !== undefined ? project.voiceConfig?.pitch : 1.0;
     utterance.volume =
-      project.voiceConfig.volume !== undefined
-        ? project.voiceConfig.volume
+      project.voiceConfig?.volume !== undefined
+        ? project.voiceConfig?.volume
         : 1.0;
 
     if ("speechSynthesis" in window) {
       const voices = window.speechSynthesis.getVoices();
       const isVi = project.config.language === "vi";
-      const gender = project.voiceConfig.gender || "neutral";
-      const selectedUri = project.voiceConfig.voiceURI;
+      const gender = project.voiceConfig?.gender || "neutral";
+      const selectedUri = project.voiceConfig?.voiceURI;
 
       let matchedVoice = null;
       if (selectedUri) {
@@ -837,8 +1136,8 @@ export function usePipelineWizard(props: any) {
     utterance.rate = speed !== undefined ? speed : 1.0;
     utterance.pitch = pitch !== undefined ? pitch : 1.0;
     utterance.volume =
-      project.voiceConfig.volume !== undefined
-        ? project.voiceConfig.volume
+      project.voiceConfig?.volume !== undefined
+        ? project.voiceConfig?.volume
         : 1.0;
 
     utterance.onstart = () => {
@@ -924,9 +1223,23 @@ export function usePipelineWizard(props: any) {
 
   const simAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  const isRestoringRef = useRef(false);
+
   useEffect(() => {
+    if (isRestoringRef.current) {
+      isRestoringRef.current = false;
+      return;
+    }
     onSaveProject(project);
-  }, [project]);
+  }, [project, onSaveProject]);
+
+  useEffect(() => {
+    if (project?.voiceConfig?.audioUrl) {
+      setTtsAudioUrl(project.voiceConfig.audioUrl);
+    } else {
+      setTtsAudioUrl(null);
+    }
+  }, [project?.voiceConfig?.audioUrl]);
 
   useEffect(() => {
     if (project.currentStep !== currentStep) {
@@ -985,7 +1298,6 @@ export function usePipelineWizard(props: any) {
     lastProjectIdRef.current = initialProject.id;
 
     if (isNewProject) {
-      // 1. Restore current step and storyboard split source mode
       if ((initialProject as any).currentStep !== undefined) {
         setCurrentStep((initialProject as any).currentStep);
       } else {
@@ -998,7 +1310,6 @@ export function usePipelineWizard(props: any) {
         setStoryboardSourceMode("script");
       }
 
-      // 2. Restore hook configurations
       if (initialProject.hookConfig) {
         setHookStrategy(initialProject.hookConfig.type || "Auto");
         setHookDuration(initialProject.hookConfig.duration || 10);
@@ -1015,7 +1326,6 @@ export function usePipelineWizard(props: any) {
         setHooksDraft([]);
       }
 
-      // 3. Rebuild binary audio blobs from Base64 for current session
       let restoredVoiceConfig = initialProject.voiceConfig
         ? { ...initialProject.voiceConfig }
         : undefined;
@@ -1025,22 +1335,22 @@ export function usePipelineWizard(props: any) {
         if (restoredVoiceConfig.audioUrl) {
           restoredTtsUrl = restoredVoiceConfig.audioUrl;
           if (
-            restoredTtsUrl === "simulated_speech" ||
-            restoredTtsUrl.startsWith("blob:")
+            restoredTtsUrl === SIMULATED_SPEECH_VAL ||
+            restoredTtsUrl.startsWith(BLOB_PREFIX)
           ) {
             if (restoredVoiceConfig.audioBase64) {
               try {
                 const arr = base64ToArrayBuffer(
                   restoredVoiceConfig.audioBase64,
                 );
-                const blob = new Blob([arr], { type: "audio/wav" });
+                const blob = new Blob([arr], { type: AUDIO_MIME_TYPE });
                 restoredTtsUrl = URL.createObjectURL(blob);
               } catch (e) {
-                logger.error("FAILED_RESTORE_BLOB", e);
-                restoredTtsUrl = "simulated";
+                logger.error(RESTORE_BLOB_ERR, e);
+                restoredTtsUrl = COMMON_STRINGS.SIMULATED;
               }
             } else {
-              restoredTtsUrl = "simulated";
+              restoredTtsUrl = COMMON_STRINGS.SIMULATED;
             }
           }
           restoredVoiceConfig.audioUrl = restoredTtsUrl;
@@ -1064,37 +1374,39 @@ export function usePipelineWizard(props: any) {
         setAlignmentsLog("");
       }
 
-      // Restore scene-specific audio URLs
       const restoredStoryboard = (initialProject.storyboard || []).map(
         (scene) => {
           if (
             scene.audioUrl &&
-            (scene.audioUrl.startsWith("blob:") ||
-              scene.audioUrl === "simulated_speech")
+            (scene.audioUrl.startsWith(BLOB_PREFIX) ||
+              scene.audioUrl === SIMULATED_SPEECH_VAL)
           ) {
             if (scene.audioBase64) {
               try {
                 const arr = base64ToArrayBuffer(scene.audioBase64);
-                const blob = new Blob([arr], { type: "audio/wav" });
+                const blob = new Blob([arr], { type: AUDIO_MIME_TYPE });
                 return { ...scene, audioUrl: URL.createObjectURL(blob) };
               } catch (e) {
-                logger.error("FAILED_RESTORE_SCENE_BLOB", e);
+                logger.error(RESTORE_SCENE_BLOB_ERR, e);
               }
             }
+            return scene;
           }
           return scene;
         },
       );
 
-      // Construct restored project
       const restoredProject: VideoProject = {
         ...initialProject,
         storyboard: restoredStoryboard,
+        voiceConfig: restoredVoiceConfig || defaultVoiceConfig,
+        input: initialProject.input || defaultProjectInput,
+        config: initialProject.config || defaultProjectConfig,
+        hookConfig: initialProject.hookConfig || defaultHookConfig,
+        visualConfig: initialProject.visualConfig || defaultVisualConfig,
       };
-      if (restoredVoiceConfig) {
-        restoredProject.voiceConfig = restoredVoiceConfig;
-      }
 
+      isRestoringRef.current = true;
       setProject(restoredProject);
     }
   }, [initialProject]);
@@ -1111,7 +1423,7 @@ export function usePipelineWizard(props: any) {
   const handleProcessInputAndConfig = async (force = false) => {
     logAction("handleProcessInputAndConfig");
 
-    if (!project.input.content.trim()) {
+    if (!(project.input?.content || "").trim()) {
       setErrorMsg(t.Please_enter_script_conte);
       return;
     }
@@ -1122,12 +1434,12 @@ export function usePipelineWizard(props: any) {
     setErrorMsg("");
 
     try {
-      // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
+
       const selectedHook = (hooksDraft || []).find((h) => h.selected);
       const hookText = selectedHook ? selectedHook.content : "";
       const payload = {
-        originalInput: project.input.content,
-        inputType: project.input.type,
+        originalInput: project.input?.content || "",
+        inputType: project.input?.type || "script",
         config: {
           ...project.config,
           hookConfig: project.hookConfig,
@@ -1202,7 +1514,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Fo);
 
     try {
-      // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
+
       const payload = {
         rewrittenScript: project.scriptRewritten,
         chapters: project.chapters,
@@ -1351,16 +1663,11 @@ export function usePipelineWizard(props: any) {
       let imageUrl = "";
       if (data.success && data.base64) {
         imageUrl = `data:image/jpeg;base64,${data.base64}`;
-        trackOperationCost(40, 0.03); // Image generation points
+        trackOperationCost(40, 0.03);
       } else if (data.fallbackUrl) {
         imageUrl = data.fallbackUrl;
         trackOperationCost(5, 0.0002);
       } else {
-        // Fallback procedural canvas gradients for preview representation
-        const hash = customPrompt
-          .split("")
-          .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const hue1 = hash % 360;
         imageUrl = `${EXTERNAL_URLS.PLACEHOLD_CO}/800x450/g/png?text=${encodeURIComponent(
           project.visualConfig.style,
         )}&bg=gradient`;
@@ -1380,7 +1687,9 @@ export function usePipelineWizard(props: any) {
           }
           return sc;
         });
-        return { ...prev, storyboard: updated };
+        const updatedProject = { ...prev, storyboard: updated };
+        onSaveProject(updatedProject, true);
+        return updatedProject;
       });
       console.log(
         `[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`,
@@ -1420,7 +1729,9 @@ export function usePipelineWizard(props: any) {
         }
         return sc;
       });
-      return { ...prev, storyboard: updatedScenes };
+      const updatedProject = { ...prev, storyboard: updatedScenes };
+      onSaveProject(updatedProject, true);
+      return updatedProject;
     });
 
     setActiveSlideIndices((indices) => ({
@@ -1445,7 +1756,7 @@ export function usePipelineWizard(props: any) {
 
   const handleGenerateHooks = async (force = false) => {
     logAction("handleGenerateHooks");
-    if (!project.input.content.trim()) {
+    if (!(project.input?.content || "").trim()) {
       setErrorMsg(
         t.Please_enter_script_conte ||
         "Vui lòng nhập nội dung trước khi tạo hook.",
@@ -1457,7 +1768,7 @@ export function usePipelineWizard(props: any) {
     setErrorMsg("");
     try {
       const payload = {
-        originalInput: project.input.content,
+        originalInput: project.input?.content || "",
         config: project.config,
         hookType: hookStrategy,
         duration: hookDuration,
@@ -1480,13 +1791,13 @@ export function usePipelineWizard(props: any) {
       const generatedVersions = data.versions || [];
       setHooksDraft(generatedVersions);
 
-      const successMsg = "Tạo hook thành công.";
+      const successMsg = t.generateHookSuccess || "Tạo hook thành công.";
       setInfoMsg(successMsg);
       console.log(
         `[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`,
       );
     } catch (e: any) {
-      setErrorMsg(e.message || "Lỗi tạo hook.");
+      setErrorMsg(e.message || t.generateHookFailed || "Lỗi tạo hook.");
     } finally {
       setLoadingStates((prev) => ({ ...prev, generateHooks: false }));
       setLoading(false);
@@ -1577,7 +1888,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
-      // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
+
       const extractPayload = { images };
       const {
         success: extractSuccess,
@@ -1638,6 +1949,7 @@ export function usePipelineWizard(props: any) {
       const rewritePayload = {
         storyboard: project.storyboard,
         newStyle: currentStyle,
+        aspectRatio: project.visualConfig.aspectRatio,
       };
       const { success: rewriteSuccess, data: rewriteData } =
         await safeSystemFetch("/api/pipeline/rewrite-prompts", rewritePayload);
@@ -1670,9 +1982,52 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const handleOptimizeAllPrompts = async () => {
+    logAction("handleOptimizeAllPrompts");
+    const isVi = project.config.language === 'vi';
+    const txt = isVi ? APP_TEXTS.VN : APP_TEXTS.EN;
+
+    if (!project.storyboard?.length) {
+      setInfoMsg(t.No_scenes_to_apply_style || txt.NO_SCENES_TO_OPTIMIZE);
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, optimizePrompts: true }));
+    setLoading(true);
+    setErrorMsg("");
+    setInfoMsg(t.optimizingPrompts || txt.OPTIMIZING_PROMPTS_FALLBACK);
+
+    try {
+      const payload = {
+        storyboard: project.storyboard,
+        visualConfig: project.visualConfig,
+        aspectRatio: project.visualConfig.aspectRatio,
+        language: project.config.language,
+      };
+      const { success, data, error } =
+        await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, payload);
+
+      if (success && data?.storyboard) {
+        setProject((prev) => ({ ...prev, storyboard: data.storyboard }));
+        setInfoMsg(t.optimizePromptsSuccess || txt.OPTIMIZE_PROMPTS_SUCCESS_FALLBACK);
+      } else {
+        throw new Error(error || data?.error || txt.OPTIMIZATION_FAILED);
+      }
+    } catch (err: any) {
+      setErrorMsg(
+        t.optimizePromptsError
+          ? t.optimizePromptsError.replace("{error}", err.message)
+          : txt.OPTIMIZE_PROMPTS_FAILED_FALLBACK + err.message
+      );
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, optimizePrompts: false }));
+      setLoading(false);
+    }
+  };
+
   const handleAnalyzeCharacter = async () => {
     logAction("handleAnalyzeCharacter");
-    const script = project.scriptRewritten || project.input.content;
+    const script = project.scriptRewritten || project.input?.content || "";
     if (!script) {
       setErrorMsg(t.charScriptEmpty);
       return;
@@ -1698,7 +2053,7 @@ export function usePipelineWizard(props: any) {
         name: c.name,
         description: c.description,
         images: [],
-        prompt: "",
+        prompt: c.prompt || "",
         extracted: false,
       }));
 
@@ -1875,8 +2230,9 @@ export function usePipelineWizard(props: any) {
           name: c.name,
           prompt: c.prompt || c.description,
         })),
+        aspectRatio: project.visualConfig.aspectRatio,
       };
-      const { success, data, error } = await safeSystemFetch(
+      const { success, data } = await safeSystemFetch(
         "/api/pipeline/rewrite-prompts-character",
         payload,
       );
@@ -1940,12 +2296,12 @@ export function usePipelineWizard(props: any) {
     const unmatchedFiles: File[] = [];
 
     for (const file of sortedFiles) {
-      const cleanName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // remove extension
+      const cleanName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
       const normFile = cleanName.replace(/[^a-z0-9]/g, "");
 
       let matchedSceneId: string | null = null;
 
-      // Match attempt 1: Check scene index or scene id exact matches
+
       for (const scene of storyboard) {
         const normId = scene.id.toLowerCase().replace(/[^a-z0-9]/g, "");
         if (normFile.includes(normId) || normId.includes(normFile)) {
@@ -1954,7 +2310,7 @@ export function usePipelineWizard(props: any) {
         }
       }
 
-      // Match attempt 2: Extract numeric digits
+
       if (!matchedSceneId) {
         const fileNumbers = cleanName.match(/\d+/g);
         if (fileNumbers && fileNumbers.length > 0) {
@@ -1989,11 +2345,11 @@ export function usePipelineWizard(props: any) {
       }
     }
 
-    // Second try: Sequential distribution fallback for unmatched files
+
     if (unmatchedFiles.length > 0) {
       let fileIdx = 0;
       for (const scene of storyboard) {
-        // Only map to scenes that do not have a match yet
+
         const alreadyMatched = results.some((r) => r.sceneId === scene.id);
         if (!alreadyMatched && fileIdx < unmatchedFiles.length) {
           const file = unmatchedFiles[fileIdx];
@@ -2013,20 +2369,18 @@ export function usePipelineWizard(props: any) {
       return;
     }
 
-    // Apply multiple image upload updates to state and calculate warnings
+
     let warnings = "";
     setProject((prev) => {
       const updatedScenes = (prev.storyboard || []).map((sc) => {
         const foundMatch = results.find((r) => r.sceneId === sc.id);
         if (foundMatch) {
-          const existingUrls =
-            sc.assetUrls || (sc.assetUrl ? [sc.assetUrl] : []);
-          const newUrls = [...existingUrls, foundMatch.base64];
+          const newUrls = [foundMatch.base64];
           return {
             ...sc,
             assetUrl: foundMatch.base64,
             assetUrls: newUrls,
-            assetName: `Scene_${sc.id}_bulk_${newUrls.length}.jpg`,
+            assetName: `Scene_${sc.id}_bulk.jpg`,
             assetType: "image" as const,
           };
         }
@@ -2062,7 +2416,9 @@ export function usePipelineWizard(props: any) {
         warnings = warnings ? `${warnings} | ${warningDetail}` : warningDetail;
       }
 
-      return { ...prev, storyboard: updatedScenes };
+      const updatedProject = { ...prev, storyboard: updatedScenes };
+      onSaveProject(updatedProject, true);
+      return updatedProject;
     });
 
     if (warnings) {
@@ -2071,7 +2427,7 @@ export function usePipelineWizard(props: any) {
       setBulkUploadWarning("");
     }
 
-    // Update active index indicator offsets for each modified element
+
     setProject((prev) => {
       results.forEach((match) => {
         const sc = (prev.storyboard || []).find((s) => s.id === match.sceneId);
@@ -2231,22 +2587,22 @@ export function usePipelineWizard(props: any) {
     setProject((prev) => {
       const updatedStoryboard = (prev.storyboard || []).map((sc) => {
         if (sc.id === sceneId) {
-          const existingUrls =
-            sc.assetUrls || (sc.assetUrl ? [sc.assetUrl] : []);
-          const newUrls = existingUrls.filter((_, idx) => idx !== imgIdx);
           return {
             ...sc,
-            assetUrls: newUrls,
-            assetUrl:
-              newUrls.length > 0 ? newUrls[newUrls.length - 1] : "",
+            assetUrls: [],
+            assetUrl: "",
+            assetName: "",
           };
         }
         return sc;
       });
-      return {
+      const updatedProject = {
         ...prev,
         storyboard: updatedStoryboard,
+        allowBulkDeleteImages: true,
       };
+      onSaveProject(updatedProject, true);
+      return updatedProject;
     });
 
     setActiveSlideIndices((prev) => {
@@ -2276,10 +2632,13 @@ export function usePipelineWizard(props: any) {
           assetName: undefined,
         };
       });
-      return {
+      const updatedProject = {
         ...prev,
         storyboard: updatedStoryboard,
+        allowBulkDeleteImages: true,
       };
+      onSaveProject(updatedProject, true);
+      return updatedProject;
     });
 
     setActiveSlideIndices({});
@@ -2319,6 +2678,7 @@ export function usePipelineWizard(props: any) {
     setIsBatchGenerating(true);
     setLoading(false);
     setErrorMsg("");
+    setBatchProgressMsg(t.initializingBatchGen);
 
     const totalToProcess = targetScenes.length;
     let completedCount = 0;
@@ -2356,20 +2716,25 @@ export function usePipelineWizard(props: any) {
         const decoder = new TextDecoder();
         let buffer = "";
 
-        while (true) {
+        let isReadingStream = true;
+        while (isReadingStream) {
           if (cancelBatchImageRef.current) {
-            reader.cancel().catch(() => {});
+            reader.cancel().catch(() => { });
             setInfoMsg(
               t.batchGenCancelled.replace(
                 "{completedCount}",
                 completedCount.toString(),
               ),
             );
+            isReadingStream = false;
             break;
           }
 
           const { value, done } = await reader.read();
-          if (done) break;
+          if (done) {
+            isReadingStream = false;
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
@@ -2379,7 +2744,7 @@ export function usePipelineWizard(props: any) {
             if (!line.trim()) continue;
             try {
               const result = JSON.parse(line);
-              
+
               setLoadingStates((prev) => ({
                 ...prev,
                 ["renderScene_" + result.sceneId]: false,
@@ -2399,7 +2764,9 @@ export function usePipelineWizard(props: any) {
                     }
                     return sc;
                   });
-                  return { ...prev, storyboard: updated };
+                  const updatedProject = { ...prev, storyboard: updated };
+                  onSaveProject(updatedProject, true);
+                  return updatedProject;
                 });
                 completedCount++;
               } else {
@@ -2475,12 +2842,14 @@ export function usePipelineWizard(props: any) {
           currentIndex += batchScenes.length;
 
           if (currentIndex < targetScenes.length && !hasError && !cancelBatchImageRef.current) {
-            const randomCooldown = Math.floor(Math.random() * 15000 + 15000);
+            const delayMs = getBatchDelayMs(project.visualConfig.batchDelay);
+            const delaySecs = (delayMs / 1000).toFixed(1);
             setBatchProgressMsg(
-              t.waitingBetweenScenes ||
-              `Đang chờ giữa các lần sinh ảnh (${Math.round(randomCooldown / 1000)}s)...`,
+              project.config.language === 'vi'
+                ? APP_TEXTS.VN.WAITING_MSG(delaySecs)
+                : APP_TEXTS.EN.WAITING_MSG(delaySecs)
             );
-            await new Promise((resolve) => setTimeout(resolve, randomCooldown));
+            await randomDelay(delayMs, delayMs);
           }
         }
       }
@@ -2514,7 +2883,7 @@ export function usePipelineWizard(props: any) {
     setSceneEditFx(scene.effects || "");
     setSceneEditTransition(scene.transition || "");
 
-    // Reset detailed prompt builder inputs for a fresh experience per scene
+
     setPromptSetting("");
     setPromptTime("");
     setPromptCharacter("");
@@ -2525,12 +2894,9 @@ export function usePipelineWizard(props: any) {
 
   const handleGenerateDetailedPrompt = async () => {
     logAction("handleGenerateDetailedPrompt");
-
     setIsGeneratingDetailedPrompt(true);
     setErrorMsg("");
-
     try {
-      // STEP 2: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
       const payload = {
         sceneScript: sceneEditScript,
         setting: promptSetting,
@@ -2538,20 +2904,21 @@ export function usePipelineWizard(props: any) {
         character: promptCharacter,
         costume: promptCostume,
         camera: promptCameraAngle,
-        style: project.visualConfig?.stylePreset || "Cinematic",
+        style: project.visualConfig?.stylePreset,
+        aspectRatio: project.visualConfig.aspectRatio,
+        characterPrompt: project.visualConfig?.characterPrompt,
+        referencePrompt: project.visualConfig?.referencePrompt,
+        currentPrompt: sceneEditPrompt,
       };
-
       const { success, data, error } = await safeSystemFetch(
-        "/api/pipeline/detailed-prompt",
+        API_ROUTES.PIPELINE_DETAILED_PROMPT,
         payload,
       );
-
       if (!success || data?.error || data?.warning) {
         throw new Error(
           error || data?.error || data?.warning || "Prompt generation failed",
         );
       }
-
       if (data.prompt) {
         setSceneEditPrompt(data.prompt);
         setProject((prev) => {
@@ -2574,7 +2941,6 @@ export function usePipelineWizard(props: any) {
       setErrorMsg(t.promptGenError.replace("{error}", err.message));
       setTimeout(() => setErrorMsg(""), 4000);
     } finally {
-      // ĐẢM BẢO DỌN DẸP TRẠNG THÁI
       setIsGeneratingDetailedPrompt(false);
     }
   };
@@ -2664,7 +3030,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_De);
 
     try {
-      // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
+
       const payload = {
         rewrittenScript: project.scriptRewritten,
         config: project.config,
@@ -2768,7 +3134,9 @@ export function usePipelineWizard(props: any) {
           }
           return th;
         });
-        return { ...prev, thumbnails: updated };
+        const updatedProject = { ...prev, thumbnails: updated };
+        onSaveProject(updatedProject, true);
+        return updatedProject;
       });
       if (isSuccess) {
         const successMsg =
@@ -2806,7 +3174,7 @@ export function usePipelineWizard(props: any) {
         if (mergedUrl) {
           const a = document.createElement("a");
           a.href = mergedUrl;
-          a.download = `voiceover_${project.voiceConfig.gender || "speaker"}.wav`;
+          a.download = `voiceover_${project.voiceConfig?.gender || "speaker"}.wav`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
@@ -2826,7 +3194,7 @@ export function usePipelineWizard(props: any) {
     } else {
       const a = document.createElement("a");
       a.href = ttsAudioUrl;
-      a.download = `voiceover_${project.voiceConfig.gender || "speaker"}.wav`;
+      a.download = `voiceover_${project.voiceConfig?.gender || "speaker"}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2937,6 +3305,173 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const handleAlignAndSaveVoice = async (
+    audioName: string,
+    audioUrl: string,
+    audioBase64: string,
+    audioType: AudioType,
+    isFromAutoGenerateAll = false,
+  ) => {
+    stopPlaybackSim();
+
+    const lang = currentLang === "en" ? "en" : "vi";
+    const texts = EXTERNAL_AUDIO_TEXTS[lang];
+
+    const scenes = project.storyboard || [];
+    if (scenes.length === 0) {
+      setErrorMsg(t.No_scenes_to_generate_voi || texts.NO_SCENES);
+      return;
+    }
+
+    if (!isFromAutoGenerateAll) {
+      setLoadingStates((prev) => ({
+        ...prev,
+        bulkVoiceGenerate_loading: true,
+        voiceGenerate_loading: true,
+      }));
+    }
+    setLoading(true);
+    setErrorMsg("");
+    setInfoMsg("");
+    setBulkVoiceStatus(t.aligningVoiceWithWhisper || texts.ALIGNING);
+
+    try {
+      const updatedScenes = scenes.map((sc: any) => {
+        const cleanText = cleanScriptText(sc.script || sc.subtitle || "");
+        return {
+          ...sc,
+          narrationText: cleanText,
+          textLength: cleanText.length,
+        };
+      });
+
+      const audioCtx = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
+
+      let totalDuration = 10;
+      try {
+        const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
+        const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
+        totalDuration = Math.max(3, decoded.duration);
+      } catch (decodeErr) {
+        logger.warn("FAILED_DECODE_AUDIO_DURATION", decodeErr);
+      } finally {
+        audioCtx.close();
+      }
+
+      const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audioBase64: audioBase64,
+          scenes: updatedScenes.map((sc) => ({
+            id: sc.id,
+            script: sc.narrationText,
+          })),
+        }),
+      });
+
+      let alignData: any;
+      try {
+        alignData = await alignResponse.json();
+      } catch (jsonErr) {
+        alignData = {};
+      }
+
+      if (!alignResponse.ok) {
+        throw new Error(alignData.error || `API align-voice error status: ${alignResponse.status}`);
+      }
+
+      if (alignData && alignData.success && Array.isArray(alignData.alignments)) {
+        console.log(VOICE_ALIGN_LOGS.ALIGN_SUCCESS, alignData.alignments);
+        for (let i = 0; i < updatedScenes.length; i++) {
+          const scene = updatedScenes[i];
+          const align = alignData.alignments.find((a: any) => a.id === scene.id);
+
+          scene.script = scene.narrationText;
+          scene.subtitle = scene.narrationText;
+          scene.audioUrl = undefined;
+          scene.audioBase64 = undefined;
+
+          if (align) {
+            scene.duration = align.duration;
+            scene.startTime = formatTimeHelper(align.start);
+            scene.endTime = formatTimeHelper(align.end);
+          } else {
+            throw new Error(
+              t.voiceAlignSceneNotFound
+                ? t.voiceAlignSceneNotFound.replace("{sceneId}", scene.id.toString())
+                : texts.SCENE_NOT_FOUND.replace("{sceneId}", scene.id.toString())
+            );
+          }
+        }
+        setInfoMsg(t.voiceAlignSuccess || texts.ALIGN_SUCCESS);
+      } else {
+        throw new Error(alignData.error || t.voiceAlignNoValidResult || texts.NO_VALID_RESULT);
+      }
+
+      let syncLogText = (t.syncLedgerSuccess || texts.SYNC_COMPLETE).replace(
+        "{totalDuration}",
+        totalDuration.toFixed(1),
+      );
+
+      updatedScenes.forEach((scene: any, idx: number) => {
+        syncLogText += (t.syncLedgerItem || texts.SYNC_ITEM)
+          .replace("{index}", (idx + 1).toString())
+          .replace("{startTime}", scene.startTime)
+          .replace("{endTime}", scene.endTime)
+          .replace("{duration}", scene.duration.toString())
+          .replace(
+            "{script}",
+            (scene.script || "").substring(0, 35),
+          );
+      });
+
+      setAlignmentsLog(syncLogText);
+      setTtsAudioUrl(audioUrl);
+      setTtsAudioBytes(audioBase64);
+
+      const updatedProject = {
+        ...project,
+        storyboard: updatedScenes,
+        voiceConfig: {
+          ...project.voiceConfig,
+          audioType: audioType,
+          uploadedAudioName: audioType === AudioType.Upload ? audioName : project.voiceConfig.uploadedAudioName,
+          audioUrl: audioUrl,
+          audioBase64: audioBase64,
+          timingLog: syncLogText,
+        },
+      };
+      setProject(updatedProject);
+      onSaveProject(updatedProject, true);
+
+      setTimeout(() => {
+        voicePlayerSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 300);
+
+      return audioUrl;
+    } catch (err: any) {
+      logger.error(EXTERNAL_AUDIO_TEXTS.LOG_ERROR_KEY, err);
+      setErrorMsg(t.voiceAlignError ? t.voiceAlignError.replace("{error}", err.message) : texts.ALIGN_ERROR.replace("{error}", err.message));
+      throw err;
+    } finally {
+      if (!isFromAutoGenerateAll) {
+        setLoadingStates((prev) => ({
+          ...prev,
+          bulkVoiceGenerate_loading: false,
+          voiceGenerate_loading: false,
+        }));
+      }
+      setLoading(false);
+      setBulkVoiceStatus("");
+    }
+  };
+
   const handleTriggerAllSceneVoices = async (
     providedScenes?: any[],
     isFromAutoGenerateAll = false,
@@ -2962,14 +3497,8 @@ export function usePipelineWizard(props: any) {
     setBulkVoiceStatus("");
 
     try {
-      // ==========================================
-      // STEP 2: Initialize Web Audio Context and Voice Configuration
-      // ==========================================
-      const vConfig = voiceConfigOverride || project.voiceConfig;
+      const vConfig = voiceConfigOverride || project.voiceConfig || defaultVoiceConfig;
       const updatedScenes = [...scenes];
-      const audioCtx = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )();
 
       let fullScript = project.scriptRewritten || "";
       if (!fullScript) {
@@ -3034,123 +3563,20 @@ export function usePipelineWizard(props: any) {
       const mergedUrl = URL.createObjectURL(processedBlob);
       const processedBase64 = await blobToBase64(processedBlob);
 
-      let totalDuration = 10;
-      try {
-        const arrayBufferRaw = base64ToArrayBuffer(processedBase64);
-        const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
-        totalDuration = Math.max(3, decoded.duration);
-      } catch (decodeErr) {
-        logger.warn("FAILED_DECODE_AUDIO_DURATION", decodeErr);
-      }
-
-      audioCtx.close();
-
-      setTtsAudioUrl(mergedUrl);
-      setTtsAudioBytes(processedBase64);
-
-      let totalTextLength = 0;
-      updatedScenes.forEach((sc) => {
+      updatedScenes.forEach((sc: any) => {
         const text = cleanScriptText(sc.script || sc.subtitle || "");
         sc.narrationText = text;
         sc.textLength = text.length;
-        totalTextLength += text.length;
       });
 
-      // Prevent division by zero
-      if (totalTextLength === 0) totalTextLength = 1;
-
-      setBulkVoiceStatus(t.aligningVoiceWithWhisper);
-      try {
-        const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            audioBase64: processedBase64,
-            scenes: updatedScenes.map((sc) => ({
-              id: sc.id,
-              script: sc.narrationText || sc.script || sc.subtitle || "",
-            })),
-          }),
-        });
-
-        if (!alignResponse.ok) {
-          const errData = await alignResponse.json().catch(() => ({}));
-          throw new Error(errData.error || `API align-voice error status: ${alignResponse.status}`);
-        }
-
-        const alignData = await alignResponse.json();
-        if (alignData && alignData.success && Array.isArray(alignData.alignments)) {
-          console.log(VOICE_ALIGN_LOGS.ALIGN_SUCCESS, alignData.alignments);
-          for (let i = 0; i < updatedScenes.length; i++) {
-            const scene = updatedScenes[i];
-            const align = alignData.alignments.find((a: any) => a.id === scene.id);
-            
-            scene.script = scene.narrationText;
-            scene.subtitle = scene.narrationText;
-            scene.audioUrl = undefined;
-            scene.audioBase64 = undefined;
-
-            if (align) {
-              scene.duration = align.duration;
-              scene.startTime = formatTimeHelper(align.start);
-              scene.endTime = formatTimeHelper(align.end);
-            } else {
-              throw new Error(t.voiceAlignSceneNotFound ? t.voiceAlignSceneNotFound.replace("{sceneId}", scene.id.toString()) : `Không tìm thấy thông tin đồng bộ cho phân cảnh ${scene.id}.`);
-            }
-          }
-          setInfoMsg(t.voiceAlignSuccess);
-        } else {
-          throw new Error(alignData.error || t.voiceAlignNoValidResult);
-        }
-      } catch (alignErr: any) {
-        logger.error(VOICE_ALIGN_LOGS.ALIGN_FAILED, alignErr);
-        throw new Error(alignErr.message || t.voiceAlignError);
-      }
-
-      let syncLogText = t.syncLedgerSuccess.replace(
-        "{totalDuration}",
-        totalDuration.toFixed(1),
+      return await handleAlignAndSaveVoice(
+        "",
+        mergedUrl,
+        processedBase64,
+        AudioType.Generated,
+        isFromAutoGenerateAll,
       );
 
-      updatedScenes.forEach((scene: any, idx: number) => {
-        syncLogText += t.syncLedgerItem
-          .replace("{index}", (idx + 1).toString())
-          .replace("{startTime}", scene.startTime)
-          .replace("{endTime}", scene.endTime)
-          .replace("{duration}", scene.duration.toString())
-          .replace(
-            "{script}",
-            (scene.script || scene.subtitle || "").substring(0, 35),
-          );
-      });
-
-      setAlignmentsLog(syncLogText);
-
-      setProject((prev) => ({
-        ...prev,
-        storyboard: updatedScenes,
-        voiceConfig: {
-          ...prev.voiceConfig,
-          audioUrl: mergedUrl,
-          audioBase64: processedBase64,
-          timingLog: syncLogText,
-        },
-      }));
-
-      const successMsg =
-        t.Synthesized_full_story_vo ||
-        "Đã tổng hợp giọng nói toàn bộ câu chuyện thành công.";
-      setInfoMsg(successMsg);
-      console.log(`[TTS] ✅ Thành công: ${successMsg}`);
-
-      setTimeout(() => {
-        voicePlayerSectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }, 300);
-
-      return mergedUrl;
     } catch (err: any) {
       logger.error("GENERAL_ERROR", err);
       setErrorMsg(t.errorGeneratingVoiceover.replace("{error}", err.message));
@@ -3163,6 +3589,17 @@ export function usePipelineWizard(props: any) {
       }
       setBulkVoiceStatus("");
     }
+  };
+
+  const handleProcessExternalAudio = async (
+    audioName: string,
+    audioUrl: string,
+    audioBase64: string,
+  ) => {
+    logAction(EXTERNAL_AUDIO_TEXTS.LOG_ACTION);
+    try {
+      await handleAlignAndSaveVoice(audioName, audioUrl, audioBase64, AudioType.Upload);
+    } catch (err) { }
   };
 
   const handleTriggerStoryboardAndVoices = async () => {
@@ -3212,12 +3649,12 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An);
 
     try {
-      // STEP 3: GỌI API XỬ LÝ NGHIỆP VỤ (Non-blocking)
+
       const response = await fetch("/api/pipeline/seo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          originalInput: project.input.content,
+          originalInput: project.input?.content || "",
           config: project.config,
           seoConfig: project.seoConfig,
           rewrittenScript: project.scriptRewritten,
@@ -3226,20 +3663,28 @@ export function usePipelineWizard(props: any) {
       });
       const data = await safeResponseJson(response, {});
 
-      if (data.error || data.warning) {
-        throw new Error(data.error || data.warning);
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       if (data.titles) {
-        setProject((prev) => ({
-          ...prev,
+        const updatedProject = {
+          ...project,
           seo: data,
-        }));
+        };
+        setProject(updatedProject);
+        onSaveProject(updatedProject, true);
         trackOperationCost(10, 0.0005);
         const successMsg =
           t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
-        setInfoMsg(successMsg);
+        if (data.warning) {
+          setInfoMsg(`${successMsg} (${data.warning})`);
+        } else {
+          setInfoMsg(successMsg);
+        }
         console.log(`[SEO] ✅ Thành công: ${successMsg}`);
+      } else if (data.warning) {
+        throw new Error(data.warning);
       }
     } catch (e: any) {
       setErrorMsg(t.seoPipelineError.replace("{error}", e.message));
@@ -3266,7 +3711,7 @@ export function usePipelineWizard(props: any) {
     stopPlaybackSim();
     setIsOfflineRendering(true);
     setOfflineRenderProgress(0);
-    setInfoMsg(t.Preparing_rendering);
+    setInfoMsg(t.waitExportProcess);
 
     try {
       const blob = await compileVideoToBlob(
@@ -3295,7 +3740,6 @@ export function usePipelineWizard(props: any) {
         URL.revokeObjectURL(url);
       }, 150);
 
-      setIsOfflineRendering(false);
       setOfflineRenderProgress(100);
       const successMsg =
         t.Cinematic_simulated_video || "Đã xuất video thành công.";
@@ -3303,8 +3747,9 @@ export function usePipelineWizard(props: any) {
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (err) {
       logger.warn("OFFLINE_RENDERING_ERROR", err);
-      setIsOfflineRendering(false);
       setErrorMsg(t.Failed_to_compile_video_C);
+    } finally {
+      setIsOfflineRendering(false);
     }
   };
 
@@ -3315,7 +3760,7 @@ export function usePipelineWizard(props: any) {
     setSimActiveScene(project.storyboard[0]);
 
     if (
-      project.voiceConfig.audioUrl === "simulated_speech" &&
+      project.voiceConfig?.audioUrl === "simulated_speech" &&
       "speechSynthesis" in window
     ) {
       window.speechSynthesis.cancel();
@@ -3331,8 +3776,8 @@ export function usePipelineWizard(props: any) {
       const audio = new Audio(ttsAudioUrl);
       audio.playbackRate = 1.0;
       audio.volume =
-        project.voiceConfig.volume !== undefined
-          ? project.voiceConfig.volume
+        project.voiceConfig?.volume !== undefined
+          ? project.voiceConfig?.volume
           : 1.0;
       simAudioRef.current = audio;
 
@@ -3399,7 +3844,7 @@ export function usePipelineWizard(props: any) {
         ) {
           setSimActiveScene(matchingScene);
           if (
-            project.voiceConfig.audioUrl === "simulated_speech" &&
+            project.voiceConfig?.audioUrl === "simulated_speech" &&
             "speechSynthesis" in window
           ) {
             window.speechSynthesis.cancel();
@@ -3541,14 +3986,14 @@ export function usePipelineWizard(props: any) {
         }
         lines.push(currentLine.trim());
 
-        // Draw subtitle container pill
+
         const subLineHeight = 32;
         const totalHeight = lines.length * subLineHeight + 24;
         const pillY = 580 - totalHeight / 2;
 
-        ctx.fillStyle = "rgba(15, 23, 42, 0.85)"; // slate-900 / 85%
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
 
-        // Draw rounded pill
+
         const pillW = 1000;
         const pillX = 640 - pillW / 2;
         const pillR = 16;
@@ -3580,7 +4025,7 @@ export function usePipelineWizard(props: any) {
         ctx.closePath();
         ctx.fill();
 
-        // Draw subtitle lines
+
         ctx.fillStyle = "#ffffff";
         lines.forEach((lineText, idx) => {
           ctx.fillText(
@@ -3601,15 +4046,8 @@ export function usePipelineWizard(props: any) {
 
   const getSceneImageUrl = (scene: any): string => {
     if (!scene) return "";
-    const urls = scene.assetUrls || (scene.assetUrl ? [scene.assetUrl] : []);
-    const activeImgIdx =
-      activeSlideIndices[scene.id] !== undefined
-        ? activeSlideIndices[scene.id]
-        : urls.length > 0
-          ? urls.length - 1
-          : 0;
-    if (urls.length > 0 && urls[activeImgIdx]) {
-      return urls[activeImgIdx];
+    if (scene.assetUrl) {
+      return scene.assetUrl;
     }
     const cacheKey = `${scene.id}_${scene.duration || 5}_${scene.subtitle || ""}_${scene.script || ""}`;
     if (fallbackImageCache.has(cacheKey)) {
@@ -3624,19 +4062,18 @@ export function usePipelineWizard(props: any) {
   const handleDownloadJSONProject = async () => {
     logAction("handleDownloadJSONProject");
     stopPlaybackSim();
-    setInfoMsg(t.Packaging_project);
+    setInfoMsg(t.waitExportProcess);
+    setLoadingExportType(EXPORT_TYPES.ZIP);
 
     try {
       let activeVideoBlob = renderedVideoBlob;
       if (!activeVideoBlob) {
-        setInfoMsg(t.Rendering_video);
         activeVideoBlob = await compileVideoToBlob(
           project.storyboard || [],
           getSceneImageUrl,
           project.voiceConfig,
           ttsAudioUrl,
           (prog) => {
-            setInfoMsg(t.renderingProgress.replace("{prog}", prog.toString()));
           },
         );
         setRenderedVideoBlob(activeVideoBlob);
@@ -3662,7 +4099,8 @@ export function usePipelineWizard(props: any) {
       zip.folder(`${folderKey}/Resources`);
       zip.folder(`${folderKey}/Resources/voices`);
       zip.folder(`${folderKey}/Resources/images`);
-      zip.folder(`${folderKey}/Resources/voiceImages`);
+      zip.folder(`${folderKey}/Resources/voice_images`);
+      zip.folder(`${folderKey}/Resources/original_voices`);
       zip.folder(`${folderKey}/smart_crop`);
       zip.folder(`${folderKey}/subdraft`);
       zip.folder(`${folderKey}/Timelines`);
@@ -3765,17 +4203,17 @@ export function usePipelineWizard(props: any) {
             imgBase64 = renderFallbackSceneImage(sc);
           }
 
-          // Put into zip folders as real assets inside active draft Resources folder & backup root Resources only
+
           const itemFileName = `${index + 1}_image.jpg`;
           zip.file(`${folderKey}/Resources/images/${itemFileName}`, imgBase64, {
             base64: true,
           });
           zip.file(`Resources/images/${itemFileName}`, imgBase64, { base64: true });
 
-          zip.file(`${folderKey}/Resources/voiceImages/${itemFileName}`, imgBase64, {
+          zip.file(`${folderKey}/Resources/voice_images/${itemFileName}`, imgBase64, {
             base64: true,
           });
-          zip.file(`Resources/voiceImages/${itemFileName}`, imgBase64, { base64: true });
+          zip.file(`Resources/voice_images/${itemFileName}`, imgBase64, { base64: true });
 
           return {
             id: sc.id,
@@ -3786,13 +4224,13 @@ export function usePipelineWizard(props: any) {
 
       await Promise.all(sceneImagePromises);
 
-      // Append project voice narration if built
+
       let ttsBase64 = project.voiceConfig?.audioBase64 || project.output?.audioBase64 || "";
       if (ttsBase64.startsWith("data:")) {
         ttsBase64 = ttsBase64.split(",")[1];
       }
 
-      const voiceUrl = project.voiceConfig.audioUrl || ttsAudioUrl;
+      const voiceUrl = project.voiceConfig?.audioUrl || ttsAudioUrl;
       if (!ttsBase64 && voiceUrl) {
         if (voiceUrl.startsWith("data:")) {
           ttsBase64 = voiceUrl.split(",")[1];
@@ -3831,7 +4269,13 @@ export function usePipelineWizard(props: any) {
           Math.floor(endSec * sampleRate),
           buffer.length,
         );
-        const numSamples = Math.max(0, endSample - startSample);
+        let numSamples = Math.max(0, endSample - startSample);
+
+        const MIN_DURATION = 0.5;
+        const minSamples = Math.floor(MIN_DURATION * sampleRate);
+        if (numSamples < minSamples) {
+          numSamples = minSamples;
+        }
 
         const blockAlign = numChannels * 2;
         const byteRate = sampleRate * blockAlign;
@@ -3852,29 +4296,17 @@ export function usePipelineWizard(props: any) {
         };
 
         writeString(view, 0, "RIFF");
-
         view.setUint32(4, 36 + dataSize, true);
-
         writeString(view, 8, "WAVE");
-
         writeString(view, 12, "fmt ");
-
         view.setUint32(16, 16, true);
-
         view.setUint16(20, 1, true);
-
         view.setUint16(22, numChannels, true);
-
         view.setUint32(24, sampleRate, true);
-
         view.setUint32(28, byteRate, true);
-
         view.setUint16(32, blockAlign, true);
-
         view.setUint16(34, 16, true);
-
         writeString(view, 36, "data");
-
         view.setUint32(40, dataSize, true);
 
         let offset = 44;
@@ -3883,9 +4315,10 @@ export function usePipelineWizard(props: any) {
           channelData.push(buffer.getChannelData(c));
         }
 
-        for (let i = startSample; i < endSample; i++) {
+        const maxReadableSample = Math.min(startSample + numSamples, buffer.length);
+        for (let i = startSample; i < maxReadableSample; i++) {
           for (let c = 0; c < numChannels; c++) {
-            let sample = channelData[c][i];
+            let sample = channelData[c][i] || 0;
             sample = Math.max(-1, Math.min(1, sample));
             const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
             view.setInt16(offset, intSample, true);
@@ -3928,15 +4361,31 @@ export function usePipelineWizard(props: any) {
           base64: true,
         });
         zip.file(`audio_narration.wav`, fullVoiceBase64, { base64: true });
+
+
+        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, fullVoiceBase64, {
+          base64: true,
+        });
+        zip.file(`Resources/original_voices/original_voice.wav`, fullVoiceBase64, { base64: true });
       } else if (ttsBase64) {
         zip.file(`${folderKey}/audio_narration.wav`, ttsBase64, {
           base64: true,
         });
         zip.file(`audio_narration.wav`, ttsBase64, { base64: true });
+
+
+        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, ttsBase64, {
+          base64: true,
+        });
+        zip.file(`Resources/original_voices/original_voice.wav`, ttsBase64, { base64: true });
       } else {
         const placeholderText = "Mock Audio Stream Narration Voice Placeholder";
         zip.file(`${folderKey}/audio_narration.wav`, placeholderText);
         zip.file(`audio_narration.wav`, placeholderText);
+
+
+        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, placeholderText);
+        zip.file(`Resources/original_voices/original_voice.wav`, placeholderText);
       }
 
       const capcutMaterials: any = {
@@ -3967,7 +4416,34 @@ export function usePipelineWizard(props: any) {
       const subtitleTrackSegments: any[] = [];
       const audioTrackSegments: any[] = [];
 
-      const sceneRanges = getSceneTimeRanges(project.storyboard || []);
+      let sceneRanges = getSceneTimeRanges(project.storyboard || []);
+
+      if (audioBuffer && ttsBase64 && project.storyboard && project.storyboard.length > 0) {
+        setInfoMsg(getPipelineLog("VOICE_ALIGN_START", currentLang === "vi"));
+        try {
+          const res = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              audioBase64: ttsBase64,
+              scenes: project.storyboard
+            })
+          });
+          const alignData = await res.json();
+          if (alignData.success && alignData.alignments) {
+            sceneRanges = sceneRanges.map(sc => {
+              const align = alignData.alignments.find((a: any) => a.id === sc.id);
+              if (align) {
+                return { ...sc, start: align.start, end: align.end, duration: align.duration };
+              }
+              return sc;
+            });
+          }
+        } catch (e) {
+          logger.warn("FAILED_TO_CALL_AI_VOICE_ALIGN", e);
+        }
+      }
+
       const parsedScenesTimings = sceneRanges.map((sc) => {
         return {
           id: sc.id,
@@ -4016,10 +4492,10 @@ export function usePipelineWizard(props: any) {
               base64: true,
             });
 
-            zip.file(`${folderKey}/Resources/voiceImages/${filename}`, voiceSegmentBase64, {
+            zip.file(`${folderKey}/Resources/voice_images/${filename}`, voiceSegmentBase64, {
               base64: true,
             });
-            zip.file(`Resources/voiceImages/${filename}`, voiceSegmentBase64, {
+            zip.file(`Resources/voice_images/${filename}`, voiceSegmentBase64, {
               base64: true,
             });
 
@@ -4042,8 +4518,8 @@ export function usePipelineWizard(props: any) {
           zip.file(`${folderKey}/Resources/voices/${filename}`, dummyText);
           zip.file(`Resources/voices/${filename}`, dummyText);
 
-          zip.file(`${folderKey}/Resources/voiceImages/${filename}`, dummyText);
-          zip.file(`Resources/voiceImages/${filename}`, dummyText);
+          zip.file(`${folderKey}/Resources/voice_images/${filename}`, dummyText);
+          zip.file(`Resources/voice_images/${filename}`, dummyText);
           sceneAudios.push({
             id: sc.id,
             fileName: filename,
@@ -4079,7 +4555,7 @@ export function usePipelineWizard(props: any) {
             start: startUs,
           },
           speed: 1.0,
-          volume: project.voiceConfig.volume || 1.0,
+          volume: project.voiceConfig?.volume || 1.0,
         });
       });
 
@@ -4355,82 +4831,99 @@ export function usePipelineWizard(props: any) {
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
       setInfoMsg(t.Error_generating_template);
+    } finally {
+      setLoadingExportType(null);
     }
   };
 
-  const handleDownloadSRT = () => {
+  const handleDownloadSRT = async () => {
     logAction("handleDownloadSRT");
-    let srt = "";
-    if (project.storyboard && project.storyboard.length > 0) {
-      project.storyboard.forEach((scene, index) => {
-        const formatToSRTTime = (timeStr: string) => {
-          if (!timeStr) return "00:00:00,000";
-          const parts = timeStr.split(":");
-          const m = parseInt(parts[0], 10) || 0;
-          const s = parseInt(parts[1], 10) || 0;
-          return `00:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},000`;
-        };
-        const start = formatToSRTTime(scene.startTime);
-        const end = formatToSRTTime(scene.endTime);
-        const text = scene.subtitle || scene.script || "";
-        srt += `${index + 1}\n${start} --> ${end}\n${text}\n\n`;
-      });
-    } else {
-      srt = "1\n00:00:00,000 --> 00:00:10,000\nNo subtitle built yet.";
+    setLoadingExportType(EXPORT_TYPES.SRT);
+    await new Promise(r => setTimeout(r, 800));
+    try {
+      let srt = "";
+      if (project.storyboard && project.storyboard.length > 0) {
+        project.storyboard.forEach((scene, index) => {
+          const formatToSRTTime = (timeStr: string) => {
+            if (!timeStr) return "00:00:00,000";
+            const parts = timeStr.split(":");
+            const m = parseInt(parts[0], 10) || 0;
+            const s = parseInt(parts[1], 10) || 0;
+            return `00:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},000`;
+          };
+          const start = formatToSRTTime(scene.startTime);
+          const end = formatToSRTTime(scene.endTime);
+          const text = scene.subtitle || scene.script || "";
+          srt += `${index + 1}\n${start} --> ${end}\n${text}\n\n`;
+        });
+      } else {
+        srt = "1\n00:00:00,000 --> 00:00:10,000\nNo subtitle built yet.";
+      }
+
+      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(srt);
+      const dlAnchorElem = document.createElement("a");
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute(
+        "download",
+        `${project.name.replace(/\s+/g, "_")}_subtitles.srt`,
+      );
+      dlAnchorElem.click();
+      console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
+    } finally {
+      setLoadingExportType(null);
     }
-
-    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(srt);
-    const dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute(
-      "download",
-      `${project.name.replace(/\s+/g, "_")}_subtitles.srt`,
-    );
-    dlAnchorElem.click();
-    console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
   };
 
-  const handleDownloadCapcutLink = () => {
+  const handleDownloadCapcutLink = async () => {
     logAction("handleDownloadCapcutLink");
-    const sceneRanges = getSceneTimeRanges(project.storyboard || []);
-    const capcutSchema = {
-      platform: "CapCut Desktop PRO",
-      version: "4.8.1",
-      timeline: sceneRanges.map((sc) => ({
-        trackId: sc.id,
-        duration_ms: sc.duration * 1000,
-        start_ms: sc.start * 1000,
-        end_ms: sc.end * 1000,
-        text_caption: sc.subtitle,
-        audio_narration: project.voiceConfig.provider,
-        visual_preset: {
-          asset_path: sc.assetName || "Image_Placeholder.jpg",
-          motion_effect: sc.cameraMotion,
-          transition_effect: sc.transition,
-        },
-      })),
-    };
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(capcutSchema, null, 2));
-    const dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute(
-      "download",
-      `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`,
-    );
-    dlAnchorElem.click();
-    console.log(
-      `[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`,
-    );
+    setLoadingExportType(EXPORT_TYPES.CAPCUT);
+    await new Promise(r => setTimeout(r, 800));
+    try {
+      const sceneRanges = getSceneTimeRanges(project.storyboard || []);
+      const capcutSchema = {
+        platform: "CapCut Desktop PRO",
+        version: "4.8.1",
+        timeline: sceneRanges.map((sc) => ({
+          trackId: sc.id,
+          duration_ms: sc.duration * 1000,
+          start_ms: sc.start * 1000,
+          end_ms: sc.end * 1000,
+          text_caption: sc.subtitle,
+          audio_narration: project.voiceConfig?.provider || "edge",
+          visual_preset: {
+            asset_path: sc.assetName || "Image_Placeholder.jpg",
+            motion_effect: sc.cameraMotion,
+            transition_effect: sc.transition,
+          },
+        })),
+      };
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(capcutSchema, null, 2));
+      const dlAnchorElem = document.createElement("a");
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute(
+        "download",
+        `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`,
+      );
+      dlAnchorElem.click();
+      console.log(
+        `[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`,
+      );
+    } finally {
+      setLoadingExportType(null);
+    }
   };
 
-  const handleDownloadPremiereXML = () => {
+  const handleDownloadPremiereXML = async () => {
     logAction("handleDownloadPremiereXML");
-    const sceneRanges = getSceneTimeRanges(project.storyboard || []);
-    const totalSecs =
-      sceneRanges.length > 0 ? sceneRanges[sceneRanges.length - 1].end : 0;
-    const xml = `<?xml version="1.0"encoding="UTF-8"?>
+    setLoadingExportType(EXPORT_TYPES.PREMIERE);
+    await new Promise(r => setTimeout(r, 800));
+    try {
+      const sceneRanges = getSceneTimeRanges(project.storyboard || []);
+      const totalSecs =
+        sceneRanges.length > 0 ? sceneRanges[sceneRanges.length - 1].end : 0;
+      const xml = `<?xml version="1.0"encoding="UTF-8"?>
 <!DOCTYPE xmeml>
 <xmeml version="4">
  <sequence id="sequence-1">
@@ -4441,8 +4934,8 @@ export function usePipelineWizard(props: any) {
  <video>
  <track>
  ${sceneRanges
-        .map(
-          (sc) => `
+          .map(
+            (sc) => `
  <clipitem id="clip-${sc.id}">
  <name>${sc.assetName || "Image_" + sc.id}</name>
  <duration>${Math.round(sc.duration * 24)}</duration>
@@ -4452,24 +4945,27 @@ export function usePipelineWizard(props: any) {
  <name>${sc.cameraMotion}</name>
  </effect>
  </clipitem>`,
-        )
-        .join("")}
+          )
+          .join("")}
  </track>
  </video>
  </media>
  </sequence>
 </xmeml>`;
-    const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
-    const dlAnchorElem = document.createElement("a");
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute(
-      "download",
-      `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`,
-    );
-    dlAnchorElem.click();
-    console.log(
-      `[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`,
-    );
+      const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
+      const dlAnchorElem = document.createElement("a");
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute(
+        "download",
+        `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`,
+      );
+      dlAnchorElem.click();
+      console.log(
+        `[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`,
+      );
+    } finally {
+      setLoadingExportType(null);
+    }
   };
   return {
     t,
@@ -4620,6 +5116,8 @@ export function usePipelineWizard(props: any) {
     setIsOfflineRendering,
     offlineRenderProgress,
     setOfflineRenderProgress,
+    loadingExportType,
+    setLoadingExportType,
     renderedVideoBlob,
     setRenderedVideoBlob,
     createSpeechUtterance,
@@ -4645,6 +5143,7 @@ export function usePipelineWizard(props: any) {
     handleReferenceImagesUpload,
     handleExtractStyle,
     handleApplyStyleToScenes,
+    handleOptimizeAllPrompts,
     handleBulkUploadImages,
     handlePrevSlide,
     handleThumbnailReferenceImagesUpload,
@@ -4664,7 +5163,9 @@ export function usePipelineWizard(props: any) {
     handleTriggerVoiceGenerate,
     handleTriggerAllSceneVoices,
     handleTriggerStoryboardAndVoices,
+    handleProcessExternalAudio,
     handleTriggerSEOBoost,
+    onSaveProject,
     handleOpenExportCenter,
     handleOfflineRenderWebM,
     startPlaybackSim,
@@ -4695,6 +5196,22 @@ export function usePipelineWizard(props: any) {
     setCostTracker,
     credits,
     setCredits,
+    favoriteStyles,
+    setFavoriteStyles,
+    showFavStyles,
+    setShowFavStyles,
+    handleAddFavoriteStyle,
+    handleDeleteFavoriteStyle,
+    handleSaveEditStyle,
+    handleSaveCurrentStyle,
+    handleApplyFavoriteStyle,
+    favoriteVoices,
+    showFavVoices,
+    setShowFavVoices,
+    handleAddFavoriteVoice,
+    handleDeleteFavoriteVoice,
+    handleSaveEditVoice,
+    handleToggleFavoriteVoice,
   };
 }
 export type PipelineWizardState = ReturnType<typeof usePipelineWizard>;

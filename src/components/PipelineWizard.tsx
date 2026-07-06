@@ -1,5 +1,4 @@
 import React from 'react';
-import { appError } from '../lib/logger.js';
 import { usePipelineWizard } from './pipeline/usePipelineWizard';
 import PipelineStep0 from './pipeline/PipelineStep0';
 import PipelineStep1 from './pipeline/PipelineStep1';
@@ -14,23 +13,29 @@ import {
   ImageGeneratorEngine,
   ImageGenerationMode,
   GeminiChatSpeed,
+  AspectRatio,
+  BatchDelayOption,
 } from '../types';
+import { APP_TEXTS } from '../constants/texts';
+import {
+  GEMINI_CHAT_SPEED_OPTIONS,
+  BATCH_DELAY_OPTIONS
+} from '../constants/data.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { Tooltip } from './ui/Tooltip';
+import { AlertCircle, Download, Pause, Terminal, Workflow } from 'lucide-react';
 
-const { ArrowLeft, Workflow, Settings2, Terminal, Volume2, Play, User, Pause, Layers, Check, Download, Sparkles, Search, X, AlertCircle, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Heart, Trash, Copy, Pencil } = LucideIcons as any;
+const { ArrowLeft, Settings2, Volume2, Play, User, Layers, Check, Sparkles, Search, X, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
 
 export default function PipelineWizard(props: PipelineWizardProps) {
   const wizard = usePipelineWizard(props);
-  const { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, errorMsg, setErrorMsg, infoMsg, setInfoMsg, zoomedImage, setZoomedImage, systemLogs, showLogsModal, setShowLogsModal, systemVoices, voiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, playVoicePreview, currentLang, getVoiceGender, isPremiumVoice } = wizard;
+  const { t, project, setProject, currentStep, setCurrentStep, leftSidebarOpen, setLeftSidebarOpen, rightSidebarOpen, setRightSidebarOpen, errorMsg, setErrorMsg, infoMsg, setInfoMsg, zoomedImage, setZoomedImage, systemLogs, showLogsModal, setShowLogsModal, systemVoices, voiceDropdownOpen, handleCloseVoiceModal, voiceSearch, setVoiceSearch, voiceTypeFilter, setVoiceTypeFilter, voiceLangFilter, setVoiceLangFilter, selectedGenderFilter, setSelectedGenderFilter, playingVoiceURI, playVoicePreview, currentLang, getVoiceGender, isPremiumVoice, favoriteStyles, showFavStyles, setShowFavStyles, handleAddFavoriteStyle, handleDeleteFavoriteStyle, handleSaveEditStyle, handleSaveCurrentStyle, handleApplyFavoriteStyle, favoriteVoices, showFavVoices, setShowFavVoices, handleAddFavoriteVoice, handleDeleteFavoriteVoice, handleSaveEditVoice } = wizard;
 
   const logsEndRef = React.useRef<HTMLDivElement>(null);
   const [showGenSettings, setShowGenSettings] = React.useState(false);
-  const [favoriteVoices, setFavoriteVoices] = React.useState<any[]>([]);
-  const [showFavVoices, setShowFavVoices] = React.useState(false);
   const [favFormName, setFavFormName] = React.useState('');
   const [favFormURI, setFavFormURI] = React.useState('');
   const [favFormChannel, setFavFormChannel] = React.useState('');
@@ -39,61 +44,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
   const [editFormURI, setEditFormURI] = React.useState('');
   const [editFormChannel, setEditFormChannel] = React.useState('');
 
-  // Load from localStorage
-  React.useEffect(() => {
-    try {
-      const stored = localStorage.getItem('favorite_voices');
-      if (stored) {
-        setFavoriteVoices(JSON.parse(stored));
-      } else {
-        const defaults = [
-          { id: '1', name: 'Brian - Deep, Resonant and Comforting', voiceURI: 'nPczCjzI2devNBz1zQrb', channelName: 'Mystic Frontiers' },
-        ];
-        setFavoriteVoices(defaults);
-        localStorage.setItem('favorite_voices', JSON.stringify(defaults));
-      }
-    } catch (e) {
-      appError("GENERAL_ERROR", e);
-    }
-  }, []);
-
-  const saveFavorites = (list: any[]) => {
-    setFavoriteVoices(list);
-    localStorage.setItem('favorite_voices', JSON.stringify(list));
-  };
+  const [favStyleFormName, setFavStyleFormName] = React.useState('');
+  const [favStyleFormPrompt, setFavStyleFormPrompt] = React.useState('');
+  const [editingStyleId, setEditingStyleId] = React.useState<string | null>(null);
+  const [editStyleFormName, setEditStyleFormName] = React.useState('');
+  const [editStyleFormPrompt, setEditStyleFormPrompt] = React.useState('');
 
   const handleAddFavorite = () => {
-    if (!favFormName.trim()) {
-      setErrorMsg(t.voiceNameRequired);
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
-    if (!favFormURI.trim()) {
-      setErrorMsg(t.voiceIdRequired);
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
-
-    const newItem = {
-      id: `fav_${Date.now()}`,
-      name: favFormName.trim(),
-      voiceURI: favFormURI.trim(),
-      channelName: favFormChannel.trim() || 'Custom'
-    };
-
-    saveFavorites([...favoriteVoices, newItem]);
-    setInfoMsg(t.saveVoiceSuccess);
-    setTimeout(() => setInfoMsg(''), 3000);
-
+    if (!favFormName.trim() || !favFormURI.trim()) return;
+    handleAddFavoriteVoice(favFormName, favFormURI, favFormChannel);
     setFavFormName('');
     setFavFormURI('');
     setFavFormChannel('');
   };
 
   const handleDeleteFavorite = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const updated = favoriteVoices.filter(item => item.id !== id);
-    saveFavorites(updated);
+    handleDeleteFavoriteVoice(id, e);
     if (editingId === id) {
       handleCancelEdit();
     }
@@ -114,32 +80,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
   };
 
   const handleSaveEdit = (id: string) => {
-    if (!editFormName.trim()) {
-      setErrorMsg(t.voiceNameRequired);
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
-    if (!editFormURI.trim()) {
-      setErrorMsg(t.voiceIdRequired);
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
-
-    const updated = favoriteVoices.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          name: editFormName.trim(),
-          voiceURI: editFormURI.trim(),
-          channelName: editFormChannel.trim() || 'Custom'
-        };
-      }
-      return item;
-    });
-
-    saveFavorites(updated);
-    setInfoMsg(t.updateVoiceSuccess);
-    setTimeout(() => setInfoMsg(''), 3000);
+    if (!editFormName.trim() || !editFormURI.trim()) return;
+    handleSaveEditVoice(id, editFormName, editFormURI, editFormChannel);
     handleCancelEdit();
   };
 
@@ -149,28 +91,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     const curName = project.voiceConfig?.voiceName || curURI;
     const curProvider = project.voiceConfig?.provider || 'Custom';
 
-    if (!curURI) {
-      setErrorMsg(t.voiceIdRequired);
-      setTimeout(() => setErrorMsg(''), 4000);
-      return;
-    }
-
+    if (!curURI) return;
     if (favoriteVoices.some(v => v.voiceURI === curURI)) {
       setInfoMsg(t.saveVoiceSuccess);
       setTimeout(() => setInfoMsg(''), 3000);
       return;
     }
 
-    const newItem = {
-      id: `fav_${Date.now()}`,
-      name: curName,
-      voiceURI: curURI,
-      channelName: curProvider
-    };
-
-    saveFavorites([...favoriteVoices, newItem]);
-    setInfoMsg(t.saveVoiceSuccess);
-    setTimeout(() => setInfoMsg(''), 3000);
+    handleAddFavoriteVoice(curName, curURI, curProvider);
   };
 
   const updateVisualConfig = (updates: Partial<typeof project.visualConfig>) => {
@@ -212,14 +140,20 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
         <div className="flex items-center gap-2 relative">
           <Tooltip content={t.Image_Generation_Settings} position="bottom">
-            <button type="button" onClick={() => { setShowGenSettings(!showGenSettings); setShowFavVoices(false); setShowLogsModal(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <button type="button" onClick={() => { setShowGenSettings(!showGenSettings); setShowFavVoices(false); setShowFavStyles(false); setShowLogsModal(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <ImageIcon className="w-4 h-4" />
             </button>
           </Tooltip>
 
           <Tooltip content={t.favVoicesTitle} position="bottom">
-            <button type="button" onClick={() => { setShowFavVoices(!showFavVoices); setShowGenSettings(false); setShowLogsModal(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <button type="button" onClick={() => { setShowFavVoices(!showFavVoices); setShowFavStyles(false); setShowGenSettings(false); setShowLogsModal(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Heart className={`w-4 h-4 ${showFavVoices ? 'fill-rose-500 text-rose-500' : ''}`} />
+            </button>
+          </Tooltip>
+
+          <Tooltip content={t.favStylesTitle} position="bottom">
+            <button type="button" onClick={() => { setShowFavStyles(!showFavStyles); setShowFavVoices(false); setShowGenSettings(false); setShowLogsModal(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showFavStyles ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+              <Palette className={`w-4 h-4 ${showFavStyles ? 'fill-rose-500 text-rose-500' : ''}`} />
             </button>
           </Tooltip>
 
@@ -228,7 +162,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className="absolute top-full right-[50px] mt-2 w-[300px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden">
                 <div className="p-4 space-y-4">
                   <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Mode || "Chế độ sinh"}</div>
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Mode}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
                       <button type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                         {t.Labs_Flow_Mode}
@@ -240,7 +174,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generate_Type || "Loại tạo"}</div>
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generate_Type}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
                       <button onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType !== GenerateType.Video ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                         <ImageIcon className="w-3.5 h-3.5" /> {t.Image}
@@ -254,8 +188,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      {['16:9', '4:3', '1:1', '3:4', '9:16'].map(ratio => (
-                        <button key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === '16:9') ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
+                      {Object.values(AspectRatio).map(ratio => (
+                        <button key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}>
                           {ratio}
                         </button>
                       ))}
@@ -296,27 +230,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       </button>
                     </div>
                   </div>
-
                   {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat && (
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Speed}</div>
                       <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                        {([
-                          { value: GeminiChatSpeed.Slow, label: t.GeminiSpeed_1 || '1' },
-                          { value: GeminiChatSpeed.Normal, label: t.GeminiSpeed_3 || '3' },
-                          { value: GeminiChatSpeed.Fast, label: t.GeminiSpeed_5 || '5' },
-                          { value: GeminiChatSpeed.SuperFast, label: t.GeminiSpeed_7 || '7' },
-                          { value: GeminiChatSpeed.HyperFast, label: t.GeminiSpeed_10 || '10' }
-                        ]).map((opt) => {
+                        {GEMINI_CHAT_SPEED_OPTIONS.map((opt) => {
+                          const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
                           const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
                           return (
                             <button
                               key={opt.value}
                               type="button"
-                              onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value })}
+                              onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })}
                               className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${isActive ? 'bg-slate-800 text-rose-400 shadow shadow-black/50' : 'text-slate-500 hover:text-slate-300'}`}
                             >
-                              {opt.label}
+                              {label}
                             </button>
                           );
                         })}
@@ -325,7 +253,29 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   )}
 
                   <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Drawing_Model || "Mô hình vẽ"}</div>
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">
+                      {t.Batch_Delay || (currentLang === 'vi' ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={project.visualConfig.batchDelay || BatchDelayOption.Default}
+                        onChange={(e) => updateVisualConfig({ batchDelay: e.target.value as BatchDelayOption })}
+                        className="w-full appearance-none bg-slate-955 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-xs text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer"
+                      >
+                        {BATCH_DELAY_OPTIONS.map((opt) => {
+                          const label = t[opt.labelKey as keyof typeof t] || (currentLang === 'vi' ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) || opt.value;
+                          return (
+                            <option key={opt.value} value={opt.value}>
+                              {label}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Drawing_Model}</div>
                     <div className="relative">
                       <select value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3} onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })} className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-xs text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer">
                         {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? (
@@ -378,7 +328,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     )}
                   </div>
 
-                  {/* List of Favorites */}
                   <div className="space-y-2 max-h-[180px] overflow-y-auto custom-scrollbar pr-1">
                     {favoriteVoices.length === 0 ? (
                       <div className="text-[10px] text-slate-500 italic text-center py-4">
@@ -505,7 +454,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     )}
                   </div>
 
-                  {/* Add Favorite Form */}
                   <div className="border-t border-slate-850 pt-3 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -545,8 +493,180 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             )}
           </AnimatePresence>
 
+          <AnimatePresence>
+            {showFavStyles && (
+              <motion.div
+                initial={{ opacity: 0, y: -15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                style={{ transformOrigin: "top right" }}
+                className="absolute top-full right-0 mt-2 w-[340px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden"
+              >
+                <div className="p-4 space-y-4 text-left">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-mono">
+                      <Palette className="w-3.5 h-3.5 text-blue-500 dark:text-rose-500 fill-blue-500 dark:fill-rose-500" />
+                      {t.favStylesTitle}
+                    </span>
+                    {project.visualConfig?.referencePrompt && (
+                      <button
+                        type="button"
+                        onClick={handleSaveCurrentStyle}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-blue-500 dark:text-rose-500" />
+                        {t.saveCurrentStyle}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 max-h-[180px] overflow-y-auto custom-scrollbar pr-1">
+                    {favoriteStyles.length === 0 ? (
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4">
+                        {t.favStylesEmpty}
+                      </div>
+                    ) : (
+                      favoriteStyles.map((item) => {
+                        const isCurrent = project.visualConfig?.referencePrompt === item.prompt;
+                        const isEditing = editingStyleId === item.id;
+                        return (
+                          <div
+                            key={item.id}
+                            className={`group flex flex-col justify-between p-2.5 rounded-lg border transition-all ${isCurrent
+                              ? 'bg-blue-50/20 dark:bg-rose-550/[0.04] border-blue-200 dark:border-rose-500/30'
+                              : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-850 hover:border-slate-300 dark:hover:border-slate-750 hover:bg-slate-100/50 dark:hover:bg-slate-900/30'
+                              }`}
+                          >
+                            {isEditing ? (
+                              <div className="space-y-2 w-full text-left">
+                                <input
+                                  type="text"
+                                  value={editStyleFormName}
+                                  onChange={(e) => setEditStyleFormName(e.target.value)}
+                                  placeholder={t.styleNamePlaceholder}
+                                  className="w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                                />
+                                <div className="flex gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={editStyleFormPrompt}
+                                    onChange={(e) => setEditStyleFormPrompt(e.target.value)}
+                                    placeholder={t.stylePromptPlaceholder}
+                                    className="flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleSaveEditStyle(item.id, editStyleFormName, editStyleFormPrompt);
+                                      setEditingStyleId(null);
+                                    }}
+                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded shadow transition-all cursor-pointer flex items-center justify-center"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingStyleId(null)}
+                                    className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleApplyFavoriteStyle(item.prompt)}>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[11px] font-bold truncate ${isCurrent ? 'text-blue-600 dark:text-rose-455' : 'text-slate-800 dark:text-slate-200'}`}>
+                                      {item.name}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="block text-[9px] text-slate-500 dark:text-slate-400 truncate font-mono select-all max-w-[200px]">
+                                      {item.prompt}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(item.prompt);
+                                        setInfoMsg(t.stylePromptCopied);
+                                        setTimeout(() => setInfoMsg(""), 3000);
+                                      }}
+                                      title="Copy mô tả phong cách"
+                                      className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer"
+                                    >
+                                      <Copy className="w-2.5 h-2.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0 ml-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingStyleId(item.id);
+                                      setEditStyleFormName(item.name);
+                                      setEditStyleFormPrompt(item.prompt);
+                                    }}
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-200 rounded transition-all cursor-pointer"
+                                    title="Sửa phong cách"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteFavoriteStyle(item.id, e)}
+                                    className="p-1 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-455 rounded transition-all cursor-pointer"
+                                    title="Xóa phong cách"
+                                  >
+                                    <Trash className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+                    <input
+                      type="text"
+                      value={favStyleFormName}
+                      onChange={(e) => setFavStyleFormName(e.target.value)}
+                      placeholder={t.styleNamePlaceholder}
+                      className="w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={favStyleFormPrompt}
+                        onChange={(e) => setFavStyleFormPrompt(e.target.value)}
+                        placeholder={t.stylePromptPlaceholder}
+                        className="flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleAddFavoriteStyle(favStyleFormName, favStyleFormPrompt);
+                          setFavStyleFormName('');
+                          setFavStyleFormPrompt('');
+                        }}
+                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-rose-600 dark:hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg shadow transition-all cursor-pointer shrink-0"
+                      >
+                        {t.addFavStyleBtn}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Tooltip content={t.System_Logs} position="bottom">
-            <button type="button" onClick={() => { setShowLogsModal(!showLogsModal); setShowGenSettings(false); setShowFavVoices(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <button type="button" onClick={() => { setShowLogsModal(!showLogsModal); setShowGenSettings(false); setShowFavVoices(false); setShowFavStyles(false); }} className={`p-2 rounded-lg border transition-all cursor-pointer ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Terminal className="w-4 h-4" />
             </button>
           </Tooltip>
@@ -563,8 +683,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </button>
           </Tooltip>
         </div>
-
-        { }
         <AnimatePresence>
           {showLogsModal && <motion.div initial={{
             opacity: 0,
@@ -623,10 +741,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </motion.div>}
         </AnimatePresence>
       </div>
-
-      { }
       <div className="flex-grow w-full flex overflow-hidden min-h-0 relative select-none">
-        { }
         <div className={`transition-all duration-300 flex flex-col bg-slate-950 border-r border-slate-850 shrink-0 h-full overflow-hidden ${leftSidebarOpen ? "w-64" : "w-0 border-r-0"}`}>
           <div className="p-3 border-b border-slate-900 bg-slate-900/40 flex items-center justify-between shrink-0 select-none">
             <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono">
@@ -636,8 +751,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               {t.NODES}
             </span>
           </div>
-
-          { }
           <div className="flex-1 overflow-y-auto p-3.5 space-y-4 custom-scrollbar bg-slate-955/40">
             {[0, 1, 2, 3, 4].map(stepIdx => {
               const shortLabel = t.stepShortLabels?.[stepIdx] || "";
@@ -645,7 +758,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               const isCompleted = stepIdx < currentStep;
               const isCurrent = stepIdx === currentStep;
               return <div key={stepIdx} className="relative">
-                { }
                 {stepIdx < 4 && <div className="absolute left-[24px] top-12 bottom-[-24px] w-[2px] bg-gradient-to-b from-rose-500/30 to-slate-800 z-0" />}
 
                 <button onClick={() => setCurrentStep(stepIdx)} title={tooltip} className={`w-full text-left p-2.5 rounded-xl border relative z-10 transition-all duration-300 flex items-center gap-2.5 cursor-pointer select-none outline-none ${isCurrent ? "bg-slate-900/90 border-rose-500 text-slate-100 shadow-lg shadow-rose-500/10 scale-[1.01]" : isCompleted ? "bg-slate-950/60 border-rose-500/20 text-rose-400 hover:bg-slate-900/30" : "bg-slate-955/10 border-slate-850 text-slate-500 hover:text-slate-350 hover:border-slate-700"}`}>
@@ -666,10 +778,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             })}
           </div>
         </div>
-
-        { }
         <div className="flex-1 h-full min-w-0 flex flex-col relative select-none bg-[radial-gradient(#1e293b_1.1px,transparent_1.1px)] [background-size:20px_20px] bg-slate-950/95 overflow-hidden">
-          { }
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 pointer-events-none select-none">
             <span className="text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur">
               {t.FPS_24_COMPLIANT}
@@ -679,37 +788,17 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </span>
           </div>
 
-          { }
           <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-0">
-            { }
-
-            { }
-
-            { }
             {currentStep === WizardStep.SourceInput && <PipelineStep0 {...wizard} />}
-
-            { }
             {currentStep === WizardStep.Storyboard && <PipelineStep1 {...wizard} />}
-
-            { }
             {currentStep === WizardStep.AssetManager && <PipelineStep2 {...wizard} />}
-
-            { }
-            { }
             {currentStep === WizardStep.SEOBoost && <PipelineStep3 {...wizard} />}
-
-            { }
             {currentStep === WizardStep.Export && <PipelineStep4 {...wizard} />}
-
-            { }
             <Modal isOpen={!!zoomedImage} onClose={() => setZoomedImage(null)} title={zoomedImage?.title || t.Image_Lightbox_Preview} maxWidth="5xl">
               {zoomedImage && <div className="flex flex-col md:flex-row h-full min-h-[50vh] bg-slate-900">
-                { }
                 <div className="flex-1 bg-slate-950/80 p-4 flex flex-col justify-center items-center relative overflow-hidden group">
                   <img referrerPolicy="no-referrer" src={zoomedImage.url} alt={zoomedImage.title} className="max-w-full max-h-[50vh] md:max-h-[75vh] object-contain rounded-xl shadow-2xl ring-1 ring-slate-800" />
                 </div>
-
-                { }
                 <div className="w-full md:w-80 p-6 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col bg-slate-900">
                   <div className="flex-1 flex flex-col min-h-0">
                     {zoomedImage.prompt && <div className="flex-1 flex flex-col min-h-0 space-y-2">
@@ -735,8 +824,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 </div>
               </div>}
             </Modal>
-
-            { }
             <Modal isOpen={voiceDropdownOpen} onClose={handleCloseVoiceModal} title={<div className="flex items-center gap-3">
               <Volume2 className="w-4 h-4 text-rose-500 animate-pulse" />
               <span>
@@ -749,10 +836,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </div>}>
               <div className="flex flex-col h-full bg-slate-900">
                 <div className="flex-1 overflow-y-auto">
-                  { }
                   <div className="p-4 sm:p-5 border-b border-slate-850/80 bg-slate-900/40 space-y-4">
                     <div className="flex flex-col md:flex-row gap-3.5">
-                      { }
                       <div className="relative flex-1">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                         <input type="text" value={voiceSearch} onChange={e => setVoiceSearch(e.target.value)} placeholder={t.Search_voices_registry_by} className="w-full bg-slate-100 hover:bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-9 py-2 text-xs text-slate-200 font-semibold placeholder-slate-550 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all h-10" />
@@ -760,8 +845,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           <X className="w-3 h-3" />
                         </button>}
                       </div>
-
-                      { }
                       <div className="flex items-center bg-slate-955 p-1 rounded-xl border border-slate-800/80 shrink-0 h-10 select-none">
                         {[{
                           id: "premium",
@@ -780,10 +863,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         })}
                       </div>
                     </div>
-
-                    { }
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1 border-t border-slate-850/50">
-                      { }
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider mr-1">
                           {t.LOCALE}
@@ -812,8 +892,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           {t.Premium_studio_quality_vo}
                         </span>
                       </div>}
-
-                      { }
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] text-slate-500 font-mono font-bold uppercase tracking-wider mr-1">
                           {t.GENDER}
@@ -836,8 +914,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       </div>
                     </div>
                   </div>
-
-                  { }
                   <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-950/15 select-none custom-scrollbar min-h-[280px] max-h-[48vh]">
                     {(() => {
                       const filtered = systemVoices.filter(voice => {
@@ -848,10 +924,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
                         if (voiceSearch) {
                           const q = voiceSearch.toLowerCase();
-                          const matchesName = voice.name.toLowerCase().includes(q);
-                          const matchesLang = voice.lang.toLowerCase().includes(q);
-                          const matchesURI = voice.voiceURI.toLowerCase().includes(q);
-                          if (!matchesName && !matchesLang && !matchesURI) return false;
+                          if (![voice.name, voice.lang, voice.voiceURI].some(field => field.toLowerCase().includes(q))) return false;
                         }
 
 
@@ -960,11 +1033,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
                             playVoicePreview(voice.voiceURI, gender, voice.lang, speed, pitch);
                           }} className={`group border rounded-2xl p-4.5 text-left transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[145px] ${isSelected ? "bg-rose-500/[0.04] bg-rose-550/[0.02] border-rose-500/80 ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-200 hover:border-slate-700"}`}>
-                            { }
                             {isSelected && <div className="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-bl-lg" />}
 
                             <div className="space-y-2.5">
-                              { }
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {isPremium ? <span className="bg-amber-500/10 text-amber-400 text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border border-amber-500/15">
                                   {t.CLOUD_AI}
@@ -980,14 +1051,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   {isFemale ? t.FEMALE : isMale ? t.MALE : t.NEUTRAL}
                                 </span>
                               </div>
-
-                              { }
                               <div>
                                 <h4 className="text-xs font-black text-slate-100 truncate leading-snug group-hover:text-rose-450 transition-colors shadow-sm">
                                   {voice.name?.replace("✨ Giọng", "") || voice.voiceURI}
                                 </h4>
-
-                                {/* Descriptive details */}
                                 <p className="text-[10px] text-slate-450 italic font-medium leading-relaxed mt-1 line-clamp-2">
                                   {(() => {
                                     if (voice.voiceURI === "preset-vi-bac-female") return t.Northern_female;
@@ -1012,8 +1079,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                 </p>
                               </div>
                             </div>
-
-                            { }
                             <div className="pt-2 border-t border-slate-800/80 mt-3 flex items-center justify-between gap-2.5">
                               <span className="text-[9px] font-mono text-slate-500 font-bold uppercase truncate max-w-[125px]">
                                 {voice.localService ? t.Offline_Supported : t.Online_API_Required}
@@ -1040,8 +1105,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       </div>;
                     })()}
                   </div>
-
-                  { }
                   <div className="p-4 sm:p-5 border-t border-slate-800 flex items-center justify-between gap-4 bg-slate-950/40 shrink-0">
                     <span className="text-[10px] sm:text-xs text-slate-450 font-medium">
                       ⚠️{" "}
@@ -1056,8 +1119,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </Modal>
           </div>
         </div>
-
-        { }
         <div className={`transition-all duration-300 flex flex-col bg-slate-950 border-l border-slate-850 shrink-0 h-full overflow-hidden ${rightSidebarOpen ? "w-72" : "w-0 border-l-0"}`}>
           <div className="p-3 border-b border-slate-900 bg-slate-900/40 flex items-center justify-between shrink-0 select-none">
             <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono">
@@ -1069,7 +1130,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar bg-slate-955/40 text-[11px] text-slate-300">
-            { }
             <div className="space-y-2">
               <div className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1">
                 {t.General_Metadata}
@@ -1101,8 +1161,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 </div>
               </div>
             </div>
-
-            { }
             <div className="space-y-2">
               <div className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1">
                 {t.Active_Profiles}
@@ -1128,8 +1186,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </div>
           </div>
         </div>
-
-        { }
         <div className="fixed bottom-6 right-6 z-[999999] flex flex-col gap-3 pointer-events-none">
           <AnimatePresence>
             {errorMsg && <motion.div key="errorMsg" initial={{
@@ -1160,7 +1216,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               <button onClick={() => setErrorMsg("")} className="text-slate-500 hover:text-slate-200 transition-colors shrink-0 p-0.5 hover:bg-slate-800/50 rounded cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
-              { }
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500/10">
                 <div className="h-full bg-rose-500 animate-shrinkWidth" />
               </div>
@@ -1193,7 +1248,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               <button onClick={() => setInfoMsg("")} className="text-slate-500 hover:text-slate-200 transition-colors shrink-0 p-0.5 hover:bg-slate-800/50 rounded cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
-              { }
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500/10">
                 <div className="h-full bg-emerald-500 animate-shrinkWidth" />
               </div>

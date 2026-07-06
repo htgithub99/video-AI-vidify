@@ -45,3 +45,16 @@ workspace/
 projects.json
 new_dictionary.json
 activeSceneId.txt
+
+# Local Projects Database and Assets
+projects/
+assets/projects/
+database.db*
+*.db
+*.db-shm
+*.db-wal
+projects.backup.json
+projects_backup_json/
+ffmpeg.exe
+diff.txt
+vite.config.ts.timestamp-*

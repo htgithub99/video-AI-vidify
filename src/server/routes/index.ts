@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getAllProjects,
+  getProjectById,
   createProject,
   updateProject,
   deleteProject
@@ -14,6 +15,7 @@ import { getVoices } from '../controllers/voiceController.js';
 
 
 router.get('/projects', getAllProjects);
+router.get('/projects/:id', getProjectById);
 router.post('/projects', createProject);
 router.put('/projects/:id', updateProject);
 router.delete('/projects/:id', deleteProject);

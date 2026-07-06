@@ -72,6 +72,14 @@ export enum PromptInputMethod {
   Paste = 'paste',
 }
 
+export enum AspectRatio {
+  SixteenNine = '16:9',
+  NineSixteen = '9:16',
+  OneOne = '1:1',
+  FourThree = '4:3',
+  ThreeFour = '3:4',
+}
+
 export type AssetType = 'image' | 'video';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
@@ -164,6 +172,7 @@ export interface VisualConfig {
   chromeHeadless?: boolean;
   generationMode?: ImageGenerationMode;
   geminiChatSpeed?: GeminiChatSpeed;
+  batchDelay?: BatchDelayOption;
 }
 
 export interface CharacterConfig {
@@ -278,6 +287,7 @@ export interface VideoProject {
   creditsUsed: number;
   currentStep?: WizardStep;
   versionHistory?: ProjectVersion[];
+  allowBulkDeleteImages?: boolean;
 }
 
 export interface PipelineWizardProps {
@@ -343,6 +353,7 @@ export enum GeminiChatSelector {
   PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="công cụ" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button',
   MenuOptions = '.cdk-overlay-pane button, mat-menu button, [role="menuitem"]',
   PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper',
+  SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
 }
 
 export enum GeminiChatTextOption {
@@ -356,4 +367,12 @@ export enum ImageModelLabel {
   Veo3 = "VEO 3.0 FLUID",
   Imagen = "IMAGEN 3 BATCH",
   LabsSandbox = "LABS SANDBOX",
+}
+
+export enum BatchDelayOption {
+  Default = 'default',
+  OneSecond = '1s',
+  TwoSeconds = '2s',
+  ThreeSeconds = '3s',
+  Random123 = 'random123',
 }

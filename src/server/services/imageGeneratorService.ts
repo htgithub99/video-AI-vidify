@@ -6,8 +6,19 @@ import {
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
-import { STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS } from "../../constants/data.js";
-import { STICKMAN_STYLE_MODIFIERS } from "../../constants/prompts.js";
+import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
+import {
+  STICKMAN_KEYWORDS,
+  DEFAULT_IMAGE_KEYWORDS,
+  PROMPT_FILLER_WORDS,
+  STICKMAN_STYLE_MODIFIERS,
+  DEFAULT_PROJECT_ID,
+} from "../../constants/data.js";
+import {
+  NON_ALPHANUMERIC_SPACE_REGEX,
+  PLAYWRIGHT_SUBMIT_ICON_REGEX,
+  PLAYWRIGHT_SUBMIT_TEXT_REGEX,
+} from "../../constants/regexes.js";
 import {
   GenerateType,
   ImageGeneratorEngine,
@@ -46,15 +57,11 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
         (targetY - startY) * t +
         Math.sin(t * Math.PI) * (Math.random() - 0.5) * 15;
       await page.mouse.move(currentX, currentY);
-      await new Promise((r) =>
-        setTimeout(r, Math.floor(Math.random() * 10 + 5)),
-      );
+      await randomDelay(5, 15);
     }
 
     await page.mouse.move(targetX, targetY);
-    await new Promise((r) =>
-      setTimeout(r, Math.floor(Math.random() * 150 + 100)),
-    );
+    await randomDelay(100, 250);
   } catch (e) {
     await locator.hover().catch(() => { });
   }
@@ -142,42 +149,12 @@ export interface ImageGeneratorResult {
 
 export const extractKeywords = (text: string): string => {
   if (!text) return "aesthetic,cinematic";
-  const clean = text.replace(/[^a-zA-Z0-9\s]/g, " ");
+  const clean = text.replace(NON_ALPHANUMERIC_SPACE_REGEX, " ");
   const words = clean
     .split(/\s+/)
     .map((w) => w.trim().toLowerCase())
     .filter((w) => w.length > 3);
-  const fillerWords = [
-    "beautiful",
-    "detailed",
-    "artistic",
-    "image",
-    "generation",
-    "prompt",
-    "describing",
-    "characters",
-    "clothes",
-    "historical",
-    "accuracy",
-    "weather",
-    "camera",
-    "angle",
-    "lighting",
-    "based",
-    "style",
-    "with",
-    "what",
-    "where",
-    "photo",
-    "shot",
-    "highly",
-    "ultra",
-    "dramatic",
-    "gorgeous",
-    "scene",
-    "rendering",
-  ];
-  const filtered = words.filter((w) => !fillerWords.includes(w));
+  const filtered = words.filter((w) => !PROMPT_FILLER_WORDS.includes(w as any));
   return filtered.slice(0, 3).join(",");
 };
 
@@ -197,17 +174,11 @@ export async function generateImageWithPlaywright(
     return generateImageWithGeminiChat(options);
   }
 
-  const isStickman = !!(
-    (style &&
-      STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
-    (prompt &&
-      STICKMAN_KEYWORDS.some((kw) => prompt.toLowerCase().includes(kw)))
-  );
+  const isStickman = !!([style, prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
-    const stickmanStyleModifiers =
-      "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
+    const stickmanStyleModifiers = STICKMAN_STYLE_MODIFIERS;
     finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
   }
 
@@ -219,7 +190,7 @@ export async function generateImageWithPlaywright(
     )}`;
 
   const projectId =
-    sandboxConfig.projectId || "cbcf7518-13d7-4eab-b59d-952d5814de53";
+    sandboxConfig.projectId || DEFAULT_PROJECT_ID;
   let cleanProjectId = projectId;
   if (cleanProjectId.startsWith("projects/")) {
     cleanProjectId = cleanProjectId.replace("projects/", "");
@@ -290,9 +261,9 @@ export async function generateImageWithPlaywright(
           .filter({
             has: globalPlaywrightPage
               .locator("i")
-              .filter({ hasText: /^(arrow_forward|add_2|send)$/i }),
+              .filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }),
           })
-          .filter({ hasText: /(Tạo|Create|Generate)/i })
+          .filter({ hasText: PLAYWRIGHT_SUBMIT_TEXT_REGEX })
           .last();
 
         let isAlreadyOnFlowPage = false;
@@ -461,9 +432,6 @@ export async function generateImageWithPlaywright(
           );
 
           const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
-          const delayFn = (ms: number) => new Promise((r) => setTimeout(r, ms));
-          const randomDelay = (min: number, max: number) =>
-            delayFn(Math.floor(Math.random() * (max - min + 1) + min));
 
           await smoothMouseMove(globalPlaywrightPage, inputLoc);
           await inputLoc.click();
@@ -524,9 +492,7 @@ export async function generateImageWithPlaywright(
         await submitBtnLocator.scrollIntoViewIfNeeded();
 
         await smoothMouseMove(globalPlaywrightPage, submitBtnLocator);
-        const delayFnSubmit = (ms: number) =>
-          new Promise((r) => setTimeout(r, ms));
-        await delayFnSubmit(Math.floor(Math.random() * 400 + 400));
+        await randomDelay(400, 800);
         await submitBtnLocator.click();
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
@@ -577,9 +543,7 @@ export async function generateImageWithPlaywright(
         appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
 
         const closedKeywords = ["closed", "close", "context"];
-        const isClosedError = closedKeywords.some((kw) =>
-          err.message?.toLowerCase().includes(kw),
-        );
+        const isClosedError = closedKeywords.some((kw) => err.message?.toLowerCase().includes(kw));
         if (isClosedError) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
           await closePlaywright().catch(() => { });
@@ -596,11 +560,7 @@ export async function generateImageWithPlaywright(
             }
           } catch (reloadErr: any) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
-            if (
-              closedKeywords.some((kw) =>
-                reloadErr.message?.toLowerCase().includes(kw),
-              )
-            ) {
+            if (closedKeywords.some((kw) => reloadErr.message?.toLowerCase().includes(kw))) {
               await closePlaywright().catch(() => { });
             }
           }
@@ -630,6 +590,8 @@ export async function generateImageWithPlaywright(
       warning: warnReason,
     };
   } finally {
+    const delayTime = await randomDelay();
+    appLog(BACKEND_MESSAGES.PLAYWRIGHT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
     release();
   }
 
@@ -657,20 +619,13 @@ export async function generateImageWithPlaywright(
   };
 }
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const randomDelay = (min: number, max: number) => delay(Math.floor(Math.random() * (max - min + 1) + min));
 
 export async function generateImageWithGeminiChat(
   options: ImageGeneratorOptions,
 ): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig } = options;
 
-  const isStickman = !!(
-    (style &&
-      STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
-    (prompt &&
-      STICKMAN_KEYWORDS.some((kw) => prompt.toLowerCase().includes(kw)))
-  );
+  const isStickman = !!([style, prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
@@ -786,10 +741,26 @@ export async function generateImageWithGeminiChat(
 
           await enterGeminiPrompt(globalPlaywrightPage, finalPrompt, visualConfig);
 
-          await globalPlaywrightPage.keyboard.press("Enter");
+          const initialResponseCount = await globalPlaywrightPage.locator('model-response').count();
+          const sendBtn = globalPlaywrightPage.locator(GeminiChatSelector.SendButton).first();
+          let clicked = false;
+          try {
+            if (await sendBtn.isVisible() && !(await sendBtn.isDisabled())) {
+              await sendBtn.click();
+              clicked = true;
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
+            }
+          } catch (e: any) {
+            appError(BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace("{0}", e.message));
+          }
+
+          if (!clicked) {
+            await globalPlaywrightPage.keyboard.press("Enter");
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
+          }
           await randomDelay(1200, 2200);
 
-          base64Result = await waitForDownloadAndGetBase64(globalPlaywrightPage, visualConfig);
+          base64Result = await waitForDownloadAndGetBase64(globalPlaywrightPage, visualConfig, initialResponseCount);
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -815,6 +786,8 @@ export async function generateImageWithGeminiChat(
       ),
     );
   } finally {
+    const delayTime = await randomDelay();
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
     release();
   }
 
@@ -859,6 +832,12 @@ export async function closeAllBatchPages() {
   globalBatchPages = [];
 }
 
+async function applyBatchDelay(visualConfig: any): Promise<number> {
+  const ms = getBatchDelayMs(visualConfig?.batchDelay);
+  await new Promise((resolve) => setTimeout(resolve, ms));
+  return ms;
+}
+
 export async function generateBatchImagesWithGeminiChat(
   items: BatchImageItem[],
   visualConfig: any,
@@ -875,7 +854,8 @@ export async function generateBatchImagesWithGeminiChat(
 
   if (maxTabs === 1) {
     const results: BatchImageResult[] = [];
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
       const result = await generateImageWithGeminiChat({
         prompt: item.prompt,
         style,
@@ -888,6 +868,11 @@ export async function generateBatchImagesWithGeminiChat(
       results.push(batchRes);
       if (onProgress) {
         onProgress(batchRes);
+      }
+
+      if (i < items.length - 1) {
+        const delayTime = await applyBatchDelay(visualConfig);
+        appLog(BACKEND_MESSAGES.SPAM_PREVENTION_DELAY.replace("{0}", delayTime.toString()));
       }
     }
     return results;
@@ -930,11 +915,20 @@ export async function generateBatchImagesWithGeminiChat(
 
     const activePages = globalBatchPages.slice(0, maxTabs);
 
+    for (let i = 0; i < activePages.length; i++) {
+      const page = activePages[i];
+      try {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace("{0}", (i + 1).toString()));
+        await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+        await randomDelay(2000, 4000);
+        batchPagesErrors.set(page, 0);
+      } catch (err: any) {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR.replace("{0}", (i + 1).toString()).replace("{1}", err.message));
+      }
+    }
+
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
-      const isStickman = !!(
-        (style && STICKMAN_KEYWORDS.some((kw) => style.toLowerCase().includes(kw))) ||
-        (item.prompt && STICKMAN_KEYWORDS.some((kw) => item.prompt.toLowerCase().includes(kw)))
-      );
+      const isStickman = !!([style, item.prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
 
       let finalPrompt = item.prompt || "";
       if (isStickman) {
@@ -1027,10 +1021,26 @@ export async function generateBatchImagesWithGeminiChat(
 
               await enterGeminiPrompt(page, finalPrompt, visualConfig);
 
-              await page.keyboard.press("Enter");
+              const initialResponseCount = await page.locator('model-response').count();
+              const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
+              let clicked = false;
+              try {
+                if (await sendBtn.isVisible() && !(await sendBtn.isDisabled())) {
+                  await sendBtn.click();
+                  clicked = true;
+                  appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", `${item.sceneId} - ${BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND}`));
+                }
+              } catch (e: any) {
+                appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", `${item.sceneId} - ${BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace("{0}", e.message)}`));
+              }
+
+              if (!clicked) {
+                await page.keyboard.press("Enter");
+                appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", `${item.sceneId} - ${BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER}`));
+              }
               await randomDelay(1200, 2200);
 
-              base64Result = await waitForDownloadAndGetBase64(page, visualConfig);
+              base64Result = await waitForDownloadAndGetBase64(page, visualConfig, initialResponseCount);
               if (base64Result) {
                 success = true;
                 batchPagesErrors.set(page, 0);
@@ -1092,6 +1102,15 @@ export async function generateBatchImagesWithGeminiChat(
           if (onProgress) {
             onProgress(res);
           }
+        }
+
+        if (!!queue?.length) {
+          const delayTime = await applyBatchDelay(visualConfig);
+          appLog(
+            BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY
+              .replace("{0}", (tabIndex + 1).toString())
+              .replace("{1}", delayTime.toString())
+          );
         }
       }
     };
@@ -1281,8 +1300,22 @@ async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: a
   await randomDelay(1500, 3000);
 }
 
-async function waitForGeminiFinished(page: Page, timeoutMs = 150000) {
+async function waitForGeminiFinished(page: Page, timeoutMs = 150000, initialResponseCount?: number) {
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
+
+  if (initialResponseCount !== undefined) {
+    try {
+      await page.waitForFunction(
+        (expected) => document.querySelectorAll('model-response').length >= expected,
+        initialResponseCount + 1,
+        { timeout: 45000 }
+      );
+    } catch (e) {
+      appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
+      throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
+    }
+  }
+
   try {
     await page.locator('thinking-overlay').waitFor({ state: 'detached', timeout: 30000 });
   } catch (e) {
@@ -1412,11 +1445,18 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
   return null;
 }
 
-async function waitForDownloadAndGetBase64(page: Page, visualConfig: any): Promise<string | null> {
-  await waitForGeminiFinished(page);
+async function waitForDownloadAndGetBase64(page: Page, visualConfig: any, initialResponseCount?: number): Promise<string | null> {
+  await waitForGeminiFinished(page, 150000, initialResponseCount);
 
   const latestResponse = page.locator('model-response').last();
   await latestResponse.waitFor({ state: 'visible', timeout: 30000 });
+
+  if (initialResponseCount !== undefined) {
+    const currentCount = await page.locator('model-response').count();
+    if (currentCount <= initialResponseCount) {
+      throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_PREVENT_OLD_IMAGE);
+    }
+  }
 
   const mediaLoc = latestResponse.locator('img, video').first();
   await mediaLoc.waitFor({ state: 'visible', timeout: 30000 });

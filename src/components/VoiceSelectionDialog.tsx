@@ -8,11 +8,17 @@ import {
   User,
   Activity,
   Mic,
+  Heart,
 } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { appError } from "../lib/logger.js";
+import {
+  VOICE_PROVIDER_OPTIONS,
+  VOICE_LANGUAGE_OPTIONS,
+  VOICE_AGE_OPTIONS
+} from "../constants/data.js";
 
 export interface Voice {
   voice_id: string;
@@ -36,6 +42,8 @@ interface VoiceSelectionDialogProps {
   onSelectVoice: (voice: Voice) => void;
   currentLang: "vi" | "en";
   selectedVoiceId?: string;
+  favoriteVoices: any[];
+  onToggleFavoriteVoice: (voiceId: string, name: string, providerName?: string) => void;
 }
 
 const getReadableLanguage = (
@@ -70,6 +78,8 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   onSelectVoice,
   currentLang,
   selectedVoiceId,
+  favoriteVoices = [],
+  onToggleFavoriteVoice,
 }) => {
   const t = translations[currentLang];
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -242,11 +252,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 onChange={(e) => setProvider(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm"
               >
-                <option value="edge">{t.Edge_Microsoft}</option>
-                <option value="elevenlabs">{t.ElevenLabs}</option>
-                <option value="minimax">{t.Minimax}</option>
-                <option value="kokoro">{t.Kokoro}</option>
-                <option value="clone">{t.Clone}</option>
+                {VOICE_PROVIDER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t[opt.labelKey as keyof typeof t] || opt.value}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -262,17 +272,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 onChange={(e) => setLanguage(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm"
               >
-                <option value="">
-                  {t.All}
-                </option>
-                <option value="en">{t.English_3}</option>
-                <option value="vi">{t.Vietnamese_4}</option>
-                <option value="fr">{t.French}</option>
-                <option value="de">{t.German}</option>
-                <option value="es">{t.Spanish}</option>
-                <option value="ja">{t.Japanese}</option>
-                <option value="ko">{t.Korean}</option>
-                <option value="zh">{t.Chinese}</option>
+                {VOICE_LANGUAGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t[opt.labelKey as keyof typeof t] || opt.value}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -310,18 +314,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 onChange={(e) => setAge(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm"
               >
-                <option value="">
-                  {t.All}
-                </option>
-                <option value="young">
-                  {t.Young}
-                </option>
-                <option value="middle_aged">
-                  {t.Middle_aged}
-                </option>
-                <option value="old">
-                  {t.Elderly}
-                </option>
+                {VOICE_AGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t[opt.labelKey as keyof typeof t] || opt.value}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -375,12 +372,31 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       <h3 className="font-bold text-base text-slate-100 truncate">
                         {voice.name}
                       </h3>
-                      {isSelected && (
-                        <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
-                          <Check className="w-3 h-3" />
-                          {t.Selected}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleFavoriteVoice(voice.voice_id, voice.name, voice.category || 'Custom');
+                          }}
+                          className="group shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 transition-all shadow-sm active:scale-90 cursor-pointer"
+                          title="Yêu thích"
+                        >
+                          <Heart
+                            className={`w-4 h-4 transition-all duration-200 ${
+                              favoriteVoices.some((v) => v.voiceURI === voice.voice_id)
+                                ? "text-rose-500 fill-rose-500 scale-110"
+                                : "text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:scale-110"
+                            }`}
+                          />
+                        </button>
+                        {isSelected && (
+                          <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
+                            <Check className="w-3 h-3" />
+                            {t.Selected}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 mb-2.5">

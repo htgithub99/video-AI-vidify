@@ -46,6 +46,17 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PROJECT_NOT_FOUND: "Không tìm thấy dự án",
     PROJECT_READ_ERR: "Lỗi đọc file projects.json:",
     PROJECT_WRITE_ERR: "Lỗi ghi file projects.json:",
+    SQLITE_MIGRATION_START: "[Hệ thống - SQLite] 🔄 Phát hiện tệp dữ liệu JSON cũ. Bắt đầu di chuyển sang SQLite...",
+    SQLITE_MIGRATION_EMPTY: "[Hệ thống - SQLite] ℹ️ Danh sách dự án cũ trống. Bỏ qua bước di chuyển.",
+    SQLITE_MIGRATION_SUCCESS: "[Hệ thống - SQLite] ✅ Di chuyển thành công toàn bộ dữ liệu sang SQLite. Các file JSON cũ đã lưu tại projects_backup_json/.",
+    SQLITE_INIT_ERR: "Không thể kết nối hoặc khởi tạo cơ sở dữ liệu SQLite",
+    SQLITE_LIST_ERR: "Lỗi đọc danh sách dự án từ SQLite",
+    SQLITE_DETAIL_ERR: "Lỗi đọc chi tiết dự án từ SQLite",
+    SQLITE_WRITE_ERR: "Lỗi ghi chi tiết dự án vào SQLite",
+    SQLITE_DELETE_ERR: "Lỗi xóa dự án khỏi SQLite",
+    SQLITE_MIGRATE_CRITICAL: "[Hệ thống - SQLite] Gặp lỗi nghiêm trọng khi di chuyển dữ liệu cũ",
+    SQLITE_MIGRATE_PARSE_ERR: "[Hệ thống - SQLite] Lỗi phân tích cú pháp file chi tiết dự án",
+    SQLITE_MIGRATE_BACKUP_ERR: "[Hệ thống - SQLite] Lỗi backup tệp metadata projects.json",
     FETCH_VOICES_ERR: "Lỗi tải danh sách giọng đọc:",
     PLAYWRIGHT_CONNECTING: "🔗 Đang kết nối tới cửa sổ Chrome thật qua cổng 9222...",
     PLAYWRIGHT_ACCESSING_LABS: "🌐 Đang truy cập Google Labs...",
@@ -133,7 +144,19 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     VOICE_ALIGN_NO_SCENES: "Không tìm thấy danh sách phân cảnh.",
     VOICE_ALIGN_MISSING_OUTPUT: "Không nhận được file kết quả từ script Python.",
     VOICE_ALIGN_INSTALL_ERR: "Môi trường Python thiếu thư viện 'openai-whisper' và không thể tự động cài đặt. Vui lòng tự chạy lệnh 'pip install openai-whisper' trên Terminal. Lỗi: {0}",
-    VOICE_ALIGN_PARSE_ERR: "Lỗi đọc kết quả đồng bộ: {0}"
+    VOICE_ALIGN_PARSE_ERR: "Lỗi đọc kết quả đồng bộ: {0}",
+    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT: "Đợi phản hồi mới từ Gemini Chat bị timeout hoặc không có phản hồi mới.",
+    GEMINI_CHAT_NO_NEW_RESPONSE: "Không thấy phản hồi mới từ Gemini sau khi gửi prompt. Vui lòng thử lại.",
+    GEMINI_CHAT_PREVENT_OLD_IMAGE: "Không có phản hồi mới nào được tạo ra từ Gemini Chat. Đã ngăn chặn lấy nhầm ảnh cũ.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM: "[Batch] Chuẩn bị Tab {0}: Chuyển hướng về phòng chat mới sạch sẽ.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR: "[Batch] Lỗi chuẩn bị Tab {0}: {1}",
+    GEMINI_CHAT_CLICKED_SEND: "[Gemini Chat] Đã click nút Gửi tin nhắn.",
+    GEMINI_CHAT_CLICK_SEND_FAILED: "[Gemini Chat] Không thể click nút Gửi, chuyển sang nhấn Enter: {0}",
+    GEMINI_CHAT_PRESSED_ENTER: "[Gemini Chat] Đã nhấn Enter.",
+    PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
+    GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
+    GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Chờ {1}ms trước khi xử lý phân cảnh tiếp theo...",
+    SPAM_PREVENTION_DELAY: "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo..."
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -182,6 +205,17 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PROJECT_NOT_FOUND: "Project not found",
     PROJECT_READ_ERR: "Error reading projects.json file:",
     PROJECT_WRITE_ERR: "Error writing projects.json file:",
+    SQLITE_MIGRATION_START: "[System - SQLite] 🔄 Old JSON data files detected. Starting migration to SQLite...",
+    SQLITE_MIGRATION_EMPTY: "[System - SQLite] ℹ️ Old project list is empty. Skipping migration.",
+    SQLITE_MIGRATION_SUCCESS: "[System - SQLite] ✅ Successfully migrated all data to SQLite. Old JSON files backed up in projects_backup_json/.",
+    SQLITE_INIT_ERR: "Could not connect to or initialize SQLite database",
+    SQLITE_LIST_ERR: "Error reading project list from SQLite",
+    SQLITE_DETAIL_ERR: "Error reading project detail from SQLite",
+    SQLITE_WRITE_ERR: "Error writing project detail to SQLite",
+    SQLITE_DELETE_ERR: "Error deleting project from SQLite",
+    SQLITE_MIGRATE_CRITICAL: "[System - SQLite] Critical error during old data migration",
+    SQLITE_MIGRATE_PARSE_ERR: "[System - SQLite] Error parsing project detail file",
+    SQLITE_MIGRATE_BACKUP_ERR: "[System - SQLite] Error backing up metadata file projects.json",
     FETCH_VOICES_ERR: "Error fetching voice list:",
     PLAYWRIGHT_CONNECTING: "🔗 Connecting to real Chrome browser via port 9222...",
     PLAYWRIGHT_ACCESSING_LABS: "🌐 Accessing Google Labs...",
@@ -269,7 +303,19 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     VOICE_ALIGN_NO_SCENES: "No scenes found.",
     VOICE_ALIGN_MISSING_OUTPUT: "No output file received from Python script.",
     VOICE_ALIGN_INSTALL_ERR: "Python environment lacks 'openai-whisper' library and automatic installation failed. Please run 'pip install openai-whisper' manually on Terminal. Error: {0}",
-    VOICE_ALIGN_PARSE_ERR: "Error reading synchronization results: {0}"
+    VOICE_ALIGN_PARSE_ERR: "Error reading synchronization results: {0}",
+    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT: "Timeout waiting for new response from Gemini Chat or no new response found.",
+    GEMINI_CHAT_NO_NEW_RESPONSE: "No new response from Gemini after sending prompt. Please try again.",
+    GEMINI_CHAT_PREVENT_OLD_IMAGE: "No new response created from Gemini Chat. Prevented extracting old image.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM: "[Batch] Preparing Tab {0}: Redirecting to a clean new chat room.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR: "[Batch] Error preparing Tab {0}: {1}",
+    GEMINI_CHAT_CLICKED_SEND: "[Gemini Chat] Clicked Send Button.",
+    GEMINI_CHAT_CLICK_SEND_FAILED: "[Gemini Chat] Failed to click Send Button, falling back to Enter: {0}",
+    GEMINI_CHAT_PRESSED_ENTER: "[Gemini Chat] Pressed Enter.",
+    PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Waiting {0}ms before releasing image generation mutex...",
+    GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
+    GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
+    SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request..."
   }
 };
 
@@ -309,7 +355,8 @@ export const PIPELINE_LOGS_LOCALIZED = {
     THUMB_STEP2: "[Thumbnail] B2: Tạo nháp layout...",
     THUMB_STEP2_DONE: "[Thumbnail] Đã tạo nháp",
     THUMB_STEP3: "[Thumbnail] B3: Tối ưu prompt & hiệu ứng...",
-    THUMB_DONE_ALL: "[Thumbnail] Hoàn thành tạo thumbnail."
+    THUMB_DONE_ALL: "[Thumbnail] Hoàn thành tạo thumbnail.",
+    VOICE_ALIGN_START: "Đang đồng bộ AI Voice (Python)..."
   },
   en: {
     HOOK_STEP1: "[Hook] Step 1: Topic & audience analysis...",
@@ -346,7 +393,8 @@ export const PIPELINE_LOGS_LOCALIZED = {
     THUMB_STEP2: "[Thumbnail] Step 2: Drafting layouts...",
     THUMB_STEP2_DONE: "[Thumbnail] Drafted successfully",
     THUMB_STEP3: "[Thumbnail] Step 3: Optimizing prompts & effects...",
-    THUMB_DONE_ALL: "[Thumbnail] Completed thumbnail generation."
+    THUMB_DONE_ALL: "[Thumbnail] Completed thumbnail generation.",
+    VOICE_ALIGN_START: "Syncing AI Voice (Python)..."
   }
 };
 
@@ -361,7 +409,7 @@ export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): strin
   return isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : PIPELINE_LOGS_LOCALIZED.en[key];
 };
 
-// Backwards compatibility fallback objects (default to Vietnamese)
+
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
   get(_, prop: string) {
     const key = prop as BackendMessageKey;
@@ -423,6 +471,10 @@ export const getFriendlyActionName = (actionName: string, lang: 'vi' | 'en' = 'v
     handleApplyStyleToScenes: {
       vi: "Đang áp dụng phong cách thiết kế mẫu lên toàn bộ phân cảnh...",
       en: "Applying visual style to all storyboard scenes..."
+    },
+    handleOptimizeAllPrompts: {
+      vi: "Đang tự động cải thiện và tối ưu hóa mô tả hình ảnh cho toàn bộ phân cảnh...",
+      en: "Optimizing and improving image descriptions for all scenes..."
     },
     handleAnalyzeCharacter: {
       vi: "Bắt đầu phân tích các đặc điểm nhân vật...",
@@ -547,7 +599,7 @@ export const getFriendlyActionName = (actionName: string, lang: 'vi' | 'en' = 'v
     return match[lang];
   }
 
-  // Formatting helper for unknown actions
+  
   const cleanName = actionName
     .replace(/^handle/, '')
     .replace(/([A-Z])/g, ' $1')
@@ -556,7 +608,7 @@ export const getFriendlyActionName = (actionName: string, lang: 'vi' | 'en' = 'v
 };
 
 export const LOG_DICTIONARY = {
-  // Project / Voice Errors
+  
   PROJECT_READ_ERR: {
     en: "Unable to read project list database (projects.json):",
     vi: "Không thể đọc dữ liệu danh sách dự án (projects.json):"
@@ -570,7 +622,7 @@ export const LOG_DICTIONARY = {
     vi: "Không thể tải danh sách giọng đọc từ máy chủ:"
   },
 
-  // TTS API Errors
+  
   TTS_API_ERROR_MSG: {
     en: "Speech service warning: {0}",
     vi: "Dịch vụ chuyển giọng nói cảnh báo: {0}"
@@ -596,7 +648,7 @@ export const LOG_DICTIONARY = {
     vi: "Không thể tải về tệp âm thanh đã được tạo."
   },
 
-  // Gemini Service / Rotation
+  
   GEMINI_START_ROTATION: {
     en: "[AI Service] Connecting to AI service. Rotating through {0} models, starting from index {1}.",
     vi: "[Trí tuệ nhân tạo] Bắt đầu kết nối dịch vụ AI. Hệ thống hỗ trợ xoay vòng qua {0} mô hình, bắt đầu từ mô hình {1}."
@@ -642,7 +694,7 @@ export const LOG_DICTIONARY = {
     vi: "Yêu cầu tạo nội dung thất bại trên tất cả mô hình AI dự phòng."
   },
 
-  // Google TTS Fallback
+  
   GOOGLE_TTS_FALLBACK_SYNTHESIZING: {
     en: "[Speech Fallback] Synthesizing segment {0}/{1} ({2} characters)",
     vi: "[Hệ thống giọng nói dự phòng] Đang chuyển đổi đoạn hội thoại {0}/{1} (độ dài: {2} ký tự) thành giọng đọc..."
@@ -656,7 +708,7 @@ export const LOG_DICTIONARY = {
     vi: "[Hệ thống giọng nói dự phòng] Gặp sự cố nghiêm trọng không thể khắc phục ở đoạn hội thoại {0}"
   },
 
-  // Backend controllers / errors
+  
   STYLE_EXTRACTION_ERROR: {
     en: "Error analyzing image style: {0}",
     vi: "Gặp lỗi khi phân tích phong cách hình ảnh: {0}"
@@ -746,7 +798,7 @@ export const LOG_DICTIONARY = {
     vi: "Lỗi phát sinh ngoài dự kiến khi ghép âm thanh: {0}"
   },
 
-  // Server-side / Playwright
+  
   PLAYWRIGHT_TOKEN_CAPTURED: {
     en: "✅ Image creation account authenticated successfully!",
     vi: "✅ Đã kết nối và xác thực tài khoản sinh ảnh thành công!"
@@ -848,7 +900,7 @@ export const LOG_DICTIONARY = {
     vi: "Chi tiết: "
   },
 
-  // Cache service
+  
   CACHE_BYPASS: {
     en: "[Temporary Memory] Bypassing cached response for {0}",
     vi: "[Bộ nhớ tạm] Bỏ qua dữ liệu lưu trữ tạm thời theo yêu cầu cho {0}"
@@ -870,13 +922,13 @@ export const LOG_DICTIONARY = {
     vi: "[Bộ nhớ tạm] Gặp lỗi khi lưu kết quả vào bộ nhớ tạm:"
   },
 
-  // Helpers / Parsing
+  
   JSON_PARSE_WARNING: {
     en: "Data structure parse failed. Activating automated recovery fallback: {0}",
     vi: "Không thể phân tích cấu hình dữ liệu nhận được. Hệ thống đang tự động khôi phục: {0}"
   },
 
-  // Sandbox / configuration
+  
   ERROR_LOADING_SANDBOX: {
     en: "Error loading local configuration:",
     vi: "Lỗi khi tải cấu hình môi trường:"
@@ -886,7 +938,7 @@ export const LOG_DICTIONARY = {
     vi: "Lỗi khi đồng bộ cấu hình môi trường:"
   },
 
-  // Audio / Video processing
+  
   PREVIEW_PLAYBACK_FAILED: {
     en: "Unable to play audio preview:",
     vi: "Không thể phát thử bản ghi âm thanh này:"
@@ -1012,13 +1064,13 @@ export const LOG_DICTIONARY = {
     vi: "Gặp sự cố khi biên tập kịch bản:"
   },
 
-  // Header / Navigation
+  
   ERROR_PARSING_SANDBOX_HEADER: {
     en: "Failed to parse system configurations in header bar:",
     vi: "Gặp lỗi khi phân tích cấu hình môi trường ở thanh tiêu đề:"
   },
 
-  // Voice Selection
+  
   FAILED_FETCH_VOICES_REGISTRY: {
     en: "Failed to load voices library:",
     vi: "Không thể tải danh sách giọng nói từ thư viện:"
@@ -1028,7 +1080,7 @@ export const LOG_DICTIONARY = {
     vi: "Không thể phát thử tệp âm thanh này"
   },
 
-  // Audio Context / Processors
+  
   FAILED_RESUME_AUDIO_CONTEXT: {
     en: "Failed to resume audio drivers:",
     vi: "Không thể kích hoạt lại hệ thống âm thanh trình duyệt:"
@@ -1038,7 +1090,7 @@ export const LOG_DICTIONARY = {
     vi: "Hệ thống âm thanh của trình duyệt chưa sẵn sàng, đang chuyển sang lưu trữ dạng chỉ có hình ảnh:"
   },
 
-  // Shared utils
+  
   SYSTEM_FLOW_ERROR: {
     en: "[System Issue] {0}:",
     vi: "[Hệ thống gặp sự cố] {0}:"
@@ -1048,13 +1100,13 @@ export const LOG_DICTIONARY = {
     vi: "[Hệ thống] {0}"
   },
 
-  // Scene generator helper
+  
   LOAD_CUSTOM_MODEL_ERR: {
     en: "Failed to retrieve the specialized AI models list:",
     vi: "Lỗi tải danh sách mô hình tùy chỉnh:"
   },
 
-  // Projects management (App.tsx)
+  
   ERROR_PARSING_PROJECTS: {
     en: "Failed to load existing projects structure:",
     vi: "Lỗi phân tích dữ liệu danh sách dự án:"
@@ -1080,7 +1132,7 @@ export const LOG_DICTIONARY = {
     vi: "Lỗi khi cập nhật dự án:"
   },
 
-  // Server bootstrap / signals
+  
   SERVER_RUNNING: {
     en: "Server running at http://localhost:{0}",
     vi: "Hệ thống đã khởi động thành công và sẵn sàng tại http://localhost:{0}"
@@ -1094,7 +1146,7 @@ export const LOG_DICTIONARY = {
     vi: "Đang dọn dẹp các tiến trình trình duyệt sinh ảnh..."
   },
 
-  // General Status
+  
   GENERAL_ERROR: {
     en: "Error:",
     vi: "Gặp sự cố:"
@@ -1128,4 +1180,7 @@ export const VOICE_ALIGN_LOGS = {
   WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...",
   ERR_DELETE_TEMP_FILES: "Error deleting temp files",
   ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE",
+  ERR_RUNNING_SCRIPT: "Error running voice_aligner.py: ",
+  PYTHON_STDOUT: "Python script stdout: ",
+  PYTHON_STDERR: "Python script stderr: ",
 };
