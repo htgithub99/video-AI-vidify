@@ -5,75 +5,14 @@ import * as LucideIcons from 'lucide-react';
 const { Eye, Download, Video, ArrowLeft } = LucideIcons as any;
 
 import { WizardStep } from '../../types';
-import { EXPORT_TYPES, EXPORT_LOADING_TEXTS, EXPORT_URLS } from '../../constants';
+import { EXPORT_TYPES, EXPORT_URLS } from '../../constants';
 
 
-
-function getExportLoadingConfig(
-  loadingExportType: EXPORT_TYPES | null | undefined,
-  isOfflineRendering: boolean,
-  lang: 'vi' | 'en',
-  t: any
-) {
-  const isExporting = !!loadingExportType || isOfflineRendering;
-  const ActiveIcon = isOfflineRendering ? Video : Download;
-
-  if (!isExporting) {
-    return { isExporting, exportTitle: "", exportDesc: "", ActiveIcon };
-  }
-
-  const texts = EXPORT_LOADING_TEXTS[lang];
-
-  if (isOfflineRendering) {
-    return {
-      isExporting,
-      exportTitle: t.exportingVideo || texts.VIDEO_TITLE,
-      exportDesc: t.waitExportProcess || texts.VIDEO_DESC,
-      ActiveIcon,
-    };
-  }
-
-  const exportConfigs: Record<EXPORT_TYPES, { title: string; desc: string }> = {
-    [EXPORT_TYPES.CAPCUT]: {
-      title: t.exportingCapcut || texts.CAPCUT_TITLE,
-      desc: t.Exports_timeline_JSON_fil || "",
-    },
-    [EXPORT_TYPES.PREMIERE]: {
-      title: texts.XML_TITLE,
-      desc: t.Construct_XML_track_metad || "",
-    },
-    [EXPORT_TYPES.ZIP]: {
-      title: t.packagingZip || texts.ZIP_TITLE,
-      desc: t.Download_complete_CapCut_ || "",
-    },
-    [EXPORT_TYPES.SRT]: {
-      title: t.exportingSRT || texts.SRT_TITLE,
-      desc: t.Extract_synced_subtitle_t || "",
-    },
-  };
-
-  const config = loadingExportType ? exportConfigs[loadingExportType] : null;
-
-  return {
-    isExporting,
-    exportTitle: config?.title || "",
-    exportDesc: config?.desc || "",
-    ActiveIcon,
-  };
-}
 
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, project, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
+  const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
 
-  const lang = project.config.language === 'en' ? 'en' : 'vi';
-  const { isExporting, exportTitle, exportDesc, ActiveIcon } = getExportLoadingConfig(
-    loadingExportType as EXPORT_TYPES,
-    isOfflineRendering,
-    lang,
-    t
-  );
-
-  return (
+    return (
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         { }
@@ -151,7 +90,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               </span>
               <span
                 className={
-                  isPlayingSim ? "text-emerald-400" : "text-amber-400"
+                  isPlayingSim ? "text-rose-450 font-bold" : "text-rose-350"
                 }
               >
                 {isPlayingSim
@@ -171,7 +110,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               ) : (
                 <button
                   onClick={startPlaybackSim}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer"
+                  className="bg-rose-750 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer"
                 >
                   {t.Play_Simulation}
                 </button>
@@ -196,7 +135,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             >
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
-                  {loadingExportType === EXPORT_TYPES.CAPCUT && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  {loadingExportType === EXPORT_TYPES.CAPCUT && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.CAPCUT ? t.exportingCapcut : t.exportCapcut}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -204,7 +143,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {loadingExportType === EXPORT_TYPES.CAPCUT ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Download className="w-5 h-5 text-slate-400 shrink-0" />
               )}
@@ -218,7 +157,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             >
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
-                  {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.PREMIERE ? t.exportingPremiere : t.exportPremiere}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -226,7 +165,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {loadingExportType === EXPORT_TYPES.PREMIERE ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Download className="w-5 h-5 text-slate-400 shrink-0" />
               )}
@@ -240,7 +179,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             >
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
-                  {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.PREMIERE ? t.exportingDavinci : t.exportDavinci}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -248,7 +187,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {loadingExportType === EXPORT_TYPES.PREMIERE ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Download className="w-5 h-5 text-slate-400 shrink-0" />
               )}
@@ -266,7 +205,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               <div>
                 <span className="font-bold block text-rose-400 flex items-center gap-1.5">
                   {isOfflineRendering ? (
-                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                   ) : (
                     <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
                   )}
@@ -279,7 +218,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {isOfflineRendering ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Video className="w-5 h-5 text-rose-500 shrink-0" />
               )}
@@ -293,7 +232,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             >
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
-                  {loadingExportType === EXPORT_TYPES.ZIP && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  {loadingExportType === EXPORT_TYPES.ZIP && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.ZIP ? t.packagingZip : t.downloadZip}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -301,7 +240,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {loadingExportType === EXPORT_TYPES.ZIP ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Download className="w-5 h-5 text-slate-400 shrink-0" />
               )}
@@ -315,7 +254,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             >
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
-                  {loadingExportType === EXPORT_TYPES.SRT && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  {loadingExportType === EXPORT_TYPES.SRT && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.SRT ? t.exportingSRT : t.Download_SRT}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -323,7 +262,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </span>
               </div>
               {loadingExportType === EXPORT_TYPES.SRT ? (
-                <div className="w-5 h-5 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin shrink-0" />
+                <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
               ) : (
                 <Download className="w-5 h-5 text-slate-400 shrink-0" />
               )}
@@ -331,7 +270,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
           </div>
 
           { }
-          <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
+          <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl space-y-2">
             <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">
               {t.Cloud_Exporter_Sync_Setup}
             </span>
@@ -364,20 +303,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </button>
           </div>
 
-          {isExporting && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-950/80 backdrop-blur-[3px] z-20 rounded-2xl border border-emerald-500/20">
-              <div className="p-3 bg-emerald-500/10 rounded-full border border-emerald-500/20 mb-3 animate-bounce">
-                <ActiveIcon className="w-6 h-6 text-emerald-500 animate-pulse" />
-              </div>
-              <p className="font-bold text-emerald-400 text-xs text-center font-mono tracking-wider uppercase">
-                {exportTitle}
-              </p>
-              <p className="text-[11px] text-slate-300 mt-2 max-w-[240px] text-center leading-relaxed font-sans">
-                {exportDesc}
-              </p>
-              <div className="mt-4 w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-            </div>
-          )}
+          
         </div>
       </div>
     </>

@@ -112,7 +112,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {" "}          <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-950/20 p-5 rounded-xl border border-slate-800">
+          {" "}          <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-900 p-5 rounded-xl border border-slate-800">
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">
                 {t.Titles_Options_Group}
@@ -155,7 +155,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 {(project.seo?.titles || []).map((title, i) => (
                   <div
                     key={i}
-                    className="bg-slate-950 border border-slate-800/80 p-4 rounded-xl space-y-3"
+                    className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-3"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <p className="font-bold text-slate-100 text-sm leading-snug">
@@ -181,13 +181,13 @@ export default function PipelineStep3(props: PipelineWizardState) {
                           <span>
                             {t.Search}
                           </span>
-                          <span className="text-sky-400 font-bold">
+                          <span className="text-rose-300 font-bold">
                             {title.searchScore}%
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                           <div
-                            className="bg-sky-400 h-full"
+                            className="bg-rose-300 h-full"
                             style={{ width: `${title.searchScore}%` }}
                           ></div>
                         </div>
@@ -198,13 +198,13 @@ export default function PipelineStep3(props: PipelineWizardState) {
                           <span>
                             {t.CTR}
                           </span>
-                          <span className="text-emerald-400 font-bold">
+                          <span className="text-rose-400 font-bold">
                             {title.ctrScore}%
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                           <div
-                            className="bg-emerald-400 h-full"
+                            className="bg-rose-400 h-full"
                             style={{ width: `${title.ctrScore}%` }}
                           ></div>
                         </div>
@@ -215,13 +215,13 @@ export default function PipelineStep3(props: PipelineWizardState) {
                           <span>
                             {t.Compet}
                           </span>
-                          <span className="text-amber-400 font-bold">
+                          <span className="text-rose-500 font-bold">
                             {title.compScore}%
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                           <div
-                            className="bg-amber-400 h-full"
+                            className="bg-rose-500 h-full"
                             style={{ width: `${title.compScore}%` }}
                           ></div>
                         </div>
@@ -232,13 +232,13 @@ export default function PipelineStep3(props: PipelineWizardState) {
                           <span>
                             {t.SEO_Score}
                           </span>
-                          <span className="text-rose-400 font-bold">
+                          <span className="text-rose-600 font-bold">
                             {title.seoScore}%
                           </span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                           <div
-                            className="bg-rose-500 h-full"
+                            className="bg-rose-600 h-full"
                             style={{ width: `${title.seoScore}%` }}
                           ></div>
                         </div>
@@ -274,7 +274,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 {(project.seo?.descriptions || []).map((desc, i) => (
                   <div
                     key={i}
-                    className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2"
+                    className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <p className="text-xs text-slate-300 leading-relaxed font-sans">
@@ -297,7 +297,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
             </div>
           </div>          <div className="space-y-5">
-            <div className="bg-slate-955 border border-slate-800 p-5 rounded-xl space-y-4">              <div className="space-y-2">
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">
                     {t.hashtags}

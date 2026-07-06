@@ -203,13 +203,13 @@ export default function Header({
       <div className="w-full max-w-[100vw] xl:max-w-screen-2xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 relative">
         {}
         <div className="flex items-center gap-3">
-          <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
+          <div className="p-1.5 sm:p-2 bg-rose-600 rounded-lg flex items-center justify-center shadow-md">
             <Video className="w-4 h-4 sm:w-5 sm:h-5 text-slate-100" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2 font-logo">
               {t.appTitle}
-              <span className="text-[10px] bg-blue-500/10 text-blue-400 font-bold px-1.5 py-0.5 rounded border border-blue-500/20 tracking-tighter">
+              <span className="text-[10px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded border border-rose-500/20 tracking-tighter">
                 {t.v2_4_PRO}
               </span>
             </h1>
@@ -231,8 +231,8 @@ export default function Header({
 
           {}
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs">
-            <Coins className="w-3.5 h-3.5 text-blue-400" />
-            <span className="font-mono font-medium text-blue-400">
+            <Coins className="w-3.5 h-3.5 text-rose-400" />
+            <span className="font-mono font-medium text-rose-400">
               {credits.toLocaleString()} {t.pts}
             </span>
           </div>
@@ -335,7 +335,7 @@ export default function Header({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-slate-800 rounded-xl">
-                      <Shield className="w-4 h-4 text-blue-500" />
+                      <Shield className="w-4 h-4 text-rose-500" />
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">

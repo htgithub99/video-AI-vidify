@@ -56,7 +56,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }))
                   }
                   className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${project.input?.type === ProjectInputType.Script
-                    ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]"
+                    ? "bg-slate-900 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]"
                     : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                     }`}
                 >
@@ -111,7 +111,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 className="w-full flex-1 bg-slate-950 border border-slate-800 focus:border-rose-500 text-slate-100 p-4 rounded-xl text-sm ring-none focus:outline-none transition-all font-sans leading-relaxed resize-none min-h-[250px]"
               />
             </div>
-          </div>          <div className="space-y-6">            <div className="bg-gradient-to-b from-slate-900 to-slate-950/90 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
+          </div>          <div className="space-y-6">            <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
 
               <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
@@ -331,7 +331,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </div>              <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
                   <span className="text-slate-450">{t.s_ng_t_o}</span>
-                  <span className="text-sky-450 bg-sky-500/10 border border-sky-500/10 px-2 py-0.5 rounded-full">
+                  <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">
                     {project.config.creativityLevel}/10
                   </span>
                 </div>
@@ -349,7 +349,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-500 focus:outline-none"
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
                 />
               </div>              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
                 <div className="flex flex-col max-w-[70%]">
@@ -579,7 +579,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 )}
               </div>              <div className="space-y-4 flex flex-col h-full">                {project.config.factCheck && (
                   <div className="bg-slate-950 border border-slate-800/80 p-4 rounded-xl space-y-2 shrink-0">
-                    <span className="text-[10px] bg-emerald-500/10 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/20 font-mono inline-flex items-center gap-1">
+                    <span className="text-[10px] bg-rose-500/10 text-rose-350 font-bold px-2 py-0.5 rounded border border-rose-500/20 font-mono inline-flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       {t.Fact_Check_Insight}
                     </span>

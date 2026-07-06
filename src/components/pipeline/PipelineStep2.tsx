@@ -155,26 +155,26 @@ export default function PipelineStep2(props: PipelineWizardState) {
               </span>
               <div className="flex flex-col gap-3 flex-1">
                 <div
-                  className="relative w-full border border-dashed border-slate-700/80 hover:border-emerald-500/50 bg-slate-900/40 hover:bg-emerald-950/20 rounded-xl flex flex-col items-center justify-center py-4 cursor-pointer transition-all group overflow-hidden flex-1"
+                  className="relative w-full border border-dashed border-slate-700/80 hover:border-rose-500/50 bg-slate-900/40 hover:bg-rose-955/20 rounded-xl flex flex-col items-center justify-center py-4 cursor-pointer transition-all group overflow-hidden flex-1"
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.add(
-                      "border-emerald-500",
-                      "bg-emerald-950/30",
+                      "border-rose-500",
+                      "bg-rose-955/30",
                     );
                   }}
                   onDragLeave={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.remove(
-                      "border-emerald-500",
-                      "bg-emerald-950/30",
+                      "border-rose-500",
+                      "bg-rose-955/30",
                     );
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
                     e.currentTarget.classList.remove(
-                      "border-emerald-500",
-                      "bg-emerald-950/30",
+                      "border-rose-500",
+                      "bg-rose-955/30",
                     );
                     if (e.dataTransfer.files) {
                       handleThumbnailReferenceImagesUpload(
@@ -197,8 +197,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300 mb-1 shadow-lg">
-                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                  <div className="p-2 bg-slate-950 rounded-xl border border-slate-800 group-hover:scale-110 group-hover:border-rose-500/30 transition-all duration-300 mb-1 shadow-lg">
+                    <Upload className="w-4 h-4 text-slate-400 group-hover:text-rose-450 transition-colors" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-200">
                     {t.Upload_style_images}
@@ -261,9 +261,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     <div className="pt-2 flex flex-col gap-2 border-t border-slate-800/50">
                       {project.visualConfig
                         ?.thumbnailReferencePrompt && (
-                          <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-md p-2 flex items-center justify-between gap-2">
+                          <div className="bg-rose-955/20 border border-rose-500/30 rounded-md p-2 flex items-center justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-emerald-400 font-bold text-[9px] mb-0.5 uppercase tracking-wider flex items-center gap-1">
+                              <h4 className="text-rose-450 font-bold text-[9px] mb-0.5 uppercase tracking-wider flex items-center gap-1">
                                 <Sparkles className="w-2.5 h-2.5" />{" "}
                                 {t.Style}
                               </h4>
@@ -290,7 +290,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   t.Style_copied,
                                 );
                               }}
-                              className="shrink-0 p-1 bg-emerald-900/50 hover:bg-emerald-800 border border-emerald-500/30 rounded text-emerald-400 transition-colors"
+                              className="shrink-0 p-1 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 rounded text-rose-450 transition-colors"
                               title={
                                 t.Copy_style
                               }
@@ -305,7 +305,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         disabled={
                           !!loadingStates["extractThumbnailStyle"]
                         }
-                        className="w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer active:scale-95 border border-emerald-500/30"
+                        className="w-full py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer active:scale-95 border border-rose-500/30"
                       >
                         {loadingStates["extractThumbnailStyle"] ? (
                           <>
@@ -316,7 +316,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           </>
                         ) : (
                           <>
-                            <Sparkles className="w-3 h-3" />
+                            <Sparkles className="w-3 h-3 text-rose-100" />
                             <span>
                               {t.Extract_Style}
                             </span>
@@ -417,11 +417,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {(project.thumbnails || []).map((thumb) => (
                   <div
                     key={thumb.id}
-                    className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800/60 rounded-2xl overflow-hidden shadow-md hover:shadow-xl hover:border-slate-300 dark:hover:border-slate-700/80 transition-all duration-500 group flex flex-col"
+                    className="bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5"
                   >                    <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                       {thumb.imageUrl ? (
                         <>
@@ -438,20 +438,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               })
                             }
                           />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadImage(
-                                thumb.imageUrl!,
-                                `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`,
-                              );
-                            }}
-                            className="absolute top-3 right-3 bg-black/60 hover:bg-slate-800 border border-white/10 backdrop-blur-md text-slate-100 hover:text-white p-2 rounded-full shadow-lg transition-all active:scale-90 cursor-pointer z-10"
-                            title={t.Download_Image || "Tải ảnh về"}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
+                          
                         </>
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none">
@@ -490,14 +477,14 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             navigator.clipboard.writeText(thumb.prompt);
                             setInfoMsg(t.Copied_thumbnail_prompt);
                           }}
-                          className="absolute -top-2 right-0 bg-white/90 dark:bg-slate-800/80 backdrop-blur-md text-slate-600 dark:text-slate-300 p-1.5 rounded-lg border border-slate-200 dark:border-slate-600/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 shadow-xl"
+                          className="absolute -top-2 right-0 bg-slate-950/90 backdrop-blur-md text-slate-300 p-1.5 rounded-lg border border-slate-800 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl"
                           title={t.Copy_Prompt}
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      <div className="bg-slate-100/50 dark:bg-slate-950/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-800/50 rounded-xl p-3 mb-4 space-y-2 mt-auto">
+                      <div className="bg-slate-950/50 backdrop-blur-sm border border-slate-800/80 rounded-xl p-3 mb-4 space-y-2 mt-auto">
                         <div className="flex items-start gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.Layout}:</span>
                           <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.layout || (currentLang === "vi" ? "Bố cục 16:9" : "16:9 Composition")}</span>
@@ -519,7 +506,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.subjectFocus}</span>
                           </div>
                         )}
-                      </div>                      <div className={!thumb.hasText ? "mt-auto pt-2" : "pt-1"}>
+                      </div>                      <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
+                        
                         <button
                           onClick={() =>
                             handleRenderThumbnailImage(
@@ -529,8 +517,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             )
                           }
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn disabled:opacity-75 disabled:cursor-not-allowed ${thumb.imageUrl
-                              ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 shadow border border-slate-200 dark:border-slate-700/50"
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn disabled:opacity-75 disabled:cursor-not-allowed ${thumb.imageUrl
+                              ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50"
                               : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
                             } active:scale-95`}
                           title={t.Render_YouTube_mockup_thu}
@@ -546,6 +534,22 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               : t.Render_Mockup}
                           </span>
                         </button>
+                        {thumb.imageUrl && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadImage(
+                                thumb.imageUrl!,
+                                `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`,
+                              );
+                            }}
+                            className="shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow"
+                            title={t.Download_Image || "Tải ảnh về"}
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

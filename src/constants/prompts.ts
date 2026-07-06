@@ -417,8 +417,12 @@ ${refImageStr}
 
 Your process MUST complete all steps internally:
 1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
-2. Layout Design: Place major visual subjects off-center (on the left-third or right-third lines) to keep them clean. Plan readable text overlays of EXACTLY 1 to 3 words max in ${isVi ? "Vietnamese" : "English"} (e.g. "SỰ THẬT!", "DỪNG LẠI!"). One design MUST have hasText: false. Avoid placing any text overlays in the bottom-right corner.
-3. Prompt Refinement: Refine the prompt descriptions to be highly cinematic, professional, sharp, and detailed, focusing on custom subject detailing and blurry background contrast. All visual prompts MUST be written in English.
+2. Layout & Composition Diversity: You MUST utilize highly viral YouTube thumbnail layouts, varying them across the generated thumbnails. Use layouts such as:
+   - "Split-Screen Confrontation": Two opposing subjects on the left and right, separated by a torn paper effect, lightning, or a giant bold symbol (like a red question mark) in the center, with a contextual background revealing the story.
+   - "Extreme Close-Up Reaction": A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half.
+   - "The Hidden Secret": A mysterious glowing object or silhouette in the foreground, with blurred cinematic depth behind it.
+3. Minimalist Typography: If text is used, keep it to an ABSOLUTE MINIMUM (1 to 3 words MAX). Use powerful, click-inducing words in ${isVi ? "Vietnamese" : "English"} (e.g., "WHAT IF?", "THE TRUTH", "SỰ THẬT!"). Text must be massive, bold, with high contrast (e.g., White and Red) usually at the bottom or center. Avoid the bottom-right corner. One design MUST have hasText: false.
+4. Prompt Refinement: Refine the prompt descriptions to be highly cinematic, professional, sharp, and detailed. All visual prompts MUST be written in English.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
 {

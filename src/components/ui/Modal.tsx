@@ -33,11 +33,13 @@ export const Modal: React.FC<IBaseModalProps> = ({
       onClick={onClose}
     >
       <div
-        className={`bg-slate-900 border border-slate-800 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-xl overflow-hidden animate-in zoom-in-95 duration-200`}
+        className={`bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200`}
         onClick={stopPropagation}
       >
-        {}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none z-0" />
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-10 bg-transparent">
           {title && (
             <h2 className="text-base font-semibold text-slate-100">{title}</h2>
           )}
@@ -49,8 +51,8 @@ export const Modal: React.FC<IBaseModalProps> = ({
           </button>
         </div>
 
-        {}
-        <div className="flex-1 overflow-y-auto bg-slate-900">{children}</div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto bg-transparent relative z-10">{children}</div>
       </div>
     </div>,
     document.body,

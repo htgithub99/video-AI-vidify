@@ -2774,7 +2774,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 }
               >
-                <div className="flex flex-col h-full bg-slate-900">
+                <div className="flex flex-col h-full bg-transparent">
                   <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
                     { }
                     <div className="space-y-4 flex flex-col">
@@ -3261,7 +3261,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           title={t.confirmRecreateTitle}
           maxWidth="md"
         >
-          <div className="p-6 space-y-6 bg-slate-900 text-left">
+          <div className="p-6 space-y-6 bg-transparent text-left">
             <p className="text-slate-300 text-sm leading-relaxed">
               {t.confirmRecreateMessage}
             </p>

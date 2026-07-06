@@ -121,13 +121,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         <div className="flex items-center gap-3">
           <Tooltip content={t.Back_to_projects} position="bottom">
             <button onClick={props.onBackToDashboard} className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-transparent hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent transition-all cursor-pointer">
-              <ArrowLeft className="w-3.5 h-3.5 text-blue-500" />
+              <ArrowLeft className="w-3.5 h-3.5 text-rose-500" />
               <span>{t.Projects}</span>
             </button>
           </Tooltip>
           <div className="h-4 w-[1px] bg-slate-800/50" />
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-medium text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full select-none">
+            <span className="text-[10px] font-medium text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full select-none">
               {t.Pro}
             </span>
             <span className="text-xs font-medium text-slate-300 truncate max-w-[150px] sm:max-w-none">
@@ -504,7 +504,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 <div className="p-4 space-y-4 text-left">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-mono">
-                      <Palette className="w-3.5 h-3.5 text-blue-500 dark:text-rose-500 fill-blue-500 dark:fill-rose-500" />
+                      <Palette className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
                       {t.favStylesTitle}
                     </span>
                     {project.visualConfig?.referencePrompt && (
@@ -513,7 +513,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         onClick={handleSaveCurrentStyle}
                         className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer"
                       >
-                        <Sparkles className="w-2.5 h-2.5 text-blue-500 dark:text-rose-500" />
+                        <Sparkles className="w-2.5 h-2.5 text-rose-500" />
                         {t.saveCurrentStyle}
                       </button>
                     )}
@@ -532,7 +532,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           <div
                             key={item.id}
                             className={`group flex flex-col justify-between p-2.5 rounded-lg border transition-all ${isCurrent
-                              ? 'bg-blue-50/20 dark:bg-rose-550/[0.04] border-blue-200 dark:border-rose-500/30'
+                              ? 'bg-rose-550/[0.04] border-rose-500/30'
                               : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-850 hover:border-slate-300 dark:hover:border-slate-750 hover:bg-slate-100/50 dark:hover:bg-slate-900/30'
                               }`}
                           >
@@ -543,7 +543,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   value={editStyleFormName}
                                   onChange={(e) => setEditStyleFormName(e.target.value)}
                                   placeholder={t.styleNamePlaceholder}
-                                  className="w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                                  className="w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50"
                                 />
                                 <div className="flex gap-1.5">
                                   <input
@@ -551,7 +551,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                     value={editStyleFormPrompt}
                                     onChange={(e) => setEditStyleFormPrompt(e.target.value)}
                                     placeholder={t.stylePromptPlaceholder}
-                                    className="flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                                    className="flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50"
                                   />
                                   <button
                                     type="button"
@@ -576,7 +576,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                               <div className="flex items-center justify-between w-full">
                                 <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleApplyFavoriteStyle(item.prompt)}>
                                   <div className="flex items-center gap-1.5">
-                                    <span className={`text-[11px] font-bold truncate ${isCurrent ? 'text-blue-600 dark:text-rose-455' : 'text-slate-800 dark:text-slate-200'}`}>
+                                    <span className={`text-[11px] font-bold truncate ${isCurrent ? 'text-rose-455' : 'text-slate-800 dark:text-slate-200'}`}>
                                       {item.name}
                                     </span>
                                   </div>
@@ -635,7 +635,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       value={favStyleFormName}
                       onChange={(e) => setFavStyleFormName(e.target.value)}
                       placeholder={t.styleNamePlaceholder}
-                      className="w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                      className="w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50"
                     />
                     <div className="flex gap-2">
                       <input
@@ -643,7 +643,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         value={favStyleFormPrompt}
                         onChange={(e) => setFavStyleFormPrompt(e.target.value)}
                         placeholder={t.stylePromptPlaceholder}
-                        className="flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 dark:focus:border-rose-500/50"
+                        className="flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50"
                       />
                       <button
                         type="button"
@@ -652,7 +652,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           setFavStyleFormName('');
                           setFavStyleFormPrompt('');
                         }}
-                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-rose-600 dark:hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg shadow transition-all cursor-pointer shrink-0"
+                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg shadow transition-all cursor-pointer shrink-0"
                       >
                         {t.addFavStyleBtn}
                       </button>
@@ -670,13 +670,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </Tooltip>
 
           <Tooltip content={t.Step_Flow_L_key} position="bottom">
-            <button type="button" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${leftSidebarOpen ? "bg-blue-500/10 border-blue-500/20 text-blue-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <button type="button" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${leftSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Workflow className="w-4 h-4" />
             </button>
           </Tooltip>
 
           <Tooltip content={t.Settings_R_key} position="bottom">
-            <button type="button" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${rightSidebarOpen ? "bg-blue-500/10 border-blue-500/20 text-blue-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <button type="button" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${rightSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Settings2 className="w-4 h-4" />
             </button>
           </Tooltip>
@@ -792,7 +792,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             {currentStep === WizardStep.AssetManager && <PipelineStep2 {...wizard} />}
             {currentStep === WizardStep.SEOBoost && <PipelineStep3 {...wizard} />}
             {currentStep === WizardStep.Export && <PipelineStep4 {...wizard} />}
-            <Modal isOpen={!!zoomedImage} onClose={() => setZoomedImage(null)} title={zoomedImage?.title || t.Image_Lightbox_Preview} maxWidth="5xl">
+            <Modal isOpen={!!zoomedImage} onClose={() => setZoomedImage(null)} title={zoomedImage?.title || t.Image_Lightbox_Preview}>
               {zoomedImage && <div className="flex flex-col md:flex-row h-full min-h-[50vh] bg-slate-900">
                 <div className="flex-1 bg-slate-950/80 p-4 flex flex-col justify-center items-center relative overflow-hidden group">
                   <img referrerPolicy="no-referrer" src={zoomedImage.url} alt={zoomedImage.title} className="max-w-full max-h-[50vh] md:max-h-[75vh] object-contain rounded-xl shadow-2xl ring-1 ring-slate-800" />
@@ -810,13 +810,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     </div>}
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-slate-800 flex flex-col gap-2.5 shrink-0">
-                    <a href={zoomedImage.url} download={`${zoomedImage.title.replace(/\s+/g, "_").toLowerCase()}_artwork.jpg`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all border border-slate-700 shadow-sm">
+                                    <div className="mt-6 pt-6 border-t border-slate-800 flex flex-row gap-2.5 shrink-0">
+                    <a href={zoomedImage.url} download={`${zoomedImage.title.replace(/\s+/g, "_").toLowerCase()}_artwork.jpg`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all border border-slate-700 shadow-sm">
                       <Download className="w-3.5 h-3.5" />
-                      {t.Download_Original}
+                      <span>{currentLang === "vi" ? "Tải về" : "Download"}</span>
                     </a>
-                    <Button variant="ghost" onClick={() => setZoomedImage(null)} className="w-full py-2.5">
-                      {t.Close_window}
+                    <Button variant="ghost" onClick={() => setZoomedImage(null)} className="flex-1 py-2.5 text-xs font-bold">
+                      {currentLang === "vi" ? "Đóng" : "Close"}
                     </Button>
                   </div>
                 </div>

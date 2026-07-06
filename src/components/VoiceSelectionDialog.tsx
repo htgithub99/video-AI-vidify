@@ -215,7 +215,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
         </div>
       }
     >
-      <div className="flex flex-col md:flex-row h-full min-h-[500px] bg-slate-900">
+      <div className="flex flex-col md:flex-row h-full min-h-[500px] bg-transparent">
         {}
         <div className="w-full md:w-72 bg-slate-950/40 border-r border-slate-800/80 p-5 flex flex-col gap-6 overflow-y-auto shrink-0">
           <div className="space-y-2">
