@@ -162,6 +162,22 @@ const defaultVisualConfig = {
   generateCount: 1,
 };
 
+const isProjectContentEqual = (p1: any, p2: any) => {
+  if (!p1 || !p2) return p1 === p2;
+  const keysToCompare = ['name', 'description', 'input', 'config', 'hookConfig', 'voiceConfig', 'visualConfig', 'storyboard', 'thumbnails', 'chapters', 'seoConfig', 'seo', 'assets', 'currentStep', 'creditsUsed', 'storyboardSourceMode'];
+  const isEmpty = (v: any) => [undefined, null, ""].includes(v) || (Array.isArray(v) && v.length === 0) || (typeof v === "object" && Object.keys(v).length === 0);
+  return keysToCompare.every((key) => {
+    const val1 = p1[key];
+    const val2 = p2[key];
+    if (val1 === val2 || (isEmpty(val1) && isEmpty(val2))) return true;
+    try {
+      return JSON.stringify(val1) === JSON.stringify(val2);
+    } catch (e) {
+      return false;
+    }
+  });
+};
+
 export function usePipelineWizard(props: any) {
   const {
     theme,
@@ -651,27 +667,20 @@ export function usePipelineWizard(props: any) {
 
     const captureLog = (type: string, args: any[]) => {
       try {
-        const msg = args
-          .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
-          .join(" ");
+        const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
+        if (["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"].some((w) => msg.includes(w))) return;
 
         let enrichedType = type;
         const msgLower = msg.toLowerCase();
-
-        if (LOG_SUCCESS_KEYWORDS.some(term => msgLower.includes(term))) {
-          enrichedType = "success";
-        } else if (LOG_PENDING_KEYWORDS.some(term => msgLower.includes(term))) {
-          enrichedType = "pending";
-        } else if (type === "log" && LOG_WARN_KEYWORDS.some(term => msgLower.includes(term))) {
-          enrichedType = "warn";
-        } else if (type === "log" && LOG_ERROR_KEYWORDS.some(term => msgLower.includes(term))) {
-          enrichedType = "error";
-        }
+        if (LOG_SUCCESS_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "success";
+        else if (LOG_PENDING_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "pending";
+        else if (type === "log" && LOG_WARN_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "warn";
+        else if (type === "log" && LOG_ERROR_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "error";
 
         const time = new Date().toLocaleTimeString();
-        setSystemLogs((prev) =>
-          [...prev, { time, type: enrichedType, msg }].slice(-200),
-        );
+        setTimeout(() => {
+          setSystemLogs((prev) => [...prev, { time, type: enrichedType, msg }].slice(-200));
+        }, 0);
       } catch (e) { }
     };
 
@@ -1199,8 +1208,14 @@ export function usePipelineWizard(props: any) {
       isRestoringRef.current = false;
       return;
     }
-    onSaveProject(project);
-  }, [project, onSaveProject]);
+
+    if (isProjectContentEqual(project, normalizedInitialProject)) return;
+
+    const timer = setTimeout(() => {
+      onSaveProject(project);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [project, normalizedInitialProject, onSaveProject]);
 
   useEffect(() => {
     if (project?.voiceConfig?.audioUrl) {
@@ -1653,7 +1668,9 @@ export function usePipelineWizard(props: any) {
           return sc;
         });
         const updatedProject = { ...prev, storyboard: updated };
-        onSaveProject(updatedProject, true);
+        setTimeout(() => {
+          onSaveProject(updatedProject, true);
+        }, 0);
         return updatedProject;
       });
       console.log(
@@ -1695,7 +1712,9 @@ export function usePipelineWizard(props: any) {
         return sc;
       });
       const updatedProject = { ...prev, storyboard: updatedScenes };
-      onSaveProject(updatedProject, true);
+      setTimeout(() => {
+        onSaveProject(updatedProject, true);
+      }, 0);
       return updatedProject;
     });
 
@@ -2382,7 +2401,9 @@ export function usePipelineWizard(props: any) {
       }
 
       const updatedProject = { ...prev, storyboard: updatedScenes };
-      onSaveProject(updatedProject, true);
+      setTimeout(() => {
+        onSaveProject(updatedProject, true);
+      }, 0);
       return updatedProject;
     });
 
@@ -2566,7 +2587,9 @@ export function usePipelineWizard(props: any) {
         storyboard: updatedStoryboard,
         allowBulkDeleteImages: true,
       };
-      onSaveProject(updatedProject, true);
+      setTimeout(() => {
+        onSaveProject(updatedProject, true);
+      }, 0);
       return updatedProject;
     });
 
@@ -2602,7 +2625,9 @@ export function usePipelineWizard(props: any) {
         storyboard: updatedStoryboard,
         allowBulkDeleteImages: true,
       };
-      onSaveProject(updatedProject, true);
+      setTimeout(() => {
+        onSaveProject(updatedProject, true);
+      }, 0);
       return updatedProject;
     });
 
@@ -2730,7 +2755,9 @@ export function usePipelineWizard(props: any) {
                     return sc;
                   });
                   const updatedProject = { ...prev, storyboard: updated };
-                  onSaveProject(updatedProject, true);
+                  setTimeout(() => {
+                    onSaveProject(updatedProject, true);
+                  }, 0);
                   return updatedProject;
                 });
                 completedCount++;
@@ -3100,7 +3127,9 @@ export function usePipelineWizard(props: any) {
           return th;
         });
         const updatedProject = { ...prev, thumbnails: updated };
-        onSaveProject(updatedProject, true);
+        setTimeout(() => {
+          onSaveProject(updatedProject, true);
+        }, 0);
         return updatedProject;
       });
       if (isSuccess) {

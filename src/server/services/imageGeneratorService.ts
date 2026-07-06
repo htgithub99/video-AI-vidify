@@ -273,7 +273,8 @@ export async function generateImageWithPlaywright(
             `${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`,
           );
           await globalPlaywrightPage.goto(targetUrl, {
-            waitUntil: "domcontentloaded",
+            waitUntil: "commit",
+            timeout: 60000,
           });
         }
 
@@ -666,7 +667,8 @@ export async function generateImageWithGeminiChat(
           }
 
           await globalPlaywrightPage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
-            waitUntil: "domcontentloaded",
+            waitUntil: "commit",
+            timeout: 60000,
           });
           await randomDelay(3000, 5000);
           consecutiveGeminiErrors = 0;
@@ -711,7 +713,7 @@ export async function generateImageWithGeminiChat(
 
         try {
           const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
-          await inputLoc.waitFor({ state: "visible", timeout: 25000 });
+          await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
           const currentConfigState = JSON.stringify({
             generateType: visualConfig?.generateType || GenerateType.Image,
@@ -894,7 +896,7 @@ export async function generateBatchImagesWithGeminiChat(
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
       for (let i = 0; i < needed; i++) {
         const newPage = await context.newPage();
-        await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+        await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
         await randomDelay(2000, 4000);
         globalBatchPages.push(newPage);
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", (globalBatchPages.length).toString()).replace("{1}", maxTabs.toString()));
@@ -907,7 +909,7 @@ export async function generateBatchImagesWithGeminiChat(
       const page = activePages[i];
       try {
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace("{0}", (i + 1).toString()));
-        await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+        await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
         await randomDelay(2000, 4000);
         batchPagesErrors.set(page, 0);
       } catch (err: any) {
@@ -955,7 +957,7 @@ export async function generateBatchImagesWithGeminiChat(
           if (needNewRoom) {
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT.replace("{0}", (tabIndex + 1).toString()).replace("{1}", roomAttempts.toString()).replace("{2}", maxRoomAttempts.toString()));
             try {
-              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "domcontentloaded" });
+              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
               await randomDelay(2000, 4000);
               batchPagesErrors.set(page, 0);
             } catch (err: any) {
@@ -989,7 +991,7 @@ export async function generateBatchImagesWithGeminiChat(
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
 
               const inputLoc = page.locator(GeminiChatSelector.Input).first();
-              await inputLoc.waitFor({ state: "visible", timeout: 25000 });
+              await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
               const currentConfigState = JSON.stringify({
                 generateType: visualConfig?.generateType || GenerateType.Image,
