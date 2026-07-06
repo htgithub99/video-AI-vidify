@@ -1070,6 +1070,8 @@ class CapCutBatchTool(ctk.CTk):
         self.entry_sync_json, row_sync = create_input_row(frame_sync, "File draft_content.json:", "Chỉ định file JSON của project...")
         ctk.CTkButton(row_sync, text="📂 Chọn", width=80, height=32, command=self.browse_sync_json, **btn_style).grid(row=0, column=2)
         
+        self.chk_run_ultra_sync = ctk.CTkCheckBox(frame_sync, text="⚡ Tự động chạy tiếp các tính năng CapCut Ultra sau khi đồng bộ (Dùng cấu hình tab CapCut Ultra)", text_color="#FFCC00", font=ctk.CTkFont(weight="bold"))
+        self.chk_run_ultra_sync.pack(anchor="w", padx=20, pady=5)
         self.chk_restart_sync = ctk.CTkCheckBox(frame_sync, text="🔁 Tự động khởi động lại CapCut sau khi đồng bộ", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"))
         self.chk_restart_sync.pack(anchor="w", padx=20, pady=5)
         
@@ -1097,6 +1099,8 @@ class CapCutBatchTool(ctk.CTk):
         ctk.CTkButton(self.row_mix_voices, text="📂 Chọn", width=80, height=32, command=lambda: self.browse_dir_generic(self.entry_mix_voices), **btn_style).grid(row=0, column=2)
         self.row_mix_voices.pack_forget() # Hide by default
 
+        self.chk_run_ultra_automix = ctk.CTkCheckBox(frame_mix, text="⚡ Tự động chạy tiếp các tính năng CapCut Ultra sau khi tạo xong (Dùng cấu hình tab CapCut Ultra)", text_color="#FFCC00", font=ctk.CTkFont(weight="bold"))
+        self.chk_run_ultra_automix.pack(anchor="w", padx=20, pady=5)
         self.chk_tele_automix = ctk.CTkCheckBox(frame_mix, text="📲 Gửi thông báo Telegram khi tạo xong", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"))
         self.chk_tele_automix.pack(anchor="w", padx=20, pady=5)
         self.chk_restart_automix = ctk.CTkCheckBox(frame_mix, text="🔁 Tự động khởi động lại CapCut để nhận Project mới", text_color="#FFFFFF", font=ctk.CTkFont(weight="bold"))
@@ -1656,12 +1660,14 @@ class CapCutBatchTool(ctk.CTk):
     def open_draft_selector(self): CapCutDraftSelector(self, self.on_draft_selected)
 
     def log(self, message, clear=False):
-        self.log_box.configure(state="normal")
-        if clear: self.log_box.delete("1.0", "end")
-        time_str = datetime.now().strftime("%H:%M:%S")
-        self.log_box.insert("end", f"[{time_str}] {message}\n")
-        self.log_box.see("end")
-        self.log_box.configure(state="disabled")
+        def _update_ui():
+            self.log_box.configure(state="normal")
+            if clear: self.log_box.delete("1.0", "end")
+            time_str = datetime.now().strftime("%H:%M:%S")
+            self.log_box.insert("end", f"[{time_str}] {message}\n")
+            self.log_box.see("end")
+            self.log_box.configure(state="disabled")
+        self.after(0, _update_ui)
 
     def start_get_mouse_pos(self):
         messagebox.showinfo("Lấy tọa độ", "Hãy mở giao diện CapCut, di chuyển chuột đến đúng vị trí bạn muốn lấy tọa độ (Ví dụ: Ô tìm kiếm) và nhấn phím F8.\n\nTọa độ sẽ được tự động lưu nối tiếp vào file Kịch Bản .txt hiện tại.")
@@ -2264,11 +2270,11 @@ class CapCutBatchTool(ctk.CTk):
         def _thread_wrapper():
             try:
                 self._process_audio_slicing(txt_path, audio_path, out_voice_dir)
-                messagebox.showinfo("Thành công", "Đã cắt voice hoàn tất!")
+                self.after(0, lambda: messagebox.showinfo("Thành công", "Đã cắt voice hoàn tất!"))
             except Exception as e:
-                messagebox.showerror("Lỗi", f"Lỗi cắt Voice:\n{str(e)}")
+                self.after(0, lambda: messagebox.showerror("Lỗi", f"Lỗi cắt Voice:\n{str(e)}"))
             finally:
-                self.btn_run_cut.configure(state="normal", text="▶ CHẠY CẮT VOICE LẺ")
+                self.after(0, lambda: self.btn_run_cut.configure(state="normal", text="▶ CHẠY CẮT VOICE LẺ"))
                 
         threading.Thread(target=_thread_wrapper, daemon=True).start()
 
@@ -2428,21 +2434,28 @@ except Exception as e:
                 scene_cuts.append({'start': cut_start, 'end': cut_end})
             
             file_counter = 1
-            self.log("-> Đang xuất file Voice (Chỉ theo thứ tự 1, 2, 3...)...")
+            self.log("-> Đang xuất file Voice (Cắt theo số lượng prompt của từng phân cảnh)...")
             
             for i, scene in enumerate(scenes):
                 cut_start = scene_cuts[i]['start']
                 cut_end = scene_cuts[i]['end']
+                prompt_count = scene.get('prompt_count', 1)
                 
-                # Không cắt nhỏ audio theo prompt_count để tránh lệch nhịp 1-1 với timeline CapCut
-                sliced_audio = audio[int(cut_start * 1000) : int(cut_end * 1000)]
+                scene_duration = cut_end - cut_start
+                part_duration = scene_duration / prompt_count
                 
-                file_name = f"{file_counter}_PhanCanh_{scene['id']}_Part1.wav"
-                output_path = os.path.join(out_voice_dir, file_name)
-                sliced_audio.export(output_path, format="wav")
-                file_counter += 1
+                for p in range(prompt_count):
+                    part_start = cut_start + p * part_duration
+                    part_end = cut_start + (p + 1) * part_duration
                     
-            self.log(f"✅ HOÀN TẤT BƯỚC 1! Đã cắt {file_counter - 1} file Audio.")
+                    sliced_audio = audio[int(part_start * 1000) : int(part_end * 1000)]
+                    
+                    file_name = f"{file_counter}_PhanCanh_{scene['id']}_Part{p+1}.wav"
+                    output_path = os.path.join(out_voice_dir, file_name)
+                    sliced_audio.export(output_path, format="wav")
+                    file_counter += 1
+                    
+            self.log(f"✅ HOÀN TẤT BƯỚC 1! Đã cắt {file_counter - 1} file Audio tương ứng với {file_counter - 1} prompt.")
             self.log(f"⭐ HOÀN TẤT BƯỚC 1! Đã cắt {file_counter - 1} file Audio.")
         except Exception as e:
             self.log(f"\n❌ Lỗi: {str(e)}")
@@ -2586,9 +2599,19 @@ except Exception as e:
             else:
                 video_segments = []
                 
-            for track in tracks:
-                if track.get('type') == 'audio':
-                    audio_segments.extend(track.get('segments', []))
+            main_audio_track = None
+            max_aud_segs = -1
+            for t in tracks:
+                if t.get('type') == 'audio':
+                    segs = t.get('segments', [])
+                    if len(segs) > max_aud_segs:
+                        max_aud_segs = len(segs)
+                        main_audio_track = t
+            
+            if main_audio_track:
+                audio_segments = main_audio_track.get('segments', [])
+            else:
+                audio_segments = []
                     
             # Sắp xếp segments theo thời gian bắt đầu
             video_segments.sort(key=lambda s: s.get('target_timerange', {}).get('start', 0))
@@ -2605,6 +2628,56 @@ except Exception as e:
                 mid = seg.get('material_id')
                 if mid and mid not in aud_mat_ids_in_order and mid in aud_mat_dict:
                     aud_mat_ids_in_order.append(mid)
+
+            # --- ADJUST VIDEO TIMELINE TO MATCH INPUT COUNT ---
+            if len(images) > len(video_segments) and len(video_segments) > 0:
+                last_seg = video_segments[-1]
+                for _ in range(len(images) - len(video_segments)):
+                    new_seg = copy.deepcopy(last_seg)
+                    new_seg['id'] = str(uuid.uuid4())
+                    
+                    old_mid = new_seg['material_id']
+                    new_mid = str(uuid.uuid4())
+                    new_seg['material_id'] = new_mid
+                    
+                    if old_mid in vid_mat_dict:
+                        new_mat = copy.deepcopy(vid_mat_dict[old_mid])
+                        new_mat['id'] = new_mid
+                        videos_mat.append(new_mat)
+                        vid_mat_dict[new_mid] = new_mat
+                    
+                    video_segments.append(new_seg)
+                    vid_mat_ids_in_order.append(new_mid)
+            elif len(images) < len(video_segments) and len(video_segments) > 0:
+                excess = len(video_segments) - len(images)
+                for _ in range(excess):
+                    video_segments.pop()
+                    vid_mat_ids_in_order.pop()
+
+            # --- ADJUST AUDIO TIMELINE TO MATCH INPUT COUNT ---
+            if len(voices) > len(audio_segments) and len(audio_segments) > 0:
+                last_seg = audio_segments[-1]
+                for _ in range(len(voices) - len(audio_segments)):
+                    new_seg = copy.deepcopy(last_seg)
+                    new_seg['id'] = str(uuid.uuid4())
+                    
+                    old_mid = new_seg['material_id']
+                    new_mid = str(uuid.uuid4())
+                    new_seg['material_id'] = new_mid
+                    
+                    if old_mid in aud_mat_dict:
+                        new_mat = copy.deepcopy(aud_mat_dict[old_mid])
+                        new_mat['id'] = new_mid
+                        audios_mat.append(new_mat)
+                        aud_mat_dict[new_mid] = new_mat
+                    
+                    audio_segments.append(new_seg)
+                    aud_mat_ids_in_order.append(new_mid)
+            elif len(voices) < len(audio_segments) and len(audio_segments) > 0:
+                excess = len(audio_segments) - len(voices)
+                for _ in range(excess):
+                    audio_segments.pop()
+                    aud_mat_ids_in_order.pop()
             
             # Replace Videos/Images
             img_idx = 0
@@ -2613,6 +2686,7 @@ except Exception as e:
                     if vid_mat_dict[mid].get('type') in ['photo', 'video']:
                         vid_mat_dict[mid]['path'] = os.path.join(img_dir, images[img_idx]).replace('\\', '/')
                         vid_mat_dict[mid]['name'] = images[img_idx]
+                        vid_mat_dict[mid]['material_name'] = images[img_idx]
                         img_idx += 1
                         
             # Replace Audios
@@ -2621,6 +2695,7 @@ except Exception as e:
                 if aud_idx < len(voices):
                     aud_mat_dict[mid]['path'] = os.path.join(out_voice_dir, voices[aud_idx]).replace('\\', '/')
                     aud_mat_dict[mid]['name'] = voices[aud_idx]
+                    aud_mat_dict[mid]['material_name'] = voices[aud_idx]
                     aud_idx += 1
             
             self.log(f"-> Đã thay thế {img_idx} Hình ảnh và {aud_idx} Âm thanh vào Template.")
@@ -2630,21 +2705,25 @@ except Exception as e:
             self.log("\n-> BƯỚC 5: ĐANG ĐỒNG BỘ TIMELINE...")
             self._process_sync_timeline(json_file)
             
+            if getattr(self, "chk_run_ultra_automix", ctk.CTkCheckBox(self)).get() == 1:
+                self.log("\n-> BƯỚC 6: ĐANG CHẠY BỘ CÔNG CỤ CAPCUT ULTRA...")
+                self.run_ultra_on_project(json_file)
+            
             self.log(f"\n🎉 HOÀN TẤT QUY TRÌNH TẠO PROJECT HOÀN CHỈNH!")
             if getattr(self, "chk_tele_automix", ctk.CTkCheckBox(self)).get() == 1:
                 self.send_telegram_msg(f"✅ [AUTO-MIX THÀNH CÔNG]\nProject mới: {new_proj_folder_name}\nĐã thay thế {img_idx} ảnh và {aud_idx} audio.")
                 
             if getattr(self, "chk_restart_automix", ctk.CTkCheckBox(self)).get() == 1:
                 restart_capcut()
-                messagebox.showinfo("Thành Công", f"Đã hoàn tất!\nProject mới: {new_proj_folder_name}\nCapCut đã được khởi động lại.")
+                self.after(0, lambda: messagebox.showinfo("Thành Công", f"Đã hoàn tất!\nProject mới: {new_proj_folder_name}\nCapCut đã được khởi động lại."))
             else:
-                messagebox.showinfo("Thành Công", f"Đã hoàn tất!\nProject mới: {new_proj_folder_name}\nHãy mở CapCut để kiểm tra.")
+                self.after(0, lambda: messagebox.showinfo("Thành Công", f"Đã hoàn tất!\nProject mới: {new_proj_folder_name}\nHãy mở CapCut để kiểm tra."))
             
         except Exception as e:
             self.log(f"\n❌ Lỗi Auto-Mix: {str(e)}")
-            messagebox.showerror("Lỗi", f"Có lỗi xảy ra trong quá trình Auto-Mix:\n{str(e)}")
+            self.after(0, lambda: messagebox.showerror("Lỗi", f"Có lỗi xảy ra trong quá trình Auto-Mix:\n{str(e)}"))
         finally:
-            self.btn_run_automix.configure(state="normal", text="🚀 KHỞI CHẠY TẠO PROJECT & ĐỒNG BỘ")
+            self.after(0, lambda: self.btn_run_automix.configure(state="normal", text="🚀 KHỞI CHẠY TẠO PROJECT & ĐỒNG BỘ"))
 
     def run_sync_timeline(self):
         json_file = self.entry_sync_json.get().strip()
@@ -2658,15 +2737,18 @@ except Exception as e:
         def _thread_wrapper():
             try:
                 self._process_sync_timeline(json_file)
+                if getattr(self, "chk_run_ultra_sync", ctk.CTkCheckBox(self)).get() == 1:
+                    self.log("\n-> ĐANG CHẠY BỘ CÔNG CỤ CAPCUT ULTRA...")
+                    self.run_ultra_on_project(json_file)
                 if getattr(self, "chk_restart_sync", ctk.CTkCheckBox(self)).get() == 1:
                     restart_capcut()
-                    messagebox.showinfo("Thành công", "Đã đồng bộ Timeline hoàn tất và khởi động lại CapCut!")
+                    self.after(0, lambda: messagebox.showinfo("Thành công", "Đã đồng bộ Timeline hoàn tất và khởi động lại CapCut!"))
                 else:
-                    messagebox.showinfo("Thành công", "Đã đồng bộ Timeline hoàn tất!")
+                    self.after(0, lambda: messagebox.showinfo("Thành công", "Đã đồng bộ Timeline hoàn tất!"))
             except Exception as e:
-                messagebox.showerror("Lỗi", f"Lỗi đồng bộ:\n{str(e)}")
+                self.after(0, lambda: messagebox.showerror("Lỗi", f"Lỗi đồng bộ:\n{str(e)}"))
             finally:
-                self.btn_run_sync.configure(state="normal", text="▶ CHẠY ĐỒNG BỘ LẺ")
+                self.after(0, lambda: self.btn_run_sync.configure(state="normal", text="▶ CHẠY ĐỒNG BỘ LẺ"))
                 
         threading.Thread(target=_thread_wrapper, daemon=True).start()
 
@@ -2687,14 +2769,42 @@ except Exception as e:
             aud_dict = {m['id']: m for m in audios_mat}
 
             tracks = data.get('tracks', [])
+            
+            main_video_track = None
+            max_vid_segs = -1
+            main_audio_track = None
+            max_aud_segs = -1
+            
+            for t in tracks:
+                if t.get('type') == 'video':
+                    segs = t.get('segments', [])
+                    media_count = 0
+                    for s in segs:
+                        if s.get('material_id') in vid_dict: media_count += 1
+                    if media_count > max_vid_segs:
+                        max_vid_segs = media_count
+                        main_video_track = t
+                elif t.get('type') == 'audio':
+                    segs = t.get('segments', [])
+                    media_count = 0
+                    for s in segs:
+                        if s.get('material_id') in aud_dict: media_count += 1
+                    if media_count > max_aud_segs:
+                        max_aud_segs = media_count
+                        main_audio_track = t
+                        
             photo_segments = []
             audio_segments = []
-
-            for track in tracks:
-                for seg in track.get('segments', []):
+            
+            if main_video_track:
+                for seg in main_video_track.get('segments', []):
                     mat_id = seg.get('material_id')
                     if mat_id in vid_dict: photo_segments.append({'segment': seg, 'material': vid_dict[mat_id]})
-                    elif mat_id in aud_dict: audio_segments.append({'segment': seg, 'material': aud_dict[mat_id]})
+                    
+            if main_audio_track:
+                for seg in main_audio_track.get('segments', []):
+                    mat_id = seg.get('material_id')
+                    if mat_id in aud_dict: audio_segments.append({'segment': seg, 'material': aud_dict[mat_id]})
 
             # SẮP XẾP LẠI THEO THỨ TỰ TỪ TRÁI SANG PHẢI TRÊN TIMELINE
             photo_segments.sort(key=lambda x: x['segment'].get('target_timerange', {}).get('start', 0))
@@ -2774,12 +2884,60 @@ except Exception as e:
             with open(json_file, 'w', encoding='utf-8') as f: json.dump(data, f, ensure_ascii=False)
                 
             self.log("\n🎉 HOÀN TẤT ĐỒNG BỘ TIMELINE!")
-            messagebox.showinfo("Thành công", "Đã đồng bộ thời lượng các cặp Ảnh/Voice thành công theo đúng thứ tự!\nHãy mở lại dự án trong phần mềm CapCut.")
 
         except Exception as e:
             self.log(f"❌ Lỗi: {e}")
             if os.path.exists(backup_file): shutil.copy2(backup_file, json_file); self.log("Đã khôi phục file dự phòng.")
             raise e
+
+    def get_ultra_opts(self):
+        return {
+            'sync_image_to_audio': False, # Bỏ qua sync trong Ultra vì _process_sync_timeline đã đồng bộ 1-1 chuẩn
+            'ultra_music_mix': getattr(self, 'opt_ultra_music_mix', ctk.BooleanVar(value=False)).get(),
+            'custom_audio_order': getattr(self, 'opt_custom_audio_order', ctk.BooleanVar(value=False)).get(),
+            'randomize_video': getattr(self, 'opt_randomize_video', ctk.BooleanVar(value=False)).get(),
+            'dynamic_motion': getattr(self, 'opt_dynamic_motion', ctk.BooleanVar(value=True)).get(),
+            'auto_transition': getattr(self, 'opt_auto_transition', ctk.BooleanVar(value=True)).get(),
+            'clear_transitions': getattr(self, 'opt_clear_transitions', ctk.BooleanVar(value=False)).get(),
+            'auto_fill_canvas': getattr(self, 'opt_auto_fill_canvas', ctk.BooleanVar(value=True)).get(),
+            'normalize_volume': getattr(self, 'opt_normalize_volume', ctk.BooleanVar(value=True)).get(),
+            'reverse_timeline': getattr(self, 'opt_reverse_timeline', ctk.BooleanVar(value=False)).get(),
+            'auto_subtitles': getattr(self, 'opt_auto_subtitles', ctk.BooleanVar(value=False)).get(),
+            'ai_sfx_generator': getattr(self, 'opt_ai_sfx_generator', ctk.BooleanVar(value=False)).get(),
+            'audio_order_list': getattr(self, 'entry_ultra_audio_order', ctk.CTkEntry(self)).get() if hasattr(self, 'entry_ultra_audio_order') else "",
+            'api_key': getattr(self, 'entry_ultra_api', ctk.CTkEntry(self)).get() if hasattr(self, 'entry_ultra_api') else "",
+            'sfx_folder': getattr(self, 'ultra_sfx_folder_path', "")
+        }
+
+    def run_ultra_on_project(self, json_file):
+        try:
+            import capcut_ultra_tool
+        except ImportError:
+            self.log("❌ Lỗi: Không tìm thấy module capcut_ultra_tool.py")
+            return False
+
+        opts = self.get_ultra_opts()
+        if opts['ai_sfx_generator']:
+            if not opts['api_key'] or not opts['sfx_folder']:
+                self.log("⚠️ Cảnh báo: Thiếu API Key hoặc thư mục SFX cho AI Sound Effect Generator! Bỏ qua AI SFX.")
+                opts['ai_sfx_generator'] = False
+
+        self.log("\n-> ĐANG KÍCH HOẠT CAPCUT ULTRA (TỰ ĐỘNG HÓA & AI)...")
+        try:
+            temp_output = json_file + ".ultra_tmp"
+            capcut_ultra_tool.process_capcut_ultra(json_file, temp_output, opts)
+            if os.path.exists(temp_output):
+                if os.path.exists(json_file):
+                    try: shutil.copy2(json_file, json_file + ".backup_ultra")
+                    except: pass
+                    try: os.remove(json_file)
+                    except: pass
+                os.rename(temp_output, json_file)
+            self.log("-> ✅ Đã chạy xong bộ công cụ CapCut Ultra và áp dụng vào project!")
+            return True
+        except Exception as e:
+            self.log(f"-> ❌ Lỗi khi chạy CapCut Ultra: {e}")
+            return False
 
 
     # =========================================================================

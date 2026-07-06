@@ -6,6 +6,7 @@ export enum WizardStep {
   AssetManager = 2,
   SEOBoost = 3,
   Export = 4,
+  IndependentGenerator = 5,
 }
 
 export enum ProjectInputType {

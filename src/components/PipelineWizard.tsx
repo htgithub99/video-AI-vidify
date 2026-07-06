@@ -5,6 +5,7 @@ import PipelineStep1 from './pipeline/PipelineStep1';
 import PipelineStep2 from './pipeline/PipelineStep2';
 import PipelineStep3 from './pipeline/PipelineStep3';
 import PipelineStep4 from './pipeline/PipelineStep4';
+import PipelineStep5 from "./pipeline/PipelineStep5";
 import {
   PipelineWizardProps,
   WizardStep,
@@ -750,13 +751,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </span>
           </div>
           <div className="flex-1 overflow-y-auto p-3.5 space-y-4 custom-scrollbar bg-slate-955/40">
-            {[0, 1, 2, 3, 4].map(stepIdx => {
+            {[0, 1, 2, 3, 4, 5].map(stepIdx => {
               const shortLabel = t.stepShortLabels?.[stepIdx] || "";
               const tooltip = t.stepTooltips?.[stepIdx] || "";
               const isCompleted = stepIdx < currentStep;
               const isCurrent = stepIdx === currentStep;
               return <div key={stepIdx} className="relative">
-                {stepIdx < 4 && <div className="absolute left-[24px] top-12 bottom-[-24px] w-[2px] bg-gradient-to-b from-rose-500/30 to-slate-800 z-0" />}
+                {stepIdx < 5 && <div className="absolute left-[24px] top-12 bottom-[-24px] w-[2px] bg-gradient-to-b from-rose-500/30 to-slate-800 z-0" />}
 
                 <button onClick={() => setCurrentStep(stepIdx)} title={tooltip} className={`w-full text-left p-2.5 rounded-xl border relative z-10 transition-all duration-300 flex items-center gap-2.5 cursor-pointer select-none outline-none ${isCurrent ? "bg-slate-900/90 border-rose-500 text-slate-100 shadow-lg shadow-rose-500/10 scale-[1.01]" : isCompleted ? "bg-slate-950/60 border-rose-500/20 text-rose-400 hover:bg-slate-900/30" : "bg-slate-955/10 border-slate-850 text-slate-500 hover:text-slate-350 hover:border-slate-700"}`}>
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold shrink-0 border transition-all ${isCurrent ? "bg-rose-600 border-rose-500 text-white" : isCompleted ? "bg-rose-950/20 border-rose-500/20 text-rose-450" : "bg-slate-900 border-slate-800 text-slate-550"}`}>
@@ -792,6 +793,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             {currentStep === WizardStep.AssetManager && <PipelineStep2 {...wizard} />}
             {currentStep === WizardStep.SEOBoost && <PipelineStep3 {...wizard} />}
             {currentStep === WizardStep.Export && <PipelineStep4 {...wizard} />}
+            {currentStep === WizardStep.IndependentGenerator && <PipelineStep5 {...wizard} />}
             <Modal isOpen={!!zoomedImage} onClose={() => setZoomedImage(null)} title={zoomedImage?.title || t.Image_Lightbox_Preview}>
               {zoomedImage && <div className="flex flex-col md:flex-row h-full min-h-[50vh] bg-slate-900">
                 <div className="flex-1 bg-slate-950/80 p-4 flex flex-col justify-center items-center relative overflow-hidden group">

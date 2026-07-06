@@ -41,3 +41,4 @@ export const AUDIO_CLEAN_EMOJI_REGEX = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\
 export const FILE_EXTENSION_REGEX = /\.[^/.]+$/;
 export const WHITESPACE_REGEX = /\s+/g;
 export const VIETNAMESE_VALID_CHARS_REGEX = /[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g;
+export const PROMPT_NUMBERING_PREFIX_REGEX = /^\d+[\.\-\s)]+\s*/;
