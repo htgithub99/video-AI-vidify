@@ -1,6 +1,6 @@
 import { getSceneDensityPrompt } from "../constants/prompts.js";
 import { appWarn, createAppError } from "../lib/logger.js";
-import { ABBREVIATIONS, CONJUNCTIONS, SCENE_DENSITY_MAP, boundaries, VIETNAMESE_VALID_CHARS_REGEX } from "../constants/index.js";
+import { SCENE_DENSITY_MAP } from "../constants/index.js";
 
 export type SceneDensity = keyof typeof SCENE_DENSITY_MAP;
 

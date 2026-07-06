@@ -190,6 +190,14 @@ export const CONJUNCTIONS = [
 
 export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Static"] as const;
 
+export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale: number; dx: number; dy: number }> = {
+  "Zoom In": (progress) => ({ scale: 1.0 + 0.12 * progress, dx: 0, dy: 0 }),
+  "Zoom Out": (progress) => ({ scale: 1.12 - 0.12 * progress, dx: 0, dy: 0 }),
+  "Pan Left": (progress) => ({ scale: 1.0, dx: -60 * progress, dy: 0 }),
+  "Pan Right": (progress) => ({ scale: 1.0, dx: 60 * progress, dy: 0 }),
+  "Static": () => ({ scale: 1.0, dx: 0, dy: 0 })
+};
+
 export const SCENE_SPLIT_TRANSITIONS = [
   "Cross Dissolve",
   "Fade out to black",
@@ -289,5 +297,202 @@ export const PROJECT_LANGUAGE_OPTIONS = [
   { value: "en", labelKey: "Ti_ng_Anh" }
 ] as const;
 
+export const VOICE_PRESET_MAP: Record<string, string> = {
+  "preset-vi-bac-female": "edge_vi-VN-HoaiMyNeural",
+  "preset-vi-bac-male": "edge_vi-VN-NamMinhNeural",
+  "preset-vi-trung-female": "edge_vi-VN-HoaiMyNeural",
+  "preset-vi-trung-male": "edge_vi-VN-NamMinhNeural",
+  "preset-vi-nam-female": "edge_vi-VN-HoaiMyNeural",
+  "preset-vi-nam-male": "edge_vi-VN-NamMinhNeural",
+  "preset-vi-kid": "edge_vi-VN-HoaiMyNeural",
+  "gcp-vi-female": "edge_vi-VN-HoaiMyNeural",
+  "gcp-vi-male": "edge_vi-VN-NamMinhNeural",
+  "gcp-en-female": "edge_en-US-AriaNeural",
+  "fpt-vi-female": "edge_vi-VN-HoaiMyNeural",
+  "fpt-vi-male": "edge_vi-VN-NamMinhNeural",
+  "zalo-vi-female": "edge_vi-VN-HoaiMyNeural",
+  "viettel-vi-male": "edge_vi-VN-NamMinhNeural",
+  "gemini-cloud-vi-female": "edge_vi-VN-HoaiMyNeural",
+  "gemini-cloud-vi-male": "edge_vi-VN-NamMinhNeural",
+  "gemini-cloud-vi": "edge_vi-VN-HoaiMyNeural",
+};
 
+export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false) => ([
+  {
+    id: isFallback ? "th_fallback_1" : "th_1",
+    prompt:
+      "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. MrBeast high-contrast style. (Resilient Fallback)",
+    style: "MrBeast",
+    hasText: true,
+    textText: isVi ? "BÍ MẬT!" : "SECRET!",
+    layout: "Bold red text on left-side overlay",
+    typography: "Impact Bold Sans",
+    colorSuggestion: "Electric red and yellow glowing effect",
+    subjectFocus: "Ancient golden locked book",
+  },
+  {
+    id: isFallback ? "th_fallback_2" : "th_2",
+    prompt:
+      "An archaeological dig site uncovered at dusk, golden ray light beams shooting out of the ground, history channel look, dramatic angle, high details.",
+    style: "History Channel",
+    hasText: false,
+    layout: "None",
+    subjectFocus: isVi
+      ? "Những tia sáng rực rỡ chiếu ra từ một ngôi mộ cổ"
+      : "Luminous light beams out of an ancient tomb",
+  }
+]);
 
+export const getDummyHooks = (isVi: boolean, isFallback: boolean = false, hookType?: string) => ([
+  {
+    id: "hk_fallback_1",
+    content: isVi
+      ? `[Mở đầu Thần bí - ${isFallback ? "Dự phòng" : "Thử nghiệm"}] Bí mật kinh ngạc làm đảo lộn dòng lịch sử mà không ai kể bạn nghe...`
+      : `[Mystery Hook - ${isFallback ? "Fallback" : "Preview"}] The shocking secret that changed the records of history forever...`,
+    type: hookType || "Mystery",
+    selected: true,
+  },
+  {
+    id: "hk_fallback_2",
+    content: isVi
+      ? `[Gây Shock - ${isFallback ? "Dự phòng" : "Thử nghiệm"}] Dừng lại ngay! Đây chính là lý do video của bạn liên tục bị bỏ lỡ.`
+      : `[Shock Hook - ${isFallback ? "Fallback" : "Preview"}] Stop scrolling! This is the exact reason you are missing out.`,
+    type: hookType || "Shock",
+    selected: false,
+  },
+]);
+
+export const DEFAULT_AI33_TOKEN = "eyJhbGciOiJIUzI1NiIsImtpZCI6ImZ0UTF2dE1kNHArNG41SUYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3hwa2NhcHFxYnJraHNwcmJxb2NiLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxYTFlZjhjOC1hN2Q4LTRkYzMtYmRjMy1kYmZjODI1MGMzZmMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzgyOTc1MDQyLCJpYXQiOjE3ODIzNzAyNDIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZ29vZ2xlIiwicHJvdmlkZXJzIjpbImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmdWxsX25hbWUiOiJUb8OgbiBMZW8iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJuYW1lIjoiVG_DoG4gTGVvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsInByb3ZpZGVyX2lkIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIiwic3ViIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib2F1dGgiLCJ0aW1lc3RhbXAiOjE3NjQ5OTMyNzB9XSwic2Vzc2lvbl9pZCI6IjY0ZjhjZDllLTMzNTItNDI5Zi1hYTYyLWZhMjg5OWNhNWUzNCIsImlzX2Fub255bW91cyI6ZmFsc2V9.Rsut9S1qJEUqimObZXDTd4a7QLwMVhHTBvfxWy9FjY0";
+
+export const getDummyScript = (isVi: boolean, fallbackHook: string, config: any, isApiError: boolean = false) => {
+  const defaultHookVi = "Có một câu chuyện kỳ bí.";
+  const defaultHookEn = "There is a mysterious story.";
+
+  const scriptVi = isApiError
+    ? `${fallbackHook || defaultHookVi} \n\nTrong dòng lịch sử bao la, những nhà nghiên cứu luôn tìm kiếm mảnh ghép bị lãng quên của thời đại. Các di chỉ khảo cổ gần đây đã mang lại bằng chứng đáng tin cậy hỗ trợ lý thuyết này. Nó chứng minh mối liên kết sâu xa giữa các hiện tượng trước đó. (Dự phòng tự động do lỗi API)`
+    : `${fallbackHook || defaultHookVi} \n\nTrong dòng lịch sử bao la, chúng ta không thể phủ nhận tầm quan trọng của bối cảnh và sự kiện liên quan. Các nhà nghiên cứu tin rằng mọi việc xảy ra đều chứa đựng ý nghĩa ẩn sau. Hãy phân tích ví dụ tiêu biểu mà chúng xuất hiện.\n\nKết luận lại, câu chuyện này mở ra góc nhìn mới đầy chiều sâu cho độc giả.`;
+
+  const scriptEn = isApiError
+    ? `${fallbackHook || defaultHookEn} \n\nThroughout the pages of history, researchers search for the forgotten fragments of the age. Modern archaeological findings have contributed compelling evidence supporting this system, revealing deep connections to past events. (Auto-fallback preview)`
+    : `${fallbackHook || defaultHookEn} \n\nThroughout the pages of history, background details and historical analysis paint a clear scene. Modern research suggests these variables correlate directly. Let us dive deeper into the core mechanics of this story.\n\nIn conclusion, this opens an entirely new perspective.`;
+
+  const factCheckVi = isApiError
+    ? "✓ [Dự phòng] Đã xác minh: Các sự kiện cơ bản phù hợp với dữ kiện lịch sử tiêu chuẩn."
+    : "✓ Đã kiểm chứng: Các dòng mốc lịch sử tương thích và dữ kiện nhất quán trong kịch bản.";
+
+  const factCheckEn = isApiError
+    ? "✓ [Fallback] Verified: The core plot parameters align with standard historical data."
+    : "✓ Verified: Historical timelines and database coordinates are fully consistent.";
+
+  return {
+    rewrittenScript: isVi ? scriptVi : scriptEn,
+    factCheckNotes: config?.factCheck
+      ? (isVi ? factCheckVi : factCheckEn)
+      : "Fact Check disabled",
+    chapters: [
+      {
+        id: "ch_1",
+        title: isVi ? "Chương I: Sự khởi đầu" : "Chapter I: The Arrival",
+        scriptSegment: isVi
+          ? "Giới thiệu về nhân vật chính và bối cảnh xảy ra sự kiện đầu tiên."
+          : "Introduction to the main characters and initial settings of the event.",
+      },
+      {
+        id: "ch_2",
+        title: isVi
+          ? "Chương II: Phân tích sâu"
+          : "Chapter II: Deep Exploration",
+        scriptSegment: isVi
+          ? "Cung cấp những dữ kiện và diễn biến kịch tính để mở rộng nội dung."
+          : "Providing critical events and dramatic facts to expand the content duration.",
+      },
+      {
+        id: "ch_3",
+        title: isVi
+          ? "Chương III: Bài học & Đúc kết"
+          : "Chapter III: Synthesis",
+        scriptSegment: isVi
+          ? "Tóm lược kết quả và truyền tải thông điệp cuối cùng."
+          : "Synthesizing the lessons and conveying the core takeaway.",
+      },
+    ],
+  };
+};
+
+export const getDummyHookTitle = (isVi: boolean, type: string = "Auto", isApiError: boolean = false) => {
+  if (isApiError) {
+    return isVi
+      ? `[Mở đầu ${type}] Bạn có biết bí mật lớn nhất đằng sau câu chuyện này?`
+      : `[${type} Hook] Did you know the biggest secret behind this story?`;
+  }
+  return isVi
+    ? `[Mở đầu ${type}] Bạn đã từng nghe về câu chuyện kỳ lạ này chưa?`
+    : `[${type} Hook] Have you ever heard about this strange story?`;
+};
+
+export const getDurationText = (isVi: boolean, durStr: string) => {
+  if (durStr === "30s") {
+    return {
+      targetWordCount: 80,
+      durationText: isVi ? "30 giây (30 seconds)" : "30 seconds",
+    };
+  }
+  const match = durStr.match(/(\d+)/);
+  if (match) {
+    const mins = parseInt(match[1], 10);
+    const targetWordCount = mins * 150;
+    const paragraphs = mins * 3;
+    const durationText = isVi
+      ? `${mins} phút (${mins} minutes). You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`
+      : `${mins} minutes. You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`;
+    return { targetWordCount, durationText, targetWordCountMin: Math.floor(targetWordCount * 0.95) };
+  }
+  return {
+    targetWordCount: 300,
+    durationText: isVi ? "2 phút (2 minutes)" : "2 minutes",
+    targetWordCountMin: Math.floor(300 * 0.95)
+  };
+};
+
+export const getDummySeoData = (isVi: boolean, isApiError: boolean = false) => {
+  return {
+    titles: [
+      {
+        text: isVi
+          ? `Bí Ẩn Lịch Sử Bị Lãng Quên Có Thể Bạn Chưa Biết${isApiError ? ' (Dự Phòng)' : ''}`
+          : `The Untold Secret of History - Documentary Special${isApiError ? ' (Fallback Preview)' : ''}`,
+        searchScore: 92,
+        ctrScore: 89,
+        compScore: 35,
+        seoScore: 93,
+      },
+      {
+        text: isVi
+          ? `Phân cảnh kinh hoàng chưa kể về lịch sử dòng chảy`
+          : `The Untold Secrets & Historical Truths Special`,
+        searchScore: 88,
+        ctrScore: 95,
+        compScore: 40,
+        seoScore: 90,
+      },
+    ],
+    descriptions: [
+      {
+        text: isVi
+          ? `Khám phá câu chuyện đằng sau những dữ kiện ít người biết đến, thông tin được xâu chuỗi một cách logic theo phong cách phim tài liệu khoa học chân thật nhất.`
+          : `Explore the captivating narrative behind hidden historical logs meticulously gathered for high click rates.`,
+        searchScore: 90,
+        ctrScore: 85,
+        compScore: 20,
+        seoScore: 89,
+      },
+    ],
+    hashtags: ["xuhuong", "learning", "lichsu", "biandocla", "aivideos"],
+    tags: [
+      "ai story rewriter",
+      "tao video tu dong",
+      "tin tuc lich su",
+      "documentary creation",
+    ],
+  };
+};

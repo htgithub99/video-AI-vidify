@@ -1,4 +1,5 @@
 import { translations } from '../lib/lang.js';
+import { VideoGenre } from './enums.js';
 
 export const APP_TEXTS = {
   VN: {
@@ -205,3 +206,23 @@ export const EXTERNAL_AUDIO_TEXTS = {
   }
 } as const;
 
+
+export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
+  [VideoGenre.HISTORY]: `CRITICAL VISUAL DIRECTIVE - HISTORY GENRE:
+- Strict Historical Accuracy: Image prompts must precisely reflect the historical period mentioned in the scene text. Describe historically accurate clothing (e.g., armor, robes, wool tunics), architecture (e.g., wooden huts, stone castles, roman pillars), and technology of the era.
+- Historical Context Enrichment: For every scene under a historical theme, the prompt must explicitly specify the historical context, such as the name of the battle or war, the specific era or year (if available), the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures involved. This ensures the AI accurately generates period-specific clothing, weapons, flags/banners, insignia, vehicles, and distinct characteristics of the era, preventing confusion between different wars or military forces.
+- Character Pinning/Consistency: If specific historical figures, rulers, or classes of people (e.g., Roman legionaries, Victorian ladies, ancient farmers) are mentioned, describe their iconic features and clothing consistently across scenes.
+- Settings: Ensure settings match the historical timeline. No modern objects, modern light sources, or modern tools should appear.`,
+  [VideoGenre.TRUE_CRIME]: `CRITICAL VISUAL DIRECTIVE - TRUE CRIME GENRE:
+- Suspenseful & Moody Atmosphere: Use dark, cinematic, high-contrast chiaroscuro lighting. Focus on shadows, dim streetlights, rainy nights, foggy alleys, and mysterious figures.
+- Forensic & Crime Elements: Depict details like police tape, old case files on a wooden desk, flickering projector lights, micro-lens shots of clues, or dramatic silhouettes. Do not include gore, but focus on the atmospheric tension.`,
+  [VideoGenre.SCIENCE]: `CRITICAL VISUAL DIRECTIVE - SCIENCE GENRE:
+- Clean, Accurate & Futuristic: Depict accurate molecular structures, space visuals, clean futuristic laboratories, holographic interfaces, and detailed scientific diagrams.
+- Use vibrant lighting like neon glowing accents, blue laser grids, or high-tech clean white backgrounds.`,
+  [VideoGenre.PSYCHOLOGY]: `CRITICAL VISUAL DIRECTIVE - PSYCHOLOGY/PHILOSOPHY GENRE:
+- Symbolic & Conceptual Visuals: Use surreal or highly symbolic visual representations to depict thoughts, mental states, dualities of mind, or philosophical concepts (e.g., a person looking into a mirror reflecting a maze, or contrasting dark and light halves of a face).
+- Keep a clean, artistic, thought-provoking focus.`,
+  [VideoGenre.PHILOSOPHY]: `CRITICAL VISUAL DIRECTIVE - PSYCHOLOGY/PHILOSOPHY GENRE:
+- Symbolic & Conceptual Visuals: Use surreal or highly symbolic visual representations to depict thoughts, mental states, dualities of mind, or philosophical concepts (e.g., a person looking into a mirror reflecting a maze, or contrasting dark and light halves of a face).
+- Keep a clean, artistic, thought-provoking focus.`
+};

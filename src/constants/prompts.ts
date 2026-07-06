@@ -378,22 +378,28 @@ export const getSeoMarketerPrompt = (
   numHashtags: number,
   numTags: number,
   isVi: boolean,
-): string => `You are a professional SEO marketer. Based on this rewritten story: "${rewrittenScript}",
-generate ${numTitles} high-impact Video Titles and ${numDescriptions} Descriptions. Give each title and description key metrics from 0 to 100: searchability score, CTR score, competition score, and overall SEO score.
-Include ${numHashtags} relevant hashtags and ${numTags} relevant search tags optimized for high reach.
-Importantly, the descriptions, hashtags, and tags should be written in a general, versatile way so that they fit and apply perfectly to ALL of the generated titles (as they will be used together).
-Language: ${isVi ? "Vietnamese" : "English"}.
+): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
+Your task is to analyze this video script and generate fully optimized search and click metadata:
+---
+${rewrittenScript}
+---
 
-Output must comply EXACTLY with this JSON structure. MAKE SURE YOU GENERATE THE EXACT REQUESTED AMOUNTS (${numTitles} titles, ${numDescriptions} descriptions, ${numHashtags} hashtags, ${numTags} tags):
+Your process MUST complete all of these steps internally:
+1. Keyword Analysis: Analyze the content and identify the top 10 search terms (including highly searched long-tail keywords) in ${isVi ? "Vietnamese" : "English"}.
+2. Draft SEO Generation: Generate exactly ${numTitles} click-worthy video titles and exactly ${numDescriptions} descriptions. Provide metrics for each title and description (searchScore, ctrScore, compScore, seoScore) on a scale of 0-100. Generate exactly ${numHashtags} hashtags and exactly ${numTags} search tags.
+3. SEO Optimization & Refinement: Polish the results so that the keywords are naturally integrated into the text. Avoid dry or clinical styles; optimize titles specifically for high CTR on modern media platforms (e.g. YouTube, TikTok).
+
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
 {
+  "keywords": ["keyword1", "keyword2"],
   "titles": [
-    { "text": "Draft title text", "searchScore": 95, "ctrScore": 90, "compScore": 30, "seoScore": 92 }
+    { "text": "Optimized Title", "searchScore": 95, "ctrScore": 95, "compScore": 25, "seoScore": 96 }
   ],
   "descriptions": [
-    { "text": "Draft description text with hooks...", "searchScore": 85, "ctrScore": 80, "compScore": 40, "seoScore": 82 }
+    { "text": "Optimized description naturally integrating keywords...", "searchScore": 92, "ctrScore": 90, "compScore": 30, "seoScore": 91 }
   ],
-  "hashtags": ["tag1", "tag2"],
-  "tags": ["tag1", "tag2", "tag3"]
+  "hashtags": ["hashtag1", "hashtag2"],
+  "tags": ["tag1", "tag2"]
 }`;
 
 export const getThumbnailLayoutPrompt = (
@@ -401,62 +407,38 @@ export const getThumbnailLayoutPrompt = (
   thumbnailCount: number,
   refImageStr: string,
   isVi: boolean,
-): string => `You are an elite, viral YouTube and social media thumbnail layout director. Your mission is to generate exactly ${thumbnailCount} distinct creative thumbnail designs that follow professional layout standards for maximum Click-Through Rate (CTR).
+): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
+Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast 16:9 visual thumbnail designs:
+---
+${rewrittenScript}
+---
 
-[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
-- Base Video Script: "${rewrittenScript}"
-- Reference Visual details (Style/Character specifications):
-  ${refImageStr ? refImageStr : "Not specified"}
+${refImageStr}
 
-[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
-1. Character Visual Continuity (Soft Alignment):
-   If there is a main character specified in the reference materials, you MUST weave their primary visual markers (e.g. hair color/style, clothing colors, identifying features) into the thumbnail prompts to keep them recognizable. You MUST adjust their pose, action, and facial expression (e.g., extremely shocked face, curiosity, fear, awe) to maximize emotional engagement and clickability.
-2. High CTR Focal Subject:
-   Every design must feature a single, dominant, extreme focal subject (like a close-up of a highly expressive face or a glowing mysterious object) that stands out instantly. The background should be heavily blurred (shallow depth of field) to draw attention to the subject.
-3. No Metaphorical Framing: Focus strictly on the literal visual representation of the scene. Avoid framed images, books, or generic screens.
+Your process MUST complete all steps internally:
+1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
+2. Layout Design: Place major visual subjects off-center (on the left-third or right-third lines) to keep them clean. Plan readable text overlays of EXACTLY 1 to 3 words max in ${isVi ? "Vietnamese" : "English"} (e.g. "SỰ THẬT!", "DỪNG LẠI!"). One design MUST have hasText: false. Avoid placing any text overlays in the bottom-right corner.
+3. Prompt Refinement: Refine the prompt descriptions to be highly cinematic, professional, sharp, and detailed, focusing on custom subject detailing and blurry background contrast. All visual prompts MUST be written in English.
 
-CRITICAL THUMBNAIL LAYOUT DIRECTIVES (conforming to modern platform standards for maximum clickability):
-1. STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this structural formula from left to right:
-   - If it has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
-   - If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
-   - CINEMATIC PROMPT RULES:
-     ${CINEMATIC_PROMPT_RULES}
-2. Aspect Ratio & Composition: Always design with a 16:9 full-bleed cinematic landscape canvas in mind.
-3. Strict Minimal Text Rule (Avoid Clutter): The cover image must NOT contain excessive text.
-   - For designs with text, "textText" MUST BE A MAXIMUM OF 1 TO 3 WORDS ONLY (e.g., "SỰ THẬT!", "CẢNH BÁO!", "BÍ MẬT!"). Long sentences or dense descriptions are strictly forbidden.
-   - The image "prompt" itself should focus entirely on visual details. Do NOT ask the AI image generator to render written text or letters inside the picture.
-4. Timestamp Blocking Prevention: NEVER place any critical subject details, facial features, or text overlays in the bottom-right corner. The platform's video duration badge (time stamp overlay) is located there. Keep the bottom-right corner empty or neutral.
-5. Rule of Thirds or Splits: Position key focal subjects on either the left-third or right-third line.
-6. High Contrast & Saturation: Emphasize rich, highly saturated color contrasts, dramatic backlight/rim light, or vivid glows.
-
-MANDATORY TITLE OVERLAY REQUIREMENT:
-- OUT OF THE ${thumbnailCount} DESIGNS, AT LEAST ONE DESIGN MUST BE ENTIRELY WITHOUT A TEXT OVERLAY.
-- For this non-text design:
-  * "hasText" must be FALSE.
-  * "textText" must be an empty string "".
-  * "layout", "typography", and "colorSuggestion" must be empty strings "".
-  * "prompt" should focus entirely on a pure visual story with maximum dramatic impact, standard 16:9 composition, and clear focal subject.
-- For the other designs (where "hasText" is TRUE):
-  * "textText" must be a highly clickable, short, punchy hook consisting of 1-3 words max (written in ${isVi ? "Vietnamese" : "English"}).
-  * Suggest a highly readable font ("typography") and high-contrast color scheme ("colorSuggestion" e.g., neon yellow, electric red, or white text with thick black stroke outlines).
-  * The text overlay layout ("layout") must specify placement (e.g., "Left-third vertical stacked overlay" or "Top-left angled banner") that complements the focal subject and strictly avoids the bottom-right corner.
-
-IMPORTANT MANDATE: The "prompt" field MUST ALWAYS BE IN ENGLISH, regardless of overall language settings.
-
-Output must comply EXACTLY with this JSON structure:
-[
-  {
-    "id": "th_unique_id",
-    "prompt": "Detailed 16:9 artwork prompt describing high-contrast composition, lighting, focal subject, and blurred background for high click-through rate, in English",
-    "style": "MrBeast",
-    "hasText": true,
-    "textText": "BÍ MẬT!",
-    "layout": "Left-third vertical stacked overlay",
-    "typography": "High-contrast thick Sans-Serif",
-    "colorSuggestion": "Neon yellow with heavy black outline",
-    "subjectFocus": "Focal character with shocked face on the right third"
-  }
-]`;
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+{
+  "concepts": [
+    { "composition": "Visual focus and emotion driver", "textHook": "TEXT" }
+  ],
+  "thumbnails": [
+    {
+      "id": "th_1",
+      "prompt": "Highly detailed 16:9 thumbnail prompt in English, describing elements, cinematic lighting, and sharp subject focus",
+      "style": "MrBeast",
+      "hasText": true,
+      "textText": "${isVi ? "BÍ MẬT!" : "SECRET!"}",
+      "layout": "Left vertical text",
+      "typography": "Impact Bold Sans",
+      "colorSuggestion": "Vibrant glowing neon yellow text with thick black borders",
+      "subjectFocus": "Focal character looking surprised on the right side"
+    }
+  ]
+}`;
 
 export const getOutlineWriterPrompt = (
   inputTypeContext: string,

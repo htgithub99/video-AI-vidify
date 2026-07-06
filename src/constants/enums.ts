@@ -94,3 +94,31 @@ export enum VoicePresetId {
   OPENAI_TTS_ALLOY = "openai-tts-alloy",
   OPENAI_TTS_NOVA = "openai-tts-nova",
 }
+
+export enum SplitStrategy {
+  MULTI_PROMPT = "multi_prompt",
+  ULTRADENSE = "ultradense",
+  WORD = "word",
+  HYPERDENSE = "hyperdense",
+  SHORT_SENTENCE = "short_sentence",
+  HIGHPACED = "highpaced",
+  DRAMATIC = "dramatic",
+  PARAGRAPH = "paragraph",
+  EPIC = "epic",
+  CINEMATIC = "cinematic",
+  ARTISTIC = "artistic",
+  SLOWPACED = "slowpaced",
+  SUPER_SLOW = "super_slow",
+  SENTENCE = "sentence",
+  DOCUMENTARY = "documentary",
+  LONG_SENTENCE = "long_sentence",
+}
+
+export enum VideoGenre {
+  HISTORY = "History",
+  TRUE_CRIME = "True Crime",
+  SCIENCE = "Science",
+  PSYCHOLOGY = "Psychology",
+  PHILOSOPHY = "Philosophy",
+  STORYTELLING = "Storytelling",
+}

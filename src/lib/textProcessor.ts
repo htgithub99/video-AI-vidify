@@ -2,7 +2,7 @@ import { AspectRatio } from "../types.js";
 import { SCENE_SPLIT_PROMPTS } from "../constants/texts.js";
 import { SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../constants/data.js";
 import { formatTimeHelper as formatTime } from "../lib/timeUtils.js";
-import { ABBREVIATIONS, CONJUNCTIONS, boundaries, VIETNAMESE_VALID_CHARS_REGEX } from "../constants/index.js";
+import { ABBREVIATIONS, CONJUNCTIONS, boundaries, VIETNAMESE_VALID_CHARS_REGEX, SplitStrategy } from "../constants/index.js";
 
 export const smartChunkScript = (
   script: string,
@@ -167,103 +167,126 @@ export function generateMockStoryboard(
     text: string;
     context: string;
   }
-  let pList: SegmentWithContext[] = [];
 
-  if (splitStrategy === "multi_prompt") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 12);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "ultradense" || splitStrategy === "word") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 6);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (
-    splitStrategy === "hyperdense" ||
-    splitStrategy === "short_sentence"
-  ) {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 10);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "highpaced") {
-    const rawSentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of rawSentences) {
-      const clauses = splitSentenceSafely(sent, 15);
-      for (const clause of clauses) {
-        pList.push({ text: clause, context: sent });
-      }
-    }
-  } else if (splitStrategy === "dramatic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 2) {
-      const chunk = sentences.slice(i, i + 2).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "paragraph") {
-    const paragraphs = (rewrittenScript || "")
-      .split(/\n+/)
-      .map((p) => p.trim())
-      .filter((p) => p.length > 10);
-    
-    for (const para of paragraphs) {
-      pList.push({ text: para, context: para });
-    }
+  const defaultStrategy = (text: string) => {
+    const sentences = smartSplitSentences(text || "");
+    return sentences.map(sent => ({ text: sent, context: sent }));
+  };
 
-    if (pList.length < 3) {
-      const sentences = smartSplitSentences(rewrittenScript || "");
-      pList = [];
-      for (let i = 0; i < sentences.length; i += 3) {
-        const chunk = sentences.slice(i, i + 3).join(". ");
-        pList.push({ text: chunk, context: chunk });
+  const SLICE_STRATEGIES: Record<string, (text: string) => SegmentWithContext[]> = {
+    [SplitStrategy.MULTI_PROMPT]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
       }
+      return res;
+    },
+    [SplitStrategy.ULTRADENSE]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 6)) res.push({ text: clause, context: sent });
+      }
+      return res;
+    },
+    [SplitStrategy.WORD]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 6)) res.push({ text: clause, context: sent });
+      }
+      return res;
+    },
+    [SplitStrategy.HYPERDENSE]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 10)) res.push({ text: clause, context: sent });
+      }
+      return res;
+    },
+    [SplitStrategy.SHORT_SENTENCE]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 10)) res.push({ text: clause, context: sent });
+      }
+      return res;
+    },
+    [SplitStrategy.HIGHPACED]: (text) => {
+      const res: SegmentWithContext[] = [];
+      for (const sent of smartSplitSentences(text)) {
+        for (const clause of splitSentenceSafely(sent, 15)) res.push({ text: clause, context: sent });
+      }
+      return res;
+    },
+    [SplitStrategy.DRAMATIC]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 2) {
+        const chunk = sentences.slice(i, i + 2).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
+    },
+    [SplitStrategy.PARAGRAPH]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const paragraphs = (text || "").split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
+      for (const para of paragraphs) res.push({ text: para, context: para });
+      if (res.length < 3) {
+        const sentences = smartSplitSentences(text);
+        res.length = 0;
+        for (let i = 0; i < sentences.length; i += 3) {
+          const chunk = sentences.slice(i, i + 3).join(". ");
+          res.push({ text: chunk, context: chunk });
+        }
+      }
+      return res;
+    },
+    [SplitStrategy.EPIC]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 4) {
+        const chunk = sentences.slice(i, i + 4).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
+    },
+    [SplitStrategy.CINEMATIC]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 5) {
+        const chunk = sentences.slice(i, i + 5).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
+    },
+    [SplitStrategy.ARTISTIC]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 6) {
+        const chunk = sentences.slice(i, i + 6).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
+    },
+    [SplitStrategy.SLOWPACED]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 7) {
+        const chunk = sentences.slice(i, i + 7).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
+    },
+    [SplitStrategy.SUPER_SLOW]: (text) => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      for (let i = 0; i < sentences.length; i += 10) {
+        const chunk = sentences.slice(i, i + 10).join(". ");
+        res.push({ text: chunk, context: chunk });
+      }
+      return res;
     }
-  } else if (splitStrategy === "epic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 4) {
-      const chunk = sentences.slice(i, i + 4).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "cinematic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 5) {
-      const chunk = sentences.slice(i, i + 5).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "artistic") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 6) {
-      const chunk = sentences.slice(i, i + 6).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "slowpaced") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 7) {
-      const chunk = sentences.slice(i, i + 7).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else if (splitStrategy === "super_slow") {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (let i = 0; i < sentences.length; i += 10) {
-      const chunk = sentences.slice(i, i + 10).join(". ");
-      pList.push({ text: chunk, context: chunk });
-    }
-  } else {
-    const sentences = smartSplitSentences(rewrittenScript || "");
-    for (const sent of sentences) {
-      pList.push({ text: sent, context: sent });
-    }
-  }
+  };
+
+  const pList: SegmentWithContext[] = (SLICE_STRATEGIES[splitStrategy || ""] || defaultStrategy)(rewrittenScript || "");
 
   const totalWords = pList.reduce(
     (acc, p) => acc + p.text.split(/\s+/).filter(Boolean).length,

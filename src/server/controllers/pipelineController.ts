@@ -10,10 +10,8 @@ import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import {
   generateScenesWithChunking,
   SceneDensity,
-  smartSplitSentences,
-  splitSentenceSafely,
 } from "../../utils/sceneGeneratorHelper.js";
-import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getVideoDirectorSceneSplitPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, STYLE_EXTRACTION_PROMPT, STICKMAN_STYLE_MODIFIERS, getMultiStepHookPrompt, getCombinedScriptPrompt, STICKMAN_KEYWORDS, SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS, SCENE_SPLIT_PROMPTS, MARKDOWN_REGEX, EMOJI_REGEX, LogEvent, ErrorMessage } from '../../constants';
+import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getVideoDirectorSceneSplitPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, STYLE_EXTRACTION_PROMPT, STICKMAN_STYLE_MODIFIERS, getMultiStepHookPrompt, getCombinedScriptPrompt, STICKMAN_KEYWORDS, SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS, SCENE_SPLIT_PROMPTS, MARKDOWN_REGEX, EMOJI_REGEX, LogEvent, ErrorMessage, getDummyHooks, getDummyScript, getDummyHookTitle, getDurationText, getDummySeoData, getThumbnailLayoutPrompt, getDummyThumbs, VOICE_PRESET_MAP, DEFAULT_AI33_API_KEY, GENRE_VISUAL_GUIDELINES, VideoGenre, SplitStrategy } from '../../constants';
 
 
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
@@ -24,17 +22,19 @@ import { requestContext } from "../utils/requestContext.js";
 
 
 
-import { AspectRatio } from "../../types.js";
+import { AspectRatio, ProjectLanguage } from "../../types.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
 import os from "os";
 import { exec } from "child_process";
+import { StepLogger } from "@/src/lib/stepLogger.js";
+import { generateMockStoryboard } from "@/src/lib/textProcessor.js";
 
 const router = express.Router();
 
 router.post("/extract-style", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -85,7 +85,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
       throw new Error(getBackendMsg("STYLE_EXTRACTION_ERR", isVi));
     }
   } catch (error: any) {
-    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
     return res
       .status(500)
@@ -97,7 +97,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
 });
 
 router.post("/rewrite-prompts", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, newStyle, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
     return res
@@ -157,7 +157,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
         logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
       }
 
-      
+
       if (i < chunks.length - 1) {
         await new Promise((res) => setTimeout(res, 1500));
       }
@@ -184,7 +184,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 });
 
 router.post("/optimize-prompts", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, visualConfig, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
     return res
@@ -276,7 +276,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 });
 
 router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, newStyle } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
     return res
@@ -338,7 +338,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   }
 });
 router.post("/analyze-character", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { script } = req.body;
     if (!script) {
@@ -360,7 +360,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     const characters = (Array.isArray(parsed) ? parsed : []).slice(0, 3);
     return res.json({ characters });
   } catch (error: any) {
-    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
     return res
       .status(500)
@@ -372,7 +372,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
 });
 
 router.post("/extract-character", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images, characterDescription } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -417,7 +417,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
       throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
     }
   } catch (error: any) {
-    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
     return res
       .status(500)
@@ -431,7 +431,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
 router.post(
   "/rewrite-prompts-character",
   async (req: Request, res: Response) => {
-    const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
     if (!storyboard || !Array.isArray(storyboard)) {
       return res
@@ -503,7 +503,7 @@ router.post(
           logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
         }
 
-        
+
         if (i < chunks.length - 1) {
           await new Promise((res) => setTimeout(res, 1500));
         }
@@ -557,31 +557,12 @@ router.post("/hooks", async (req: Request, res: Response) => {
 
   if (!isGeminiApiKeyAvailable()) {
     return res.json({
-      versions: [
-        {
-          id: "hk_m1",
-          content:
-            language === "vi"
-              ? `[Mở đầu Thần bí - Thử nghiệm] Bí mật kinh ngạc làm đảo lộn dòng lịch sử mà không ai kể bạn nghe...`
-              : `[Mystery Hook - Preview] The shocking secret that changed the records of history forever...`,
-          type: hookType || "Mystery",
-          selected: true,
-        },
-        {
-          id: "hk_m2",
-          content:
-            language === "vi"
-              ? `[Gây Shock - Thử nghiệm] Dừng lại ngay! Đây chính là lý do video của bạn liên tục bị bỏ lỡ.`
-              : `[Shock Hook - Preview] Stop scrolling! This is the exact reason you are missing out.`,
-          type: hookType || "Shock",
-          selected: false,
-        },
-      ],
+      versions: getDummyHooks(language === ProjectLanguage.VI, false, hookType),
     });
   }
 
   const multiStepLogs: string[] = [];
-  const isVi = language === "vi" || config?.language === "vi";
+  const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
   const logStep = (msg: string) => {
     appLogStep(msg, multiStepLogs);
   };
@@ -638,31 +619,14 @@ router.post("/hooks", async (req: Request, res: Response) => {
     res.json(output);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_HOOKS, error);
-    const isVi = language === "vi" || config?.language === "vi";
+    const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
     const errorLogs = error.rotationLogs
       ? [...multiStepLogs, ...error.rotationLogs]
       : multiStepLogs;
     res.json({
-      warning: error.message || "API rate limits triggered",
+      warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
       rotationLogs: errorLogs,
-      versions: [
-        {
-          id: "hk_fallback_1",
-          content: isVi
-            ? `[Mở đầu Thần bí - Dự phòng] Bí mật kinh ngạc làm đảo lộn dòng lịch sử mà không ai kể bạn nghe...`
-            : `[Mystery Hook - Fallback] The shocking secret that changed the records of history forever...`,
-          type: hookType || "Mystery",
-          selected: true,
-        },
-        {
-          id: "hk_fallback_2",
-          content: isVi
-            ? `[Gây Shock - Dự phòng] Dừng lại ngay! Đây chính là lý do video của bạn liên tục bị bỏ lỡ.`
-            : `[Shock Hook - Fallback] Stop scrolling! This is the exact reason you are missing out.`,
-          type: hookType || "Shock",
-          selected: false,
-        },
-      ],
+      versions: getDummyHooks(isVi, true, hookType),
     });
   }
 });
@@ -681,80 +645,27 @@ router.post("/script", async (req: Request, res: Response) => {
   }
 
   if (!isGeminiApiKeyAvailable()) {
-    const isVi = config.language === "vi";
+    const isVi = config.language === ProjectLanguage.VI;
     let fallbackHook = selectedHookText || "";
     if (!fallbackHook && config.hookConfig) {
       const type = config.hookConfig.type || "Auto";
-      fallbackHook = isVi
-        ? `[Mở đầu ${type}] Bạn đã từng nghe về câu chuyện kỳ lạ này chưa?`
-        : `[${type} Hook] Have you ever heard about this strange story?`;
+      fallbackHook = getDummyHookTitle(isVi, type, false);
     }
     return res.json({
-      rewrittenScript: isVi
-        ? `${fallbackHook || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, chúng ta không thể phủ nhận tầm quan trọng của bối cảnh và sự kiện liên quan. Các nhà nghiên cứu tin rằng mọi việc xảy ra đều chứa đựng ý nghĩa ẩn sau. Hãy phân tích ví dụ tiêu biểu mà chúng ta vừa thấy.\n\nKết luận lại, câu chuyện này mở ra góc nhìn mới đầy chiều sâu cho độc giả.`
-        : `${fallbackHook || "There is a mysterious story."} \n\nThroughout the pages of history, background details and historical analysis paint a clear scene. Modern research suggests these variables correlate directly. Let us dive deeper into the core mechanics of this story.\n\nIn conclusion, this opens an entirely new perspective.`,
-      factCheckNotes: config.factCheck
-        ? isVi
-          ? "✓ Đã kiểm chứng: Các dòng mốc lịch sử tương thích và dữ kiện nhất quán trong kịch bản."
-          : "✓ Verified: Historical timelines and database coordinates are fully consistent."
-        : "Fact Check disabled",
-      chapters: [
-        {
-          id: "ch_1",
-          title: isVi ? "Chương I: Sự khởi đầu" : "Chapter I: The Arrival",
-          scriptSegment: isVi
-            ? "Giới thiệu về nhân vật chính và bối cảnh xảy ra sự kiện đầu tiên."
-            : "Introduction to the main characters and initial settings of the event.",
-        },
-        {
-          id: "ch_2",
-          title: isVi
-            ? "Chương II: Phân tích sâu"
-            : "Chapter II: Deep Exploration",
-          scriptSegment: isVi
-            ? "Cung cấp những dữ kiện và diễn biến kịch tính để mở rộng nội dung."
-            : "Providing critical events and dramatic facts to expand the content duration.",
-        },
-        {
-          id: "ch_3",
-          title: isVi
-            ? "Chương III: Bài học & Đúc kết"
-            : "Chapter III: Synthesis",
-          scriptSegment: isVi
-            ? "Tóm lược kết quả và truyền tải thông điệp cuối cùng."
-            : "Synthesizing the lessons and conveying the core takeaway.",
-        },
-      ],
+      ...getDummyScript(isVi, fallbackHook, config, false)
     });
   }
 
   let activeHookText = selectedHookText || "";
 
   try {
-    const isVi = config.language === "vi";
+    const isVi = config.language === ProjectLanguage.VI;
     const rawDurationText = config.duration || "2m";
 
-    let targetWordCount = 320;
-    let durationText = "2 minutes";
-
     const durStr = String(rawDurationText).toLowerCase().trim();
-    if (durStr === "30s") {
-      targetWordCount = 80;
-      durationText = isVi ? "30 giây (30 seconds)" : "30 seconds";
-    } else {
-      const match = durStr.match(/(\d+)/);
-      if (match) {
-        const mins = parseInt(match[1], 10);
-        targetWordCount = mins * 150;
-        const paragraphs = mins * 3;
-        durationText = isVi
-          ? `${mins} phút (${mins} minutes). You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`
-          : `${mins} minutes. You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`;
-      } else {
-        targetWordCount = 300;
-        durationText = isVi ? "2 phút (2 minutes)" : "2 minutes";
-      }
-    }
+    const durationInfo = getDurationText(isVi, durStr);
+    const targetWordCount = durationInfo.targetWordCount;
+    const durationText = durationInfo.durationText;
 
     const targetWordCountMin = Math.floor(targetWordCount * 0.95);
 
@@ -765,13 +676,13 @@ router.post("/script", async (req: Request, res: Response) => {
     if (isVi) {
       genreGuideline =
         VI_GENRE_GUIDELINES[config.genre] ||
-        PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Kể chuyện");
+        PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Storytelling");
       styleGuideline =
         VI_STYLE_GUIDELINES[config.writingStyle] ||
-        PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Mặc định");
+        PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Default");
       audienceGuideline =
         VI_AUDIENCE_GUIDELINES[config.audience] ||
-        PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "Đại chúng");
+        PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "General");
     } else {
       genreGuideline =
         EN_GENRE_GUIDELINES[config.genre] ||
@@ -791,7 +702,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     activeHookText = selectedHookText || "";
     if (!activeHookText && config.hookConfig) {
-      logStep(isVi ? "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình..." : "🤖 Auto-generating Hook from config...");
+      logStep(getPipelineLog("HOOK_AUTO_GENERATE", isVi));
       try {
         const hookType = config.hookConfig.type || "Auto";
         const hookDuration = config.hookConfig.duration || 10;
@@ -810,7 +721,7 @@ router.post("/script", async (req: Request, res: Response) => {
         const hookResult = safeParseJSON(hookResponse.text, { versions: [] });
         if (hookResult.versions && hookResult.versions.length > 0) {
           activeHookText = hookResult.versions[0].content || "";
-          logStep(isVi ? `✨ Đã nhúng Hook: "${activeHookText}"` : `✨ Hook embedded: "${activeHookText}"`);
+          logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
         }
       } catch (hookErr: any) {
         logger.error(LogEvent.AUTO_HOOK_GENERATION_FAILED_FALLING_BACK, hookErr);
@@ -821,7 +732,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
 
-    
+
     const combinedScriptPrompt = getCombinedScriptPrompt(
       originalInput,
       durationText,
@@ -876,7 +787,7 @@ router.post("/script", async (req: Request, res: Response) => {
       targetWordCount / Math.max(1, chapters.length),
     );
 
-    
+
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
       logStep(
@@ -937,51 +848,15 @@ router.post("/script", async (req: Request, res: Response) => {
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
-    const isVi = config?.language === "vi";
+    const isVi = config?.language === ProjectLanguage.VI;
     let finalHook = activeHookText || selectedHookText || "";
     if (!finalHook && config?.hookConfig) {
       const type = config.hookConfig.type || "Auto";
-      finalHook = isVi
-        ? `[Mở đầu ${type}] Bạn có biết bí mật lớn nhất đằng sau câu chuyện này?`
-        : `[${type} Hook] Did you know the biggest secret behind this story?`;
+      finalHook = getDummyHookTitle(isVi, type, true);
     }
     res.json({
-      warning: error.message || "API rate limits triggered",
-      rewrittenScript: isVi
-        ? `${finalHook || "Có một câu chuyện kỳ bí."} \n\nTrong dòng lịch sử bao la, những nhà nghiên cứu luôn tìm kiếm mảnh ghép bị lãng quên của thời đại. Các di chỉ khảo cổ gần đây đã mang lại bằng chứng đáng tin cậy hỗ trợ lý thuyết này. Nó chứng minh mối liên kết sâu xa giữa các hiện tượng trước đó. (Dự phòng tự động do lỗi API)`
-        : `${finalHook || "There is a mysterious story."} \n\nThroughout the pages of history, researchers search for the forgotten fragments of the age. Modern archaeological findings have contributed compelling evidence supporting this system, revealing deep connections to past events. (Auto-fallback preview)`,
-      factCheckNotes: config?.factCheck
-        ? isVi
-          ? "✓ [Dự phòng] Đã xác minh: Các sự kiện cơ bản phù hợp với dữ kiện lịch sử tiêu chuẩn."
-          : "✓ [Fallback] Verified: The core plot parameters align with standard historical data."
-        : "Fact Check disabled",
-      chapters: [
-        {
-          id: "ch_1",
-          title: isVi ? "Chương I: Sự khởi đầu" : "Chapter I: The Arrival",
-          scriptSegment: isVi
-            ? "Giới thiệu về nhân vật chính và bối cảnh xảy ra sự kiện đầu tiên."
-            : "Introduction to the main characters and initial settings of the event.",
-        },
-        {
-          id: "ch_2",
-          title: isVi
-            ? "Chương II: Phân tích sâu"
-            : "Chapter II: Deep Exploration",
-          scriptSegment: isVi
-            ? "Cung cấp những dữ kiện và diễn biến kịch tính để mở rộng nội dung."
-            : "Providing critical events and dramatic facts to expand the content duration.",
-        },
-        {
-          id: "ch_3",
-          title: isVi
-            ? "Chương III: Bài học & Đúc kết"
-            : "Chapter III: Synthesis",
-          scriptSegment: isVi
-            ? "Tóm lược kết quả và truyền tải thông điệp cuối cùng."
-            : "Synthesizing the lessons and conveying the core takeaway.",
-        },
-      ],
+      warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
+      ...getDummyScript(isVi, finalHook, config, true),
     });
   }
 });
@@ -1099,7 +974,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       characterRef = JSON.stringify(rawRefChars);
     }
   }
-  const isVi = config?.language === "vi";
+  const isVi = config?.language === ProjectLanguage.VI;
   const density = visualDensity || 5;
   const splitStrategy = config?.splitStrategy || "sentence";
   const customSplitRules = config?.customSplitRules || "";
@@ -1136,44 +1011,22 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
   try {
     let mappedDensity: SceneDensity = "CAU_DAI";
-    if (splitStrategy === "word" || splitStrategy === "ultradense")
+    if (splitStrategy === SplitStrategy.WORD || splitStrategy === SplitStrategy.ULTRADENSE)
       mappedDensity = "THEO_TU";
     else if (
-      splitStrategy === "short_sentence" ||
-      splitStrategy === "hyperdense" ||
-      splitStrategy === "highpaced"
+      splitStrategy === SplitStrategy.SHORT_SENTENCE ||
+      splitStrategy === SplitStrategy.HYPERDENSE ||
+      splitStrategy === SplitStrategy.HIGHPACED
     )
       mappedDensity = "CAU_NGAN";
-    else if (splitStrategy === "multi_prompt") mappedDensity = "DA_PHAN_CANH";
-    else if (splitStrategy === "sentence" || splitStrategy === "long_sentence")
+    else if (splitStrategy === SplitStrategy.MULTI_PROMPT) mappedDensity = "DA_PHAN_CANH";
+    else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE)
       mappedDensity = "CAU_DAI";
     else mappedDensity = "THEO_DOAN";
 
-    const genre = config?.genre || "Storytelling";
-    let genreVisualGuideline = "";
-
-    if (genre === "History") {
-      genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - HISTORY GENRE:
-- Strict Historical Accuracy: Image prompts must precisely reflect the historical period mentioned in the scene text. Describe historically accurate clothing (e.g., armor, robes, wool tunics), architecture (e.g., wooden huts, stone castles, roman pillars), and technology of the era.
-- Historical Context Enrichment: For every scene under a historical theme, the prompt must explicitly specify the historical context, such as the name of the battle or war, the specific era or year (if available), the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures involved. This ensures the AI accurately generates period-specific clothing, weapons, flags/banners, insignia, vehicles, and distinct characteristics of the era, preventing confusion between different wars or military forces.
-- Character Pinning/Consistency: If specific historical figures, rulers, or classes of people (e.g., Roman legionaries, Victorian ladies, ancient farmers) are mentioned, describe their iconic features and clothing consistently across scenes.
-- Settings: Ensure settings match the historical timeline. No modern objects, modern light sources, or modern tools should appear.`;
-    } else if (genre === "True Crime") {
-      genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - TRUE CRIME GENRE:
-- Suspenseful & Moody Atmosphere: Use dark, cinematic, high-contrast chiaroscuro lighting. Focus on shadows, dim streetlights, rainy nights, foggy alleys, and mysterious figures.
-- Forensic & Crime Elements: Depict details like police tape, old case files on a wooden desk, flickering projector lights, micro-lens shots of clues, or dramatic silhouettes. Do not include gore, but focus on the atmospheric tension.`;
-    } else if (genre === "Science") {
-      genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - SCIENCE GENRE:
-- Clean, Accurate & Futuristic: Depict accurate molecular structures, space visuals, clean futuristic laboratories, holographic interfaces, and detailed scientific diagrams.
-- Use vibrant lighting like neon glowing accents, blue laser grids, or high-tech clean white backgrounds.`;
-    } else if (genre === "Psychology" || genre === "Philosophy") {
-      genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - PSYCHOLOGY/PHILOSOPHY GENRE:
-- Symbolic & Conceptual Visuals: Use surreal or highly symbolic visual representations to depict thoughts, mental states, dualities of mind, or philosophical concepts (e.g., a person looking into a mirror reflecting a maze, or contrasting dark and light halves of a face).
-- Keep a clean, artistic, thought-provoking focus.`;
-    } else {
-      genreVisualGuideline = `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
+    const genre = config?.genre || VideoGenre.STORYTELLING;
+    let genreVisualGuideline = GENRE_VISUAL_GUIDELINES[genre as VideoGenre] || `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
 - Maintain context consistency and ensure the image details align with a ${genre} theme.`;
-    }
 
     const storyboardLogger = new StepLogger();
     const storyboardLogs = storyboardLogger.getLogs();
@@ -1239,35 +1092,35 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         mappedDensity,
         async (chunkText, targetPrompt, chunkIndex, totalChunks) => {
           let splitInstruction = ``;
-          if (splitStrategy === "ultradense" || splitStrategy === "word") {
+          if (splitStrategy === SplitStrategy.ULTRADENSE || splitStrategy === SplitStrategy.WORD) {
             splitInstruction = `CRITICAL STYLING / ULTRA-DENSE SPLITTING MANDATE: You MUST divide the script into ultra-short rhythmic scenes (roughly 2-4 seconds each) to achieve maximum image alignment with every spoken phrase or clause. Every single scene MUST contain only a brief phrase, a single clause, or 3-8 words of text. NEVER combine sentences, and do NOT skip or summarize any segment of the script. This ensures the output images fit every word and sentence perfectly step-by-step. MANDATORY: The visual design MUST strictly align with the exact content of that phrase or short sentence. ABSOLUTELY NO LAZINESS AND NO COMBINING OF CLAUSES.`;
           } else if (
-            splitStrategy === "hyperdense" ||
-            splitStrategy === "short_sentence"
+            splitStrategy === SplitStrategy.HYPERDENSE ||
+            splitStrategy === SplitStrategy.SHORT_SENTENCE
           ) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: To make the video extremely dynamic and high-paced, split the script into thin scene chunks of 2-4 seconds each. Divide sentences in half if they are long. MANDATORY: The visual design MUST strictly align with the exact content of that short sentence. DO NOT COMBINE SENTENCES TOGETHER.`;
-          } else if (splitStrategy === "multi_prompt") {
+          } else if (splitStrategy === SplitStrategy.MULTI_PROMPT) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes. MANDATORY: Generate at least 1 prompt per sentence. If a sentence is long, split it into 2-3 continuous moving sub-scenes.`;
-          } else if (splitStrategy === "highpaced") {
+          } else if (splitStrategy === SplitStrategy.HIGHPACED) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a swift, modern pacing of 4-6 seconds per scene. Cut precisely at punctuation boundaries or short sentence blocks.`;
           } else if (
-            splitStrategy === "sentence" ||
-            splitStrategy === "long_sentence"
+            splitStrategy === SplitStrategy.SENTENCE ||
+            splitStrategy === SplitStrategy.LONG_SENTENCE
           ) {
             splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script. MANDATORY: Never combine multiple sentences into a single scene. Combining sentences will ruin the pacing and rhythm.`;
-          } else if (splitStrategy === "dramatic") {
+          } else if (splitStrategy === SplitStrategy.DRAMATIC) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a punchy, dramatic pacing of 8-10 seconds per scene. Focus heavily on suspenseful chapter transitions and key narrative beats.`;
-          } else if (splitStrategy === "paragraph") {
+          } else if (splitStrategy === SplitStrategy.PARAGRAPH) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part. MANDATORY: The visual design MUST strictly align with the exact content of that paragraph.`;
-          } else if (splitStrategy === "epic") {
+          } else if (splitStrategy === SplitStrategy.EPIC) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo.`;
-          } else if (splitStrategy === "cinematic") {
+          } else if (splitStrategy === SplitStrategy.CINEMATIC) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus.`;
-          } else if (splitStrategy === "artistic") {
+          } else if (splitStrategy === SplitStrategy.ARTISTIC) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity.`;
-          } else if (splitStrategy === "slowpaced") {
+          } else if (splitStrategy === SplitStrategy.SLOWPACED) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling.`;
-          } else if (splitStrategy === "super_slow") {
+          } else if (splitStrategy === SplitStrategy.SUPER_SLOW) {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts.`;
           } else {
             splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.`;
@@ -1423,47 +1276,16 @@ router.post("/seo", async (req: Request, res: Response) => {
 
   if (!isGeminiApiKeyAvailable()) {
     return res.json({
-      titles: [
-        {
-          text: `Bí Ẩn Lịch Sử Bị Lãng Quên Có Thể Bạn Chưa Biết`,
-          searchScore: 92,
-          ctrScore: 89,
-          compScore: 35,
-          seoScore: 93,
-        },
-        {
-          text: `The Untold Secret of History - Documentary Special`,
-          searchScore: 88,
-          ctrScore: 95,
-          compScore: 40,
-          seoScore: 90,
-        },
-      ],
-      descriptions: [
-        {
-          text: `Khám phá câu chuyện đằng sau những dữ kiện ít người biết đến, thông tin được xâu chuỗi một cách logic theo phong cách phim tài liệu khoa học chân thật nhất.`,
-          searchScore: 90,
-          ctrScore: 85,
-          compScore: 20,
-          seoScore: 89,
-        },
-      ],
-      hashtags: ["xuhuong", "learning", "lichsu", "biandocla", "aivideos"],
-      tags: [
-        "ai story rewriter",
-        "tao video tu dong",
-        "tin tuc lich su",
-        "documentary creation",
-      ],
+      ...getDummySeoData(config?.language === ProjectLanguage.VI, false)
     });
   }
 
   const seoLogger = new StepLogger();
-    const seoLogs = seoLogger.getLogs();
-    const logSeoStep = (msg: string) => seoLogger.log(msg);
+  const seoLogs = seoLogger.getLogs();
+  const logSeoStep = (msg: string) => seoLogger.log(msg);
 
   try {
-    const isVi = config.language === "vi";
+    const isVi = config.language === ProjectLanguage.VI;
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
@@ -1528,62 +1350,10 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_SEO, error);
-    const isVi = config?.language === "vi";
+    const isVi = config?.language === ProjectLanguage.VI;
     res.json({
-      warning: error.message || "API rate limits triggered",
-      titles: [
-        {
-          text: isVi
-            ? `Bí Ẩn Lịch Sử Bị Lãng Quên Có Thể Bạn Chưa Biết (Dự Phòng)`
-            : `The Forgotten Chronologies of Secrets (Fallback Preview)`,
-          searchScore: 92,
-          ctrScore: 89,
-          compScore: 35,
-          seoScore: 93,
-        },
-        {
-          text: isVi
-            ? `Phân cảnh kinh hoàng chưa kể về lịch sử dòng chảy`
-            : `The Untold Secrets & Historical Truths Special`,
-          searchScore: 88,
-          ctrScore: 95,
-          compScore: 40,
-          seoScore: 90,
-        },
-      ],
-      descriptions: [
-        {
-          text: isVi
-            ? `Khám phá câu chuyện đằng sau những dữ kiện ít người biết đến, thông tin được xâu chuỗi một cách logic theo phong cách phim tài liệu khoa học chân thật nhất.`
-            : `Explore the captivating narrative behind hidden historical logs meticulously gathered for high click rates.`,
-          searchScore: 90,
-          ctrScore: 85,
-          compScore: 20,
-          seoScore: 89,
-        },
-      ],
-      hashtags: isVi
-        ? ["xuhuong", "learning", "lichsu", "biandocla", "aivideos"]
-        : [
-          "history",
-          "viralhistory",
-          "documentary",
-          "curiousfacts",
-          "aitexttovideo",
-        ],
-      tags: isVi
-        ? [
-          "ai story rewriter",
-          "tao video tu dong",
-          "tin tuc lich su",
-          "documentary creation",
-        ]
-        : [
-          "history docs",
-          "narratives",
-          "automated video creators",
-          "high ctr thumbnail prompts",
-        ],
+      warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
+      ...getDummySeoData(isVi, true),
     });
   }
 });
@@ -1609,68 +1379,30 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       : "";
 
   if (!isGeminiApiKeyAvailable()) {
-    const dummyThumb = {
-      id: "th_1",
-      prompt:
-        "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. MrBeast high-contrast style.",
-      style: "MrBeast",
-      hasText: true,
-      textText:
-        config.language === "vi" ? "BÍ MẬT!" : "SECRET!",
-      layout: "Bold red text on left-side overlay",
-      typography: "Impact Bold Sans",
-      colorSuggestion: "Electric red and yellow glowing effect",
-      subjectFocus: "Ancient golden locked book",
-    };
+    const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false);
     return res.json({
       thumbnails: Array.from({ length: thumbnailCount }).map((_, i) => ({
-        ...dummyThumb,
+        ...dummyThumbs[i % dummyThumbs.length],
         id: `th_${i}`,
       })),
     });
   }
 
   const thumbLogger = new StepLogger();
-    const thumbLogs = thumbLogger.getLogs();
-    const logThumbStep = (msg: string) => thumbLogger.log(msg);
+  const thumbLogs = thumbLogger.getLogs();
+  const logThumbStep = (msg: string) => thumbLogger.log(msg);
 
   try {
-    const isVi = config.language === "vi";
+    const isVi = config.language === ProjectLanguage.VI;
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
-    const combinedThumbnailsPrompt = `You are an elite YouTube visual strategist and viral click-through rate copywriter.
-Your task is to analyze this script and generate highly engaging, high-contrast 16:9 visual thumbnail designs:
----
-${rewrittenScript}
----
-
-${refImageStr}
-
-Your process MUST complete all steps internally:
-1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
-2. Layout Design: Place major visual subjects off-center (on the left-third or right-third lines) to keep them clean. Plan readable text overlays of EXACTLY 1 to 3 words max in ${isVi ? "Vietnamese" : "English"} (e.g. "SỰ THẬT!", "DỪNG LẠI!"). One design MUST have hasText: false. Avoid placing any text overlays in the bottom-right corner.
-3. Prompt Refinement: Refine the prompt descriptions to be highly cinematic, professional, sharp, and detailed, focusing on custom subject detailing and blurry background contrast. All visual prompts MUST be written in English.
-
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
-{
-  "concepts": [
-    { "composition": "Visual focus and emotion driver", "textHook": "TEXT" }
-  ],
-  "thumbnails": [
-    {
-      "id": "th_1",
-      "prompt": "Highly detailed 16:9 thumbnail prompt in English, describing elements, cinematic lighting, and sharp subject focus",
-      "style": "MrBeast",
-      "hasText": true,
-      "textText": "BÍ MẬT!",
-      "layout": "Left vertical text",
-      "typography": "Impact Bold Sans",
-      "colorSuggestion": "Vibrant glowing neon yellow text with thick black borders",
-      "subjectFocus": "Focal character looking surprised on the right side"
-    }
-  ]
-}`;
+    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(
+      rewrittenScript,
+      thumbnailCount,
+      refImageStr,
+      isVi
+    );
 
     const thumbParts: any[] = [];
     if (visualConfig.thumbnailReferenceImages && Array.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
@@ -1731,32 +1463,10 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
-    const isVi = config?.language === "vi";
+    const isVi = config?.language === ProjectLanguage.VI;
     res.json({
-      warning: error.message || "API rate limits triggered",
-      thumbnails: [
-        {
-          id: "th_fallback_1",
-          prompt:
-            "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. MrBeast high-contrast style. (Resilient Fallback)",
-          style: "MrBeast",
-          hasText: true,
-          textText: isVi ? "BÍ MẬT!" : "SECRET!",
-          layout: "Bold red text on left-side overlay",
-          typography: "Impact Bold Sans",
-          colorSuggestion: "Electric red and yellow glowing effect",
-          subjectFocus: "Ancient golden locked book",
-        },
-        {
-          id: "th_fallback_2",
-          prompt:
-            "An archaeological dig site uncovered at dusk, golden ray light beams shooting out of the ground, history channel look, dramatic angle, high details.",
-          style: "History Channel",
-          hasText: false,
-          layout: "None",
-          subjectFocus: "Luminous light beams out of a ancient tomb",
-        },
-      ],
+      warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
+      thumbnails: getDummyThumbs(isVi, true),
     });
   }
 });
@@ -1766,43 +1476,23 @@ router.post("/voice", async (req: Request, res: Response) => {
     let { text, speed, voice_id, voiceURI } = req.body;
     let finalVoiceId = voice_id || voiceURI;
 
-    const presetMap: Record<string, string> = {
-      "preset-vi-bac-female": "edge_vi-VN-HoaiMyNeural",
-      "preset-vi-bac-male": "edge_vi-VN-NamMinhNeural",
-      "preset-vi-trung-female": "edge_vi-VN-HoaiMyNeural",
-      "preset-vi-trung-male": "edge_vi-VN-NamMinhNeural",
-      "preset-vi-nam-female": "edge_vi-VN-HoaiMyNeural",
-      "preset-vi-nam-male": "edge_vi-VN-NamMinhNeural",
-      "preset-vi-kid": "edge_vi-VN-HoaiMyNeural",
-      "gcp-vi-female": "edge_vi-VN-HoaiMyNeural",
-      "gcp-vi-male": "edge_vi-VN-NamMinhNeural",
-      "gcp-en-female": "edge_en-US-AriaNeural",
-      "fpt-vi-female": "edge_vi-VN-HoaiMyNeural",
-      "fpt-vi-male": "edge_vi-VN-NamMinhNeural",
-      "zalo-vi-female": "edge_vi-VN-HoaiMyNeural",
-      "viettel-vi-male": "edge_vi-VN-NamMinhNeural",
-      "gemini-cloud-vi-female": "edge_vi-VN-HoaiMyNeural",
-      "gemini-cloud-vi-male": "edge_vi-VN-NamMinhNeural",
-      "gemini-cloud-vi": "edge_vi-VN-HoaiMyNeural",
-    };
-
-    if (finalVoiceId && presetMap[finalVoiceId]) {
-      finalVoiceId = presetMap[finalVoiceId];
+    if (finalVoiceId && VOICE_PRESET_MAP[finalVoiceId]) {
+      finalVoiceId = VOICE_PRESET_MAP[finalVoiceId];
     }
 
     if (!text || !text.trim()) {
-      text = "Xin chào, đây là giọng đọc thử nghiệm.";
+      text = BACKEND_MESSAGES.TTS_DEFAULT_TEST;
     }
 
     if (!finalVoiceId) {
-      finalVoiceId = "edge_vi-VN-HoaiMyNeural";
+      finalVoiceId = VOICE_PRESET_MAP["preset-vi-bac-female"] || "edge_vi-VN-HoaiMyNeural";
     }
 
     const store = requestContext.getStore();
     const apiKey =
       store?.ai33Key ||
       process.env.AI33_API_KEY ||
-      "eyJhbGciOiJIUzI1NiIsImtpZCI6ImZ0UTF2dE1kNHArNG41SUYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3hwa2NhcHFxYnJraHNwcmJxb2NiLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiIxYTFlZjhjOC1hN2Q4LTRkYzMtYmRjMy1kYmZjODI1MGMzZmMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzgyOTc1MDQyLCJpYXQiOjE3ODIzNzAyNDIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZ29vZ2xlIiwicHJvdmlkZXJzIjpbImdvb2dsZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJhdmF0YXJfdXJsIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsImVtYWlsIjoibGVldm90aWkxMjM0QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmdWxsX25hbWUiOiJUb8OgbiBMZW8iLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJuYW1lIjoiVG_DoG4gTGVvIiwicGhvbmVfdmVyaWZpZWQiOmZhbHNlLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSXhxOHJVNXlTU0NuRDJxLU15TEtfZ2NJcm5wNkRTUkNDZXZHbjFmRW9SVUhHXzNuTVhQQT1zOTYtYyIsInByb3ZpZGVyX2lkIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIiwic3ViIjoiMTE0MjcxMzQ3Mzk5OTQ1MjYwMzkxIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib2F1dGgiLCJ0aW1lc3RhbXAiOjE3NjQ5OTMyNzB9XSwic2Vzc2lvbl9pZCI6IjY0ZjhjZDllLTMzNTItNDI5Zi1hYTYyLWZhMjg5OWNhNWUzNCIsImlzX2Fub255bW91cyI6ZmFsc2V9.Rsut9S1qJEUqimObZXDTd4a7QLwMVhHTBvfxWy9FjY0";
+      DEFAULT_AI33_API_KEY;
 
     const formData = new FormData();
     formData.append("text", text);
@@ -1916,7 +1606,7 @@ router.post("/generate-image", async (req: Request, res: Response) => {
       success: false,
       base64: null,
       fallbackUrl: "",
-      warning: `Có lỗi hệ thống xảy ra: ${error.message}`,
+      warning: getMessage("SYSTEM_ERROR", undefined, error.message),
     });
   }
 });
@@ -2033,7 +1723,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
 });
 
 router.post("/align-voice", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === "vi" || req.query?.lang !== "en";
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { audioBase64, scenes } = req.body;
     if (!audioBase64) {
@@ -2062,25 +1752,25 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
     const checkCmd = `python -c "import whisper"`;
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
-    
+
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
         const installCmd = `python -m pip install openai-whisper`;
-        
+
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
             logger.error(`Failed to install openai-whisper: ${installError.message}`);
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-            } catch (cleanupErr) {}
+            } catch (cleanupErr) { }
             return res.status(500).json({
               success: false,
               error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message)
             });
           }
-          
+
           logger.log(VOICE_ALIGN_LOGS.WHISPER_INSTALL_SUCCESS);
           runAligner();
         });
@@ -2106,10 +1796,10 @@ router.post("/align-voice", async (req: Request, res: Response) => {
           logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
           if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
           if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
-          
+
           const pythonError = stderr || stdout;
-          return res.status(500).json({ 
-            success: false, 
+          return res.status(500).json({
+            success: false,
             error: pythonError ? pythonError : error.message
           });
         }
@@ -2128,10 +1818,10 @@ router.post("/align-voice", async (req: Request, res: Response) => {
         } catch (err: any) {
           logger.error(`Error parsing voice_aligner.py output: ${err.message}`);
           if (fs.existsSync(outputPath)) {
-            try { fs.unlinkSync(outputPath); } catch (e) {}
+            try { fs.unlinkSync(outputPath); } catch (e) { }
           }
-          return res.status(500).json({ 
-            success: false, 
+          return res.status(500).json({
+            success: false,
             error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message)
           });
         }

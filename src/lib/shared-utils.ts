@@ -1,6 +1,6 @@
 
 import { appLog, appError, createAppError } from "./logger";
-import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, SYSTEM_STATUS } from '../constants';
+import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS } from '../constants';
 import { BatchDelayOption } from "../types";
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY): string => {
@@ -17,18 +17,18 @@ export const safeSystemFetch = async (url: string, payload: any) => {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'x-gemini-api-key': geminiKey,
         'x-ai33-api-key': ai33Key
       },
       body: JSON.stringify(payload),
     });
-    
-    
+
+
     const data = await response.json().catch(() => null);
-    
-    
+
+
     if (data && Array.isArray(data.rotationLogs)) {
       data.rotationLogs.forEach((log: string) => {
         if (LOG_ERROR_SYMBOLS.some(sym => log.includes(sym))) appError(log);
@@ -40,7 +40,7 @@ export const safeSystemFetch = async (url: string, payload: any) => {
     if (!response.ok) {
       throw createAppError(data?.error || `API Error: ${response.status}`);
     }
-    
+
     return { success: true, data };
   } catch (error: any) {
     appError('SYSTEM_FLOW_ERROR', url, error);

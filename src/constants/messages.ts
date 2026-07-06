@@ -156,7 +156,9 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
     GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Chờ {1}ms trước khi xử lý phân cảnh tiếp theo...",
-    SPAM_PREVENTION_DELAY: "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo..."
+    SPAM_PREVENTION_DELAY: "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo...",
+    API_RATE_LIMITS_TRIGGERED: "Giới hạn tỷ lệ API đã được kích hoạt",
+    TTS_DEFAULT_TEST: "Xin chào, đây là giọng đọc thử nghiệm."
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -315,13 +317,17 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
-    SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request..."
+    SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
+    API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
+    TTS_DEFAULT_TEST: "Hello, this is a test voice."
   }
 };
 
 export const PIPELINE_LOGS_LOCALIZED = {
   vi: {
     HOOK_STEP1: "[Hook] B1: Phân tích chủ đề & đối tượng...",
+    HOOK_AUTO_GENERATE: "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình...",
+    HOOK_EMBEDDED: "✨ Đã nhúng Hook: ",
     HOOK_STEP1_DONE: "[Hook] Đã xác định khán giả:",
     HOOK_STEP2: "[Hook] B2: Tạo nháp hook...",
     HOOK_STEP2_DONE: "[Hook] Đã tạo thành công",
@@ -360,6 +366,8 @@ export const PIPELINE_LOGS_LOCALIZED = {
   },
   en: {
     HOOK_STEP1: "[Hook] Step 1: Topic & audience analysis...",
+    HOOK_AUTO_GENERATE: "🤖 Auto-generating Hook from config...",
+    HOOK_EMBEDDED: "✨ Hook embedded: ",
     HOOK_STEP1_DONE: "[Hook] Audience identified:",
     HOOK_STEP2: "[Hook] Step 2: Drafting hook...",
     HOOK_STEP2_DONE: "[Hook] Drafted successfully",

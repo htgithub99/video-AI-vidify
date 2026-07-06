@@ -4,12 +4,8 @@ import {
   closePlaywright,
 } from "./audioService.js";
 import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX } from '../../constants';
-
-
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
-
-
 import {
   GenerateType,
   ImageGeneratorEngine,
@@ -20,6 +16,7 @@ import {
   GeminiChatTextOption,
   GeminiChatSpeed,
   GEMINI_CHAT_SPEED_TAB_COUNT,
+  AspectRatio,
 } from "../../types.js";
 import { Locator, Page } from "playwright";
 
@@ -295,10 +292,10 @@ export async function generateImageWithPlaywright(
 
         try {
           const currentConfigState = JSON.stringify({
-            generateType: visualConfig?.generateType || "image",
-            aspectRatio: visualConfig?.aspectRatio || "16:9",
+            generateType: visualConfig?.generateType || GenerateType.Image,
+            aspectRatio: visualConfig?.aspectRatio || AspectRatio.SixteenNine,
             generateCount: visualConfig?.generateCount || 1,
-            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || "veo3",
+            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
           });
 
           if (
@@ -319,7 +316,7 @@ export async function generateImageWithPlaywright(
               await configBtnLoc.click();
               await globalPlaywrightPage.waitForTimeout(1000);
 
-              const isVideo = visualConfig?.generateType === "video";
+              const isVideo = visualConfig?.generateType === GenerateType.Video;
               const sectionKeyword = isVideo
                 ? /(tạo video|video generation|video)/i
                 : /(tạo hình ảnh|image generation|image)/i;
@@ -331,7 +328,7 @@ export async function generateImageWithPlaywright(
               if (await sectionSpan.isVisible()) {
                 const sectionDiv = sectionSpan.locator("xpath=..");
 
-                const targetRatio = visualConfig?.aspectRatio || "16:9";
+                const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
                 const ratioBtn = sectionDiv
                   .locator('[role="tab"]')
                   .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
@@ -347,7 +344,7 @@ export async function generateImageWithPlaywright(
                 if (await countBtn.isVisible()) await countBtn.click();
 
                 const targetEngineKey = (
-                  visualConfig?.imageGeneratorEngine || "veo3"
+                  visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3
                 ).toLowerCase();
 
                 let exactEngineRegex: RegExp;

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import { EXTERNAL_URLS, DEFAULT_AI33_API_KEY, FALLBACK_VOICES_PREVIEWS, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES } from '../../constants';
+import { EXTERNAL_URLS, DEFAULT_AI33_API_KEY, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES } from '../../constants';
 import { requestContext } from '../utils/requestContext.js';
 import { appWarn, createAppError } from '../../lib/logger.js';
 
@@ -29,7 +29,7 @@ export const getVoices = async (req: Request, res: Response) => {
   } catch (error: any) {
     appWarn('FETCH_VOICES_ERR', 'External voice registry load failed. Falling back to high-quality local voices database.', error);
 
-    
+
     let filtered = [...FALLBACK_VOICES];
 
     const reqLang = req.query.language as string;

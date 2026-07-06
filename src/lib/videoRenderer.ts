@@ -1,5 +1,4 @@
-import { base64ToArrayBuffer, blobToBase64 } from "./fileUtils.js";
-import { ErrorMessage, supportedTypes } from '../constants';
+import { ErrorMessage, supportedTypes } from '../constants/index.js';
 import { StoryboardScene } from '../types.js';
 import { appWarn } from './logger.js';
 import { parseTimeToSeconds, formatCleanDuration } from './timeUtils.js';
@@ -158,7 +157,7 @@ export const compileVideoToBlob = async (
     throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }
 
-  
+
   onProgress(5);
   const loadedImages: Record<string, HTMLImageElement> = {};
   let loadedCount = 0;
@@ -184,7 +183,7 @@ export const compileVideoToBlob = async (
     })
   );
 
-  
+
   const canvas = document.createElement('canvas');
   canvas.width = 1280;
   canvas.height = 720;
@@ -243,7 +242,7 @@ export const compileVideoToBlob = async (
   const ranges = getSceneTimeRanges(scenes);
   const totalDuration = ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
 
-  
+
   return new Promise<Blob>((resolve, reject) => {
     recorder.onstop = () => {
       const finalBlob = new Blob(chunks, { type: selectedType || 'video/webm' });
