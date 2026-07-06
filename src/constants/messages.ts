@@ -158,7 +158,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Chờ {1}ms trước khi xử lý phân cảnh tiếp theo...",
     SPAM_PREVENTION_DELAY: "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo...",
     API_RATE_LIMITS_TRIGGERED: "Giới hạn tỷ lệ API đã được kích hoạt",
-    TTS_DEFAULT_TEST: "Xin chào, đây là giọng đọc thử nghiệm."
+    TTS_DEFAULT_TEST: "Xin chào, đây là giọng đọc thử nghiệm.",
+    ULTRA_FILE_REQUIRED: "Đường dẫn file dự án draft_content.json là bắt buộc!",
+    ULTRA_FILE_NOT_FOUND: "Không tìm thấy file dự án draft_content.json!",
+    ULTRA_SUCCESS: "Xử lý CapCut Ultra hoàn tất thành công!",
+    SELECT_FILE_FAILED: "Lỗi mở hộp thoại chọn file!",
+    SELECT_FOLDER_FAILED: "Lỗi mở hộp thoại chọn thư mục!"
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -319,7 +324,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
     SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
     API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
-    TTS_DEFAULT_TEST: "Hello, this is a test voice."
+    TTS_DEFAULT_TEST: "Hello, this is a test voice.",
+    ULTRA_FILE_REQUIRED: "draft_content.json file path is required!",
+    ULTRA_FILE_NOT_FOUND: "draft_content.json file not found!",
+    ULTRA_SUCCESS: "CapCut Ultra processed successfully!",
+    SELECT_FILE_FAILED: "Error opening file selector!",
+    SELECT_FOLDER_FAILED: "Error opening folder selector!"
   }
 };
 

@@ -18,6 +18,9 @@ export const API_ROUTES = {
   PIPELINE_DETAILED_PROMPT: '/api/pipeline/detailed-prompt',
   PIPELINE_VOICE: '/api/pipeline/voice',
   PIPELINE_ALIGN_VOICE: '/api/pipeline/align-voice',
+  PIPELINE_RUN_ULTRA: '/api/pipeline/run-ultra',
+  PIPELINE_SELECT_FILE: '/api/pipeline/select-file',
+  PIPELINE_SELECT_FOLDER: '/api/pipeline/select-folder',
 };
 
 export const EXTERNAL_URLS = {

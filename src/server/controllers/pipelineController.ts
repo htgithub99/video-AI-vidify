@@ -1834,4 +1834,124 @@ router.post("/align-voice", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/run-ultra", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const { filePath, geminiApiKey, sfxFolder, opts } = req.body;
+
+  if (!filePath) {
+    return res.status(400).json({
+      success: false,
+      error: getBackendMsg("ULTRA_FILE_REQUIRED", isVi)
+    });
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(400).json({
+      success: false,
+      error: getBackendMsg("ULTRA_FILE_NOT_FOUND", isVi)
+    });
+  }
+
+  const tempOutputPath = filePath + ".ultra_tmp";
+  const uniqueId = randomUUID().substring(0, 8);
+  const optsJsonPath = path.join(process.cwd(), `ultra_opts_${uniqueId}.json`);
+
+  const cmdOpts = {
+    ...opts,
+    api_key: geminiApiKey || "",
+    sfx_folder: sfxFolder || ""
+  };
+
+  try {
+    fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), "utf-8");
+
+    const cmd = `python capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`;
+    logger.log(`Running capcut ultra command: ${cmd}`);
+
+    exec(cmd, (error, stdout, stderr) => {
+      try {
+        if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
+      } catch (cleanupErr) {}
+
+      if (error) {
+        try {
+          if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
+        } catch (cleanupErr) {}
+
+        logger.error(`CapCut Ultra process failed with exit code ${error.code}: ${error.message}`);
+        if (stdout) logger.error(`Python stdout: ${stdout}`);
+        if (stderr) logger.error(`Python stderr: ${stderr}`);
+
+        const pythonError = stderr || stdout || error.message;
+        return res.status(500).json({
+          success: false,
+          error: pythonError.replace("ERROR: ", "").trim()
+        });
+      }
+
+      try {
+        if (fs.existsSync(tempOutputPath)) {
+          if (fs.existsSync(filePath)) {
+            fs.copyFileSync(filePath, filePath + ".backup_ultra");
+            fs.unlinkSync(filePath);
+          }
+          fs.renameSync(tempOutputPath, filePath);
+        }
+      } catch (fsErr: any) {
+        logger.error(`File copy/rename failed: ${fsErr.message}`);
+        return res.status(500).json({
+          success: false,
+          error: fsErr.message
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: getBackendMsg("ULTRA_SUCCESS", isVi)
+      });
+    });
+
+  } catch (err: any) {
+    try {
+      if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
+    } catch (cleanupErr) {}
+    try {
+      if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
+    } catch (cleanupErr) {}
+    logger.error(`Unexpected error running CapCut Ultra: ${err.message}`);
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+router.post("/select-file", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const cmd = `python capcut_ultra_tool.py select-file`;
+  logger.log(`Running select-file command: ${cmd}`);
+
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      logger.error(`Select file dialog failed: ${error.message}`);
+      return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FILE_FAILED", isVi) });
+    }
+    return res.json({ success: true, filePath: stdout.trim() });
+  });
+});
+
+router.post("/select-folder", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const cmd = `python capcut_ultra_tool.py select-folder`;
+  logger.log(`Running select-folder command: ${cmd}`);
+
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      logger.error(`Select folder dialog failed: ${error.message}`);
+      return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FOLDER_FAILED", isVi) });
+    }
+    return res.json({ success: true, folderPath: stdout.trim() });
+  });
+});
+
 export default router;
