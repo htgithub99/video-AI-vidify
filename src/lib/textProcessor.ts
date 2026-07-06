@@ -97,8 +97,9 @@ export const smartSplitSentences = (text: string): string[] => {
 };
 
 export const splitSentenceSafely = (sent: string, maxWords: number = 12): string[] => {
+  const safeMaxWords = Math.max(12, maxWords);
   const words = sent.split(/\s+/).filter(Boolean);
-  if (words.length <= maxWords) {
+  if (words.length <= safeMaxWords) {
     return [sent];
   }
 
@@ -124,8 +125,8 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
       const part1 = words.slice(0, i + 1).join(" ");
       const part2 = words.slice(i + 1).join(" ");
       return [
-        ...splitSentenceSafely(part1, maxWords),
-        ...splitSentenceSafely(part2, maxWords)
+        ...splitSentenceSafely(part1, safeMaxWords),
+        ...splitSentenceSafely(part2, safeMaxWords)
       ];
     }
   }
@@ -138,8 +139,8 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
       const part1 = words.slice(0, i).join(" ");
       const part2 = words.slice(i).join(" ");
       return [
-        ...splitSentenceSafely(part1, maxWords),
-        ...splitSentenceSafely(part2, maxWords)
+        ...splitSentenceSafely(part1, safeMaxWords),
+        ...splitSentenceSafely(part2, safeMaxWords)
       ];
     }
   }
@@ -148,8 +149,8 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
   const part1 = words.slice(0, mid).join(" ");
   const part2 = words.slice(mid).join(" ");
   return [
-    ...splitSentenceSafely(part1, maxWords),
-    ...splitSentenceSafely(part2, maxWords)
+    ...splitSentenceSafely(part1, safeMaxWords),
+    ...splitSentenceSafely(part2, safeMaxWords)
   ];
 };
 
@@ -177,35 +178,35 @@ export function generateMockStoryboard(
     [SplitStrategy.MULTI_PROMPT]: (text) => {
       const res: SegmentWithContext[] = [];
       for (const sent of smartSplitSentences(text)) {
-        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
+        for (const clause of splitSentenceSafely(sent, 14)) res.push({ text: clause, context: sent });
       }
       return res;
     },
     [SplitStrategy.ULTRADENSE]: (text) => {
       const res: SegmentWithContext[] = [];
       for (const sent of smartSplitSentences(text)) {
-        for (const clause of splitSentenceSafely(sent, 6)) res.push({ text: clause, context: sent });
+        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
       }
       return res;
     },
     [SplitStrategy.WORD]: (text) => {
       const res: SegmentWithContext[] = [];
       for (const sent of smartSplitSentences(text)) {
-        for (const clause of splitSentenceSafely(sent, 6)) res.push({ text: clause, context: sent });
+        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
       }
       return res;
     },
     [SplitStrategy.HYPERDENSE]: (text) => {
       const res: SegmentWithContext[] = [];
       for (const sent of smartSplitSentences(text)) {
-        for (const clause of splitSentenceSafely(sent, 10)) res.push({ text: clause, context: sent });
+        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
       }
       return res;
     },
     [SplitStrategy.SHORT_SENTENCE]: (text) => {
       const res: SegmentWithContext[] = [];
       for (const sent of smartSplitSentences(text)) {
-        for (const clause of splitSentenceSafely(sent, 10)) res.push({ text: clause, context: sent });
+        for (const clause of splitSentenceSafely(sent, 12)) res.push({ text: clause, context: sent });
       }
       return res;
     },

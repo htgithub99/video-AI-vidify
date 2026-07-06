@@ -1,11 +1,11 @@
 import { VoicePresetId } from './enums';
 
 export const SCENE_DENSITY_MAP = {
-  THEO_TU: { maxChars: 20, label: "Word-based (Ultra-dense)" },
-  CAU_NGAN: { maxChars: 75, label: "Short sentence (Hyper-dense)" },
-  DA_PHAN_CANH: { maxChars: 100, label: "Multi-scene (Clause-based)" },
-  CAU_DAI: { maxChars: 150, label: "Long sentence (Standard)" },
-  THEO_DOAN: { maxChars: 300, label: "Paragraph-based (Slow-paced)" },
+  THEO_TU: { maxChars: 65, label: "Word-based (Ultra-dense)" },
+  CAU_NGAN: { maxChars: 90, label: "Short sentence (Hyper-dense)" },
+  DA_PHAN_CANH: { maxChars: 120, label: "Multi-scene (Clause-based)" },
+  CAU_DAI: { maxChars: 180, label: "Long sentence (Standard)" },
+  THEO_DOAN: { maxChars: 350, label: "Paragraph-based (Slow-paced)" },
 } as const;
 
 export const boundaries = [".", "!", "?", "\n"];
