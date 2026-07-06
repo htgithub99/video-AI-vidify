@@ -152,8 +152,7 @@ def open_file_dialog():
     file_path = filedialog.askopenfilename(
         title=DIALOG_FILE_TITLE,
         filetypes=[
-            (JSON_FILE_TYPES_LABEL, DRAFT_JSON_NAME), 
-            (ALL_JSON_LABEL, JSON_EXT), 
+            (JSON_FILE_TYPES_LABEL, JSON_EXT), 
             (ALL_FILES_LABEL, ALL_EXT)
         ]
     )

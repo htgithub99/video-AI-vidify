@@ -960,7 +960,7 @@ export const translations = {
         "Tối ưu SEO",
         "Kết xuất",
         "Tạo ảnh/video",
-        "Bộ Công Cụ CapCut Ultra"
+        "CapCut Ultra"
     ],
     "stepTooltips": [
         "Ý tưởng & kịch bản",
@@ -1784,7 +1784,7 @@ export const translations = {
     "node6_log_zip_success": "Tải ZIP thành công!",
     "node6_log_zip_error": "Lỗi đóng gói file ZIP: {error}",
     "node6_log_cleared": "Đã dọn dẹp bộ nhớ.",
-    "node7_title": "Bộ Công Cụ Tự Động Hóa CapCut Ultra",
+    "node7_title": "CapCut Ultra",
     "node7_desc": "Tự động hóa, khớp ảnh theo voice, zoom/pan và tạo Sound Effect bằng AI cho dự án CapCut.",
     "node7_input_file_label": "1. Chọn tệp draft_content.json gốc",
     "node7_choose_file_btn": "Chọn từ Dự Án",
