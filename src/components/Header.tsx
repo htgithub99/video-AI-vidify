@@ -197,44 +197,63 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
           </div>
 
           {}
-          <button
+          <Button
+            variant={showKeysConfig ? "outline" : "secondary"}
+            size="sm"
             onClick={() => {
               setShowKeysConfig(!showKeysConfig);
               setShowConfig(false);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showKeysConfig ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"}`}
+            className={`relative shrink-0 ${showKeysConfig ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20" : ""}`}
           >
             <Key className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">API Keys</span>
             {(geminiKey || ai33Key) && <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>}
-          </button>
+          </Button>
 
           {}
-          <button
+          <Button
+            variant={showConfig ? "outline" : "secondary"}
+            size="sm"
             onClick={() => {
               setShowConfig(!showConfig);
               setShowKeysConfig(false);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showConfig ? "bg-rose-500/10 border-rose-500/30 text-rose-500" : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"}`}
+            className={`relative shrink-0 ${showConfig ? "bg-rose-500/10 border-rose-500/30 text-rose-500 hover:bg-rose-500/20" : ""}`}
           >
             <Sliders className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{t.Sandbox}</span>
             {showConfig && <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>}
-          </button>
+          </Button>
 
           {}
-          <button onClick={toggleTheme} className="p-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:text-slate-100 hover:bg-slate-700 text-slate-400 cursor-pointer transition-all shrink-0">
+          <Button 
+            variant="secondary" 
+            size="xs" 
+            onClick={toggleTheme} 
+            className="p-1.5 bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700 shrink-0 shadow-none"
+          >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          </Button>
 
           {}
           <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-lg p-0.5 shrink-0">
-            <button onClick={() => setLang("vi")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "vi" ? "bg-slate-700 text-slate-100 shadow-sm" : "text-slate-400 hover:text-slate-200"}`}>
+            <Button 
+              variant="ghost" 
+              size="xs" 
+              onClick={() => setLang("vi")} 
+              className={`px-2 py-1 text-[10px] rounded-md shadow-none ${currentLang === "vi" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
+            >
               {t.VI}
-            </button>
-            <button onClick={() => setLang("en")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "en" ? "bg-slate-700 text-slate-100 shadow-sm" : "text-slate-400 hover:text-slate-200"}`}>
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="xs" 
+              onClick={() => setLang("en")} 
+              className={`px-2 py-1 text-[10px] rounded-md shadow-none ${currentLang === "en" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
+            >
               {t.EN}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -265,9 +284,9 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
                         <span>{t.Saved}</span>
                       </motion.div>
                     )}
-                    <button onClick={() => setShowConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
+                    <Button variant="ghost" size="xs" onClick={() => setShowConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg shadow-none">
                       <X className="w-5 h-5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -351,9 +370,9 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
                         <span>{t.Saved}</span>
                       </motion.div>
                     )}
-                    <button onClick={() => setShowKeysConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
+                    <Button variant="ghost" size="xs" onClick={() => setShowKeysConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg shadow-none">
                       <X className="w-5 h-5" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 

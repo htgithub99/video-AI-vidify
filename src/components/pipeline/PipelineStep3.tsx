@@ -1,6 +1,7 @@
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { WizardStep } from "../../types";
+import { Button } from "../ui/Button";
 
 const { Sparkles, RefreshCw, Sliders, ChevronDown, Search, Copy, ArrowLeft, ArrowRight } = LucideIcons as any;
 
@@ -19,25 +20,18 @@ export default function PipelineStep3(props: PipelineWizardState) {
             <p className="text-slate-400 text-xs mt-1">{t.seoDescription}</p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={() => handleTriggerSEOBoost(true, "top")}
-            disabled={!!loadingStates["seoBoost_loading"]}
-            className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all cursor-pointer shadow-md self-start sm:self-auto active:scale-95"
+            isLoading={!!loadingStates["seoBoost_loading"]}
+            className="flex items-center gap-1.5 shadow-md self-start sm:self-auto"
             title={t.Optimize_metadata_and_tri}
           >
-            {loadingStates["seoBoost_loading"] ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>{t.Optimizing}</span>
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>{t.Optimize_SEO}</span>
-              </>
-            )}
-          </button>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{t.Optimize_SEO}</span>
+          </Button>
         </div>
         <div className="bg-slate-950/45 border border-slate-805 p-5 rounded-xl space-y-3">
           <div className="flex justify-between items-center">
@@ -127,16 +121,18 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   <div key={i} className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <p className="font-bold text-slate-100 text-sm leading-snug">{title.text}</p>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         onClick={() => {
                           navigator.clipboard.writeText(title.text);
                           setInfoMsg(t.Copied_title_to_clipboard);
                         }}
-                        className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                        className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto w-auto shadow-none"
                         title={t.Copy_title}
                       >
                         <Copy className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
                       <div>
@@ -203,15 +199,17 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   <div key={i} className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2">
                     <div className="flex items-start justify-between gap-4">
                       <p className="text-xs text-slate-300 leading-relaxed font-sans">{desc.text}</p>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="xs"
                         onClick={() => {
                           navigator.clipboard.writeText(desc.text);
                           setInfoMsg(t.Copied_description_to_cli);
                         }}
-                        className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                        className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
                       >
                         <Copy className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -223,17 +221,19 @@ export default function PipelineStep3(props: PipelineWizardState) {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.hashtags}</span>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     onClick={() => {
                       const hashtagsText = (project.seo?.hashtags || []).map((tag) => `#${tag}`).join(" ");
                       navigator.clipboard.writeText(hashtagsText);
                       setInfoMsg(t.Copied_Hashtags_to_clipbo);
                     }}
-                    className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                    className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
                     title={t.Copy_Hashtags}
                   >
                     <Copy className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {(!project.seo?.hashtags || project.seo.hashtags.length === 0) &&
@@ -256,17 +256,19 @@ export default function PipelineStep3(props: PipelineWizardState) {
               <div className="space-y-2 pt-3 border-t border-slate-900">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.tags}</span>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="xs"
                     onClick={() => {
                       const tagsText = (project.seo?.tags || []).join(", ");
                       navigator.clipboard.writeText(tagsText);
                       setInfoMsg(t.Copied_Tags_to_clipboard);
                     }}
-                    className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                    className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
                     title={t.Copy_Tags}
                   >
                     <Copy className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(!project.seo?.tags || project.seo.tags.length === 0) &&
@@ -291,14 +293,24 @@ export default function PipelineStep3(props: PipelineWizardState) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <button onClick={() => setCurrentStep(WizardStep.AssetManager)} className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+          <Button 
+            variant="secondary" 
+            size="md" 
+            onClick={() => setCurrentStep(WizardStep.AssetManager)} 
+            className="flex items-center gap-1.5 px-5 py-3 shadow"
+          >
             <ArrowLeft className="w-4 h-4" />
             {t.Back}
-          </button>
-          <button onClick={() => setCurrentStep(WizardStep.Export)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+          </Button>
+          <Button 
+            variant="primary" 
+            size="md" 
+            onClick={() => setCurrentStep(WizardStep.Export)} 
+            className="flex items-center gap-1.5 px-5 py-3 shadow"
+          >
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </>

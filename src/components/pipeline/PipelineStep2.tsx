@@ -1,4 +1,5 @@
 import { PipelineWizardState } from "./usePipelineWizard";
+import { Button } from "../ui/Button";
 
 import * as LucideIcons from "lucide-react";
 
@@ -45,25 +46,17 @@ export default function PipelineStep2(props: PipelineWizardState) {
             <p className="text-slate-400 text-xs mt-1">{t.Select_visual_styles_defi}</p>
           </div>
 
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={() => handleTriggerAssetAndThumbnail(true, "top")}
             disabled={!!loadingStates["assetAndThumbnail_loading"]}
-            className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-all cursor-pointer shadow-md self-start sm:self-auto active:scale-95"
+            isLoading={!!loadingStates["assetAndThumbnail_loading"]}
+            className="self-start sm:self-auto"
             title={t.Create_prompt_guides_and_}
           >
-            {loadingStates["assetAndThumbnail_loading"] ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>{t.Generating}</span>
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>{t.Generate_Thumbnails}</span>
-              </>
-            )}
-          </button>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>{t.Generate_Thumbnails}</span>
+          </Button>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <div className="lg:col-span-3 bg-slate-950/45 border border-slate-800 p-5 rounded-xl flex flex-col space-y-3">
@@ -167,8 +160,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           <img src={imgBase64} alt={`Style reference ${idx + 1}`} className="w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg"></div>
                         </div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="primary"
+                          size="xs"
                           onClick={(e) => {
                             e.stopPropagation();
                             setProject((prev) => {
@@ -183,11 +177,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               };
                             });
                           }}
-                          className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 hover:bg-rose-600 border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-md cursor-pointer"
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 hover:bg-rose-600 border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-md p-0"
                           title={t.Remove}
                         >
                           <X className="w-3 h-3" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -205,36 +199,31 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             {project.visualConfig.thumbnailReferencePrompt}
                           </p>
                         </div>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           onClick={() => {
                             navigator.clipboard.writeText(project.visualConfig.thumbnailReferencePrompt || "");
                             setInfoMsg(t.Style_copied);
                           }}
-                          className="shrink-0 p-1 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 rounded text-rose-450 transition-colors"
+                          className="shrink-0 p-1 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 rounded text-rose-450 transition-colors h-auto w-auto hover:text-rose-400 shadow-none"
                           title={t.Copy_style}
                         >
                           <Copy className="w-3 h-3" />
-                        </button>
+                        </Button>
                       </div>
                     )}
-                    <button
-                      type="button"
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={handleExtractThumbnailStyle}
                       disabled={!!loadingStates["extractThumbnailStyle"]}
-                      className="w-full py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer active:scale-95 border border-rose-500/30"
+                      isLoading={!!loadingStates["extractThumbnailStyle"]}
+                      className="w-full text-white font-bold text-[10px] active:scale-95"
                     >
-                      {loadingStates["extractThumbnailStyle"] ? (
-                        <>
-                          <RefreshCw className="w-3 h-3 animate-spin" />
-                          <span>{t.Extracting}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3 text-rose-100" />
-                          <span>{t.Extract_Style}</span>
-                        </>
-                      )}
-                    </button>
+                      <Sparkles className="w-3 h-3 text-rose-100" />
+                      <span>{t.Extract_Style}</span>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -275,25 +264,17 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   <h4 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">{t.No_Thumbnail_Prompts}</h4>
                   <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">{t.Draft_eye_catching_visual}</p>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
                   onClick={() => handleTriggerAssetAndThumbnail(true, "empty")}
                   disabled={!!loadingStates["assetAndThumbnail_loading"]}
-                  className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] font-bold px-4 py-2 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow disabled:opacity-75 disabled:cursor-not-allowed"
+                  isLoading={!!loadingStates["assetAndThumbnail_loading"]}
+                  className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5"
                   title={t.Draft_visual_arrangements}
                 >
-                  {loadingStates["assetAndThumbnail_loading"] ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>{t.Generating}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                      <span>{t.Generate_Thumbnail}</span>
-                    </>
-                  )}
-                </button>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                  <span>{t.Generate_Thumbnail}</span>
+                </Button>
               </div>
             )
           ) : (
@@ -354,16 +335,17 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         <p className="text-[11px] text-slate-600 dark:text-slate-300/90 leading-relaxed line-clamp-3" title={thumb.prompt}>
                           {thumb.prompt}
                         </p>
-                        <button
+                        <Button
+                          variant="ghost"
                           onClick={() => {
                             navigator.clipboard.writeText(thumb.prompt);
                             setInfoMsg(t.Copied_thumbnail_prompt);
                           }}
-                          className="absolute -top-2 right-0 bg-slate-950/90 backdrop-blur-md text-slate-300 p-1.5 rounded-lg border border-slate-800 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl"
+                          className="absolute -top-2 right-0 bg-slate-950/90 backdrop-blur-md text-slate-300 p-1.5 rounded-lg border border-slate-800 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl h-auto w-auto hover:text-slate-100"
                           title={t.Copy_Prompt}
                         >
                           <Copy className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </div>
 
                       <div className="bg-slate-950/50 backdrop-blur-sm border border-slate-800/80 rounded-xl p-3 mb-4 space-y-2 mt-auto">
@@ -390,20 +372,22 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         )}
                       </div>
                       <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
-                        <button
+                        <Button
+                          variant="primary"
                           onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn disabled:opacity-75 disabled:cursor-not-allowed ${
+                          isLoading={!!loadingStates["renderThumb_" + thumb.id]}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${
                             thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
                           } active:scale-95`}
                           title={t.Render_YouTube_mockup_thu}
                         >
-                          {loadingStates["renderThumb_" + thumb.id] ? <RefreshCw className="w-4 h-4 animate-spin text-white/80" /> : <Sparkles className={`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`} />}
-                          <span className="relative z-10">{loadingStates["renderThumb_" + thumb.id] ? t.Drawing : t.Render_Mockup}</span>
-                        </button>
+                          <Sparkles className={`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`} />
+                          <span className="relative z-10">{t.Render_Mockup}</span>
+                        </Button>
                         {thumb.imageUrl && (
-                          <button
-                            type="button"
+                          <Button
+                            variant="secondary"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDownloadImage(thumb.imageUrl!, `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`);
@@ -412,7 +396,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             title={t.Download_Image || "Tải ảnh về"}
                           >
                             <Download className="w-4 h-4" />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -424,14 +408,14 @@ export default function PipelineStep2(props: PipelineWizardState) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <button onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+          <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 px-5 py-3 shadow">
             <ArrowLeft className="w-4 h-4" />
             {t.Back}
-          </button>
-          <button onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+          </Button>
+          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 px-5 py-3 shadow">
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </>

@@ -5,6 +5,7 @@ import { GenerateType, ImageGeneratorEngine, ImageGenerationMode, AspectRatio } 
 import JSZip from "jszip";
 import { API_ROUTES, PROMPT_NUMBERING_PREFIX_REGEX } from "../../constants";
 import { safeSystemFetch } from "../../lib/shared-utils";
+import { Button } from "../ui/Button";
 
 const { Play, Square, Download, Trash, Sparkles, Terminal, RefreshCw, FileText, Eye } = LucideIcons as any;
 
@@ -244,12 +245,12 @@ export default function PipelineStep5(props: PipelineWizardState) {
             </div>
             {!isRunning && (
               <div className="flex gap-2">
-                <button onClick={handlePasteSamples} className="text-[9px] font-mono font-bold bg-slate-850 hover:bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-rose-400 cursor-pointer" title="Dán 2 prompt stickman mẫu">
+                <Button variant="outline" size="xs" onClick={handlePasteSamples} className="font-mono text-rose-400 border-slate-700 font-bold" title="Dán 2 prompt stickman mẫu">
                   {t.node6_sample_prompts}
-                </button>
-                <button onClick={handleClearAll} className="text-[9px] font-mono font-bold bg-slate-950 hover:bg-rose-950/30 border border-slate-850 hover:border-rose-500/20 px-2 py-0.5 rounded text-slate-550 hover:text-rose-400 cursor-pointer">
+                </Button>
+                <Button variant="outline" size="xs" onClick={handleClearAll} className="text-slate-550 hover:text-rose-400 hover:bg-rose-950/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none" title="Xóa toàn bộ">
                   <Trash className="w-2.5 h-2.5" />
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -261,29 +262,33 @@ export default function PipelineStep5(props: PipelineWizardState) {
 
         <div className="flex gap-3">
           {isRunning ? (
-            <button onClick={handleCancelGeneration} className="flex-1 py-3.5 bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-bold text-xs rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+            <Button variant="danger" size="lg" onClick={handleCancelGeneration} className="flex-1 font-bold">
               <Square className="w-4 h-4 fill-white" />
               <span>{t.node6_stop_gen}</span>
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
+              variant="primary"
+              size="lg"
               onClick={handleStartGeneration}
               disabled={prompts.length === 0}
-              className="flex-1 py-3.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 disabled:from-slate-900 disabled:to-slate-950 disabled:border-slate-850 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-lg cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              className="flex-1 font-bold"
             >
               <Play className="w-4 h-4 fill-white" />
               <span>{t.node6_start_gen}</span>
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
+            variant="secondary"
+            size="lg"
             onClick={handleDownloadAllZip}
             disabled={prompts.filter((p) => p.status === "success").length === 0}
-            className="px-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-950 disabled:text-slate-700 disabled:border-slate-850 disabled:cursor-not-allowed border border-slate-800 rounded-xl text-slate-200 shadow transition-all cursor-pointer flex items-center justify-center"
+            className="px-4"
             title={t.node6_zip_tooltip}
           >
             <Download className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -363,9 +368,9 @@ export default function PipelineStep5(props: PipelineWizardState) {
 
                             {currentGenerateType === GenerateType.Image && (
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
-                                <button type="button" onClick={() => handleZoomResult(item)} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all" title={t.Image_Lightbox_Preview}>
+                                <Button type="button" variant="ghost" onClick={() => handleZoomResult(item)} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow-none h-auto w-auto transition-all" title={t.Image_Lightbox_Preview}>
                                   <Eye className="w-4 h-4" />
-                                </button>
+                                </Button>
                                 <a href={item.resultUrl} download={`artwork_${item.id}.jpg`} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all" title={t.download}>
                                   <Download className="w-4 h-4" />
                                 </a>

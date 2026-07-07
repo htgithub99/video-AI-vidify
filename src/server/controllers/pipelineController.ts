@@ -331,8 +331,6 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
         const thumb = updatedThumbnails[i];
         if (rewrittenMap.has(thumb.id)) {
           thumb.prompt = rewrittenMap.get(thumb.id);
-        } else if (thumb.prompt) {
-          thumb.prompt = thumb.prompt;
         }
       }
     }
@@ -983,7 +981,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
-    if (!!data?.scenes?.length) {
+    if (data?.scenes?.length) {
       data.scenes = diversifyDuplicatePrompts(data.scenes);
     }
 
@@ -1020,7 +1018,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
     const fallbackData: any = generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
-    if (!!fallbackData?.scenes?.length) {
+    if (fallbackData?.scenes?.length) {
       fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
     }
     if (error.rotationLogs) {
@@ -1481,13 +1479,13 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
     const scriptPath = path.join(process.cwd(), ALIGN_CONFIG.SCRIPT_FILE);
 
-    const checkCmd = `python -c "import whisper"`;
+    const checkCmd = `python3 -c "import whisper"`;
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = `python -m pip install openai-whisper`;
+        const installCmd = `python3 -m pip install openai-whisper`;
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
@@ -1511,8 +1509,8 @@ router.post("/align-voice", async (req: Request, res: Response) => {
       }
     });
 
-    function runAligner() {
-      const cmd = `python "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
+    const runAligner = () => {
+      const cmd = `python3 "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       logger.log(`Running voice aligner command: ${cmd}`);
 
       exec(cmd, (error, stdout, stderr) => {
@@ -1597,7 +1595,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   try {
     fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), "utf-8");
 
-    const cmd = `python capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`;
+    const cmd = `python3 capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`;
     logger.log(`Running capcut ultra command: ${cmd}`);
 
     exec(cmd, (error, stdout, stderr) => {
@@ -1659,7 +1657,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
 router.post("/select-file", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const cmd = `python capcut_ultra_tool.py select-file`;
+  const cmd = `python3 capcut_ultra_tool.py select-file`;
   logger.log(`Running select-file command: ${cmd}`);
 
   exec(cmd, (error, stdout, stderr) => {
@@ -1673,7 +1671,7 @@ router.post("/select-file", async (req: Request, res: Response) => {
 
 router.post("/select-folder", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const cmd = `python capcut_ultra_tool.py select-folder`;
+  const cmd = `python3 capcut_ultra_tool.py select-folder`;
   logger.log(`Running select-folder command: ${cmd}`);
 
   exec(cmd, (error, stdout, stderr) => {

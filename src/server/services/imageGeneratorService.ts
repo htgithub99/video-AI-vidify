@@ -975,7 +975,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
         }
 
-        if (!!queue?.length) {
+        if (queue?.length) {
           const delayTime = await applyBatchDelay(visualConfig);
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
         }

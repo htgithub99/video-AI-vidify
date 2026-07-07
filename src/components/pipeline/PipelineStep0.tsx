@@ -1,4 +1,5 @@
 import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS } from "../../constants";
+import { Button } from "../ui/Button";
 
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
@@ -25,8 +26,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">{t.sourceType}</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
@@ -36,16 +38,17 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900 ${
                     project.input?.type === ProjectInputType.Script ? "bg-slate-900 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                   }`}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.originalScript}</span>
                   <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.originalScriptDesc}</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() =>
                     setProject((prev) => ({
                       ...prev,
@@ -55,13 +58,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none ${
+                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900/40 ${
                     project.input?.type === ProjectInputType.Idea ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
                   }`}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.storyIdea}</span>
                   <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.storyIdeaDesc}</span>
-                </button>
+                </Button>
               </div>
             </div>{" "}
             <div className="space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]">
@@ -295,7 +298,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   <span className="text-[10px] text-slate-500 leading-normal mt-0.5">{t.T_ng_ph_n_t_ch_v_x_c_minh}</span>
                 </div>
 
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() =>
                     setProject((prev) => ({
@@ -306,10 +310,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 ${project.config.factCheck ? "bg-rose-600" : "bg-slate-800"}`}
+                  className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-transparent ${project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-800"}`}
                 >
                   <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck ? "translate-x-5" : "translate-x-0"}`} />
-                </button>
+                </Button>
               </div>{" "}
               <div className="pt-4 border-t border-slate-800 space-y-4">
                 <div className="flex items-center gap-2">
@@ -356,25 +360,19 @@ export default function PipelineStep0(props: PipelineWizardState) {
           </div>
         </div>
         <div className="pt-4 flex items-center justify-end">
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="lg"
             onClick={() => handleProcessInputAndConfig(true)}
-            disabled={!!loadingStates["processInput"] || !(project.input?.content || "").trim()}
-            className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-sm px-6 py-3.5 rounded-xl transition-all shadow-md cursor-pointer active:scale-95"
+            disabled={!(project.input?.content || "").trim()}
+            isLoading={!!loadingStates["processInput"]}
             title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
+            className="px-6 py-3.5"
           >
-            {loadingStates["processInput"] ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{t.ang_t_o}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>{t.Generate_Script}</span>
-              </>
-            )}
-          </button>
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>{t.Generate_Script}</span>
+          </Button>
         </div>
         {(project.scriptRewritten || loadingStates["processInput"]) && (
           <div className="pt-6 border-t border-slate-800 space-y-6">
@@ -390,18 +388,20 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold font-mono text-slate-400">{t.FULL_VERBOSE_SCRIPT}</span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="xs"
                       onClick={() => {
                         if (project.scriptRewritten) {
                           navigator.clipboard.writeText(project.scriptRewritten);
                           setInfoMsg(t.Copied_script);
                         }
                       }}
-                      className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-slate-900 transition-colors"
+                      className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-slate-900 transition-colors shadow-none"
                       title={t.Copy}
                     >
                       <Copy className="w-3.5 h-3.5" />
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex gap-4 text-[10px] font-mono text-slate-500">
                     <span>
@@ -512,10 +512,15 @@ export default function PipelineStep0(props: PipelineWizardState) {
         )}
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-end mt-6">
-          <button onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+          <Button 
+            variant="primary" 
+            size="lg" 
+            onClick={() => setCurrentStep(WizardStep.Storyboard)}
+            className="flex items-center gap-1.5 px-5 py-3 shadow"
+          >
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </>

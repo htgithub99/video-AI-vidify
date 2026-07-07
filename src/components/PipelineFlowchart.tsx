@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PipelineNode, pipelineNodes } from "../constants";
 import { Lang, translations } from "../lib/lang.js";
 import { HelpCircle, Activity, Sparkles } from "lucide-react";
+import { Button } from "./ui/Button";
 
 interface PipelineFlowchartProps {
   currentLang: Lang;
@@ -56,11 +57,13 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
           const isPassedGroup = node.stageGroup < activeStepIndex;
 
           return (
-            <button
+            <Button
               key={node.id}
               onClick={() => setSelectedNode(node)}
-              className={`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer ${
-                isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 shadow-sm scale-[1.02] ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800"
+              variant="ghost"
+              size="xs"
+              className={`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer flex-col items-start justify-start gap-1 h-auto w-full shadow-none ${
+                isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800"
               }`}
             >
               {/* Active Pulse Glow */}
@@ -71,20 +74,20 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
                 </span>
               )}
 
-              <div className="text-[9px] font-mono font-bold tracking-wider opacity-60 flex items-center justify-between mb-1">
+              <div className="text-[9px] font-mono font-bold tracking-wider opacity-60 flex items-center justify-between mb-1 w-full">
                 <span>
                   {t.STAGE_0}
                   {node.stageGroup + 1}
                 </span>
                 <span className={isActiveGroup ? "text-rose-400" : isPassedGroup ? "text-green-400" : "text-slate-400"}>{node.id}</span>
               </div>
-              <p className="text-xs font-semibold truncate uppercase tracking-tight">{currentLang === "vi" ? node.nameVi : node.nameEn}</p>
+              <p className="text-xs font-semibold truncate uppercase tracking-tight w-full text-left">{currentLang === "vi" ? node.nameVi : node.nameEn}</p>
 
-              <div className="mt-1.5 pt-1.5 border-t border-slate-800/50 text-[8px] text-slate-500 uppercase font-bold truncate flex items-center gap-1 font-mono justify-between">
+              <div className="mt-1.5 pt-1.5 border-t border-slate-800/50 text-[8px] text-slate-500 uppercase font-bold truncate flex items-center gap-1 font-mono justify-between w-full">
                 <span>{getGroupName(node.stageGroup)}</span>
                 <HelpCircle className="w-3 h-3 text-slate-600 group-hover:text-rose-400" />
               </div>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -107,20 +110,27 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
           </div>
           <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
             {onNavigateStep && selectedNode.stageGroup !== activeStepIndex && (
-              <button
+              <Button
                 onClick={() => {
                   onNavigateStep(selectedNode.stageGroup);
                   setSelectedNode(null);
                 }}
-                className="text-[10px] uppercase font-mono font-bold text-white bg-rose-600 hover:bg-rose-500 px-3.5 py-1.5 rounded border border-transparent cursor-pointer transition-colors"
+                variant="primary"
+                size="sm"
+                className="text-[10px] uppercase font-mono font-bold"
                 title={t.Navigate_to_this_stage}
               >
                 {t.Jump_to_this_step}
-              </button>
+              </Button>
             )}
-            <button onClick={() => setSelectedNode(null)} className="text-[10px] uppercase font-mono font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-[#222] px-3 py-1.5 rounded border border-slate-800 cursor-pointer">
+            <Button 
+              onClick={() => setSelectedNode(null)} 
+              variant="secondary"
+              size="sm"
+              className="text-[10px] uppercase font-mono font-bold"
+            >
               {t.Close}
-            </button>
+            </Button>
           </div>
         </div>
       )}

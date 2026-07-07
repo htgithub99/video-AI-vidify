@@ -1,6 +1,7 @@
 import { formatCleanTime } from "../../lib/timeUtils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
+import { Button } from "../ui/Button";
 
 const { Eye, Download, Video, ArrowLeft } = LucideIcons as any;
 
@@ -63,13 +64,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
             <div className="flex items-center gap-2">
               {isPlayingSim ? (
-                <button onClick={stopPlaybackSim} className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer">
+                <Button variant="primary" size="sm" onClick={stopPlaybackSim}>
                   {t.Stop_Simulation}
-                </button>
+                </Button>
               ) : (
-                <button onClick={startPlaybackSim} className="bg-rose-750 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2 rounded-lg cursor-pointer">
+                <Button variant="primary" size="sm" onClick={startPlaybackSim} className="bg-rose-750 hover:bg-rose-700 border-none">
                   {t.Play_Simulation}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -82,76 +83,106 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
           <div className="grid grid-cols-1 gap-3.5 text-xs">
             {}
-            <button onClick={handleDownloadCapcutLink} disabled={loadingExportType === EXPORT_TYPES.CAPCUT} className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 transition-colors cursor-pointer text-left disabled:opacity-50">
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleDownloadCapcutLink} 
+              disabled={loadingExportType === EXPORT_TYPES.CAPCUT} 
+              className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 text-left h-auto shrink-0 shadow-none hover:text-slate-100 flex-row gap-4"
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block flex items-center gap-1.5">
                   {loadingExportType === EXPORT_TYPES.CAPCUT && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.CAPCUT ? t.exportingCapcut : t.exportCapcut}
                 </span>
-                <span className="text-[10px] text-slate-500">{t.Exports_timeline_JSON_fil}</span>
+                <span className="text-[10px] text-slate-500 block font-normal text-left">{t.Exports_timeline_JSON_fil}</span>
               </div>
               {loadingExportType === EXPORT_TYPES.CAPCUT ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Download className="w-5 h-5 text-slate-400 shrink-0" />}
-            </button>
+            </Button>
 
             {}
-            <button onClick={handleDownloadPremiereXML} disabled={loadingExportType === EXPORT_TYPES.PREMIERE} className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 transition-colors cursor-pointer text-left disabled:opacity-50">
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleDownloadPremiereXML} 
+              disabled={loadingExportType === EXPORT_TYPES.PREMIERE} 
+              className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 text-left h-auto shrink-0 shadow-none hover:text-slate-100 flex-row gap-4"
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block flex items-center gap-1.5">
                   {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.PREMIERE ? t.exportingPremiere : t.exportPremiere}
                 </span>
-                <span className="text-[10px] text-slate-500">{t.Construct_XML_track_metad}</span>
+                <span className="text-[10px] text-slate-500 block font-normal text-left">{t.Construct_XML_track_metad}</span>
               </div>
               {loadingExportType === EXPORT_TYPES.PREMIERE ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Download className="w-5 h-5 text-slate-400 shrink-0" />}
-            </button>
+            </Button>
 
             {}
-            <button onClick={handleDownloadPremiereXML} disabled={loadingExportType === EXPORT_TYPES.PREMIERE} className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 transition-colors cursor-pointer text-left disabled:opacity-50">
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleDownloadPremiereXML} 
+              disabled={loadingExportType === EXPORT_TYPES.PREMIERE} 
+              className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 text-left h-auto shrink-0 shadow-none hover:text-slate-100 flex-row gap-4"
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block flex items-center gap-1.5">
                   {loadingExportType === EXPORT_TYPES.PREMIERE && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.PREMIERE ? t.exportingDavinci : t.exportDavinci}
                 </span>
-                <span className="text-[10px] text-slate-500">{t.Download_FCPXML_timing_fi}</span>
+                <span className="text-[10px] text-slate-500 block font-normal text-left">{t.Download_FCPXML_timing_fi}</span>
               </div>
               {loadingExportType === EXPORT_TYPES.PREMIERE ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Download className="w-5 h-5 text-slate-400 shrink-0" />}
-            </button>
+            </Button>
 
             {}
-            <button onClick={handleOfflineRenderWebM} disabled={isOfflineRendering} className={`w-full flex items-center justify-between p-3.5 border rounded-xl text-left transition-all cursor-pointer ${isOfflineRendering ? "bg-slate-950 border-slate-900 text-slate-500" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200"}`}>
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleOfflineRenderWebM} 
+              disabled={isOfflineRendering} 
+              className={`w-full flex items-center justify-between p-3.5 border rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 ${isOfflineRendering ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100"}`}
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block text-rose-400 flex items-center gap-1.5">
                   {isOfflineRendering ? <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> : <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />}
                   {isOfflineRendering ? t.exportingVideo : t.renderingWebM}
                 </span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">{isOfflineRendering ? t.waitExportProcess : t.Render_and_compile_full_p}</span>
+                <span className="text-[10px] text-slate-500 block mt-0.5 font-normal text-left">{isOfflineRendering ? t.waitExportProcess : t.Render_and_compile_full_p}</span>
               </div>
               {isOfflineRendering ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Video className="w-5 h-5 text-rose-500 shrink-0" />}
-            </button>
+            </Button>
 
             {}
-            <button onClick={handleDownloadJSONProject} disabled={loadingExportType === EXPORT_TYPES.ZIP} className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 transition-colors cursor-pointer text-left disabled:opacity-50">
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleDownloadJSONProject} 
+              disabled={loadingExportType === EXPORT_TYPES.ZIP} 
+              className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 text-left h-auto shrink-0 shadow-none hover:text-slate-100 flex-row gap-4"
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block flex items-center gap-1.5">
                   {loadingExportType === EXPORT_TYPES.ZIP && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.ZIP ? t.packagingZip : t.downloadZip}
                 </span>
-                <span className="text-[10px] text-slate-500">{t.Download_complete_CapCut_}</span>
+                <span className="text-[10px] text-slate-500 block font-normal text-left">{t.Download_complete_CapCut_}</span>
               </div>
               {loadingExportType === EXPORT_TYPES.ZIP ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Download className="w-5 h-5 text-slate-400 shrink-0" />}
-            </button>
+            </Button>
 
             {}
-            <button onClick={handleDownloadSRT} disabled={loadingExportType === EXPORT_TYPES.SRT} className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 transition-colors cursor-pointer text-left disabled:opacity-50">
-              <div>
+            <Button 
+              variant="ghost" 
+              onClick={handleDownloadSRT} 
+              disabled={loadingExportType === EXPORT_TYPES.SRT} 
+              className="w-full flex items-center justify-between p-3.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 rounded-xl text-slate-200 text-left h-auto shrink-0 shadow-none hover:text-slate-100 flex-row gap-4"
+            >
+              <div className="text-left flex-1">
                 <span className="font-bold block flex items-center gap-1.5">
                   {loadingExportType === EXPORT_TYPES.SRT && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
                   {loadingExportType === EXPORT_TYPES.SRT ? t.exportingSRT : t.Download_SRT}
                 </span>
-                <span className="text-[10px] text-slate-500">{t.Extract_synced_subtitle_t}</span>
+                <span className="text-[10px] text-slate-500 block font-normal text-left">{t.Extract_synced_subtitle_t}</span>
               </div>
               {loadingExportType === EXPORT_TYPES.SRT ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Download className="w-5 h-5 text-slate-400 shrink-0" />}
-            </button>
+            </Button>
           </div>
 
           {}
@@ -159,17 +190,22 @@ export default function PipelineStep4(props: PipelineWizardState) {
             <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">{t.Cloud_Exporter_Sync_Setup}</span>
             <div className="flex gap-2">
               <input type="text" placeholder={EXPORT_URLS.DEFAULT_S3_BUCKET} className="w-full bg-slate-900 text-slate-350 text-[11px] p-2 rounded focus:outline-none placeholder-slate-600 border border-slate-800" />
-              <button onClick={() => setInfoMsg(t.Configured_bucket_coordin)} className="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[10px] px-3.5 rounded">
+              <Button variant="primary" size="xs" onClick={() => setInfoMsg(t.Configured_bucket_coordin)}>
                 {t.Save}
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="pt-4 border-t border-slate-800 flex items-center justify-start mt-6">
-            <button onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs px-5 py-3 rounded-lg transition-all cursor-pointer shadow">
+            <Button 
+              variant="secondary" 
+              size="md" 
+              onClick={() => setCurrentStep(WizardStep.SEOBoost)} 
+              className="flex items-center gap-1.5 px-5 py-3 shadow"
+            >
               <ArrowLeft className="w-4 h-4" />
               {t.Back}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

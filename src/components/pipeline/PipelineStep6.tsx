@@ -3,6 +3,7 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import { API_ROUTES } from "../../constants";
+import { Button } from "../ui/Button";
 
 const { Play, Sparkles, Terminal, FileJson, FolderOpen, Key, CheckSquare, Square, Eye, EyeOff } = LucideIcons as any;
 
@@ -59,17 +60,10 @@ export default function PipelineStep6(props: PipelineWizardState) {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
-  const consoleEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem("capcut_ultra_config", JSON.stringify(config));
   }, [config]);
-
-  useEffect(() => {
-    if (consoleEndRef.current) {
-      consoleEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [consoleLogs]);
 
   const addLog = (msg: string, type: "info" | "success" | "warn" | "error" = "info") => {
     const time = new Date().toLocaleTimeString();
@@ -240,6 +234,34 @@ export default function PipelineStep6(props: PipelineWizardState) {
         <p className="text-xs text-slate-450 leading-relaxed">{t.node7_desc}</p>
       </div>
 
+      {/* Bảng điều khiển tiến trình CapCut */}
+      <div className="bg-slate-900/60 border border-slate-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col text-left animate-fadeIn">
+        <div className="px-5 py-3 border-b border-slate-850 bg-slate-900/40 flex items-center justify-between shrink-0">
+          <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono flex items-center gap-1.5 select-none">
+            <Terminal className="w-3.5 h-3.5 text-rose-500" />
+            {t.node7_console_title}
+          </span>
+          <span className="text-[9px] font-mono text-slate-600">STDOUT / STDERR</span>
+        </div>
+        <div className="p-5 bg-slate-950 font-mono text-[11px] leading-relaxed text-slate-350 min-h-[160px] max-h-[300px] overflow-y-auto custom-scrollbar space-y-1.5 select-text">
+          {consoleLogs.length === 0 ? (
+            <div className="text-slate-650 italic">{t.node7_console_waiting}</div>
+          ) : (
+            consoleLogs.map((log, index) => {
+              let textClass = "text-slate-300";
+              if (log.includes("✅") || log.includes("SUCCESS")) textClass = "text-teal-400 font-semibold";
+              if (log.includes("❌") || log.includes("ERROR")) textClass = "text-rose-500 font-semibold";
+              if (log.includes("⚠️")) textClass = "text-amber-400";
+              return (
+                <div key={index} className={textClass}>
+                  {log}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-5 space-y-5 bg-slate-900/40 p-5 rounded-2xl border border-slate-850 backdrop-blur-sm text-left">
           <div className="space-y-2">
@@ -249,9 +271,9 @@ export default function PipelineStep6(props: PipelineWizardState) {
             </label>
             <div className="flex gap-2">
               <input type="text" value={config.draft_json_path} onChange={(e) => setConfig((prev) => ({ ...prev, draft_json_path: e.target.value }))} placeholder={t.node7_placeholder_file} className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono" />
-              <button type="button" onClick={handleSelectFile} title={t.node7_choose_file_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 transition-all cursor-pointer flex items-center justify-center shrink-0">
+              <Button type="button" variant="ghost" onClick={handleSelectFile} title={t.node7_choose_file_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 shrink-0 shadow-none">
                 <FolderOpen className="w-4 h-4 text-rose-500" />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -268,9 +290,9 @@ export default function PipelineStep6(props: PipelineWizardState) {
                 placeholder={t.node7_api_key_placeholder}
                 className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl pl-4 pr-10 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono"
               />
-              <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer">
+              <Button type="button" variant="ghost" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer p-0 h-auto w-auto shadow-none">
                 {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -281,14 +303,14 @@ export default function PipelineStep6(props: PipelineWizardState) {
             </label>
             <div className="flex gap-2">
               <input type="text" value={config.sfx_folder} onChange={(e) => setConfig((prev) => ({ ...prev, sfx_folder: e.target.value }))} placeholder={t.node7_placeholder_sfx} className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono" />
-              <button type="button" onClick={handleSelectFolder} title={t.node7_choose_sfx_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 transition-all cursor-pointer flex items-center justify-center shrink-0">
+              <Button type="button" variant="ghost" onClick={handleSelectFolder} title={t.node7_choose_sfx_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 shrink-0 shadow-none">
                 <FolderOpen className="w-4 h-4 text-rose-500" />
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="pt-4 border-t border-slate-850">
-            <button onClick={handleRunProcess} disabled={isRunning} className={`w-full py-3.5 rounded-xl text-xs font-bold text-white shadow-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isRunning ? "bg-rose-700/50 text-rose-350 cursor-wait" : "bg-rose-600 hover:bg-rose-500 active:scale-[0.99] hover:shadow-rose-500/20"}`}>
+            <Button variant="primary" size="lg" onClick={handleRunProcess} disabled={isRunning} className="w-full">
               {isRunning ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -300,7 +322,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
                   <span>{t.node7_run_btn}</span>
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -309,14 +331,14 @@ export default function PipelineStep6(props: PipelineWizardState) {
             <div className="flex items-center justify-between border-b border-slate-850 pb-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono select-none">{t.node7_opt_title}</span>
               <div className="flex gap-2">
-                <button onClick={handleSelectAll} className="px-2.5 py-1 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-slate-200 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+                <Button variant="outline" size="xs" onClick={handleSelectAll} className="text-slate-450 hover:text-slate-200 border-slate-800 flex items-center gap-1 shadow-none">
                   <CheckSquare className="w-3 h-3 text-rose-500" />
                   {t.node7_select_all}
-                </button>
-                <button onClick={handleDeselectAll} className="px-2.5 py-1 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-slate-200 rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+                </Button>
+                <Button variant="outline" size="xs" onClick={handleDeselectAll} className="text-slate-450 hover:text-slate-200 border-slate-800 flex items-center gap-1 shadow-none">
                   <Square className="w-3 h-3 text-slate-500" />
                   {t.node7_deselect_all}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -342,34 +364,6 @@ export default function PipelineStep6(props: PipelineWizardState) {
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      <div className="bg-slate-900/60 border border-slate-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col text-left">
-        <div className="px-5 py-3 border-b border-slate-850 bg-slate-900/40 flex items-center justify-between shrink-0">
-          <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono flex items-center gap-1.5 select-none">
-            <Terminal className="w-3.5 h-3.5 text-rose-500" />
-            {t.node7_console_title}
-          </span>
-          <span className="text-[9px] font-mono text-slate-600">STDOUT / STDERR</span>
-        </div>
-        <div className="p-5 bg-slate-950 font-mono text-[11px] leading-relaxed text-slate-350 min-h-[160px] max-h-[300px] overflow-y-auto custom-scrollbar space-y-1.5 select-text">
-          {consoleLogs.length === 0 ? (
-            <div className="text-slate-650 italic">{t.node7_console_waiting}</div>
-          ) : (
-            consoleLogs.map((log, index) => {
-              let textClass = "text-slate-300";
-              if (log.includes("✅") || log.includes("SUCCESS")) textClass = "text-teal-400 font-semibold";
-              if (log.includes("❌") || log.includes("ERROR")) textClass = "text-rose-500 font-semibold";
-              if (log.includes("⚠️")) textClass = "text-amber-400";
-              return (
-                <div key={index} className={textClass}>
-                  {log}
-                </div>
-              );
-            })
-          )}
-          <div ref={consoleEndRef} />
         </div>
       </div>
     </div>

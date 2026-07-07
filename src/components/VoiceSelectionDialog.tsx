@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Play, Square, Check, Globe2, User, Activity, Mic, Heart } from "lucide-react";
 import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { appError } from "../lib/logger.js";
@@ -239,9 +240,15 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="flex gap-2">
               {["", "male", "female"].map((g) => (
-                <button key={g} onClick={() => setGender(g)} className={`flex-1 py-2 text-xs font-semibold rounded-xl border transition-all ${gender === g ? "bg-rose-500/10 border-rose-500/50 text-rose-500 shadow-sm" : "bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-slate-300 shadow-sm"}`}>
+                <Button 
+                  key={g} 
+                  variant={gender === g ? "outline" : "secondary"}
+                  size="sm"
+                  onClick={() => setGender(g)} 
+                  className={`flex-1 font-semibold ${gender === g ? "bg-rose-500/10 border-rose-500/50 text-rose-500 shadow-sm" : "bg-slate-900 border-slate-700 text-slate-400"}`}
+                >
                   {g === "" ? t.All : g === "male" ? t.Male_5 : t.Female_6}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -286,31 +293,35 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
 
               return (
                 <div key={voice.voice_id} className={`flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${isSelected ? "bg-rose-500/5 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-800/50 shadow-sm"}`} onClick={() => onSelectVoice(voice)}>
-                  <button
+                  <Button
+                    variant={isPlaying ? "primary" : "secondary"}
+                    size="md"
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlay(voice);
                     }}
-                    className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isPlaying ? "bg-rose-500 text-white shadow-lg shadow-rose-500/40 scale-105" : "bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:scale-105"}`}
+                    className={`shrink-0 w-12 h-12 rounded-full p-0 flex items-center justify-center ${isPlaying ? "bg-rose-500 text-white" : "bg-slate-800 text-slate-300"}`}
                   >
                     {isPlaying ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
-                  </button>
+                  </Button>
 
                   <div className="flex-1 min-w-0 py-0.5">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <h3 className="font-bold text-base text-slate-100 truncate">{voice.name}</h3>
                       <div className="flex items-center gap-2 shrink-0">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="xs"
                           onClick={(e) => {
                             e.stopPropagation();
                             onToggleFavoriteVoice(voice.voice_id, voice.name, voice.category || "Custom");
                           }}
-                          className="group shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 transition-all shadow-sm active:scale-90 cursor-pointer"
+                          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
                           title="Yêu thích"
                         >
-                          <Heart className={`w-4 h-4 transition-all duration-200 ${favoriteVoices.some((v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 group-hover:text-rose-500 group-hover:scale-110"}`} />
-                        </button>
+                          <Heart className={`w-4 h-4 transition-all duration-200 ${favoriteVoices.some((v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
+                        </Button>
                         {isSelected && (
                           <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
                             <Check className="w-3 h-3" />

@@ -159,10 +159,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
       <div className="h-14 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm relative">
         <div className="flex items-center gap-3">
           <Tooltip content={t.Back_to_projects} position="bottom">
-            <button onClick={props.onBackToDashboard} className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-transparent hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent transition-all cursor-pointer">
+            <Button variant="ghost" size="sm" onClick={props.onBackToDashboard} className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-slate-100 bg-transparent hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent shadow-none h-auto">
               <ArrowLeft className="w-3.5 h-3.5 text-rose-500" />
               <span>{t.Projects}</span>
-            </button>
+            </Button>
           </Tooltip>
           <div className="h-4 w-[1px] bg-slate-800/50" />
           <div className="flex items-center gap-2">
@@ -173,7 +173,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
 
         <div className="flex items-center gap-2 relative">
           <Tooltip content={t.Image_Generation_Settings} position="bottom">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={() => {
                 setShowGenSettings(!showGenSettings);
@@ -181,14 +183,16 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowFavStyles(false);
                 setShowLogsModal(false);
               }}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
+              className={`p-2 rounded-lg border shadow-none h-auto w-auto ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
             >
               <ImageIcon className="w-4 h-4" />
-            </button>
+            </Button>
           </Tooltip>
 
           <Tooltip content={t.favVoicesTitle} position="bottom">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={() => {
                 setShowFavVoices(!showFavVoices);
@@ -196,14 +200,16 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowGenSettings(false);
                 setShowLogsModal(false);
               }}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
+              className={`p-2 rounded-lg border shadow-none h-auto w-auto ${showFavVoices ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
             >
               <Heart className={`w-4 h-4 ${showFavVoices ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
+            </Button>
           </Tooltip>
 
           <Tooltip content={t.favStylesTitle} position="bottom">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={() => {
                 setShowFavStyles(!showFavStyles);
@@ -211,10 +217,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowGenSettings(false);
                 setShowLogsModal(false);
               }}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${showFavStyles ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
+              className={`p-2 rounded-lg border shadow-none h-auto w-auto ${showFavStyles ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
             >
               <Palette className={`w-4 h-4 ${showFavStyles ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
+            </Button>
           </Tooltip>
 
           <AnimatePresence>
@@ -224,24 +230,24 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Mode}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      <button type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      <Button variant="ghost" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-none h-auto ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         {t.Labs_Flow_Mode}
-                      </button>
-                      <button type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      </Button>
+                      <Button variant="ghost" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-none h-auto ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         {t.Gemini_Chat_Mode}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generate_Type}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      <button onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType !== GenerateType.Video ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      <Button variant="ghost" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all shadow-none h-auto ${project.visualConfig.generateType !== GenerateType.Video ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         <ImageIcon className="w-3.5 h-3.5" /> {t.Image}
-                      </button>
-                      <button onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      </Button>
+                      <Button variant="ghost" onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all shadow-none h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         <Video className="w-3.5 h-3.5" /> {t.Video}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -249,9 +255,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
                       {Object.values(AspectRatio).map((ratio) => (
-                        <button key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                        <Button variant="ghost" key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-none h-auto ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                           {ratio}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -259,12 +265,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Input_Method_Labs}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      <button onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      <Button variant="ghost" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-none h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         <Type className="w-3 h-3" /> {t.Type_Text}
-                      </button>
-                      <button onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      </Button>
+                      <Button variant="ghost" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-none h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         <ClipboardPaste className="w-3 h-3" /> {t.Quick_Paste}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -272,9 +278,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Sample_Count}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
                       {[1, 2, 3, 4].map((count) => (
-                        <button key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                        <Button variant="ghost" key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all shadow-none h-auto ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                           {count === 1 ? "1x" : `x${count}`}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -282,12 +288,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Chrome_Mode}</div>
                     <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800/50">
-                      <button type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      <Button variant="ghost" type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-none h-auto ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         {t.Chrome_Hidden}
-                      </button>
-                      <button type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                      </Button>
+                      <Button variant="ghost" type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-none h-auto ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                         {t.Chrome_Visible}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat && (
@@ -298,9 +304,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
                           const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
                           return (
-                            <button key={opt.value} type="button" onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${isActive ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
+                            <Button variant="ghost" key={opt.value} type="button" onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all shadow-none h-auto ${isActive ? "bg-slate-800 text-rose-400 shadow shadow-black/50" : "text-slate-500 hover:text-slate-300"}`}>
                               {label}
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -367,10 +373,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       {t.favVoicesTitle}
                     </span>
                     {project.voiceConfig?.voiceURI && (
-                      <button type="button" onClick={handleSaveCurrentVoice} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-slate-200 text-[9px] font-bold rounded flex items-center gap-1 transition-all cursor-pointer">
+                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentVoice} className="px-2 py-1 text-[9px] font-bold rounded flex items-center gap-1">
                         <Volume2 className="w-2.5 h-2.5 text-rose-500" />
                         {t.saveCurrentVoice}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -391,20 +397,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                 </div>
                                 <div className="flex gap-1.5">
                                   <input type="text" value={editFormURI} onChange={(e) => setEditFormURI(e.target.value)} placeholder={t.voiceIdPlaceholder} className="flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[9px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
-                                  <button type="button" onClick={() => handleSaveEdit(item.id)} className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-bold rounded shadow transition-all cursor-pointer flex items-center justify-center">
+                                  <Button variant="primary" size="xs" type="button" onClick={() => handleSaveEdit(item.id)} className="px-2 py-1 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white flex items-center justify-center h-auto w-auto">
                                     <Check className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button type="button" onClick={handleCancelEdit} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-350 text-[9px] font-bold rounded border border-slate-700 transition-all cursor-pointer flex items-center justify-center">
+                                  </Button>
+                                  <Button variant="secondary" size="xs" type="button" onClick={handleCancelEdit} className="px-2 py-1 text-slate-355 text-[9px] font-bold flex items-center justify-center h-auto w-auto">
                                     <X className="w-3.5 h-3.5" />
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
                               <div className="flex items-center justify-between w-full">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5">
-                                    <span className={`text-[10px] font-bold truncate ${isCurrent ? "text-rose-400" : "text-slate-200"}`}>{item.name}</span>
-                                    <button
+                                    <span className={`text-[10px] font-bold truncate ${isCurrent ? "text-rose-450" : "text-slate-200"}`}>{item.name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
                                       type="button"
                                       onClick={() => {
                                         navigator.clipboard.writeText(item.name);
@@ -412,15 +420,17 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
                                       title="Copy tên giọng"
-                                      className="p-0.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
+                                      className="p-0.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
-                                    </button>
+                                    </Button>
                                     <span className="shrink-0 text-[8px] bg-slate-950 px-1 py-0.2 rounded border border-slate-850 font-mono text-slate-500">{item.channelName}</span>
                                   </div>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="block text-[8px] text-slate-500 truncate font-mono select-all">{item.voiceURI}</span>
-                                    <button
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
                                       type="button"
                                       onClick={() => {
                                         navigator.clipboard.writeText(item.voiceURI);
@@ -428,19 +438,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
                                       title="Copy Voice ID"
-                                      className="p-0.5 hover:bg-slate-800 rounded text-slate-550 hover:text-slate-350 transition-all cursor-pointer"
+                                      className="p-0.5 hover:bg-slate-800 rounded text-slate-550 hover:text-slate-350 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2 h-2" />
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0 ml-2">
-                                  <button type="button" onClick={() => handleStartEdit(item)} className="p-1 hover:bg-slate-800 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Sửa giọng đọc">
+                                  <Button variant="ghost" size="xs" type="button" onClick={() => handleStartEdit(item)} className="p-1 hover:bg-slate-800 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title="Sửa giọng đọc">
                                     <Pencil className="w-3 h-3" />
-                                  </button>
-                                  <button type="button" onClick={(e) => handleDeleteFavorite(item.id, e)} className="p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Xóa giọng đọc">
+                                  </Button>
+                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavorite(item.id, e)} className="p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title="Xóa giọng đọc">
                                     <Trash className="w-3 h-3" />
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             )}
@@ -457,9 +467,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     </div>
                     <div className="flex gap-2">
                       <input type="text" value={favFormURI} onChange={(e) => setFavFormURI(e.target.value)} placeholder={t.voiceIdPlaceholder} className="flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
-                      <button type="button" onClick={handleAddFavorite} className="px-3 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 text-white text-[10px] font-bold rounded shadow transition-all cursor-pointer">
+                      <Button variant="primary" size="sm" type="button" onClick={handleAddFavorite} className="px-3 text-white text-[10px] font-bold rounded">
                         {t.addFavVoiceBtn}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -484,10 +494,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       {t.favStylesTitle}
                     </span>
                     {project.visualConfig?.referencePrompt && (
-                      <button type="button" onClick={handleSaveCurrentStyle} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer">
+                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentStyle} className="px-2.5 py-1 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5 text-rose-500" />
                         {t.saveCurrentStyle}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -505,19 +515,21 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                 <input type="text" value={editStyleFormName} onChange={(e) => setEditStyleFormName(e.target.value)} placeholder={t.styleNamePlaceholder} className="w-full bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
                                 <div className="flex gap-1.5">
                                   <input type="text" value={editStyleFormPrompt} onChange={(e) => setEditStyleFormPrompt(e.target.value)} placeholder={t.stylePromptPlaceholder} className="flex-1 bg-slate-955 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
-                                  <button
+                                  <Button
+                                    variant="primary"
+                                    size="xs"
                                     type="button"
                                     onClick={() => {
                                       handleSaveEditStyle(item.id, editStyleFormName, editStyleFormPrompt);
                                       setEditingStyleId(null);
                                     }}
-                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded shadow transition-all cursor-pointer flex items-center justify-center"
+                                    className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/20 text-white text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto"
                                   >
                                     <Check className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button type="button" onClick={() => setEditingStyleId(null)} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 text-[10px] font-bold rounded border border-slate-200 dark:border-slate-700 transition-all cursor-pointer flex items-center justify-center">
+                                  </Button>
+                                  <Button variant="secondary" size="xs" type="button" onClick={() => setEditingStyleId(null)} className="px-2 py-1 text-slate-650 dark:text-slate-350 text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto">
                                     <X className="w-3.5 h-3.5" />
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             ) : (
@@ -528,7 +540,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   </div>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="block text-[9px] text-slate-500 dark:text-slate-400 truncate font-mono select-all max-w-[200px]">{item.prompt}</span>
-                                    <button
+                                    <Button
+                                      variant="ghost"
+                                      size="xs"
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -537,28 +551,30 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
                                       title="Copy mô tả phong cách"
-                                      className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer"
+                                      className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
-                                    </button>
+                                    </Button>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0 ml-2">
-                                  <button
+                                  <Button
+                                    variant="ghost"
+                                    size="xs"
                                     type="button"
                                     onClick={() => {
                                       setEditingStyleId(item.id);
                                       setEditStyleFormName(item.name);
                                       setEditStyleFormPrompt(item.prompt);
                                     }}
-                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-200 rounded transition-all cursor-pointer"
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-200 rounded shadow-none h-auto w-auto"
                                     title="Sửa phong cách"
                                   >
                                     <Pencil className="w-3 h-3" />
-                                  </button>
-                                  <button type="button" onClick={(e) => handleDeleteFavoriteStyle(item.id, e)} className="p-1 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-455 rounded transition-all cursor-pointer" title="Xóa phong cách">
+                                  </Button>
+                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavoriteStyle(item.id, e)} className="p-1 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-455 rounded shadow-none h-auto w-auto" title="Xóa phong cách">
                                     <Trash className="w-3 h-3" />
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             )}
@@ -572,17 +588,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <input type="text" value={favStyleFormName} onChange={(e) => setFavStyleFormName(e.target.value)} placeholder={t.styleNamePlaceholder} className="w-full bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
                     <div className="flex gap-2">
                       <input type="text" value={favStyleFormPrompt} onChange={(e) => setFavStyleFormPrompt(e.target.value)} placeholder={t.stylePromptPlaceholder} className="flex-1 bg-slate-955 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 placeholder-slate-600 focus:outline-none focus:border-rose-500/50" />
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
                         type="button"
                         onClick={() => {
                           handleAddFavoriteStyle(favStyleFormName, favStyleFormPrompt);
                           setFavStyleFormName("");
                           setFavStyleFormPrompt("");
                         }}
-                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold rounded-lg shadow transition-all cursor-pointer shrink-0"
+                        className="px-4 py-1.5 text-white text-[10px] font-bold rounded-lg shrink-0"
                       >
                         {t.addFavStyleBtn}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -591,7 +609,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </AnimatePresence>
 
           <Tooltip content={t.System_Logs} position="bottom">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               type="button"
               onClick={() => {
                 setShowLogsModal(!showLogsModal);
@@ -599,22 +619,22 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 setShowFavVoices(false);
                 setShowFavStyles(false);
               }}
-              className={`p-2 rounded-lg border transition-all cursor-pointer ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
+              className={`p-2 rounded-lg border shadow-none h-auto w-auto ${showLogsModal ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}
             >
               <Terminal className="w-4 h-4" />
-            </button>
+            </Button>
           </Tooltip>
 
           <Tooltip content={t.Step_Flow_L_key} position="bottom">
-            <button type="button" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${leftSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <Button variant="ghost" size="sm" type="button" onClick={() => setLeftSidebarOpen(!leftSidebarOpen)} className={`p-2 rounded-lg border shadow-none h-auto w-auto ${leftSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Workflow className="w-4 h-4" />
-            </button>
+            </Button>
           </Tooltip>
 
           <Tooltip content={t.Settings_R_key} position="bottom">
-            <button type="button" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} className={`p-2 rounded-lg border transition-all cursor-pointer ${rightSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
+            <Button variant="ghost" size="sm" type="button" onClick={() => setRightSidebarOpen(!rightSidebarOpen)} className={`p-2 rounded-lg border shadow-none h-auto w-auto ${rightSidebarOpen ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-transparent border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-800"}`}>
               <Settings2 className="w-4 h-4" />
-            </button>
+            </Button>
           </Tooltip>
         </div>
         <AnimatePresence>
@@ -702,10 +722,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 <div key={stepIdx} className="relative">
                   {stepIdx < 6 && <div className="absolute left-[24px] top-12 bottom-[-24px] w-[2px] bg-gradient-to-b from-rose-500/30 to-slate-800 z-0" />}
 
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setCurrentStep(stepIdx)}
                     title={tooltip}
-                    className={`w-full text-left p-2.5 rounded-xl border relative z-10 transition-all duration-300 flex items-center gap-2.5 cursor-pointer select-none outline-none ${isCurrent ? "bg-slate-900/90 border-rose-500 text-slate-100 shadow-lg shadow-rose-500/10 scale-[1.01]" : isCompleted ? "bg-slate-950/60 border-rose-500/20 text-rose-400 hover:bg-slate-900/30" : "bg-slate-955/10 border-slate-850 text-slate-500 hover:text-slate-350 hover:border-slate-700"}`}
+                    className={`w-full text-left p-2.5 rounded-xl border relative z-10 flex items-center gap-2.5 select-none h-auto justify-start ${isCurrent ? "bg-slate-900/90 border-rose-500 text-slate-100 shadow-lg shadow-rose-500/10 scale-[1.01]" : isCompleted ? "bg-slate-950/60 border-rose-500/20 text-rose-400 hover:bg-slate-900/30" : "bg-slate-955/10 border-slate-850 text-slate-500 hover:text-slate-350 hover:border-slate-700"}`}
                   >
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold shrink-0 border transition-all ${isCurrent ? "bg-rose-600 border-rose-500 text-white" : isCompleted ? "bg-rose-950/20 border-rose-500/20 text-rose-450" : "bg-slate-900 border-slate-800 text-slate-550"}`}>0{stepIdx + 1}</div>
 
@@ -714,9 +735,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         {t.NODE}
                         {stepIdx + 1}
                       </div>
-                      <div className="text-[11px] font-extrabold uppercase truncate mt-0.5">{shortLabel}</div>
+                      <div className="text-[11px] font-extrabold uppercase truncate mt-0.5 text-left">{shortLabel}</div>
                     </div>
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -795,9 +816,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           className="w-full bg-slate-100 hover:bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-9 py-2 text-xs text-slate-200 font-semibold placeholder-slate-550 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 transition-all h-10"
                         />
                         {voiceSearch && (
-                          <button type="button" onClick={() => setVoiceSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-850 text-slate-400 hover:text-slate-200 rounded-full hover:scale-105 transition cursor-pointer">
+                          <Button variant="ghost" size="xs" type="button" onClick={() => setVoiceSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 bg-slate-850 text-slate-400 hover:text-slate-200 rounded-full hover:scale-105 transition shadow-none h-auto w-auto">
                             <X className="w-3 h-3" />
-                          </button>
+                          </Button>
                         )}
                       </div>
                       <div className="flex items-center bg-slate-955 p-1 rounded-xl border border-slate-800/80 shrink-0 h-10 select-none">
@@ -813,17 +834,18 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((tab) => {
                           const isActive = voiceTypeFilter === tab.id;
                           return (
-                            <button
+                            <Button
                               key={tab.id}
+                              variant="ghost"
                               type="button"
                               onClick={() => {
                                 setVoiceTypeFilter(tab.id as any);
                               }}
-                              className={`px-4 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${isActive ? "bg-slate-800 text-slate-100 shadow-sm border border-slate-700" : "text-slate-500 hover:text-slate-300"}`}
+                              className={`px-4 h-8 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-none ${isActive ? "bg-slate-800 text-slate-100 shadow-sm border border-slate-700 hover:bg-slate-800 hover:text-slate-100" : "text-slate-500 hover:text-slate-300"}`}
                             >
                               {tab.id === "premium" ? <Sparkles className="w-3 h-3 text-amber-500 shrink-0" /> : <Layers className="w-3 h-3 text-sky-400 shrink-0" />}
                               <span>{tab.label}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -847,9 +869,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((loc) => {
                           const isActive = voiceLangFilter === loc.id;
                           return (
-                            <button key={loc.id} type="button" onClick={() => setVoiceLangFilter(loc.id as any)} className={`px-3 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${isActive ? "bg-rose-500/10 border-rose-500/30 text-rose-450" : "bg-slate-100 hover:bg-slate-900 border-slate-800 text-slate-450 hover:text-slate-250"}`}>
+                            <Button key={loc.id} variant="ghost" type="button" onClick={() => setVoiceLangFilter(loc.id as any)} className={`px-3 py-1 rounded-lg text-[10px] font-bold border h-auto w-auto shadow-none ${isActive ? "bg-rose-500/10 border-rose-500/30 text-rose-450 hover:bg-rose-500/10 hover:text-rose-450" : "bg-slate-100 hover:bg-slate-900 border-slate-880 text-slate-450 hover:text-slate-250"}`}>
                               {loc.label}
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -878,9 +900,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         ].map((gen) => {
                           const isActive = selectedGenderFilter === gen.id;
                           return (
-                            <button key={gen.id} type="button" onClick={() => setSelectedGenderFilter(gen.id as any)} className={`px-3 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border ${isActive ? "bg-rose-600 border-rose-600 hover:bg-rose-500 text-white shadow-sm" : "bg-slate-100 hover:bg-slate-900 border-slate-800 text-slate-450 hover:text-slate-250"}`}>
+                            <Button key={gen.id} variant="ghost" type="button" onClick={() => setSelectedGenderFilter(gen.id as any)} className={`px-3 py-1 rounded-lg text-[10px] font-bold border h-auto w-auto shadow-none ${isActive ? "bg-rose-600 border-rose-600 hover:bg-rose-500 hover:text-white text-white" : "bg-slate-100 hover:bg-slate-900 border-slate-880 text-slate-450 hover:text-slate-250"}`}>
                               {gen.label}
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -1045,7 +1067,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   <span className="text-[9px] font-mono text-slate-500 font-bold uppercase truncate max-w-[125px]">{voice.localService ? t.Offline_Supported : t.Online_API_Required}</span>
 
                                   <div className="flex items-center gap-1.5 shrink-0">
-                                    <button
+                                    <Button
+                                      variant="ghost"
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1054,11 +1077,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         const pitch = project.voiceConfig.pitch || 1.0;
                                         playVoicePreview(voice.voiceURI, gender, voice.lang, speed, pitch);
                                       }}
-                                      className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all duration-200 cursor-pointer ${playingVoiceURI === voice.voiceURI ? "bg-rose-600 border-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/20" : "bg-slate-100 hover:bg-slate-850 border-slate-800 text-slate-350"}`}
+                                      className={`w-8 h-8 rounded-xl border flex items-center justify-center shadow-none p-0 ${playingVoiceURI === voice.voiceURI ? "bg-rose-600 border-rose-600 hover:bg-rose-500 hover:text-white text-white" : "bg-slate-100 hover:bg-slate-850 border-slate-800 text-slate-350"}`}
                                       title={playingVoiceURI === voice.voiceURI ? t.Stop_preview : t.Listen_sample}
                                     >
                                       {playingVoiceURI === voice.voiceURI ? <Pause className="w-3 h-3 animate-pulse" /> : <Play className="w-3 h-3" />}
-                                    </button>
+                                    </Button>
 
                                     <span className={`px-2.5 py-1 rounded-lg text-[9px] font-mono font-black uppercase transition-all shrink-0 border ${isSelected ? "bg-rose-500 text-white border-rose-500" : "bg-slate-950 text-slate-400 border-slate-850"}`}>{isSelected ? t.ACTIVE : t.SELECT}</span>
                                   </div>
@@ -1150,9 +1173,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <span className="text-[10px] uppercase font-mono font-bold text-rose-500 tracking-wider">{t.System_Error}</span>
                   <p className="leading-snug text-slate-300 font-medium">{errorMsg}</p>
                 </div>
-                <button onClick={() => setErrorMsg("")} className="text-slate-500 hover:text-slate-200 transition-colors shrink-0 p-0.5 hover:bg-slate-800/50 rounded cursor-pointer">
+                <Button variant="ghost" size="xs" onClick={() => setErrorMsg("")} className="text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-800/50 rounded shadow-none h-auto w-auto">
                   <X className="w-3.5 h-3.5" />
-                </button>
+                </Button>
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500/10">
                   <div className="h-full bg-rose-500 animate-shrinkWidth" />
                 </div>
@@ -1186,9 +1209,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <span className="text-[10px] uppercase font-mono font-bold text-emerald-500 tracking-wider">{t.Success}</span>
                   <p className="leading-snug text-slate-300 font-medium">{infoMsg}</p>
                 </div>
-                <button onClick={() => setInfoMsg("")} className="text-slate-500 hover:text-slate-200 transition-colors shrink-0 p-0.5 hover:bg-slate-800/50 rounded cursor-pointer">
+                <Button variant="ghost" size="xs" onClick={() => setInfoMsg("")} className="text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-800/50 rounded shadow-none h-auto w-auto">
                   <X className="w-3.5 h-3.5" />
-                </button>
+                </Button>
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500/10">
                   <div className="h-full bg-emerald-500 animate-shrinkWidth" />
                 </div>

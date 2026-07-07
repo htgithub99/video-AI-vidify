@@ -323,6 +323,7 @@ export interface ITooltipProps {
 export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   isLoading?: boolean;
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 export interface Voice {
