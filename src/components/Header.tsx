@@ -158,7 +158,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
       <div className="w-full max-w-[100vw] xl:max-w-screen-2xl mx-auto px-4 lg:px-8 py-3 flex items-center justify-between gap-4 relative">
-        {}
+        { }
         <div className="flex items-center gap-3">
           <div className="p-1.5 sm:p-2 bg-rose-600 rounded-lg flex items-center justify-center shadow-md">
             <Video className="w-4 h-4 sm:w-5 sm:h-5 text-slate-100" />
@@ -172,15 +172,15 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
           </div>
         </div>
 
-        {}
-        <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1 overflow-x-auto no-scrollbar">
-          {}
+        { }
+        <div className="flex items-center justify-end gap-2 sm:gap-3 flex-1 no-scrollbar">
+          { }
           <div className="hidden md:flex items-center gap-2 mr-2">
             <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse"></div>
             <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">{t.Live_Sync}</span>
           </div>
 
-          {}
+          { }
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs">
             <Coins className="w-3.5 h-3.5 text-rose-400" />
             <span className="font-mono font-medium text-rose-400">
@@ -188,7 +188,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
             </span>
           </div>
 
-          {}
+          { }
           <div className="hidden sm:flex items-center gap-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg px-2.5 py-1.5 text-xs">
             <TrendingUp className="w-3.5 h-3.5 text-green-400" />
             <span className="font-mono font-medium text-green-400">
@@ -196,7 +196,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
             </span>
           </div>
 
-          {}
+          { }
           <Button
             variant={showKeysConfig ? "outline" : "secondary"}
             size="sm"
@@ -211,7 +211,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
             {(geminiKey || ai33Key) && <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>}
           </Button>
 
-          {}
+          { }
           <Button
             variant={showConfig ? "outline" : "secondary"}
             size="sm"
@@ -226,30 +226,30 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
             {showConfig && <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>}
           </Button>
 
-          {}
-          <Button 
-            variant="secondary" 
-            size="xs" 
-            onClick={toggleTheme} 
+          { }
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={toggleTheme}
             className="p-1.5 bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700 shrink-0 shadow-none"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
 
-          {}
+          { }
           <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-lg p-0.5 shrink-0">
-            <Button 
-              variant="ghost" 
-              size="xs" 
-              onClick={() => setLang("vi")} 
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setLang("vi")}
               className={`px-2 py-1 text-[10px] rounded-md shadow-none ${currentLang === "vi" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
             >
               {t.VI}
             </Button>
-            <Button 
-              variant="ghost" 
-              size="xs" 
-              onClick={() => setLang("en")} 
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setLang("en")}
               className={`px-2 py-1 text-[10px] rounded-md shadow-none ${currentLang === "en" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
             >
               {t.EN}
@@ -257,9 +257,9 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
           </div>
         </div>
 
-        {}
+        { }
         <AnimatePresence>
-          {}
+          { }
           {showConfig && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ type: "spring", stiffness: 350, damping: 30 }} className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]">
               <div className="p-4 sm:p-6 space-y-5">
@@ -345,7 +345,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
         </AnimatePresence>
 
         <AnimatePresence>
-          {}
+          { }
           {showKeysConfig && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ type: "spring", stiffness: 350, damping: 30 }} className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]">
               <div className="p-4 sm:p-6 space-y-5">

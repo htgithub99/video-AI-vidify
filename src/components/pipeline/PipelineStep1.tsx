@@ -35,7 +35,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
     if (voiceTestAudioRef.current) {
       voiceTestAudioRef.current.src = previewUrl;
-      voiceTestAudioRef.current.play().catch(() => {});
+      voiceTestAudioRef.current.play().catch(() => { });
       setTestingVoiceURI(voiceURI);
     }
   };
@@ -208,7 +208,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
   return (
     <>
-      {}
+      { }
       <audio ref={voiceTestAudioRef} onEnded={() => setTestingVoiceURI(null)} className="hidden" />
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
@@ -244,12 +244,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        {}
+        { }
         <div className="bg-slate-950/40 p-5 rounded-xl border border-slate-800/60 max-w-full space-y-5 shadow-lg text-left relative overflow-hidden">
           <h4 className="text-xs font-bold uppercase tracking-wider text-rose-450 border-b border-slate-800/60 pb-2">{t.Settings}</h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {}
+            { }
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-400 font-mono font-bold uppercase block">{t.txt_1_Voice_Actor}</label>
@@ -330,7 +330,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </div>
             </div>
 
-            {}
+            { }
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] text-slate-400 font-mono font-bold uppercase block">{t.txt_2_Split_Density}</label>
@@ -371,10 +371,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        {}
+        { }
         {(ttsAudioUrl || loadingStates["bulkVoiceGenerate_loading"]) && (
           <div ref={voicePlayerSectionRef} className="bg-slate-955/60 p-5 rounded-xl border border-rose-500/25 space-y-4 mb-4 shadow-xl text-left relative overflow-hidden animate-fade-in animate-duration-300">
-            {}
+            { }
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.02] rounded-full blur-2xl pointer-events-none" />
 
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
@@ -386,9 +386,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {}
+              { }
               <div className="bg-slate-900/95 border border-slate-850 p-4 rounded-xl space-y-4 shadow-xl relative">
-                {}
+                { }
                 <style>{`
  @keyframes active-soundwave {
  0% { height: 4px; }
@@ -428,7 +428,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
  }
  `}</style>
 
-                {}
+                { }
                 <div className="flex items-center justify-between gap-3 text-xs font-mono font-bold tracking-wider uppercase pb-2 border-b border-slate-800/60 text-slate-400">
                   <span className="flex items-center gap-1.5 text-rose-450 text-[10px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
@@ -461,7 +461,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 ) : (
                   <div className="space-y-3.5">
-                    {}
+                    { }
                     {ttsAudioUrl !== "simulated" && (
                       <audio
                         ref={audioPreviewRef}
@@ -478,7 +478,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       />
                     )}
 
-                    {}
+                    { }
                     <div className="bg-slate-905 p-2.5 rounded-lg border border-slate-850 flex flex-wrap items-center justify-between gap-3 shadow-inner">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-rose-500/10 to-amber-500/10 rounded-lg border border-rose-500/20 text-rose-400">
@@ -494,14 +494,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </div>
                       </div>
 
-                      {}
+                      { }
                       <div className="bg-slate-950 px-2 py-1 rounded border border-slate-800 text-[9px] font-mono text-slate-450 text-right space-y-0.5">
                         <div className="font-bold text-slate-350">{t.txt_16_bit_WAV}</div>
                         <div className="text-[8px] text-slate-600">{t.txt_44_1kHz_Mono}</div>
                       </div>
                     </div>
 
-                    {}
+                    { }
                     <div className="py-2.5 flex items-center justify-center gap-[4px] h-11 bg-slate-950/80 rounded-lg border border-slate-900 relative overflow-hidden px-1.5">
                       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
                       <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
@@ -528,7 +528,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       })}
                     </div>
 
-                    {}
+                    { }
                     <div className="space-y-1">
                       <div className="relative group/seeker select-none pt-1">
                         <input
@@ -563,7 +563,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
 
-                    {}
+                    { }
                     <div className="flex items-center justify-between pt-1 gap-2 border-t border-slate-900/80 pt-2.5">
                       <Button
                         variant="ghost"
@@ -650,9 +650,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           variant="ghost"
                           type="button"
                           onClick={handleDownloadVoice}
-                          className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${
-                            ttsAudioUrl === "simulated" ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300" : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
-                          }`}
+                          className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${ttsAudioUrl === "simulated" ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300" : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
+                            }`}
                           title={t.Download_voiceover_file}
                         >
                           <Download className="w-3.5 h-3.5 text-current shrink-0" />
@@ -664,9 +663,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 )}
               </div>
 
-              {}
+              { }
               <div className="border border-slate-800 rounded-lg bg-slate-950/90 overflow-hidden font-mono text-[10px] leading-relaxed relative flex flex-col min-h-[220px] max-h-[320px]">
-                {}
+                { }
                 <div className="bg-slate-900 px-3 py-1.5 flex items-center justify-between border-b border-slate-800">
                   <div className="flex items-center gap-2">
                     {loadingStates["bulkVoiceGenerate_loading"] ? (
@@ -693,7 +692,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   )}
                 </div>
 
-                {}
+                { }
                 <div className="p-3 overflow-y-auto custom-scrollbar space-y-1.5 text-[11px] flex-1">
                   {loadingStates["bulkVoiceGenerate_loading"] ? (
                     <div className="space-y-2 select-none">
@@ -758,9 +757,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         )}
 
-        {}
+        { }
         <div className="bg-slate-950/40 p-4.5 rounded-xl border border-slate-800/60 space-y-4 mb-4 shadow-xl text-left relative overflow-hidden">
-          {}
+          { }
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.02] rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-1">
@@ -771,9 +770,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
             <h3 className="text-xs font-bold text-slate-350">{t.Select_Storyboard_Split_M}</h3>
           </div>
 
-          {}
+          { }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10">
-            {}
+            { }
             <Button
               variant="ghost"
               type="button"
@@ -783,7 +782,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               }}
               className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "audio" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`}
             >
-              {}
+              { }
               <div className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "audio" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`}>
                 <Check className="w-2.5 h-2.5" />
               </div>
@@ -802,7 +801,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </div>
             </Button>
 
-            {}
+            { }
             <Button
               variant="ghost"
               type="button"
@@ -812,7 +811,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               }}
               className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "script" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`}
             >
-              {}
+              { }
               <div className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "script" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`}>
                 <Check className="w-2.5 h-2.5" />
               </div>
@@ -866,11 +865,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
  }
  `}</style>
 
-              {}
+              { }
               <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-rose-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
-              {}
+              { }
               <div className="flex bg-slate-950/80 p-1 border border-slate-900 rounded-lg relative z-10 max-w-sm">
                 <Button
                   variant="ghost"
@@ -910,7 +909,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </Button>
               </div>
 
-              {}
+              { }
               <div className="relative z-10 min-h-[110px] font-sans">
                 {project.voiceConfig.audioType !== AudioType.Upload ? (
                   <div className="space-y-3">
@@ -918,7 +917,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       <div className="bg-slate-950/45 border border-slate-850 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.015] rounded-full blur-2xl pointer-events-none" />
 
-                        {}
+                        { }
                         <audio
                           ref={step2AudioRef}
                           src={ttsAudioUrl}
@@ -933,7 +932,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           className="hidden"
                         />
 
-                        {}
+                        { }
                         <div className="flex items-center justify-between gap-3 relative z-10">
                           <div className="flex items-center gap-2.5 min-w-0">
                             {step2IsPlaying ? (
@@ -981,7 +980,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="flex items-center gap-3 relative z-10 pt-2 border-t border-slate-900/60">
                           <span className="text-[10px] font-mono font-bold text-emerald-400 min-w-[32px] text-left">{formatAudioTime(step2CurrentTime)}</span>
 
@@ -1010,7 +1009,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                           <span className="text-[10px] font-mono text-slate-500 min-w-[32px] text-right">{formatAudioTime(step2Duration || 0)}</span>
 
-                          {}
+                          { }
                           <div className="flex items-end gap-0.5 h-3.5 w-3.5 shrink-0">
                             <span
                               style={{
@@ -1037,7 +1036,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       <div className="bg-slate-950/45 border border-slate-855 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.015] rounded-full blur-2xl pointer-events-none" />
 
-                        {}
+                        { }
                         <div className="flex items-center justify-between gap-3 relative z-10">
                           <div className="flex items-center gap-2.5 min-w-0">
                             {step2IsSimulatedPlaying ? (
@@ -1145,7 +1144,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                           <span className="text-[10px] font-mono text-slate-500 min-w-[32px] text-right">{formatAudioTime(voiceAudioDuration || 0)}</span>
 
-                          {}
+                          { }
                           <div className="flex items-end gap-0.5 h-3.5 w-3.5 shrink-0">
                             <span
                               style={{
@@ -1210,7 +1209,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       <div className="bg-slate-950/45 border border-slate-850 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.015] rounded-full blur-2xl pointer-events-none" />
 
-                        {}
+                        { }
                         <audio
                           ref={step2AudioRef}
                           src={project.voiceConfig.audioUrl}
@@ -1225,7 +1224,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           className="hidden"
                         />
 
-                        {}
+                        { }
                         <div className="flex items-center justify-between gap-3 relative z-10">
                           <div className="flex items-center gap-2.5 min-w-0">
                             {step2IsPlaying ? (
@@ -1298,7 +1297,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </div>
                         </div>
 
-                        {}
+                        { }
                         <div className="flex items-center gap-3 relative z-10 pt-2 border-t border-slate-900/60">
                           <span className="text-[10px] font-mono font-bold text-emerald-400 min-w-[32px] text-left">{formatAudioTime(step2CurrentTime)}</span>
 
@@ -1327,7 +1326,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                           <span className="text-[10px] font-mono text-slate-500 min-w-[32px] text-right">{formatAudioTime(step2Duration || 0)}</span>
 
-                          {}
+                          { }
                           <div className="flex items-end gap-0.5 h-3.5 w-3.5 shrink-0">
                             <span
                               style={{
@@ -1409,7 +1408,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        {}
+        { }
         <div className="bg-slate-950/60 border border-slate-800/85 rounded-xl p-4 space-y-3 shadow-inner text-left">
           <div className="flex items-center justify-between">
             <Button variant="ghost" type="button" onClick={() => setShowAdvancedVisualConfig(!showAdvancedVisualConfig)} className="flex items-center gap-2 text-xs font-bold text-rose-450 hover:text-rose-350 transition-colors shadow-none p-0 h-auto w-auto hover:bg-transparent" title={t.Modify_visual_configurati}>
@@ -1451,7 +1450,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row gap-4 font-sans shadow-inner items-stretch">
-                {}
+                { }
                 <div
                   className="bg-slate-900/40 border-[2px] border-dashed border-slate-800 hover:border-emerald-500/50 rounded-lg p-3 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer w-full md:w-64 shrink-0 min-h-[90px]"
                   onDragOver={(e) => {
@@ -1485,7 +1484,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   <span className="text-[8px] text-slate-500 leading-tight block whitespace-nowrap">{t.System_extracts_Style_Art}</span>
                 </div>
 
-                {}
+                { }
                 <div className="flex-1 flex flex-col min-w-0 w-full min-h-[90px]">
                   {project.visualConfig?.referenceImages && project.visualConfig.referenceImages.length > 0 ? (
                     <div className="flex flex-col gap-3 h-full">
@@ -1601,7 +1600,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </div>
               </div>
 
-              {}
+              { }
               <div className="border-t border-slate-800/80 my-2 pt-2" />
 
               <div className="flex items-center justify-between mb-2">
@@ -1615,7 +1614,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </label>
               </div>
 
-              {}
+              { }
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-inner">
                 {!project.visualConfig?.characters || project.visualConfig.characters.length === 0 ? (
                   <div className="flex items-center justify-between gap-3">
@@ -1627,7 +1626,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {}
+                    { }
                     <div className="flex items-center justify-between border-b border-slate-850 pb-2">
                       <span className="text-[10px] text-slate-400 font-mono">{t.charDetectedCount.replace("{count}", project.visualConfig.characters.length.toString())}</span>
                       <div className="flex items-center gap-2">
@@ -1643,14 +1642,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
 
-                    {}
+                    { }
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {project.visualConfig.characters.map((char) => {
                         const isExtracting = !!loadingStates[`extractCharacter_${char.id}`];
                         return (
                           <div key={char.id} className="bg-slate-955/65 rounded-xl p-3 border border-slate-850 flex flex-col justify-between gap-2.5 relative shadow-md">
                             <div className="flex flex-row gap-3 items-stretch">
-                              {}
+                              { }
                               <div className="flex-1 min-w-0 flex flex-col justify-between">
                                 <div>
                                   <div className="flex items-center justify-between gap-1">
@@ -1688,10 +1687,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 </div>
                               </div>
 
-                              {}
+                              { }
                               <div className="w-[1px] bg-slate-800/80 my-1 self-stretch" />
 
-                              {}
+                              { }
                               <div className="w-24 sm:w-28 shrink-0 flex flex-col gap-1.5 justify-between">
                                 <div
                                   className="bg-slate-900/40 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded p-1.5 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer h-[42px]"
@@ -1723,7 +1722,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   <span className="text-[7px] font-bold text-slate-350 block leading-tight truncate max-w-[80px]">{t.charUploadFor.replace("{name}", char.name)}</span>
                                 </div>
 
-                                {}
+                                { }
                                 <div className="min-w-0 w-full">
                                   {char.images && char.images.length > 0 ? (
                                     <div className="flex flex-wrap gap-1 max-h-[32px] overflow-y-auto p-0.5 bg-slate-900/10 rounded border border-slate-900/30">
@@ -1773,7 +1772,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               </div>
                             </div>
 
-                            {}
+                            { }
                             <div className="border-t border-slate-900/60 pt-2 space-y-2">
                               {char.prompt && (
                                 <div className="bg-emerald-950/15 border border-emerald-500/20 rounded p-1.5 flex flex-col gap-1">
@@ -1835,7 +1834,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        {}
+        { }
         <div className="bg-slate-950/80 border border-slate-850 rounded-xl p-5 space-y-4 shadow-xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 pb-3 border-b border-slate-900">
             <div>
@@ -1847,7 +1846,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
             </div>
           </div>
 
-          {}
+          { }
           {bulkUploadWarning && (
             <div className="p-3 bg-amber-950/40 border border-amber-500/25 text-xs text-amber-300 rounded-lg flex items-start gap-2">
               <span className="text-sm">⚠️</span>
@@ -1856,7 +1855,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {}
+            { }
             <div className="bg-slate-900/60 border border-slate-850/50 p-4 rounded-lg flex flex-col justify-between space-y-3">
               <div className="space-y-1">
                 <span className="text-[10px] text-rose-450 font-bold uppercase tracking-wider font-mono">{t.Step_1_Bulk_copy_raw_prom}</span>
@@ -1869,7 +1868,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </Button>
             </div>
 
-            {}
+            { }
             <div
               className="bg-slate-900/30 border border-dashed border-rose-500/20 hover:border-rose-500/40 rounded-lg p-4 transition flex flex-col items-center justify-center text-center space-y-3 min-h-[140px] relative group"
               onDragOver={(e) => {
@@ -1907,7 +1906,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
             </div>
           </div>
 
-          {}
+          { }
           <div className="p-3.5 bg-slate-950 border border-slate-900 rounded-lg space-y-1">
             <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold block">{t.How_auto_alignment_works}</span>
             <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -1926,7 +1925,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        {}
+        { }
         <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-3 text-left w-full md:w-auto">
             <div className="p-2 bg-rose-950/40 rounded-lg text-rose-450 border border-rose-500/10">
@@ -1986,7 +1985,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        {}
+        { }
         {!project.storyboard || project.storyboard.length === 0 ? (
           loadingStates["storyboardSplit_loading"] ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
@@ -2044,21 +2043,21 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </span>
               </h4>
               {project.storyboard && project.storyboard.length > 0 && (
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={handleDeleteAllSceneImages}
-                disabled={!!(loadingStates["storyboardSplit_loading"] || loadingStates["bulkVoiceGenerate_loading"])}
-                className="px-2.5 py-1.5 bg-rose-600/10 hover:bg-rose-600/20 hover:text-rose-400 border border-rose-500/20 hover:border-rose-500/40 text-rose-400 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shadow-none h-auto transition-all"
-                title={t.deleteAllImagesBtn}
-              >
-                <Trash className="w-3 h-3 text-rose-500" />
-                <span>{t.deleteAllImagesBtn}</span>
-              </Button>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={handleDeleteAllSceneImages}
+                  disabled={!!(loadingStates["storyboardSplit_loading"] || loadingStates["bulkVoiceGenerate_loading"])}
+                  className="px-2.5 py-1.5 bg-rose-600/10 hover:bg-rose-600/20 hover:text-rose-400 border border-rose-500/20 hover:border-rose-500/40 text-rose-400 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shadow-none h-auto transition-all"
+                  title={t.deleteAllImagesBtn}
+                >
+                  <Trash className="w-3 h-3 text-rose-500" />
+                  <span>{t.deleteAllImagesBtn}</span>
+                </Button>
               )}
             </div>
 
-            <div className="relative min-h-[250px] rounded-xl overflow-hidden">
+            <div className="relative min-h-[250px] rounded-xl">
               {(loadingStates["storyboardSplit_loading"] || loadingStates["bulkVoiceGenerate_loading"]) && (
                 <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
                   <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
@@ -2082,10 +2081,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     <div key={scene.id} onClick={() => openSceneModal(scene)} className="group relative aspect-[16/9] bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer hover:scale-[1.03] hover:-translate-y-1">
                       <img referrerPolicy="no-referrer" src={displayUrl} loading="lazy" alt={scene.assetName || `Scene ${scene.id}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
 
-                      {}
+                      { }
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/30 opacity-90 group-hover:opacity-100 transition-opacity" />
 
-                      {}
+                      { }
                       {loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + scene.id] && (
                         <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
                           <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
@@ -2093,7 +2092,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </div>
                       )}
 
-                      {}
+                      { }
                       <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
                         <span className="bg-slate-950/85 backdrop-blur-md text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded font-mono border border-slate-800/70 shadow">#{scene.id}</span>
                         <span className="bg-rose-600/90 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shadow-sm">
@@ -2102,14 +2101,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </span>
                       </div>
 
-                      {}
+                      { }
                       {scene.cameraMotion && scene.cameraMotion !== "Static" && (
                         <div className="absolute top-2 right-2 z-10">
                           <span className="bg-slate-950/80 backdrop-blur-md text-slate-355 text-[9px] font-mono px-1.5 py-0.5 rounded border border-slate-800/60 shadow-sm">{getMotionLabel(scene.cameraMotion)}</span>
                         </div>
                       )}
 
-                      {}
+                      { }
                       {!hasAsset && !loadingStates["renderScene_" + scene.id] && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-3 pointer-events-none z-10">
                           <div className="p-2 bg-slate-950/70 rounded-full border border-slate-800/80 mb-1 shadow-md">
@@ -2119,7 +2118,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </div>
                       )}
 
-                      {}
+                      { }
                       <div className="absolute bottom-2.5 inset-x-2.5 z-10 flex flex-col justify-end text-left">
                         <p className="text-white text-[11px] font-bold leading-snug line-clamp-1 group-hover:line-clamp-2 transition-all font-sans drop-shadow-[0_1.5px_1.5px_rgba(0,0,0,0.8)]">{scene.script || scene.subtitle || t.No_description}</p>
                       </div>
@@ -2128,7 +2127,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 })}
               </div>
 
-              {}
+              { }
               {(project.storyboard || []).length > scenesPerPage && (
                 <div className="flex items-center justify-between border-t border-slate-800 pt-5 mt-6 shrink-0 z-10">
                   <Button
@@ -2164,7 +2163,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         )}
 
-        {}
+        { }
         {activeSceneId &&
           (() => {
             const activeScene = (project.storyboard || []).find((sc) => sc.id === activeSceneId);
@@ -2193,7 +2192,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               >
                 <div className="flex flex-col h-full bg-transparent">
                   <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
-                    {}
+                    { }
                     <div className="space-y-4 flex flex-col">
                       <div className="space-y-1.5 text-left">
                         <label className="text-[10px] text-slate-450 uppercase font-mono font-bold block tracking-wider">{t.Scene_Artwork}</label>
@@ -2268,7 +2267,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </Button>
                       )}
 
-                      {}
+                      { }
                       <div className="bg-slate-955 p-3 rounded-xl border border-slate-800 space-y-1.5 text-xs text-slate-400 text-left">
                         <div className="flex justify-between">
                           <span className="font-mono text-slate-500">{t.Duration}:</span>
@@ -2290,9 +2289,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
 
-                    {}
+                    { }
                     <div className="space-y-4 text-left">
-                      {}
+                      { }
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] text-slate-450 uppercase font-mono font-bold block tracking-wider">{t.Narration_text}</label>
@@ -2316,7 +2315,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <textarea value={sceneEditScript} rows={3} onChange={(e) => setSceneEditScript(e.target.value)} className="w-full bg-slate-955 border border-slate-800 text-slate-200 text-xs p-3 rounded-xl focus:outline-none focus:border-rose-500 transition-all duration-200" />
                       </div>
 
-                      {}
+                      { }
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] text-slate-450 uppercase font-mono font-bold block tracking-wider">{t.Subtitle}</label>
@@ -2340,7 +2339,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <input type="text" value={sceneEditSubtitle} onChange={(e) => setSceneEditSubtitle(e.target.value)} className="w-full bg-slate-955 border border-slate-800 text-slate-200 text-xs p-3 rounded-xl focus:outline-none focus:border-rose-500 transition-all duration-200" />
                       </div>
 
-                      {}
+                      { }
                       <div className="bg-slate-955 border border-slate-800 rounded-xl p-4 space-y-4 shadow-inner">
                         <div className="flex items-center justify-between">
                           <Button
@@ -2365,7 +2364,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                         {showPromptGeneratorPanel && (
                           <div className="pt-3 border-t border-slate-800 space-y-4 text-left animate-fadeIn max-h-[220px] overflow-y-auto pr-1">
-                            {}
+                            { }
                             <div className="space-y-1.5">
                               <label className="text-[10px] text-slate-450 uppercase font-mono block font-bold">{t.txt_1_Environment_Setting}</label>
                               <input type="text" placeholder={t.misty_pine_forest_vintage} value={promptSetting} onChange={(e) => setPromptSetting(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl focus:outline-none focus:border-rose-500/50 transition-all duration-200" />
@@ -2376,7 +2375,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               <input type="text" placeholder={t.warm_golden_sunset_low_ke} value={promptTime} onChange={(e) => setPromptTime(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl focus:outline-none focus:border-rose-500/50 transition-all duration-200" />
                             </div>
 
-                            {}
+                            { }
                             <div className="space-y-1.5">
                               <label className="text-[10px] text-slate-450 uppercase font-mono block font-bold">{t.txt_3_Character_details}</label>
                               <input type="text" placeholder={t.old_wise_magician} value={promptCharacter} onChange={(e) => setPromptCharacter(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl focus:outline-none focus:border-rose-500/50 transition-all duration-200" />
@@ -2387,7 +2386,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               <input type="text" placeholder={t.rough_leather_boots} value={promptCostume} onChange={(e) => setPromptCostume(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl focus:outline-none focus:border-rose-500/50 transition-all duration-200" />
                             </div>
 
-                            {}
+                            { }
                             <div className="space-y-1.5">
                               <label className="text-[10px] text-slate-450 uppercase font-mono block font-bold">{t.txt_5_Camera_Angle}</label>
                               <input type="text" placeholder={t.cinematic_close_up_portra} value={promptCameraAngle} onChange={(e) => setPromptCameraAngle(e.target.value)} className="w-full bg-slate-900 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl focus:outline-none focus:border-rose-500/50 transition-all duration-200" />
@@ -2418,7 +2417,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         )}
                       </div>
 
-                      {}
+                      { }
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <label className="text-[10px] text-slate-450 uppercase font-mono font-bold block tracking-wider">{t.imagePrompt}</label>
@@ -2456,7 +2455,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <textarea value={sceneEditPrompt} rows={4} onChange={(e) => setSceneEditPrompt(e.target.value)} className="w-full bg-slate-955 border border-slate-800 text-slate-200 text-xs p-3 rounded-xl focus:outline-none focus:border-rose-500 transition-all duration-200" />
                       </div>
 
-                      {}
+                      { }
                       <div className="grid grid-cols-3 gap-2.5">
                         <div className="space-y-1.5 text-left">
                           <label className="text-[9px] text-slate-450 uppercase font-mono font-bold block tracking-wider">{t.cameraMotion}</label>
@@ -2483,7 +2482,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
                   </div>
-                  {}
+                  { }
                   <div className="bg-slate-900/50 px-6 py-4.5 border-t border-slate-800 flex items-center justify-end gap-3.5 shrink-0">
                     <Button variant="ghost" onClick={() => setActiveSceneId(null)} className="px-4.5 py-2.5">
                       {t.Cancel}
