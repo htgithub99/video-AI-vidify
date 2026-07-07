@@ -4,13 +4,7 @@ import { IBaseModalProps } from "../../types";
 import { X } from "lucide-react";
 import { stopPropagation } from "../../utils/helpers";
 
-export const Modal: React.FC<IBaseModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  maxWidth,
-}) => {
+export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, children, maxWidth }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -28,25 +22,14 @@ export const Modal: React.FC<IBaseModalProps> = ({
   const maxWidthClass = maxWidth ? (isFullClass ? maxWidth : `max-w-${maxWidth}`) : "max-w-6xl";
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={onClose}
-    >
-      <div
-        className={`bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200`}
-        onClick={stopPropagation}
-      >
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+      <div className={`bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200`} onClick={stopPropagation}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none z-0" />
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-10 bg-transparent">
-          {title && (
-            <h2 className="text-base font-semibold text-slate-100">{title}</h2>
-          )}
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
-          >
+          {title && <h2 className="text-base font-semibold text-slate-100">{title}</h2>}
+          <button onClick={onClose} className="p-2 -mr-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

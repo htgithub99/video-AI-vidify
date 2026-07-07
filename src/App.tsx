@@ -1,25 +1,12 @@
-import { ErrorMessage } from './constants';
+import { ErrorMessage } from "./constants";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
-import {
-  VideoProject,
-  ProjectInputType,
-  ProjectLanguage,
-  HookPosition,
-  AudioType,
-  Gender,
-  AgeGroup,
-  AssetsMode,
-  ImageGeneratorEngine,
-  GenerateType,
-  PromptInputMethod,
-  AspectRatio,
-} from "./types.js";
+import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from './constants';
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -53,7 +40,7 @@ export default function App() {
   }, []);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return (!cached || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cached)) ? null : cached;
+    return !cached || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cached) ? null : cached;
   });
 
   useEffect(() => {
@@ -91,34 +78,33 @@ export default function App() {
     let timerId: NodeJS.Timeout;
 
     const cachedId = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    const fetchProjects = fetch(API_ROUTES.PROJECTS)
-      .then(async (res) => {
-        try {
-          const text = await res.text();
-          if (!text?.trim() || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(text?.trim())) {
-            return [];
-          }
-          const list = JSON.parse(text);
-          if (cachedId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cachedId)) {
-            const hasProj = list.some((p: any) => p.id === cachedId);
-            if (hasProj) {
-              try {
-                const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
-                if (detailRes.ok) {
-                  const detailData = await detailRes.json();
-                  return list.map((p: any) => p.id === cachedId ? detailData : p);
-                }
-              } catch (e) {
-                appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
-              }
-            }
-          }
-          return list;
-        } catch (e) {
-          appError(ERROR_MESSAGES.PARSING_PROJECTS, e);
+    const fetchProjects = fetch(API_ROUTES.PROJECTS).then(async (res) => {
+      try {
+        const text = await res.text();
+        if (!text?.trim() || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(text?.trim())) {
           return [];
         }
-      });
+        const list = JSON.parse(text);
+        if (cachedId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cachedId)) {
+          const hasProj = list.some((p: any) => p.id === cachedId);
+          if (hasProj) {
+            try {
+              const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
+              if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                return list.map((p: any) => (p.id === cachedId ? detailData : p));
+              }
+            } catch (e) {
+              appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
+            }
+          }
+        }
+        return list;
+      } catch (e) {
+        appError(ERROR_MESSAGES.PARSING_PROJECTS, e);
+        return [];
+      }
+    });
 
     const fontTimeout = new Promise((resolve) => setTimeout(resolve, LOADING_CONFIG.FONT_TIMEOUT_MS));
     const fontReady = document.fonts ? document.fonts.ready : Promise.resolve();
@@ -160,9 +146,7 @@ export default function App() {
         const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`);
         if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
         const detailData = await res.json();
-        setProjects((prev) =>
-          prev.map((p) => (p.id === id ? detailData : p))
-        );
+        setProjects((prev) => prev.map((p) => (p.id === id ? detailData : p)));
         setSelectedProjectId(id);
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
@@ -293,11 +277,7 @@ export default function App() {
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
 
-  const handleUpdateProjectDetails = async (
-    id: string,
-    name: string,
-    description: string,
-  ) => {
+  const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = projects.find((p) => p.id === id);
     if (!projToUpdate) return;
     const updated = {
@@ -320,40 +300,14 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-950 transition-colors duration-300 overflow-hidden">
-      <Header
-        currentLang={currentLang}
-        setLang={setLang}
-        credits={credits}
-        costTracker={costTracker}
-        theme={theme}
-        toggleTheme={toggleTheme}
-      />
+      <Header currentLang={currentLang} setLang={setLang} credits={credits} costTracker={costTracker} theme={theme} toggleTheme={toggleTheme} />
 
       <main className="flex-1 w-full flex flex-col min-h-0 overflow-hidden relative">
         {selectedProjectId && activeProject ? (
-          <PipelineWizard
-            key={selectedProjectId}
-            theme={theme}
-            currentLang={currentLang}
-            project={activeProject}
-            onSaveProject={handleUpdateProject}
-            setProject={handleUpdateProject}
-            onBackToDashboard={() => handleSelectProject(null)}
-            costTracker={costTracker}
-            setCostTracker={setCostTracker}
-            credits={credits}
-            setCredits={setCredits}
-          />
+          <PipelineWizard key={selectedProjectId} theme={theme} currentLang={currentLang} project={activeProject} onSaveProject={handleUpdateProject} setProject={handleUpdateProject} onBackToDashboard={() => handleSelectProject(null)} costTracker={costTracker} setCostTracker={setCostTracker} credits={credits} setCredits={setCredits} />
         ) : (
           <div className="flex-grow overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
-            <ProjectList
-              currentLang={currentLang}
-              projects={projects}
-              onSelectProject={(p) => handleSelectProject(p.id)}
-              onCreateProject={handleCreateProject}
-              onUpdateProject={handleUpdateProjectDetails}
-              onDeleteProject={handleDeleteProject}
-            />
+            <ProjectList currentLang={currentLang} projects={projects} onSelectProject={(p) => handleSelectProject(p.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
           </div>
         )}
       </main>

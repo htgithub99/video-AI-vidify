@@ -11,18 +11,14 @@ export interface GeneratedScene {
 
 import { smartChunkScript } from "../lib/textProcessor.js";
 
-const retryableLlmCall = async <T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 2,
-  chunkIndex: number,
-): Promise<T> => {
+const retryableLlmCall = async <T>(fn: () => Promise<T>, maxRetries: number = 2, chunkIndex: number): Promise<T> => {
   let attempt = 0;
   while (attempt <= maxRetries) {
     try {
       return await fn();
     } catch (error: any) {
       attempt++;
-      appWarn('CHUNK_RETRY_WARNING', chunkIndex, attempt, maxRetries + 1, error);
+      appWarn("CHUNK_RETRY_WARNING", chunkIndex, attempt, maxRetries + 1, error);
       if (error?.noRetry || attempt > maxRetries) {
         throw error;
       }
@@ -32,18 +28,7 @@ const retryableLlmCall = async <T>(
   throw createAppError("Unable to execute LLM request.");
 };
 
-export const generateScenesWithChunking = async (
-  script: string,
-  density: SceneDensity,
-  llmCallFn: (
-    chunkText: string,
-    targetPrompt: string,
-    chunkIndex: number,
-    totalChunks: number,
-  ) => Promise<GeneratedScene[]>,
-  maxChunkSize: number = 1300,
-  minChunkSize: number = 900,
-): Promise<GeneratedScene[]> => {
+export const generateScenesWithChunking = async (script: string, density: SceneDensity, llmCallFn: (chunkText: string, targetPrompt: string, chunkIndex: number, totalChunks: number) => Promise<GeneratedScene[]>, maxChunkSize: number = 1300, minChunkSize: number = 900): Promise<GeneratedScene[]> => {
   const chunks = smartChunkScript(script, maxChunkSize, minChunkSize);
   const densityConfig = SCENE_DENSITY_MAP[density];
 
@@ -55,16 +40,9 @@ export const generateScenesWithChunking = async (
     const minScenes = Math.floor(chunkLength / densityConfig.maxChars);
     const maxScenes = Math.floor(chunkLength / (densityConfig.maxChars * 0.8));
 
-    const targetPrompt = getSceneDensityPrompt(
-      chunkLength,
-      densityConfig.label,
-      densityConfig.maxChars,
-      minScenes,
-      maxScenes,
-    );
+    const targetPrompt = getSceneDensityPrompt(chunkLength, densityConfig.label, densityConfig.maxChars, minScenes, maxScenes);
 
-    return () =>
-      retryableLlmCall(() => llmCallFn(chunk, targetPrompt, index + 1, chunks.length), 2, index);
+    return () => retryableLlmCall(() => llmCallFn(chunk, targetPrompt, index + 1, chunks.length), 2, index);
   });
 
   for (let i = 0; i < chunkTasks.length; i += chunkSize) {

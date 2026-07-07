@@ -1,10 +1,10 @@
-import fs from 'fs';
-import { Page } from 'playwright';
-import { chromium } from 'playwright-extra';
-import stealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { EXTERNAL_URLS } from '../../constants';
+import fs from "fs";
+import { Page } from "playwright";
+import { chromium } from "playwright-extra";
+import stealthPlugin from "puppeteer-extra-plugin-stealth";
+import { EXTERNAL_URLS } from "../../constants";
 
-import { appLog, appError } from '../../lib/logger.js';
+import { appLog, appError } from "../../lib/logger.js";
 chromium.use(stealthPlugin());
 
 export let globalPlaywrightPage: Page | null = null;
@@ -19,7 +19,7 @@ export const ensureDirectoryExists = (dir: string): void => {
 export async function initPlaywright() {
   if (globalPlaywrightPage) {
     try {
-      await globalPlaywrightPage.evaluate('1');
+      await globalPlaywrightPage.evaluate("1");
       return;
     } catch {
       globalPlaywrightPage = null;
@@ -27,12 +27,11 @@ export async function initPlaywright() {
   }
 
   try {
-    appLog('PLAYWRIGHT_CONNECTING');
+    appLog("PLAYWRIGHT_CONNECTING");
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
     const ctx = browser.contexts()[0];
-    const page = ctx.pages()[0] || await ctx.newPage();
+    const page = ctx.pages()[0] || (await ctx.newPage());
 
-    
     await page.addInitScript(`
       if (typeof window !== 'undefined') {
         if (!window.__name) {
@@ -60,30 +59,31 @@ export async function initPlaywright() {
       }
     `);
 
-    page.on('request', req => {
-      const auth = req.headers()['authorization'];
-      if (auth && req.url().includes('aisandbox-pa.googleapis.com')) {
+    page.on("request", (req) => {
+      const auth = req.headers()["authorization"];
+      if (auth && req.url().includes("aisandbox-pa.googleapis.com")) {
         globalBearerToken = auth;
         (global as any).globalGoogleHeaders = req.headers();
       }
     });
 
-    appLog('PLAYWRIGHT_ACCESSING_LABS');
-    await page.goto(EXTERNAL_URLS.GOOGLE_LABS, { waitUntil: 'networkidle' });
+    appLog("PLAYWRIGHT_ACCESSING_LABS");
+    await page.goto(EXTERNAL_URLS.GOOGLE_LABS, { waitUntil: "networkidle" });
 
     if (!globalBearerToken) {
-      appLog('PLAYWRIGHT_LOGIN_PROMPT');
-      page.waitForResponse(res => res.url().includes('googleapis.com'), { timeout: 300000 })
-        .then(() => appLog('PLAYWRIGHT_TOKEN_CAPTURED'))
-        .catch(() => appLog('PLAYWRIGHT_TOKEN_TIMEOUT'));
+      appLog("PLAYWRIGHT_LOGIN_PROMPT");
+      page
+        .waitForResponse((res) => res.url().includes("googleapis.com"), { timeout: 300000 })
+        .then(() => appLog("PLAYWRIGHT_TOKEN_CAPTURED"))
+        .catch(() => appLog("PLAYWRIGHT_TOKEN_TIMEOUT"));
     } else {
-      appLog('PLAYWRIGHT_TOKEN_CAPTURED');
+      appLog("PLAYWRIGHT_TOKEN_CAPTURED");
     }
 
     globalPlaywrightPage = page;
   } catch (e: any) {
-    appError('PLAYWRIGHT_CONNECT_ERR', e?.message || e);
-    ['PLAYWRIGHT_BORDER', 'PLAYWRIGHT_CHROME_MANDATE', 'PLAYWRIGHT_CHROME_COMMAND', 'PLAYWRIGHT_BORDER_BOTTOM'].forEach(k => appLog(k));
+    appError("PLAYWRIGHT_CONNECT_ERR", e?.message || e);
+    ["PLAYWRIGHT_BORDER", "PLAYWRIGHT_CHROME_MANDATE", "PLAYWRIGHT_CHROME_COMMAND", "PLAYWRIGHT_BORDER_BOTTOM"].forEach((k) => appLog(k));
   }
 }
 
@@ -91,7 +91,7 @@ export async function closePlaywright() {
   if (globalPlaywrightPage) {
     try {
       await globalPlaywrightPage.close();
-    } catch (e) { }
+    } catch (e) {}
     globalPlaywrightPage = null;
   }
 }

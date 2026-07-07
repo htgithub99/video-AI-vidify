@@ -1,5 +1,3 @@
-
-
 import { appLog } from "../../lib/logger.js";
 
 interface CacheEntry {
@@ -8,11 +6,11 @@ interface CacheEntry {
 }
 
 const geminiCache: Record<string, CacheEntry> = {};
-const CACHE_TTL = 30 * 60 * 1000; 
+const CACHE_TTL = 30 * 60 * 1000;
 
 const getCacheKey = (endpoint: string, body: any): string => {
   const clone = { ...body };
-  
+
   delete clone.bypassCache;
   delete clone.timestamp;
   delete clone.projectId;
@@ -21,7 +19,7 @@ const getCacheKey = (endpoint: string, body: any): string => {
 
 export const checkCache = (endpoint: string, body: any, bypass = false): any | null => {
   if (bypass) {
-    appLog('CACHE_BYPASS', endpoint);
+    appLog("CACHE_BYPASS", endpoint);
     return null;
   }
   const key = getCacheKey(endpoint, body);
@@ -29,10 +27,10 @@ export const checkCache = (endpoint: string, body: any, bypass = false): any | n
   if (entry) {
     const age = Date.now() - entry.timestamp;
     if (age < CACHE_TTL) {
-      appLog('CACHE_HIT', endpoint);
+      appLog("CACHE_HIT", endpoint);
       return entry.data;
     } else {
-      appLog('CACHE_EVICT', endpoint);
+      appLog("CACHE_EVICT", endpoint);
       delete geminiCache[key];
     }
   }
@@ -46,8 +44,8 @@ export const setCache = (endpoint: string, body: any, data: any): void => {
       timestamp: Date.now(),
       data,
     };
-    appLog('CACHE_NEW', endpoint);
+    appLog("CACHE_NEW", endpoint);
   } catch (err) {
-    appLog('CACHE_ERROR', err);
+    appLog("CACHE_ERROR", err);
   }
 };

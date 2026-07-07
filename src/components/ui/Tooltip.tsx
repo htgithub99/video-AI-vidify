@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { ITooltipProps } from "../../types";
 
-export const Tooltip: React.FC<ITooltipProps> = ({
-  content,
-  children,
-  position = "top",
-}) => {
+export const Tooltip: React.FC<ITooltipProps> = ({ content, children, position = "top" }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const positionClasses = {
@@ -16,16 +12,10 @@ export const Tooltip: React.FC<ITooltipProps> = ({
   };
 
   return (
-    <div
-      className="relative flex items-center justify-center group"
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
-    >
+    <div className="relative flex items-center justify-center group" onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
       {children}
       {isVisible && (
-        <div
-          className={`absolute z-[100000] px-3 py-2 text-xs font-medium text-slate-100 bg-slate-800 rounded-xl shadow-lg pointer-events-none animate-in fade-in zoom-in duration-200 w-max max-w-xs text-center leading-relaxed ${positionClasses[position]}`}
-        >
+        <div className={`absolute z-[100000] px-3 py-2 text-xs font-medium text-slate-100 bg-slate-800 rounded-xl shadow-lg pointer-events-none animate-in fade-in zoom-in duration-200 w-max max-w-xs text-center leading-relaxed ${positionClasses[position]}`}>
           {content}
           <div
             className="absolute w-2.5 h-2.5 bg-slate-800 rotate-45 transform 

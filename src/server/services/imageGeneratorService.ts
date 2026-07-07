@@ -1,23 +1,8 @@
-import {
-  globalPlaywrightPage,
-  initPlaywright,
-  closePlaywright,
-} from "./audioService.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX } from '../../constants';
+import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX } from "../../constants";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
-import {
-  GenerateType,
-  ImageGeneratorEngine,
-  PromptInputMethod,
-  ImageGenerationMode,
-  GeminiChatModelName,
-  GeminiChatSelector,
-  GeminiChatTextOption,
-  GeminiChatSpeed,
-  GEMINI_CHAT_SPEED_TAB_COUNT,
-  AspectRatio,
-} from "../../types.js";
+import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio } from "../../types.js";
 import { Locator, Page } from "playwright";
 
 export async function smoothMouseMove(page: Page, locator: Locator) {
@@ -27,12 +12,8 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
 
     const startX = Math.floor(Math.random() * 800 + 100);
     const startY = Math.floor(Math.random() * 600 + 100);
-    const targetX = Math.floor(
-      box.x + box.width / 2 + (Math.random() - 0.5) * 10,
-    );
-    const targetY = Math.floor(
-      box.y + box.height / 2 + (Math.random() - 0.5) * 5,
-    );
+    const targetX = Math.floor(box.x + box.width / 2 + (Math.random() - 0.5) * 10);
+    const targetY = Math.floor(box.y + box.height / 2 + (Math.random() - 0.5) * 5);
 
     await page.mouse.move(startX, startY);
 
@@ -40,10 +21,7 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
     for (let step = 1; step <= steps; step++) {
       const t = step / steps;
       const currentX = startX + (targetX - startX) * t;
-      const currentY =
-        startY +
-        (targetY - startY) * t +
-        Math.sin(t * Math.PI) * (Math.random() - 0.5) * 15;
+      const currentY = startY + (targetY - startY) * t + Math.sin(t * Math.PI) * (Math.random() - 0.5) * 15;
       await page.mouse.move(currentX, currentY);
       await randomDelay(5, 15);
     }
@@ -51,7 +29,7 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
     await page.mouse.move(targetX, targetY);
     await randomDelay(100, 250);
   } catch (e) {
-    await locator.hover().catch(() => { });
+    await locator.hover().catch(() => {});
   }
 }
 
@@ -74,9 +52,7 @@ export const getImgIdSafe = (url: string): string => {
     const u = new URL(url);
     const id = u.searchParams.get("id") || u.searchParams.get("docid");
     if (id) return id;
-    ["token", "sig", "signature", "expires", "t"].forEach((p) =>
-      u.searchParams.delete(p),
-    );
+    ["token", "sig", "signature", "expires", "t"].forEach((p) => u.searchParams.delete(p));
     return u.toString();
   } catch (e) {
     return url;
@@ -153,16 +129,14 @@ let globalBatchPages: Page[] = [];
 const batchPagesErrors = new WeakMap<Page, number>();
 const batchPagesConfigs = new WeakMap<Page, string>();
 
-export async function generateImageWithPlaywright(
-  options: ImageGeneratorOptions,
-): Promise<ImageGeneratorResult> {
+export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig, sandboxConfig = {} } = options;
 
   if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) {
     return generateImageWithGeminiChat(options);
   }
 
-  const isStickman = !!([style, prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
+  const isStickman = !![style, prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
@@ -171,14 +145,9 @@ export async function generateImageWithPlaywright(
   }
 
   const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman
-    ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
-    : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(
-      kws || "cinematic,landscape",
-    )}`;
+  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
 
-  const projectId =
-    sandboxConfig.projectId || DEFAULT_PROJECT_ID;
+  const projectId = sandboxConfig.projectId || DEFAULT_PROJECT_ID;
   let cleanProjectId = projectId;
   if (cleanProjectId.startsWith("projects/")) {
     cleanProjectId = cleanProjectId.replace("projects/", "");
@@ -211,14 +180,12 @@ export async function generateImageWithPlaywright(
                     value,
                     configurable: true,
                   });
-                } catch (e) { }
+                } catch (e) {}
                 return target;
               };
             }
             if (!(window as any).__getImgId) {
-              (window as any).__getImgId = new Function(
-                "return " + getImgIdStr,
-              )();
+              (window as any).__getImgId = new Function("return " + getImgIdStr)();
             }
           }
         },
@@ -232,9 +199,7 @@ export async function generateImageWithPlaywright(
 
     while (attempts < maxAttempts && !success) {
       attempts++;
-      appLog(
-        `${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`,
-      );
+      appLog(`${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`);
       try {
         if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT);
@@ -247,9 +212,7 @@ export async function generateImageWithPlaywright(
         const submitBtnLocator = globalPlaywrightPage
           .locator("button")
           .filter({
-            has: globalPlaywrightPage
-              .locator("i")
-              .filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }),
+            has: globalPlaywrightPage.locator("i").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }),
           })
           .filter({ hasText: PLAYWRIGHT_SUBMIT_TEXT_REGEX })
           .last();
@@ -257,11 +220,7 @@ export async function generateImageWithPlaywright(
         let isAlreadyOnFlowPage = false;
         try {
           const currentUrl = globalPlaywrightPage.url();
-          if (
-            [cleanProjectId, "labs.google"].every((kw) =>
-              currentUrl.includes(kw),
-            )
-          ) {
+          if ([cleanProjectId, "labs.google"].every((kw) => currentUrl.includes(kw))) {
             isAlreadyOnFlowPage = true;
           }
         } catch (e) {
@@ -269,27 +228,19 @@ export async function generateImageWithPlaywright(
         }
 
         if (!isAlreadyOnFlowPage) {
-          appLog(
-            `${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`,
-          );
+          appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`);
           await globalPlaywrightPage.goto(targetUrl, {
             waitUntil: "commit",
             timeout: 60000,
           });
         }
 
-        appLog(
-          `${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`,
-        );
+        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
 
-        const inputEl = await globalPlaywrightPage.waitForSelector(
-          SELECTOR_INPUT,
-          {
-            timeout: 30000,
-          },
-        );
-        if (!inputEl)
-          throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
+        const inputEl = await globalPlaywrightPage.waitForSelector(SELECTOR_INPUT, {
+          timeout: 30000,
+        });
+        if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
 
         try {
           const currentConfigState = JSON.stringify({
@@ -299,17 +250,12 @@ export async function generateImageWithPlaywright(
             imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
           });
 
-          if (
-            currentConfigState !== lastPlaywrightConfigState ||
-            attempts > 1
-          ) {
+          if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
             const configBtnLoc = globalPlaywrightPage
               .locator("button")
               .filter({
-                has: globalPlaywrightPage
-                  .locator("i")
-                  .filter({ hasText: "tune" }),
+                has: globalPlaywrightPage.locator("i").filter({ hasText: "tune" }),
               })
               .first();
 
@@ -318,13 +264,8 @@ export async function generateImageWithPlaywright(
               await globalPlaywrightPage.waitForTimeout(1000);
 
               const isVideo = visualConfig?.generateType === GenerateType.Video;
-              const sectionKeyword = isVideo
-                ? /(tạo video|video generation|video)/i
-                : /(tạo hình ảnh|image generation|image)/i;
-              const sectionSpan = globalPlaywrightPage
-                .locator("span")
-                .filter({ hasText: sectionKeyword })
-                .last();
+              const sectionKeyword = isVideo ? /(tạo video|video generation|video)/i : /(tạo hình ảnh|image generation|image)/i;
+              const sectionSpan = globalPlaywrightPage.locator("span").filter({ hasText: sectionKeyword }).last();
 
               if (await sectionSpan.isVisible()) {
                 const sectionDiv = sectionSpan.locator("xpath=..");
@@ -344,9 +285,7 @@ export async function generateImageWithPlaywright(
                   .first();
                 if (await countBtn.isVisible()) await countBtn.click();
 
-                const targetEngineKey = (
-                  visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3
-                ).toLowerCase();
+                const targetEngineKey = (visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3).toLowerCase();
 
                 let exactEngineRegex: RegExp;
                 let fallbackEngineRegex: RegExp;
@@ -356,37 +295,23 @@ export async function generateImageWithPlaywright(
                   fallbackEngineRegex = /(imagen|banana pro|banana)/i;
                 } else if (targetEngineKey === "labs-sandbox") {
                   exactEngineRegex = /(labs-sandbox|sandbox|banana 2 lite)/i;
-                  fallbackEngineRegex =
-                    /(labs-sandbox|sandbox|banana 2 lite|banana)/i;
+                  fallbackEngineRegex = /(labs-sandbox|sandbox|banana 2 lite|banana)/i;
                 } else {
                   exactEngineRegex = /(veo|omni flash|banana 2\b(?!.*lite))/i;
                   fallbackEngineRegex = /(veo|omni flash|banana 2)/i;
                 }
-                const engineDropdownBtn = sectionDiv
-                  .locator('button[aria-haspopup="menu"]')
-                  .first();
+                const engineDropdownBtn = sectionDiv.locator('button[aria-haspopup="menu"]').first();
 
                 if (await engineDropdownBtn.isVisible()) {
-                  const currentEngineText =
-                    await engineDropdownBtn.textContent();
-                  if (
-                    currentEngineText &&
-                    !exactEngineRegex.test(currentEngineText)
-                  ) {
+                  const currentEngineText = await engineDropdownBtn.textContent();
+                  if (currentEngineText && !exactEngineRegex.test(currentEngineText)) {
                     await engineDropdownBtn.click({ force: true });
                     await globalPlaywrightPage.waitForTimeout(500);
-                    let optionBtn = globalPlaywrightPage
-                      .locator('[role="menuitem"]:visible')
-                      .filter({ hasText: exactEngineRegex })
-                      .first();
+                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: exactEngineRegex }).first();
                     if (!(await optionBtn.isVisible())) {
-                      optionBtn = globalPlaywrightPage
-                        .locator('[role="menuitem"]:visible')
-                        .filter({ hasText: fallbackEngineRegex })
-                        .first();
+                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: fallbackEngineRegex }).first();
                     }
-                    if (await optionBtn.isVisible())
-                      await optionBtn.click({ force: true });
+                    if (await optionBtn.isVisible()) await optionBtn.click({ force: true });
                   }
                 }
               }
@@ -412,13 +337,8 @@ export async function generateImageWithPlaywright(
 
         const targetPrompt = finalPrompt || prompt;
         if (targetPrompt && targetPrompt.length > 0) {
-          const inputMethod =
-            visualConfig?.promptInputMethod || PromptInputMethod.Paste;
-          appLog(
-            inputMethod === PromptInputMethod.Type
-              ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG
-              : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG,
-          );
+          const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
+          appLog(inputMethod === PromptInputMethod.Type ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
 
           const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
 
@@ -463,11 +383,7 @@ export async function generateImageWithPlaywright(
         for (let i = 0; i < 6; i++) {
           try {
             isBtnDisabled = await submitBtnLocator.evaluate((btn) => {
-              return (
-                !btn ||
-                btn.hasAttribute("disabled") ||
-                btn.getAttribute("aria-disabled") === "true"
-              );
+              return !btn || btn.hasAttribute("disabled") || btn.getAttribute("aria-disabled") === "true";
             });
           } catch (e) {
             isBtnDisabled = true;
@@ -489,9 +405,7 @@ export async function generateImageWithPlaywright(
           ([oldIdsList, getImgIdStr]) => {
             const getImgId = new Function("return " + getImgIdStr)();
             const imgs = Array.from(document.querySelectorAll("img"));
-            const genImgs = imgs.filter(
-              (img) => img.src && img.src.includes("getMediaUrlRedirect"),
-            );
+            const genImgs = imgs.filter((img) => img.src && img.src.includes("getMediaUrlRedirect"));
 
             const newImg = [...genImgs].reverse().find((img) => {
               const imgId = getImgId(img.src);
@@ -504,7 +418,7 @@ export async function generateImageWithPlaywright(
                   behavior: "instant",
                   block: "center",
                 });
-              } catch (e) { }
+              } catch (e) {}
 
               if (!newImg.complete || newImg.naturalWidth === 0) return null;
 
@@ -515,7 +429,7 @@ export async function generateImageWithPlaywright(
               try {
                 const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
                 if (dataUrl.length > 1000) return dataUrl;
-              } catch (e) { }
+              } catch (e) {}
             }
             return null;
           },
@@ -535,7 +449,7 @@ export async function generateImageWithPlaywright(
         const isClosedError = closedKeywords.some((kw) => err.message?.toLowerCase().includes(kw));
         if (isClosedError) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
-          await closePlaywright().catch(() => { });
+          await closePlaywright().catch(() => {});
         }
 
         if (attempts < maxAttempts) {
@@ -550,7 +464,7 @@ export async function generateImageWithPlaywright(
           } catch (reloadErr: any) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
             if (closedKeywords.some((kw) => reloadErr.message?.toLowerCase().includes(kw))) {
-              await closePlaywright().catch(() => { });
+              await closePlaywright().catch(() => {});
             }
           }
         } else {
@@ -565,12 +479,11 @@ export async function generateImageWithPlaywright(
 
     let warnReason = `${BACKEND_MESSAGES.PLAYWRIGHT_SANDBOX_ERR} (HTTP ${status}). ${BACKEND_MESSAGES.PLAYWRIGHT_RECAPTCHA}`;
     try {
-      const errorJson =
-        typeof errText === "string" ? JSON.parse(errText) : errText;
+      const errorJson = typeof errText === "string" ? JSON.parse(errText) : errText;
       if (errorJson?.error?.details?.[0]?.reason) {
         warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
       }
-    } catch (e) { }
+    } catch (e) {}
 
     return {
       success: false,
@@ -598,7 +511,7 @@ export async function generateImageWithPlaywright(
         fallbackUrl: parsed.directBase64,
       };
     }
-  } catch (e) { }
+  } catch (e) {}
 
   return {
     success: false,
@@ -608,13 +521,10 @@ export async function generateImageWithPlaywright(
   };
 }
 
-
-export async function generateImageWithGeminiChat(
-  options: ImageGeneratorOptions,
-): Promise<ImageGeneratorResult> {
+export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig } = options;
 
-  const isStickman = !!([style, prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
+  const isStickman = !![style, prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
@@ -622,11 +532,7 @@ export async function generateImageWithGeminiChat(
   }
 
   const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman
-    ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
-    : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(
-      kws || "cinematic,landscape",
-    )}`;
+  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
 
   const release = await imageGenMutex.acquire();
   await randomDelay(1000, 4000);
@@ -653,11 +559,7 @@ export async function generateImageWithGeminiChat(
       }
 
       if (needNewRoom) {
-        appLog(
-          BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM
-            .replace("{0}", roomAttempts.toString())
-            .replace("{1}", maxRoomAttempts.toString()),
-        );
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
         try {
           if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
             await initPlaywright();
@@ -673,9 +575,7 @@ export async function generateImageWithGeminiChat(
           await randomDelay(3000, 5000);
           consecutiveGeminiErrors = 0;
         } catch (err: any) {
-          appError(
-            BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", err.message),
-          );
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", err.message));
           if (roomAttempts >= maxRoomAttempts) {
             throw err;
           }
@@ -691,22 +591,12 @@ export async function generateImageWithGeminiChat(
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
         if (reloadAttempts > 1) {
-          appLog(
-            BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(
-              "{0}",
-              (reloadAttempts - 1).toString(),
-            ),
-          );
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace("{0}", (reloadAttempts - 1).toString()));
           try {
             await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
             await randomDelay(3000, 5000);
           } catch (reloadErr: any) {
-            appError(
-              BACKEND_MESSAGES.GEMINI_CHAT_RELOAD_FAILED.replace(
-                "{0}",
-                reloadErr.message,
-              ),
-            );
+            appError(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD_FAILED.replace("{0}", reloadErr.message));
             continue;
           }
         }
@@ -731,11 +621,11 @@ export async function generateImageWithGeminiChat(
 
           await enterGeminiPrompt(globalPlaywrightPage, finalPrompt, visualConfig);
 
-          const initialResponseCount = await globalPlaywrightPage.locator('model-response').count();
+          const initialResponseCount = await globalPlaywrightPage.locator("model-response").count();
           const sendBtn = globalPlaywrightPage.locator(GeminiChatSelector.SendButton).first();
           let clicked = false;
           try {
-            if (await sendBtn.isVisible() && !(await sendBtn.isDisabled())) {
+            if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
               await sendBtn.click();
               clicked = true;
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
@@ -759,22 +649,12 @@ export async function generateImageWithGeminiChat(
           }
         } catch (err: any) {
           consecutiveGeminiErrors++;
-          appError(
-            BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED
-              .replace("{0}", reloadAttempts.toString())
-              .replace("{1}", roomAttempts.toString())
-              .replace("{2}", err.message),
-          );
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace("{0}", reloadAttempts.toString()).replace("{1}", roomAttempts.toString()).replace("{2}", err.message));
         }
       }
     }
   } catch (err: any) {
-    appError(
-      BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(
-        "{0}",
-        err.message,
-      ),
-    );
+    appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", err.message));
   } finally {
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -817,7 +697,7 @@ export async function closeAllBatchPages() {
       if (!page.isClosed()) {
         await page.close();
       }
-    } catch (e) { }
+    } catch (e) {}
   }
   globalBatchPages = [];
 }
@@ -828,12 +708,7 @@ async function applyBatchDelay(visualConfig: any): Promise<number> {
   return ms;
 }
 
-export async function generateBatchImagesWithGeminiChat(
-  items: BatchImageItem[],
-  visualConfig: any,
-  style?: string,
-  onProgress?: (result: BatchImageResult) => void,
-): Promise<BatchImageResult[]> {
+export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[], visualConfig: any, style?: string, onProgress?: (result: BatchImageResult) => void): Promise<BatchImageResult[]> {
   if (!items || items.length === 0) {
     return [];
   }
@@ -889,7 +764,7 @@ export async function generateBatchImagesWithGeminiChat(
       throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
     }
 
-    globalBatchPages = globalBatchPages.filter(p => !p.isClosed());
+    globalBatchPages = globalBatchPages.filter((p) => !p.isClosed());
 
     if (globalBatchPages.length < maxTabs) {
       const needed = maxTabs - globalBatchPages.length;
@@ -899,7 +774,7 @@ export async function generateBatchImagesWithGeminiChat(
         await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
         await randomDelay(2000, 4000);
         globalBatchPages.push(newPage);
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", (globalBatchPages.length).toString()).replace("{1}", maxTabs.toString()));
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", globalBatchPages.length.toString()).replace("{1}", maxTabs.toString()));
       }
     }
 
@@ -918,7 +793,7 @@ export async function generateBatchImagesWithGeminiChat(
     }
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
-      const isStickman = !!([style, item.prompt].some(str => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw))));
+      const isStickman = !![style, item.prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
 
       let finalPrompt = item.prompt || "";
       if (isStickman) {
@@ -926,9 +801,7 @@ export async function generateBatchImagesWithGeminiChat(
       }
 
       const kws = extractKeywords(item.prompt);
-      const fallbackUrl = isStickman
-        ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon`
-        : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`;
+      const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`;
 
       let success = false;
       let base64Result: string | null = null;
@@ -955,7 +828,11 @@ export async function generateBatchImagesWithGeminiChat(
           }
 
           if (needNewRoom) {
-            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT.replace("{0}", (tabIndex + 1).toString()).replace("{1}", roomAttempts.toString()).replace("{2}", maxRoomAttempts.toString()));
+            appLog(
+              BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT.replace("{0}", (tabIndex + 1).toString())
+                .replace("{1}", roomAttempts.toString())
+                .replace("{2}", maxRoomAttempts.toString()),
+            );
             try {
               await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
               await randomDelay(2000, 4000);
@@ -1011,11 +888,11 @@ export async function generateBatchImagesWithGeminiChat(
 
               await enterGeminiPrompt(page, finalPrompt, visualConfig);
 
-              const initialResponseCount = await page.locator('model-response').count();
+              const initialResponseCount = await page.locator("model-response").count();
               const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
               let clicked = false;
               try {
-                if (await sendBtn.isVisible() && !(await sendBtn.isDisabled())) {
+                if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
                   await sendBtn.click();
                   clicked = true;
                   appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", `${item.sceneId} - ${BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND}`));
@@ -1039,7 +916,11 @@ export async function generateBatchImagesWithGeminiChat(
               }
             } catch (err: any) {
               batchPagesErrors.set(page, (batchPagesErrors.get(page) || 0) + 1);
-              appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RENDER_ERROR.replace("{0}", (tabIndex + 1).toString()).replace("{1}", reloadAttempts.toString()).replace("{2}", err.message));
+              appError(
+                BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RENDER_ERROR.replace("{0}", (tabIndex + 1).toString())
+                  .replace("{1}", reloadAttempts.toString())
+                  .replace("{2}", err.message),
+              );
             }
           }
         }
@@ -1096,11 +977,7 @@ export async function generateBatchImagesWithGeminiChat(
 
         if (!!queue?.length) {
           const delayTime = await applyBatchDelay(visualConfig);
-          appLog(
-            BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY
-              .replace("{0}", (tabIndex + 1).toString())
-              .replace("{1}", delayTime.toString())
-          );
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
         }
       }
     };
@@ -1108,11 +985,11 @@ export async function generateBatchImagesWithGeminiChat(
     const workers = activePages.map((page, idx) => runWorker(page, idx));
     await Promise.all(workers);
 
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", results.filter(r => r.success).length.toString()).replace("{1}", items.length.toString()));
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", results.filter((r) => r.success).length.toString()).replace("{1}", items.length.toString()));
   } catch (err: any) {
     appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", err.message));
     for (const item of items) {
-      if (!results.find(r => r.sceneId === item.sceneId)) {
+      if (!results.find((r) => r.sceneId === item.sceneId)) {
         const kws = extractKeywords(item.prompt);
         const res = {
           sceneId: item.sceneId,
@@ -1134,7 +1011,6 @@ export async function generateBatchImagesWithGeminiChat(
   return results;
 }
 
-
 async function configureGeminiModel(page: Page, visualConfig: any, forceSetting: boolean) {
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   let targetModelText = GeminiChatModelName.Pro;
@@ -1145,7 +1021,7 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
   }
 
   const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
-  if (!await modelPickerBtn.isVisible()) {
+  if (!(await modelPickerBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
     return;
   }
@@ -1156,11 +1032,11 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
 
     let isCorrect = false;
-    if (targetModelText === GeminiChatModelName.FlashLite && currentText?.includes('Lite')) {
+    if (targetModelText === GeminiChatModelName.FlashLite && currentText?.includes("Lite")) {
       isCorrect = true;
-    } else if (targetModelText === GeminiChatModelName.Flash && currentText?.includes('Flash') && !currentText?.includes('Lite')) {
+    } else if (targetModelText === GeminiChatModelName.Flash && currentText?.includes("Flash") && !currentText?.includes("Lite")) {
       isCorrect = true;
-    } else if (targetModelText === GeminiChatModelName.Pro && currentText?.includes('Pro')) {
+    } else if (targetModelText === GeminiChatModelName.Pro && currentText?.includes("Pro")) {
       isCorrect = true;
     }
 
@@ -1173,7 +1049,10 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
     await modelPickerBtn.click();
     await randomDelay(1000, 1800);
 
-    const optionBtn = page.locator(GeminiChatSelector.MenuOptions).filter({ hasText: new RegExp(targetModelText, 'i') }).first();
+    const optionBtn = page
+      .locator(GeminiChatSelector.MenuOptions)
+      .filter({ hasText: new RegExp(targetModelText, "i") })
+      .first();
     if (await optionBtn.isVisible()) {
       await randomDelay(500, 1000);
       await optionBtn.click();
@@ -1193,7 +1072,7 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
         await randomDelay(1000, 1800);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -1201,12 +1080,10 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
 async function configureGeminiGenerateType(page: Page, visualConfig: any, forceSetting: boolean) {
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
-  const targetRegex = isVideo
-    ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, 'i')
-    : new RegExp(GeminiChatTextOption.CreateImageRegexStr, 'i');
+  const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
 
   const plusBtn = page.locator(GeminiChatSelector.PlusButton).first();
-  if (!await plusBtn.isVisible()) {
+  if (!(await plusBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_NOT_FOUND);
     return;
   }
@@ -1217,8 +1094,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
     await plusBtn.click();
     await randomDelay(1000, 1800);
 
-    const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions)
-      .filter({ hasText: targetRegex }).first();
+    const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions).filter({ hasText: targetRegex }).first();
 
     if (await optionBtn.isVisible()) {
       await randomDelay(500, 1000);
@@ -1226,7 +1102,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
       await randomDelay(1200, 2000);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS.replace("{0}", targetText));
     } else {
-      const optionBtnFallback = page.locator('button').filter({ hasText: targetRegex }).first();
+      const optionBtnFallback = page.locator("button").filter({ hasText: targetRegex }).first();
       if (await optionBtnFallback.isVisible()) {
         await randomDelay(500, 1000);
         await optionBtnFallback.click();
@@ -1247,7 +1123,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
         await randomDelay(1200, 2000);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -1268,7 +1144,7 @@ async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: a
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_PASTING_PROMPT);
     try {
       const context = page.context();
-      await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => { });
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
       const clipboardSuccess = await page.evaluate(async (text) => {
         try {
           await navigator.clipboard.writeText(text);
@@ -1295,11 +1171,7 @@ async function waitForGeminiFinished(page: Page, timeoutMs = 150000, initialResp
 
   if (initialResponseCount !== undefined) {
     try {
-      await page.waitForFunction(
-        (expected) => document.querySelectorAll('model-response').length >= expected,
-        initialResponseCount + 1,
-        { timeout: 45000 }
-      );
+      await page.waitForFunction((expected) => document.querySelectorAll("model-response").length >= expected, initialResponseCount + 1, { timeout: 45000 });
     } catch (e) {
       appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
@@ -1307,14 +1179,14 @@ async function waitForGeminiFinished(page: Page, timeoutMs = 150000, initialResp
   }
 
   try {
-    await page.locator('thinking-overlay').waitFor({ state: 'detached', timeout: 30000 });
+    await page.locator("thinking-overlay").waitFor({ state: "detached", timeout: 30000 });
   } catch (e) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
   }
 
-  const latestResponse = page.locator('model-response').last();
+  const latestResponse = page.locator("model-response").last();
   try {
-    await latestResponse.waitFor({ state: 'visible', timeout: 30000 });
+    await latestResponse.waitFor({ state: "visible", timeout: 30000 });
   } catch (e) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_RESPONSE);
   }
@@ -1323,15 +1195,15 @@ async function waitForGeminiFinished(page: Page, timeoutMs = 150000, initialResp
     const busyDiv = latestResponse.locator('message-content div[aria-busy="true"]').first();
     if (await busyDiv.isVisible()) {
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
-      await latestResponse.locator('message-content div[aria-busy="false"]').first().waitFor({ state: 'attached', timeout: timeoutMs });
+      await latestResponse.locator('message-content div[aria-busy="false"]').first().waitFor({ state: "attached", timeout: timeoutMs });
     }
   } catch (e) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_TIMEOUT);
   }
 
   try {
-    const imageContainer = latestResponse.locator('.attachment-container.generated-images, download-generated-image-button, img.loaded').first();
-    await imageContainer.waitFor({ state: 'attached', timeout: 45000 });
+    const imageContainer = latestResponse.locator(".attachment-container.generated-images, download-generated-image-button, img.loaded").first();
+    await imageContainer.waitFor({ state: "attached", timeout: 45000 });
   } catch (e) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
   }
@@ -1343,10 +1215,10 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
   try {
     const tagName = await mediaElement.evaluate((el: HTMLElement) => el.tagName.toLowerCase());
 
-    let src = '';
+    let src = "";
     for (let i = 0; i < 30; i++) {
-      src = await mediaElement.evaluate((el: any) => el.src || el.getAttribute('src') || '');
-      if (src.startsWith('blob:') || src.startsWith('http') || src.startsWith('data:')) {
+      src = await mediaElement.evaluate((el: any) => el.src || el.getAttribute("src") || "");
+      if (src.startsWith("blob:") || src.startsWith("http") || src.startsWith("data:")) {
         break;
       }
       await page.waitForTimeout(500);
@@ -1357,14 +1229,14 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
       return null;
     }
 
-    if (src.startsWith('data:')) {
-      const parts = src.split(',');
+    if (src.startsWith("data:")) {
+      const parts = src.split(",");
       return parts[1] || null;
     }
 
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACTING_MEDIA.replace("{0}", tagName).replace("{1}", src));
 
-    if (tagName === 'img') {
+    if (tagName === "img") {
       const base64Data = await mediaElement.evaluate(async (imgEl) => {
         try {
           const img = imgEl as HTMLImageElement;
@@ -1379,28 +1251,28 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext("2d");
-          if (!ctx) return 'ERROR:Could not get canvas context';
+          if (!ctx) return "ERROR:Could not get canvas context";
           ctx.drawImage(img, 0, 0);
-          return canvas.toDataURL("image/jpeg", 0.95).split(',')[1];
+          return canvas.toDataURL("image/jpeg", 0.95).split(",")[1];
         } catch (e: any) {
           try {
-            const res = await fetch((imgEl as HTMLImageElement).src || imgEl.getAttribute('src') || '');
+            const res = await fetch((imgEl as HTMLImageElement).src || imgEl.getAttribute("src") || "");
             const blob = await res.blob();
             return new Promise<string>((resolve, reject) => {
               const reader = new FileReader();
               reader.onloadend = () => {
-                resolve((reader.result as string).split(',')[1]);
+                resolve((reader.result as string).split(",")[1]);
               };
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
           } catch (fetchErr: any) {
-            return 'ERROR:' + fetchErr.message;
+            return "ERROR:" + fetchErr.message;
           }
         }
       });
 
-      if (base64Data && !base64Data.startsWith('ERROR:')) {
+      if (base64Data && !base64Data.startsWith("ERROR:")) {
         return base64Data;
       } else {
         appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
@@ -1408,22 +1280,22 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
     } else {
       const base64Data = await mediaElement.evaluate(async (videoEl) => {
         try {
-          const res = await fetch((videoEl as HTMLVideoElement).src || videoEl.getAttribute('src') || '');
+          const res = await fetch((videoEl as HTMLVideoElement).src || videoEl.getAttribute("src") || "");
           const blob = await res.blob();
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onloadend = () => {
-              resolve((reader.result as string).split(',')[1]);
+              resolve((reader.result as string).split(",")[1]);
             };
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
         } catch (e: any) {
-          return 'ERROR:' + e.message;
+          return "ERROR:" + e.message;
         }
       });
 
-      if (base64Data && !base64Data.startsWith('ERROR:')) {
+      if (base64Data && !base64Data.startsWith("ERROR:")) {
         return base64Data;
       } else {
         appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
@@ -1438,18 +1310,18 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 async function waitForDownloadAndGetBase64(page: Page, visualConfig: any, initialResponseCount?: number): Promise<string | null> {
   await waitForGeminiFinished(page, 150000, initialResponseCount);
 
-  const latestResponse = page.locator('model-response').last();
-  await latestResponse.waitFor({ state: 'visible', timeout: 30000 });
+  const latestResponse = page.locator("model-response").last();
+  await latestResponse.waitFor({ state: "visible", timeout: 30000 });
 
   if (initialResponseCount !== undefined) {
-    const currentCount = await page.locator('model-response').count();
+    const currentCount = await page.locator("model-response").count();
     if (currentCount <= initialResponseCount) {
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_PREVENT_OLD_IMAGE);
     }
   }
 
-  const mediaLoc = latestResponse.locator('img, video').first();
-  await mediaLoc.waitFor({ state: 'visible', timeout: 30000 });
+  const mediaLoc = latestResponse.locator("img, video").first();
+  await mediaLoc.waitFor({ state: "visible", timeout: 30000 });
 
   const base64 = await getBase64FromBlobUrl(page, mediaLoc);
   if (base64) {
@@ -1459,4 +1331,3 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: any, initia
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
 }
-

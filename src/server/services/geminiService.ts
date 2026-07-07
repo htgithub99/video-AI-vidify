@@ -1,9 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
 dotenv.config();
-import { requestContext } from '../utils/requestContext.js';
-import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, AVAILABLE_MODELS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from '../../constants';
-import { getMessage, appLog, appLogStep, createAppError } from '../../lib/logger.js';
+import { requestContext } from "../utils/requestContext.js";
+import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, AVAILABLE_MODELS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from "../../constants";
+import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 
 export const isGeminiApiKeyAvailable = (): boolean => {
   const store = requestContext.getStore();
@@ -12,22 +12,26 @@ export const isGeminiApiKeyAvailable = (): boolean => {
 
 let currentModelIndex = 0;
 
-export const generateContentWithRetry = async (params: {
-  contents: string | any;
-  config?: any;
-}, retries = 3, delayMs = 1200): Promise<any> => {
+export const generateContentWithRetry = async (
+  params: {
+    contents: string | any;
+    config?: any;
+  },
+  retries = 3,
+  delayMs = 1200,
+): Promise<any> => {
   const store = requestContext.getStore();
-  const activeApiKey = store?.geminiKey || process.env.GEMINI_API_KEY || '';
+  const activeApiKey = store?.geminiKey || process.env.GEMINI_API_KEY || "";
 
   const clientAi = activeApiKey
     ? new GoogleGenAI({
-      apiKey: activeApiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
+        apiKey: activeApiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
         },
-      },
-    })
+      })
     : null;
 
   let lastError: any = null;
@@ -39,20 +43,20 @@ export const generateContentWithRetry = async (params: {
     appLogStep(msg, rotationLogs);
   };
 
-  logStep('GEMINI_START_ROTATION', AVAILABLE_MODELS.length, startIndex);
+  logStep("GEMINI_START_ROTATION", AVAILABLE_MODELS.length, startIndex);
 
   for (let i = 0; i < AVAILABLE_MODELS.length; i++) {
     const modelIndex = (startIndex + i) % AVAILABLE_MODELS.length;
     const model = AVAILABLE_MODELS[modelIndex];
 
-    appLog('----------------------------------------------------');
-    logStep('GEMINI_CALLING_MODEL', i + 1, AVAILABLE_MODELS.length, model, modelIndex);
+    appLog("----------------------------------------------------");
+    logStep("GEMINI_CALLING_MODEL", i + 1, AVAILABLE_MODELS.length, model, modelIndex);
 
     let attempt = 0;
     while (attempt <= retries) {
       try {
         if (!clientAi) {
-          throw createAppError('GEMINI_SDK_NOT_INIT');
+          throw createAppError("GEMINI_SDK_NOT_INIT");
         }
 
         const response = await clientAi.models.generateContent({
@@ -61,14 +65,17 @@ export const generateContentWithRetry = async (params: {
           config: params.config,
         });
 
-        logStep('GEMINI_SUCCESS', model, attempt + 1);
+        logStep("GEMINI_SUCCESS", model, attempt + 1);
 
         currentModelIndex = modelIndex;
 
         if (modelIndex !== 0) {
-          setTimeout(() => {
-            currentModelIndex = 0;
-          }, 3 * 60 * 1000);
+          setTimeout(
+            () => {
+              currentModelIndex = 0;
+            },
+            3 * 60 * 1000,
+          );
         }
 
         (response as any).rotationLogs = rotationLogs;
@@ -77,49 +84,49 @@ export const generateContentWithRetry = async (params: {
         lastError = error;
         attempt++;
 
-        const errorStr = error?.toString() || '';
-        const errorMessage = error?.message || '';
+        const errorStr = error?.toString() || "";
+        const errorMessage = error?.message || "";
 
-        logStep('GEMINI_ERROR', model, attempt, errorMessage);
+        logStep("GEMINI_ERROR", model, attempt, errorMessage);
 
-        const isUnsupportedModel = GEMINI_UNSUPPORTED_ERROR_KEYWORDS.some(term => [errorMessage, errorStr].some(str => str.toLowerCase().includes(term.toLowerCase())));
+        const isUnsupportedModel = GEMINI_UNSUPPORTED_ERROR_KEYWORDS.some((term) => [errorMessage, errorStr].some((str) => str.toLowerCase().includes(term.toLowerCase())));
 
         if (isUnsupportedModel) {
-          logStep('GEMINI_UNSUPPORTED_FALLBACK', model);
+          logStep("GEMINI_UNSUPPORTED_FALLBACK", model);
           break;
         }
 
-        const isRetryable = (GEMINI_RETRYABLE_STATUSES as readonly any[]).includes(error?.status) || GEMINI_RETRYABLE_ERROR_KEYWORDS.some(term => [errorMessage, errorStr].some(str => str.toLowerCase().includes(term.toLowerCase())));
+        const isRetryable = (GEMINI_RETRYABLE_STATUSES as readonly any[]).includes(error?.status) || GEMINI_RETRYABLE_ERROR_KEYWORDS.some((term) => [errorMessage, errorStr].some((str) => str.toLowerCase().includes(term.toLowerCase())));
 
         let waitTime = delayMs;
         const retryMatch = errorMessage.match(GEMINI_RETRY_REGEX) || errorStr.match(GEMINI_RETRY_REGEX);
         if (retryMatch) {
           waitTime = Math.ceil((parseFloat(retryMatch[1]) + 1.5) * 1000);
-        } else if ((GEMINI_QUOTA_STATUSES as readonly any[]).includes(error?.status) || [errorMessage, errorStr].some(str => str.toLowerCase().includes('quota'))) {
+        } else if ((GEMINI_QUOTA_STATUSES as readonly any[]).includes(error?.status) || [errorMessage, errorStr].some((str) => str.toLowerCase().includes("quota"))) {
           waitTime = 8000;
         }
 
         if (attempt <= retries && isRetryable) {
-          logStep('GEMINI_RETRYABLE_ERROR', model, waitTime);
+          logStep("GEMINI_RETRYABLE_ERROR", model, waitTime);
           await new Promise((resolve) => setTimeout(resolve, waitTime));
           delayMs = Math.max(delayMs * 1.5, waitTime * 1.2);
           continue;
         }
 
-        logStep('GEMINI_MODEL_FAILED', model);
+        logStep("GEMINI_MODEL_FAILED", model);
         break;
       }
     }
 
     if (i < AVAILABLE_MODELS.length - 1) {
-      logStep('GEMINI_COOLDOWN');
+      logStep("GEMINI_COOLDOWN");
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 
-  const finalError = lastError || createAppError('GEMINI_GENERATION_FAILED_ALL');
+  const finalError = lastError || createAppError("GEMINI_GENERATION_FAILED_ALL");
   finalError.rotationLogs = rotationLogs;
   finalError.noRetry = true;
-  logStep('GEMINI_ALL_FAILED', AVAILABLE_MODELS.length);
+  logStep("GEMINI_ALL_FAILED", AVAILABLE_MODELS.length);
   throw finalError;
 };

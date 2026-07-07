@@ -1,9 +1,8 @@
-import { appLog } from '../../lib/logger.js';
-
+import { appLog } from "../../lib/logger.js";
 
 export const extractBalancedJSON = (text: string): string | null => {
-  const firstBrace = text.indexOf('{');
-  const firstBracket = text.indexOf('[');
+  const firstBrace = text.indexOf("{");
+  const firstBracket = text.indexOf("[");
   let startIdx = -1;
   if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
     startIdx = firstBrace;
@@ -21,7 +20,7 @@ export const extractBalancedJSON = (text: string): string | null => {
     if (inString) {
       if (escape) {
         escape = false;
-      } else if (char === '\\') {
+      } else if (char === "\\") {
         escape = true;
       } else if (char === '"') {
         inString = false;
@@ -29,19 +28,19 @@ export const extractBalancedJSON = (text: string): string | null => {
     } else {
       if (char === '"') {
         inString = true;
-      } else if (char === '{' || char === '[') {
+      } else if (char === "{" || char === "[") {
         stack.push(char);
-      } else if (char === '}') {
+      } else if (char === "}") {
         const last = stack[stack.length - 1];
-        if (last === '{') {
+        if (last === "{") {
           stack.pop();
           if (stack.length === 0) {
             return text.substring(startIdx, i + 1);
           }
         }
-      } else if (char === ']') {
+      } else if (char === "]") {
         const last = stack[stack.length - 1];
-        if (last === '[') {
+        if (last === "[") {
           stack.pop();
           if (stack.length === 0) {
             return text.substring(startIdx, i + 1);
@@ -51,11 +50,10 @@ export const extractBalancedJSON = (text: string): string | null => {
     }
   }
   return null;
-}
-
+};
 
 export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
-  let out = '';
+  let out = "";
   let inString = false;
   let escapeNext = false;
 
@@ -68,7 +66,7 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
       continue;
     }
 
-    if (char === '\\') {
+    if (char === "\\") {
       out += char;
       escapeNext = true;
       continue;
@@ -83,7 +81,7 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
         }
         if (j < jsonStr.length) {
           const nextChar = jsonStr[j];
-          if (nextChar === ',' || nextChar === '}' || nextChar === ']' || nextChar === ':') {
+          if (nextChar === "," || nextChar === "}" || nextChar === "]" || nextChar === ":") {
             isTrueEnd = true;
           }
         } else {
@@ -104,12 +102,12 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
     }
 
     if (inString) {
-      if (char === '\n') {
-        out += '\\n';
-      } else if (char === '\r') {
-        out += '\\r';
-      } else if (char === '\t') {
-        out += '\\t';
+      if (char === "\n") {
+        out += "\\n";
+      } else if (char === "\r") {
+        out += "\\r";
+      } else if (char === "\t") {
+        out += "\\t";
       } else {
         out += char;
       }
@@ -118,11 +116,10 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
     }
   }
   return out;
-}
-
+};
 
 export const completeCutoffJSON = (jsonStr: string): string => {
-  let out = '';
+  let out = "";
   const stack: string[] = [];
   let inString = false;
   let escape = false;
@@ -135,7 +132,7 @@ export const completeCutoffJSON = (jsonStr: string): string => {
       escape = false;
       continue;
     }
-    if (char === '\\') {
+    if (char === "\\") {
       escape = true;
       continue;
     }
@@ -147,43 +144,40 @@ export const completeCutoffJSON = (jsonStr: string): string => {
     } else {
       if (char === '"') {
         inString = true;
-      } else if (char === '{' || char === '[') {
+      } else if (char === "{" || char === "[") {
         stack.push(char);
-      } else if (char === '}') {
-        if (stack[stack.length - 1] === '{') {
+      } else if (char === "}") {
+        if (stack[stack.length - 1] === "{") {
           stack.pop();
         }
-      } else if (char === ']') {
-        if (stack[stack.length - 1] === '[') {
+      } else if (char === "]") {
+        if (stack[stack.length - 1] === "[") {
           stack.pop();
         }
       }
     }
   }
 
-  
   if (inString) {
     out += '"';
   }
 
-  
   while (stack.length > 0) {
     const last = stack.pop();
-    if (last === '{') {
-      out += '}';
-    } else if (last === '[') {
-      out += ']';
+    if (last === "{") {
+      out += "}";
+    } else if (last === "[") {
+      out += "]";
     }
   }
 
   return out;
-}
-
+};
 
 export const safeParseJSON = (text: string, defaultVal: any): any => {
   if (!text) return defaultVal;
   let trimmed = text.trim();
-  if (['', 'undefined', 'null'].includes(trimmed)) {
+  if (["", "undefined", "null"].includes(trimmed)) {
     return defaultVal;
   }
 
@@ -191,7 +185,7 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     try {
       return JSON.parse(str);
     } catch {
-      const cleanCommas = str.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+      const cleanCommas = str.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
       try {
         return JSON.parse(cleanCommas);
       } catch {
@@ -220,10 +214,8 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     }
   };
 
-
   let parsed = tryParseClean(trimmed);
   if (parsed) return parsed;
-
 
   const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (match && match[1]) {
@@ -231,25 +223,23 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     if (parsed) return parsed;
   }
 
-
   const balanced = extractBalancedJSON(trimmed);
   if (balanced) {
     parsed = tryParseClean(balanced);
     if (parsed) return parsed;
   }
 
-
-  const firstBrace = trimmed.indexOf('{');
-  const firstBracket = trimmed.indexOf('[');
+  const firstBrace = trimmed.indexOf("{");
+  const firstBracket = trimmed.indexOf("[");
   let startIdx = -1;
   let endIdx = -1;
 
   if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
     startIdx = firstBrace;
-    endIdx = trimmed.lastIndexOf('}');
+    endIdx = trimmed.lastIndexOf("}");
   } else if (firstBracket !== -1) {
     startIdx = firstBracket;
-    endIdx = trimmed.lastIndexOf(']');
+    endIdx = trimmed.lastIndexOf("]");
   }
 
   if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
@@ -258,9 +248,9 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     if (parsed) return parsed;
   }
 
-  appLog('JSON_PARSE_WARNING', text.substring(0, 150) + '...');
+  appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
   return defaultVal;
-}
+};
 
 export const formatTime = (secs: number): string => {
   const totalSecs = Math.round(secs);
@@ -268,4 +258,3 @@ export const formatTime = (secs: number): string => {
   const remainingSecs = totalSecs % 60;
   return `${minutes.toString().padStart(2, "0")}:${remainingSecs.toString().padStart(2, "0")}`;
 };
-

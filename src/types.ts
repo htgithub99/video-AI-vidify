@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export enum WizardStep {
   SourceInput = 0,
@@ -11,82 +11,82 @@ export enum WizardStep {
 }
 
 export enum ProjectInputType {
-  Script = 'script',
-  Idea = 'idea',
+  Script = "script",
+  Idea = "idea",
 }
 
 export enum ProjectLanguage {
-  VI = 'vi',
-  EN = 'en',
+  VI = "vi",
+  EN = "en",
 }
 
 export enum HookPosition {
-  Start = 'start',
-  Mid = 'mid',
-  All = 'all',
+  Start = "start",
+  Mid = "mid",
+  All = "all",
 }
 
 export enum AudioType {
-  TTS = 'tts',
-  Clone = 'clone',
-  Upload = 'upload',
-  Generated = 'generated',
-  Simulated = 'simulated',
+  TTS = "tts",
+  Clone = "clone",
+  Upload = "upload",
+  Generated = "generated",
+  Simulated = "simulated",
 }
 
 export enum Gender {
-  Male = 'male',
-  Female = 'female',
-  Neutral = 'neutral',
+  Male = "male",
+  Female = "female",
+  Neutral = "neutral",
 }
 
 export enum AgeGroup {
-  Child = 'child',
-  Teen = 'teen',
-  Adult = 'adult',
-  Senior = 'senior',
+  Child = "child",
+  Teen = "teen",
+  Adult = "adult",
+  Senior = "senior",
 }
 
 export enum AssetsMode {
-  UserOnly = 'user_only',
-  UserFirst = 'user_first',
-  Mixed = 'mixed',
+  UserOnly = "user_only",
+  UserFirst = "user_first",
+  Mixed = "mixed",
 }
 
 export enum ImageGeneratorEngine {
-  Imagen = 'imagen',
-  Veo3 = 'veo3',
-  LabsSandbox = 'labs-sandbox',
+  Imagen = "imagen",
+  Veo3 = "veo3",
+  LabsSandbox = "labs-sandbox",
 }
 
 export enum ImageGenerationMode {
-  LabsFlow = 'labs-flow',
-  GeminiChat = 'gemini-chat',
+  LabsFlow = "labs-flow",
+  GeminiChat = "gemini-chat",
 }
 
 export enum GenerateType {
-  Image = 'image',
-  Video = 'video',
+  Image = "image",
+  Video = "video",
 }
 
 export enum PromptInputMethod {
-  Type = 'type',
-  Paste = 'paste',
+  Type = "type",
+  Paste = "paste",
 }
 
 export enum AspectRatio {
-  SixteenNine = '16:9',
-  NineSixteen = '9:16',
-  OneOne = '1:1',
-  FourThree = '4:3',
-  ThreeFour = '3:4',
+  SixteenNine = "16:9",
+  NineSixteen = "9:16",
+  OneOne = "1:1",
+  FourThree = "4:3",
+  ThreeFour = "3:4",
 }
 
-export type AssetType = 'image' | 'video';
+export type AssetType = "image" | "video";
 
-export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
+export type TooltipPosition = "top" | "bottom" | "left" | "right";
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "outline";
 
 export interface ProjectInput {
   type: ProjectInputType;
@@ -96,11 +96,11 @@ export interface ProjectInput {
 export interface ProjectConfig {
   genre: string;
   language: ProjectLanguage;
-  duration: string; 
+  duration: string;
   targetDuration?: string;
-  rewriteLevel: number; 
-  similarityReduction: number; 
-  creativityLevel: number; 
+  rewriteLevel: number;
+  similarityReduction: number;
+  creativityLevel: number;
   factCheck: boolean;
   audience: string;
   writingStyle: string;
@@ -116,37 +116,38 @@ export interface HookVersion {
 }
 
 export interface HookConfig {
-  type: string; 
-  duration: number; 
-  count: number; 
+  type: string;
+  duration: number;
+  count: number;
   positions: HookPosition;
   versions: HookVersion[];
 }
 
 export interface VoiceConfig {
-  provider: string; 
+  provider: string;
   audioType: AudioType;
   voiceName?: string;
   gender: Gender;
   age: AgeGroup;
-  emotion: string; 
-  speed: number; 
-  pitch?: number; 
-  volume?: number; 
+  emotion: string;
+  speed: number;
+  pitch?: number;
+  volume?: number;
   voiceURI?: string;
   previewUrl?: string;
   audioUrl?: string;
   audioBase64?: string;
   uploadedAudioName?: string;
-  subtitleFiles?: string[]; 
-  timingLog?: string; 
+  subtitleFiles?: string[];
+  timingLog?: string;
+  isSegmented?: boolean;
 }
 
 export interface VisualConfig {
-  source: string; 
-  style: string; 
-  quality: string; 
-  density: number; 
+  source: string;
+  style: string;
+  quality: string;
+  density: number;
   characterConsistency: boolean;
   assetsMode: AssetsMode;
   stylePreset?: string;
@@ -195,18 +196,19 @@ export interface Chapter {
 export interface StoryboardScene {
   id: string;
   chapterId: string;
-  startTime: string; 
-  endTime: string; 
-  duration: number; 
+  startTime: string;
+  endTime: string;
+  duration: number;
   script: string;
   subtitle: string;
   prompt: string;
   assetName?: string;
   assetType?: AssetType;
-  assetUrl?: string; 
-  assetUrls?: string[]; 
-  audioUrl?: string; 
-  cameraMotion: string; 
+  assetUrl?: string;
+  assetUrls?: string[];
+  audioUrl?: string;
+  audioBase64?: string;
+  cameraMotion: string;
   effects?: string;
   transition?: string;
 }
@@ -214,7 +216,7 @@ export interface StoryboardScene {
 export interface ThumbnailItem {
   id: string;
   prompt: string;
-  style: string; 
+  style: string;
   hasText: boolean;
   textText?: string;
   layout?: string;
@@ -276,8 +278,7 @@ export interface VideoProject {
   output?: {
     audioBase64?: string;
   };
-  
-  
+
   scriptRewritten?: string;
   factCheckNotes?: string;
   chapters?: Chapter[];
@@ -285,7 +286,7 @@ export interface VideoProject {
   thumbnails?: ThumbnailItem[];
   seo?: SEOPackage;
   assets?: SavedAsset[];
-  
+
   creditsUsed: number;
   currentStep?: WizardStep;
   versionHistory?: ProjectVersion[];
@@ -324,14 +325,22 @@ export interface IBaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonE
   isLoading?: boolean;
 }
 
-export interface Voice { voiceURI: string; name: string; lang: string; localService: boolean; default: boolean; gender?: string; [key: string]: any; }
+export interface Voice {
+  voiceURI: string;
+  name: string;
+  lang: string;
+  localService: boolean;
+  default: boolean;
+  gender?: string;
+  [key: string]: any;
+}
 
 export enum GeminiChatSpeed {
-  Slow = '1',
-  Normal = '3',
-  Fast = '5',
-  SuperFast = '7',
-  HyperFast = '10',
+  Slow = "1",
+  Normal = "3",
+  Fast = "5",
+  SuperFast = "7",
+  HyperFast = "10",
 }
 
 export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
@@ -343,9 +352,9 @@ export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
 };
 
 export enum GeminiChatModelName {
-  Pro = 'Pro',
-  Flash = 'Flash',
-  FlashLite = 'Flash-Lite',
+  Pro = "Pro",
+  Flash = "Flash",
+  FlashLite = "Flash-Lite",
 }
 
 export enum GeminiChatSelector {
@@ -359,10 +368,10 @@ export enum GeminiChatSelector {
 }
 
 export enum GeminiChatTextOption {
-  CreateVideoVi = 'Tạo video',
-  CreateImageVi = 'Tạo hình ảnh',
-  CreateVideoRegexStr = 'Tạo video|Create video|Generate video|video',
-  CreateImageRegexStr = 'Tạo hình ảnh|Create image|Generate image|image',
+  CreateVideoVi = "Tạo video",
+  CreateImageVi = "Tạo hình ảnh",
+  CreateVideoRegexStr = "Tạo video|Create video|Generate video|video",
+  CreateImageRegexStr = "Tạo hình ảnh|Create image|Generate image|image",
 }
 
 export enum ImageModelLabel {
@@ -372,9 +381,9 @@ export enum ImageModelLabel {
 }
 
 export enum BatchDelayOption {
-  Default = 'default',
-  OneSecond = '1s',
-  TwoSeconds = '2s',
-  ThreeSeconds = '3s',
-  Random123 = 'random123',
+  Default = "default",
+  OneSecond = "1s",
+  TwoSeconds = "2s",
+  ThreeSeconds = "3s",
+  Random123 = "random123",
 }

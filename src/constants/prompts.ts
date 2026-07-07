@@ -63,12 +63,7 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
  26. CROWD ANATOMY DEFECT PREVENTION (LARGE-SCALE SCENES): In massive scene battles or large crowds (e.g., "hundreds of soldiers clashing", "thousands of tents"), establish a clear foreground focus on 1 to 3 distinct, well-drawn characters or key objects. Describe the vast crowd/army in the background using terms like "silhouettes in the distant hazy dust", "indistinct figures obscured by gunpowder smoke", or "soft-focus background" to prevent mutated limbs or facial distortions.
  27. AVOID COMPLEX DIVERGENT OR MULTI-DIRECTIONAL ACTIONS (CRITICAL): Do not ask the image generator to depict multiple characters or groups performing different or opposite actions simultaneously (e.g., "two groups of soldiers riding away from each other in opposite directions"). AI generators struggle with dual-subject focus and will merge the directions. Instead, focus the prompt on one primary direction of movement or a single focal group's perspective (e.g., "A group of soldiers riding away down a ravine, seen from the perspective of another group stationary on a hill").`;
 
-export const getSceneStyleRewritePrompt = (
-  promptText: string,
-  newStyle: string,
-  isThumbnail: boolean = false,
-  aspectRatio: string = AspectRatio.SixteenNine,
-): string => `You are an elite AI Image Prompt Designer.
+export const getSceneStyleRewritePrompt = (promptText: string, newStyle: string, isThumbnail: boolean = false, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an elite AI Image Prompt Designer.
 Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it to perfectly align with the new visual style, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -90,11 +85,7 @@ ${NO_FRAME_RULE}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
-export const getStyleRewriteBatchPrompt = (
-  newStyle: string,
-  chunkJson: string,
-  aspectRatio: string = AspectRatio.SixteenNine,
-): string => `You are an elite AI Image Prompt Designer.
+export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an elite AI Image Prompt Designer.
 Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -119,13 +110,7 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes:
 ${chunkJson}`;
 
-export const getOptimizePromptsBatchPrompt = (
-  visualStyle: string,
-  referenceStyle: string,
-  chunkJson: string,
-  aspectRatio: string = AspectRatio.SixteenNine,
-  charactersJson?: string,
-): string => `You are an elite AI Image Prompt Designer.
+export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string): string => `You are an elite AI Image Prompt Designer.
 Your task is to analyze, rewrite, and optimize a list of image generation prompts for a video storyboard. You must review the current prompts, correct any style conflicts or formatting issues, clean up redundant keywords, and upgrade them to look highly detailed, cinematic, and visually consistent.
 
 [STYLE & REFERENCE SPECIFICATIONS]
@@ -176,14 +161,7 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes to optimize (includes current prompt and script):
 ${chunkJson}`;
 
-export const getHookGeneratorPrompt = (
-  count: number,
-  originalInput: string,
-  genre: string,
-  hookType: string,
-  duration: number,
-  language: string,
-): string => `You are a professional Youtube and TikTok script writer specializing in video layouts.
+export const getHookGeneratorPrompt = (count: number, originalInput: string, genre: string, hookType: string, duration: number, language: string): string => `You are a professional Youtube and TikTok script writer specializing in video layouts.
 Generate ${count || 3} different hooks based on this input: "${originalInput}".
 Genre/Category context: ${genre || "Storytelling"}.
 Hook Style desired: ${hookType || "Auto"} (options: Auto, Mystery, Shock, Drama, Curiosity, Emotional, Historical, Statistical, Question, Story).
@@ -195,16 +173,7 @@ You must return a raw JSON Array matching this format perfectly. No markdown cod
   { "id": "hk_unique_1", "content": "The Hook Line...", "type": "StyleName", "selected": true }
 ]`;
 
-export const getChapterWriterPrompt = (
-  chapterTitle: string,
-  chapterDescription: string,
-  genre: string,
-  writingStyle: string,
-  isVi: boolean,
-  genreGuideline: string,
-  styleGuideline: string,
-  chapterWordTarget: number,
-): string => `You are writing ONE CHAPTER of a larger script.
+export const getChapterWriterPrompt = (chapterTitle: string, chapterDescription: string, genre: string, writingStyle: string, isVi: boolean, genreGuideline: string, styleGuideline: string, chapterWordTarget: number): string => `You are writing ONE CHAPTER of a larger script.
 [Chapter Info]:
 - Title: ${chapterTitle}
 - Description: ${chapterDescription}
@@ -221,20 +190,18 @@ ${genreGuideline}
 ${styleGuideline}
 
 [CRITICAL REQUIREMENT - LENGTH & TTS SAFE]:
-${isVi
+${
+  isVi
     ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
     : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
-  }
+}
 
 Provide strict output complying EXACTLY with this JSON structure:
 {
   "scriptSegment": "Massive, extensive script lines for this chapter contributing to the ${chapterWordTarget}+ word count requirement."
 }`;
 
-export const getImagePromptDesignerPrompt = (
-  genre: string,
-  rewrittenScript: string,
-): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
+export const getImagePromptDesignerPrompt = (genre: string, rewrittenScript: string): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
 - Genre Theme: ${genre}
@@ -372,14 +339,7 @@ ${chunkScript}
 Chapters structure context:
 ${chaptersStr}`;
 
-export const getSeoMarketerPrompt = (
-  rewrittenScript: string,
-  numTitles: number,
-  numDescriptions: number,
-  numHashtags: number,
-  numTags: number,
-  isVi: boolean,
-): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
+export const getSeoMarketerPrompt = (rewrittenScript: string, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number, isVi: boolean): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
 Your task is to analyze this video script and generate fully optimized search and click metadata:
 ---
 ${rewrittenScript}
@@ -403,12 +363,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailLayoutPrompt = (
-  rewrittenScript: string,
-  thumbnailCount: number,
-  refImageStr: string,
-  isVi: boolean,
-): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
+export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
 Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast 16:9 visual thumbnail designs.
 
 ---
@@ -456,15 +411,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   ]
 }`;
 
-export const getOutlineWriterPrompt = (
-  inputTypeContext: string,
-  durationText: string,
-  targetWordCount: number,
-  genre: string,
-  writingStyle: string,
-  isVi: boolean,
-  targetWordCountMin: number,
-): string => `CRITICAL MANDATE: You MUST strictly adhere to all of the following [System Configuration] constraints and guidelines.
+export const getOutlineWriterPrompt = (inputTypeContext: string, durationText: string, targetWordCount: number, genre: string, writingStyle: string, isVi: boolean, targetWordCountMin: number): string => `CRITICAL MANDATE: You MUST strictly adhere to all of the following [System Configuration] constraints and guidelines.
 
 ${inputTypeContext}
 
@@ -534,10 +481,7 @@ ${CINEMATIC_PROMPT_RULES}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the generated prompt.
 DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw prompt string in English.`;
 
-export const getHookAnalysisPrompt = (
-  originalInput: string,
-  genre: string,
-): string => `You are an expert content strategist. Analyze the following topic/idea: "${originalInput}".
+export const getHookAnalysisPrompt = (originalInput: string, genre: string): string => `You are an expert content strategist. Analyze the following topic/idea: "${originalInput}".
 Genre context: ${genre || "Storytelling"}.
 Identify the primary target audience, core emotional triggers (curiosity, fear, nostalgia, shock, etc.), and outline 3 completely different narrative angles or hooks that would grab attention in the first 3 seconds on social media.
 Output a raw JSON object with this format (no markdown):
@@ -549,10 +493,7 @@ Output a raw JSON object with this format (no markdown):
   ]
 }`;
 
-export const getHookPolishPrompt = (
-  draftsJson: string,
-  language: string,
-): string => `You are a viral copywriting editor. Polish and refine the following draft hooks to make them extremely punchy, catchy, and optimized for TTS text-to-speech voice generation.
+export const getHookPolishPrompt = (draftsJson: string, language: string): string => `You are a viral copywriting editor. Polish and refine the following draft hooks to make them extremely punchy, catchy, and optimized for TTS text-to-speech voice generation.
 Draft Hooks JSON:
 ${draftsJson}
 
@@ -565,12 +506,7 @@ Rules:
   { "id": "hk_unique_1", "content": "Polished Hook Line...", "type": "Angle Name", "selected": true }
 ]`;
 
-export const getScriptConceptPrompt = (
-  originalInput: string,
-  genre: string,
-  writingStyle: string,
-  language: string,
-): string => `You are an expert researcher and creative director.
+export const getScriptConceptPrompt = (originalInput: string, genre: string, writingStyle: string, language: string): string => `You are an expert researcher and creative director.
 Create a "Concept & Terminology Sheet" for a video script based on:
 Input Idea: "${originalInput}"
 Genre: "${genre}"
@@ -589,11 +525,7 @@ Output a raw JSON object matching this schema perfectly (no markdown wrapping):
   "preferredTerms": ["term1", "term2"]
 }`;
 
-export const getOutlineVerifyPrompt = (
-  outlineJson: string,
-  targetWordCount: number,
-  genre: string,
-): string => `You are a senior script editor. Review this draft outline:
+export const getOutlineVerifyPrompt = (outlineJson: string, targetWordCount: number, genre: string): string => `You are a senior script editor. Review this draft outline:
 ${outlineJson}
 
 Constraints:
@@ -614,10 +546,7 @@ Output a raw JSON object matching this schema (no markdown wrapping):
   ]
 }`;
 
-export const getScriptSanitizePrompt = (
-  rawScript: string,
-  isVi: boolean,
-): string => `You are an AI TTS Normalization Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
+export const getScriptSanitizePrompt = (rawScript: string, isVi: boolean): string => `You are an AI TTS Normalization Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
 Raw Script:
 """
 ${rawScript}
@@ -633,13 +562,7 @@ Output a raw JSON object matching this schema (no markdown wrapping):
   "cleanedScript": "The fully cleaned, TTS-safe script text"
 }`;
 
-export const getGlobalVisualBiblePrompt = (
-  script: string,
-  genre: string,
-  visualStyle: string,
-  referenceStyle?: string,
-  referenceCharacters?: string,
-): string => {
+export const getGlobalVisualBiblePrompt = (script: string, genre: string, visualStyle: string, referenceStyle?: string, referenceCharacters?: string): string => {
   let prompt = `You are a cinematic concept artist. Analyze the video script to establish a cohesive Visual Bible.
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
@@ -682,10 +605,7 @@ Output a raw JSON object matching this schema (no markdown wrapping):
   return prompt;
 };
 
-export const getScenePromptRefinePrompt = (
-  scenesJson: string,
-  visualBibleJson: string,
-): string => `You are an elite Image Prompt Refiner. Your goal is to apply a global Visual Bible to individual scene prompts to ensure perfect character and visual consistency across the entire storyboard.
+export const getScenePromptRefinePrompt = (scenesJson: string, visualBibleJson: string): string => `You are an elite Image Prompt Refiner. Your goal is to apply a global Visual Bible to individual scene prompts to ensure perfect character and visual consistency across the entire storyboard.
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
 You MUST always translate the core subject matter of the narration into the visual prompt, completely ignoring metaphorical, introductory, or framing words.
@@ -722,10 +642,7 @@ ${NO_FRAME_RULE}
   }
 ]`;
 
-export const getSeoKeywordAnalysisPrompt = (
-  script: string,
-  isVi: boolean,
-): string => `You are an SEO analyst. Analyze this script:
+export const getSeoKeywordAnalysisPrompt = (script: string, isVi: boolean): string => `You are an SEO analyst. Analyze this script:
 """
 ${script}
 """
@@ -736,11 +653,7 @@ Output a raw JSON object (no markdown wrapping):
   "keywords": ["keyword 1", "keyword 2"]
 }`;
 
-export const getSeoRefinementPrompt = (
-  draftSeoJson: string,
-  keywordsJson: string,
-  isVi: boolean,
-): string => `You are a high-CTR SEO Optimizer. Take the draft SEO metadata and optimize it using the analyzed keywords list.
+export const getSeoRefinementPrompt = (draftSeoJson: string, keywordsJson: string, isVi: boolean): string => `You are a high-CTR SEO Optimizer. Take the draft SEO metadata and optimize it using the analyzed keywords list.
 Draft SEO:
 ${draftSeoJson}
 
@@ -764,11 +677,7 @@ Rules:
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailConceptPrompt = (
-  script: string,
-  count: number,
-  isVi: boolean,
-): string => `You are a viral YouTube thumbnail strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
+export const getThumbnailConceptPrompt = (script: string, count: number, isVi: boolean): string => `You are a viral YouTube thumbnail strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
 Script:
 """
 ${script}
@@ -785,10 +694,7 @@ Output a raw JSON object (no markdown wrapping):
   ]
 }`;
 
-export const getThumbnailPromptRefinePrompt = (
-  draftThumbsJson: string,
-  conceptsJson: string,
-): string => `You are an expert thumbnail layout editor. Your task is to refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
+export const getThumbnailPromptRefinePrompt = (draftThumbsJson: string, conceptsJson: string): string => `You are an expert thumbnail layout editor. Your task is to refine the draft thumbnail generation prompts using the high-CTR composition concepts to meet professional YouTube and Facebook thumbnail layout standards.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Draft Thumbnails to refine:
@@ -831,9 +737,7 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
   }
 ]`;
 
-export const getCharacterAnalysisPrompt = (
-  script: string,
-): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance).
+export const getCharacterAnalysisPrompt = (script: string): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance).
 For each character, identify their name, gender, age group, appearance details mentioned (like hair color, clothing style, facial features), write a concise description in English, and extract/generate a detailed character design prompt in English consisting of keywords and descriptive phrases (max 30 words in total, separated by commas) that can be used directly for AI image generators.
 
 Output ONLY a valid JSON array matching the structure: 
@@ -849,9 +753,7 @@ containing at most 3 elements. Do not include markdown tags, code blocks, or exp
 Script:
 ${script}`;
 
-export const getCharacterExtractPrompt = (
-  characterDescription: string,
-): string => `You are an expert prompt engineer. Analyze the provided image(s) showing the same main character, along with their text description: "${characterDescription || ""}".
+export const getCharacterExtractPrompt = (characterDescription: string): string => `You are an expert prompt engineer. Analyze the provided image(s) showing the same main character, along with their text description: "${characterDescription || ""}".
 Extract a highly detailed character design prompt in English that describes this character consistently. Focus on:
 - Gender, ethnicity, and approximate age
 - Facial features (eyes, nose, expression style)
@@ -861,11 +763,7 @@ Extract a highly detailed character design prompt in English that describes this
 
 Keep the output as a set of keywords or descriptive phrases separated by commas, max 30 words in total. Only return the English character prompt keywords, with no introductory text or markdown.`;
 
-export const getCharacterRewriteBatchPrompt = (
-  charactersJson: string,
-  chunkJson: string,
-  aspectRatio: string = AspectRatio.SixteenNine,
-): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
+export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Character Visual Blueprints:
@@ -906,14 +804,7 @@ If the image shows a stick figure character style (simple sketch with black outl
 For other images: Extract and describe the style entirely in English, using short phrases separated by commas, max 3 words per phrase (e.g., "3D animation, bright colors, thick black outlines, flat colors").
 Only return the list of English style keywords, with no introductory text or markdown.`;
 
-export const getMultiStepHookPrompt = (
-  originalInput: string,
-  genre: string,
-  hookType: string,
-  duration: number,
-  language: string,
-  count: number,
-): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
+export const getMultiStepHookPrompt = (originalInput: string, genre: string, hookType: string, duration: number, language: string, count: number): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
 Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
 
 [Genre Context]: ${genre || "Storytelling"}
@@ -967,18 +858,14 @@ Your mission is to perform a highly unified script outline and research process 
 - Language: ${isVi ? "Vietnamese (Tiếng Việt)" : "English (Tiếng Anh)"}
 
 [Selected Opening Hook (MANDATORY PRE-PENDED)]: "${selectedHookText || ""}"
-${hookConfig
+${
+  hookConfig
     ? `[Hook Retention Strategy]:
 - Hook Type: ${hookConfig.type}
 - Hook Duration: ${hookConfig.duration}s
-- Hook Positions: ${hookConfig.positions === "start"
-      ? "The hook is placed only at the very beginning of the script."
-      : hookConfig.positions === "mid"
-        ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters."
-        : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."
-    }`
+- Hook Positions: ${hookConfig.positions === "start" ? "The hook is placed only at the very beginning of the script." : hookConfig.positions === "mid" ? "There must be an opening hook, and a transitional mid-roll retention hook at the beginning of the middle chapters." : "Add retention hooks at the opening, the middle chapters, and a suspenseful/cliffhanger hook at the ending chapter."}`
     : ""
-  }
+}
 
 [Guidelines]:
 - Genre Guidelines: ${genreGuideline}
@@ -1004,16 +891,10 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   ]
 }`;
 
-export const getSceneDensityPrompt = (
-  chunkLength: number,
-  label: string,
-  maxChars: number,
-  minScenes: number,
-  maxScenes: number,
-): string => `
+export const getSceneDensityPrompt = (chunkLength: number, label: string, maxChars: number, minScenes: number, maxScenes: number): string =>
+  `
 The provided script chunk has a total length of ${chunkLength} characters.
 The user has selected the [${label}] density (equivalent to a maximum of ${maxChars} characters per scene).
 STRICT MATHEMATICAL TARGET: You MUST generate a total number of scenes that falls strictly between ${minScenes} and ${maxScenes} scenes.
 If the returned result contains fewer than ${minScenes} scenes, the system will evaluate it as a critical failure and reject the response.
 `.trim();
-

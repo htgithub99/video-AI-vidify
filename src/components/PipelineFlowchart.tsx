@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { PipelineNode, pipelineNodes } from '../constants';
-import { Lang, translations } from '../lib/lang.js';
-import { HelpCircle, Activity, Sparkles } from 'lucide-react';
+import { useState } from "react";
+import { PipelineNode, pipelineNodes } from "../constants";
+import { Lang, translations } from "../lib/lang.js";
+import { HelpCircle, Activity, Sparkles } from "lucide-react";
 
 interface PipelineFlowchartProps {
   currentLang: Lang;
@@ -9,23 +9,30 @@ interface PipelineFlowchartProps {
   onNavigateStep?: (stepIdx: number) => void;
 }
 
-
-
 export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavigateStep }: PipelineFlowchartProps) {
   const [selectedNode, setSelectedNode] = useState<PipelineNode | null>(null);
   const t = translations[currentLang];
 
   const getGroupName = (groupId: number) => {
     switch (groupId) {
-      case 0: return t.Inputs;
-      case 1: return t.Hook_Engine;
-      case 2: return t.Story_Expansion;
-      case 3: return t.Storyboard;
-      case 4: return t.Visuals;
-      case 5: return t.Audio_Sync;
-      case 6: return t.SEO_Boost;
-      case 7: return t.Video_Editorial;
-      default: return '';
+      case 0:
+        return t.Inputs;
+      case 1:
+        return t.Hook_Engine;
+      case 2:
+        return t.Story_Expansion;
+      case 3:
+        return t.Storyboard;
+      case 4:
+        return t.Visuals;
+      case 5:
+        return t.Audio_Sync;
+      case 6:
+        return t.SEO_Boost;
+      case 7:
+        return t.Video_Editorial;
+      default:
+        return "";
     }
   };
 
@@ -34,9 +41,7 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-rose-500 animate-pulse" />
-          <h3 className="font-bold text-slate-200 text-xs tracking-wider uppercase font-mono">
-            {t.viewPipelineMap}
-          </h3>
+          <h3 className="font-bold text-slate-200 text-xs tracking-wider uppercase font-mono">{t.viewPipelineMap}</h3>
         </div>
         <div className="text-[10px] text-slate-400 flex items-center gap-1 font-mono uppercase font-bold">
           <Sparkles className="w-3.5 h-3.5 text-rose-400 animate-bounce" />
@@ -54,12 +59,9 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
             <button
               key={node.id}
               onClick={() => setSelectedNode(node)}
-              className={`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer ${isActiveGroup
-                ? 'bg-rose-950/20 border-rose-500 text-rose-100 shadow-sm scale-[1.02] ring-1 ring-rose-500/30'
-                : isPassedGroup
-                  ? 'bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400'
-                  : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800'
-                }`}
+              className={`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer ${
+                isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 shadow-sm scale-[1.02] ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-800"
+              }`}
             >
               {/* Active Pulse Glow */}
               {isActiveGroup && (
@@ -70,12 +72,13 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
               )}
 
               <div className="text-[9px] font-mono font-bold tracking-wider opacity-60 flex items-center justify-between mb-1">
-                <span>{t.STAGE_0}{node.stageGroup + 1}</span>
-                <span className={isActiveGroup ? 'text-rose-400' : isPassedGroup ? 'text-green-400' : 'text-slate-400'}>{node.id}</span>
+                <span>
+                  {t.STAGE_0}
+                  {node.stageGroup + 1}
+                </span>
+                <span className={isActiveGroup ? "text-rose-400" : isPassedGroup ? "text-green-400" : "text-slate-400"}>{node.id}</span>
               </div>
-              <p className="text-xs font-semibold truncate uppercase tracking-tight">
-                {currentLang === 'vi' ? node.nameVi : node.nameEn}
-              </p>
+              <p className="text-xs font-semibold truncate uppercase tracking-tight">{currentLang === "vi" ? node.nameVi : node.nameEn}</p>
 
               <div className="mt-1.5 pt-1.5 border-t border-slate-800/50 text-[8px] text-slate-500 uppercase font-bold truncate flex items-center gap-1 font-mono justify-between">
                 <span>{getGroupName(node.stageGroup)}</span>
@@ -86,25 +89,20 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
         })}
       </div>
 
-      { }
+      {}
       {selectedNode && (
         <div className="mt-4 bg-slate-950 border border-slate-800 rounded p-4 animate-fadeIn flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-slate-800 rounded text-rose-400 shrink-0 font-mono font-black text-xs border border-slate-800">
-              {selectedNode.id}
-            </div>
+            <div className="p-2 bg-slate-800 rounded text-rose-400 shrink-0 font-mono font-black text-xs border border-slate-800">{selectedNode.id}</div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] uppercase font-bold bg-slate-800 font-mono px-2 py-0.5 rounded text-green-400 border border-slate-800">
-                  {t.STAGE_0}{selectedNode.stageGroup + 1} : {getGroupName(selectedNode.stageGroup)}
+                  {t.STAGE_0}
+                  {selectedNode.stageGroup + 1} : {getGroupName(selectedNode.stageGroup)}
                 </span>
-                <h4 className="font-bold text-white text-xs uppercase tracking-wide">
-                  {currentLang === 'vi' ? selectedNode.nameVi : selectedNode.nameEn}
-                </h4>
+                <h4 className="font-bold text-white text-xs uppercase tracking-wide">{currentLang === "vi" ? selectedNode.nameVi : selectedNode.nameEn}</h4>
               </div>
-              <p className="text-xs text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
-                {currentLang === 'vi' ? selectedNode.descVi : selectedNode.descEn}
-              </p>
+              <p className="text-xs text-slate-400 mt-1.5 max-w-2xl leading-relaxed">{currentLang === "vi" ? selectedNode.descVi : selectedNode.descEn}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
@@ -120,10 +118,7 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
                 {t.Jump_to_this_step}
               </button>
             )}
-            <button
-              onClick={() => setSelectedNode(null)}
-              className="text-[10px] uppercase font-mono font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-[#222] px-3 py-1.5 rounded border border-slate-800 cursor-pointer"
-            >
+            <button onClick={() => setSelectedNode(null)} className="text-[10px] uppercase font-mono font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-[#222] px-3 py-1.5 rounded border border-slate-800 cursor-pointer">
               {t.Close}
             </button>
           </div>

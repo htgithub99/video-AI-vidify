@@ -1,21 +1,9 @@
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
-import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX } from '../constants';
+import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX } from "../constants";
 import { appError } from "../lib/logger.js";
-import {
-  Video,
-  Coins,
-  TrendingUp,
-  Sliders,
-  Save,
-  CheckCircle2,
-  Shield,
-  X,
-  Moon,
-  Sun,
-  Key,
-} from "lucide-react";
+import { Video, Coins, TrendingUp, Sliders, Save, CheckCircle2, Shield, X, Moon, Sun, Key } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "./ui/Button";
 
@@ -28,14 +16,7 @@ interface HeaderProps {
   toggleTheme: () => void;
 }
 
-export default function Header({
-  currentLang,
-  setLang,
-  credits,
-  costTracker,
-  theme,
-  toggleTheme,
-}: HeaderProps) {
+export default function Header({ currentLang, setLang, credits, costTracker, theme, toggleTheme }: HeaderProps) {
   const t = translations[currentLang];
   const [showConfig, setShowConfig] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -49,12 +30,7 @@ export default function Header({
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
 
-  
-  const saveConfigHelper = (
-    keysToSave: Record<string, string>,
-    setSavingState: (saving: boolean) => void,
-    setSuccessState: (success: boolean) => void
-  ) => {
+  const saveConfigHelper = (keysToSave: Record<string, string>, setSavingState: (saving: boolean) => void, setSuccessState: (success: boolean) => void) => {
     setSavingState(true);
     setTimeout(() => {
       Object.entries(keysToSave).forEach(([key, val]) => {
@@ -70,21 +46,17 @@ export default function Header({
   };
 
   const handleSaveConfig = () => {
-    saveConfigHelper(
-      { [STORAGE_KEYS.API_SANDBOX_CONFIG]: JSON.stringify(config) },
-      setIsSaving,
-      setSavedSuccess
-    );
+    saveConfigHelper({ [STORAGE_KEYS.API_SANDBOX_CONFIG]: JSON.stringify(config) }, setIsSaving, setSavedSuccess);
   };
 
   const handleSaveKeys = () => {
     saveConfigHelper(
       {
         [STORAGE_KEYS.GEMINI_API_KEY]: geminiKey.trim(),
-        [STORAGE_KEYS.AI33_API_KEY]: ai33Key.trim()
+        [STORAGE_KEYS.AI33_API_KEY]: ai33Key.trim(),
       },
       setIsSavingKeys,
-      setKeysSavedSuccess
+      setKeysSavedSuccess,
     );
   };
 
@@ -133,9 +105,7 @@ export default function Header({
       const agentSessMatch = val.match(CURL_AGENT_SESSION_ID_REGEX);
       if (agentSessMatch) parsedAgentSessionId = agentSessMatch[1];
 
-      const isStreamChat =
-        val.includes("flowCreationAgent:streamChat") ||
-        val.includes("streamChat");
+      const isStreamChat = val.includes("flowCreationAgent:streamChat") || val.includes("streamChat");
 
       const updated = {
         ...config,
@@ -148,41 +118,28 @@ export default function Header({
       };
 
       setConfig(updated);
-      setCurlFeedback(
-        currentLang === "vi"
-          ? `✓ Đã trích xuất thành công: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "Kiểu StreamChat (SSE)" : "Kiểu Batch"}`
-          : `✓ Successfully parsed: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "StreamChat (SSE)" : "Batch"}`,
-      );
+      setCurlFeedback(currentLang === "vi" ? `✓ Đã trích xuất thành công: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "Kiểu StreamChat (SSE)" : "Kiểu Batch"}` : `✓ Successfully parsed: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "StreamChat (SSE)" : "Batch"}`);
       setTimeout(() => setCurlFeedback(null), 5000);
     } catch (e) {
       appError("GENERAL_ERROR", e);
-      setCurlFeedback(
-        t.Failed_to_parse_cURL_comm,
-      );
+      setCurlFeedback(t.Failed_to_parse_cURL_comm);
     }
   };
 
   const [config, setConfig] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (
-        saved &&
-        saved.trim() !== "undefined" &&
-        saved.trim() !== "null" &&
-        saved.trim() !== ""
-      ) {
+      if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === "object") {
           return {
-            projectId:
-              parsed.projectId || DEFAULT_PROJECT_ID,
+            projectId: parsed.projectId || DEFAULT_PROJECT_ID,
             authToken: parsed.authToken || "",
             recaptchaToken: parsed.recaptchaToken || "",
             sessionId: parsed.sessionId || DEFAULT_SESSION_ID,
             imageModelName: parsed.imageModelName || "NARWHAL",
             agentSessionId: parsed.agentSessionId || "",
-            isStreamChat:
-              parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
+            isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
           };
         }
       }
@@ -209,13 +166,9 @@ export default function Header({
           <div>
             <h1 className="text-sm font-bold tracking-wide text-slate-100 flex items-center gap-2 font-logo">
               {t.appTitle}
-              <span className="text-[10px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded border border-rose-500/20 tracking-tighter">
-                {t.v2_4_PRO}
-              </span>
+              <span className="text-[10px] bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded border border-rose-500/20 tracking-tighter">{t.v2_4_PRO}</span>
             </h1>
-            <p className="hidden sm:block text-[10px] text-slate-400 font-medium tracking-wide">
-              {t.appSubtitle}
-            </p>
+            <p className="hidden sm:block text-[10px] text-slate-400 font-medium tracking-wide">{t.appSubtitle}</p>
           </div>
         </div>
 
@@ -224,9 +177,7 @@ export default function Header({
           {}
           <div className="hidden md:flex items-center gap-2 mr-2">
             <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse"></div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">
-              {t.Live_Sync}
-            </span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider">{t.Live_Sync}</span>
           </div>
 
           {}
@@ -251,18 +202,11 @@ export default function Header({
               setShowKeysConfig(!showKeysConfig);
               setShowConfig(false);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showKeysConfig
-              ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-              : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"
-              }`}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showKeysConfig ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"}`}
           >
             <Key className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">
-              API Keys
-            </span>
-            {(geminiKey || ai33Key) && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>
-            )}
+            <span className="hidden sm:inline">API Keys</span>
+            {(geminiKey || ai33Key) && <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>}
           </button>
 
           {}
@@ -271,50 +215,24 @@ export default function Header({
               setShowConfig(!showConfig);
               setShowKeysConfig(false);
             }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showConfig
-              ? "bg-rose-500/10 border-rose-500/30 text-rose-500"
-              : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"
-              }`}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer relative shrink-0 ${showConfig ? "bg-rose-500/10 border-rose-500/30 text-rose-500" : "bg-slate-800 border-slate-700/50 text-slate-300 hover:text-slate-100 hover:bg-slate-700 hover:border-slate-600"}`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">
-              {t.Sandbox}
-            </span>
-            {showConfig && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
-            )}
+            <span className="hidden sm:inline">{t.Sandbox}</span>
+            {showConfig && <span className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>}
           </button>
 
           {}
-          <button
-            onClick={toggleTheme}
-            className="p-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:text-slate-100 hover:bg-slate-700 text-slate-400 cursor-pointer transition-all shrink-0"
-          >
-            {theme === "dark" ? (
-              <Sun className="w-4 h-4" />
-            ) : (
-              <Moon className="w-4 h-4" />
-            )}
+          <button onClick={toggleTheme} className="p-1.5 bg-slate-800/50 border border-slate-700/50 rounded-lg hover:text-slate-100 hover:bg-slate-700 text-slate-400 cursor-pointer transition-all shrink-0">
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
           {}
           <div className="flex items-center bg-slate-800/50 border border-slate-700/50 rounded-lg p-0.5 shrink-0">
-            <button
-              onClick={() => setLang("vi")}
-              className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "vi"
-                ? "bg-slate-700 text-slate-100 shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-                }`}
-            >
+            <button onClick={() => setLang("vi")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "vi" ? "bg-slate-700 text-slate-100 shadow-sm" : "text-slate-400 hover:text-slate-200"}`}>
               {t.VI}
             </button>
-            <button
-              onClick={() => setLang("en")}
-              className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "en"
-                ? "bg-slate-700 text-slate-100 shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-                }`}
-            >
+            <button onClick={() => setLang("en")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${currentLang === "en" ? "bg-slate-700 text-slate-100 shadow-sm" : "text-slate-400 hover:text-slate-200"}`}>
               {t.EN}
             </button>
           </div>
@@ -324,13 +242,7 @@ export default function Header({
         <AnimatePresence>
           {}
           {showConfig && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]"
-            >
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ type: "spring", stiffness: 350, damping: 30 }} className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]">
               <div className="p-4 sm:p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -340,33 +252,20 @@ export default function Header({
                     <div>
                       <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                         {t.Sandbox_Config}
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-medium">
-                          {t.Active}
-                        </span>
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-medium">{t.Active}</span>
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {t.Unlimited_Proxy}
-                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t.Unlimited_Proxy}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {savedSuccess && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-1.5 text-xs text-green-500 font-medium bg-green-500/10 px-3 py-1.5 rounded-lg"
-                      >
+                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-1.5 text-xs text-green-500 font-medium bg-green-500/10 px-3 py-1.5 rounded-lg">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>
-                          {t.Saved}
-                        </span>
+                        <span>{t.Saved}</span>
                       </motion.div>
                     )}
-                    <button
-                      onClick={() => setShowConfig(false)}
-                      className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
-                    >
+                    <button onClick={() => setShowConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
                       <X className="w-5 h-5" />
                     </button>
                   </div>
@@ -377,34 +276,17 @@ export default function Header({
                     <label className="text-xs font-semibold text-slate-350 block mb-2 flex items-center gap-2">
                       <span>{t.Paste_cURL_from_Chrome_F1}</span>
                     </label>
-                    <textarea
-                      value={curlInput}
-                      onChange={(e) => handleCurlPaste(e.target.value)}
-                      placeholder={t.Paste_full_cURL}
-                      rows={4}
-                      className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-300 p-3 rounded-lg focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 font-mono resize-none transition-all"
-                    />
-                    {curlFeedback && (
-                      <div
-                        className={`mt-2 text-xs font-medium ${curlFeedback.startsWith("✓") ? "text-emerald-500" : "text-rose-500"
-                          }`}
-                      >
-                        {curlFeedback}
-                      </div>
-                    )}
+                    <textarea value={curlInput} onChange={(e) => handleCurlPaste(e.target.value)} placeholder={t.Paste_full_cURL} rows={4} className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-300 p-3 rounded-lg focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 font-mono resize-none transition-all" />
+                    {curlFeedback && <div className={`mt-2 text-xs font-medium ${curlFeedback.startsWith("✓") ? "text-emerald-500" : "text-rose-500"}`}>{curlFeedback}</div>}
                   </div>
 
                   <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 flex flex-col justify-between">
                     <div>
-                      <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
-                        {t.Extracted_Parameters}
-                      </h4>
+                      <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">{t.Extracted_Parameters}</h4>
                       <div className="space-y-3.5 text-xs font-mono">
                         <div className="flex flex-col border-b border-slate-800/60 pb-2 gap-1 text-left">
                           <span className="text-slate-500 font-semibold">{t.Authorization}</span>
-                          <span className={config.authToken ? "text-emerald-400 break-all" : "text-rose-400 break-all"}>
-                            {config.authToken ? `${config.authToken.slice(0, 30)}...` : "N/A"}
-                          </span>
+                          <span className={config.authToken ? "text-emerald-400 break-all" : "text-rose-400 break-all"}>{config.authToken ? `${config.authToken.slice(0, 30)}...` : "N/A"}</span>
                         </div>
                         <div className="flex flex-col border-b border-slate-800/60 pb-2 gap-1 text-left">
                           <span className="text-slate-500 font-semibold">{t.Project_ID}</span>
@@ -416,20 +298,13 @@ export default function Header({
                         </div>
                         <div className="flex justify-between items-center text-left pt-1">
                           <span className="text-slate-500 font-semibold">{t.API_Mode}</span>
-                          <span className="text-slate-300 bg-slate-800 px-2 py-0.5 rounded text-[10px]">
-                            {config.isStreamChat ? "SSE Stream" : "Batch"}
-                          </span>
+                          <span className="text-slate-300 bg-slate-800 px-2 py-0.5 rounded text-[10px]">{config.isStreamChat ? "SSE Stream" : "Batch"}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-4 flex justify-end">
-                      <Button
-                        variant="primary"
-                        onClick={handleSaveConfig}
-                        disabled={isSaving}
-                        className="w-full sm:w-auto"
-                      >
+                      <Button variant="primary" onClick={handleSaveConfig} disabled={isSaving} className="w-full sm:w-auto">
                         {isSaving ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -453,13 +328,7 @@ export default function Header({
         <AnimatePresence>
           {}
           {showKeysConfig && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]"
-            >
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ type: "spring", stiffness: 350, damping: 30 }} className="absolute top-[120px] right-4 lg:right-8 w-[calc(100vw_-_32px)] sm:w-[540px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[100]">
               <div className="p-4 sm:p-6 space-y-5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -469,33 +338,20 @@ export default function Header({
                     <div>
                       <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                         {currentLang === "vi" ? "Cấu hình API Keys" : "API Keys Configuration"}
-                        <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded-full font-medium">
-                          {geminiKey || ai33Key ? (currentLang === "vi" ? "Đã nhập" : "Configured") : (currentLang === "vi" ? "Chưa cấu hình" : "Not Set")}
-                        </span>
+                        <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded-full font-medium">{geminiKey || ai33Key ? (currentLang === "vi" ? "Đã nhập" : "Configured") : currentLang === "vi" ? "Chưa cấu hình" : "Not Set"}</span>
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {currentLang === "vi" ? "Các key này sẽ được ưu tiên sử dụng trước các cấu hình trong file .env" : "These keys take precedence over options in your .env file"}
-                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{currentLang === "vi" ? "Các key này sẽ được ưu tiên sử dụng trước các cấu hình trong file .env" : "These keys take precedence over options in your .env file"}</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {keysSavedSuccess && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-1.5 text-xs text-green-500 font-medium bg-green-500/10 px-3 py-1.5 rounded-lg"
-                      >
+                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-1.5 text-xs text-green-500 font-medium bg-green-500/10 px-3 py-1.5 rounded-lg">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>
-                          {t.Saved}
-                        </span>
+                        <span>{t.Saved}</span>
                       </motion.div>
                     )}
-                    <button
-                      onClick={() => setShowKeysConfig(false)}
-                      className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
-                    >
+                    <button onClick={() => setShowKeysConfig(false)} className="p-1.5 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors">
                       <X className="w-5 h-5" />
                     </button>
                   </div>
@@ -503,9 +359,7 @@ export default function Header({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-350 block">
-                      GEMINI_API_KEY
-                    </label>
+                    <label className="text-xs font-semibold text-slate-350 block">GEMINI_API_KEY</label>
                     <input
                       type="password"
                       value={geminiKey}
@@ -516,26 +370,13 @@ export default function Header({
                   </div>
 
                   <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-350 block">
-                      AI33_API_KEY
-                    </label>
-                    <input
-                      type="password"
-                      value={ai33Key}
-                      onChange={(e) => setAi33Key(e.target.value)}
-                      placeholder={currentLang === "vi" ? "Nhập AI33 TTS Token..." : "Enter AI33 TTS Token..."}
-                      className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 font-mono transition-all"
-                    />
+                    <label className="text-xs font-semibold text-slate-350 block">AI33_API_KEY</label>
+                    <input type="password" value={ai33Key} onChange={(e) => setAi33Key(e.target.value)} placeholder={currentLang === "vi" ? "Nhập AI33 TTS Token..." : "Enter AI33 TTS Token..."} className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 font-mono transition-all" />
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <Button
-                    variant="primary"
-                    onClick={handleSaveKeys}
-                    disabled={isSavingKeys}
-                    className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold"
-                  >
+                  <Button variant="primary" onClick={handleSaveKeys} disabled={isSavingKeys} className="w-full sm:w-auto bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold">
                     {isSavingKeys ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

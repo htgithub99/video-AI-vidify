@@ -1,26 +1,62 @@
 import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
-import {
-  generateContentWithRetry,
-  isGeminiApiKeyAvailable,
-} from "../services/geminiService.js";
+import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
+import { generateScenesWithChunking, SceneDensity } from "../../utils/sceneGeneratorHelper.js";
 import {
-  generateScenesWithChunking,
-  SceneDensity,
-} from "../../utils/sceneGeneratorHelper.js";
-import { EXTERNAL_URLS, ALIGN_CONFIG, API_ROUTES, BACKEND_MESSAGES, getBackendMsg, getPipelineLog, PIPELINE_LOGS, VOICE_ALIGN_LOGS, VI_GENRE_GUIDELINES, VI_STYLE_GUIDELINES, VI_AUDIENCE_GUIDELINES, EN_GENRE_GUIDELINES, EN_STYLE_GUIDELINES, EN_AUDIENCE_GUIDELINES, PROMPT_CONTEXT, getStyleRewriteBatchPrompt, getOptimizePromptsBatchPrompt, getChapterWriterPrompt, getVideoDirectorSceneSplitPrompt, getDetailedPromptBuilderPrompt, getGlobalVisualBiblePrompt, getCharacterAnalysisPrompt, getCharacterExtractPrompt, getCharacterRewriteBatchPrompt, STYLE_EXTRACTION_PROMPT, STICKMAN_STYLE_MODIFIERS, getMultiStepHookPrompt, getCombinedScriptPrompt, STICKMAN_KEYWORDS, MARKDOWN_REGEX, EMOJI_REGEX, LogEvent, ErrorMessage, getDummyHooks, getDummyScript, getDummyHookTitle, getDurationText, getDummySeoData, getThumbnailLayoutPrompt, getDummyThumbs, VOICE_PRESET_MAP, DEFAULT_AI33_API_KEY, GENRE_VISUAL_GUIDELINES, VideoGenre, SplitStrategy } from '../../constants';
-
+  EXTERNAL_URLS,
+  ALIGN_CONFIG,
+  API_ROUTES,
+  BACKEND_MESSAGES,
+  getBackendMsg,
+  getPipelineLog,
+  PIPELINE_LOGS,
+  VOICE_ALIGN_LOGS,
+  VI_GENRE_GUIDELINES,
+  VI_STYLE_GUIDELINES,
+  VI_AUDIENCE_GUIDELINES,
+  EN_GENRE_GUIDELINES,
+  EN_STYLE_GUIDELINES,
+  EN_AUDIENCE_GUIDELINES,
+  PROMPT_CONTEXT,
+  getStyleRewriteBatchPrompt,
+  getOptimizePromptsBatchPrompt,
+  getChapterWriterPrompt,
+  getVideoDirectorSceneSplitPrompt,
+  getDetailedPromptBuilderPrompt,
+  getGlobalVisualBiblePrompt,
+  getCharacterAnalysisPrompt,
+  getCharacterExtractPrompt,
+  getCharacterRewriteBatchPrompt,
+  STYLE_EXTRACTION_PROMPT,
+  STICKMAN_STYLE_MODIFIERS,
+  getMultiStepHookPrompt,
+  getCombinedScriptPrompt,
+  STICKMAN_KEYWORDS,
+  MARKDOWN_REGEX,
+  EMOJI_REGEX,
+  LogEvent,
+  ErrorMessage,
+  getDummyHooks,
+  getDummyScript,
+  getDummyHookTitle,
+  getDurationText,
+  getDummySeoData,
+  getThumbnailLayoutPrompt,
+  getDummyThumbs,
+  VOICE_PRESET_MAP,
+  DEFAULT_AI33_API_KEY,
+  GENRE_VISUAL_GUIDELINES,
+  VideoGenre,
+  SplitStrategy,
+} from "../../constants";
 
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
 
-
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
-
-
 
 import { AspectRatio, ProjectLanguage } from "../../types.js";
 
@@ -77,7 +113,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
       let extracted = response.text.trim();
 
       const lower = extracted.toLowerCase();
-      if (STICKMAN_KEYWORDS.some(kw => lower.includes(kw))) {
+      if (STICKMAN_KEYWORDS.some((kw) => lower.includes(kw))) {
         extracted = STICKMAN_STYLE_MODIFIERS;
       }
       return res.json({ style: extracted });
@@ -87,12 +123,10 @@ router.post("/extract-style", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
-    return res
-      .status(500)
-      .json({
-        error: error.message || getBackendMsg("STYLE_EXTRACTION_ERR", isVi),
-        rotationLogs: error.rotationLogs,
-      });
+    return res.status(500).json({
+      error: error.message || getBackendMsg("STYLE_EXTRACTION_ERR", isVi),
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 
@@ -100,9 +134,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, newStyle, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
-    return res
-      .status(400)
-      .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    return res.status(400).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
   if (!newStyle) {
     return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
@@ -134,11 +166,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const prompt = getStyleRewriteBatchPrompt(
-        newStyle,
-        JSON.stringify(chunk),
-        aspectRatio || AspectRatio.SixteenNine,
-      );
+      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -156,7 +184,6 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       } catch (err) {
         logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
       }
-
 
       if (i < chunks.length - 1) {
         await new Promise((res) => setTimeout(res, 1500));
@@ -177,9 +204,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
-    res
-      .status(500)
-      .json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -187,9 +212,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, visualConfig, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
-    return res
-      .status(400)
-      .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    return res.status(400).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -211,9 +234,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
     const visualStyle = visualConfig?.style || "Cinematic";
     const referenceStyle = visualConfig?.referencePrompt || "";
-    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0
-      ? JSON.stringify(visualConfig.characters)
-      : undefined;
+    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? JSON.stringify(visualConfig.characters) : undefined;
 
     const chunkSize = 8;
     const chunks = [];
@@ -225,13 +246,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const prompt = getOptimizePromptsBatchPrompt(
-        visualStyle,
-        referenceStyle,
-        JSON.stringify(chunk),
-        aspectRatio || AspectRatio.SixteenNine,
-        charactersJson
-      );
+      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine, charactersJson);
 
       try {
         const response = await generateContentWithRetry({
@@ -269,9 +284,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res
-      .status(500)
-      .json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -279,9 +292,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, newStyle } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
-    return res
-      .status(400)
-      .json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+    return res.status(400).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
   if (!newStyle) {
     return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
@@ -297,10 +308,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getStyleRewriteBatchPrompt(
-        newStyle,
-        JSON.stringify(thumbsToRewrite),
-      );
+      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(thumbsToRewrite));
 
       try {
         const response = await generateContentWithRetry({
@@ -332,9 +340,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
     res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
-    res
-      .status(500)
-      .json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 router.post("/analyze-character", async (req: Request, res: Response) => {
@@ -362,12 +368,10 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
-    return res
-      .status(500)
-      .json({
-        error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
-        rotationLogs: error.rotationLogs,
-      });
+    return res.status(500).json({
+      error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 
@@ -419,136 +423,108 @@ router.post("/extract-character", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
-    return res
-      .status(500)
-      .json({
-        error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
-        rotationLogs: error.rotationLogs,
-      });
+    return res.status(500).json({
+      error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 
-router.post(
-  "/rewrite-prompts-character",
-  async (req: Request, res: Response) => {
-    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-    const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
-    if (!storyboard || !Array.isArray(storyboard)) {
-      return res
-        .status(400)
-        .json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
+router.post("/rewrite-prompts-character", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
+  if (!storyboard || !Array.isArray(storyboard)) {
+    return res.status(400).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
+  }
+
+  let finalCharacters = characters;
+  if (!finalCharacters || !Array.isArray(finalCharacters) || finalCharacters.length === 0) {
+    if (characterPrompt) {
+      finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
+    } else {
+      return res.status(400).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
+    }
+  }
+
+  if (!isGeminiApiKeyAvailable()) {
+    return res.json({ storyboard });
+  }
+
+  try {
+    const scenesToRewrite = storyboard
+      .map((s: any) => ({
+        id: s.id,
+        prompt: s.prompt || s.script || "",
+      }))
+      .filter((s) => s.prompt);
+
+    if (scenesToRewrite.length === 0) {
+      return res.json({ success: true, storyboard });
     }
 
-    let finalCharacters = characters;
-    if (
-      !finalCharacters ||
-      !Array.isArray(finalCharacters) ||
-      finalCharacters.length === 0
-    ) {
-      if (characterPrompt) {
-        finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
-      } else {
-        return res
-          .status(400)
-          .json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
-      }
+    const chunkSize = 25;
+    const chunks = [];
+    for (let i = 0; i < scenesToRewrite.length; i += chunkSize) {
+      chunks.push(scenesToRewrite.slice(i, i + chunkSize));
     }
 
-    if (!isGeminiApiKeyAvailable()) {
-      return res.json({ storyboard });
-    }
+    const rewrittenMap = new Map<string, string>();
 
-    try {
-      const scenesToRewrite = storyboard
-        .map((s: any) => ({
-          id: s.id,
-          prompt: s.prompt || s.script || "",
-        }))
-        .filter((s) => s.prompt);
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const prompt = getCharacterRewriteBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine);
 
-      if (scenesToRewrite.length === 0) {
-        return res.json({ success: true, storyboard });
-      }
-
-      const chunkSize = 25;
-      const chunks = [];
-      for (let i = 0; i < scenesToRewrite.length; i += chunkSize) {
-        chunks.push(scenesToRewrite.slice(i, i + chunkSize));
-      }
-
-      const rewrittenMap = new Map<string, string>();
-
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        const prompt = getCharacterRewriteBatchPrompt(
-          JSON.stringify(finalCharacters),
-          JSON.stringify(chunk),
-          aspectRatio || AspectRatio.SixteenNine,
-        );
-
-        try {
-          const response = await generateContentWithRetry({
-            contents: prompt,
-            config: { responseMimeType: "application/json" },
-          });
-          const parsed = safeParseJSON(response.text, []);
-          if (Array.isArray(parsed)) {
-            for (const item of parsed) {
-              if (item.id && item.prompt) {
-                rewrittenMap.set(item.id, item.prompt);
-              }
+      try {
+        const response = await generateContentWithRetry({
+          contents: prompt,
+          config: { responseMimeType: "application/json" },
+        });
+        const parsed = safeParseJSON(response.text, []);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item.id && item.prompt) {
+              rewrittenMap.set(item.id, item.prompt);
             }
           }
-        } catch (err) {
-          logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
         }
-
-
-        if (i < chunks.length - 1) {
-          await new Promise((res) => setTimeout(res, 1500));
-        }
+      } catch (err) {
+        logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
       }
 
-      const updatedStoryboard = storyboard.map((scene: any) => {
-        const rewritten = rewrittenMap.get(scene.id);
-        if (rewritten) {
-          return { ...scene, prompt: rewritten };
-        }
-        if (scene.prompt) {
-          const combinedPrompt = finalCharacters
-            .map((c: any) => c.prompt)
-            .filter(Boolean)
-            .join(", ");
-          if (combinedPrompt) {
-            return {
-              ...scene,
-              prompt: scene.prompt,
-            };
-          }
-        }
-        return scene;
-      });
-
-      res.json({ success: true, storyboard: updatedStoryboard });
-    } catch (error: any) {
-      logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
-      res
-        .status(500)
-        .json({ error: error.message, rotationLogs: error.rotationLogs });
+      if (i < chunks.length - 1) {
+        await new Promise((res) => setTimeout(res, 1500));
+      }
     }
-  },
-);
+
+    const updatedStoryboard = storyboard.map((scene: any) => {
+      const rewritten = rewrittenMap.get(scene.id);
+      if (rewritten) {
+        return { ...scene, prompt: rewritten };
+      }
+      if (scene.prompt) {
+        const combinedPrompt = finalCharacters
+          .map((c: any) => c.prompt)
+          .filter(Boolean)
+          .join(", ");
+        if (combinedPrompt) {
+          return {
+            ...scene,
+            prompt: scene.prompt,
+          };
+        }
+      }
+      return scene;
+    });
+
+    res.json({ success: true, storyboard: updatedStoryboard });
+  } catch (error: any) {
+    logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
+    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+  }
+});
 
 router.post("/hooks", async (req: Request, res: Response) => {
-  const {
-    originalInput,
-    config = {},
-    hookType,
-    duration,
-    count,
-    language,
-    bypassCache,
-  } = req.body;
+  const { originalInput, config = {}, hookType, duration, count, language, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_HOOKS, req.body, bypassCache);
   if (cached) {
@@ -570,14 +546,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
   try {
     logStep(getPipelineLog("HOOK_STEP1", isVi));
 
-    const combinedPrompt = getMultiStepHookPrompt(
-      originalInput,
-      config.genre,
-      hookType,
-      duration,
-      language,
-      count
-    );
+    const combinedPrompt = getMultiStepHookPrompt(originalInput, config.genre, hookType, duration, language, count);
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedPrompt,
@@ -591,16 +560,11 @@ router.post("/hooks", async (req: Request, res: Response) => {
       versions: [],
     });
 
-    logStep(
-      `${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`,
-    );
-    if (combinedResponse.rotationLogs)
-      multiStepLogs.push(...combinedResponse.rotationLogs);
+    logStep(`${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`);
+    if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
 
     logStep(getPipelineLog("HOOK_STEP2", isVi));
-    logStep(
-      `${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`,
-    );
+    logStep(`${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`);
 
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
@@ -620,9 +584,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_HOOKS, error);
     const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
-    const errorLogs = error.rotationLogs
-      ? [...multiStepLogs, ...error.rotationLogs]
-      : multiStepLogs;
+    const errorLogs = error.rotationLogs ? [...multiStepLogs, ...error.rotationLogs] : multiStepLogs;
     res.json({
       warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
       rotationLogs: errorLogs,
@@ -632,12 +594,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
 });
 
 router.post("/script", async (req: Request, res: Response) => {
-  const {
-    originalInput,
-    config = {},
-    selectedHookText,
-    bypassCache,
-  } = req.body;
+  const { originalInput, config = {}, selectedHookText, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
   if (cached) {
@@ -652,7 +609,7 @@ router.post("/script", async (req: Request, res: Response) => {
       fallbackHook = getDummyHookTitle(isVi, type, false);
     }
     return res.json({
-      ...getDummyScript(isVi, fallbackHook, config, false)
+      ...getDummyScript(isVi, fallbackHook, config, false),
     });
   }
 
@@ -674,25 +631,13 @@ router.post("/script", async (req: Request, res: Response) => {
     let audienceGuideline = "";
 
     if (isVi) {
-      genreGuideline =
-        VI_GENRE_GUIDELINES[config.genre] ||
-        PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Storytelling");
-      styleGuideline =
-        VI_STYLE_GUIDELINES[config.writingStyle] ||
-        PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Default");
-      audienceGuideline =
-        VI_AUDIENCE_GUIDELINES[config.audience] ||
-        PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "General");
+      genreGuideline = VI_GENRE_GUIDELINES[config.genre] || PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Storytelling");
+      styleGuideline = VI_STYLE_GUIDELINES[config.writingStyle] || PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Default");
+      audienceGuideline = VI_AUDIENCE_GUIDELINES[config.audience] || PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "General");
     } else {
-      genreGuideline =
-        EN_GENRE_GUIDELINES[config.genre] ||
-        PROMPT_CONTEXT.EN_GENRE_DEFAULT(config.genre || "Storytelling");
-      styleGuideline =
-        EN_STYLE_GUIDELINES[config.writingStyle] ||
-        PROMPT_CONTEXT.EN_STYLE_DEFAULT(config.writingStyle || "Default");
-      audienceGuideline =
-        EN_AUDIENCE_GUIDELINES[config.audience] ||
-        PROMPT_CONTEXT.EN_AUDIENCE_DEFAULT(config.audience || "General");
+      genreGuideline = EN_GENRE_GUIDELINES[config.genre] || PROMPT_CONTEXT.EN_GENRE_DEFAULT(config.genre || "Storytelling");
+      styleGuideline = EN_STYLE_GUIDELINES[config.writingStyle] || PROMPT_CONTEXT.EN_STYLE_DEFAULT(config.writingStyle || "Default");
+      audienceGuideline = EN_AUDIENCE_GUIDELINES[config.audience] || PROMPT_CONTEXT.EN_AUDIENCE_DEFAULT(config.audience || "General");
     }
 
     const multiStepLogs: string[] = [];
@@ -706,14 +651,7 @@ router.post("/script", async (req: Request, res: Response) => {
       try {
         const hookType = config.hookConfig.type || "Auto";
         const hookDuration = config.hookConfig.duration || 10;
-        const hookPrompt = getMultiStepHookPrompt(
-          originalInput,
-          config.genre || "Storytelling",
-          hookType,
-          hookDuration,
-          isVi ? "vi" : "en",
-          1
-        );
+        const hookPrompt = getMultiStepHookPrompt(originalInput, config.genre || "Storytelling", hookType, hookDuration, isVi ? "vi" : "en", 1);
         const hookResponse = await generateContentWithRetry({
           contents: hookPrompt,
           config: { responseMimeType: "application/json" },
@@ -732,21 +670,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
 
-
-    const combinedScriptPrompt = getCombinedScriptPrompt(
-      originalInput,
-      durationText,
-      targetWordCount,
-      config.genre,
-      config.writingStyle,
-      isVi,
-      activeHookText,
-      genreGuideline,
-      styleGuideline,
-      audienceGuideline,
-      targetChapterCount,
-      config.hookConfig
-    );
+    const combinedScriptPrompt = getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig);
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedScriptPrompt,
@@ -764,16 +688,11 @@ router.post("/script", async (req: Request, res: Response) => {
       chapters: [],
     });
 
-    logStep(
-      `${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`,
-    );
-    if (combinedResponse.rotationLogs)
-      multiStepLogs.push(...combinedResponse.rotationLogs);
+    logStep(`${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`);
+    if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
 
     logStep(getPipelineLog("SCRIPT_STEP2A", isVi));
-    logStep(
-      `${getPipelineLog("SCRIPT_STEP2A_DONE", isVi)} ${(scriptResult.chapters || []).length} chapters.`,
-    );
+    logStep(`${getPipelineLog("SCRIPT_STEP2A_DONE", isVi)} ${(scriptResult.chapters || []).length} chapters.`);
 
     logStep(getPipelineLog("SCRIPT_STEP2B", isVi));
     logStep(`${getPipelineLog("SCRIPT_STEP2B_DONE", isVi)} ${(scriptResult.chapters || []).length}.`);
@@ -783,27 +702,13 @@ router.post("/script", async (req: Request, res: Response) => {
     let fullScript = activeHookText ? activeHookText + "\n\n" : "";
 
     const chapters = scriptResult.chapters || [];
-    const chapterWordTarget = Math.ceil(
-      targetWordCount / Math.max(1, chapters.length),
-    );
-
+    const chapterWordTarget = Math.ceil(targetWordCount / Math.max(1, chapters.length));
 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
-      logStep(
-        `${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`,
-      );
+      logStep(`${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`);
 
-      const chapterPrompt = getChapterWriterPrompt(
-        chapter.title,
-        chapter.description || "Write detailed story elements for this segment",
-        config.genre,
-        config.writingStyle,
-        isVi,
-        genreGuideline,
-        styleGuideline,
-        chapterWordTarget,
-      );
+      const chapterPrompt = getChapterWriterPrompt(chapter.title, chapter.description || "Write detailed story elements for this segment", config.genre, config.writingStyle, isVi, genreGuideline, styleGuideline, chapterWordTarget);
 
       const chapterResponse = await generateContentWithRetry({
         contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${JSON.stringify(scriptResult)}\n\nChapter Prompt:\n${chapterPrompt}`,
@@ -818,9 +723,7 @@ router.post("/script", async (req: Request, res: Response) => {
       });
 
       let cleanedSegment = chapterData.scriptSegment || "";
-      cleanedSegment = cleanedSegment
-        .replace(MARKDOWN_REGEX, "")
-        .replace(EMOJI_REGEX, "");
+      cleanedSegment = cleanedSegment.replace(MARKDOWN_REGEX, "").replace(EMOJI_REGEX, "");
 
       completedChapters.push({
         id: chapter.id || `ch_${i + 1}`,
@@ -829,8 +732,7 @@ router.post("/script", async (req: Request, res: Response) => {
       });
 
       fullScript += cleanedSegment + "\n\n";
-      if (chapterResponse.rotationLogs)
-        multiStepLogs.push(...chapterResponse.rotationLogs);
+      if (chapterResponse.rotationLogs) multiStepLogs.push(...chapterResponse.rotationLogs);
     }
 
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
@@ -864,16 +766,7 @@ router.post("/script", async (req: Request, res: Response) => {
 function diversifyDuplicatePrompts(scenes: any[]): any[] {
   if (!scenes || scenes.length <= 1) return scenes;
 
-  const cameraAngles = [
-    "low-angle shot, looking up",
-    "high-angle shot, looking down",
-    "close-up portrait shot focusing on expression",
-    "wide-angle panoramic view establishing the environment",
-    "medium shot from side profile",
-    "dramatic over-the-shoulder shot",
-    "extreme close-up shot focusing on details",
-    "three-quarter angle shot showing action"
-  ];
+  const cameraAngles = ["low-angle shot, looking up", "high-angle shot, looking down", "close-up portrait shot focusing on expression", "wide-angle panoramic view establishing the environment", "medium shot from side profile", "dramatic over-the-shoulder shot", "extreme close-up shot focusing on details", "three-quarter angle shot showing action"];
 
   for (let i = 1; i < scenes.length; i++) {
     const currentPrompt = scenes[i].prompt?.trim();
@@ -902,40 +795,14 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
   return scenes;
 }
 
-
-
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
-  const {
-    sceneScript,
-    setting,
-    time,
-    character,
-    costume,
-    camera,
-    style,
-    aspectRatio,
-    characterPrompt,
-    referencePrompt,
-    currentPrompt,
-  } = req.body;
+  const { sceneScript, setting, time, character, costume, camera, style, aspectRatio, characterPrompt, referencePrompt, currentPrompt } = req.body;
   if (!sceneScript) {
     return res.status(400).json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
   }
 
   try {
-    const prompt = getDetailedPromptBuilderPrompt(
-      sceneScript,
-      setting,
-      time,
-      character,
-      costume,
-      camera,
-      style,
-      aspectRatio || AspectRatio.SixteenNine,
-      characterPrompt,
-      referencePrompt,
-      currentPrompt,
-    );
+    const prompt = getDetailedPromptBuilderPrompt(sceneScript, setting, time, character, costume, camera, style, aspectRatio || AspectRatio.SixteenNine, characterPrompt, referencePrompt, currentPrompt);
 
     const response = await generateContentWithRetry({
       contents: prompt,
@@ -945,26 +812,12 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
     logger.error(LogEvent.DETAILED_PROMPT_ERROR, error);
-    res
-      .status(500)
-      .json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
 router.post("/storyboard", async (req: Request, res: Response) => {
-  const {
-    rewrittenScript,
-    chapters,
-    config = {},
-    visualStyle,
-    referenceStyle,
-    referenceCharacter,
-    referenceCharacters,
-    referenceImages,
-    visualDensity,
-    bypassCache,
-    voiceDuration,
-  } = req.body;
+  const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, visualDensity, bypassCache, voiceDuration } = req.body;
   let characterRef: string | undefined = undefined;
   const rawRefChars = referenceCharacters || referenceCharacter;
   if (rawRefChars) {
@@ -981,9 +834,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
-    const wordCount = (rewrittenScript || "")
-      .split(/\s+/)
-      .filter(Boolean).length;
+    const wordCount = (rewrittenScript || "").split(/\s+/).filter(Boolean).length;
     const speed = config?.speed || 1.0;
     chosenDuration = Math.round(wordCount / 2.5 / speed);
     if (chosenDuration < 10) chosenDuration = 10;
@@ -995,37 +846,21 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   }
 
   if (!isGeminiApiKeyAvailable()) {
-    return res.json(
-      generateMockStoryboard(
-        rewrittenScript,
-        chapters,
-        isVi,
-        visualStyle,
-        density,
-        chosenDuration,
-        splitStrategy,
-        config?.aspectRatio || AspectRatio.SixteenNine,
-      ),
-    );
+    return res.json(generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
   }
 
   try {
     let mappedDensity: SceneDensity = "CAU_DAI";
-    if (splitStrategy === SplitStrategy.WORD || splitStrategy === SplitStrategy.ULTRADENSE)
-      mappedDensity = "THEO_TU";
-    else if (
-      splitStrategy === SplitStrategy.SHORT_SENTENCE ||
-      splitStrategy === SplitStrategy.HYPERDENSE ||
-      splitStrategy === SplitStrategy.HIGHPACED
-    )
-      mappedDensity = "CAU_NGAN";
+    if (splitStrategy === SplitStrategy.WORD || splitStrategy === SplitStrategy.ULTRADENSE) mappedDensity = "THEO_TU";
+    else if (splitStrategy === SplitStrategy.SHORT_SENTENCE || splitStrategy === SplitStrategy.HYPERDENSE || splitStrategy === SplitStrategy.HIGHPACED) mappedDensity = "CAU_NGAN";
     else if (splitStrategy === SplitStrategy.MULTI_PROMPT) mappedDensity = "DA_PHAN_CANH";
-    else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE)
-      mappedDensity = "CAU_DAI";
+    else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE) mappedDensity = "CAU_DAI";
     else mappedDensity = "THEO_DOAN";
 
     const genre = config?.genre || VideoGenre.STORYTELLING;
-    let genreVisualGuideline = GENRE_VISUAL_GUIDELINES[genre as VideoGenre] || `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
+    let genreVisualGuideline =
+      GENRE_VISUAL_GUIDELINES[genre as VideoGenre] ||
+      `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
 - Maintain context consistency and ensure the image details align with a ${genre} theme.`;
 
     const storyboardLogger = new StepLogger();
@@ -1033,13 +868,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const logStoryboardStep = (msg: string) => storyboardLogger.log(msg);
 
     logStoryboardStep(getPipelineLog("STORY_STEP1", isVi));
-    const visualBiblePrompt = getGlobalVisualBiblePrompt(
-      rewrittenScript,
-      genre,
-      visualStyle,
-      referenceStyle,
-      characterRef,
-    );
+    const visualBiblePrompt = getGlobalVisualBiblePrompt(rewrittenScript, genre, visualStyle, referenceStyle, characterRef);
 
     const bibleParts: any[] = [];
     if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
@@ -1077,88 +906,59 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       landscapeSpecs: "",
       lightingMood: "",
     });
-    logStoryboardStep(
-      `${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`,
-    );
-    if (bibleResponse.rotationLogs)
-      storyboardLogs.push(...bibleResponse.rotationLogs);
+    logStoryboardStep(`${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`);
+    if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
 
     logStoryboardStep(`${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`);
     let allScenes: any[] = [];
 
     try {
-      allScenes = await generateScenesWithChunking(
-        rewrittenScript,
-        mappedDensity,
-        async (chunkText, targetPrompt, chunkIndex, totalChunks) => {
-          let splitInstruction = ``;
-          if (splitStrategy === SplitStrategy.ULTRADENSE || splitStrategy === SplitStrategy.WORD) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Divide the script into short scenes corresponding to spoken phrases or clauses. MANDATORY SEMANTIC INTEGRITY: Regardless of density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g., do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene.`;
-          } else if (
-            splitStrategy === SplitStrategy.HYPERDENSE ||
-            splitStrategy === SplitStrategy.SHORT_SENTENCE
-          ) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Split the script into scene chunks corresponding to short sentences or complete clauses. MANDATORY SEMANTIC INTEGRITY: Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments or tiny dangling phrases. The narration text for each scene must make complete grammatical and logical sense on its own.`;
-          } else if (splitStrategy === SplitStrategy.MULTI_PROMPT) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes, but ensure each sub-scene's narration is a grammatically complete, semantically meaningful clause with its own subject and verb. Never split a sentence into meaningless fragments.`;
-          } else if (splitStrategy === SplitStrategy.HIGHPACED) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a swift, modern pacing. Cut precisely at punctuation boundaries or complete short clause blocks. Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence.`;
-          } else if (
-            splitStrategy === SplitStrategy.SENTENCE ||
-            splitStrategy === SplitStrategy.LONG_SENTENCE
-          ) {
-            splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script. MANDATORY: Never combine multiple sentences into a single scene. Combining sentences will ruin the pacing and rhythm.`;
-          } else if (splitStrategy === SplitStrategy.DRAMATIC) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a punchy, dramatic pacing of 8-10 seconds per scene. Focus heavily on suspenseful chapter transitions and key narrative beats.`;
-          } else if (splitStrategy === SplitStrategy.PARAGRAPH) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part. MANDATORY: The visual design MUST strictly align with the exact content of that paragraph.`;
-          } else if (splitStrategy === SplitStrategy.EPIC) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo.`;
-          } else if (splitStrategy === SplitStrategy.CINEMATIC) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus.`;
-          } else if (splitStrategy === SplitStrategy.ARTISTIC) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity.`;
-          } else if (splitStrategy === SplitStrategy.SLOWPACED) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling.`;
-          } else if (splitStrategy === SplitStrategy.SUPER_SLOW) {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts.`;
-          } else {
-            splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.`;
-          }
+      allScenes = await generateScenesWithChunking(rewrittenScript, mappedDensity, async (chunkText, targetPrompt, chunkIndex, totalChunks) => {
+        let splitInstruction = ``;
+        if (splitStrategy === SplitStrategy.ULTRADENSE || splitStrategy === SplitStrategy.WORD) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Divide the script into short scenes corresponding to spoken phrases or clauses. MANDATORY SEMANTIC INTEGRITY: Regardless of density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g., do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene.`;
+        } else if (splitStrategy === SplitStrategy.HYPERDENSE || splitStrategy === SplitStrategy.SHORT_SENTENCE) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Split the script into scene chunks corresponding to short sentences or complete clauses. MANDATORY SEMANTIC INTEGRITY: Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments or tiny dangling phrases. The narration text for each scene must make complete grammatical and logical sense on its own.`;
+        } else if (splitStrategy === SplitStrategy.MULTI_PROMPT) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes, but ensure each sub-scene's narration is a grammatically complete, semantically meaningful clause with its own subject and verb. Never split a sentence into meaningless fragments.`;
+        } else if (splitStrategy === SplitStrategy.HIGHPACED) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a swift, modern pacing. Cut precisely at punctuation boundaries or complete short clause blocks. Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence.`;
+        } else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE) {
+          splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script. MANDATORY: Never combine multiple sentences into a single scene. Combining sentences will ruin the pacing and rhythm.`;
+        } else if (splitStrategy === SplitStrategy.DRAMATIC) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a punchy, dramatic pacing of 8-10 seconds per scene. Focus heavily on suspenseful chapter transitions and key narrative beats.`;
+        } else if (splitStrategy === SplitStrategy.PARAGRAPH) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part. MANDATORY: The visual design MUST strictly align with the exact content of that paragraph.`;
+        } else if (splitStrategy === SplitStrategy.EPIC) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo.`;
+        } else if (splitStrategy === SplitStrategy.CINEMATIC) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus.`;
+        } else if (splitStrategy === SplitStrategy.ARTISTIC) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity.`;
+        } else if (splitStrategy === SplitStrategy.SLOWPACED) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling.`;
+        } else if (splitStrategy === SplitStrategy.SUPER_SLOW) {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts.`;
+        } else {
+          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.`;
+        }
 
-          const combinedInstruction = `${targetPrompt}\n\n${splitInstruction}`;
-          const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Lighting mood: ${visualBible.lightingMood}`;
-          const prompt = getVideoDirectorSceneSplitPrompt(
-            chunkIndex,
-            totalChunks,
-            genre,
-            genreVisualGuideline,
-            combinedInstruction,
-            visualStyleCombined,
-            referenceStyle,
-            customSplitRules,
-            isVi,
-            chunkText,
-            JSON.stringify(chapters),
-            characterRef,
-            config?.aspectRatio || AspectRatio.SixteenNine,
-            visualBible.characterSpecs,
-            visualBible.landscapeSpecs,
-          );
+        const combinedInstruction = `${targetPrompt}\n\n${splitInstruction}`;
+        const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Lighting mood: ${visualBible.lightingMood}`;
+        const prompt = getVideoDirectorSceneSplitPrompt(chunkIndex, totalChunks, genre, genreVisualGuideline, combinedInstruction, visualStyleCombined, referenceStyle, customSplitRules, isVi, chunkText, JSON.stringify(chapters), characterRef, config?.aspectRatio || AspectRatio.SixteenNine, visualBible.characterSpecs, visualBible.landscapeSpecs);
 
-          const response = await generateContentWithRetry({
-            contents: prompt,
-            config: {
-              responseMimeType: "application/json",
-            },
-          });
-          const data = safeParseJSON(response.text, {});
-          if ((response as any).rotationLogs) {
-            storyboardLogs.push(...(response as any).rotationLogs);
-          }
-          return data.scenes || [];
-        },
-      );
+        const response = await generateContentWithRetry({
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+          },
+        });
+        const data = safeParseJSON(response.text, {});
+        if ((response as any).rotationLogs) {
+          storyboardLogs.push(...(response as any).rotationLogs);
+        }
+        return data.scenes || [];
+      });
     } catch (e: any) {
       logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_CHUNKING, e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
@@ -1167,13 +967,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     logStoryboardStep(getPipelineLog("STORY_STEP3", isVi));
     if (allScenes.length > 0) {
       try {
-        logStoryboardStep(
-          `${getPipelineLog("STORY_REFINE_SUCCESS", isVi)} ${allScenes.length} prompts.`,
-        );
+        logStoryboardStep(`${getPipelineLog("STORY_REFINE_SUCCESS", isVi)} ${allScenes.length} prompts.`);
       } catch (refineErr: any) {
-        logStoryboardStep(
-          `${getPipelineLog("STORY_REFINE_ERROR", isVi)} ${refineErr.message}.`,
-        );
+        logStoryboardStep(`${getPipelineLog("STORY_REFINE_ERROR", isVi)} ${refineErr.message}.`);
       }
     }
 
@@ -1181,20 +977,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     let data: any = { scenes: allScenes, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || data.scenes.length === 0) {
-      console.warn(
-        "Gemini returned malformed or incomplete storyboard JSON. Using robust programmatic sentence splitter fallback to guarantee high-density scenes.",
-      );
+      console.warn("Gemini returned malformed or incomplete storyboard JSON. Using robust programmatic sentence splitter fallback to guarantee high-density scenes.");
       const oldLogs = data?.rotationLogs;
-      data = generateMockStoryboard(
-        rewrittenScript,
-        chapters,
-        isVi,
-        visualStyle,
-        density,
-        chosenDuration,
-        splitStrategy,
-        config?.aspectRatio || AspectRatio.SixteenNine,
-      );
+      data = generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
@@ -1204,9 +989,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     if (chosenDuration && data.scenes && data.scenes.length > 0) {
       const scenes = data.scenes;
-      const wordCounts = scenes.map(
-        (s: any) => (s.script || "").split(/\s+/).filter(Boolean).length,
-      );
+      const wordCounts = scenes.map((s: any) => (s.script || "").split(/\s+/).filter(Boolean).length);
       const totalWords = wordCounts.reduce((a: number, b: number) => a + b, 0);
 
       let currentSecs = 0;
@@ -1236,16 +1019,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
-    const fallbackData: any = generateMockStoryboard(
-      rewrittenScript,
-      chapters,
-      isVi,
-      visualStyle,
-      density,
-      chosenDuration,
-      splitStrategy,
-      config?.aspectRatio || AspectRatio.SixteenNine,
-    );
+    const fallbackData: any = generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
     if (!!fallbackData?.scenes?.length) {
       fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
     }
@@ -1257,12 +1031,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 });
 
 router.post("/seo", async (req: Request, res: Response) => {
-  const {
-    config = {},
-    seoConfig = {},
-    rewrittenScript,
-    bypassCache,
-  } = req.body;
+  const { config = {}, seoConfig = {}, rewrittenScript, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SEO, req.body, bypassCache);
   if (cached) {
@@ -1276,7 +1045,7 @@ router.post("/seo", async (req: Request, res: Response) => {
 
   if (!isGeminiApiKeyAvailable()) {
     return res.json({
-      ...getDummySeoData(config?.language === ProjectLanguage.VI, false)
+      ...getDummySeoData(config?.language === ProjectLanguage.VI, false),
     });
   }
 
@@ -1326,11 +1095,8 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
       tags: [],
     });
 
-    logSeoStep(
-      `${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`,
-    );
-    if (combinedResponse.rotationLogs)
-      seoLogs.push(...combinedResponse.rotationLogs);
+    logSeoStep(`${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`);
+    if (combinedResponse.rotationLogs) seoLogs.push(...combinedResponse.rotationLogs);
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP2);
     logSeoStep(PIPELINE_LOGS.SEO_STEP2_DONE);
@@ -1359,12 +1125,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
 });
 
 router.post("/thumbnails", async (req: Request, res: Response) => {
-  const {
-    rewrittenScript,
-    config = {},
-    visualConfig = {},
-    bypassCache,
-  } = req.body;
+  const { rewrittenScript, config = {}, visualConfig = {}, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, bypassCache);
   if (cached) {
@@ -1372,11 +1133,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   }
 
   const thumbnailCount = visualConfig.thumbnailCount || 2;
-  const refImageStr =
-    visualConfig.thumbnailReferencePrompt ||
-      visualConfig.thumbnailReferenceImage
-      ? `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage}". Deeply integrate these aesthetic keywords into the thumbnail prompt.`
-      : "";
+  const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage}". Deeply integrate these aesthetic keywords into the thumbnail prompt.` : "";
 
   if (!isGeminiApiKeyAvailable()) {
     const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false);
@@ -1397,12 +1154,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
-    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(
-      rewrittenScript,
-      thumbnailCount,
-      refImageStr,
-      isVi
-    );
+    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi);
 
     const thumbParts: any[] = [];
     if (visualConfig.thumbnailReferenceImages && Array.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
@@ -1427,7 +1179,9 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     }
 
     thumbParts.push({
-      text: combinedThumbnailsPrompt + (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) for the thumbnails above. Inspect their color palette, typography vibe, lighting contrast, and composition. Strictly apply these elements to your output prompts." : ""),
+      text:
+        combinedThumbnailsPrompt +
+        (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) for the thumbnails above. Inspect their color palette, typography vibe, lighting contrast, and composition. Strictly apply these elements to your output prompts." : ""),
     });
 
     const combinedResponse = await generateContentWithRetry({
@@ -1440,16 +1194,11 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       thumbnails: [],
     });
 
-    logThumbStep(
-      `${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`,
-    );
-    if (combinedResponse.rotationLogs)
-      thumbLogs.push(...combinedResponse.rotationLogs);
+    logThumbStep(`${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`);
+    if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP2);
-    logThumbStep(
-      `${PIPELINE_LOGS.THUMB_STEP2_DONE} ${(thumbsResult.thumbnails || []).length || 0} thumbnails.`,
-    );
+    logThumbStep(`${PIPELINE_LOGS.THUMB_STEP2_DONE} ${(thumbsResult.thumbnails || []).length || 0} thumbnails.`);
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
@@ -1489,10 +1238,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     }
 
     const store = requestContext.getStore();
-    const apiKey =
-      store?.ai33Key ||
-      process.env.AI33_API_KEY ||
-      DEFAULT_AI33_API_KEY;
+    const apiKey = store?.ai33Key || process.env.AI33_API_KEY || DEFAULT_AI33_API_KEY;
 
     const formData = new FormData();
     formData.append("text", text);
@@ -1520,9 +1266,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     }
 
     const taskId = ttsData.task_id;
-    console.log(
-      `${BACKEND_MESSAGES.TTS_TASK_ID}${taskId}${BACKEND_MESSAGES.TTS_POLLING}`,
-    );
+    console.log(`${BACKEND_MESSAGES.TTS_TASK_ID}${taskId}${BACKEND_MESSAGES.TTS_POLLING}`);
 
     let audioUrl = null;
     let attempts = 0;
@@ -1535,8 +1279,7 @@ router.post("/voice", async (req: Request, res: Response) => {
         },
       });
 
-      if (!pollRes.ok)
-        throw new Error(getMessage("TTS_POLL_FAILED", undefined, await pollRes.text()));
+      if (!pollRes.ok) throw new Error(getMessage("TTS_POLL_FAILED", undefined, await pollRes.text()));
       const pollData = await pollRes.json();
 
       if (pollData.status === "done") {
@@ -1570,24 +1313,18 @@ router.post("/voice", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: error.message,
-        rotationLogs: error.rotationLogs,
-      });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 router.post("/generate-image", async (req: Request, res: Response) => {
   try {
     const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
-    const cached = checkCache(
-      API_ROUTES.PIPELINE_GENERATE_IMAGE,
-      req.body,
-      bypassCache,
-    );
+    const cached = checkCache(API_ROUTES.PIPELINE_GENERATE_IMAGE, req.body, bypassCache);
     if (cached) {
       return res.json({ ...cached, cached: true });
     }
@@ -1673,15 +1410,11 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
     }
 
     if (filePaths.length === 0) {
-      return res
-        .status(400)
-        .json({ error: "No valid base64 audio data found in chunks" });
+      return res.status(400).json({ error: "No valid base64 audio data found in chunks" });
     }
 
     const listPath = path.join(tempDir, `list_${sessionId}.txt`);
-    const fileListContent = filePaths
-      .map((p) => `file '${p.replace(/'/g, "'\\''")}'`)
-      .join("\n");
+    const fileListContent = filePaths.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n");
     fs.writeFileSync(listPath, fileListContent);
 
     const outputPath = path.join(tempDir, `merged_${sessionId}.mp3`);
@@ -1711,9 +1444,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
         filePaths.forEach((p) => fs.existsSync(p) && fs.unlinkSync(p));
         fs.existsSync(listPath) && fs.unlinkSync(listPath);
         fs.existsSync(outputPath) && fs.unlinkSync(outputPath);
-        res
-          .status(500)
-          .json({ error: "FFmpeg processing error: " + err.message });
+        res.status(500).json({ error: "FFmpeg processing error: " + err.message });
       })
       .save(outputPath);
   } catch (err: any) {
@@ -1764,10 +1495,10 @@ router.post("/align-voice", async (req: Request, res: Response) => {
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-            } catch (cleanupErr) { }
+            } catch (cleanupErr) {}
             return res.status(500).json({
               success: false,
-              error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message)
+              error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message),
             });
           }
 
@@ -1800,7 +1531,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
           const pythonError = stderr || stdout;
           return res.status(500).json({
             success: false,
-            error: pythonError ? pythonError : error.message
+            error: pythonError ? pythonError : error.message,
           });
         }
 
@@ -1818,16 +1549,17 @@ router.post("/align-voice", async (req: Request, res: Response) => {
         } catch (err: any) {
           logger.error(`Error parsing voice_aligner.py output: ${err.message}`);
           if (fs.existsSync(outputPath)) {
-            try { fs.unlinkSync(outputPath); } catch (e) { }
+            try {
+              fs.unlinkSync(outputPath);
+            } catch (e) {}
           }
           return res.status(500).json({
             success: false,
-            error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message)
+            error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message),
           });
         }
       });
     }
-
   } catch (err: any) {
     logger.error(VOICE_ALIGN_LOGS.ERR_UNEXPECTED_ALIGN, err);
     res.status(500).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
@@ -1841,14 +1573,14 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   if (!filePath) {
     return res.status(400).json({
       success: false,
-      error: getBackendMsg("ULTRA_FILE_REQUIRED", isVi)
+      error: getBackendMsg("ULTRA_FILE_REQUIRED", isVi),
     });
   }
 
   if (!fs.existsSync(filePath)) {
     return res.status(400).json({
       success: false,
-      error: getBackendMsg("ULTRA_FILE_NOT_FOUND", isVi)
+      error: getBackendMsg("ULTRA_FILE_NOT_FOUND", isVi),
     });
   }
 
@@ -1859,7 +1591,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   const cmdOpts = {
     ...opts,
     api_key: geminiApiKey || "",
-    sfx_folder: sfxFolder || ""
+    sfx_folder: sfxFolder || "",
   };
 
   try {
@@ -1885,7 +1617,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
         const pythonError = stderr || stdout || error.message;
         return res.status(500).json({
           success: false,
-          error: pythonError.replace("ERROR: ", "").trim()
+          error: pythonError.replace("ERROR: ", "").trim(),
         });
       }
 
@@ -1901,16 +1633,15 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
         logger.error(`File copy/rename failed: ${fsErr.message}`);
         return res.status(500).json({
           success: false,
-          error: fsErr.message
+          error: fsErr.message,
         });
       }
 
       return res.json({
         success: true,
-        message: getBackendMsg("ULTRA_SUCCESS", isVi)
+        message: getBackendMsg("ULTRA_SUCCESS", isVi),
       });
     });
-
   } catch (err: any) {
     try {
       if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
@@ -1921,7 +1652,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     logger.error(`Unexpected error running CapCut Ultra: ${err.message}`);
     return res.status(500).json({
       success: false,
-      error: err.message
+      error: err.message,
     });
   }
 });

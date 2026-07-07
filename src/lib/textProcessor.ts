@@ -4,11 +4,7 @@ import { SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../constants/data.
 import { formatTimeHelper as formatTime } from "../lib/timeUtils.js";
 import { ABBREVIATIONS, CONJUNCTIONS, boundaries, VIETNAMESE_VALID_CHARS_REGEX, SplitStrategy } from "../constants/index.js";
 
-export const smartChunkScript = (
-  script: string,
-  maxChunkSize: number = 2500,
-  minChunkSize: number = 2000,
-): string[] => {
+export const smartChunkScript = (script: string, maxChunkSize: number = 2500, minChunkSize: number = 2000): string[] => {
   if (!script || script.trim().length === 0) return [];
   if (script.length <= maxChunkSize) return [script.trim()];
 
@@ -64,8 +60,8 @@ export const smartSplitSentences = (text: string): string[] => {
     const char = text[i];
     currentSentence += char;
 
-    if (char === '.' || char === '?' || char === '!' || char === '\n') {
-      if (char === '.') {
+    if (char === "." || char === "?" || char === "!" || char === "\n") {
+      if (char === ".") {
         if (i > 0 && i < text.length - 1 && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
           continue;
         }
@@ -79,7 +75,7 @@ export const smartSplitSentences = (text: string): string[] => {
         }
       }
 
-      if (char === '\n' || i === text.length - 1 || /\s/.test(text[i + 1])) {
+      if (char === "\n" || i === text.length - 1 || /\s/.test(text[i + 1])) {
         const trimmed = currentSentence.trim();
         if (trimmed) {
           sentences.push(trimmed);
@@ -112,7 +108,7 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
   for (let i = startIdx; i <= endIdx; i++) {
     const word = words[i];
     if (/[伤害,.;:—\-\s]+$/.test(word)) {
-      if (word.endsWith('.')) {
+      if (word.endsWith(".")) {
         const cleanWord = word.slice(0, -1).toLowerCase().replace(VIETNAMESE_VALID_CHARS_REGEX, "");
         if (abbrSet.has(cleanWord)) {
           continue;
@@ -124,10 +120,7 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
 
       const part1 = words.slice(0, i + 1).join(" ");
       const part2 = words.slice(i + 1).join(" ");
-      return [
-        ...splitSentenceSafely(part1, safeMaxWords),
-        ...splitSentenceSafely(part2, safeMaxWords)
-      ];
+      return [...splitSentenceSafely(part1, safeMaxWords), ...splitSentenceSafely(part2, safeMaxWords)];
     }
   }
 
@@ -138,32 +131,17 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
     if (conjSet.has(word)) {
       const part1 = words.slice(0, i).join(" ");
       const part2 = words.slice(i).join(" ");
-      return [
-        ...splitSentenceSafely(part1, safeMaxWords),
-        ...splitSentenceSafely(part2, safeMaxWords)
-      ];
+      return [...splitSentenceSafely(part1, safeMaxWords), ...splitSentenceSafely(part2, safeMaxWords)];
     }
   }
 
   const mid = Math.ceil(len / 2);
   const part1 = words.slice(0, mid).join(" ");
   const part2 = words.slice(mid).join(" ");
-  return [
-    ...splitSentenceSafely(part1, safeMaxWords),
-    ...splitSentenceSafely(part2, safeMaxWords)
-  ];
+  return [...splitSentenceSafely(part1, safeMaxWords), ...splitSentenceSafely(part2, safeMaxWords)];
 };
 
-export function generateMockStoryboard(
-  rewrittenScript: string,
-  chapters: any[],
-  isVi: boolean,
-  style: string,
-  density: number,
-  voiceDuration?: number,
-  splitStrategy?: string,
-  aspectRatio: string = AspectRatio.SixteenNine,
-) {
+export function generateMockStoryboard(rewrittenScript: string, chapters: any[], isVi: boolean, style: string, density: number, voiceDuration?: number, splitStrategy?: string, aspectRatio: string = AspectRatio.SixteenNine) {
   interface SegmentWithContext {
     text: string;
     context: string;
@@ -171,7 +149,7 @@ export function generateMockStoryboard(
 
   const defaultStrategy = (text: string) => {
     const sentences = smartSplitSentences(text || "");
-    return sentences.map(sent => ({ text: sent, context: sent }));
+    return sentences.map((sent) => ({ text: sent, context: sent }));
   };
 
   const SLICE_STRATEGIES: Record<string, (text: string) => SegmentWithContext[]> = {
@@ -228,7 +206,10 @@ export function generateMockStoryboard(
     },
     [SplitStrategy.PARAGRAPH]: (text) => {
       const res: SegmentWithContext[] = [];
-      const paragraphs = (text || "").split(/\n+/).map(p => p.trim()).filter(p => p.length > 10);
+      const paragraphs = (text || "")
+        .split(/\n+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 10);
       for (const para of paragraphs) res.push({ text: para, context: para });
       if (res.length < 3) {
         const sentences = smartSplitSentences(text);
@@ -284,15 +265,12 @@ export function generateMockStoryboard(
         res.push({ text: chunk, context: chunk });
       }
       return res;
-    }
+    },
   };
 
   const pList: SegmentWithContext[] = (SLICE_STRATEGIES[splitStrategy || ""] || defaultStrategy)(rewrittenScript || "");
 
-  const totalWords = pList.reduce(
-    (acc, p) => acc + p.text.split(/\s+/).filter(Boolean).length,
-    0,
-  );
+  const totalWords = pList.reduce((acc, p) => acc + p.text.split(/\s+/).filter(Boolean).length, 0);
 
   let maxScenes = 250;
 
@@ -301,10 +279,7 @@ export function generateMockStoryboard(
   let currentTime = 0;
 
   const styleStr = style || "Realistic";
-  const defaultChapters =
-    chapters && chapters.length > 0
-      ? chapters
-      : [{ id: "ch_1", title: "Chapter 1" }];
+  const defaultChapters = chapters && chapters.length > 0 ? chapters : [{ id: "ch_1", title: "Chapter 1" }];
 
   const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
 

@@ -1,1 +1,1 @@
-export { formatCleanTime, formatAudioTime, formatCleanDuration } from '../../lib/timeUtils.js';
+export { formatCleanTime, formatAudioTime, formatCleanDuration } from "../../lib/timeUtils.js";

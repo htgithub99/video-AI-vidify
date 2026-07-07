@@ -19,10 +19,10 @@ export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const arrayBuffer = new ArrayBuffer(totalLength);
   const view = new DataView(arrayBuffer);
 
-  writeString(view, 0, 'RIFF');
+  writeString(view, 0, "RIFF");
   view.setUint32(4, totalLength - 8, true);
-  writeString(view, 8, 'WAVE');
-  writeString(view, 12, 'fmt ');
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
   view.setUint32(16, 16, true);
   view.setUint16(20, format, true);
   view.setUint16(22, numOfChan, true);
@@ -30,9 +30,8 @@ export const bufferToWav = (buffer: AudioBuffer): Blob => {
   view.setUint32(28, sampleRate * numOfChan * (bitDepth / 8), true);
   view.setUint16(32, numOfChan * (bitDepth / 8), true);
   view.setUint16(34, bitDepth, true);
-  writeString(view, 36, 'data');
+  writeString(view, 36, "data");
   view.setUint32(40, bufferLength, true);
-
 
   floatTo16BitPCM(view, 44, result);
 
@@ -57,7 +56,7 @@ const floatTo16BitPCM = (output: DataView, offset: number, input: Float32Array):
   let off = offset;
   for (let i = 0; i < input.length; i++, off += 2) {
     const s = Math.max(-1, Math.min(1, input[i]));
-    output.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    output.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true);
   }
 };
 
@@ -67,13 +66,7 @@ const writeString = (view: DataView, offset: number, string: string): void => {
   }
 };
 
-export const applyAudioEffects = async (
-  arrayBuffer: ArrayBuffer,
-  rate: number,
-  pitch: number,
-  volume: number
-): Promise<Blob> => {
-
+export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, pitch: number, volume: number): Promise<Blob> => {
   if (Math.abs(rate - 1.0) < 0.01 && Math.abs(pitch - 1.0) < 0.01 && Math.abs(volume - 1.0) < 0.01) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
     const isWav = uint8[0] === 0x52 && uint8[1] === 0x49 && uint8[2] === 0x46 && uint8[3] === 0x46;
@@ -87,7 +80,7 @@ export const applyAudioEffects = async (
   }
 
   const audioCtx = new AudioContextClass();
-  if (audioCtx.state === 'suspended') {
+  if (audioCtx.state === "suspended") {
     try {
       await audioCtx.resume();
     } catch (e) {
@@ -98,18 +91,12 @@ export const applyAudioEffects = async (
   try {
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-
-
     const combinedRate = Math.max(0.5, Math.min(2.0, rate * pitch));
 
     const targetLength = Math.max(1, Math.ceil(decodedBuffer.length / combinedRate));
 
     const OfflineAudioCtxClass = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
-    const offlineCtx = new OfflineAudioCtxClass(
-      decodedBuffer.numberOfChannels,
-      targetLength,
-      decodedBuffer.sampleRate
-    );
+    const offlineCtx = new OfflineAudioCtxClass(decodedBuffer.numberOfChannels, targetLength, decodedBuffer.sampleRate);
 
     const source = offlineCtx.createBufferSource();
     source.buffer = decodedBuffer;
@@ -131,20 +118,16 @@ export const applyAudioEffects = async (
   }
 };
 
-
-
 export const cleanScriptText = (text: string): string => {
-  if (!text) return '';
+  if (!text) return "";
   let t = text;
-  
-  t = t.replace(AUDIO_CLEAN_PREFIX_REGEX, '');
-  
-  t = t.replace(AUDIO_CLEAN_MARKDOWN_REGEX, ' ');
-  
-  t = t.replace(AUDIO_CLEAN_EMOJI_REGEX, '');
-  
-  t = t.replace(WHITESPACE_REGEX, ' ').trim();
+
+  t = t.replace(AUDIO_CLEAN_PREFIX_REGEX, "");
+
+  t = t.replace(AUDIO_CLEAN_MARKDOWN_REGEX, " ");
+
+  t = t.replace(AUDIO_CLEAN_EMOJI_REGEX, "");
+
+  t = t.replace(WHITESPACE_REGEX, " ").trim();
   return t;
 };
-
-

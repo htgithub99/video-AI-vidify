@@ -1,17 +1,11 @@
-import { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { VideoProject } from '../../types.js';
-import { randomUUID } from 'crypto';
-import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX } from '../../constants';
-import { appError, appLog } from '../../lib/logger.js';
-import {
-  getProjectsListFromDb,
-  getProjectDetailFromDb,
-  saveProjectDetailToDb,
-  deleteProjectFromDb,
-  migrateJsonToSqlite
-} from '../utils/db.js';
+import { Request, Response } from "express";
+import fs from "fs";
+import path from "path";
+import { VideoProject } from "../../types.js";
+import { randomUUID } from "crypto";
+import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX } from "../../constants";
+import { appError, appLog } from "../../lib/logger.js";
+import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 
 async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
@@ -19,27 +13,20 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     if (project) {
       const projectStr = JSON.stringify(project);
       const cleaned = projectStr.replace(UNSPLASH_IMAGE_REGEX, (match, query) => {
-        const decoded = decodeURIComponent(query).replace(/%2C/g, ',').replace(/\+/g, ',').replace(/,/g, ',');
+        const decoded = decodeURIComponent(query).replace(/%2C/g, ",").replace(/\+/g, ",").replace(/,/g, ",");
         return `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${decoded}`;
       });
       return JSON.parse(cleaned) as VideoProject;
     }
   } catch (error) {
-    appError(`${getBackendMsg('SQLITE_DETAIL_ERR')} ${id}`, error);
+    appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
   }
   return null;
 }
 
 function getSafeFolderName(name: string): string {
   if (!name) return COMMON_STRINGS.PROJECT_DEFAULT_NAME;
-  const safeName = name
-    .normalize('NFD')
-    .replace(VIETNAMESE_ACCENT_MARKS_REGEX, '')
-    .replace(VIETNAMESE_D_LETTER_REGEX, 'd')
-    .replace(SAFE_FOLDER_CHARS_REGEX, '')
-    .trim()
-    .replace(MULTIPLE_SPACES_REGEX, '_')
-    .toUpperCase();
+  const safeName = name.normalize("NFD").replace(VIETNAMESE_ACCENT_MARKS_REGEX, "").replace(VIETNAMESE_D_LETTER_REGEX, "d").replace(SAFE_FOLDER_CHARS_REGEX, "").trim().replace(MULTIPLE_SPACES_REGEX, "_").toUpperCase();
 
   return safeName || COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 }
@@ -59,7 +46,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
         assetUrl = assetUrl.replace(oldPathPrefix, newPathPrefix);
       }
       if (assetUrls.length > 0) {
-        assetUrls = assetUrls.map(url => (url && url.startsWith(oldPathPrefix)) ? url.replace(oldPathPrefix, newPathPrefix) : url);
+        assetUrls = assetUrls.map((url) => (url && url.startsWith(oldPathPrefix) ? url.replace(oldPathPrefix, newPathPrefix) : url));
       }
       if (audioUrl && audioUrl.startsWith(oldPathPrefix)) {
         audioUrl = audioUrl.replace(oldPathPrefix, newPathPrefix);
@@ -69,7 +56,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
         ...scene,
         assetUrl,
         assetUrls,
-        audioUrl
+        audioUrl,
       };
     });
   }
@@ -83,7 +70,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
       }
       return {
         ...thumb,
-        imageUrl
+        imageUrl,
       };
     });
   }
@@ -92,7 +79,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
   if (voiceConfig && (voiceConfig as any).audioUrl && (voiceConfig as any).audioUrl.startsWith(oldPathPrefix)) {
     voiceConfig = {
       ...voiceConfig,
-      audioUrl: (voiceConfig as any).audioUrl.replace(oldPathPrefix, newPathPrefix)
+      audioUrl: (voiceConfig as any).audioUrl.replace(oldPathPrefix, newPathPrefix),
     };
   }
 
@@ -100,7 +87,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
     ...project,
     storyboard,
     thumbnails,
-    voiceConfig
+    voiceConfig,
   };
 }
 
@@ -138,7 +125,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
             const filePath = path.join(imageDir, fileName);
 
             try {
-              fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+              fs.writeFileSync(filePath, Buffer.from(data, "base64"));
               assetUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${IMAGES_DIR_NAME}/${fileName}`;
               sceneUpdated = true;
               storyboardUpdated = true;
@@ -149,7 +136,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         if (assetUrls?.length) {
-          const hasBase64 = assetUrls.some(url => url && url.includes(COMMON_STRINGS.BASE64_IMAGE_PREFIX));
+          const hasBase64 = assetUrls.some((url) => url && url.includes(COMMON_STRINGS.BASE64_IMAGE_PREFIX));
           if (hasBase64) {
             assetUrls = assetUrl ? [assetUrl] : [];
             sceneUpdated = true;
@@ -174,12 +161,12 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         const anyScene = scene as any;
-        const hasBase64Audio = typeof anyScene.audioBase64 === 'string' && anyScene.audioBase64.length > 100 && !['/', 'http'].some(prefix => anyScene.audioBase64?.startsWith(prefix));
+        const hasBase64Audio = typeof anyScene.audioBase64 === "string" && anyScene.audioBase64.length > 100 && !["/", "http"].some((prefix) => anyScene.audioBase64?.startsWith(prefix));
         if (hasBase64Audio) {
           const fileName = `scene_${scene.id}.wav`;
           const filePath = path.join(audioDir, fileName);
           try {
-            fs.writeFileSync(filePath, Buffer.from(anyScene.audioBase64, 'base64'));
+            fs.writeFileSync(filePath, Buffer.from(anyScene.audioBase64, "base64"));
             audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${VOICES_DIR_NAME}/${fileName}`;
             delete anyScene.audioBase64;
             sceneUpdated = true;
@@ -217,7 +204,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
             const filePath = path.join(imageDir, fileName);
 
             try {
-              fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+              fs.writeFileSync(filePath, Buffer.from(data, "base64"));
               imageUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${IMAGES_DIR_NAME}/${fileName}`;
               thumbUpdated = true;
               thumbnailsUpdated = true;
@@ -239,14 +226,14 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 
     let voiceConfigUpdated = false;
     let voiceConfig = project.voiceConfig;
-    if (typeof (voiceConfig as any)?.audioBase64 === 'string' && (voiceConfig as any).audioBase64.length > 100) {
+    if (typeof (voiceConfig as any)?.audioBase64 === "string" && (voiceConfig as any).audioBase64.length > 100) {
       const fileName = COMMON_STRINGS.UNIFIED_WAV;
       const filePath = path.join(audioDir, fileName);
       try {
-        fs.writeFileSync(filePath, Buffer.from((voiceConfig as any).audioBase64, 'base64'));
+        fs.writeFileSync(filePath, Buffer.from((voiceConfig as any).audioBase64, "base64"));
         voiceConfig = {
           ...voiceConfig,
-          audioUrl: `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${VOICES_DIR_NAME}/${fileName}`
+          audioUrl: `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${VOICES_DIR_NAME}/${fileName}`,
         };
         delete (voiceConfig as any).audioBase64;
         voiceConfigUpdated = true;
@@ -276,13 +263,13 @@ async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
     await saveProjectDetailToDb(cleanedProject);
     return cleanedProject;
   } catch (error) {
-    appError(`${getBackendMsg('SQLITE_WRITE_ERR')} ${project.id}`, error);
+    appError(`${getBackendMsg("SQLITE_WRITE_ERR")} ${project.id}`, error);
     throw error;
   }
 }
 
 migrateJsonToSqlite().catch((error) => {
-  appError(getBackendMsg('SQLITE_MIGRATE_CRITICAL'), error);
+  appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
 });
 
 export const getAllProjects = async (req: Request, res: Response) => {
@@ -290,7 +277,7 @@ export const getAllProjects = async (req: Request, res: Response) => {
     const list = await getProjectsListFromDb();
     res.json(list);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg('SQLITE_LIST_ERR') });
+    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_LIST_ERR") });
   }
 };
 
@@ -304,7 +291,7 @@ export const getProjectById = async (req: Request, res: Response) => {
       res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg('SQLITE_DETAIL_ERR') });
+    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_DETAIL_ERR") });
   }
 };
 
@@ -314,13 +301,13 @@ export const createProject = async (req: Request, res: Response) => {
     ...req.body,
     id: req.body.id || randomUUID(),
     createdAt: req.body.createdAt || now,
-    updatedAt: req.body.updatedAt || now
+    updatedAt: req.body.updatedAt || now,
   };
   try {
     const savedProject = await saveProjectDetail(newProject);
     res.status(201).json(savedProject);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg('SQLITE_WRITE_ERR') });
+    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_WRITE_ERR") });
   }
 };
 
@@ -363,7 +350,7 @@ export const updateProject = async (req: Request, res: Response) => {
               return {
                 ...newScene,
                 assetUrl: oldScene.assetUrl,
-                assetUrls: newScene.assetUrls?.length ? newScene.assetUrls : (oldScene.assetUrls || [oldScene.assetUrl]),
+                assetUrls: newScene.assetUrls?.length ? newScene.assetUrls : oldScene.assetUrls || [oldScene.assetUrl],
                 assetName: newScene.assetName || oldScene.assetName,
                 assetType: newScene.assetType || oldScene.assetType,
               };
@@ -414,7 +401,7 @@ export const updateProject = async (req: Request, res: Response) => {
       res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg('SQLITE_WRITE_ERR') });
+    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_WRITE_ERR") });
   }
 };
 
@@ -444,6 +431,6 @@ export const deleteProject = async (req: Request, res: Response) => {
       res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg('SQLITE_DELETE_ERR') });
+    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_DELETE_ERR") });
   }
 };
