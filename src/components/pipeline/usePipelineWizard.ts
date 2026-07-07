@@ -2186,9 +2186,9 @@ export function usePipelineWizard(props: any) {
           ...prev,
           storyboard: data.storyboard,
         }));
-        const successMsg = t.charApplySuccess || "Áp dụng đặc điểm nhân vật thành công.";
+        const successMsg = t.charApplySuccess;
         setInfoMsg(successMsg);
-        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        appLog("STORYBOARD_CHAR_SUCCESS");
       } else {
         setProject((prev) => ({
           ...prev,
@@ -2197,6 +2197,72 @@ export function usePipelineWizard(props: any) {
             prompt: scene.prompt || "",
           })),
         }));
+        setInfoMsg(t.charApplyFallback);
+      }
+    } catch (e: any) {
+      setErrorMsg(`${t.charApplyFailed} ${e.message}`);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, applyCharacter: false }));
+      setLoading(false);
+    }
+  };
+
+  const handleApplyCharacterToThumbnails = async () => {
+    logAction("handleApplyCharacterToThumbnails");
+    if (!project.thumbnails || project.thumbnails.length === 0) {
+      setInfoMsg(t.No_thumbnails_to_apply_style || "Chưa có ảnh bìa để áp dụng phong cách.");
+      return;
+    }
+    const characters = project.visualConfig?.characters || [];
+    const activeChars = characters.filter((c) => c.prompt || c.description);
+    if (activeChars.length === 0) {
+      setInfoMsg(t.charNoPrompt);
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, applyCharacter: true }));
+    setLoading(true);
+    setErrorMsg("");
+    setInfoMsg(t.charApplying);
+
+    try {
+      const payload = {
+        thumbnails: project.thumbnails,
+        characters: activeChars.map((c) => ({
+          name: c.name,
+          prompt: c.prompt || c.description,
+        })),
+        aspectRatio: project.visualConfig.aspectRatio || "16:9",
+      };
+      const { success, data } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS_CHARACTER, payload);
+      if (success && data?.thumbnails) {
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            thumbnails: data.thumbnails,
+          };
+          setTimeout(() => {
+            onSaveProject(updatedProject, true);
+          }, 0);
+          return updatedProject;
+        });
+        const successMsg = t.charApplySuccess;
+        setInfoMsg(successMsg);
+        appLog("THUMBNAIL_CHAR_SUCCESS");
+      } else {
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            thumbnails: (prev.thumbnails || []).map((thumb) => ({
+              ...thumb,
+              prompt: thumb.prompt || "",
+            })),
+          };
+          setTimeout(() => {
+            onSaveProject(updatedProject, true);
+          }, 0);
+          return updatedProject;
+        });
         setInfoMsg(t.charApplyFallback);
       }
     } catch (e: any) {
@@ -4996,6 +5062,7 @@ export function usePipelineWizard(props: any) {
     handleCharacterImagesUpload,
     handleExtractCharacter,
     handleApplyCharacterToScenes,
+    handleApplyCharacterToThumbnails,
     theme,
     currentLang,
     handleNextStep,

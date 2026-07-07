@@ -7,6 +7,7 @@ export const API_ROUTES = {
   PIPELINE_REWRITE_PROMPTS: "/api/pipeline/rewrite-prompts",
   PIPELINE_OPTIMIZE_PROMPTS: "/api/pipeline/optimize-prompts",
   PIPELINE_REWRITE_THUMBNAILS: "/api/pipeline/rewrite-thumbnails",
+  PIPELINE_REWRITE_THUMBNAILS_CHARACTER: "/api/pipeline/rewrite-thumbnails-character",
   PIPELINE_HOOKS: "/api/pipeline/hooks",
   PIPELINE_SCRIPT: "/api/pipeline/script",
   PIPELINE_STORYBOARD: "/api/pipeline/storyboard",

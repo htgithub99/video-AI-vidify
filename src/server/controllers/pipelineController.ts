@@ -30,6 +30,7 @@ import {
   getCharacterAnalysisPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
+  getCharacterRewriteThumbnailsBatchPrompt,
   STYLE_EXTRACTION_PROMPT,
   STICKMAN_STYLE_MODIFIERS,
   getMultiStepHookPrompt,
@@ -339,6 +340,60 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
     res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+  }
+});
+router.post("/rewrite-thumbnails-character", async (req: Request, res: Response) => {
+  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const { thumbnails, characters, aspectRatio } = req.body;
+  if (!thumbnails || !Array.isArray(thumbnails)) {
+    return res.status(400).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+  }
+
+  let finalCharacters = characters;
+  if (!finalCharacters || !Array.isArray(finalCharacters) || finalCharacters.length === 0) {
+    return res.status(400).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
+  }
+
+  if (!isGeminiApiKeyAvailable()) {
+    return res.json({ thumbnails });
+  }
+
+  try {
+    const thumbsToRewrite = thumbnails.filter((t: any) => t.prompt);
+    const updatedThumbnails = thumbnails.map((t: any) => ({ ...t }));
+
+    if (thumbsToRewrite.length > 0) {
+      const rewrittenMap = new Map<string, string>();
+      const prompt = getCharacterRewriteThumbnailsBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
+
+      try {
+        const response = await generateContentWithRetry({
+          contents: prompt,
+          config: { responseMimeType: "application/json" },
+        });
+        const parsed = safeParseJSON(response.text, []);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item && item.id && item.prompt) {
+              rewrittenMap.set(item.id, item.prompt);
+            }
+          }
+        }
+      } catch (err: any) {
+        logger.error(`Error rewriting batch character thumbnails: ${err.message}`);
+      }
+
+      for (const rawThumb of updatedThumbnails) {
+        if (rewrittenMap.has(rawThumb.id)) {
+          rawThumb.prompt = rewrittenMap.get(rawThumb.id);
+        }
+      }
+    }
+
+    return res.json({ success: true, thumbnails: updatedThumbnails });
+  } catch (err: any) {
+    logger.error(`Error in /rewrite-thumbnails-character: ${err.message}`);
+    return res.status(500).json({ error: err.message });
   }
 });
 router.post("/analyze-character", async (req: Request, res: Response) => {

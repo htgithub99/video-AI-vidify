@@ -601,6 +601,10 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
       vi: "Đang chuẩn bị xuất tệp tin dòng thời gian XML cho Premiere...",
       en: "Preparing to export Premiere XML timeline file...",
     },
+    handleApplyCharacterToThumbnails: {
+      vi: "Đang áp dụng đặc điểm nhân vật chính vào toàn bộ ảnh bìa...",
+      en: "Applying main character traits to all cover thumbnails...",
+    },
   };
 
   if (!actionName) return "";
@@ -622,6 +626,14 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
 };
 
 export const LOG_DICTIONARY = {
+  THUMBNAIL_CHAR_SUCCESS: {
+    en: "[AI Service] ✅ Successfully applied character consistency to thumbnails!",
+    vi: "[Trí tuệ nhân tạo] ✅ Đồng nhất nhân vật chính cho ảnh bìa thành công!",
+  },
+  STORYBOARD_CHAR_SUCCESS: {
+    en: "[AI Service] ✅ Successfully applied character consistency to storyboard!",
+    vi: "[Trí tuệ nhân tạo] ✅ Đồng nhất nhân vật chính cho kịch bản phân cảnh thành công!",
+  },
   PROJECT_READ_ERR: {
     en: "Unable to read project list database (projects.json):",
     vi: "Không thể đọc dữ liệu danh sách dự án (projects.json):",

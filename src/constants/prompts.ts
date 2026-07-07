@@ -791,6 +791,35 @@ RULES:
 Input scenes:
 ${chunkJson}`;
 
+export const getCharacterRewriteThumbnailsBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
+
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+- Character Visual Blueprints:
+${charactersJson}
+
+[VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Mandatory Character Integration:
+   The main characters listed in the blueprint are the stars of this video. Therefore, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, clothing items, age) into every rewritten thumbnail prompt. 
+   If a thumbnail prompt mentions a general subject like "Union officer", "man", "soldier", "girl", "magician", or "character", you MUST replace or enrich that subject with the detailed appearance of the corresponding main character from the blueprint.
+2. Pose & Action Adaptation:
+   Change the character's pose, body action, and facial expression to perfectly match the action described in the original thumbnail prompt.
+3. Art Style & Context Preservation:
+   Keep the original art style, layout, text/slogan, surrounding background, lighting, and camera angle of each thumbnail. Do NOT change them.
+4. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
+
+RULES:
+1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right:
+   - If the thumbnail has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   - If the thumbnail does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+   ${CINEMATIC_PROMPT_RULES}
+2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the prompt.
+3. ${NO_FRAME_RULE}
+4. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+5. Output ONLY a valid JSON array matching the structure: [{"id": "thumbnail_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
+
+Input thumbnails:
+${chunkJson}`;
+
 export const STYLE_EXTRACTION_PROMPT = `Analyze the provided image(s) and extract ONLY the core art style and visual aesthetic keywords.
 Ignore and DO NOT describe the subject, specific characters, objects, or actions happening in the image.
 Focus entirely on visual elements:

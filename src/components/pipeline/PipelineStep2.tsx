@@ -3,7 +3,7 @@ import { Button } from "../ui/Button";
 
 import * as LucideIcons from "lucide-react";
 
-const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check } = LucideIcons as any;
+const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check, User } = LucideIcons as any;
 
 const handleDownloadImage = async (url: string, filename: string) => {
   try {
@@ -32,7 +32,47 @@ const handleDownloadImage = async (url: string, filename: string) => {
 import { WizardStep } from "../../types";
 
 export default function PipelineStep2(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, setZoomedImage, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleApplyThumbnailStyle, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, currentLang } = props;
+  const {
+    t,
+    project,
+    setProject,
+    setCurrentStep,
+    loadingStates,
+    setInfoMsg,
+    setZoomedImage,
+    handleThumbnailReferenceImagesUpload,
+    handleExtractThumbnailStyle,
+    handleApplyThumbnailStyle,
+    handleTriggerAssetAndThumbnail,
+    handleRenderThumbnailImage,
+    currentLang,
+    handleAnalyzeCharacter,
+    handleCharacterImagesUpload,
+    handleExtractCharacter,
+    handleApplyCharacterToThumbnails,
+  } = props;
+
+  const handleUpdateCharacter = (charId: string, field: "name" | "description" | "prompt", value: string) => {
+    setProject((prev) => {
+      const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
+        if (c.id === charId) {
+          return {
+            ...c,
+            [field]: value,
+          };
+        }
+        return c;
+      });
+      return {
+        ...prev,
+        visualConfig: {
+          ...prev.visualConfig,
+          characters: updatedChars,
+        },
+      };
+    });
+  };
+
   return (
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
@@ -245,6 +285,231 @@ export default function PipelineStep2(props: PipelineWizardState) {
             </div>
           </div>
         </div>
+
+        <div className="bg-slate-950/40 p-5 rounded-xl border border-slate-850/60 space-y-4 text-left relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.02] rounded-full blur-2xl pointer-events-none" />
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-rose-450 flex items-center gap-1.5 select-none">
+              <span>{t.charConsistencyTitle || "Đồng nhất Nhân vật chính"}</span>
+              <span className="text-[9px] bg-emerald-950/45 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                CHARACTER REFERENCE NODE
+              </span>
+            </h4>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-inner">
+            {!project.visualConfig?.characters || project.visualConfig.characters.length === 0 ? (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 text-[11px] text-slate-355 leading-relaxed italic">{t.charNotAnalyzed}</div>
+                <Button type="button" variant="primary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="sm">
+                  {loadingStates["analyzeCharacter"] ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {t.charAnalyzeBtn}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-850 pb-2">
+                  <span className="text-[10px] text-slate-400 font-mono">{t.charDetectedCount.replace("{count}", project.visualConfig.characters.length.toString())}</span>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="secondary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="xs">
+                      <RefreshCw className={`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`} />
+                      {t.charReAnalyze}
+                    </Button>
+                    {project.visualConfig.characters.some((c) => c.prompt || c.description) && project.thumbnails && project.thumbnails.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleApplyCharacterToThumbnails}
+                        disabled={!!loadingStates["applyCharacter"]}
+                        isLoading={!!loadingStates["applyCharacter"]}
+                        className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto"
+                      >
+                        <Check className="w-2.5 h-2.5 text-amber-100" />
+                        <span>{t.Apply_Character_Thumbnails || "Áp dụng vào ảnh bìa"}</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {project.visualConfig.characters.map((char) => {
+                    const isExtracting = !!loadingStates[`extractCharacter_${char.id}`];
+                    return (
+                      <div key={char.id} className="bg-slate-955/65 rounded-xl p-3 border border-slate-855 flex flex-col justify-between gap-2.5 relative shadow-md">
+                        <div className="flex flex-row gap-3 items-stretch">
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between gap-1">
+                                <h4 className="text-[11px] font-bold text-rose-350 flex items-center gap-1 min-w-0 flex-1">
+                                  <User className="w-3 h-3 text-rose-500 shrink-0" />
+                                  <input
+                                    type="text"
+                                    value={char.name}
+                                    onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)}
+                                    className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
+                                    placeholder="Tên nhân vật"
+                                  />
+                                </h4>
+                                <Button
+                                  variant="ghost"
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${char.name}: ${char.description}`);
+                                    setInfoMsg(t.charDescCopied);
+                                    setTimeout(() => setInfoMsg(""), 3000);
+                                  }}
+                                  title={t.charCopyDesc}
+                                  className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
+                                >
+                                  <Copy className="w-2.5 h-2.5" />
+                                </Button>
+                              </div>
+                              <textarea
+                                value={char.description}
+                                onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
+                                className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
+                                placeholder="Mô tả tiểu sử nhân vật..."
+                                title={char.description}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="w-[1px] bg-slate-800/80 my-1 self-stretch" />
+
+                          <div className="w-24 sm:w-28 shrink-0 flex flex-col gap-1.5 justify-between">
+                            <div
+                              className="bg-slate-900/40 border border-dashed border-slate-800 hover:border-emerald-500/50 rounded p-1.5 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer h-[42px]"
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (e.dataTransfer.files) {
+                                  handleCharacterImagesUpload(char.id, e.dataTransfer.files);
+                                }
+                              }}
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => {
+                                  if (e.target.files) {
+                                    handleCharacterImagesUpload(char.id, e.target.files);
+                                    e.target.value = "";
+                                  }
+                                }}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                              />
+                              <Upload className="w-2.5 h-2.5 text-slate-500 group-hover:text-emerald-400 mb-0.5" />
+                              <span className="text-[7px] font-bold text-slate-350 block leading-tight truncate max-w-[80px]">{t.charUploadFor.replace("{name}", char.name)}</span>
+                            </div>
+
+                            <div className="min-w-0 w-full">
+                              {char.images && char.images.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 max-h-[32px] overflow-y-auto p-0.5 bg-slate-900/10 rounded border border-slate-900/30">
+                                  {char.images.map((imgBase64, idx) => (
+                                    <div key={idx} className="relative w-6 h-6 rounded group shadow-sm">
+                                      <div className="w-full h-full border border-slate-800 bg-black rounded overflow-hidden">
+                                        <img src={imgBase64} alt={`${char.name} ref ${idx + 1}`} className="w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setProject((prev) => {
+                                            const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
+                                              if (c.id === char.id) {
+                                                const newImgs = [...(c.images || [])];
+                                                newImgs.splice(idx, 1);
+                                                return {
+                                                  ...c,
+                                                  images: newImgs,
+                                                };
+                                              }
+                                              return c;
+                                            });
+                                            return {
+                                              ...prev,
+                                              visualConfig: {
+                                                ...prev.visualConfig,
+                                                characters: updatedChars,
+                                                characterImages: updatedChars[0]?.images || [],
+                                              },
+                                            };
+                                          });
+                                        }}
+                                        className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 hover:bg-rose-600 hover:text-white border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-none p-0 cursor-pointer h-auto min-w-0"
+                                      >
+                                        <X className="w-1.5 h-1.5" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap">Chưa có ảnh</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-900/60 pt-2 space-y-2">
+                          {char.prompt && (
+                            <div className="bg-emerald-950/15 border border-emerald-500/20 rounded p-1.5 flex flex-col gap-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-emerald-400 font-bold text-[8px] uppercase tracking-wider flex items-center gap-1">
+                                  <Sparkles className="w-2 h-2 text-emerald-400" /> {t.charPromptTitle}
+                                </h4>
+                                <Button
+                                  variant="ghost"
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(char.prompt || "");
+                                    setInfoMsg(t.charCopied);
+                                    setTimeout(() => setInfoMsg(""), 3000);
+                                  }}
+                                  className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto"
+                                >
+                                  <Copy className="w-2.5 h-2.5" />
+                                </Button>
+                              </div>
+                              <textarea
+                                value={char.prompt}
+                                onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
+                                className="w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900"
+                                placeholder="Đặc tả nhân vật..."
+                                title={char.prompt}
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex justify-end">
+                            <Button
+                              variant="primary"
+                              type="button"
+                              onClick={() => handleExtractCharacter(char.id)}
+                              disabled={isExtracting || !char.images?.length}
+                              isLoading={isExtracting}
+                              size="xs"
+                              className="text-[9px] px-2 py-1 font-bold"
+                            >
+                              {isExtracting ? t.charExtractingBtn : t.charExtractBtn}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="border-t border-slate-800 pt-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
