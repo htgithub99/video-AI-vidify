@@ -23,6 +23,7 @@ import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer"
 import JSZip from "jszip";
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
+import { ASPECT_RATIO_PARAM_REGEX } from "../../constants/regexes";
 
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 
@@ -2425,58 +2426,29 @@ export function usePipelineWizard(props: any) {
 
     setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: true }));
     try {
-      const response = await fetch("/api/pipeline/extract-style", {
+      const response = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ images }),
       });
       const data = await response.json();
       if (data.style) {
-        if (project.thumbnails && project.thumbnails.length > 0) {
-          setInfoMsg(t.Rewriting_thumbnail_promp);
-          const rewritePayload = {
-            thumbnails: project.thumbnails,
-            newStyle: data.style,
-          };
-          const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch("/api/pipeline/rewrite-thumbnails", rewritePayload);
-
-          if (rewriteSuccess && rewriteData?.thumbnails) {
-            setProject((prev) => ({
-              ...prev,
-              thumbnails: rewriteData.thumbnails,
-              visualConfig: {
-                ...prev.visualConfig,
-                thumbnailReferencePrompt: data.style,
-              },
-            }));
-          } else {
-            setProject((prev) => {
-              const updatedThumbnails = (prev.thumbnails || []).map((thumb) => ({
-                ...thumb,
-                prompt: thumb.prompt || "",
-              }));
-              return {
-                ...prev,
-                thumbnails: updatedThumbnails,
-                visualConfig: {
-                  ...prev.visualConfig,
-                  thumbnailReferencePrompt: data.style,
-                },
-              };
-            });
-          }
-        } else {
-          setProject((prev) => ({
+        setProject((prev) => {
+          const updatedProject = {
             ...prev,
             visualConfig: {
               ...prev.visualConfig,
               thumbnailReferencePrompt: data.style,
             },
-          }));
-        }
-        const successMsg = t.Thumbnail_style_extracted || "Trích xuất phong cách ảnh thu nhỏ thành công.";
+          };
+          setTimeout(() => {
+            onSaveProject(updatedProject, true);
+          }, 0);
+          return updatedProject;
+        });
+        const successMsg = t.Thumbnail_style_extracted;
         setInfoMsg(successMsg);
-        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       } else if (data.error) {
         setErrorMsg(data.error);
       }
@@ -2484,6 +2456,69 @@ export function usePipelineWizard(props: any) {
       setErrorMsg(e.message);
     } finally {
       setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: false }));
+    }
+  };
+
+  const handleApplyThumbnailStyle = async () => {
+    logAction("handleApplyThumbnailStyle");
+    if (!project.thumbnails || project.thumbnails.length === 0) {
+      setInfoMsg(t.No_thumbnails_to_apply_style);
+      return;
+    }
+    const currentStyle = project.visualConfig?.thumbnailReferencePrompt;
+    if (!currentStyle) {
+      setInfoMsg(t.No_style_extracted_yet);
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, applyThumbnailStyle: true }));
+    setLoading(true);
+    setErrorMsg("");
+    setInfoMsg(t.Applying_style_to_scenes);
+
+    try {
+      const rewritePayload = {
+        thumbnails: project.thumbnails,
+        newStyle: currentStyle,
+        aspectRatio: project.visualConfig.aspectRatio || "16:9",
+      };
+      const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS, rewritePayload);
+
+      if (rewriteSuccess && rewriteData?.thumbnails) {
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            thumbnails: rewriteData.thumbnails,
+          };
+          setTimeout(() => {
+            onSaveProject(updatedProject, true);
+          }, 0);
+          return updatedProject;
+        });
+        const successMsg = t.Successfully_applied_styl;
+        setInfoMsg(successMsg);
+        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+      } else {
+        setProject((prev) => {
+          const updatedProject = {
+            ...prev,
+            thumbnails: (prev.thumbnails || []).map((thumb) => ({
+              ...thumb,
+              prompt: thumb.prompt || "",
+            })),
+          };
+          setTimeout(() => {
+            onSaveProject(updatedProject, true);
+          }, 0);
+          return updatedProject;
+        });
+        setInfoMsg(t.Applied_style_fallback_mo);
+      }
+    } catch (err: any) {
+      setErrorMsg(t.applyStyleError ? t.applyStyleError.replace("{error}", err.message) : err.message);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, applyThumbnailStyle: false }));
+      setLoading(false);
     }
   };
 
@@ -2922,7 +2957,7 @@ export function usePipelineWizard(props: any) {
         const formattedThumbs = data.thumbnails.map((th: ThumbnailItem) => {
           return {
             ...th,
-            imageUrl: `${EXTERNAL_URLS.PLACEHOLD_CO}/600x338/f43f5e/ffffff?text=${encodeURIComponent(th.style || "Thumbnail")}`,
+            imageUrl: "",
           };
         });
 
@@ -2954,11 +2989,16 @@ export function usePipelineWizard(props: any) {
     setLoading(true);
     setErrorMsg("");
     try {
-      const response = await fetch("/api/pipeline/generate-image", {
+      let cleanPromptText = promptText || "";
+      cleanPromptText = cleanPromptText.replace(ASPECT_RATIO_PARAM_REGEX, "");
+
+      const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
+
+      const response = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `${promptText}. Designed in rich high-CTR ${styleText} layout.`,
+          prompt: `${cleanPromptText}. Designed in rich high-CTR ${styleText} layout. --ar ${currentAspectRatio}`,
           style: styleText,
           resolution: "Standard",
           bypassCache: isForce,
@@ -4922,6 +4962,7 @@ export function usePipelineWizard(props: any) {
     handlePrevSlide,
     handleThumbnailReferenceImagesUpload,
     handleExtractThumbnailStyle,
+    handleApplyThumbnailStyle,
     handleNextSlide,
     handleDeleteSceneImage,
     handleDeleteAllSceneImages,

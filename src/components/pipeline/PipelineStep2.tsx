@@ -3,7 +3,7 @@ import { Button } from "../ui/Button";
 
 import * as LucideIcons from "lucide-react";
 
-const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download } = LucideIcons as any;
+const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check } = LucideIcons as any;
 
 const handleDownloadImage = async (url: string, filename: string) => {
   try {
@@ -32,7 +32,7 @@ const handleDownloadImage = async (url: string, filename: string) => {
 import { WizardStep } from "../../types";
 
 export default function PipelineStep2(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, setZoomedImage, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, currentLang } = props;
+  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, setZoomedImage, handleThumbnailReferenceImagesUpload, handleExtractThumbnailStyle, handleApplyThumbnailStyle, handleTriggerAssetAndThumbnail, handleRenderThumbnailImage, currentLang } = props;
   return (
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
@@ -213,17 +213,32 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         </Button>
                       </div>
                     )}
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleExtractThumbnailStyle}
-                      disabled={!!loadingStates["extractThumbnailStyle"]}
-                      isLoading={!!loadingStates["extractThumbnailStyle"]}
-                      className="w-full text-white font-bold text-[10px] active:scale-95"
-                    >
-                      <Sparkles className="w-3 h-3 text-rose-100" />
-                      <span>{t.Extract_Style}</span>
-                    </Button>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleExtractThumbnailStyle}
+                        disabled={!!loadingStates["extractThumbnailStyle"]}
+                        isLoading={!!loadingStates["extractThumbnailStyle"]}
+                        className="flex-1 text-white font-bold text-[10px] active:scale-95"
+                      >
+                        <Sparkles className="w-3 h-3 text-rose-100" />
+                        <span>{t.Extract_Style}</span>
+                      </Button>
+                      {project.visualConfig?.thumbnailReferencePrompt && project?.thumbnails?.length && (
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          onClick={handleApplyThumbnailStyle}
+                          disabled={!!loadingStates["applyThumbnailStyle"]}
+                          isLoading={!!loadingStates["applyThumbnailStyle"]}
+                          className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto"
+                        >
+                          <Check className="w-3 h-3 text-amber-100" />
+                          <span>{t.Apply_Style}</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -377,9 +392,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
                           isLoading={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${
-                            thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
-                          } active:scale-95`}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
+                            } active:scale-95`}
                           title={t.Render_YouTube_mockup_thu}
                         >
                           <Sparkles className={`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`} />

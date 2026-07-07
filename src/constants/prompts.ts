@@ -363,8 +363,8 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
-Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast 16:9 visual thumbnail designs.
+export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean, aspectRatio: string = "16:9"): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
+Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast ${aspectRatio} visual thumbnail designs.
 
 ---
 ${rewrittenScript}
@@ -390,6 +390,7 @@ Your process MUST complete all steps internally:
    - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay at the bottom reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow...".
    - If there are choices or secondary labels (e.g., 'ATTACK NOW' and 'WAIT & WIN' with arrows), describe them in the prompt: "...at the very bottom edge, there are two interactive-style option banners reading 'OPTION A' and 'OPTION B' with a small arrow pointing between them...".
    - The overall image style must be highly cinematic, dramatic lighting, high contrast, sharp details, shallow depth of field, with strong color contrast (e.g. warm sunset/dust tones vs. cold shadows).
+   - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single thumbnail. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
 {
@@ -399,7 +400,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "thumbnails": [
     {
       "id": "th_1",
-      "prompt": "Highly detailed 16:9 thumbnail prompt in English. Must describe all visual elements, cinematic lighting, and explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator.",
+      "prompt": "Highly detailed ${aspectRatio} thumbnail prompt in English. Must describe all visual elements, cinematic lighting, explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator, and you MUST append the exact parameter '--ar ${aspectRatio}' at the very end of the prompt.",
       "style": "Dramatic Cinematic",
       "hasText": true,
       "textText": "${isVi ? "SỰ THẬT!" : "THE TRUTH!"}",

@@ -290,7 +290,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
 router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { thumbnails, newStyle } = req.body;
+  const { thumbnails, newStyle, aspectRatio } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
     return res.status(400).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
@@ -308,7 +308,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(thumbsToRewrite));
+      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -1152,7 +1152,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
-    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi);
+    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi, visualConfig.aspectRatio || "16:9");
 
     const thumbParts: any[] = [];
     if (visualConfig.thumbnailReferenceImages && Array.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
@@ -1493,7 +1493,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-            } catch (cleanupErr) {}
+            } catch (cleanupErr) { }
             return res.status(500).json({
               success: false,
               error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message),
@@ -1549,7 +1549,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
           if (fs.existsSync(outputPath)) {
             try {
               fs.unlinkSync(outputPath);
-            } catch (e) {}
+            } catch (e) { }
           }
           return res.status(500).json({
             success: false,
@@ -1601,12 +1601,12 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     exec(cmd, (error, stdout, stderr) => {
       try {
         if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
-      } catch (cleanupErr) {}
+      } catch (cleanupErr) { }
 
       if (error) {
         try {
           if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
-        } catch (cleanupErr) {}
+        } catch (cleanupErr) { }
 
         logger.error(`CapCut Ultra process failed with exit code ${error.code}: ${error.message}`);
         if (stdout) logger.error(`Python stdout: ${stdout}`);
@@ -1643,10 +1643,10 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   } catch (err: any) {
     try {
       if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
-    } catch (cleanupErr) {}
+    } catch (cleanupErr) { }
     try {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
-    } catch (cleanupErr) {}
+    } catch (cleanupErr) { }
     logger.error(`Unexpected error running CapCut Ultra: ${err.message}`);
     return res.status(500).json({
       success: false,

@@ -5,7 +5,7 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 
-const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, RefreshCw, FileText, Copy, ShieldCheck, ArrowRight } = LucideIcons as any;
+const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight } = LucideIcons as any;
 
 export default function PipelineStep0(props: PipelineWizardState) {
   const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition } = props;

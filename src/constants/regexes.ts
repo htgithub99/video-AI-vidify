@@ -43,3 +43,4 @@ export const FILE_EXTENSION_REGEX = /\.[^/.]+$/;
 export const WHITESPACE_REGEX = /\s+/g;
 export const VIETNAMESE_VALID_CHARS_REGEX = /[^a-zđâăêôơưàáảãạằắẳẵặầấẩẫậềếểễệồốổỗộờớởỡợừứửữựỳýỷỹỵ]/g;
 export const PROMPT_NUMBERING_PREFIX_REGEX = /^\d+[\.\-\s)]+\s*/;
+export const ASPECT_RATIO_PARAM_REGEX = /\s*--ar\s+\d+:\d+/gi;
