@@ -26,11 +26,30 @@ LOG_INSERT_TRANSITIONS = "🎬 Đang tự động thêm hiệu ứng chuyển c�
 LOG_SUBTITLES = "📝 Đang định dạng kiểu phụ đề và phông chữ chuyên nghiệp..."
 LOG_AI_SFX = "⚡ Đang tự động tạo hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)..."
 LOG_SUCCESS = "HOÀN TẤT: Toàn bộ tiến trình tối ưu hóa CapCut Ultra đã thành công!"
+LOG_DUP_PHOTOS = "-> Số lượng ảnh ({}) ít hơn âm thanh ({}). Đang tự động nhân bản ảnh..."
+LOG_TRUNCATE_PHOTOS = "-> Số lượng ảnh ({}) nhiều hơn âm thanh ({}). Đang cắt bỏ ảnh thừa..."
+LOG_NO_TIMELINE_CHANGE = "-> Không thay đổi cấu trúc timeline. Áp dụng các hiệu ứng trực tiếp trên các phân cảnh hiện tại..."
+LOG_NO_BGM_FOUND = "-> Không tìm thấy tệp nhạc nền nào."
+LOG_NO_SFX_MATCH = "-> Không tìm thấy kết hợp hiệu ứng âm thanh nào phù hợp."
+LOG_SFX_DIR_EMPTY = "-> Thư mục SFX trống."
+LOG_SFX_GEMINI_REQUEST = "-> Đang gửi yêu cầu gợi ý SFX tới Google Gemini..."
+LOG_SFX_GEMINI_ERR = "-> Lỗi kết nối Gemini: {}. Đang chuyển sang đối sánh từ khóa tự động..."
+LOG_SFX_AUTO_MATCH = "-> Đang thực hiện đối sánh từ khóa tự động cho SFX..."
+LOG_SFX_MATCH_SUCCESS = "-> Đã ghép nối thành công {} hiệu ứng âm thanh."
+LOG_PROCESS_KILLED = "🛑 Phát hiện và đã tự động tắt tiến trình CapCut/Jianying đang hoạt động để tránh lỗi ghi đè dữ liệu."
+LOG_SCENE_DETAIL = "🎬 Scene {:02d} | Ratio: {} | Type: {} | Motion: {} | Scale: {:.2f} | Transform: ({:.4f}, {:.4f}) | Rot: {:.2f}°"
+LOG_SCENE_DETAIL_SIMPLE = "🎬 Scene {:02d} | Ratio: {} | Motion: {} | Scale: {:.2f} | Transform: ({:.4f}, {:.4f}) | Rot: {:.2f}°"
+LOG_GEMINI_API_REQUEST = "-> Đang gửi yêu cầu gợi ý SFX tới Google Gemini..."
+LOG_DUP_INFO = "-> Số lượng ảnh ({}) ít hơn âm thanh ({}). Đang tự động nhân bản ảnh..."
+LOG_DEL_INFO = "-> Số lượng ảnh ({}) nhiều hơn âm thanh ({}). Đang cắt bỏ ảnh thừa..."
+LOG_NO_SFX_DIR = "-> Thư mục SFX trống."
 
 ERR_NO_MEDIA = "Không tìm thấy hình ảnh, video hoặc âm thanh trên dòng thời gian!"
 ERR_CLI_USAGE = "Cú pháp: python capcut_ultra_tool.py <input_json> <output_json> [opts_json_string] HOẶC python capcut_ultra_tool.py <select-file/select-folder>"
 ERR_OPTS_PARSE = "Lỗi phân tích cú pháp tùy chọn JSON: {}"
 ERR_GENERIC = "ERROR: {}"
+ERR_NO_TIMELINE_MOD = "Không thể thực hiện các thao tác thay đổi timeline do thiếu ảnh/video hoặc âm thanh trên track chính!"
+ERR_SUBTITLE_CONFIG = "Lỗi cấu hình phụ đề: {}"
 
 TRANSITION_NAME = "Chuyển cảnh ngẫu nhiên"
 DEFAULT_TRANSITION_DURATION = 500000
@@ -72,6 +91,116 @@ DIALOG_FOLDER_TITLE = "Chọn thư mục"
 JSON_FILE_TYPES_LABEL = "JSON files"
 JSON_EXT = "*.json"
 ALL_EXT = "*.*"
+
+OPT_SYNC_IMAGE_TO_AUDIO = 'sync_image_to_audio'
+OPT_CUSTOM_AUDIO_ORDER = 'custom_audio_order'
+OPT_AUDIO_ORDER_LIST = 'audio_order_list'
+OPT_RANDOMIZE_VIDEO = 'randomize_video'
+OPT_REVERSE_TIMELINE = 'reverse_timeline'
+OPT_AUTO_FILL_CANVAS = 'auto_fill_canvas'
+OPT_DYNAMIC_MOTION = 'dynamic_motion'
+OPT_SCENE_TYPE = 'scene_type'
+OPT_NORMALIZE_VOLUME = 'normalize_volume'
+OPT_ULTRA_MUSIC_MIX = 'ultra_music_mix'
+OPT_SFX_FOLDER = 'sfx_folder'
+OPT_AUTO_TRANSITION = 'auto_transition'
+OPT_AUTO_SUBTITLES = 'auto_subtitles'
+OPT_AI_SFX_GENERATOR = 'ai_sfx_generator'
+OPT_API_KEY = 'api_key'
+
+CMD_KILL_CAPCUT = "taskkill /f /im CapCut.exe"
+CMD_KILL_JIANYING = "taskkill /f /im JianyingPro.exe"
+
+BGM_TRACK_NAME = "BGM Track"
+BGM_TRACK_ID_PREFIX = "bgm_track_{}"
+BGM_MAT_ID_PREFIX = "bgm_mat_{}"
+BGM_SEG_ID_PREFIX = "bgm_seg_{}"
+
+SFX_TRACK_NAME = "SFX Track"
+SFX_TRACK_ID_PREFIX = "sfx_track_{}"
+SFX_MAT_ID_PREFIX = "sfx_mat_{}"
+SFX_SEG_ID_PREFIX = "sfx_seg_{}"
+
+FONT_INTER = 'Inter'
+DUP_PHOTO_PREFIX = "dup_photo_{}"
+
+PROMPT_TEMPLATE = """
+Bạn là một nhà thiết kế âm thanh chuyên nghiệp cho video ngắn.
+Tôi có danh sách các phân cảnh video dưới đây:
+{}
+
+Và tôi có danh sách các tệp hiệu ứng âm thanh (SFX) có sẵn trong thư mục:
+{}
+
+Hãy ghép nối mỗi phân cảnh với một tệp SFX phù hợp nhất từ danh sách trên để làm nổi bật bối cảnh hoặc tạo chuyển cảnh mượt mà.
+Nếu một phân cảnh không cần SFX hoặc không có tệp nào phù hợp, hãy đặt "sfx_filename" là null.
+Hãy chọn tệp từ danh sách có sẵn, KHÔNG tự bịa tên tệp.
+Trả về kết quả dưới dạng JSON object với cấu trúc:
+{{
+  "sfx_mapping": [
+    {{"scene_index": 0, "sfx_filename": "tên_file.mp3"}},
+    ...
+  ]
+}}
+Chỉ trả về chuỗi JSON thô hợp lệ, không bọc trong markdown hay bất cứ ký tự nào khác.
+"""
+
+SAFE_TRANSFORM_X_MIN = -0.12
+SAFE_TRANSFORM_X_MAX = 0.12
+SAFE_TRANSFORM_Y_MIN = -0.08
+SAFE_TRANSFORM_Y_MAX = 0.08
+
+SAFE_PAN_MIN_SCALE = 1.12
+MAX_ROTATION_DEGREE = 0.5
+LIGHT_ROTATION_MIN = -0.15
+LIGHT_ROTATION_MAX = 0.15
+
+SCALE_MOTION_MIN = 1.08
+SCALE_MOTION_MAX = 1.18
+
+DURATION_HOOK_MIN = 1.5
+DURATION_HOOK_MAX = 2.0
+DURATION_INFO_MIN = 3.0
+DURATION_INFO_MAX = 5.0
+DURATION_IMPORTANT_MIN = 5.0
+DURATION_IMPORTANT_MAX = 8.0
+
+WEIGHT_ZOOM = 0.30
+WEIGHT_PAN = 0.25
+WEIGHT_PUSH = 0.15
+WEIGHT_CORNER = 0.15
+WEIGHT_KEN_BURNS = 0.15
+
+KF_PROPERTY_SCALE = "UNIFORM_SCALE"
+KF_PROPERTY_POSITION_X = "KFTypePositionX"
+KF_PROPERTY_POSITION_Y = "KFTypePositionY"
+KF_PROPERTY_ROTATION = "KFTypeRotation"
+CURVE_EASE_IN_OUT = "EaseInOut"
+
+RATIO_LANDSCAPE = "Landscape"
+RATIO_PORTRAIT = "Portrait"
+RATIO_SQUARE = "Square"
+
+SCENE_HOOK = "Hook"
+SCENE_IMPORTANT = "Important"
+SCENE_INFORMATION = "Information"
+
+MOTION_ZOOM_IN = "Zoom In"
+MOTION_ZOOM_OUT = "Zoom Out"
+MOTION_PAN_LEFT = "Pan Left"
+MOTION_PAN_RIGHT = "Pan Right"
+MOTION_PAN_UP = "Pan Up"
+MOTION_PAN_DOWN = "Pan Down"
+MOTION_PUSH_IN = "Push In"
+MOTION_PULL_OUT = "Pull Out"
+MOTION_CORNER_LEFT = "Corner Left"
+MOTION_CORNER_RIGHT = "Corner Right"
+MOTION_KEN_BURNS = "Ken Burns"
+MOTION_STATIC_FOCUS = "Static Focus"
+
+GENRE_DOCUMENTARY = "Documentary"
+GENRE_HISTORY = "History"
+GENRE_ACTION = "Action"
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding=UTF8_ENCODING)
@@ -140,17 +269,14 @@ def get_image_dimensions_fallback(filepath):
             head = f.read(32)
             if len(head) < 24:
                 return None
-            # PNG
             if head.startswith(b'\x89PNG\r\n\x1a\n'):
                 import struct
                 w, h = struct.unpack('>II', head[16:24])
                 return int(w), int(h)
-            # GIF
             elif head.startswith(b'GIF87a') or head.startswith(b'GIF89a'):
                 import struct
                 w, h = struct.unpack('<HH', head[6:10])
                 return int(w), int(h)
-            # JPEG
             elif head.startswith(b'\xff\xd8'):
                 f.seek(0)
                 size = 2
@@ -211,9 +337,9 @@ def call_gemini(api_key, prompt):
             "responseMimeType": "application/json"
         }
     }
-    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method="POST")
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(UTF8_ENCODING), headers=headers, method="POST")
     with urllib.request.urlopen(req) as response:
-        res_data = json.loads(response.read().decode('utf-8'))
+        res_data = json.loads(response.read().decode(UTF8_ENCODING))
         text = res_data['candidates'][0]['content']['parts'][0]['text']
         return text
 
@@ -285,9 +411,382 @@ def open_folder_dialog():
     else:
         print(os.path.abspath("."), end="")
 
+class SceneAnalyzer:
+    @staticmethod
+    def analyze_ratio(media_w, media_h):
+        if not media_w or not media_h:
+            return RATIO_SQUARE
+        ratio = media_w / media_h
+        if ratio > 1.2:
+            return RATIO_LANDSCAPE
+        elif ratio < 0.8:
+            return RATIO_PORTRAIT
+        else:
+            return RATIO_SQUARE
+
+    @staticmethod
+    def classify_scene_type(index, total_scenes, scene_text=""):
+        if index == 0:
+            return SCENE_HOOK
+        important_keywords = ["quan trọng", "chú ý", "kết luận", "tóm lại", "important", "conclusion", "attention", "lưu ý"]
+        is_important_text = any(kw in scene_text.lower() for kw in important_keywords)
+        if index == total_scenes - 1 or is_important_text:
+            return SCENE_IMPORTANT
+        return SCENE_INFORMATION
+
+class CanvasEngine:
+    @staticmethod
+    def calculate_fill_scale(media_w, media_h, canvas_w, canvas_h):
+        if not media_w or not media_h:
+            return 1.3
+        fit_scale_w = canvas_w / media_w
+        fit_scale_h = canvas_h / media_h
+        fit_scale = min(fit_scale_w, fit_scale_h)
+        fill_scale = max(fit_scale_w, fit_scale_h)
+        if fit_scale > 0:
+            scale_factor = fill_scale / fit_scale
+            return max(1.0, min(scale_factor, 4.0))
+        return 1.0
+
+    @staticmethod
+    def calculate_safe_crop_margin(motion_scale, fill_scale):
+        if motion_scale <= 1.0:
+            return 0.0, 0.0
+        max_d = (motion_scale - 1.0) * 0.95
+        max_dx = min(max_d, SAFE_TRANSFORM_X_MAX)
+        max_dy = min(max_d, SAFE_TRANSFORM_Y_MAX)
+        return max_dx, max_dy
+
+class MotionEngine:
+    MOTIONS = [
+        MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_PAN_LEFT, MOTION_PAN_RIGHT, 
+        MOTION_PAN_UP, MOTION_PAN_DOWN, MOTION_PUSH_IN, MOTION_PULL_OUT, 
+        MOTION_CORNER_LEFT, MOTION_CORNER_RIGHT, MOTION_KEN_BURNS, MOTION_STATIC_FOCUS
+    ]
+    
+    MOTION_GROUPS = {
+        "Zoom": [MOTION_ZOOM_IN, MOTION_ZOOM_OUT],
+        "Pan": [MOTION_PAN_LEFT, MOTION_PAN_RIGHT, MOTION_PAN_UP, MOTION_PAN_DOWN],
+        "Push": [MOTION_PUSH_IN, MOTION_PULL_OUT],
+        "Corner": [MOTION_CORNER_LEFT, MOTION_CORNER_RIGHT],
+        "Ken Burns": [MOTION_KEN_BURNS],
+        "Static Focus": [MOTION_STATIC_FOCUS]
+    }
+
+    @staticmethod
+    def select_motion(aspect_ratio, motion_history=None):
+        if aspect_ratio == RATIO_LANDSCAPE:
+            allowed = [MOTION_PAN_LEFT, MOTION_PAN_RIGHT, MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_KEN_BURNS, MOTION_STATIC_FOCUS]
+        elif aspect_ratio == RATIO_PORTRAIT:
+            allowed = [MOTION_PAN_UP, MOTION_PAN_DOWN, MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_PUSH_IN, MOTION_PULL_OUT, MOTION_STATIC_FOCUS]
+        else:
+            allowed = [MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_CORNER_LEFT, MOTION_CORNER_RIGHT, MOTION_STATIC_FOCUS]
+
+        if motion_history:
+            filtered = [m for m in allowed if m not in motion_history]
+            if filtered:
+                allowed = filtered
+            else:
+                last_m = motion_history[-1]
+                if last_m in allowed and len(allowed) > 1:
+                    allowed = [m for m in allowed if m != last_m]
+
+        weights = []
+        for m in allowed:
+            if m in MotionEngine.MOTION_GROUPS["Zoom"]:
+                weights.append(WEIGHT_ZOOM / len(MotionEngine.MOTION_GROUPS["Zoom"]))
+            elif m in MotionEngine.MOTION_GROUPS["Pan"]:
+                weights.append(WEIGHT_PAN / len(MotionEngine.MOTION_GROUPS["Pan"]))
+            elif m in MotionEngine.MOTION_GROUPS["Push"]:
+                weights.append(WEIGHT_PUSH / len(MotionEngine.MOTION_GROUPS["Push"]))
+            elif m in MotionEngine.MOTION_GROUPS["Corner"]:
+                weights.append(WEIGHT_CORNER / len(MotionEngine.MOTION_GROUPS["Corner"]))
+            elif m in MotionEngine.MOTION_GROUPS["Ken Burns"]:
+                weights.append(WEIGHT_KEN_BURNS)
+            else:
+                weights.append(0.05)
+
+        total_w = sum(weights)
+        if total_w > 0:
+            weights = [w / total_w for w in weights]
+        else:
+            weights = [1.0 / len(allowed)] * len(allowed)
+
+        return random.choices(allowed, weights=weights)[0]
+
+    @staticmethod
+    def build_keyframe(kf_id, time_offset, value, curve_type=CURVE_EASE_IN_OUT):
+        return {
+            "curveType": curve_type,
+            "graphID": "",
+            "left_control": {"x": 0.0, "y": 0.0},
+            "right_control": {"x": 0.0, "y": 0.0},
+            "id": kf_id,
+            "time_offset": int(time_offset),
+            "values": [float(value)]
+        }
+
+    @staticmethod
+    def build_keyframe_list(property_type, keyframes):
+        return {
+            "id": uuid.uuid4().hex,
+            "keyframe_list": keyframes,
+            "material_id": "",
+            "property_type": property_type
+        }
+
+    @staticmethod
+    def apply_motion(segment, motion, duration_micros, fill_scale, canvas_w, canvas_h):
+        duration_sec = duration_micros / 1000000.0
+        
+        if duration_sec <= 2.0:
+            motion_scale = SCALE_MOTION_MAX
+        elif duration_sec >= 8.0:
+            motion_scale = SCALE_MOTION_MIN
+        else:
+            ratio = (duration_sec - 2.0) / 6.0
+            motion_scale = SCALE_MOTION_MAX - ratio * (SCALE_MOTION_MAX - SCALE_MOTION_MIN)
+            
+        motion_scale = random.uniform(motion_scale - 0.01, motion_scale + 0.01)
+        motion_scale = max(SCALE_MOTION_MIN, min(motion_scale, SCALE_MOTION_MAX))
+
+        max_dx, max_dy = CanvasEngine.calculate_safe_crop_margin(motion_scale, fill_scale)
+
+        start_rot = random.uniform(LIGHT_ROTATION_MIN, LIGHT_ROTATION_MAX)
+        end_rot = random.uniform(LIGHT_ROTATION_MIN, LIGHT_ROTATION_MAX)
+        start_rot = max(-MAX_ROTATION_DEGREE, min(start_rot, MAX_ROTATION_DEGREE))
+        end_rot = max(-MAX_ROTATION_DEGREE, min(end_rot, MAX_ROTATION_DEGREE))
+
+        scale_kfs = []
+        pos_x_kfs = []
+        pos_y_kfs = []
+        rot_kfs = []
+
+        if motion == MOTION_ZOOM_IN:
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * motion_scale))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+
+        elif motion == MOTION_ZOOM_OUT:
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * motion_scale))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+
+        elif motion in [MOTION_PAN_LEFT, MOTION_PAN_RIGHT, MOTION_PAN_UP, MOTION_PAN_DOWN, MOTION_CORNER_LEFT, MOTION_CORNER_RIGHT]:
+            pan_scale = fill_scale * max(SAFE_PAN_MIN_SCALE, motion_scale)
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, pan_scale))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, pan_scale))
+
+            actual_motion_scale = pan_scale / fill_scale
+            dx_limit, dy_limit = CanvasEngine.calculate_safe_crop_margin(actual_motion_scale, fill_scale)
+            
+            dx = dx_limit * random.uniform(0.8, 0.95)
+            dy = dy_limit * random.uniform(0.8, 0.95)
+
+            if pan_scale < SAFE_PAN_MIN_SCALE * fill_scale:
+                dx = 0.0
+                dy = 0.0
+
+            if motion == MOTION_PAN_LEFT:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dx))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, -dx))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            elif motion == MOTION_PAN_RIGHT:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dx))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dx))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            elif motion == MOTION_PAN_UP:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dy))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dy))
+            elif motion == MOTION_PAN_DOWN:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dy))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, -dy))
+            elif motion == MOTION_CORNER_LEFT:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dx))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, -dx))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dy))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, -dy))
+            elif motion == MOTION_CORNER_RIGHT:
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dx))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dx))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dy))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, -dy))
+
+        elif motion == MOTION_PUSH_IN:
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * motion_scale))
+            
+            dx_limit, dy_limit = CanvasEngine.calculate_safe_crop_margin(motion_scale, fill_scale)
+            dx = dx_limit * 0.7
+            dy = dy_limit * 0.7
+            
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dx))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dy))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+
+        elif motion == MOTION_PULL_OUT:
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * motion_scale))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale))
+            
+            dx_limit, dy_limit = CanvasEngine.calculate_safe_crop_margin(motion_scale, fill_scale)
+            dx = dx_limit * 0.7
+            dy = dy_limit * 0.7
+            
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dx))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dy))
+
+        elif motion == MOTION_KEN_BURNS:
+            kb_preset = random.choice(["TopLeft_to_Center", "Bottom_to_Top", "Corner_to_Corner"])
+            if kb_preset == "TopLeft_to_Center":
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * 1.15))
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * 1.04))
+                
+                dx, dy = CanvasEngine.calculate_safe_crop_margin(1.15, fill_scale)
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dx * 0.9))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, dy * 0.9))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            elif kb_preset == "Bottom_to_Top":
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * 1.14))
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * 1.14))
+                
+                dx, dy = CanvasEngine.calculate_safe_crop_margin(1.14, fill_scale)
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dy * 0.9))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dy * 0.9))
+            else:
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * 1.16))
+                scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * 1.06))
+                
+                dx_start, dy_start = CanvasEngine.calculate_safe_crop_margin(1.16, fill_scale)
+                dx_end, dy_end = CanvasEngine.calculate_safe_crop_margin(1.06, fill_scale)
+                
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dx_start * 0.9))
+                pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dx_end * 0.9))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, -dy_start * 0.9))
+                pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, dy_end * 0.9))
+
+        else:
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, fill_scale * 1.02))
+            scale_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, fill_scale * 1.03))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_x_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, 0.0))
+            pos_y_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, 0.0))
+
+        rot_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, 0, start_rot))
+        rot_kfs.append(MotionEngine.build_keyframe(uuid.uuid4().hex, duration_micros, end_rot))
+
+        segment['common_keyframes'] = [
+            MotionEngine.build_keyframe_list(KF_PROPERTY_SCALE, scale_kfs),
+            MotionEngine.build_keyframe_list(KF_PROPERTY_POSITION_X, pos_x_kfs),
+            MotionEngine.build_keyframe_list(KF_PROPERTY_POSITION_Y, pos_y_kfs),
+            MotionEngine.build_keyframe_list(KF_PROPERTY_ROTATION, rot_kfs)
+        ]
+
+        clip_settings = segment.setdefault('clip', {})
+        scale_settings = clip_settings.setdefault('scale', {})
+        transform_settings = clip_settings.setdefault('transform', {})
+        
+        scale_settings['x'] = scale_kfs[0]['values'][0]
+        scale_settings['y'] = scale_kfs[0]['values'][0]
+        transform_settings['x'] = pos_x_kfs[0]['values'][0]
+        transform_settings['y'] = pos_y_kfs[0]['values'][0]
+        clip_settings['rotation'] = start_rot
+
+        final_scale_display = scale_kfs[1]['values'][0] if len(scale_kfs) > 1 else scale_kfs[0]['values'][0]
+        final_x_display = pos_x_kfs[1]['values'][0] if len(pos_x_kfs) > 1 else pos_x_kfs[0]['values'][0]
+        final_y_display = pos_y_kfs[1]['values'][0] if len(pos_y_kfs) > 1 else pos_y_kfs[0]['values'][0]
+
+        return motion, final_scale_display, final_x_display, final_y_display, start_rot
+
+class TransitionEngine:
+    TRANSITION_LIBRARY = {
+        GENRE_DOCUMENTARY: [
+            {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""},
+            {"name": "Dip to Black", "effect_id": "6008013", "resource_id": "7108928014529069053", "path": ""},
+            {"name": "Blur", "effect_id": "6008020", "resource_id": "7108928014529069060", "path": ""},
+            {"name": "Pull In", "effect_id": "6008076", "resource_id": "7108928014529069116", "path": ""}
+        ],
+        GENRE_HISTORY: [
+            {"name": "Film Burn", "effect_id": "6008035", "resource_id": "7108928014529069075", "path": ""},
+            {"name": "Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""},
+            {"name": "Flash", "effect_id": "6008016", "resource_id": "7108928014529069056", "path": ""},
+            {"name": "Glitch", "effect_id": "6008090", "resource_id": "7108928014529069130", "path": ""}
+        ],
+        GENRE_ACTION: [
+            {"name": "Whip", "effect_id": "6008050", "resource_id": "7108928014529069090", "path": ""},
+            {"name": "Zoom", "effect_id": "6008060", "resource_id": "7108928014529069100", "path": ""},
+            {"name": "Motion Blur", "effect_id": "6008022", "resource_id": "7108928014529069062", "path": ""},
+            {"name": "Push", "effect_id": "6008075", "resource_id": "7108928014529069115", "path": ""},
+            {"name": "Slide Left", "effect_id": "6008071", "resource_id": "7108928014529069111", "path": ""},
+            {"name": "Slide Right", "effect_id": "6008072", "resource_id": "7108928014529069112", "path": ""}
+        ]
+    }
+
+    @staticmethod
+    def select_transition(genre=GENRE_DOCUMENTARY, transition_history=None):
+        pool = TransitionEngine.TRANSITION_LIBRARY.get(genre, TransitionEngine.TRANSITION_LIBRARY[GENRE_DOCUMENTARY])
+        allowed = [t for t in pool]
+        
+        if transition_history:
+            filtered = [t for t in allowed if t["name"] not in transition_history]
+            if filtered:
+                allowed = filtered
+            else:
+                last_t = transition_history[-1]
+                if last_t in [x["name"] for x in allowed] and len(allowed) > 1:
+                    allowed = [t for t in allowed if t["name"] != last_t]
+                    
+        return random.choice(allowed)
+
+    @staticmethod
+    def calculate_duration(clip_duration_micros):
+        duration_sec = clip_duration_micros / 1000000.0
+        if duration_sec <= 2.0:
+            return 100000
+        elif duration_sec >= 8.0:
+            return 300000
+        else:
+            ratio = (duration_sec - 2.0) / 6.0
+            ms = 100 + ratio * 200
+            return int(ms * 1000)
+
+def kill_capcut_processes():
+    try:
+        import subprocess
+        res_cc = subprocess.run(CMD_KILL_CAPCUT, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        res_jy = subprocess.run(CMD_KILL_JIANYING, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        killed_any = (res_cc.returncode == 0) or (res_jy.returncode == 0)
+        if killed_any:
+            print(LOG_PROCESS_KILLED)
+    except Exception:
+        pass
+
 def process_capcut_ultra(input_json_path, output_json_path, opts):
+    kill_capcut_processes()
     print(LOG_START_PROCESS.format(input_json_path))
     print(LOG_OPTS.format(opts))
+
+    if opts.get('seed') is not None:
+        random.seed(opts.get('seed'))
 
     with open(input_json_path, READ_MODE, encoding=UTF8_ENCODING) as f:
         data = json.load(f)
@@ -302,7 +801,13 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
 
     tracks = data.setdefault(TRACKS_ATTR, [])
     
-    # Identify video/audio segments on all tracks
+    canvas_w = 1080
+    canvas_h = 1920
+    canvas_config = data.get('canvas_config') or data.get('settings', {}).get('canvas_config', {})
+    if canvas_config and canvas_config.get('width') and canvas_config.get('height'):
+        canvas_w = canvas_config.get('width')
+        canvas_h = canvas_config.get('height')
+        
     all_video_segments = []
     all_audio_segments = []
     for t in tracks:
@@ -317,11 +822,9 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 if mat_id in aud_dict:
                     all_audio_segments.append({'segment': seg, 'material': aud_dict[mat_id], 'track': t})
 
-    # Sort ALL segments by start time initially
     all_video_segments.sort(key=lambda x: x['segment'].get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0))
     all_audio_segments.sort(key=lambda x: x['segment'].get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0))
 
-    # Identify main tracks (for re-sequencing / timeline modifications)
     main_video_track = None
     max_vid_segs = -1
     main_audio_track = None
@@ -364,11 +867,9 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
     print(LOG_COUNT_PHOTOS.format(num_photos))
     print(LOG_COUNT_AUDIOS.format(num_audios))
 
-    # Check if there is media to operate on
     if len(all_video_segments) == 0 and len(all_audio_segments) == 0:
         raise Exception(ERR_NO_MEDIA)
 
-    # 7. Clear Transitions (Runs first to wipe slate)
     if opts.get('clear_transitions'):
         print(LOG_CLEAR_TRANSITIONS)
         trans_ids = {t['id'] for t in transitions_mat}
@@ -380,29 +881,24 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 seg[EXTRA_REFS_ATTR] = [ref for ref in seg[EXTRA_REFS_ATTR] if ref not in trans_ids]
         transitions_mat.clear()
 
-    # Determine if timeline modifications are requested
-    timeline_modifying = any(opts.get(k) for k in ['sync_image_to_audio', 'custom_audio_order', 'randomize_video', 'reverse_timeline'])
+    timeline_modifying = any(opts.get(k) for k in [OPT_SYNC_IMAGE_TO_AUDIO, OPT_CUSTOM_AUDIO_ORDER, OPT_RANDOMIZE_VIDEO, OPT_REVERSE_TIMELINE])
 
     if timeline_modifying:
         if num_photos == 0 or num_audios == 0:
-            raise Exception("Không thể thực hiện các thao tác thay đổi timeline do thiếu ảnh/video hoặc âm thanh trên track chính!")
+            raise Exception(ERR_NO_TIMELINE_MOD)
 
-        # 1. Sync Image/Video voice list to match 1-1 length
-        if opts.get('sync_image_to_audio'):
-            # If we have fewer photos than audios, duplicate the last photo or loop photos
+        if opts.get(OPT_SYNC_IMAGE_TO_AUDIO):
             if num_photos < num_audios and num_photos > 0:
-                print(f"-> Số lượng ảnh ({num_photos}) ít hơn âm thanh ({num_audios}). Đang tự động nhân bản ảnh...")
+                print(LOG_DUP_INFO.format(num_photos, num_audios))
                 while len(photo_segments) < num_audios:
                     last_item = photo_segments[-1]
                     new_seg = copy.deepcopy(last_item['segment'])
-                    new_seg['id'] = f"dup_photo_{uuid.uuid4().hex[:8]}"
+                    new_seg['id'] = DUP_PHOTO_PREFIX.format(uuid.uuid4().hex[:8])
                     main_video_track['segments'].append(new_seg)
                     photo_segments.append({'segment': new_seg, 'material': last_item['material']})
                 num_photos = len(photo_segments)
-            
-            # If we have more photos than audios, truncate extra photos
             elif num_photos > num_audios:
-                print(f"-> Số lượng ảnh ({num_photos}) nhiều hơn âm thanh ({num_audios}). Đang cắt bỏ ảnh thừa...")
+                print(LOG_DEL_INFO.format(num_photos, num_audios))
                 extra_photos = photo_segments[num_audios:]
                 for item in extra_photos:
                     if item['segment'] in main_video_track['segments']:
@@ -412,12 +908,10 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
 
         target_count = min(num_photos, num_audios)
 
-        # Group paired tracks and overlapping text overlays into "Unified Scene objects"
         scenes = []
         for i in range(target_count):
             p_item = photo_segments[i]
             a_item = audio_segments[i]
-            
             p_seg = p_item['segment']
             p_start = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0)
             p_dur = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(DURATION_ATTR, 0)
@@ -427,7 +921,6 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             for text_track in [t for t in tracks if t.get('type') == 'text']:
                 for text_seg in text_track.get('segments', []):
                     t_start = text_seg.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0)
-                    # If text overlaps with this scene
                     if p_start <= t_start < p_end:
                         scene_texts.append(text_seg)
                         
@@ -439,9 +932,8 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 "original_start": p_start
             })
 
-        # 3. Custom Audio Track Order
-        if opts.get('custom_audio_order') and opts.get('audio_order_list'):
-            order_str = opts.get('audio_order_list')
+        if opts.get(OPT_CUSTOM_AUDIO_ORDER) and opts.get(OPT_AUDIO_ORDER_LIST):
+            order_str = opts.get(OPT_AUDIO_ORDER_LIST)
             print(LOG_CUSTOM_ORDER.format(order_str))
             keywords = [k.strip().lower() for k in order_str.split(",") if k.strip()]
             
@@ -454,51 +946,43 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 
             scenes.sort(key=get_scene_priority)
 
-        # 4. Randomize Video Timeline
-        if opts.get('randomize_video'):
+        if opts.get(OPT_RANDOMIZE_VIDEO):
             print(LOG_RANDOMIZING)
             random.shuffle(scenes)
 
-        # 10. Reverse Timeline Sequence
-        if opts.get('reverse_timeline'):
+        if opts.get(OPT_REVERSE_TIMELINE):
             print(LOG_REVERSING)
             scenes.reverse()
 
-        # Apply Synchronize sequence timing & properties
         print(LOG_SYNCING.format(target_count))
         current_time = 0
+        motion_history = []
+        
         for i, scene in enumerate(scenes):
             p_item = scene["photo"]
             a_item = scene["audio"]
-
             p_seg = p_item['segment']
             a_seg = a_item['segment']
             
             audio_path = a_item['material'][PATH_ATTR]
             audio_duration = get_audio_duration_micros(audio_path)
             
-            # Audio timings
             a_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: audio_duration}
             a_seg[TARGET_TIMERANGE_ATTR] = {START_ATTR: current_time, DURATION_ATTR: audio_duration}
             a_item['material'][DURATION_ATTR] = audio_duration
             
-            # Photo timings
-            photo_duration = audio_duration if opts.get('sync_image_to_audio') else scene["original_duration"]
+            photo_duration = audio_duration if opts.get(OPT_SYNC_IMAGE_TO_AUDIO) else scene["original_duration"]
             p_seg[TARGET_TIMERANGE_ATTR] = {START_ATTR: current_time, DURATION_ATTR: photo_duration}
+            p_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: photo_duration}
             
             if p_item['material'].get(TYPE_ATTR) == VIDEO_TYPE_KEY:
-                p_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: photo_duration}
                 p_item['material'][DURATION_ATTR] = photo_duration
-            else:
-                p_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: photo_duration}
 
-            # Subtitles/Texts timing adjustment
             orig_start = scene["original_start"]
             orig_dur = scene["original_duration"]
             for text_seg in scene["texts"]:
                 t_orig_start = text_seg.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0)
                 t_offset = t_orig_start - orig_start
-                
                 if orig_dur > 0:
                     ratio = photo_duration / orig_dur
                     new_offset = int(t_offset * ratio)
@@ -514,56 +998,49 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 if text_seg.get(SOURCE_TIMERANGE_ATTR):
                     text_seg[SOURCE_TIMERANGE_ATTR][DURATION_ATTR] = new_dur
 
-            # 8. Auto Scale Fit Canvas
-            scale_factor = 1.0
-            if opts.get('auto_fill_canvas'):
-                canvas_w = 1080
-                canvas_h = 1920
-                canvas_config = data.get('canvas_config') or data.get('settings', {}).get('canvas_config', {})
-                if canvas_config and canvas_config.get('width') and canvas_config.get('height'):
-                    canvas_w = canvas_config.get('width')
-                    canvas_h = canvas_config.get('height')
-                    
-                media_path = p_item['material'].get(PATH_ATTR)
-                scale_factor = 1.3  # Default safe scale to fill
-                dims = get_media_dimensions(media_path)
-                if dims:
-                    media_w, media_h = dims
-                    fit_scale_w = canvas_w / media_w
-                    fit_scale_h = canvas_h / media_h
-                    fit_scale = min(fit_scale_w, fit_scale_h)
-                    fill_scale = max(fit_scale_w, fit_scale_h)
-                    if fit_scale > 0:
-                        scale_factor = fill_scale / fit_scale
-                        scale_factor = max(1.0, min(scale_factor, 4.0))
-                
-                clip_settings = p_seg.setdefault(CLIP_ATTR, {})
-                scale_settings = clip_settings.setdefault(SCALE_ATTR, {})
-                scale_settings[X_AXIS] = scale_factor
-                scale_settings[Y_AXIS] = scale_factor
+            scene_text = ""
+            for text_seg in scene["texts"]:
+                mat_id = text_seg.get('material_id')
+                for tm in data.get('materials', {}).get('texts', []):
+                    if tm.get('id') == mat_id:
+                        try:
+                            c_dict = json.loads(tm.get('content', '{}'))
+                            scene_text = c_dict.get('text', '')
+                        except: pass
+                        break
+            
+            media_path = p_item['material'].get(PATH_ATTR)
+            dims = get_media_dimensions(media_path)
+            media_w, media_h = dims if dims else (1920, 1080)
+            
+            aspect_ratio = SceneAnalyzer.analyze_ratio(media_w, media_h)
+            fill_scale = CanvasEngine.calculate_fill_scale(media_w, media_h, canvas_w, canvas_h)
+            
+            if opts.get(OPT_AUTO_FILL_CANVAS):
+                clip_settings = p_seg.setdefault('clip', {})
+                scale_settings = clip_settings.setdefault('scale', {})
+                scale_settings['x'] = fill_scale
+                scale_settings['y'] = fill_scale
 
-            # 5. Auto Zoom & Pan / Dynamic Motion (zoom & subtle displacement)
-            if opts.get('dynamic_motion'):
-                clip_settings = p_seg.setdefault(CLIP_ATTR, {})
-                scale_settings = clip_settings.setdefault(SCALE_ATTR, {})
-                transform_settings = clip_settings.setdefault(TRANSFORM_ATTR, {})
-                
-                zoom_factor = random.choice([1.1, 1.15, 1.2])
-                scale_settings[X_AXIS] = scale_factor * zoom_factor
-                scale_settings[Y_AXIS] = scale_factor * zoom_factor
-                transform_settings[X_AXIS] = random.choice([-40, 0, 40])
-                transform_settings[Y_AXIS] = random.choice([-20, 0, 20])
+            applied_motion = "None"
+            final_scale, final_x, final_y, final_rot = fill_scale, 0.0, 0.0, 0.0
+            if opts.get(OPT_DYNAMIC_MOTION):
+                motion = MotionEngine.select_motion(aspect_ratio, motion_history)
+                applied_motion, final_scale, final_x, final_y, final_rot = MotionEngine.apply_motion(
+                    p_seg, motion, photo_duration, fill_scale, canvas_w, canvas_h
+                )
+                motion_history.append(motion)
+                if len(motion_history) > 3:
+                    motion_history.pop(0)
+            
+            scene_type = SceneAnalyzer.classify_scene_type(i, target_count, scene_text)
+            print(LOG_SCENE_DETAIL.format(i+1, aspect_ratio, scene_type, applied_motion, final_scale, final_x, final_y, final_rot))
 
             current_time += photo_duration
-
         total_duration = current_time
         data['duration'] = total_duration
-
     else:
-        # TIMELINE NOT REARRANGED: Process ALL segments on the timeline independently
-        print("-> Không thay đổi cấu trúc timeline. Áp dụng các hiệu ứng trực tiếp trên các phân cảnh hiện tại...")
-        
-        # Calculate overall duration from existing segments
+        print(LOG_NO_TIMELINE_CHANGE)
         total_duration = data.get('duration', 0)
         if total_duration <= 0:
             for t in tracks:
@@ -573,59 +1050,37 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                         total_duration = seg_end
         data['duration'] = total_duration
 
-        # 8. Auto Scale Fit Canvas
-        if opts.get('auto_fill_canvas'):
-            print("-> Đang tự động scale vừa khít khung hình cho tất cả ảnh/video...")
-            canvas_w = 1080
-            canvas_h = 1920
-            canvas_config = data.get('canvas_config') or data.get('settings', {}).get('canvas_config', {})
-            if canvas_config and canvas_config.get('width') and canvas_config.get('height'):
-                canvas_w = canvas_config.get('width')
-                canvas_h = canvas_config.get('height')
-                
-            for p_item in all_video_segments:
-                p_seg = p_item['segment']
-                media_path = p_item['material'].get(PATH_ATTR)
-                scale_factor = 1.3
-                dims = get_media_dimensions(media_path)
-                if dims:
-                    media_w, media_h = dims
-                    fit_scale_w = canvas_w / media_w
-                    fit_scale_h = canvas_h / media_h
-                    fit_scale = min(fit_scale_w, fit_scale_h)
-                    fill_scale = max(fit_scale_w, fit_scale_h)
-                    if fit_scale > 0:
-                        scale_factor = fill_scale / fit_scale
-                        scale_factor = max(1.0, min(scale_factor, 4.0))
-                
-                clip_settings = p_seg.setdefault(CLIP_ATTR, {})
-                scale_settings = clip_settings.setdefault(SCALE_ATTR, {})
-                scale_settings[X_AXIS] = scale_factor
-                scale_settings[Y_AXIS] = scale_factor
-                p_item['last_scale'] = scale_factor
+        motion_history = []
+        for i, p_item in enumerate(all_video_segments):
+            p_seg = p_item['segment']
+            media_path = p_item['material'].get(PATH_ATTR)
+            dims = get_media_dimensions(media_path)
+            media_w, media_h = dims if dims else (1920, 1080)
+            
+            aspect_ratio = SceneAnalyzer.analyze_ratio(media_w, media_h)
+            fill_scale = CanvasEngine.calculate_fill_scale(media_w, media_h, canvas_w, canvas_h)
+            photo_duration = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(DURATION_ATTR, 0)
 
-        # 5. Auto Zoom & Pan / Dynamic Motion
-        if opts.get('dynamic_motion'):
-            print("-> Đang tự động thêm chuyển động Zoom & Pan cho tất cả ảnh/video...")
-            for p_item in all_video_segments:
-                p_seg = p_item['segment']
-                scale_factor = p_item.get('last_scale', 1.0)
-                if not opts.get('auto_fill_canvas'):
-                    # Check if already has scale
-                    scale_factor = p_seg.get(CLIP_ATTR, {}).get(SCALE_ATTR, {}).get(X_AXIS, 1.0)
+            if opts.get(OPT_AUTO_FILL_CANVAS):
+                clip_settings = p_seg.setdefault('clip', {})
+                scale_settings = clip_settings.setdefault('scale', {})
+                scale_settings['x'] = fill_scale
+                scale_settings['y'] = fill_scale
 
-                clip_settings = p_seg.setdefault(CLIP_ATTR, {})
-                scale_settings = clip_settings.setdefault(SCALE_ATTR, {})
-                transform_settings = clip_settings.setdefault(TRANSFORM_ATTR, {})
+            applied_motion = "None"
+            final_scale, final_x, final_y, final_rot = fill_scale, 0.0, 0.0, 0.0
+            if opts.get(OPT_DYNAMIC_MOTION):
+                motion = MotionEngine.select_motion(aspect_ratio, motion_history)
+                applied_motion, final_scale, final_x, final_y, final_rot = MotionEngine.apply_motion(
+                    p_seg, motion, photo_duration, fill_scale, canvas_w, canvas_h
+                )
+                motion_history.append(motion)
+                if len(motion_history) > 3:
+                    motion_history.pop(0)
                 
-                zoom_factor = random.choice([1.1, 1.15, 1.2])
-                scale_settings[X_AXIS] = scale_factor * zoom_factor
-                scale_settings[Y_AXIS] = scale_factor * zoom_factor
-                transform_settings[X_AXIS] = random.choice([-40, 0, 40])
-                transform_settings[Y_AXIS] = random.choice([-20, 0, 20])
+            print(LOG_SCENE_DETAIL_SIMPLE.format(i+1, aspect_ratio, applied_motion, final_scale, final_x, final_y, final_rot))
 
-    # 9. Normalize Volume (Apply to ALL audio segments in any audio track)
-    if opts.get('normalize_volume'):
+    if opts.get(OPT_NORMALIZE_VOLUME):
         print(LOG_NORMALIZE)
         for a_item in all_audio_segments:
             mat = a_item['material']
@@ -637,13 +1092,12 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 else:
                     seg['volume'] = 1.0
 
-    # 2. Ultra Music Mix (Random background music)
-    if opts.get('ultra_music_mix'):
+    if opts.get(OPT_ULTRA_MUSIC_MIX):
         print(LOG_MIXING)
         bgm_files = []
         dirs_to_scan = []
-        if opts.get('sfx_folder'):
-            dirs_to_scan.append(opts.get('sfx_folder'))
+        if opts.get(OPT_SFX_FOLDER):
+            dirs_to_scan.append(opts.get(OPT_SFX_FOLDER))
         dirs_to_scan.append(os.path.dirname(input_json_path))
         
         for d in list(dirs_to_scan):
@@ -665,16 +1119,15 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             music_files = bgm_files
             
         if music_files:
-            # Check if there is an existing BGM track to avoid adding duplicates
-            bgm_track = next((t for t in tracks if t.get('name') == "BGM Track"), None)
+            bgm_track = next((t for t in tracks if t.get('name') == BGM_TRACK_NAME), None)
             if bgm_track:
                 bgm_track['segments'].clear()
             else:
-                bgm_track_id = f"bgm_track_{uuid.uuid4().hex[:8]}"
+                bgm_track_id = BGM_TRACK_ID_PREFIX.format(uuid.uuid4().hex[:8])
                 bgm_track = {
                     "id": bgm_track_id,
                     "type": "audio",
-                    "name": "BGM Track",
+                    "name": BGM_TRACK_NAME,
                     "segments": []
                 }
                 tracks.append(bgm_track)
@@ -683,8 +1136,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             while current_bgm_time < total_duration:
                 chosen_music = random.choice(music_files)
                 music_dur = get_audio_duration_micros(chosen_music)
-                
-                mat_id = f"bgm_mat_{uuid.uuid4().hex[:8]}"
+                mat_id = BGM_MAT_ID_PREFIX.format(uuid.uuid4().hex[:8])
                 new_mat = {
                     "id": mat_id,
                     "name": os.path.basename(chosen_music),
@@ -696,7 +1148,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 audios_mat.append(new_mat)
                 
                 seg_dur = min(music_dur, total_duration - current_bgm_time)
-                seg_id = f"bgm_seg_{uuid.uuid4().hex[:8]}"
+                seg_id = BGM_SEG_ID_PREFIX.format(uuid.uuid4().hex[:8])
                 new_seg = {
                     "id": seg_id,
                     "material_id": mat_id,
@@ -707,42 +1159,55 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 bgm_track["segments"].append(new_seg)
                 current_bgm_time += seg_dur
         else:
-            print("-> Không tìm thấy tệp nhạc nền nào.")
+            print(LOG_NO_BGM_FOUND)
 
-    # 6. Auto Transition Insert
-    if opts.get('auto_transition'):
+    if opts.get(OPT_AUTO_TRANSITION):
         print(LOG_INSERT_TRANSITIONS)
         template_transition = transitions_mat[0] if transitions_mat else None
-        
         target_video_segs = photo_segments if timeline_modifying else [v['segment'] for v in all_video_segments]
         
+        genre = opts.get(OPT_SCENE_TYPE, GENRE_DOCUMENTARY)
+        transition_history = []
         for i in range(len(target_video_segs) - 1):
             p_seg = target_video_segs[i]
-            # Only add transition if not already exists
             if TRANSITION_ATTR not in p_seg:
+                trans_choice = TransitionEngine.select_transition(genre, transition_history)
+                transition_history.append(trans_choice["name"])
+                if len(transition_history) > 3:
+                    transition_history.pop(0)
+                
                 trans_id = f"{TRANS_PREFIX}{uuid.uuid4().hex[:8]}"
+                clip_dur = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(DURATION_ATTR, DEFAULT_FALLBACK_DURATION)
+                trans_dur = TransitionEngine.calculate_duration(clip_dur)
+                
                 if template_transition:
                     trans_mat = copy.deepcopy(template_transition)
                     trans_mat[ID_ATTR] = trans_id
+                    trans_mat[NAME_ATTR] = trans_choice["name"]
+                    trans_mat[DURATION_ATTR] = trans_dur
+                    trans_mat["effect_id"] = trans_choice["effect_id"]
+                    trans_mat["resource_id"] = trans_choice["resource_id"]
                 else:
                     trans_mat = {
-                        ID_ATTR: trans_id,
-                        NAME_ATTR: TRANSITION_NAME,
-                        TYPE_ATTR: TRANSITION_ATTR,
-                        DURATION_ATTR: DEFAULT_TRANSITION_DURATION,
-                        PATH_ATTR: ""
+                        "category_name": "transition",
+                        "duration": trans_dur,
+                        "effect_id": trans_choice["effect_id"],
+                        "id": trans_id,
+                        "name": trans_choice["name"],
+                        "path": trans_choice["path"],
+                        "resource_id": trans_choice["resource_id"],
+                        "type": "transition"
                     }
                 transitions_mat.append(trans_mat)
                 p_seg[TRANSITION_ATTR] = {
                     ID_ATTR: trans_id,
-                    DURATION_ATTR: DEFAULT_TRANSITION_DURATION
+                    DURATION_ATTR: trans_dur
                 }
                 if EXTRA_REFS_ATTR not in p_seg:
                     p_seg[EXTRA_REFS_ATTR] = []
                 p_seg[EXTRA_REFS_ATTR].append(trans_id)
 
-    # 11. Auto Font / Subtitle Preset Config
-    if opts.get('auto_subtitles'):
+    if opts.get(OPT_AUTO_SUBTITLES):
         print(LOG_SUBTITLES)
         text_materials = data.get('materials', {}).get('texts', [])
         for tm in text_materials:
@@ -753,7 +1218,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 c_dict = json.loads(content_str)
                 
                 c_dict['font_size'] = 12.0
-                c_dict['text_color'] = '#FFCC00'  # Warm professional gold-yellow
+                c_dict['text_color'] = '#FFCC00'
                 c_dict['has_stroke'] = True
                 c_dict['stroke_color'] = '#000000'
                 c_dict['stroke_width'] = 0.15
@@ -762,16 +1227,15 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 c_dict['shadow_alpha'] = 0.8
                 c_dict['shadow_blur'] = 0.15
                 c_dict['align_type'] = 1
-                c_dict['font_name'] = 'Inter'
+                c_dict['font_name'] = FONT_INTER
                 
                 tm['content'] = json.dumps(c_dict, ensure_ascii=False)
             except Exception as e:
-                print(f"Lỗi cấu hình phụ đề: {e}")
+                print(ERR_SUBTITLE_CONFIG.format(e))
 
-    # 12. AI Sound Effect Generator (Gemini Selection + Keyword fallback)
-    if opts.get('ai_sfx_generator') and opts.get('sfx_folder'):
+    if opts.get(OPT_AI_SFX_GENERATOR) and opts.get(OPT_SFX_FOLDER):
         print(LOG_AI_SFX)
-        sfx_dir = opts.get('sfx_folder')
+        sfx_dir = opts.get(OPT_SFX_FOLDER)
         if os.path.exists(sfx_dir) and os.path.isdir(sfx_dir):
             valid_exts = ('.mp3', '.wav', '.m4a', '.aac', '.flac')
             all_sfx_files = [f for f in os.listdir(sfx_dir) if f.lower().endswith(valid_exts)]
@@ -781,7 +1245,6 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 target_scenes_for_sfx = list(scenes) if timeline_modifying else []
                 
                 if not target_scenes_for_sfx:
-                    # Form scenes representation from current segments
                     for i, v_item in enumerate(all_video_segments):
                         p_seg = v_item['segment']
                         p_start = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0)
@@ -811,40 +1274,20 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                                 try:
                                     c_dict = json.loads(tm.get('content', '{}'))
                                     overlapping_text = c_dict.get('text', '')
-                                except Exception:
-                                    pass
+                                except: pass
                                 break
                     scene_label = overlapping_text or f"Scene {i+1} (Image: {scene['photo']['material'].get(NAME_ATTR)})"
                     scenes_desc.append({"index": i, "description": scene_label})
                 
-                gemini_api_key = opts.get('api_key')
+                gemini_api_key = opts.get(OPT_API_KEY)
                 sfx_mapping = {}
                 if gemini_api_key:
                     try:
-                        print("-> Đang gửi yêu cầu gợi ý SFX tới Google Gemini...")
+                        print(LOG_GEMINI_API_REQUEST)
                         scenes_text = json.dumps(scenes_desc, ensure_ascii=False, indent=2)
                         sfx_list_str = "\n".join(all_sfx_files)
                         
-                        prompt = f"""
-                        Bạn là một nhà thiết kế âm thanh chuyên nghiệp cho video ngắn.
-                        Tôi có danh sách các phân cảnh video dưới đây:
-                        {scenes_text}
-
-                        Và tôi có danh sách các tệp hiệu ứng âm thanh (SFX) có sẵn trong thư mục:
-                        {sfx_list_str}
-
-                        Hãy ghép nối mỗi phân cảnh với một tệp SFX phù hợp nhất từ danh sách trên để làm nổi bật bối cảnh hoặc tạo chuyển cảnh mượt mà.
-                        Nếu một phân cảnh không cần SFX hoặc không có tệp nào phù hợp, hãy đặt "sfx_filename" là null.
-                        Hãy chọn tệp từ danh sách có sẵn, KHÔNG tự bịa tên tệp.
-                        Trả về kết quả dưới dạng JSON object với cấu trúc:
-                        {{
-                          "sfx_mapping": [
-                            {{"scene_index": 0, "sfx_filename": "tên_file.mp3"}},
-                            ...
-                          ]
-                        }}
-                        Chỉ trả về chuỗi JSON thô hợp lệ, không bọc trong markdown hay bất cứ ký tự nào khác.
-                        """
+                        prompt = PROMPT_TEMPLATE.format(scenes_text, sfx_list_str)
                         
                         res_text = call_gemini(gemini_api_key, prompt)
                         res_text = re.sub(r'```json|```', '', res_text).strip()
@@ -855,11 +1298,11 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                             if fn and fn in all_sfx_files:
                                 sfx_mapping[idx] = fn
                     except Exception as gem_err:
-                        print(f"-> Lỗi kết nối Gemini: {gem_err}. Đang chuyển sang đối sánh từ khóa tự động...")
+                        print(LOG_SFX_GEMINI_ERR.format(gem_err))
                         gemini_api_key = None
                         
                 if not gemini_api_key:
-                    print("-> Đang thực hiện đối sánh từ khóa tự động cho SFX...")
+                    print(LOG_SFX_AUTO_MATCH)
                     for item in scenes_desc:
                         idx = item["index"]
                         desc = item["description"].lower()
@@ -874,17 +1317,16 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                             sfx_mapping[idx] = matched_file
                 
                 if sfx_mapping:
-                    print(f"-> Đã ghép nối thành công {len(sfx_mapping)} hiệu ứng âm thanh.")
-                    # Avoid duplicate SFX tracks
-                    sfx_track = next((t for t in tracks if t.get('name') == "SFX Track"), None)
+                    print(LOG_SFX_MATCH_SUCCESS.format(len(sfx_mapping)))
+                    sfx_track = next((t for t in tracks if t.get('name') == SFX_TRACK_NAME), None)
                     if sfx_track:
                         sfx_track['segments'].clear()
                     else:
-                        sfx_track_id = f"sfx_track_{uuid.uuid4().hex[:8]}"
+                        sfx_track_id = SFX_TRACK_ID_PREFIX.format(uuid.uuid4().hex[:8])
                         sfx_track = {
                             "id": sfx_track_id,
                             "type": "audio",
-                            "name": "SFX Track",
+                            "name": SFX_TRACK_NAME,
                             "segments": []
                         }
                         tracks.append(sfx_track)
@@ -897,7 +1339,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                         full_sfx_path = os.path.join(sfx_dir, sfx_file)
                         sfx_dur = get_audio_duration_micros(full_sfx_path)
                         
-                        mat_id = f"sfx_mat_{uuid.uuid4().hex[:8]}"
+                        mat_id = SFX_MAT_ID_PREFIX.format(uuid.uuid4().hex[:8])
                         new_mat = {
                             "id": mat_id,
                             "name": sfx_file,
@@ -908,7 +1350,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                         }
                         audios_mat.append(new_mat)
                         
-                        seg_id = f"sfx_seg_{uuid.uuid4().hex[:8]}"
+                        seg_id = SFX_SEG_ID_PREFIX.format(uuid.uuid4().hex[:8])
                         new_seg = {
                             "id": seg_id,
                             "material_id": mat_id,
@@ -918,11 +1360,10 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                         }
                         sfx_track["segments"].append(new_seg)
                 else:
-                    print("-> Không tìm thấy kết hợp hiệu ứng âm thanh nào phù hợp.")
+                    print(LOG_NO_SFX_MATCH)
             else:
-                print("-> Thư mục SFX trống.")
+                print(LOG_NO_SFX_DIR)
 
-    # Chronological sort for all tracks to ensure perfect timeline rendering inside CapCut
     for t in tracks:
         if SEGMENTS_ATTR in t:
             t[SEGMENTS_ATTR].sort(key=lambda s: s.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0))
