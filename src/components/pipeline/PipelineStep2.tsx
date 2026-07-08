@@ -560,7 +560,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
           ) : (
             <div className="relative">
               {loadingStates["assetAndThumbnail_loading"] && (
-                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-2xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
+                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
                   <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
                     <Sparkles className="w-8 h-8 text-rose-500" />
                   </div>

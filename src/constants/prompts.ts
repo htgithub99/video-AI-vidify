@@ -773,6 +773,7 @@ ${charactersJson}
 [SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 1. Character Visual Continuity (Soft Alignment):
    For each scene, identify which characters are present (by their names or descriptions in the scene text/script). If a character is present, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the rewritten prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression to match the scene's action.
+   CRITICAL DIRECTIVE: When a character is present in the scene, you MUST explicitly include the character's exact name at the beginning of their visual description in the rewritten prompt (e.g., "portraying George Armstrong Custer, a male, Caucasian, 50s with..." rather than just "portraying a male, Caucasian, 50s..."). Never omit the character's name.
 2. Character Exclusion Rule:
    If a scene does not contain any characters, do NOT force or incorporate any character description; instead, rewrite it to focus purely on the scene's environment, object, or action.
 3. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
@@ -801,6 +802,7 @@ ${charactersJson}
 1. Mandatory Character Integration:
    The main characters listed in the blueprint are the stars of this video. Therefore, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, clothing items, age) into every rewritten thumbnail prompt. 
    If a thumbnail prompt mentions a general subject like "Union officer", "man", "soldier", "girl", "magician", or "character", you MUST replace or enrich that subject with the detailed appearance of the corresponding main character from the blueprint.
+   CRITICAL DIRECTIVE: You MUST explicitly include the character's exact name at the start of their visual description in the rewritten prompt (e.g., "portraying George Armstrong Custer, a male, Caucasian, 50s with..." instead of just "portraying a male, Caucasian, 50s..."). Never omit the character's name.
 2. Pose & Action Adaptation:
    Change the character's pose, body action, and facial expression to perfectly match the action described in the original thumbnail prompt.
 3. Art Style & Context Preservation:
