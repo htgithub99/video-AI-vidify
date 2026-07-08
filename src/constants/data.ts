@@ -168,7 +168,7 @@ export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale
 
 export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Fade out to black", "Cut", "Wipe", "Zoom transition"] as const;
 
-export const AVAILABLE_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3.1-pro-preview", "gemini-2.5-flash"] as const;
+export const AVAILABLE_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"] as const;
 
 export const PROMPT_FILLER_WORDS = ["beautiful", "detailed", "artistic", "image", "generation", "prompt", "describing", "characters", "clothes", "historical", "accuracy", "weather", "camera", "angle", "lighting", "based", "style", "with", "what", "where", "photo", "shot", "highly", "ultra", "dramatic", "gorgeous", "scene", "rendering"] as const;
 
