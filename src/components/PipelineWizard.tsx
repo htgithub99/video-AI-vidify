@@ -88,6 +88,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
   const [editStyleFormName, setEditStyleFormName] = React.useState("");
   const [editStyleFormPrompt, setEditStyleFormPrompt] = React.useState("");
 
+  const [visitedSteps, setVisitedSteps] = React.useState<Record<number, boolean>>({
+    [currentStep]: true,
+  });
+
+  if (!visitedSteps[currentStep]) {
+    setVisitedSteps((prev) => ({ ...prev, [currentStep]: true }));
+  }
+
   const handleAddFavorite = () => {
     if (!favFormName.trim() || !favFormURI.trim()) return;
     handleAddFavoriteVoice(favFormName, favFormURI, favFormChannel);
@@ -749,14 +757,42 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className="text-[9px] bg-rose-600 text-white font-bold border border-rose-500 px-2.5 py-1 rounded-md uppercase tracking-wide">{t.stepShortLabels?.[currentStep]}</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar relative z-0">
-            {currentStep === WizardStep.SourceInput && <PipelineStep0 {...wizard} />}
-            {currentStep === WizardStep.Storyboard && <PipelineStep1 {...wizard} />}
-            {currentStep === WizardStep.AssetManager && <PipelineStep2 {...wizard} />}
-            {currentStep === WizardStep.SEOBoost && <PipelineStep3 {...wizard} />}
-            {currentStep === WizardStep.Export && <PipelineStep4 {...wizard} />}
-            {currentStep === WizardStep.IndependentGenerator && <PipelineStep5 {...wizard} />}
-            {currentStep === WizardStep.CapCutUltra && <PipelineStep6 {...wizard} />}
+          <div className="flex-1 flex flex-col min-h-0 relative z-0 overflow-hidden">
+            {visitedSteps[WizardStep.SourceInput] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SourceInput ? "" : "hidden"}`}>
+                <PipelineStep0 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.Storyboard] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.Storyboard ? "" : "hidden"}`}>
+                <PipelineStep1 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.AssetManager] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.AssetManager ? "" : "hidden"}`}>
+                <PipelineStep2 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.SEOBoost] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SEOBoost ? "" : "hidden"}`}>
+                <PipelineStep3 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.Export] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.Export ? "" : "hidden"}`}>
+                <PipelineStep4 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.IndependentGenerator] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.IndependentGenerator ? "" : "hidden"}`}>
+                <PipelineStep5 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.CapCutUltra] && (
+              <div className={`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.CapCutUltra ? "" : "hidden"}`}>
+                <PipelineStep6 {...wizard} />
+              </div>
+            )}
             <Modal isOpen={!!zoomedImage} onClose={() => setZoomedImage(null)} title={zoomedImage?.title || t.Image_Lightbox_Preview}>
               {zoomedImage && (
                 <div className="flex flex-col md:flex-row h-full min-h-[50vh] bg-slate-900">
