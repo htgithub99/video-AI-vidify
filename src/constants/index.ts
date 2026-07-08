@@ -9,3 +9,5 @@ export * from "./prompts";
 export * from "./regexes";
 export * from "./storageKeys";
 export * from "./texts";
+export * from "./capcut";
+

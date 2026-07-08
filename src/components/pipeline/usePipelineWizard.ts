@@ -2,6 +2,7 @@ import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { formatCleanDuration } from "./pipeline-utils";
 import { formatTimeHelper } from "../../utils/helpers";
+import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { translations } from "../../lib/lang";
 
 import { appLog, appError, appWarn } from "../../lib/logger.js";
@@ -13,17 +14,18 @@ const logger = {
 };
 import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
 import { LOADING_KEYS } from "../../constants/loading";
-import { getPipelineLog } from "../../constants/messages";
+// Removed unused getPipelineLog
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, VOICE_OPTIMIZATION_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender, AgeGroup, ProjectInputType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
-import JSZip from "jszip";
+// Removed unused JSZip
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
-import { ASPECT_RATIO_PARAM_REGEX } from "../../constants/regexes";
+import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
+import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 
@@ -218,26 +220,36 @@ export function usePipelineWizard(props: any) {
       setProject((prev) => {
         if (!prev || prev.id !== normalizedInitialProject.id) return normalizedInitialProject;
 
-        const mergedStoryboard = (prev.storyboard || []).map((localScene) => {
-          if (localScene.assetUrl === "") return localScene;
-          const serverScene = normalizedInitialProject.storyboard?.find((s) => s.id === localScene.id);
-          return serverScene?.assetUrl?.startsWith("/assets/")
-            ? {
-                ...localScene,
-                assetUrl: serverScene.assetUrl,
-                assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
-              }
-            : localScene;
-        });
+        const isServerUpdate = normalizedInitialProject.updatedAt !== prev.updatedAt;
 
-        const mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
-          const serverThumb = normalizedInitialProject.thumbnails?.find((t) => t.id === localThumb.id);
-          return serverThumb?.imageUrl?.startsWith("/assets/") ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
-        });
+        let mergedStoryboard = prev.storyboard || [];
+        if (isServerUpdate || !prev.storyboard || prev.storyboard.length === 0) {
+          mergedStoryboard = normalizedInitialProject.storyboard || [];
+        } else {
+          mergedStoryboard = (prev.storyboard || []).map((localScene) => {
+            if (localScene.assetUrl === "") return localScene;
+            const serverScene = normalizedInitialProject.storyboard?.find((s) => s.id === localScene.id);
+            return serverScene?.assetUrl?.startsWith("/assets/")
+              ? {
+                  ...localScene,
+                  assetUrl: serverScene.assetUrl,
+                  assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
+                }
+              : localScene;
+          });
+        }
+
+        let mergedThumbnails = prev.thumbnails || [];
+        if (isServerUpdate || !prev.thumbnails || prev.thumbnails.length === 0) {
+          mergedThumbnails = normalizedInitialProject.thumbnails || [];
+        } else {
+          mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
+            const serverThumb = normalizedInitialProject.thumbnails?.find((t) => t.id === localThumb.id);
+            return serverThumb?.imageUrl?.startsWith("/assets/") ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
+          });
+        }
 
         const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig ? ["audioUrl", "audioBase64", "timingLog"].some((key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any]) : false;
-
-        const isServerUpdate = normalizedInitialProject.updatedAt !== prev.updatedAt;
 
         const syncField = (key: keyof VideoProject, fallback: any = undefined, checkEmptyArray = false) => {
           const serverVal = normalizedInitialProject[key];
@@ -1220,7 +1232,6 @@ export function usePipelineWizard(props: any) {
 
   const lastProjectIdRef = useRef<string | null>(null);
   const cancelBatchImageRef = useRef<boolean>(false);
-  const isBgProcessingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!initialProject) return;
@@ -1328,120 +1339,7 @@ export function usePipelineWizard(props: any) {
     if (isRestoringRef.current) {
       isRestoringRef.current = false;
     }
-
-    const shouldResumeBg = [project?.voiceConfig?.audioBase64, project?.voiceConfig?.audioUrl, project?.voiceConfig?.isSegmented !== true, project.storyboard?.length, !loadingStates.bulkVoiceGenerate_loading, !loadingStates.voiceGenerate_loading, !isBgProcessingRef.current].every(Boolean);
-
-    if (shouldResumeBg) {
-      const audioBase64 = project.voiceConfig.audioBase64;
-      const storyboard = project.storyboard;
-      const vTexts = VOICE_OPTIMIZATION_TEXTS[currentLang === "en" ? "en" : "vi"];
-
-      logger.log(vTexts.BG_PROCESS_RESUME);
-      isBgProcessingRef.current = true;
-
-      (async () => {
-        try {
-          const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audioBase64: audioBase64,
-              scenes: storyboard.map((sc) => ({
-                id: sc.id,
-                script: sc.script || sc.subtitle || "",
-              })),
-            }),
-          });
-
-          let alignData: any;
-          try {
-            alignData = await alignResponse.json();
-          } catch (jsonErr) {
-            alignData = {};
-          }
-
-          if (!alignResponse.ok || !alignData.success || !Array.isArray(alignData.alignments)) {
-            throw new Error(alignData.error || vTexts.ALIGN_ERROR);
-          }
-
-          const alignedScenes = storyboard.map((sc: any) => {
-            const align = alignData.alignments.find((a: any) => a.id === sc.id);
-            if (align) {
-              return {
-                ...sc,
-                duration: align.duration,
-                startTime: formatTimeHelper(align.start),
-                endTime: formatTimeHelper(align.end),
-                _start: align.start,
-                _end: align.end,
-              };
-            }
-            return sc;
-          });
-
-          const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
-          const audioCtxBackground = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const decodedBuffer = await audioCtxBackground.decodeAudioData(arrayBufferRaw);
-          await audioCtxBackground.close();
-
-          const segmentedScenes = await Promise.all(
-            alignedScenes.map(async (sc: any, index: number) => {
-              try {
-                const start = sc._start !== undefined ? sc._start : index > 0 ? parseFloat(alignedScenes[index - 1].endTime) : 0;
-                const end = sc._end !== undefined ? sc._end : parseFloat(sc.endTime);
-
-                const voiceSegmentBlob = bufferToWav(decodedBuffer, start, end);
-                const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
-                  const r = new FileReader();
-                  r.onloadend = () => {
-                    const res = r.result as string;
-                    resolve(res.split(",")[1]);
-                  };
-                  r.onerror = reject;
-                  r.readAsDataURL(voiceSegmentBlob);
-                });
-
-                const { _start, _end, ...cleanScene } = sc;
-                return {
-                  ...cleanScene,
-                  audioBase64: voiceSegmentBase64,
-                  audioUrl: `data:audio/wav;base64,${voiceSegmentBase64}`,
-                };
-              } catch (sliceErr: any) {
-                logger.warn(vTexts.BG_PROCESS_ERROR.replace("{error}", sliceErr?.message || String(sliceErr)));
-                const { _start, _end, ...cleanScene } = sc;
-                return cleanScene;
-              }
-            }),
-          );
-
-          let finalSyncLogText = `[Whisper Background Alignment] Đồng bộ hoàn tất (Tổng thời lượng: ${decodedBuffer.duration.toFixed(1)}s)\n`;
-          segmentedScenes.forEach((scene: any, idx: number) => {
-            finalSyncLogText += `- Cảnh ${idx + 1}: [${scene.startTime} -> ${scene.endTime}] (${scene.duration}s) | ${scene.script.substring(0, 35)}...\n`;
-          });
-
-          const finalProject = {
-            ...project,
-            storyboard: segmentedScenes,
-            voiceConfig: {
-              ...project.voiceConfig,
-              timingLog: finalSyncLogText,
-              isSegmented: true,
-            },
-          };
-
-          setProject(finalProject);
-          onSaveProject(finalProject, true);
-          setAlignmentsLog(finalSyncLogText);
-          logger.log(vTexts.BG_PROCESS_COMPLETE);
-        } catch (bgErr: any) {
-          logger.warn(vTexts.BG_PROCESS_ERROR.replace("{error}", bgErr?.message || String(bgErr)));
-        } finally {
-          isBgProcessingRef.current = false;
-        }
-      })();
-    }
-  }, [project?.id, project?.voiceConfig?.audioBase64, project?.voiceConfig?.isSegmented]);
+  }, [project?.id]);
 
   const trackOperationCost = (creditsUsed: number, usdCost: number) => {
     setCredits((prev) => Math.max(0, prev - creditsUsed));
@@ -2940,6 +2838,7 @@ export function usePipelineWizard(props: any) {
     setProject((prev) => {
       const updated = (prev.storyboard || []).map((sc) => {
         if (sc.id === activeSceneId) {
+          const changed = [sc.script !== sceneEditScript, sc.subtitle !== sceneEditSubtitle].some(Boolean);
           return {
             ...sc,
             script: sceneEditScript,
@@ -2948,6 +2847,8 @@ export function usePipelineWizard(props: any) {
             cameraMotion: sceneEditMotion,
             effects: sceneEditFx,
             transition: sceneEditTransition,
+            audioUrl: changed ? undefined : sc.audioUrl,
+            audioBase64: changed ? undefined : sc.audioBase64,
           };
         }
         return sc;
@@ -3362,7 +3263,6 @@ export function usePipelineWizard(props: any) {
           audioUrl: audioUrl,
           audioBase64: audioBase64,
           timingLog: syncLogText,
-          isSegmented: false, // Báo hiệu chưa cắt ngầm xong
         },
       };
 
@@ -3375,113 +3275,6 @@ export function usePipelineWizard(props: any) {
           block: "center",
         });
       }, 300);
-
-      isBgProcessingRef.current = true;
-      (async () => {
-        try {
-          logger.log(vTexts.BG_PROCESS_START);
-
-          const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audioBase64: audioBase64,
-              scenes: lazyScenes.map((sc) => ({
-                id: sc.id,
-                script: sc.script,
-              })),
-            }),
-          });
-
-          let alignData: any;
-          try {
-            alignData = await alignResponse.json();
-          } catch (jsonErr) {
-            alignData = {};
-          }
-
-          if (!alignResponse.ok || !alignData.success || !Array.isArray(alignData.alignments)) {
-            throw new Error(alignData.error || vTexts.ALIGN_ERROR);
-          }
-
-          logger.log(vTexts.BG_PROCESS_ALIGN_SUCCESS);
-
-          const alignedScenes = lazyScenes.map((sc: any) => {
-            const align = alignData.alignments.find((a: any) => a.id === sc.id);
-            if (align) {
-              return {
-                ...sc,
-                duration: align.duration,
-                startTime: formatTimeHelper(align.start),
-                endTime: formatTimeHelper(align.end),
-                _start: align.start,
-                _end: align.end,
-              };
-            }
-            return sc;
-          });
-
-          const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
-          const audioCtxBackground = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const decodedBuffer = await audioCtxBackground.decodeAudioData(arrayBufferRaw);
-          await audioCtxBackground.close();
-
-          const segmentedScenes = await Promise.all(
-            alignedScenes.map(async (sc: any, index: number) => {
-              try {
-                const start = sc._start !== undefined ? sc._start : index > 0 ? parseFloat(alignedScenes[index - 1].endTime) : 0;
-                const end = sc._end !== undefined ? sc._end : parseFloat(sc.endTime);
-
-                const voiceSegmentBlob = bufferToWav(decodedBuffer, start, end);
-                const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
-                  const r = new FileReader();
-                  r.onloadend = () => {
-                    const res = r.result as string;
-                    resolve(res.split(",")[1]);
-                  };
-                  r.onerror = reject;
-                  r.readAsDataURL(voiceSegmentBlob);
-                });
-
-                const { _start, _end, ...cleanScene } = sc;
-                return {
-                  ...cleanScene,
-                  audioBase64: voiceSegmentBase64,
-                  audioUrl: `data:audio/wav;base64,${voiceSegmentBase64}`,
-                };
-              } catch (sliceErr: any) {
-                logger.warn(vTexts.BG_PROCESS_ERROR.replace("{error}", sliceErr?.message || String(sliceErr)));
-                const { _start, _end, ...cleanScene } = sc;
-                return cleanScene;
-              }
-            }),
-          );
-
-          let finalSyncLogText = `[Whisper Background Alignment] Đồng bộ hoàn tất (Tổng thời lượng: ${decodedBuffer.duration.toFixed(1)}s)\n`;
-          segmentedScenes.forEach((scene: any, idx: number) => {
-            finalSyncLogText += `- Cảnh ${idx + 1}: [${scene.startTime} -> ${scene.endTime}] (${scene.duration}s) | ${scene.script.substring(0, 35)}...\n`;
-          });
-
-          const finalProject = {
-            ...lazyProject,
-            storyboard: segmentedScenes,
-            voiceConfig: {
-              ...lazyProject.voiceConfig,
-              timingLog: finalSyncLogText,
-              isSegmented: true,
-            },
-          };
-
-          setProject(finalProject);
-          onSaveProject(finalProject, true);
-          setAlignmentsLog(finalSyncLogText);
-          logger.log(vTexts.BG_PROCESS_COMPLETE);
-        } catch (bgErr: any) {
-          logger.warn(vTexts.BG_PROCESS_ERROR.replace("{error}", bgErr?.message || String(bgErr)));
-        } finally {
-          isBgProcessingRef.current = false;
-        }
-      })();
 
       if (!isFromAutoGenerateAll) {
         setLoadingStates((prev) => ({
@@ -4014,706 +3807,131 @@ export function usePipelineWizard(props: any) {
   const handleDownloadJSONProject = async () => {
     logAction("handleDownloadJSONProject");
     stopPlaybackSim();
-    setInfoMsg(t.waitExportProcess);
     setLoadingExportType(EXPORT_TYPES.ZIP);
 
+    const vTexts = VOICE_OPTIMIZATION_TEXTS[currentLang === "en" ? "en" : "vi"];
+
     try {
-      let activeVideoBlob = renderedVideoBlob;
-      if (!activeVideoBlob) {
-        activeVideoBlob = await compileVideoToBlob(project.storyboard || [], getSceneImageUrl, project.voiceConfig, ttsAudioUrl, (prog) => {});
-        setRenderedVideoBlob(activeVideoBlob);
-      }
+      let currentProject = project;
 
-      const zip = new JSZip();
+      const hasMissingAudio = project.storyboard?.some((sc) => [!sc.audioBase64, !sc.audioUrl].some(Boolean));
+      const needToSegment = hasMissingAudio;
 
-      const activeFolderUuid = "517bd185-0d13-49a4-8227-e73216acc7a9";
-      const folderKey = `{${activeFolderUuid}}`;
+      if ([project?.voiceConfig?.audioBase64, needToSegment].every(Boolean)) {
+        setInfoMsg(vTexts.SYNC_WHISPER_WAIT);
+        const audioBase64 = project.voiceConfig.audioBase64;
+        const storyboard = project.storyboard || [];
 
-      const isMp4 = activeVideoBlob.type.includes("mp4");
-      const videoExt = isMp4 ? "mp4" : "webm";
-      const videoFileName = `rendered_video.${videoExt}`;
-
-      zip.file(`${folderKey}/${videoFileName}`, activeVideoBlob);
-      zip.file(videoFileName, activeVideoBlob);
-
-      zip.folder(folderKey);
-      zip.folder(`${folderKey}/adjust_mask`);
-      zip.folder(`${folderKey}/common_attachment`);
-      zip.folder(`${folderKey}/matting`);
-      zip.folder(`${folderKey}/qr_upload`);
-      zip.folder(`${folderKey}/Resources`);
-      zip.folder(`${folderKey}/Resources/voices`);
-      zip.folder(`${folderKey}/Resources/images`);
-      zip.folder(`${folderKey}/Resources/voice_images`);
-      zip.folder(`${folderKey}/Resources/original_voices`);
-      zip.folder(`${folderKey}/smart_crop`);
-      zip.folder(`${folderKey}/subdraft`);
-      zip.folder(`${folderKey}/Timelines`);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = 600;
-      canvas.height = 400;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const grad = ctx.createLinearGradient(0, 0, 600, 400);
-        grad.addColorStop(0, "#0f172a");
-        grad.addColorStop(1, "#e11d48");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 600, 400);
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.lineWidth = 1;
-        for (let x = 0; x < 600; x += 30) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, 400);
-          ctx.stroke();
-        }
-        for (let y = 0; y < 400; y += 30) {
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(600, y);
-          ctx.stroke();
-        }
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-        ctx.beginPath();
-        ctx.arc(500, 100, 180, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 32px sans-serif";
-        ctx.fillText(project.name || "Untitled Project", 45, 140);
-
-        ctx.fillStyle = "#fca5a5";
-        ctx.font = "14px monospace";
-        ctx.fillText("• PROFESSIONAL CAPCUT PC EXPORT BUNDLE", 45, 185);
-        ctx.fillText(`• SCENES: ${project.storyboard?.length || 0} SECTIONS`, 45, 210);
-        ctx.fillText(`• AUDIO TRANSCRIPTION SYNCHRONIZED`, 45, 235);
-
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "11px sans-serif";
-        const dateStr = new Date().toLocaleString();
-        ctx.fillText(`Exported on: ${dateStr}`, 45, 335);
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-        ctx.font = "bold 12px sans-serif";
-        ctx.fillText("AI VIDEO FACTORY © 2026", 45, 360);
-      }
-
-      let coverBase64 = "";
-      try {
-        coverBase64 = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
-      } catch (err) {
-        logger.warn("COVER_IMAGE_CANVAS_CAPTURE_FAILED", err);
-      }
-
-      if (coverBase64) {
-        zip.file("draft_cover.jpg", coverBase64, { base64: true });
-        zip.file(`${folderKey}/draft_cover.jpg`, coverBase64, { base64: true });
-      } else {
-        zip.file("draft_cover.jpg", "Mock Cover Binary Space");
-        zip.file(`${folderKey}/draft_cover.jpg`, "Mock Cover Binary Space");
-      }
-
-      const sceneImagePromises = (project.storyboard || []).map(async (sc, index) => {
-        let imgBase64 = "";
-        const targetUrl = getSceneImageUrl(sc);
-        if (targetUrl && targetUrl.startsWith("data:")) {
-          imgBase64 = targetUrl.split(",")[1];
-        } else if (targetUrl) {
-          try {
-            const response = await fetch(targetUrl);
-            const blob = await response.blob();
-            imgBase64 = await new Promise<string>((resolve, reject) => {
-              const r = new FileReader();
-              r.onloadend = () => {
-                const res = r.result as string;
-                resolve(res.split(",")[1]);
-              };
-              r.onerror = reject;
-              r.readAsDataURL(blob);
-            });
-          } catch (e) {
-            logger.warn("FAILED_FETCH_SCENE_IMAGE", sc.id, e);
-          }
-        }
-
-        if (!imgBase64) {
-          imgBase64 = renderFallbackSceneImage(sc);
-        }
-
-        const itemFileName = `${index + 1}_image.jpg`;
-        zip.file(`${folderKey}/Resources/images/${itemFileName}`, imgBase64, {
-          base64: true,
-        });
-        zip.file(`Resources/images/${itemFileName}`, imgBase64, {
-          base64: true,
-        });
-
-        zip.file(`${folderKey}/Resources/voice_images/${itemFileName}`, imgBase64, {
-          base64: true,
-        });
-        zip.file(`Resources/voice_images/${itemFileName}`, imgBase64, {
-          base64: true,
-        });
-
-        return {
-          id: sc.id,
-          fileName: itemFileName,
-        };
-      });
-
-      await Promise.all(sceneImagePromises);
-
-      let ttsBase64 = project.voiceConfig?.audioBase64 || project.output?.audioBase64 || "";
-      if (ttsBase64.startsWith("data:")) {
-        ttsBase64 = ttsBase64.split(",")[1];
-      }
-
-      const voiceUrl = project.voiceConfig?.audioUrl || ttsAudioUrl;
-      if (!ttsBase64 && voiceUrl) {
-        if (voiceUrl.startsWith("data:")) {
-          ttsBase64 = voiceUrl.split(",")[1];
-        } else if (voiceUrl !== "simulated" && voiceUrl !== "simulated_speech") {
-          try {
-            const response = await fetch(voiceUrl);
-            const blob = await response.blob();
-            ttsBase64 = await new Promise<string>((resolve, reject) => {
-              const r = new FileReader();
-              r.onloadend = () => {
-                const res = r.result as string;
-                resolve(res.split(",")[1]);
-              };
-              r.onerror = reject;
-              r.readAsDataURL(blob);
-            });
-          } catch (e) {
-            logger.warn("FAILED_FETCH_NARRATION", e);
-          }
-        }
-      }
-
-      let audioBuffer: AudioBuffer | null = null;
-      if (ttsBase64) {
-        try {
-          const arrayBuffer = base64ToArrayBuffer(ttsBase64);
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          if (audioCtx.state === "suspended") {
-            await audioCtx.resume();
-          }
-          audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-          await audioCtx.close();
-        } catch (e) {
-          logger.error("FAILED_DECODE_NARRATION_SLICE", e);
-        }
-      }
-
-      if (audioBuffer) {
-        const fullVoiceBlob = bufferToWav(audioBuffer, 0, audioBuffer.duration);
-        const fullVoiceBase64 = await new Promise<string>((resolve, reject) => {
-          const r = new FileReader();
-          r.onloadend = () => {
-            const res = r.result as string;
-            resolve(res.split(",")[1]);
-          };
-          r.onerror = reject;
-          r.readAsDataURL(fullVoiceBlob);
-        });
-        zip.file(`${folderKey}/audio_narration.wav`, fullVoiceBase64, {
-          base64: true,
-        });
-        zip.file(`audio_narration.wav`, fullVoiceBase64, { base64: true });
-
-        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, fullVoiceBase64, {
-          base64: true,
-        });
-        zip.file(`Resources/original_voices/original_voice.wav`, fullVoiceBase64, { base64: true });
-      } else if (ttsBase64) {
-        zip.file(`${folderKey}/audio_narration.wav`, ttsBase64, {
-          base64: true,
-        });
-        zip.file(`audio_narration.wav`, ttsBase64, { base64: true });
-
-        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, ttsBase64, {
-          base64: true,
-        });
-        zip.file(`Resources/original_voices/original_voice.wav`, ttsBase64, {
-          base64: true,
-        });
-      } else {
-        const placeholderText = "Mock Audio Stream Narration Voice Placeholder";
-        zip.file(`${folderKey}/audio_narration.wav`, placeholderText);
-        zip.file(`audio_narration.wav`, placeholderText);
-
-        zip.file(`${folderKey}/Resources/original_voices/original_voice.wav`, placeholderText);
-        zip.file(`Resources/original_voices/original_voice.wav`, placeholderText);
-      }
-
-      const capcutMaterials: any = {
-        audios: [],
-        beats: [],
-        canvases: [],
-        chromas: [],
-        colors: [],
-        drafts: [],
-        effects: [],
-        flowers: [],
-        images: [],
-        keyframes: [],
-        manual_deformations: [],
-        masks: [],
-        sound_channel_mappings: [],
-        speeds: [],
-        stickers: [],
-        tail_leaders: [],
-        texts: [],
-        transitions: [],
-        video_effects: [],
-        videos: [],
-        vocal_separations: [],
-      };
-
-      const videoTrackSegments: any[] = [];
-      const subtitleTrackSegments: any[] = [];
-      const audioTrackSegments: any[] = [];
-
-      let sceneRanges = getSceneTimeRanges(project.storyboard || []);
-
-      const vTexts = VOICE_OPTIMIZATION_TEXTS[currentLang === "en" ? "en" : "vi"];
-      const hasSegmentedVoices = project.storyboard && project.storyboard.length > 0 && project.storyboard.every((sc: any) => sc.audioBase64 && sc.audioBase64.length > 100) && project.voiceConfig?.isSegmented === true;
-
-      if (hasSegmentedVoices) {
-        logger.log(vTexts.EXPORT_ZIP_PRE_SEGMENTED);
-      } else {
-        logger.log(vTexts.EXPORT_ZIP_FALLBACK);
-      }
-
-      if (!hasSegmentedVoices && audioBuffer && ttsBase64 && project.storyboard && project.storyboard.length > 0) {
-        setInfoMsg(getPipelineLog("VOICE_ALIGN_START", currentLang === "vi"));
-        try {
-          const res = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              audioBase64: ttsBase64,
-              scenes: project.storyboard,
-            }),
-          });
-          const alignData = await res.json();
-          if (alignData.success && alignData.alignments) {
-            sceneRanges = sceneRanges.map((sc) => {
-              const align = alignData.alignments.find((a: any) => a.id === sc.id);
-              if (align) {
-                return {
-                  ...sc,
-                  start: align.start,
-                  end: align.end,
-                  duration: align.duration,
-                };
-              }
-              return sc;
-            });
-          }
-        } catch (e) {
-          logger.warn("FAILED_TO_CALL_AI_VOICE_ALIGN", e);
-        }
-      }
-
-      const parsedScenesTimings = sceneRanges.map((sc) => {
-        return {
-          id: sc.id,
-          startUs: Math.round(sc.start * 1000000),
-          durationUs: Math.round(sc.duration * 1000000),
-          cameraMotion: sc.cameraMotion,
-          transition: sc.transition,
-          subtitle: sc.subtitle,
-        };
-      });
-
-      const totalDurationUs = sceneRanges.length > 0 ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
-
-      const sceneAudios: {
-        id: string;
-        fileName: string;
-        durationUs: number;
-      }[] = [];
-
-      if (hasSegmentedVoices) {
-        logger.log(vTexts.EXPORT_ZIP_PRE_SEGMENTED);
-        for (let index = 0; index < sceneRanges.length; index++) {
-          const sc = sceneRanges[index];
-          const matchingScene = (project.storyboard || [])[index];
-          let voiceSegmentBase64 = matchingScene?.audioBase64 || "";
-          if (voiceSegmentBase64.startsWith("data:")) {
-            voiceSegmentBase64 = voiceSegmentBase64.split(",")[1];
-          }
-          if (voiceSegmentBase64) {
-            const filename = `${index + 1}_voice.wav`;
-
-            zip.file(`${folderKey}/Resources/voices/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-            zip.file(`Resources/voices/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-
-            zip.file(`${folderKey}/Resources/voice_images/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-            zip.file(`Resources/voice_images/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-
-            sceneAudios.push({
+        const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            audioBase64: audioBase64,
+            scenes: storyboard.map((sc) => ({
               id: sc.id,
-              fileName: filename,
-              durationUs: Math.round(sc.duration * 1000000),
-            });
-          }
-        }
-      } else if (audioBuffer) {
-        setInfoMsg(t.Syncing_scene_voices);
-        for (let index = 0; index < sceneRanges.length; index++) {
-          const sc = sceneRanges[index];
-          try {
-            const voiceSegmentBlob = bufferToWav(audioBuffer, sc.start, sc.end);
-            const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
-              const r = new FileReader();
-              r.onloadend = () => {
-                const res = r.result as string;
-                resolve(res.split(",")[1]);
-              };
-              r.onerror = reject;
-              r.readAsDataURL(voiceSegmentBlob);
-            });
-            const filename = `${index + 1}_voice.wav`;
-
-            zip.file(`${folderKey}/Resources/voices/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-            zip.file(`Resources/voices/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-
-            zip.file(`${folderKey}/Resources/voice_images/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-            zip.file(`Resources/voice_images/${filename}`, voiceSegmentBase64, {
-              base64: true,
-            });
-
-            sceneAudios.push({
-              id: sc.id,
-              fileName: filename,
-              durationUs: Math.round(sc.duration * 1000000),
-            });
-          } catch (sliceErr) {
-            logger.warn("FAILED_PACKAGE_SLICED_VOICE", sc.id, sliceErr);
-          }
-        }
-      }
-
-      if (sceneAudios.length === 0) {
-        for (let index = 0; index < sceneRanges.length; index++) {
-          const sc = sceneRanges[index];
-          const filename = `${index + 1}_voice.wav`;
-          const dummyText = "Mock Audio Stream Segment Placeholder";
-          zip.file(`${folderKey}/Resources/voices/${filename}`, dummyText);
-          zip.file(`Resources/voices/${filename}`, dummyText);
-
-          zip.file(`${folderKey}/Resources/voice_images/${filename}`, dummyText);
-          zip.file(`Resources/voice_images/${filename}`, dummyText);
-          sceneAudios.push({
-            id: sc.id,
-            fileName: filename,
-            durationUs: Math.round(sc.duration * 1000000),
-          });
-        }
-      }
-
-      sceneAudios.forEach((sa, idx) => {
-        const scRange = sceneRanges.find((r) => r.id === sa.id) || sceneRanges[idx];
-        const startUs = Math.round(scRange.start * 1000000);
-        const durationUs = Math.round(scRange.duration * 1000000);
-        const materialId = `material_audio_scene_${sa.id}`;
-
-        capcutMaterials.audios.push({
-          id: materialId,
-          type: "audio",
-          duration: durationUs,
-          source_platform: "AI Video Factory TTS Segmented",
-          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/voices/${sa.fileName}`,
-        });
-
-        audioTrackSegments.push({
-          id: `seg_audio_scene_${sa.id}`,
-          material_id: materialId,
-          source_timerange: {
-            duration: durationUs,
-            start: 0,
-          },
-          target_timerange: {
-            duration: durationUs,
-            start: startUs,
-          },
-          speed: 1.0,
-          volume: project.voiceConfig?.volume || 1.0,
-        });
-      });
-
-      capcutMaterials.videos.push({
-        id: "material_rendered_video_main",
-        type: "video",
-        duration: totalDurationUs,
-        source_platform: "AI Video Factory Render Engine",
-        local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/${videoFileName}`,
-      });
-
-      parsedScenesTimings.forEach((timing, index) => {
-        const imgMatId = `material_image_${timing.id}`;
-
-        capcutMaterials.images.push({
-          id: imgMatId,
-          type: "image",
-          duration: timing.durationUs,
-          local_material_path: `C:/CapCut/User Data/Drafts/${folderKey}/Resources/images/${index + 1}_image.jpg`,
-        });
-
-        videoTrackSegments.push({
-          id: `seg_backup_video_slide_${timing.id}`,
-          material_id: imgMatId,
-          source_timerange: {
-            duration: timing.durationUs,
-            start: 0,
-          },
-          target_timerange: {
-            duration: timing.durationUs,
-            start: timing.startUs,
-          },
-          extra_info: {
-            camera_motion: timing.cameraMotion,
-            transition_effect: timing.transition,
-          },
-        });
-
-        const textMatId = `material_text_${timing.id}`;
-        capcutMaterials.texts.push({
-          id: textMatId,
-          type: "text",
-          content: JSON.stringify({
-            text: timing.subtitle,
-            styles: {
-              font_size: 15.0,
-              text_color: "#ffff00",
-              stroke: true,
-              stroke_color: "#000000",
-            },
+              script: sc.script || sc.subtitle || "",
+            })),
           }),
         });
 
-        subtitleTrackSegments.push({
-          id: `seg_subtitle_${timing.id}`,
-          material_id: textMatId,
-          source_timerange: null,
-          target_timerange: {
-            duration: timing.durationUs,
-            start: timing.startUs,
-          },
+        let alignData: any;
+        try {
+          alignData = await alignResponse.json();
+        } catch (jsonErr) {
+          alignData = {};
+        }
+
+        if (![alignResponse.ok, alignData.success, Array.isArray(alignData.alignments)].every(Boolean)) {
+          throw new Error(alignData.error || vTexts.SYNC_WHISPER_ERROR);
+        }
+
+        const alignedScenes = storyboard.map((sc: any) => {
+          const align = alignData.alignments.find((a: any) => a.id === sc.id);
+          if (align) {
+            return {
+              ...sc,
+              duration: align.duration,
+              startTime: formatTimeHelper(align.start),
+              endTime: formatTimeHelper(align.end),
+              _start: align.start,
+              _end: align.end,
+            };
+          }
+          return sc;
         });
+
+        const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
+        const audioCtxBackground = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const decodedBuffer = await audioCtxBackground.decodeAudioData(arrayBufferRaw);
+        await audioCtxBackground.close();
+
+        const segmentedScenes = await Promise.all(
+          alignedScenes.map(async (sc: any, index: number) => {
+            try {
+              const start = sc._start !== undefined ? sc._start : index > 0 ? (parseTimeToSeconds(alignedScenes[index - 1].endTime) || 0) : 0;
+              const end = sc._end !== undefined ? sc._end : (parseTimeToSeconds(sc.endTime) || 0);
+
+              const voiceSegmentBlob = bufferToWav(decodedBuffer, start, end);
+              const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
+                const r = new FileReader();
+                r.onloadend = () => {
+                  const res = r.result as string;
+                  resolve(res.split(",")[1]);
+                };
+                r.onerror = reject;
+                r.readAsDataURL(voiceSegmentBlob);
+              });
+
+              const { _start, _end, ...cleanScene } = sc;
+              return {
+                ...cleanScene,
+                audioBase64: voiceSegmentBase64,
+                audioUrl: `data:audio/wav;base64,${voiceSegmentBase64}`,
+              };
+            } catch (sliceErr: any) {
+              const { _start, _end, ...cleanScene } = sc;
+              return cleanScene;
+            }
+          }),
+        );
+
+        let finalSyncLogText = `[Whisper Sync before ZIP] Đồng bộ hoàn tất (Tổng thời lượng: ${decodedBuffer.duration.toFixed(1)}s)\n`;
+        segmentedScenes.forEach((scene: any, idx: number) => {
+          finalSyncLogText += `- Cảnh ${idx + 1}: [${scene.startTime} -> ${scene.endTime}] (${scene.duration}s) | ${scene.script.substring(0, 35)}...\n`;
+        });
+
+        const finalProject = {
+          ...project,
+          storyboard: segmentedScenes,
+          voiceConfig: {
+            ...project.voiceConfig,
+            timingLog: finalSyncLogText,
+          },
+        };
+
+        setProject(finalProject);
+        setAlignmentsLog(finalSyncLogText);
+
+        await onSaveProject(finalProject, true);
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        currentProject = finalProject;
+      }
+
+      setInfoMsg(t.waitExportProcess || vTexts.PREPARE_ZIP);
+      const response = await fetch(CAPCUT_CONFIG.EXPORT_ZIP_ROUTE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: currentProject.id }),
       });
 
-      const draftContentObj = {
-        canvas_config: {
-          height: 1080,
-          width: 1920,
-          ratio: "16:9",
-        },
-        duration: totalDurationUs,
-        id: "draft_root_timeline",
-        materials: capcutMaterials,
-        tracks: [
-          {
-            id: "track_video_timeline",
-            type: "video",
-            segments: videoTrackSegments,
-          },
-          {
-            id: "track_audio_timeline",
-            type: "audio",
-            segments: audioTrackSegments,
-          },
-          {
-            id: "track_subtitle_timeline",
-            type: "text",
-            segments: subtitleTrackSegments,
-          },
-        ],
-      };
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
 
-      const draftContentStr = JSON.stringify(draftContentObj, null, 2);
-
-      const writeDraftFile = (name: string, content: string) => {
-        zip.file(name, content);
-        zip.file(`${folderKey}/${name}`, content);
-      };
-
-      writeDraftFile("draft_content.json", draftContentStr);
-      writeDraftFile("draft_content.json.bak", draftContentStr);
-
-      writeDraftFile(
-        "attachment_editing.json",
-        JSON.stringify(
-          {
-            editing_items: [],
-            version: 1,
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "attachment_pc_common.json",
-        JSON.stringify(
-          {
-            device_id: "ai-studio-pc-pro-export",
-            client_version: "4.8.1",
-            system_info: "Windows/MacOS PC Engine",
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "draft.extra",
-        JSON.stringify(
-          {
-            client_os: "win",
-            author: "AI Video Factory Pro",
-            sync_time: Math.floor(Date.now() / 1000),
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "draft_agency_config.json",
-        JSON.stringify(
-          {
-            agency_id: "",
-            org_id: "",
-            user_id: "AI_Studio_Power_User",
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "draft_biz_config.json",
-        JSON.stringify(
-          {
-            commercial_use: false,
-            music_copyright_check: true,
-          },
-          null,
-          2,
-        ),
-      );
-
-      const draftMetaInfoObj = {
-        draft_id: activeFolderUuid,
-        draft_name: project.name || "AI_Video_Draft",
-        draft_type: "video",
-        create_time: Date.now(),
-        modify_time: Date.now(),
-        draft_duration: totalDurationUs,
-        tm_draft_modified: Math.floor(Date.now() / 1000),
-        draft_cover_path: "draft_cover.jpg",
-        draft_fold_path: "",
-      };
-      writeDraftFile("draft_meta_info.json", JSON.stringify(draftMetaInfoObj, null, 2));
-
-      writeDraftFile(
-        "draft_settings",
-        JSON.stringify(
-          {
-            project_setting: {
-              fps: 30,
-              ratio: "16:9",
-              width: 1920,
-              height: 1080,
-            },
-            export_setting: {
-              resolution: "1080p",
-              fps: 30,
-              rate_control: "vbr",
-              bit_rate: 8000,
-            },
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "draft_virtual_store.json",
-        JSON.stringify(
-          {
-            cache_items: [],
-            local_res_map: [],
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "key_value.json",
-        JSON.stringify(
-          {
-            draft_opened_count: 1,
-            last_open_time: Math.floor(Date.now() / 1000),
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile(
-        "performance_opt_info.json",
-        JSON.stringify(
-          {
-            enable_proxy: false,
-            render_quality: 100,
-          },
-          null,
-          2,
-        ),
-      );
-
-      writeDraftFile("template-2.tmp", `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${project.name}`);
-
-      writeDraftFile(
-        "timeline_layout.json",
-        JSON.stringify(
-          {
-            track_scale: 1.0,
-            timeline_scroll_x: 0.0,
-            ruler_offset: 0,
-          },
-          null,
-          2,
-        ),
-      );
-
-      const content = await zip.generateAsync({ type: "blob" });
-
-      const fileName = `${project.name.replace(/\s+/g, "_")}_CapCut_Project_Bundle.zip`;
-      const url = window.URL.createObjectURL(content);
+      const blob = await response.blob();
+      const fileName = `${currentProject.name.replace(WHITESPACE_REGEX, "_")}${CAPCUT_CONFIG.EXPORT_BUNDLE_SUFFIX}`;
+      const url = window.URL.createObjectURL(blob);
       const dlAnchorElem = document.createElement("a");
       dlAnchorElem.setAttribute("href", url);
       dlAnchorElem.setAttribute("download", fileName);
@@ -4726,7 +3944,7 @@ export function usePipelineWizard(props: any) {
       console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
-      setInfoMsg(t.Error_generating_template);
+      setInfoMsg(t.Error_generating_template || "Lỗi đóng gói file ZIP.");
     } finally {
       setLoadingExportType(null);
     }

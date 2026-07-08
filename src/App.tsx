@@ -255,9 +255,10 @@ export default function App() {
 
     if (immediate) {
       delete pendingSavesRef.current[updated.id];
-      doSave();
+      return doSave();
     } else {
       pendingSavesRef.current[updated.id] = setTimeout(doSave, 1000);
+      return Promise.resolve();
     }
   }, []);
 

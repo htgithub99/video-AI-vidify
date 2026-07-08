@@ -140,7 +140,6 @@ export interface VoiceConfig {
   uploadedAudioName?: string;
   subtitleFiles?: string[];
   timingLog?: string;
-  isSegmented?: boolean;
 }
 
 export interface VisualConfig {

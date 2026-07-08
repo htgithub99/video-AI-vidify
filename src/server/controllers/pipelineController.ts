@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
+import { getProjectDetailFromDb } from "../utils/db.js";
+import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { generateScenesWithChunking, SceneDensity } from "../../utils/sceneGeneratorHelper.js";
 import {
@@ -52,6 +54,8 @@ import {
   GENRE_VISUAL_GUIDELINES,
   VideoGenre,
   SplitStrategy,
+  CAPCUT_CONFIG,
+  WHITESPACE_REGEX,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
@@ -1736,6 +1740,316 @@ router.post("/select-folder", async (req: Request, res: Response) => {
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });
+});
+
+router.post("/export-zip", async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.body;
+    if (!projectId) {
+      return res.status(400).json({ error: "Missing projectId" });
+    }
+
+    const project = await getProjectDetailFromDb(projectId);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    const zip = new JSZip();
+    const folderKey = `{${CAPCUT_CONFIG.ACTIVE_FOLDER_UUID}}`;
+
+    zip.folder(folderKey);
+    zip.folder(`${folderKey}/adjust_mask`);
+    zip.folder(`${folderKey}/common_attachment`);
+    zip.folder(`${folderKey}/matting`);
+    zip.folder(`${folderKey}/qr_upload`);
+    zip.folder(`${folderKey}/Resources`);
+    zip.folder(`${folderKey}/Resources/voices`);
+    zip.folder(`${folderKey}/Resources/images`);
+    zip.folder(`${folderKey}/Resources/voice_images`);
+    zip.folder(`${folderKey}/Resources/original_voices`);
+    zip.folder(`${folderKey}/smart_crop`);
+    zip.folder(`${folderKey}/subdraft`);
+    zip.folder(`${folderKey}/Timelines`);
+
+    zip.file(CAPCUT_CONFIG.COVER_FILENAME, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
+    zip.file(`${folderKey}/${CAPCUT_CONFIG.COVER_FILENAME}`, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
+
+    const scenes = project.storyboard || [];
+    scenes.forEach((sc, index) => {
+      const filename = `${index + 1}_image.jpg`;
+      if (sc.assetUrl) {
+        const relativePath = sc.assetUrl.startsWith('/') ? sc.assetUrl.slice(1) : sc.assetUrl;
+        const fullPath = path.join(process.cwd(), relativePath);
+        if (fs.existsSync(fullPath)) {
+          const imgBuffer = fs.readFileSync(fullPath);
+          zip.file(`${folderKey}/Resources/images/${filename}`, imgBuffer);
+          zip.file(`Resources/images/${filename}`, imgBuffer);
+          zip.file(`${folderKey}/Resources/voice_images/${filename}`, imgBuffer);
+          zip.file(`Resources/voice_images/${filename}`, imgBuffer);
+        }
+      }
+    });
+
+    scenes.forEach((sc, index) => {
+      const filename = `${index + 1}_voice.wav`;
+      if (sc.audioUrl) {
+        const relativePath = sc.audioUrl.startsWith('/') ? sc.audioUrl.slice(1) : sc.audioUrl;
+        const fullPath = path.join(process.cwd(), relativePath);
+        if (fs.existsSync(fullPath)) {
+          const audioBuffer = fs.readFileSync(fullPath);
+          zip.file(`${folderKey}/Resources/voices/${filename}`, audioBuffer);
+          zip.file(`Resources/voices/${filename}`, audioBuffer);
+          zip.file(`${folderKey}/Resources/voice_images/${filename}`, audioBuffer);
+          zip.file(`Resources/voice_images/${filename}`, audioBuffer);
+        }
+      }
+    });
+
+    const voiceUrl = project.voiceConfig?.audioUrl;
+    if (voiceUrl) {
+      const relativePath = voiceUrl.startsWith('/') ? voiceUrl.slice(1) : voiceUrl;
+      const fullPath = path.join(process.cwd(), relativePath);
+      if (fs.existsSync(fullPath)) {
+        const fullAudioBuffer = fs.readFileSync(fullPath);
+        zip.file(`${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`, fullAudioBuffer);
+        zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, fullAudioBuffer);
+        zip.file(`${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, fullAudioBuffer);
+        zip.file(`Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, fullAudioBuffer);
+      }
+    } else {
+      zip.file(`${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
+      zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
+      zip.file(`${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
+      zip.file(`Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
+    }
+
+    const capcutMaterials: any = {
+      audios: [],
+      beats: [],
+      canvases: [],
+      chromas: [],
+      colors: [],
+      drafts: [],
+      effects: [],
+      flowers: [],
+      images: [],
+      keyframes: [],
+      manual_deformations: [],
+      masks: [],
+      sound_channel_mappings: [],
+      speeds: [],
+      stickers: [],
+      tail_leaders: [],
+      texts: [],
+      transitions: [],
+      video_effects: [],
+      videos: [],
+      vocal_separations: [],
+    };
+
+    const videoTrackSegments: any[] = [];
+    const subtitleTrackSegments: any[] = [];
+    const audioTrackSegments: any[] = [];
+
+    const parseTimeToSecondsHelper = (timeStr: string | undefined): number => {
+      if (!timeStr) return 0;
+      const parts = timeStr.trim().split(":");
+      let secs = 0;
+      if (parts.length === 3) {
+        secs = parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+      } else if (parts.length === 2) {
+        secs = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+      } else if (parts.length === 1) {
+        secs = parseFloat(parts[0]);
+      }
+      return isNaN(secs) ? 0 : secs;
+    };
+
+    let elapsed = 0;
+    const sceneRanges = scenes.map((sc) => {
+      const startSec = parseTimeToSecondsHelper(sc.startTime);
+      const endSec = parseTimeToSecondsHelper(sc.endTime);
+      const start = sc.startTime && startSec >= 0 ? startSec : elapsed;
+      const duration = sc.duration || 5;
+      const end = sc.endTime && endSec > start ? endSec : start + duration;
+      const actualDuration = end - start;
+      elapsed = end;
+      return {
+        id: sc.id,
+        start,
+        end,
+        duration: actualDuration,
+        cameraMotion: sc.cameraMotion,
+        transition: sc.transition,
+        subtitle: sc.subtitle || sc.script || "",
+      };
+    });
+
+    const totalDurationUs = sceneRanges.length > 0 ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
+
+    sceneRanges.forEach((scRange, idx) => {
+      const startUs = Math.round(scRange.start * 1000000);
+      const durationUs = Math.round(scRange.duration * 1000000);
+      const filename = `${idx + 1}_voice.wav`;
+      const materialId = `material_audio_scene_${scRange.id}`;
+
+      capcutMaterials.audios.push({
+        id: materialId,
+        type: "audio",
+        duration: durationUs,
+        source_platform: CAPCUT_CONFIG.SOURCE_PLATFORM_TTS,
+        local_material_path: `${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}/${folderKey}/Resources/voices/${filename}`,
+      });
+
+      audioTrackSegments.push({
+        id: `seg_audio_scene_${scRange.id}`,
+        material_id: materialId,
+        source_timerange: {
+          duration: durationUs,
+          start: 0,
+        },
+        target_timerange: {
+          duration: durationUs,
+          start: startUs,
+        },
+        speed: 1.0,
+        volume: project.voiceConfig?.volume || 1.0,
+      });
+    });
+
+    sceneRanges.forEach((timing, index) => {
+      const imgMatId = `material_image_${timing.id}`;
+      const timingDurationUs = Math.round(timing.duration * 1000000);
+      const timingStartUs = Math.round(timing.start * 1000000);
+
+      capcutMaterials.images.push({
+        id: imgMatId,
+        type: "image",
+        duration: timingDurationUs,
+        local_material_path: `${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}/${folderKey}/Resources/images/${index + 1}_image.jpg`,
+      });
+
+      videoTrackSegments.push({
+        id: `seg_backup_video_slide_${timing.id}`,
+        material_id: imgMatId,
+        source_timerange: {
+          duration: timingDurationUs,
+          start: 0,
+        },
+        target_timerange: {
+          duration: timingDurationUs,
+          start: timingStartUs,
+        },
+        extra_info: {
+          camera_motion: timing.cameraMotion,
+          transition_effect: timing.transition,
+        },
+      });
+
+      const textMatId = `material_text_${timing.id}`;
+      capcutMaterials.texts.push({
+        id: textMatId,
+        type: "text",
+        content: JSON.stringify({
+          text: timing.subtitle,
+          styles: {
+            font_size: 15.0,
+            text_color: "#ffff00",
+            stroke: true,
+            stroke_color: "#000000",
+          },
+        }),
+      });
+
+      subtitleTrackSegments.push({
+        id: `seg_subtitle_${timing.id}`,
+        material_id: textMatId,
+        source_timerange: null,
+        target_timerange: {
+          duration: timingDurationUs,
+          start: timingStartUs,
+        },
+      });
+    });
+
+    const draftContentObj = {
+      canvas_config: {
+        height: CAPCUT_CONFIG.CANVAS_HEIGHT,
+        width: CAPCUT_CONFIG.CANVAS_WIDTH,
+        ratio: CAPCUT_CONFIG.CANVAS_RATIO,
+      },
+      duration: totalDurationUs,
+      id: "draft_root_timeline",
+      materials: capcutMaterials,
+      tracks: [
+        {
+          id: "track_video_timeline",
+          type: "video",
+          segments: videoTrackSegments,
+        },
+        {
+          id: "track_audio_timeline",
+          type: "audio",
+          segments: audioTrackSegments,
+        },
+        {
+          id: "track_subtitle_timeline",
+          type: "text",
+          segments: subtitleTrackSegments,
+        },
+      ],
+    };
+
+    const draftContentStr = JSON.stringify(draftContentObj, null, 2);
+
+    const writeDraftFile = (name: string, content: string) => {
+      zip.file(name, content);
+      zip.file(`${folderKey}/${name}`, content);
+    };
+
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_FILENAME, draftContentStr);
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_BAK_FILENAME, draftContentStr);
+
+    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME, JSON.stringify({ editing_items: [], version: 1 }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME, JSON.stringify({ device_id: CAPCUT_CONFIG.DEVICE_ID, client_version: CAPCUT_CONFIG.CLIENT_VERSION, system_info: CAPCUT_CONFIG.SYSTEM_INFO }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, JSON.stringify({ client_os: "win", author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, JSON.stringify({ agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, JSON.stringify({ commercial_use: false, music_copyright_check: true }, null, 2));
+
+    const draftMetaInfoObj = {
+      draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID,
+      draft_name: project.name || "AI_Video_Draft",
+      draft_type: "video",
+      create_time: Date.now(),
+      modify_time: Date.now(),
+      draft_duration: totalDurationUs,
+      tm_draft_modified: Math.floor(Date.now() / 1000),
+      draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME,
+      draft_fold_path: "",
+    };
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, JSON.stringify(draftMetaInfoObj, null, 2));
+
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, JSON.stringify({ project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, JSON.stringify({ cache_items: [], local_res_map: [] }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, JSON.stringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, JSON.stringify({ enable_proxy: false, render_quality: 100 }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${project.name}`);
+    writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, JSON.stringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
+
+    const content = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "STORE",
+    });
+
+    res.setHeader("Content-Type", "application/zip");
+    const safeFileName = encodeURIComponent(project.name.replace(WHITESPACE_REGEX, "_"));
+    res.setHeader("Content-Disposition", `attachment; filename=${safeFileName}_CapCut_Project_Bundle.zip`);
+    return res.send(content);
+
+  } catch (error: any) {
+    logger.error("Lỗi xuất CapCut ZIP ở server:", error);
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;
