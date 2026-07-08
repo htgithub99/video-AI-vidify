@@ -908,7 +908,12 @@ Your workflow MUST execute the following steps internally:
 STEP 1: Research & Concept sheet formulation. Determine theme details, main characters visual profiles, core keywords, and preferred terms.
 STEP 2: Outline creation. Plan a pacing-optimized structure split into exactly ${targetChapterCount} chapters. Provide a clear title and description for each chapter detailing what narration must cover.
 
+[RECOMMENDED CHAPTER TITLE FORMAT]:
+- If chapters/outlines are generated, it is highly recommended to keep chapter titles clean and short (e.g., "Chapter I: [Short Title]" or "Chương I: [Tiêu đề ngắn]").
+- Avoid using long narration paragraphs, hook texts, or questions directly as chapter titles to keep the structure clear and readable.
+
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+MANDATORY: You must generate at least 3 chapters in the chapters array. Do not return an empty array or change the key name under any circumstances.
 {
   "theme": "Core theme details",
   "characterSpecs": "Detailed visual descriptions of main characters",
