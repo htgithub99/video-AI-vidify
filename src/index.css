@@ -7,19 +7,26 @@
   --font-mono: "JetBrains Mono", monospace;
 
   /* Redefine Slate for the High Density theme (Google Labs Dark Mode) */
-  --color-slate-955: #111111;
-  --color-slate-950: #1F1F1F; /* Main Dark Background */
-  --color-slate-900: #282828; /* Card Background */
-  --color-slate-800: #3C4043; /* Borders / Inputs */
-  --color-slate-700: #5F6368;
-  --color-slate-650: #80868B;
-  --color-slate-600: #9AA0A6;
-  --color-slate-500: #BDC1C6;
-  --color-slate-400: #D2D2D2;
-  --color-slate-350: #DADCE0;
-  --color-slate-300: #E8EAED;
-  --color-slate-205: #F1F3F4;
-  --color-slate-200: #F8F9FA;
+  --color-slate-955: #000000;
+  --color-slate-950: #000000; /* Main Dark Background */
+  --color-slate-900: #0a0a0a; /* Card Background */
+  --color-slate-880: #2F3136;
+  --color-slate-850: #333639;
+  --color-slate-800: #1f1f1f; /* Borders / Inputs */
+  --color-slate-750: #4D5054;
+  --color-slate-700: #2d2d2d;
+  --color-slate-650: #404040;
+  --color-slate-600: #525252;
+  --color-slate-550: #ACAFB5;
+  --color-slate-500: #737373;
+  --color-slate-450: #C7C9CD;
+  --color-slate-400: #a3a3a3;
+  --color-slate-355: #DFE1E5;
+  --color-slate-350: #e5e5e5;
+  --color-slate-300: #ffffff;
+  --color-slate-250: #ECEFF1;
+  --color-slate-205: #ffffff;
+  --color-slate-200: #ffffff;
   --color-slate-100: #FFFFFF;
 
   /* Redefine Rose for Electric Blue high contrast alerts and primary action callouts */
@@ -30,8 +37,10 @@
   --color-rose-700: #1d4ed8;
   --color-rose-600: #2563eb;
   --color-rose-500: #3b82f6;
+  --color-rose-455: #4b93fb;
   --color-rose-450: #4f46e5;
   --color-rose-400: #60a5fa;
+  --color-rose-350: #7cb5fc;
   --color-rose-300: #93c5fd;
   --color-rose-200: #bfdbfe;
   --color-rose-100: #dbeafe;
@@ -80,19 +89,26 @@ body {
   
   /* Inverse Slate for Light Mode - Google Labs Light Mode */
   --color-slate-955: #FFFFFF;
-  --color-slate-950: #F8F9FA; /* main body background slightly darker for contrast with cards */
+  --color-slate-950: #FFFFFF; /* main body background */
   --color-slate-900: #FFFFFF; /* card background */
-  --color-slate-800: #E8EAED; /* borders, placeholder inputs, secondary bg */
-  --color-slate-700: #DADCE0; /* bold borders, lines */
-  --color-slate-650: #BDC1C6; /* border focus, inactive grays */
-  --color-slate-600: #9AA0A6; /* muted gray icons and secondary borders */
-  --color-slate-500: #5F6368; /* muted labels / timestamp text */
-  --color-slate-400: #3C4043; /* secondary body text / readable labels */
-  --color-slate-350: #202124; /* regular body text / subheadings */
-  --color-slate-300: #202124; /* standard primary text */
-  --color-slate-205: #111111; /* bold texts / titles */
-  --color-slate-200: #111111; /* contrast titles / text */
-  --color-slate-100: #000000; /* pure black headings */
+  --color-slate-880: #F4F5F7;
+  --color-slate-850: #F1F3F4;
+  --color-slate-800: #f1f5f9; /* borders, placeholder inputs, secondary bg */
+  --color-slate-750: #E2E5E9;
+  --color-slate-700: #e2e8f0; /* bold borders, lines */
+  --color-slate-650: #cbd5e1; /* border focus, inactive grays */
+  --color-slate-600: #94a3b8; /* muted gray icons and secondary borders */
+  --color-slate-550: #7C8085;
+  --color-slate-500: #64748b; /* muted labels / timestamp text */
+  --color-slate-450: #4C5054;
+  --color-slate-400: #334155; /* secondary body text / readable labels */
+  --color-slate-355: #2B2D30;
+  --color-slate-350: #000000;
+  --color-slate-300: #000000;
+  --color-slate-250: #191A1D;
+  --color-slate-205: #000000;
+  --color-slate-200: #000000;
+  --color-slate-100: #000000;
 
   /* Override blue in light mode to provide excellent accessibility contrast */
   --color-blue-950: #eff6ff;
@@ -107,16 +123,19 @@ body {
   --color-blue-100: #0f172a;
 
   /* Adjust Rose mapped to Blue */
-  --color-rose-955: #eff6ff;
+  --color-rose-955: #f8fafc;
   --color-rose-950: #eff6ff; 
   --color-rose-900: #dbeafe; 
-  --color-rose-800: #3b82f6; 
+  --color-rose-800: #1e3a8a; 
   --color-rose-705: #2563eb; 
-  --color-rose-700: #1d4ed8; 
-  --color-rose-600: #1d4ed8; 
-  --color-rose-500: #1e40af; 
+  --color-rose-700: #1e40af; /* active state (darker blue) */
+  --color-rose-600: #2563eb; /* normal state (vibrant blue) */
+  --color-rose-550: #1e3a8a;
+  --color-rose-500: #1d4ed8; /* hover state (darker blue) */
+  --color-rose-455: #1b3273;
   --color-rose-450: #1e3a8a;
   --color-rose-400: #172554; 
+  --color-rose-350: #121e3d;
   --color-rose-300: #0f172a;
   --color-rose-200: #0f172a;
   --color-rose-100: #000000;

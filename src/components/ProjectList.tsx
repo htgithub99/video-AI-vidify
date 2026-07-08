@@ -178,7 +178,7 @@ export default function ProjectList({ currentLang, projects, onSelectProject, on
         <div className="p-6">
           <p className="text-slate-300 text-sm mb-4">
             {t.Are_you_sure_you_want_to_}
-            <span className="font-bold text-white px-2">"{projectToDelete?.name}"</span>?
+            <span className="font-bold text-slate-100 px-2">"{projectToDelete?.name}"</span>?
           </p>
           <p className="text-rose-400 text-xs font-medium">{t.This_action_cannot_be_und}</p>
           <div className="flex items-center justify-end gap-3 pt-6 mt-2">
@@ -235,7 +235,7 @@ export default function ProjectList({ currentLang, projects, onSelectProject, on
             <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="px-4 py-2">
               {t.cancel}
             </Button>
-            <Button type="submit" variant="primary" className="px-5 py-2 !bg-blue-600 hover:!bg-blue-500 shadow-blue-900/10">
+            <Button type="submit" variant="primary" className="px-5 py-2">
               {editingId ? t.Update : t.create}
             </Button>
           </div>

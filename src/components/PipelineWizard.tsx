@@ -497,12 +497,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
               >
                 <div className="p-4 space-y-4 text-left">
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-mono">
+                    <span className="text-xs font-bold text-slate-205 dark:text-slate-200 flex items-center gap-1.5 font-mono">
                       <Palette className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
                       {t.favStylesTitle}
                     </span>
                     {project.visualConfig?.referencePrompt && (
-                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentStyle} className="px-2.5 py-1 text-slate-700 dark:text-slate-200 text-[10px] font-bold rounded-lg flex items-center gap-1">
+                      <Button variant="secondary" size="xs" type="button" onClick={handleSaveCurrentStyle} className="px-2.5 py-1 text-[10px] font-bold rounded-lg flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5 text-rose-500" />
                         {t.saveCurrentStyle}
                       </Button>
@@ -535,7 +535,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   >
                                     <Check className="w-3.5 h-3.5" />
                                   </Button>
-                                  <Button variant="secondary" size="xs" type="button" onClick={() => setEditingStyleId(null)} className="px-2 py-1 text-slate-650 dark:text-slate-350 text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto">
+                                  <Button variant="secondary" size="xs" type="button" onClick={() => setEditingStyleId(null)} className="px-2 py-1 text-[10px] font-bold rounded flex items-center justify-center h-auto w-auto">
                                     <X className="w-3.5 h-3.5" />
                                   </Button>
                                 </div>
@@ -544,7 +544,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                               <div className="flex items-center justify-between w-full">
                                 <div className="min-w-0 flex-1 cursor-pointer" onClick={() => handleApplyFavoriteStyle(item.prompt)}>
                                   <div className="flex items-center gap-1.5">
-                                    <span className={`text-[11px] font-bold truncate ${isCurrent ? "text-rose-455" : "text-slate-800 dark:text-slate-200"}`}>{item.name}</span>
+                                    <span className={`text-[11px] font-bold truncate ${isCurrent ? "text-rose-455" : "text-slate-205 dark:text-slate-200"}`}>{item.name}</span>
                                   </div>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="block text-[9px] text-slate-500 dark:text-slate-400 truncate font-mono select-all max-w-[200px]">{item.prompt}</span>
@@ -559,7 +559,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
                                       title="Copy mô tả phong cách"
-                                      className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 shadow-none h-auto w-auto"
+                                      className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-slate-500 hover:text-slate-205 dark:hover:text-slate-300 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
                                     </Button>
@@ -575,7 +575,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       setEditStyleFormName(item.name);
                                       setEditStyleFormPrompt(item.prompt);
                                     }}
-                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-650 dark:hover:text-slate-200 rounded shadow-none h-auto w-auto"
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-500 dark:text-slate-500 hover:text-slate-205 dark:hover:text-slate-200 rounded shadow-none h-auto w-auto"
                                     title="Sửa phong cách"
                                   >
                                     <Pencil className="w-3 h-3" />
