@@ -161,7 +161,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         const anyScene = scene as any;
-        const hasBase64Audio = typeof anyScene.audioBase64 === "string" && anyScene.audioBase64.length > 100 && !["/", "http"].some((prefix) => anyScene.audioBase64?.startsWith(prefix));
+        const hasBase64Audio = typeof anyScene.audioBase64 === "string" && anyScene.audioBase64.length > COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD && ![COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX].some((prefix) => anyScene.audioBase64?.startsWith(prefix));
         if (hasBase64Audio) {
           const fileName = `scene_${scene.id}.wav`;
           const filePath = path.join(audioDir, fileName);
@@ -362,6 +362,8 @@ export const updateProject = async (req: Request, res: Response) => {
         const folderName = getSafeFolderName(newProject.name || oldProject.name);
         const assetsDir = path.join(process.cwd(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
         const imageDir = path.join(assetsDir, folderName, IMAGES_DIR_NAME);
+        const audioDir = path.join(assetsDir, folderName, VOICES_DIR_NAME);
+
         newProject.storyboard.forEach((newScene: any) => {
           const newHasImage = !!(newScene?.assetUrl && newScene.assetUrl !== COMMON_STRINGS.UNDEFINED) || !!newScene?.assetUrls?.length;
 
@@ -388,7 +390,44 @@ export const updateProject = async (req: Request, res: Response) => {
               }
             }
           }
+
+          const newHasAudio = !!(newScene?.audioUrl && newScene.audioUrl !== COMMON_STRINGS.UNDEFINED);
+          if (!newHasAudio) {
+            if (fs.existsSync(audioDir)) {
+              try {
+                const files = fs.readdirSync(audioDir);
+                const prefix = `scene_${newScene.id}.`;
+                files.forEach((file) => {
+                  if (file.startsWith(prefix)) {
+                    const filePath = path.join(audioDir, file);
+                    try {
+                      fs.unlinkSync(filePath);
+                      appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${filePath}`);
+                    } catch (err) {
+                      appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${filePath}`, err);
+                    }
+                  }
+                });
+              } catch (err) {
+                appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
+              }
+            }
+          }
         });
+
+        const oldAudioUrl = (oldProject?.voiceConfig as any)?.audioUrl;
+        const newAudioUrl = (newProject?.voiceConfig as any)?.audioUrl;
+        if (oldAudioUrl && (!newAudioUrl || newAudioUrl === "")) {
+          const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
+          if (fs.existsSync(unifiedAudioFile)) {
+            try {
+              fs.unlinkSync(unifiedAudioFile);
+              appLog(`${LOG_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_SUCCESS}${unifiedAudioFile}`);
+            } catch (err) {
+              appError(`${ERROR_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_ERR}${unifiedAudioFile}`, err);
+            }
+          }
+        }
       }
 
       delete newProject.allowBulkDeleteImages;

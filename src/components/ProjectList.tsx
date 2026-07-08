@@ -4,6 +4,7 @@ import { VideoProject } from "../types.js";
 import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
+import { COMMON_STRINGS } from "../constants/index.js";
 
 interface ProjectListProps {
   currentLang: Lang;
@@ -112,9 +113,9 @@ export default function ProjectList({ currentLang, projects, onSelectProject, on
                       <span>{dateStr}</span>
                     </div>
 
-                    <span className="bg-slate-800/50 text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-medium">{project.config.genre || "Story"}</span>
+                    <span className="bg-slate-800/50 text-slate-400 px-2 py-0.5 rounded-full text-[10px] font-medium">{project.config.genre || COMMON_STRINGS.DEFAULT_GENRE}</span>
 
-                    <span className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full text-[10px] font-medium">{project.config.language === "en" ? "EN" : "VI"}</span>
+                    <span className="bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full text-[10px] font-medium">{project.config.language === COMMON_STRINGS.EN ? t.englishLanguage : t.vietnamLanguage}</span>
                   </div>
                 </div>
 

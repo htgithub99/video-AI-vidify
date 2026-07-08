@@ -14,14 +14,12 @@ const logger = {
 };
 import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
 import { LOADING_KEYS } from "../../constants/loading";
-// Removed unused getPipelineLog
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, VOICE_OPTIMIZATION_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender, AgeGroup, ProjectInputType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
-// Removed unused JSZip
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
@@ -119,8 +117,8 @@ const bufferToWav = (buffer: AudioBuffer, startSec: number, endSec: number): Blo
 
   return new Blob([view], { type: "audio/wav" });
 };
-let handleNextStep = () => {};
-let handlePrevStep = () => {};
+let handleNextStep = () => { };
+let handlePrevStep = () => { };
 let audioRef: any = null;
 let videoRef: any = null;
 let simVideoRef: any = null;
@@ -221,26 +219,32 @@ export function usePipelineWizard(props: any) {
         if (!prev || prev.id !== normalizedInitialProject.id) return normalizedInitialProject;
 
         const isServerUpdate = normalizedInitialProject.updatedAt !== prev.updatedAt;
+        if (isServerUpdate) {
+          return prev;
+        }
+        const isTimingLogChanged = [prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog].some(Boolean);
 
         let mergedStoryboard = prev.storyboard || [];
-        if (isServerUpdate || !prev.storyboard || prev.storyboard.length === 0) {
+        if ([isServerUpdate, !prev.storyboard, prev.storyboard.length === 0].some(Boolean)) {
           mergedStoryboard = normalizedInitialProject.storyboard || [];
+        } else if (isTimingLogChanged) {
+          mergedStoryboard = prev.storyboard;
         } else {
           mergedStoryboard = (prev.storyboard || []).map((localScene) => {
             if (localScene.assetUrl === "") return localScene;
             const serverScene = normalizedInitialProject.storyboard?.find((s) => s.id === localScene.id);
             return serverScene?.assetUrl?.startsWith("/assets/")
               ? {
-                  ...localScene,
-                  assetUrl: serverScene.assetUrl,
-                  assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
-                }
+                ...localScene,
+                assetUrl: serverScene.assetUrl,
+                assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
+              }
               : localScene;
           });
         }
 
         let mergedThumbnails = prev.thumbnails || [];
-        if (isServerUpdate || !prev.thumbnails || prev.thumbnails.length === 0) {
+        if ([isServerUpdate, !prev.thumbnails, prev.thumbnails.length === 0].some(Boolean)) {
           mergedThumbnails = normalizedInitialProject.thumbnails || [];
         } else {
           mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
@@ -260,13 +264,13 @@ export function usePipelineWizard(props: any) {
 
         const voiceConfig = isServerUpdate
           ? normalizedInitialProject.voiceConfig || prev.voiceConfig
-          : shouldUpdateVoiceConfig && normalizedInitialProject.voiceConfig
+          : [!isTimingLogChanged, shouldUpdateVoiceConfig, !!normalizedInitialProject.voiceConfig].every(Boolean)
             ? {
-                ...(prev.voiceConfig || {}),
-                audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
-                audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
-                timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
-              }
+              ...(prev.voiceConfig || {}),
+              audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
+              audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
+              timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
+            }
             : prev.voiceConfig;
 
         const scriptRewritten = syncField("scriptRewritten", "");
@@ -427,12 +431,12 @@ export function usePipelineWizard(props: any) {
         stored
           ? JSON.parse(stored)
           : [
-              {
-                id: "style_1",
-                name: "Cinematic Realistic",
-                prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
-              },
-            ],
+            {
+              id: "style_1",
+              name: "Cinematic Realistic",
+              prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
+            },
+          ],
       );
     } catch (e) {
       logger.error("GENERAL_ERROR", e);
@@ -509,13 +513,13 @@ export function usePipelineWizard(props: any) {
         stored
           ? JSON.parse(stored)
           : [
-              {
-                id: "fav_1",
-                name: "Brian - Deep, Resonant and Comforting",
-                voiceURI: "nPczCjzI2devNBz1zQrb",
-                channelName: "Mystic Frontiers",
-              },
-            ],
+            {
+              id: "fav_1",
+              name: "Brian - Deep, Resonant and Comforting",
+              voiceURI: "nPczCjzI2devNBz1zQrb",
+              channelName: "Mystic Frontiers",
+            },
+          ],
       );
     } catch (e) {
       logger.error("GENERAL_ERROR", e);
@@ -553,11 +557,11 @@ export function usePipelineWizard(props: any) {
       favoriteVoices.map((item) =>
         item.id === id
           ? {
-              ...item,
-              name: name.trim(),
-              voiceURI: voiceURI.trim(),
-              channelName: channelName?.trim() || item.channelName,
-            }
+            ...item,
+            name: name.trim(),
+            voiceURI: voiceURI.trim(),
+            channelName: channelName?.trim() || item.channelName,
+          }
           : item,
       ),
     );
@@ -680,7 +684,7 @@ export function usePipelineWizard(props: any) {
     try {
       const savedLogs = sessionStorage.getItem("pipeline_system_logs");
       if (savedLogs) return JSON.parse(savedLogs);
-    } catch (e) {}
+    } catch (e) { }
     return [];
   });
 
@@ -692,7 +696,7 @@ export function usePipelineWizard(props: any) {
         const reduced = systemLogs.slice(-100);
         try {
           sessionStorage.setItem("pipeline_system_logs", JSON.stringify(reduced));
-        } catch (err) {}
+        } catch (err) { }
       }
     }
   }, [systemLogs]);
@@ -720,7 +724,7 @@ export function usePipelineWizard(props: any) {
         setTimeout(() => {
           setSystemLogs((prev) => [...prev, { time, type: enrichedType, msg }].slice(-200));
         }, 0);
-      } catch (e) {}
+      } catch (e) { }
     };
 
     console.log = (...args) => {
@@ -1217,29 +1221,33 @@ export function usePipelineWizard(props: any) {
       return isHookUnchanged
         ? prev
         : {
-            ...prev,
-            hookConfig: {
-              ...currentHookConfig,
-              type: hookStrategy,
-              duration: hookDuration,
-              count: hookCount,
-              positions: hookPosition,
-              versions: hooksDraft,
-            },
-          };
+          ...prev,
+          hookConfig: {
+            ...currentHookConfig,
+            type: hookStrategy,
+            duration: hookDuration,
+            count: hookCount,
+            positions: hookPosition,
+            versions: hooksDraft,
+          },
+        };
     });
   }, [hookStrategy, hookDuration, hookCount, hookPosition, hooksDraft]);
 
   const lastProjectIdRef = useRef<string | null>(null);
+  const lastUpdatedAtRef = useRef<string | null>(null);
   const cancelBatchImageRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!initialProject) return;
 
     const isNewProject = lastProjectIdRef.current !== initialProject.id;
-    lastProjectIdRef.current = initialProject.id;
+    const isServerUpdate = lastUpdatedAtRef.current && initialProject.updatedAt !== lastUpdatedAtRef.current;
 
-    if (isNewProject) {
+    lastProjectIdRef.current = initialProject.id;
+    lastUpdatedAtRef.current = initialProject.updatedAt;
+
+    if (isNewProject || isServerUpdate) {
       if ((initialProject as any).currentStep !== undefined) {
         setCurrentStep((initialProject as any).currentStep);
       } else {
@@ -1450,9 +1458,9 @@ export function usePipelineWizard(props: any) {
         referenceCharacters:
           project.visualConfig.characters && project.visualConfig.characters.length > 0
             ? project.visualConfig.characters.map((c) => ({
-                name: c.name,
-                prompt: c.prompt || c.description,
-              }))
+              name: c.name,
+              prompt: c.prompt || c.description,
+            }))
             : undefined,
         referenceCharacter: project.visualConfig.characterPrompt || undefined,
         visualDensity: project.visualConfig.density || 5,
@@ -1487,17 +1495,25 @@ export function usePipelineWizard(props: any) {
 
         setAlignmentsLog(syncLogText);
 
-        setProject((prev) => ({
-          ...prev,
+        const updatedProject = {
+          ...project,
           storyboard: updatedScenes,
+          allowBulkDeleteImages: true,
           voiceConfig: {
-            ...prev.voiceConfig,
+            ...project.voiceConfig,
+            audioUrl: "",
+            audioBase64: undefined,
             timingLog: syncLogText,
           },
-        }));
+        };
+
+        setProject(updatedProject);
+        setTimeout(() => {
+          onSaveProject(updatedProject, true);
+        }, 0);
 
         trackOperationCost(18, 0.0012);
-        const successMsg = t.Storyboard_coordinates_fo || "Hoàn thành phân cảnh.";
+        const successMsg = t.Storyboard_coordinates_fo;
         setInfoMsg(successMsg);
         console.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
         return updatedScenes;
@@ -2642,7 +2658,7 @@ export function usePipelineWizard(props: any) {
         let isReadingStream = true;
         while (isReadingStream) {
           if (cancelBatchImageRef.current) {
-            reader.cancel().catch(() => {});
+            reader.cancel().catch(() => { });
             setInfoMsg(t.batchGenCancelled.replace("{completedCount}", completedCount.toString()));
             isReadingStream = false;
             break;
@@ -2763,7 +2779,7 @@ export function usePipelineWizard(props: any) {
       setIsCancellingBatch(false);
       setBatchProgressMsg("");
       if (isGeminiChat && concurrency > 1) {
-        fetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, { method: "POST" }).catch(() => {});
+        fetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, { method: "POST" }).catch(() => { });
       }
     }
   };
@@ -3403,7 +3419,7 @@ export function usePipelineWizard(props: any) {
     logAction(EXTERNAL_AUDIO_TEXTS.LOG_ACTION);
     try {
       await handleAlignAndSaveVoice(audioName, audioUrl, audioBase64, AudioType.Upload);
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const handleTriggerStoryboardAndVoices = async () => {
@@ -4037,8 +4053,8 @@ export function usePipelineWizard(props: any) {
  <video>
  <track>
  ${sceneRanges
-   .map(
-     (sc) => `
+          .map(
+            (sc) => `
  <clipitem id="clip-${sc.id}">
  <name>${sc.assetName || "Image_" + sc.id}</name>
  <duration>${Math.round(sc.duration * 24)}</duration>
@@ -4048,8 +4064,8 @@ export function usePipelineWizard(props: any) {
  <name>${sc.cameraMotion}</name>
  </effect>
  </clipitem>`,
-   )
-   .join("")}
+          )
+          .join("")}
  </track>
  </video>
  </media>

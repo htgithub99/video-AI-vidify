@@ -116,6 +116,11 @@ export const COMMON_STRINGS = {
   JPG_EXT: "jpg",
   UNIFIED_WAV: "unified.wav",
   SLASH_ASSETS_SLASH: "/assets/",
+  SCENE_PREFIX: "sc_",
+  DEFAULT_GENRE: "Story",
+  HTTP_PREFIX: "http",
+  SLASH_PREFIX: "/",
+  BASE64_AUDIO_LENGTH_THRESHOLD: 100,
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -138,10 +143,16 @@ export const ERROR_MESSAGES = {
   DELETE_SCENE_IMAGE_DISK_ERR: "Lỗi khi xóa file ảnh phân cảnh trên đĩa: ",
   READ_IMAGES_DIR_CLEAN_ERR: "Lỗi đọc thư mục ảnh để dọn dẹp: ",
   DELETE_PROJECT_ASSETS_ERR: "Lỗi xóa thư mục assets của dự án",
+  DELETE_SCENE_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice phân cảnh cũ: ",
+  READ_AUDIO_DIR_CLEAN_ERR: "[Dọn dẹp Audio] Không thể đọc thư mục audio để dọn dẹp: ",
+  DELETE_UNIFIED_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ",
+  LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
 } as const;
 
 export const LOG_MESSAGES = {
   DELETE_SCENE_IMAGE_DISK_SUCCESS: "Đã xóa file ảnh phân cảnh trên đĩa (dọn dẹp prefix): ",
+  DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ",
+  DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
 } as const;
 
 export const DEFAULT_PROJECT_CONFIGS = {
@@ -245,4 +256,12 @@ export const VOICE_OPTIMIZATION_TEXTS = {
     PREPARE_ZIP: "Preparing project bundle...",
     ZIP_GEN_ERROR: "Failed to generate ZIP project bundle.",
   },
+} as const;
+
+export const LLM_CONFIG = {
+  DEFAULT_MAX_RETRIES: 2,
+  RETRY_DELAY_BASE: 1000,
+  BATCH_WAIT_DELAY: 1500,
+  DEFAULT_MAX_CHUNK_SIZE: 1300,
+  DEFAULT_MIN_CHUNK_SIZE: 900,
 } as const;

@@ -1,6 +1,6 @@
 import { getSceneDensityPrompt } from "../constants/prompts.js";
 import { appWarn, createAppError } from "../lib/logger.js";
-import { SCENE_DENSITY_MAP } from "../constants/index.js";
+import { SCENE_DENSITY_MAP, COMMON_STRINGS, ERROR_MESSAGES, LLM_CONFIG } from "../constants/index.js";
 
 export type SceneDensity = keyof typeof SCENE_DENSITY_MAP;
 
@@ -11,7 +11,7 @@ export interface GeneratedScene {
 
 import { smartChunkScript } from "../lib/textProcessor.js";
 
-const retryableLlmCall = async <T>(fn: () => Promise<T>, maxRetries: number = 2, chunkIndex: number): Promise<T> => {
+const retryableLlmCall = async <T>(fn: () => Promise<T>, maxRetries: number = LLM_CONFIG.DEFAULT_MAX_RETRIES, chunkIndex: number): Promise<T> => {
   let attempt = 0;
   while (attempt <= maxRetries) {
     try {
@@ -22,13 +22,13 @@ const retryableLlmCall = async <T>(fn: () => Promise<T>, maxRetries: number = 2,
       if (error?.noRetry || attempt > maxRetries) {
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, LLM_CONFIG.RETRY_DELAY_BASE * attempt));
     }
   }
-  throw createAppError("Unable to execute LLM request.");
+  throw createAppError(ERROR_MESSAGES.LLM_EXECUTION_FAILED);
 };
 
-export const generateScenesWithChunking = async (script: string, density: SceneDensity, llmCallFn: (chunkText: string, targetPrompt: string, chunkIndex: number, totalChunks: number) => Promise<GeneratedScene[]>, maxChunkSize: number = 1300, minChunkSize: number = 900): Promise<GeneratedScene[]> => {
+export const generateScenesWithChunking = async (script: string, density: SceneDensity, llmCallFn: (chunkText: string, targetPrompt: string, chunkIndex: number, totalChunks: number) => Promise<GeneratedScene[]>, maxChunkSize: number = LLM_CONFIG.DEFAULT_MAX_CHUNK_SIZE, minChunkSize: number = LLM_CONFIG.DEFAULT_MIN_CHUNK_SIZE): Promise<GeneratedScene[]> => {
   const chunks = smartChunkScript(script, maxChunkSize, minChunkSize);
   const densityConfig = SCENE_DENSITY_MAP[density];
 
@@ -42,7 +42,7 @@ export const generateScenesWithChunking = async (script: string, density: SceneD
 
     const targetPrompt = getSceneDensityPrompt(chunkLength, densityConfig.label, densityConfig.maxChars, minScenes, maxScenes);
 
-    return () => retryableLlmCall(() => llmCallFn(chunk, targetPrompt, index + 1, chunks.length), 2, index);
+    return () => retryableLlmCall(() => llmCallFn(chunk, targetPrompt, index + 1, chunks.length), LLM_CONFIG.DEFAULT_MAX_RETRIES, index);
   });
 
   for (let i = 0; i < chunkTasks.length; i += chunkSize) {
@@ -51,7 +51,7 @@ export const generateScenesWithChunking = async (script: string, density: SceneD
     chunkResults.push(...batchResults);
 
     if (i + chunkSize < chunkTasks.length) {
-      await new Promise((res) => setTimeout(res, 1500));
+      await new Promise((res) => setTimeout(res, LLM_CONFIG.BATCH_WAIT_DELAY));
     }
   }
 
@@ -62,7 +62,7 @@ export const generateScenesWithChunking = async (script: string, density: SceneD
     for (const scene of chunkScenes) {
       finalScenes.push({
         ...scene,
-        id: `sc_${currentIndex}`,
+        id: `${COMMON_STRINGS.SCENE_PREFIX}${currentIndex}`,
         scene_id: currentIndex,
       });
       currentIndex++;
