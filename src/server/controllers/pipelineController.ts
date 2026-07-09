@@ -1,7 +1,8 @@
 import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
-import { chunk, filter, map, take, isArray, join, max, floor, ceil } from "lodash";
+import _ from 'lodash';
+
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
@@ -153,8 +154,8 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   }
 
   try {
-    const scenesToRewrite = filter(
-      map(storyboard, (s: any) => ({
+    const scenesToRewrite = _.filter(
+      _.map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || s.script || "",
       })),
@@ -166,13 +167,13 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
     }
 
     const chunkSize = 25;
-    const chunks = chunk(scenesToRewrite, chunkSize);
+    const chunks = _.chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine);
+      const chunkItem = chunks[i];
+      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -196,7 +197,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       }
     }
 
-    const updatedStoryboard = map(storyboard, (scene: any) => {
+    const updatedStoryboard = _.map(storyboard, (scene: any) => {
       const rewritten = rewrittenMap.get(scene.id);
       if (rewritten) {
         return { ...scene, prompt: rewritten };
@@ -226,8 +227,8 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
   }
 
   try {
-    const scenesToOptimize = filter(
-      map(storyboard, (s: any) => ({
+    const scenesToOptimize = _.filter(
+      _.map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || "",
         script: s.script || s.subtitle || "",
@@ -244,13 +245,13 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
     const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? JSON.stringify(visualConfig.characters) : undefined;
 
     const chunkSize = 8;
-    const chunks = chunk(scenesToOptimize, chunkSize);
+    const chunks = _.chunk(scenesToOptimize, chunkSize);
 
     const optimizedMap = new Map<string, string>();
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine, charactersJson);
+      const chunkItem = chunks[i];
+      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson);
 
       try {
         const response = await generateContentWithRetry({
@@ -274,7 +275,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
       }
     }
 
-    const updatedStoryboard = map(storyboard, (scene: any) => {
+    const updatedStoryboard = _.map(storyboard, (scene: any) => {
       const optimized = optimizedMap.get(scene.id);
       if (optimized) {
         return { ...scene, prompt: optimized };
@@ -307,8 +308,8 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   }
 
   try {
-    const thumbsToRewrite = filter(thumbnails, (t: any) => t.prompt);
-    const updatedThumbnails = map(thumbnails, (t: any) => ({ ...t }));
+    const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
+    const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
@@ -362,8 +363,8 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
   }
 
   try {
-    const thumbsToRewrite = filter(thumbnails, (t: any) => t.prompt);
-    const updatedThumbnails = map(thumbnails, (t: any) => ({ ...t }));
+    const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
+    const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
@@ -419,7 +420,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     });
 
     const parsed = safeParseJSON(response.text, []);
-    const characters = take(isArray(parsed) ? parsed : [], 3);
+    const characters = _.take(_.isArray(parsed) ? parsed : [], 3);
     return res.json({ characters });
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
@@ -507,8 +508,8 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
   }
 
   try {
-    const scenesToRewrite = filter(
-      map(storyboard, (s: any) => ({
+    const scenesToRewrite = _.filter(
+      _.map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || s.script || "",
       })),
@@ -520,13 +521,13 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
     }
 
     const chunkSize = 25;
-    const chunks = chunk(scenesToRewrite, chunkSize);
+    const chunks = _.chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const prompt = getCharacterRewriteBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(chunk), aspectRatio || AspectRatio.SixteenNine);
+      const chunkItem = chunks[i];
+      const prompt = getCharacterRewriteBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -550,14 +551,14 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       }
     }
 
-    const updatedStoryboard = map(storyboard, (scene: any) => {
+    const updatedStoryboard = _.map(storyboard, (scene: any) => {
       const rewritten = rewrittenMap.get(scene.id);
       if (rewritten) {
         return { ...scene, prompt: rewritten };
       }
       if (scene.prompt) {
-        const combinedPrompt = join(
-          filter(map(finalCharacters, (c: any) => c.prompt), Boolean),
+        const combinedPrompt = _.join(
+          _.filter(_.map(finalCharacters, (c: any) => c.prompt), Boolean),
           ", "
         );
         if (combinedPrompt) {
@@ -623,7 +624,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
     if (Array.isArray(versions)) {
-      versions = map(versions, (v: any, idx: number) => ({
+      versions = _.map(versions, (v: any, idx: number) => ({
         id: v.id || `hk_${idx + 1}`,
         content: v.content || "",
         type: v.type || hookType || "StyleName",
@@ -722,7 +723,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
-    const targetChapterCount = max([3, floor(targetWordCountMin / 100)]) || 3;
+    const targetChapterCount = _.max([3, _.floor(targetWordCountMin / 100)]) || 3;
 
     const combinedScriptPrompt = getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig);
 
@@ -756,7 +757,7 @@ router.post("/script", async (req: Request, res: Response) => {
     let fullScript = activeHookText ? activeHookText + "\n\n" : "";
 
     const chapters = scriptResult.chapters || [];
-    const chapterWordTarget = ceil(targetWordCount / (max([1, chapters.length]) || 1));
+    const chapterWordTarget = _.ceil(targetWordCount / (_.max([1, chapters.length]) || 1));
 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
@@ -1521,9 +1522,9 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
     const filePaths: string[] = [];
 
     for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      if (chunk.audioBase64) {
-        const buffer = Buffer.from(chunk.audioBase64, "base64");
+      const chunkItem = chunks[i];
+      if (chunkItem.audioBase64) {
+        const buffer = Buffer.from(chunkItem.audioBase64, "base64");
         const filePath = path.join(tempDir, `chunk_${sessionId}_${i}.mp3`);
         fs.writeFileSync(filePath, buffer);
         filePaths.push(filePath);

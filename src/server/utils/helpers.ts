@@ -1,50 +1,51 @@
 import { appLog } from "../../lib/logger.js";
 import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
-import { eq, lt, includes, gt, isEmpty, trim, replace, isNil, add, padStart, toString, round, floor } from "lodash";
+import _ from 'lodash';
+
 
 export const extractBalancedJSON = (text: string): string | null => {
   const firstBrace = text.indexOf("{");
   const firstBracket = text.indexOf("[");
   let startIdx = -1;
-  if (!eq(firstBrace, -1) && (eq(firstBracket, -1) || lt(firstBrace, firstBracket))) {
+  if (!_.eq(firstBrace, -1) && (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))) {
     startIdx = firstBrace;
-  } else if (!eq(firstBracket, -1)) {
+  } else if (!_.eq(firstBracket, -1)) {
     startIdx = firstBracket;
   }
-  if (eq(startIdx, -1)) return null;
+  if (_.eq(startIdx, -1)) return null;
 
   const stack: string[] = [];
   let inString = false;
   let escape = false;
 
-  for (let i = startIdx; lt(i, text.length); i++) {
+  for (let i = startIdx; _.lt(i, text.length); i++) {
     const char = text[i];
-    if (eq(inString, true)) {
-      if (eq(escape, true)) {
+    if (_.eq(inString, true)) {
+      if (_.eq(escape, true)) {
         escape = false;
-      } else if (eq(char, "\\")) {
+      } else if (_.eq(char, "\\")) {
         escape = true;
-      } else if (eq(char, '"')) {
+      } else if (_.eq(char, '"')) {
         inString = false;
       }
     } else {
-      if (eq(char, '"')) {
+      if (_.eq(char, '"')) {
         inString = true;
-      } else if (includes(["{", "["], char)) {
+      } else if (_.includes(["{", "["], char)) {
         stack.push(char);
-      } else if (eq(char, "}")) {
+      } else if (_.eq(char, "}")) {
         const last = stack[stack.length - 1];
-        if (eq(last, "{")) {
+        if (_.eq(last, "{")) {
           stack.pop();
-          if (eq(stack.length, 0)) {
+          if (_.eq(stack.length, 0)) {
             return text.substring(startIdx, i + 1);
           }
         }
-      } else if (eq(char, "]")) {
+      } else if (_.eq(char, "]")) {
         const last = stack[stack.length - 1];
-        if (eq(last, "[")) {
+        if (_.eq(last, "[")) {
           stack.pop();
-          if (eq(stack.length, 0)) {
+          if (_.eq(stack.length, 0)) {
             return text.substring(startIdx, i + 1);
           }
         }
@@ -59,38 +60,38 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
   let inString = false;
   let escapeNext = false;
 
-  for (let i = 0; lt(i, jsonStr.length); i++) {
+  for (let i = 0; _.lt(i, jsonStr.length); i++) {
     const char = jsonStr[i];
 
-    if (eq(escapeNext, true)) {
+    if (_.eq(escapeNext, true)) {
       out += char;
       escapeNext = false;
       continue;
     }
 
-    if (eq(char, "\\")) {
+    if (_.eq(char, "\\")) {
       out += char;
       escapeNext = true;
       continue;
     }
 
-    if (eq(char, '"')) {
-      if (eq(inString, true)) {
+    if (_.eq(char, '"')) {
+      if (_.eq(inString, true)) {
         let isTrueEnd = false;
         let j = i + 1;
-        while (lt(j, jsonStr.length) && /\s/.test(jsonStr[j])) {
+        while (_.lt(j, jsonStr.length) && /\s/.test(jsonStr[j])) {
           j++;
         }
-        if (lt(j, jsonStr.length)) {
+        if (_.lt(j, jsonStr.length)) {
           const nextChar = jsonStr[j];
-          if (includes([",", "}", "]", ":"], nextChar)) {
+          if (_.includes([",", "}", "]", ":"], nextChar)) {
             isTrueEnd = true;
           }
         } else {
           isTrueEnd = true;
         }
 
-        if (eq(isTrueEnd, true)) {
+        if (_.eq(isTrueEnd, true)) {
           inString = false;
           out += char;
         } else {
@@ -103,12 +104,12 @@ export const repairUnescapedDoubleQuotes = (jsonStr: string): string => {
       continue;
     }
 
-    if (eq(inString, true)) {
-      if (eq(char, "\n")) {
+    if (_.eq(inString, true)) {
+      if (_.eq(char, "\n")) {
         out += "\\n";
-      } else if (eq(char, "\r")) {
+      } else if (_.eq(char, "\r")) {
         out += "\\r";
-      } else if (eq(char, "\t")) {
+      } else if (_.eq(char, "\t")) {
         out += "\\t";
       } else {
         out += char;
@@ -126,49 +127,49 @@ export const completeCutoffJSON = (jsonStr: string): string => {
   let inString = false;
   let escape = false;
 
-  for (let i = 0; lt(i, jsonStr.length); i++) {
+  for (let i = 0; _.lt(i, jsonStr.length); i++) {
     const char = jsonStr[i];
     out += char;
 
-    if (eq(escape, true)) {
+    if (_.eq(escape, true)) {
       escape = false;
       continue;
     }
-    if (eq(char, "\\")) {
+    if (_.eq(char, "\\")) {
       escape = true;
       continue;
     }
 
-    if (eq(inString, true)) {
-      if (eq(char, '"')) {
+    if (_.eq(inString, true)) {
+      if (_.eq(char, '"')) {
         inString = false;
       }
     } else {
-      if (eq(char, '"')) {
+      if (_.eq(char, '"')) {
         inString = true;
-      } else if (includes(["{", "["], char)) {
+      } else if (_.includes(["{", "["], char)) {
         stack.push(char);
-      } else if (eq(char, "}")) {
-        if (eq(stack[stack.length - 1], "{")) {
+      } else if (_.eq(char, "}")) {
+        if (_.eq(stack[stack.length - 1], "{")) {
           stack.pop();
         }
-      } else if (eq(char, "]")) {
-        if (eq(stack[stack.length - 1], "[")) {
+      } else if (_.eq(char, "]")) {
+        if (_.eq(stack[stack.length - 1], "[")) {
           stack.pop();
         }
       }
     }
   }
 
-  if (eq(inString, true)) {
+  if (_.eq(inString, true)) {
     out += '"';
   }
 
-  while (gt(stack.length, 0)) {
+  while (_.gt(stack.length, 0)) {
     const last = stack.pop();
-    if (eq(last, "{")) {
+    if (_.eq(last, "{")) {
       out += "}";
-    } else if (eq(last, "[")) {
+    } else if (_.eq(last, "[")) {
       out += "]";
     }
   }
@@ -177,9 +178,9 @@ export const completeCutoffJSON = (jsonStr: string): string => {
 };
 
 export const safeParseJSON = (text: string, defaultVal: any): any => {
-  if (isEmpty(text)) return defaultVal;
-  let trimmed = trim(text);
-  if (includes(["", "undefined", "null"], trimmed)) {
+  if (_.isEmpty(text)) return defaultVal;
+  let trimmed = _.trim(text);
+  if (_.includes(["", "undefined", "null"], trimmed)) {
     return defaultVal;
   }
 
@@ -187,7 +188,7 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     try {
       return JSON.parse(str);
     } catch {
-      const cleanCommas = replace(replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
+      const cleanCommas = _.replace(_.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
       try {
         return JSON.parse(cleanCommas);
       } catch {
@@ -217,18 +218,18 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   };
 
   let parsed = tryParseClean(trimmed);
-  if (!isNil(parsed)) return parsed;
+  if (!_.isNil(parsed)) return parsed;
 
   const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (!isNil(match) && !isNil(match[1])) {
-    parsed = tryParseClean(trim(match[1]));
-    if (!isNil(parsed)) return parsed;
+  if (!_.isNil(match) && !_.isNil(match[1])) {
+    parsed = tryParseClean(_.trim(match[1]));
+    if (!_.isNil(parsed)) return parsed;
   }
 
   const balanced = extractBalancedJSON(trimmed);
-  if (!isNil(balanced)) {
+  if (!_.isNil(balanced)) {
     parsed = tryParseClean(balanced);
-    if (!isNil(parsed)) return parsed;
+    if (!_.isNil(parsed)) return parsed;
   }
 
   const firstBrace = trimmed.indexOf("{");
@@ -236,18 +237,18 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   let startIdx = -1;
   let endIdx = -1;
 
-  if (!eq(firstBrace, -1) && (eq(firstBracket, -1) || lt(firstBrace, firstBracket))) {
+  if (!_.eq(firstBrace, -1) && (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))) {
     startIdx = firstBrace;
     endIdx = trimmed.lastIndexOf("}");
-  } else if (!eq(firstBracket, -1)) {
+  } else if (!_.eq(firstBracket, -1)) {
     startIdx = firstBracket;
     endIdx = trimmed.lastIndexOf("]");
   }
 
-  if (!eq(startIdx, -1) && !eq(endIdx, -1) && gt(endIdx, startIdx)) {
-    const candidate = trimmed.substring(startIdx, add(endIdx, 1));
+  if (!_.eq(startIdx, -1) && !_.eq(endIdx, -1) && _.gt(endIdx, startIdx)) {
+    const candidate = trimmed.substring(startIdx, _.add(endIdx, 1));
     parsed = tryParseClean(candidate);
-    if (!isNil(parsed)) return parsed;
+    if (!_.isNil(parsed)) return parsed;
   }
 
   appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
@@ -255,8 +256,8 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
 };
 
 export const formatTime = (secs: number): string => {
-  const totalSecs = round(secs);
-  const minutes = floor(totalSecs / 60);
+  const totalSecs = _.round(secs);
+  const minutes = _.floor(totalSecs / 60);
   const remainingSecs = totalSecs % 60;
-  return `${padStart(toString(minutes), 2, "0")}:${padStart(toString(remainingSecs), 2, "0")}`;
+  return `${_.padStart(_.toString(minutes), 2, "0")}:${_.padStart(_.toString(remainingSecs), 2, "0")}`;
 };

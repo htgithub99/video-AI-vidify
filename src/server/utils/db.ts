@@ -5,13 +5,14 @@ import fs from "fs";
 import { VideoProject } from "../../types.js";
 import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg } from "../../constants";
 import { appError } from "../../lib/logger.js";
-import { isNil, map, eq, gt, isArray, isEmpty } from "lodash";
+import _ from 'lodash';
+
 
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 const dbPath = path.join(process.cwd(), SQLITE_DB_NAME);
 
 export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
-  if (!isNil(dbInstance)) return dbInstance;
+  if (!_.isNil(dbInstance)) return dbInstance;
 
   try {
     dbInstance = await open({
@@ -51,7 +52,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
       ORDER BY updated_at DESC
     `);
 
-    return map(rows, (row) => {
+    return _.map(rows, (row) => {
       let config = undefined;
       try {
         const detail = JSON.parse(row.data);
@@ -85,7 +86,7 @@ export async function getProjectDetailFromDb(id: string): Promise<VideoProject |
   try {
     const db = await initDb();
     const row = await db.get("SELECT data FROM projects WHERE id = ?", [id]);
-    if (!isNil(row) && !isNil(row.data)) {
+    if (!_.isNil(row) && !_.isNil(row.data)) {
       return JSON.parse(row.data) as VideoProject;
     }
   } catch (error) {
@@ -113,7 +114,7 @@ export async function deleteProjectFromDb(id: string): Promise<boolean> {
   try {
     const db = await initDb();
     const result = await db.run("DELETE FROM projects WHERE id = ?", [id]);
-    return (result.changes && gt(result.changes, 0)) || false;
+    return (result.changes && _.gt(result.changes, 0)) || false;
   } catch (error) {
     appError(`${getBackendMsg("SQLITE_DELETE_ERR")} ${id}`, error);
     return false;
@@ -126,7 +127,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
     const projectsDir = path.join(process.cwd(), "projects");
     const backupDir = path.join(process.cwd(), PROJECTS_BACKUP_DIR_NAME);
 
-    if (eq(fs.existsSync(projectsFile), false)) {
+    if (_.eq(fs.existsSync(projectsFile), false)) {
       return;
     }
 
@@ -137,12 +138,12 @@ export async function migrateJsonToSqlite(): Promise<void> {
     const rawList = fs.readFileSync(projectsFile, ENCODING_UTF8);
     const metadataList = JSON.parse(rawList);
 
-    if (eq(isArray(metadataList), false) || eq(metadataList.length, 0)) {
+    if (_.eq(_.isArray(metadataList), false) || _.eq(metadataList.length, 0)) {
       console.log(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
       return;
     }
 
-    if (eq(fs.existsSync(backupDir), false)) {
+    if (_.eq(fs.existsSync(backupDir), false)) {
       fs.mkdirSync(backupDir, { recursive: true });
     }
 
@@ -150,12 +151,12 @@ export async function migrateJsonToSqlite(): Promise<void> {
 
     for (const meta of metadataList) {
       const id = meta.id;
-      if (isEmpty(id)) continue;
+      if (_.isEmpty(id)) continue;
 
       let projectDetail: VideoProject | null = null;
 
       const detailFile = path.join(projectsDir, `${id}.json`);
-      if (eq(fs.existsSync(detailFile), true)) {
+      if (_.eq(fs.existsSync(detailFile), true)) {
         try {
           const detailRaw = fs.readFileSync(detailFile, ENCODING_UTF8);
           projectDetail = JSON.parse(detailRaw);
@@ -164,7 +165,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
         }
       }
 
-      if (isNil(projectDetail)) {
+      if (_.isNil(projectDetail)) {
         projectDetail = {
           id,
           name: meta.name || "Dự án di chuyển",
@@ -187,7 +188,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
         [projectDetail.id, projectDetail.name, projectDetail.description || "", projectDetail.createdAt || new Date().toISOString(), projectDetail.updatedAt || new Date().toISOString(), projectDetail.currentStep || 0, projectDetail.creditsUsed || 0, JSON.stringify(projectDetail)],
       );
 
-      if (eq(fs.existsSync(detailFile), true)) {
+      if (_.eq(fs.existsSync(detailFile), true)) {
         try {
           fs.renameSync(detailFile, path.join(backupDir, `${id}.json`));
         } catch (e) {
@@ -201,7 +202,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
     try {
       fs.renameSync(projectsFile, path.join(backupDir, PROJECTS_FILE_NAME));
       const backupFile = path.join(process.cwd(), "projects.backup.json");
-      if (eq(fs.existsSync(backupFile), true)) {
+      if (_.eq(fs.existsSync(backupFile), true)) {
         fs.renameSync(backupFile, path.join(backupDir, "projects.backup.json"));
       }
       console.log(getBackendMsg("SQLITE_MIGRATION_SUCCESS"));
@@ -211,7 +212,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
   } catch (error) {
     appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
     try {
-      if (!isNil(dbInstance)) {
+      if (!_.isNil(dbInstance)) {
         await dbInstance.exec("ROLLBACK;");
       }
     } catch (e) {}

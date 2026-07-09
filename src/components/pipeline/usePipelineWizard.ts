@@ -1,6 +1,7 @@
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { isEqual, chunk } from "lodash";
+import _ from 'lodash';
+
 import { formatCleanDuration } from "./pipeline-utils";
 import { formatTimeHelper } from "../../utils/helpers";
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
@@ -184,7 +185,7 @@ const isProjectContentEqual = (p1: any, p2: any) => {
     const val1 = p1[key];
     const val2 = p2[key];
     if (val1 === val2 || (isEmpty(val1) && isEmpty(val2))) return true;
-    return isEqual(val1, val2);
+    return _.isEqual(val1, val2);
   });
 };
 
@@ -291,7 +292,7 @@ export function usePipelineWizard(props: any) {
           [prev.currentStep, normalizedInitialProject.currentStep],
           [prev.creditsUsed, normalizedInitialProject.creditsUsed],
         ];
-        const hasChanges = compareItems.some(([a, b, isJson]) => (isJson ? !isEqual(a, b) : a !== b));
+        const hasChanges = compareItems.some(([a, b, isJson]) => (isJson ? !_.isEqual(a, b) : a !== b));
 
         if (!hasChanges) {
           return prev;
@@ -1213,7 +1214,7 @@ export function usePipelineWizard(props: any) {
           [currentHookConfig.duration, hookDuration],
           [currentHookConfig.count, hookCount],
           [currentHookConfig.positions, hookPosition],
-        ].every(([a, b]) => a === b) && isEqual(currentHookConfig.versions, hooksDraft);
+        ].every(([a, b]) => a === b) && _.isEqual(currentHookConfig.versions, hooksDraft);
 
       return isHookUnchanged
         ? prev
@@ -2714,7 +2715,7 @@ export function usePipelineWizard(props: any) {
           }
         }
       } else {
-        const batches = chunk(targetScenes, concurrency);
+        const batches = _.chunk(targetScenes, concurrency);
         let completedBatchesCount = 0;
 
         for (let i = 0; i < batches.length && !hasError; i++) {

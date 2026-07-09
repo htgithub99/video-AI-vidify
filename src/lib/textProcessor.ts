@@ -3,46 +3,47 @@ import { SCENE_SPLIT_PROMPTS } from "../constants/texts.js";
 import { SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../constants/data.js";
 import { formatTimeHelper as formatTime } from "../lib/timeUtils.js";
 import { ABBREVIATIONS, CONJUNCTIONS, boundaries, VIETNAMESE_VALID_CHARS_REGEX, SplitStrategy } from "../constants/index.js";
-import { isEmpty, trim, lte, lt, add, gte, includes, eq, toLower, max, compact, split, ceil, slice, join, concat, forEach, chunk, sumBy, min, isNil, endsWith, subtract } from "lodash";
+import _ from 'lodash';
+
 
 export const smartChunkScript = (script: string, maxChunkSize: number = 2500, minChunkSize: number = 2000): string[] => {
-  if (isEmpty(trim(script))) return [];
-  if (lte(script.length, maxChunkSize)) return [trim(script)];
+  if (_.isEmpty(_.trim(script))) return [];
+  if (_.lte(script.length, maxChunkSize)) return [_.trim(script)];
 
   const chunks: string[] = [];
   let currentIdx = 0;
 
-  while (lt(currentIdx, script.length)) {
-    let endIdx = add(currentIdx, maxChunkSize);
+  while (_.lt(currentIdx, script.length)) {
+    let endIdx = _.add(currentIdx, maxChunkSize);
 
-    if (gte(endIdx, script.length)) {
-      const finalChunk = trim(script.slice(currentIdx));
-      if (!isEmpty(finalChunk)) chunks.push(finalChunk);
+    if (_.gte(endIdx, script.length)) {
+      const finalChunk = _.trim(script.slice(currentIdx));
+      if (!_.isEmpty(finalChunk)) chunks.push(finalChunk);
       break;
     }
 
     let cutPoint = endIdx;
     let foundBoundary = false;
 
-    for (let i = endIdx; gt(i, add(currentIdx, minChunkSize)); i--) {
-      if (includes(boundaries, script[i])) {
-        cutPoint = add(i, 1);
+    for (let i = endIdx; gt(i, _.add(currentIdx, minChunkSize)); i--) {
+      if (_.includes(boundaries, script[i])) {
+        cutPoint = _.add(i, 1);
         foundBoundary = true;
         break;
       }
     }
 
-    if (eq(foundBoundary, false)) {
+    if (_.eq(foundBoundary, false)) {
       for (let i = endIdx; gt(i, currentIdx); i--) {
-        if (eq(script[i], " ")) {
+        if (_.eq(script[i], " ")) {
           cutPoint = i;
           break;
         }
       }
     }
 
-    const chunkVal = trim(script.slice(currentIdx, cutPoint));
-    if (!isEmpty(chunkVal)) {
+    const chunkVal = _.trim(script.slice(currentIdx, cutPoint));
+    if (!_.isEmpty(chunkVal)) {
       chunks.push(chunkVal);
     }
 
@@ -53,32 +54,32 @@ export const smartChunkScript = (script: string, maxChunkSize: number = 2500, mi
 };
 
 export const smartSplitSentences = (text: string): string[] => {
-  if (isEmpty(text)) return [];
+  if (_.isEmpty(text)) return [];
   const sentences: string[] = [];
   let currentSentence = "";
 
-  for (let i = 0; lt(i, text.length); i++) {
+  for (let i = 0; _.lt(i, text.length); i++) {
     const char = text[i];
     currentSentence += char;
 
-    if (includes([".", "?", "!", "\n"], char)) {
-      if (eq(char, ".")) {
-        if (gt(i, 0) && lt(i, subtract(text.length, 1)) && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
+    if (_.includes([".", "?", "!", "\n"], char)) {
+      if (_.eq(char, ".")) {
+        if (gt(i, 0) && _.lt(i, _.subtract(text.length, 1)) && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
           continue;
         }
 
         const lastWordMatch = currentSentence.slice(0, -1).match(/(\b[a-zA-ZÀ-ỹ]+)$/);
-        if (!isNil(lastWordMatch)) {
-          const lastWord = toLower(lastWordMatch[1]);
-          if (includes(ABBREVIATIONS, lastWord)) {
+        if (!_.isNil(lastWordMatch)) {
+          const lastWord = _.toLower(lastWordMatch[1]);
+          if (_.includes(ABBREVIATIONS, lastWord)) {
             continue;
           }
         }
       }
 
-      if (eq(char, "\n") || eq(i, subtract(text.length, 1)) || /\s/.test(text[i + 1])) {
-        const trimmed = trim(currentSentence);
-        if (!isEmpty(trimmed)) {
+      if (_.eq(char, "\n") || _.eq(i, _.subtract(text.length, 1)) || /\s/.test(text[i + 1])) {
+        const trimmed = _.trim(currentSentence);
+        if (!_.isEmpty(trimmed)) {
           sentences.push(trimmed);
         }
         currentSentence = "";
@@ -86,56 +87,56 @@ export const smartSplitSentences = (text: string): string[] => {
     }
   }
 
-  if (!isEmpty(trim(currentSentence))) {
-    sentences.push(trim(currentSentence));
+  if (!_.isEmpty(_.trim(currentSentence))) {
+    sentences.push(_.trim(currentSentence));
   }
 
   return sentences;
 };
 
 export const splitSentenceSafely = (sent: string, maxWords: number = 12): string[] => {
-  const safeMaxWords = max([12, maxWords]) || 12;
-  const words = compact(split(sent, /\s+/));
-  if (lte(words.length, safeMaxWords)) {
+  const safeMaxWords = _.max([12, maxWords]) || 12;
+  const words = _.compact(_.split(sent, /\s+/));
+  if (_.lte(words.length, safeMaxWords)) {
     return [sent];
   }
 
   const len = words.length;
   const startIdx = floor(len * 0.3);
-  const endIdx = ceil(len * 0.7);
+  const endIdx = _.ceil(len * 0.7);
 
-  for (let i = startIdx; lte(i, endIdx); i++) {
+  for (let i = startIdx; _.lte(i, endIdx); i++) {
     const word = words[i];
     if (/[伤害,.;:—\-\s]+$/.test(word)) {
-      if (endsWith(word, ".")) {
-        const cleanWord = toLower(word.slice(0, -1)).replace(VIETNAMESE_VALID_CHARS_REGEX, "");
-        if (includes(ABBREVIATIONS, cleanWord)) {
+      if (_.endsWith(word, ".")) {
+        const cleanWord = _.toLower(word.slice(0, -1)).replace(VIETNAMESE_VALID_CHARS_REGEX, "");
+        if (_.includes(ABBREVIATIONS, cleanWord)) {
           continue;
         }
-        if (/\d$/.test(cleanWord) && lt(i, subtract(len, 1)) && /^\d/.test(words[i + 1])) {
+        if (/\d$/.test(cleanWord) && _.lt(i, _.subtract(len, 1)) && /^\d/.test(words[i + 1])) {
           continue;
         }
       }
 
-      const part1 = join(slice(words, 0, add(i, 1)), " ");
-      const part2 = join(slice(words, add(i, 1)), " ");
-      return concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+      const part1 = _.join(_.slice(words, 0, _.add(i, 1)), " ");
+      const part2 = _.join(_.slice(words, _.add(i, 1)), " ");
+      return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
     }
   }
 
-  for (let i = startIdx; lte(i, endIdx); i++) {
-    const word = toLower(words[i]).replace(VIETNAMESE_VALID_CHARS_REGEX, "");
-    if (includes(CONJUNCTIONS, word)) {
-      const part1 = join(slice(words, 0, i), " ");
-      const part2 = join(slice(words, i), " ");
-      return concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+  for (let i = startIdx; _.lte(i, endIdx); i++) {
+    const word = _.toLower(words[i]).replace(VIETNAMESE_VALID_CHARS_REGEX, "");
+    if (_.includes(CONJUNCTIONS, word)) {
+      const part1 = _.join(_.slice(words, 0, i), " ");
+      const part2 = _.join(_.slice(words, i), " ");
+      return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
     }
   }
 
-  const mid = ceil(len / 2);
-  const part1 = join(slice(words, 0, mid), " ");
-  const part2 = join(slice(words, mid), " ");
-  return concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+  const mid = _.ceil(len / 2);
+  const part1 = _.join(_.slice(words, 0, mid), " ");
+  const part2 = _.join(_.slice(words, mid), " ");
+  return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
 };
 
 export function generateMockStoryboard(rewrittenScript: string, chapters: any[], isVi: boolean, style: string, density: number, voiceDuration?: number, splitStrategy?: string, aspectRatio: string = AspectRatio.SixteenNine) {
@@ -153,62 +154,62 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.MULTI_PROMPT]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 14);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.ULTRADENSE]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 12);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.WORD]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 12);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.HYPERDENSE]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 12);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.SHORT_SENTENCE]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 12);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.HIGHPACED]: (text) => {
       const res: SegmentWithContext[] = [];
       const sents = smartSplitSentences(text);
-      forEach(sents, (sent) => {
+      _.forEach(sents, (sent) => {
         const clauses = splitSentenceSafely(sent, 15);
-        forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
+        _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
       });
       return res;
     },
     [SplitStrategy.DRAMATIC]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 2), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 2), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -216,15 +217,15 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.PARAGRAPH]: (text) => {
       const res: SegmentWithContext[] = [];
       const paragraphs = filter(
-        map(split(text || "", /\n+/), trim),
+        map(_.split(text || "", /\n+/), _.trim),
         (p) => gt(p.length, 10)
       );
-      forEach(paragraphs, (para) => res.push({ text: para, context: para }));
-      if (lt(res.length, 3)) {
+      _.forEach(paragraphs, (para) => res.push({ text: para, context: para }));
+      if (_.lt(res.length, 3)) {
         const sentences = smartSplitSentences(text);
         res.length = 0;
-        forEach(chunk(sentences, 3), (batch) => {
-          const chunkText = join(batch, ". ");
+        _.forEach(_.chunk(sentences, 3), (batch) => {
+          const chunkText = _.join(batch, ". ");
           res.push({ text: chunkText, context: chunkText });
         });
       }
@@ -233,8 +234,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.EPIC]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 4), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 4), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -242,8 +243,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.CINEMATIC]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 5), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 5), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -251,8 +252,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.ARTISTIC]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 6), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 6), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -260,8 +261,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.SLOWPACED]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 7), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 7), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -269,8 +270,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     [SplitStrategy.SUPER_SLOW]: (text) => {
       const res: SegmentWithContext[] = [];
       const sentences = smartSplitSentences(text);
-      forEach(chunk(sentences, 10), (batch) => {
-        const chunkText = join(batch, ". ");
+      _.forEach(_.chunk(sentences, 10), (batch) => {
+        const chunkText = _.join(batch, ". ");
         res.push({ text: chunkText, context: chunkText });
       });
       return res;
@@ -279,40 +280,40 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
 
   const pList: SegmentWithContext[] = (SLICE_STRATEGIES[splitStrategy || ""] || defaultStrategy)(rewrittenScript || "");
 
-  const totalWords = sumBy(pList, (p) => compact(split(p.text, /\s+/)).length);
+  const totalWords = _.sumBy(pList, (p) => _.compact(_.split(p.text, /\s+/)).length);
 
   let maxScenes = 250;
 
-  const scenesCount = min([maxScenes, gt(pList.length, 0) ? pList.length : 8]) || 8;
+  const scenesCount = _.min([maxScenes, gt(pList.length, 0) ? pList.length : 8]) || 8;
   const scenes: any[] = [];
   let currentTime = 0;
 
   const styleStr = style || "Realistic";
-  const defaultChapters = !isEmpty(chapters) ? chapters : [{ id: "ch_1", title: "Chapter 1" }];
+  const defaultChapters = !_.isEmpty(chapters) ? chapters : [{ id: "ch_1", title: "Chapter 1" }];
 
   const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
 
-  for (let i = 0; lt(i, scenesCount); i++) {
+  for (let i = 0; _.lt(i, scenesCount); i++) {
     const chapter = defaultChapters[i % defaultChapters.length];
     const segment = pList[i];
-    const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(add(i, 1));
+    const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(_.add(i, 1));
     const contextText = segment ? segment.context : scriptText;
 
-    const wordsCount = compact(split(scriptText, /\s+/)).length;
+    const wordsCount = _.compact(_.split(scriptText, /\s+/)).length;
     let duration = 5;
     if (voiceDuration && gt(totalWords, 0)) {
       duration = round((wordsCount / totalWords) * voiceDuration);
-      if (lt(duration, 3)) duration = 3;
+      if (_.lt(duration, 3)) duration = 3;
     } else {
-      duration = max([5, min([20, ceil(wordsCount / 2.2)]) || 20]) || 5;
+      duration = _.max([5, _.min([20, _.ceil(wordsCount / 2.2)]) || 20]) || 5;
     }
 
-    if (voiceDuration && eq(i, subtract(scenesCount, 1))) {
-      duration = max([3, subtract(voiceDuration, currentTime)]) || 3;
+    if (voiceDuration && _.eq(i, _.subtract(scenesCount, 1))) {
+      duration = _.max([3, _.subtract(voiceDuration, currentTime)]) || 3;
     }
 
     const startTimeSeconds = currentTime;
-    const endTimeSeconds = add(currentTime, duration);
+    const endTimeSeconds = _.add(currentTime, duration);
     currentTime = endTimeSeconds;
 
     const motion = SCENE_SPLIT_MOTIONS[i % SCENE_SPLIT_MOTIONS.length];
@@ -320,7 +321,7 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     const transition = SCENE_SPLIT_TRANSITIONS[i % SCENE_SPLIT_TRANSITIONS.length];
 
     scenes.push({
-      id: `sc_${add(i, 1)}`,
+      id: `sc_${_.add(i, 1)}`,
       chapterId: chapter.id,
       startTime: formatTime(startTimeSeconds),
       endTime: formatTime(endTimeSeconds),

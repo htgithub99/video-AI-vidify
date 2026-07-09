@@ -2,35 +2,20 @@ import { ErrorMessage, supportedTypes } from "../constants/index.js";
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
-import {
-  map,
-  isNil,
-  gte,
-  gt,
-  min,
-  eq,
-  forEach,
-  round,
-  some,
-  lte,
-  find,
-  divide,
-  multiply,
-  add,
-  lt,
-} from "lodash";
+import _ from 'lodash';
+
 
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
-  return map(storyboard, (sc) => {
+  return _.map(storyboard, (sc) => {
     const startSec = parseTimeToSeconds(sc.startTime || "");
     const endSec = parseTimeToSeconds(sc.endTime || "");
 
     const start =
-      sc.startTime && !isNil(startSec) && gte(startSec, 0) ? startSec : elapsed;
+      sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0) ? startSec : elapsed;
     const duration = sc.duration || 5;
     const end =
-      sc.endTime && !isNil(endSec) && gt(endSec, start)
+      sc.endTime && !_.isNil(endSec) && _.gt(endSec, start)
         ? endSec
         : start + duration;
 
@@ -62,30 +47,30 @@ export const drawSceneFrameToContext = (
   ctx.clearRect(0, 0, w, h);
 
   const progress =
-    min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
+    _.min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
 
   ctx.save();
 
   let scale = 1.0;
   let dx = 0;
   let dy = 0;
-  if (eq(sc.cameraMotion, "Zoom In")) {
+  if (_.eq(sc.cameraMotion, "Zoom In")) {
     scale = 1.0 + 0.12 * progress;
-  } else if (eq(sc.cameraMotion, "Zoom Out")) {
+  } else if (_.eq(sc.cameraMotion, "Zoom Out")) {
     scale = 1.12 - 0.12 * progress;
-  } else if (eq(sc.cameraMotion, "Pan Left")) {
+  } else if (_.eq(sc.cameraMotion, "Pan Left")) {
     dx = -60 * progress;
-  } else if (eq(sc.cameraMotion, "Pan Right")) {
+  } else if (_.eq(sc.cameraMotion, "Pan Right")) {
     dx = 60 * progress;
   }
 
-  if (!isNil(imgElement)) {
+  if (!_.isNil(imgElement)) {
     ctx.translate(w / 2 + dx, h / 2 + dy);
     ctx.scale(scale, scale);
     ctx.drawImage(imgElement, -w / 2, -h / 2, w, h);
   } else {
     const grad = ctx.createLinearGradient(0, 0, w, h);
-    const isAlt = eq((sc.id || "").charCodeAt((sc.id || "").length - 1) % 2, 0);
+    const isAlt = _.eq((sc.id || "").charCodeAt((sc.id || "").length - 1) % 2, 0);
     grad.addColorStop(0, isAlt ? "#0f172a" : "#1e1b4b");
     grad.addColorStop(1, isAlt ? "#e11d48" : "#311042");
     ctx.fillStyle = grad;
@@ -93,13 +78,13 @@ export const drawSceneFrameToContext = (
 
     ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
     ctx.lineWidth = 1.5;
-    for (let x = 0; lt(x, w); x += 40) {
+    for (let x = 0; _.lt(x, w); x += 40) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
       ctx.stroke();
     }
-    for (let y = 0; lt(y, h); y += 40) {
+    for (let y = 0; _.lt(y, h); y += 40) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -129,8 +114,8 @@ export const drawSceneFrameToContext = (
     let startY = 220;
     const words = promptText.split(" ");
     let currentLine = "";
-    forEach(words, (word: string) => {
-      if (gt((currentLine + word).length, 80)) {
+    _.forEach(words, (word: string) => {
+      if (_.gt((currentLine + word).length, 80)) {
         ctx.fillText(currentLine, 80, startY);
         currentLine = word + " ";
         startY += 30;
@@ -155,8 +140,8 @@ export const drawSceneFrameToContext = (
   let subLines: string[] = [];
   const maxLineLength = 90;
 
-  forEach(subText.split(" "), (w: string) => {
-    if (gt((currentSubLine + w).length, maxLineLength)) {
+  _.forEach(subText.split(" "), (w: string) => {
+    if (_.gt((currentSubLine + w).length, maxLineLength)) {
       subLines.push(currentSubLine);
       currentSubLine = w + " ";
     } else {
@@ -166,7 +151,7 @@ export const drawSceneFrameToContext = (
   subLines.push(currentSubLine);
 
   let sY = h - 90 - (subLines.length - 1) * 15;
-  forEach(subLines, (l) => {
+  _.forEach(subLines, (l) => {
     ctx.fillText(l, w / 2, sY);
     sY += 30;
   });
@@ -179,7 +164,7 @@ export const compileVideoToBlob = async (
   ttsAudioUrl: string,
   onProgress: (percent: number) => void,
 ): Promise<Blob> => {
-  if (eq(scenes.length, 0)) {
+  if (_.eq(scenes.length, 0)) {
     throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }
 
@@ -188,7 +173,7 @@ export const compileVideoToBlob = async (
   let loadedCount = 0;
 
   await Promise.all(
-    map(scenes, (sc) => {
+    _.map(scenes, (sc) => {
       return new Promise<void>((resolve) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
@@ -196,14 +181,14 @@ export const compileVideoToBlob = async (
           loadedImages[sc.id] = img;
           loadedCount++;
           onProgress(
-            add(5, round(multiply(divide(loadedCount, scenes.length), 15))),
+            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
           );
           resolve();
         };
         img.onerror = () => {
           loadedCount++;
           onProgress(
-            add(5, round(multiply(divide(loadedCount, scenes.length), 15))),
+            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
           );
           resolve();
         };
@@ -216,11 +201,11 @@ export const compileVideoToBlob = async (
   canvas.width = 1280;
   canvas.height = 720;
   const ctx = canvas.getContext("2d");
-  if (isNil(ctx)) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
+  if (_.isNil(ctx)) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
 
   let mixedStream = new MediaStream();
   const canvasStream = canvas.captureStream(30);
-  forEach(canvasStream.getVideoTracks(), (track) =>
+  _.forEach(canvasStream.getVideoTracks(), (track) =>
     mixedStream.addTrack(track),
   );
 
@@ -228,10 +213,10 @@ export const compileVideoToBlob = async (
   let destNode: any = null;
   let audioEl: HTMLAudioElement | null = null;
 
-  const hasSceneVoices = some(scenes, (sc) => !!sc.audioUrl);
+  const hasSceneVoices = _.some(scenes, (sc) => !!sc.audioUrl);
   const voiceUrl = voiceConfig?.audioUrl || ttsAudioUrl;
   const hasGlobalAudio =
-    voiceUrl && !eq(voiceUrl, "simulated") && !eq(voiceUrl, "simulated_speech");
+    voiceUrl && !_.eq(voiceUrl, "simulated") && !_.eq(voiceUrl, "simulated_speech");
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
   if (hasAudioRecording) {
@@ -246,7 +231,7 @@ export const compileVideoToBlob = async (
       const sourceNode = audioCtx.createMediaElementSource(audioEl);
       sourceNode.connect(destNode);
 
-      forEach(destNode.stream.getAudioTracks(), (track: MediaStreamTrack) =>
+      _.forEach(destNode.stream.getAudioTracks(), (track: MediaStreamTrack) =>
         mixedStream.addTrack(track),
       );
     } catch (ae) {
@@ -255,7 +240,7 @@ export const compileVideoToBlob = async (
   }
 
   let selectedType = "";
-  forEach(supportedTypes, (t) => {
+  _.forEach(supportedTypes, (t) => {
     if (MediaRecorder.isTypeSupported(t)) {
       selectedType = t;
       return false;
@@ -269,11 +254,11 @@ export const compileVideoToBlob = async (
 
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
-    if (e.data && gt(e.data.size, 0)) chunks.push(e.data);
+    if (e.data && _.gt(e.data.size, 0)) chunks.push(e.data);
   };
 
   const ranges = getSceneTimeRanges(scenes);
-  const totalDuration = gt(ranges.length, 0)
+  const totalDuration = _.gt(ranges.length, 0)
     ? ranges[ranges.length - 1].end
     : 30;
 
@@ -292,14 +277,14 @@ export const compileVideoToBlob = async (
     recorder.start();
 
     const MAX_EXPORT_TIME = 5;
-    const speedFactor = gt(totalDuration, MAX_EXPORT_TIME)
+    const speedFactor = _.gt(totalDuration, MAX_EXPORT_TIME)
       ? totalDuration / MAX_EXPORT_TIME
       : 1;
 
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
       audioEl.src = voiceUrl || "";
       audioEl.currentTime = 0;
-      audioEl.playbackRate = lte(speedFactor, 4.0) ? speedFactor : 4.0;
+      audioEl.playbackRate = _.lte(speedFactor, 4.0) ? speedFactor : 4.0;
       audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
     }
 
@@ -311,7 +296,7 @@ export const compileVideoToBlob = async (
       const realElapsed = (now - startTime) / 1000;
       const elapsed = realElapsed * speedFactor;
 
-      if (gte(elapsed, totalDuration) || gte(realElapsed, MAX_EXPORT_TIME)) {
+      if (_.gte(elapsed, totalDuration) || _.gte(realElapsed, MAX_EXPORT_TIME)) {
         recorder.stop();
         if (audioEl) audioEl.pause();
         if (audioCtx) audioCtx.close();
@@ -319,17 +304,17 @@ export const compileVideoToBlob = async (
       }
 
       const matchingRange =
-        find(ranges, (r) => elapsed >= r.start && elapsed < r.end) ||
+        _.find(ranges, (r) => elapsed >= r.start && elapsed < r.end) ||
         ranges[ranges.length - 1];
       const activeScene =
-        find(scenes, (sc) => eq(sc.id, matchingRange.id)) || scenes[0];
+        _.find(scenes, (sc) => _.eq(sc.id, matchingRange.id)) || scenes[0];
 
-      if (hasSceneVoices && audioEl && !eq(activeScene.id, lastSceneId)) {
+      if (hasSceneVoices && audioEl && !_.eq(activeScene.id, lastSceneId)) {
         lastSceneId = activeScene.id;
         if (activeScene.audioUrl) {
           audioEl.src = activeScene.audioUrl;
           audioEl.currentTime = 0;
-          audioEl.playbackRate = lte(speedFactor, 4.0) ? speedFactor : 4.0;
+          audioEl.playbackRate = _.lte(speedFactor, 4.0) ? speedFactor : 4.0;
           audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
         } else {
           audioEl.src = "";
@@ -348,8 +333,8 @@ export const compileVideoToBlob = async (
         sceneDuration,
       );
 
-      const prog = add(20, round(multiply(divide(elapsed, totalDuration), 80)));
-      onProgress(min([prog, 99]) || prog);
+      const prog = _.add(20, _.round(_.multiply(_.divide(elapsed, totalDuration), 80)));
+      onProgress(_.min([prog, 99]) || prog);
 
       requestAnimationFrame(renderFrame);
     };

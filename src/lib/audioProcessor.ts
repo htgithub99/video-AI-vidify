@@ -1,7 +1,8 @@
 import { appWarn, createAppError } from "./logger.js";
 import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
 import { MimeType } from "../constants/enums.js";
-import { eq, lt, max, min, add, subtract, isNil, ceil, isEmpty } from "lodash";
+import _ from 'lodash';
+
 
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
@@ -10,7 +11,7 @@ export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const bitDepth = 16;
 
   let result: Float32Array;
-  if (eq(numOfChan, 2)) {
+  if (_.eq(numOfChan, 2)) {
     result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
   } else {
     result = buffer.getChannelData(0);
@@ -46,7 +47,7 @@ const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array =>
   let index = 0;
   let inputIndex = 0;
 
-  while (lt(index, length)) {
+  while (_.lt(index, length)) {
     result[index++] = inputL[inputIndex];
     result[index++] = inputR[inputIndex];
     inputIndex++;
@@ -56,33 +57,33 @@ const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array =>
 
 const floatTo16BitPCM = (output: DataView, offset: number, input: Float32Array): void => {
   let off = offset;
-  for (let i = 0; lt(i, input.length); i++, off = add(off, 2)) {
-    const s = max([-1, min([1, input[i]]) || 1]) || -1;
-    output.setInt16(off, lt(s, 0) ? s * 0x8000 : s * 0x7fff, true);
+  for (let i = 0; _.lt(i, input.length); i++, off = _.add(off, 2)) {
+    const s = _.max([-1, _.min([1, input[i]]) || 1]) || -1;
+    output.setInt16(off, _.lt(s, 0) ? s * 0x8000 : s * 0x7fff, true);
   }
 };
 
 const writeString = (view: DataView, offset: number, string: string): void => {
-  for (let i = 0; lt(i, string.length); i++) {
+  for (let i = 0; _.lt(i, string.length); i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 };
 
 export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, pitch: number, volume: number): Promise<Blob> => {
-  if (lt(Math.abs(subtract(rate, 1.0)), 0.01) && lt(Math.abs(subtract(pitch, 1.0)), 0.01) && lt(Math.abs(subtract(volume, 1.0)), 0.01)) {
+  if (_.lt(Math.abs(_.subtract(rate, 1.0)), 0.01) && _.lt(Math.abs(_.subtract(pitch, 1.0)), 0.01) && _.lt(Math.abs(_.subtract(volume, 1.0)), 0.01)) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
-    const isWav = eq(uint8[0], 0x52) && eq(uint8[1], 0x49) && eq(uint8[2], 0x46) && eq(uint8[3], 0x46);
+    const isWav = _.eq(uint8[0], 0x52) && _.eq(uint8[1], 0x49) && _.eq(uint8[2], 0x46) && _.eq(uint8[3], 0x46);
     const mimeType = isWav ? MimeType.WAV : MimeType.MPEG;
     return new Blob([arrayBuffer], { type: mimeType });
   }
 
   const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-  if (isNil(AudioContextClass)) {
+  if (_.isNil(AudioContextClass)) {
     throw createAppError("Web Audio API is not supported in this browser.");
   }
 
   const audioCtx = new AudioContextClass();
-  if (eq(audioCtx.state, "suspended")) {
+  if (_.eq(audioCtx.state, "suspended")) {
     try {
       await audioCtx.resume();
     } catch (e) {
@@ -93,9 +94,9 @@ export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, 
   try {
     const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-    const combinedRate = max([0.5, min([2.0, rate * pitch]) || 2.0]) || 0.5;
+    const combinedRate = _.max([0.5, _.min([2.0, rate * pitch]) || 2.0]) || 0.5;
 
-    const targetLength = max([1, ceil(decodedBuffer.length / combinedRate)]) || 1;
+    const targetLength = _.max([1, _.ceil(decodedBuffer.length / combinedRate)]) || 1;
 
     const OfflineAudioCtxClass = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
     const offlineCtx = new OfflineAudioCtxClass(decodedBuffer.numberOfChannels, targetLength, decodedBuffer.sampleRate);
@@ -121,7 +122,7 @@ export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, 
 };
 
 export const cleanScriptText = (text: string): string => {
-  if (isEmpty(text)) return "";
+  if (_.isEmpty(text)) return "";
   let t = text;
 
   t = t.replace(AUDIO_CLEAN_PREFIX_REGEX, "");

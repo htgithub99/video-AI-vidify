@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Play, Square, Check, Globe2, User, Activity, Mic, Heart } from "lucide-react";
 import { Modal } from "./ui/Modal";
-import { split, unionBy, map, some, uniq, filter, toLower, take } from "lodash";
+import _ from 'lodash';
 import { Button } from "./ui/Button";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
@@ -39,7 +39,7 @@ const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean 
   try {
     const localeToUse = lang === "vi" ? "vi-VN" : "en-US";
     if (isLocale && code.includes("-")) {
-      const regionCode = split(code, "-")[1];
+      const regionCode = _.split(code, "-")[1];
       if (regionCode) {
         const regionNames = new Intl.DisplayNames([localeToUse], {
           type: "region",
@@ -104,7 +104,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
         if (overrideVoices) {
           setVoices(json.data);
         } else {
-          setVoices((prev) => unionBy(prev, json.data, "voice_id"));
+          setVoices((prev) => _.unionBy(prev, json.data, "voice_id"));
         }
         setHasMore(json.pagination?.has_more ?? false);
       } else {
@@ -185,7 +185,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
       }
     >
       <div className="flex flex-col md:flex-row h-full min-h-[500px] bg-transparent">
-        {}
+        { }
         <div className="w-full md:w-72 bg-slate-950/40 border-r border-slate-800/80 p-5 flex flex-col gap-6 overflow-y-auto shrink-0">
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -205,7 +205,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {map(VOICE_PROVIDER_OPTIONS, (opt) => (
+                {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -221,7 +221,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {map(VOICE_LANGUAGE_OPTIONS, (opt) => (
+                {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -236,12 +236,12 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               {t.Gender}
             </label>
             <div className="flex gap-2">
-              {map(["", "male", "female"], (g) => (
-                <Button 
-                  key={g} 
+              {_.map(["", "male", "female"], (g) => (
+                <Button
+                  key={g}
                   variant={gender === g ? "outline" : "secondary"}
                   size="sm"
-                  onClick={() => setGender(g)} 
+                  onClick={() => setGender(g)}
                   className={`flex-1 font-semibold ${gender === g ? "bg-rose-500/10 border-rose-500/50 text-rose-500 shadow-sm" : "bg-slate-900 border-slate-700 text-slate-400"}`}
                 >
                   {g === "" ? t.All : g === "male" ? t.Male_5 : t.Female_6}
@@ -257,7 +257,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={age} onChange={(e) => setAge(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {map(VOICE_AGE_OPTIONS, (opt) => (
+                {_.map(VOICE_AGE_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -267,7 +267,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
           </div>
         </div>
 
-        {}
+        { }
         <div className="flex-1 overflow-y-auto relative p-5">
           {voices.length === 0 && !loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
@@ -284,7 +284,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
           )}
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {map(voices, (voice) => {
+            {_.map(voices, (voice) => {
               const isSelected = selectedVoiceId === voice.voice_id;
               const isPlaying = playingId === voice.voice_id;
 
@@ -317,7 +317,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
                           title={t.favorite}
                         >
-                          <Heart className={`w-4 h-4 transition-all duration-200 ${some(favoriteVoices, (v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
+                          <Heart className={`w-4 h-4 transition-all duration-200 ${_.some(favoriteVoices, (v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
                         </Button>
                         {isSelected && (
                           <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
@@ -338,13 +338,13 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           voice.accent,
                           ...(voice.tags || [])
                         ];
-                        const displayTags = uniq(filter(rawTags, Boolean) as string[]);
+                        const displayTags = _.uniq(_.filter(rawTags, Boolean) as string[]);
 
-                        return map(
-                          filter(displayTags, (tag) => {
-                            const lowerTag = toLower(String(tag));
-                            const lowerLocale = toLower(voice.locale);
-                            const lowerLang = toLower(voice.language);
+                        return _.map(
+                          _.filter(displayTags, (tag) => {
+                            const lowerTag = _.toLower(String(tag));
+                            const lowerLocale = _.toLower(voice.locale);
+                            const lowerLang = _.toLower(voice.language);
                             return lowerTag !== lowerLocale && lowerTag !== lowerLang;
                           }),
                           (tag, idx) => (
@@ -354,7 +354,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           )
                         );
                       })()}
-                      {map(take(voice.descriptives, 2), (desc, idx) => (
+                      {_.map(_.take(voice.descriptives, 2), (desc, idx) => (
                         <span key={`desc-${idx}`} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-800/50 border border-slate-700/50 text-slate-400 capitalize whitespace-nowrap">
                           {desc}
                         </span>

@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
-import { isArray, map, some, includes, filter, find, forEach, eq, gt, subtract } from "lodash";
+import _ from 'lodash';
+
 import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX } from "../../constants";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
@@ -37,8 +38,8 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
   const newPathPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${newFolderName}/`;
 
   let storyboard = project.storyboard;
-  if (storyboard && isArray(storyboard)) {
-    storyboard = map(storyboard, (scene) => {
+  if (storyboard && _.isArray(storyboard)) {
+    storyboard = _.map(storyboard, (scene) => {
       let assetUrl = scene.assetUrl;
       let assetUrls = scene.assetUrls || [];
       let audioUrl = scene.audioUrl;
@@ -47,7 +48,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
         assetUrl = assetUrl.replace(oldPathPrefix, newPathPrefix);
       }
       if (assetUrls.length > 0) {
-        assetUrls = map(assetUrls, (url) => (url && url.startsWith(oldPathPrefix) ? url.replace(oldPathPrefix, newPathPrefix) : url));
+        assetUrls = _.map(assetUrls, (url) => (url && url.startsWith(oldPathPrefix) ? url.replace(oldPathPrefix, newPathPrefix) : url));
       }
       if (audioUrl && audioUrl.startsWith(oldPathPrefix)) {
         audioUrl = audioUrl.replace(oldPathPrefix, newPathPrefix);
@@ -63,8 +64,8 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
   }
 
   let thumbnails = project.thumbnails;
-  if (thumbnails && isArray(thumbnails)) {
-    thumbnails = map(thumbnails, (thumb) => {
+  if (thumbnails && _.isArray(thumbnails)) {
+    thumbnails = _.map(thumbnails, (thumb) => {
       let imageUrl = thumb.imageUrl;
       if (imageUrl && imageUrl.startsWith(oldPathPrefix)) {
         imageUrl = imageUrl.replace(oldPathPrefix, newPathPrefix);
@@ -95,7 +96,7 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
 function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   const assetsDir = path.join(process.cwd(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
 
-  return map(projects, (project) => {
+  return _.map(projects, (project) => {
     const folderName = getSafeFolderName(project.name);
     const projectDir = path.join(assetsDir, folderName);
     const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
@@ -110,8 +111,8 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 
     let storyboardUpdated = false;
     let storyboard = project.storyboard;
-    if (storyboard && isArray(storyboard)) {
-      storyboard = map(storyboard, (scene) => {
+    if (storyboard && _.isArray(storyboard)) {
+      storyboard = _.map(storyboard, (scene) => {
         let assetUrl = scene.assetUrl;
         let assetUrls = scene.assetUrls || [];
         let audioUrl = scene.audioUrl;
@@ -137,7 +138,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         if (assetUrls?.length) {
-          const hasBase64 = some(assetUrls, (url) => url && url.includes(COMMON_STRINGS.BASE64_IMAGE_PREFIX));
+          const hasBase64 = _.some(assetUrls, (url) => url && url.includes(COMMON_STRINGS.BASE64_IMAGE_PREFIX));
           if (hasBase64) {
             assetUrls = assetUrl ? [assetUrl] : [];
             sceneUpdated = true;
@@ -147,7 +148,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 
         if (assetUrl) {
           const isNotBase64 = !assetUrl.includes(COMMON_STRINGS.BASE64_IMAGE_PREFIX);
-          const needsSync = !assetUrls || assetUrls.length !== 1 || !includes(assetUrls, assetUrl);
+          const needsSync = !assetUrls || assetUrls.length !== 1 || !_.includes(assetUrls, assetUrl);
           if (isNotBase64 && needsSync) {
             assetUrls = [assetUrl];
             sceneUpdated = true;
@@ -162,7 +163,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         }
 
         const anyScene = scene as any;
-        const hasBase64Audio = typeof anyScene.audioBase64 === "string" && anyScene.audioBase64.length > COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD && !some([COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX], (prefix) => anyScene.audioBase64?.startsWith(prefix));
+        const hasBase64Audio = typeof anyScene.audioBase64 === "string" && anyScene.audioBase64.length > COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD && !_.some([COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX], (prefix) => anyScene.audioBase64?.startsWith(prefix));
         if (hasBase64Audio) {
           const fileName = `scene_${scene.id}.wav`;
           const filePath = path.join(audioDir, fileName);
@@ -191,8 +192,8 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 
     let thumbnailsUpdated = false;
     let thumbnails = project.thumbnails;
-    if (thumbnails && isArray(thumbnails)) {
-      thumbnails = map(thumbnails, (thumb) => {
+    if (thumbnails && _.isArray(thumbnails)) {
+      thumbnails = _.map(thumbnails, (thumb) => {
         let imageUrl = thumb.imageUrl;
         let thumbUpdated = false;
 
@@ -319,11 +320,11 @@ export const updateProject = async (req: Request, res: Response) => {
 
     if (oldProject) {
       let newProject = req.body;
-      if (newProject.name && oldProject.name && !eq(newProject.name, oldProject.name)) {
+      if (newProject.name && oldProject.name && !_.eq(newProject.name, oldProject.name)) {
         const oldFolderName = getSafeFolderName(oldProject.name);
         const newFolderName = getSafeFolderName(newProject.name);
 
-        if (!eq(oldFolderName, newFolderName)) {
+        if (!_.eq(oldFolderName, newFolderName)) {
           const assetsDir = path.join(process.cwd(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
           const oldDir = path.join(assetsDir, oldFolderName);
           const newDir = path.join(assetsDir, newFolderName);
@@ -341,12 +342,12 @@ export const updateProject = async (req: Request, res: Response) => {
       }
 
       if (oldProject?.storyboard && newProject?.storyboard) {
-        const oldImagesCount = filter(oldProject.storyboard, (s: any) => s.assetUrl).length;
-        const newImagesCount = filter(newProject.storyboard, (s: any) => s.assetUrl).length;
+        const oldImagesCount = _.filter(oldProject.storyboard, (s: any) => s.assetUrl).length;
+        const newImagesCount = _.filter(newProject.storyboard, (s: any) => s.assetUrl).length;
 
-        if (gt(subtract(oldImagesCount, newImagesCount), 1) && !newProject.allowBulkDeleteImages) {
-          newProject.storyboard = map(newProject.storyboard, (newScene: any) => {
-            const oldScene = find(oldProject.storyboard, (s: any) => eq(s.id, newScene.id));
+        if (_.gt(_.subtract(oldImagesCount, newImagesCount), 1) && !newProject.allowBulkDeleteImages) {
+          newProject.storyboard = _.map(newProject.storyboard, (newScene: any) => {
+            const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
             if (oldScene?.assetUrl && !newScene.assetUrl) {
               return {
                 ...newScene,
@@ -365,8 +366,8 @@ export const updateProject = async (req: Request, res: Response) => {
         const imageDir = path.join(assetsDir, folderName, IMAGES_DIR_NAME);
         const audioDir = path.join(assetsDir, folderName, VOICES_DIR_NAME);
 
-        forEach(newProject.storyboard, (newScene: any) => {
-          const newHasImage = !!(newScene?.assetUrl && !eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !!newScene?.assetUrls?.length;
+        _.forEach(newProject.storyboard, (newScene: any) => {
+          const newHasImage = !!(newScene?.assetUrl && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !!newScene?.assetUrls?.length;
 
           if (!newHasImage) {
             if (fs.existsSync(imageDir)) {
@@ -375,7 +376,7 @@ export const updateProject = async (req: Request, res: Response) => {
                 const prefix1 = `scene_${newScene.id}.`;
                 const prefix2 = `scene_${newScene.id}_`;
 
-                forEach(files, (file) => {
+                _.forEach(files, (file) => {
                   if (file.startsWith(prefix1) || file.startsWith(prefix2)) {
                     const filePath = path.join(imageDir, file);
                     try {
@@ -392,13 +393,13 @@ export const updateProject = async (req: Request, res: Response) => {
             }
           }
 
-          const newHasAudio = !!(newScene?.audioUrl && !eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
+          const newHasAudio = !!(newScene?.audioUrl && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
           if (!newHasAudio) {
             if (fs.existsSync(audioDir)) {
               try {
                 const files = fs.readdirSync(audioDir);
                 const prefix = `scene_${newScene.id}.`;
-                forEach(files, (file) => {
+                _.forEach(files, (file) => {
                   if (file.startsWith(prefix)) {
                     const filePath = path.join(audioDir, file);
                     try {
@@ -418,7 +419,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
         const oldAudioUrl = (oldProject?.voiceConfig as any)?.audioUrl;
         const newAudioUrl = (newProject?.voiceConfig as any)?.audioUrl;
-        if (oldAudioUrl && (!newAudioUrl || eq(newAudioUrl, ""))) {
+        if (oldAudioUrl && (!newAudioUrl || _.eq(newAudioUrl, ""))) {
           const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
           if (fs.existsSync(unifiedAudioFile)) {
             try {
@@ -437,7 +438,7 @@ export const updateProject = async (req: Request, res: Response) => {
       const savedProject = await saveProjectDetail(updatedProject);
       res.json(savedProject);
     } else {
-      const isVi = !eq(req.query.lang, COMMON_STRINGS.EN);
+      const isVi = !_.eq(req.query.lang, COMMON_STRINGS.EN);
       res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
@@ -447,7 +448,7 @@ export const updateProject = async (req: Request, res: Response) => {
 
 export const deleteProject = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const isVi = !eq(req.query.lang, COMMON_STRINGS.EN);
+  const isVi = !_.eq(req.query.lang, COMMON_STRINGS.EN);
 
   try {
     const project = await getProjectDetail(id);
