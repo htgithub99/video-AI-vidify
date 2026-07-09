@@ -25,7 +25,7 @@ export const smartChunkScript = (script: string, maxChunkSize: number = 2500, mi
     let cutPoint = endIdx;
     let foundBoundary = false;
 
-    for (let i = endIdx; gt(i, _.add(currentIdx, minChunkSize)); i--) {
+    for (let i = endIdx; _.gt(i, _.add(currentIdx, minChunkSize)); i--) {
       if (_.includes(boundaries, script[i])) {
         cutPoint = _.add(i, 1);
         foundBoundary = true;
@@ -34,7 +34,7 @@ export const smartChunkScript = (script: string, maxChunkSize: number = 2500, mi
     }
 
     if (_.eq(foundBoundary, false)) {
-      for (let i = endIdx; gt(i, currentIdx); i--) {
+      for (let i = endIdx; _.gt(i, currentIdx); i--) {
         if (_.eq(script[i], " ")) {
           cutPoint = i;
           break;
@@ -64,7 +64,7 @@ export const smartSplitSentences = (text: string): string[] => {
 
     if (_.includes([".", "?", "!", "\n"], char)) {
       if (_.eq(char, ".")) {
-        if (gt(i, 0) && _.lt(i, _.subtract(text.length, 1)) && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
+        if (_.gt(i, 0) && _.lt(i, _.subtract(text.length, 1)) && /\d/.test(text[i - 1]) && /\d/.test(text[i + 1])) {
           continue;
         }
 
@@ -102,7 +102,7 @@ export const splitSentenceSafely = (sent: string, maxWords: number = 12): string
   }
 
   const len = words.length;
-  const startIdx = floor(len * 0.3);
+  const startIdx = _.floor(len * 0.3);
   const endIdx = _.ceil(len * 0.7);
 
   for (let i = startIdx; _.lte(i, endIdx); i++) {
@@ -147,7 +147,7 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
 
   const defaultStrategy = (text: string) => {
     const sentences = smartSplitSentences(text || "");
-    return map(sentences, (sent) => ({ text: sent, context: sent }));
+    return _.map(sentences, (sent) => ({ text: sent, context: sent }));
   };
 
   const SLICE_STRATEGIES: Record<string, (text: string) => SegmentWithContext[]> = {
@@ -216,9 +216,9 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
     },
     [SplitStrategy.PARAGRAPH]: (text) => {
       const res: SegmentWithContext[] = [];
-      const paragraphs = filter(
-        map(_.split(text || "", /\n+/), _.trim),
-        (p) => gt(p.length, 10)
+      const paragraphs = _.filter(
+        _.map(_.split(text || "", /\n+/), _.trim),
+        (p) => _.gt(p.length, 10)
       );
       _.forEach(paragraphs, (para) => res.push({ text: para, context: para }));
       if (_.lt(res.length, 3)) {
@@ -284,7 +284,7 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
 
   let maxScenes = 250;
 
-  const scenesCount = _.min([maxScenes, gt(pList.length, 0) ? pList.length : 8]) || 8;
+  const scenesCount = _.min([maxScenes, _.gt(pList.length, 0) ? pList.length : 8]) || 8;
   const scenes: any[] = [];
   let currentTime = 0;
 
@@ -301,8 +301,8 @@ export function generateMockStoryboard(rewrittenScript: string, chapters: any[],
 
     const wordsCount = _.compact(_.split(scriptText, /\s+/)).length;
     let duration = 5;
-    if (voiceDuration && gt(totalWords, 0)) {
-      duration = round((wordsCount / totalWords) * voiceDuration);
+    if (voiceDuration && _.gt(totalWords, 0)) {
+      duration = _.round((wordsCount / totalWords) * voiceDuration);
       if (_.lt(duration, 3)) duration = 3;
     } else {
       duration = _.max([5, _.min([20, _.ceil(wordsCount / 2.2)]) || 20]) || 5;

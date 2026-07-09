@@ -45,7 +45,6 @@ export default function PipelineStep2(props: PipelineWizardState) {
     handleApplyThumbnailStyle,
     handleTriggerAssetAndThumbnail,
     handleRenderThumbnailImage,
-    currentLang,
     handleAnalyzeCharacter,
     handleCharacterImagesUpload,
     handleExtractCharacter,
