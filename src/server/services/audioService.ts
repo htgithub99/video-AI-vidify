@@ -3,21 +3,22 @@ import { Page } from "playwright";
 import { chromium } from "playwright-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
 import { EXTERNAL_URLS } from "../../constants";
-
 import { appLog, appError } from "../../lib/logger.js";
+import { eq, isNil, isEmpty, forEach } from "lodash";
+
 chromium.use(stealthPlugin());
 
 export let globalPlaywrightPage: Page | null = null;
 export let globalBearerToken: string | null = null;
 
 export const ensureDirectoryExists = (dir: string): void => {
-  if (!fs.existsSync(dir)) {
+  if (eq(fs.existsSync(dir), false)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 };
 
 export async function initPlaywright() {
-  if (globalPlaywrightPage) {
+  if (!isNil(globalPlaywrightPage)) {
     try {
       await globalPlaywrightPage.evaluate("1");
       return;
@@ -70,7 +71,7 @@ export async function initPlaywright() {
     appLog("PLAYWRIGHT_ACCESSING_LABS");
     await page.goto(EXTERNAL_URLS.GOOGLE_LABS, { waitUntil: "networkidle" });
 
-    if (!globalBearerToken) {
+    if (isEmpty(globalBearerToken)) {
       appLog("PLAYWRIGHT_LOGIN_PROMPT");
       page
         .waitForResponse((res) => res.url().includes("googleapis.com"), { timeout: 300000 })
@@ -83,12 +84,12 @@ export async function initPlaywright() {
     globalPlaywrightPage = page;
   } catch (e: any) {
     appError("PLAYWRIGHT_CONNECT_ERR", e?.message || e);
-    ["PLAYWRIGHT_BORDER", "PLAYWRIGHT_CHROME_MANDATE", "PLAYWRIGHT_CHROME_COMMAND", "PLAYWRIGHT_BORDER_BOTTOM"].forEach((k) => appLog(k));
+    forEach(["PLAYWRIGHT_BORDER", "PLAYWRIGHT_CHROME_MANDATE", "PLAYWRIGHT_CHROME_COMMAND", "PLAYWRIGHT_BORDER_BOTTOM"], (k) => appLog(k));
   }
 }
 
 export async function closePlaywright() {
-  if (globalPlaywrightPage) {
+  if (!isNil(globalPlaywrightPage)) {
     try {
       await globalPlaywrightPage.close();
     } catch (e) {}

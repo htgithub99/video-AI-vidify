@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Play, Square, Check, Globe2, User, Activity, Mic, Heart } from "lucide-react";
 import { Modal } from "./ui/Modal";
+import { split, unionBy, map, some, uniq, filter, toLower, take } from "lodash";
 import { Button } from "./ui/Button";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
@@ -38,7 +39,7 @@ const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean 
   try {
     const localeToUse = lang === "vi" ? "vi-VN" : "en-US";
     if (isLocale && code.includes("-")) {
-      const regionCode = code.split("-")[1];
+      const regionCode = split(code, "-")[1];
       if (regionCode) {
         const regionNames = new Intl.DisplayNames([localeToUse], {
           type: "region",
@@ -103,11 +104,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
         if (overrideVoices) {
           setVoices(json.data);
         } else {
-          setVoices((prev) => {
-            const existingIds = new Set(prev.map((v) => v.voice_id));
-            const newVoices = json.data.filter((v: Voice) => !existingIds.has(v.voice_id));
-            return [...prev, ...newVoices];
-          });
+          setVoices((prev) => unionBy(prev, json.data, "voice_id"));
         }
         setHasMore(json.pagination?.has_more ?? false);
       } else {
@@ -208,7 +205,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {VOICE_PROVIDER_OPTIONS.map((opt) => (
+                {map(VOICE_PROVIDER_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -224,7 +221,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {VOICE_LANGUAGE_OPTIONS.map((opt) => (
+                {map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -239,7 +236,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               {t.Gender}
             </label>
             <div className="flex gap-2">
-              {["", "male", "female"].map((g) => (
+              {map(["", "male", "female"], (g) => (
                 <Button 
                   key={g} 
                   variant={gender === g ? "outline" : "secondary"}
@@ -260,7 +257,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             </label>
             <div className="relative">
               <select value={age} onChange={(e) => setAge(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
-                {VOICE_AGE_OPTIONS.map((opt) => (
+                {map(VOICE_AGE_OPTIONS, (opt) => (
                   <option key={opt.value} value={opt.value}>
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
@@ -287,7 +284,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
           )}
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {voices.map((voice) => {
+            {map(voices, (voice) => {
               const isSelected = selectedVoiceId === voice.voice_id;
               const isPlaying = playingId === voice.voice_id;
 
@@ -320,7 +317,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
                           title="Yêu thích"
                         >
-                          <Heart className={`w-4 h-4 transition-all duration-200 ${favoriteVoices.some((v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
+                          <Heart className={`w-4 h-4 transition-all duration-200 ${some(favoriteVoices, (v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
                         </Button>
                         {isSelected && (
                           <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
@@ -333,29 +330,31 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
 
                     <div className="flex flex-wrap gap-1.5 mb-2.5">
                       {(() => {
-                        const displayTags = new Set<string>();
-                        if (voice.language) displayTags.add(getReadableLanguage(voice.language, currentLang));
-                        if (voice.locale) displayTags.add(getReadableLanguage(voice.locale, currentLang, true));
-                        if (voice.gender) displayTags.add(voice.gender);
-                        if (voice.age) displayTags.add(voice.age);
-                        if (voice.accent) displayTags.add(voice.accent);
-                        if (voice.tags) voice.tags.forEach((t) => displayTags.add(t));
+                        const rawTags = [
+                          voice.language && getReadableLanguage(voice.language, currentLang),
+                          voice.locale && getReadableLanguage(voice.locale, currentLang, true),
+                          voice.gender,
+                          voice.age,
+                          voice.accent,
+                          ...(voice.tags || [])
+                        ];
+                        const displayTags = uniq(filter(rawTags, Boolean) as string[]);
 
-                        return Array.from(displayTags)
-                          .filter(Boolean)
-                          .filter((tag) => {
-                            const lowerTag = String(tag).toLowerCase();
-                            const lowerLocale = voice.locale?.toLowerCase();
-                            const lowerLang = voice.language?.toLowerCase();
+                        return map(
+                          filter(displayTags, (tag) => {
+                            const lowerTag = toLower(String(tag));
+                            const lowerLocale = toLower(voice.locale);
+                            const lowerLang = toLower(voice.language);
                             return lowerTag !== lowerLocale && lowerTag !== lowerLang;
-                          })
-                          .map((tag, idx) => (
+                          }),
+                          (tag, idx) => (
                             <span key={`tag-${idx}`} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap">
                               {tag}
                             </span>
-                          ));
+                          )
+                        );
                       })()}
-                      {voice.descriptives?.slice(0, 2).map((desc, idx) => (
+                      {map(take(voice.descriptives, 2), (desc, idx) => (
                         <span key={`desc-${idx}`} className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-800/50 border border-slate-700/50 text-slate-400 capitalize whitespace-nowrap">
                           {desc}
                         </span>

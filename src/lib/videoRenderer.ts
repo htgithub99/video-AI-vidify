@@ -2,16 +2,37 @@ import { ErrorMessage, supportedTypes } from "../constants/index.js";
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
+import {
+  map,
+  isNil,
+  gte,
+  gt,
+  min,
+  eq,
+  forEach,
+  round,
+  some,
+  lte,
+  find,
+  divide,
+  multiply,
+  add,
+  lt,
+} from "lodash";
 
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
-  return storyboard.map((sc) => {
+  return map(storyboard, (sc) => {
     const startSec = parseTimeToSeconds(sc.startTime || "");
     const endSec = parseTimeToSeconds(sc.endTime || "");
 
-    const start = sc.startTime && startSec !== null && startSec >= 0 ? startSec : elapsed;
+    const start =
+      sc.startTime && !isNil(startSec) && gte(startSec, 0) ? startSec : elapsed;
     const duration = sc.duration || 5;
-    const end = sc.endTime && endSec !== null && endSec > start ? endSec : start + duration;
+    const end =
+      sc.endTime && !isNil(endSec) && gt(endSec, start)
+        ? endSec
+        : start + duration;
 
     const actualDuration = end - start;
     elapsed = end;
@@ -28,36 +49,43 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   });
 };
 
-export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, imgElement: HTMLImageElement | undefined, elapsedTimeInScene: number, totalSceneDuration: number) => {
+export const drawSceneFrameToContext = (
+  ctx: CanvasRenderingContext2D,
+  sc: any,
+  imgElement: HTMLImageElement | undefined,
+  elapsedTimeInScene: number,
+  totalSceneDuration: number,
+) => {
   const w = 1280;
   const h = 720;
 
   ctx.clearRect(0, 0, w, h);
 
-  const progress = Math.min(elapsedTimeInScene / (totalSceneDuration || 1), 1.0);
+  const progress =
+    min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
 
   ctx.save();
 
   let scale = 1.0;
   let dx = 0;
   let dy = 0;
-  if (sc.cameraMotion === "Zoom In") {
+  if (eq(sc.cameraMotion, "Zoom In")) {
     scale = 1.0 + 0.12 * progress;
-  } else if (sc.cameraMotion === "Zoom Out") {
+  } else if (eq(sc.cameraMotion, "Zoom Out")) {
     scale = 1.12 - 0.12 * progress;
-  } else if (sc.cameraMotion === "Pan Left") {
+  } else if (eq(sc.cameraMotion, "Pan Left")) {
     dx = -60 * progress;
-  } else if (sc.cameraMotion === "Pan Right") {
+  } else if (eq(sc.cameraMotion, "Pan Right")) {
     dx = 60 * progress;
   }
 
-  if (imgElement) {
+  if (!isNil(imgElement)) {
     ctx.translate(w / 2 + dx, h / 2 + dy);
     ctx.scale(scale, scale);
     ctx.drawImage(imgElement, -w / 2, -h / 2, w, h);
   } else {
     const grad = ctx.createLinearGradient(0, 0, w, h);
-    const isAlt = (sc.id || "").charCodeAt((sc.id || "").length - 1) % 2 === 0;
+    const isAlt = eq((sc.id || "").charCodeAt((sc.id || "").length - 1) % 2, 0);
     grad.addColorStop(0, isAlt ? "#0f172a" : "#1e1b4b");
     grad.addColorStop(1, isAlt ? "#e11d48" : "#311042");
     ctx.fillStyle = grad;
@@ -65,13 +93,13 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
 
     ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
     ctx.lineWidth = 1.5;
-    for (let x = 0; x < w; x += 40) {
+    for (let x = 0; lt(x, w); x += 40) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, h);
       ctx.stroke();
     }
-    for (let y = 0; y < h; y += 40) {
+    for (let y = 0; lt(y, h); y += 40) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(w, y);
@@ -89,7 +117,11 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
 
     ctx.fillStyle = "#f43f5e";
     ctx.font = "bold 18px monospace";
-    ctx.fillText(`SCENE ID: ${sc.id} | DURATION: ${formatCleanDuration(sc.duration || 5)}s`, 80, 160);
+    ctx.fillText(
+      `SCENE ID: ${sc.id} | DURATION: ${formatCleanDuration(sc.duration || 5)}s`,
+      80,
+      160,
+    );
 
     ctx.fillStyle = "#cbd5e1";
     ctx.font = "italic 16px sans-serif";
@@ -97,8 +129,8 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
     let startY = 220;
     const words = promptText.split(" ");
     let currentLine = "";
-    words.forEach((word: string) => {
-      if ((currentLine + word).length > 80) {
+    forEach(words, (word: string) => {
+      if (gt((currentLine + word).length, 80)) {
         ctx.fillText(currentLine, 80, startY);
         currentLine = word + " ";
         startY += 30;
@@ -123,8 +155,8 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
   let subLines: string[] = [];
   const maxLineLength = 90;
 
-  subText.split(" ").forEach((w: string) => {
-    if ((currentSubLine + w).length > maxLineLength) {
+  forEach(subText.split(" "), (w: string) => {
+    if (gt((currentSubLine + w).length, maxLineLength)) {
       subLines.push(currentSubLine);
       currentSubLine = w + " ";
     } else {
@@ -134,14 +166,20 @@ export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, 
   subLines.push(currentSubLine);
 
   let sY = h - 90 - (subLines.length - 1) * 15;
-  subLines.forEach((l) => {
+  forEach(subLines, (l) => {
     ctx.fillText(l, w / 2, sY);
     sY += 30;
   });
 };
 
-export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImageUrl: (sc: StoryboardScene) => string, voiceConfig: any, ttsAudioUrl: string, onProgress: (percent: number) => void): Promise<Blob> => {
-  if (scenes.length === 0) {
+export const compileVideoToBlob = async (
+  scenes: StoryboardScene[],
+  getSceneImageUrl: (sc: StoryboardScene) => string,
+  voiceConfig: any,
+  ttsAudioUrl: string,
+  onProgress: (percent: number) => void,
+): Promise<Blob> => {
+  if (eq(scenes.length, 0)) {
     throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }
 
@@ -150,19 +188,23 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
   let loadedCount = 0;
 
   await Promise.all(
-    scenes.map((sc) => {
+    map(scenes, (sc) => {
       return new Promise<void>((resolve) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => {
           loadedImages[sc.id] = img;
           loadedCount++;
-          onProgress(5 + Math.round((loadedCount / scenes.length) * 15));
+          onProgress(
+            add(5, round(multiply(divide(loadedCount, scenes.length), 15))),
+          );
           resolve();
         };
         img.onerror = () => {
           loadedCount++;
-          onProgress(5 + Math.round((loadedCount / scenes.length) * 15));
+          onProgress(
+            add(5, round(multiply(divide(loadedCount, scenes.length), 15))),
+          );
           resolve();
         };
         img.src = getSceneImageUrl(sc);
@@ -174,24 +216,29 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
   canvas.width = 1280;
   canvas.height = 720;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
+  if (isNil(ctx)) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
 
   let mixedStream = new MediaStream();
   const canvasStream = canvas.captureStream(30);
-  canvasStream.getVideoTracks().forEach((track) => mixedStream.addTrack(track));
+  forEach(canvasStream.getVideoTracks(), (track) =>
+    mixedStream.addTrack(track),
+  );
 
   let audioCtx: AudioContext | null = null;
   let destNode: any = null;
   let audioEl: HTMLAudioElement | null = null;
 
-  const hasSceneVoices = scenes.some((sc) => !!sc.audioUrl);
+  const hasSceneVoices = some(scenes, (sc) => !!sc.audioUrl);
   const voiceUrl = voiceConfig?.audioUrl || ttsAudioUrl;
-  const hasGlobalAudio = voiceUrl && voiceUrl !== "simulated" && voiceUrl !== "simulated_speech";
+  const hasGlobalAudio =
+    voiceUrl && !eq(voiceUrl, "simulated") && !eq(voiceUrl, "simulated_speech");
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
   if (hasAudioRecording) {
     try {
-      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtx = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
       destNode = audioCtx.createMediaStreamDestination();
 
       audioEl = new Audio();
@@ -199,19 +246,21 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
       const sourceNode = audioCtx.createMediaElementSource(audioEl);
       sourceNode.connect(destNode);
 
-      destNode.stream.getAudioTracks().forEach((track: MediaStreamTrack) => mixedStream.addTrack(track));
+      forEach(destNode.stream.getAudioTracks(), (track: MediaStreamTrack) =>
+        mixedStream.addTrack(track),
+      );
     } catch (ae) {
       appWarn("AUDIO_CONTEXT_INIT_FAILED", ae);
     }
   }
 
   let selectedType = "";
-  for (const t of supportedTypes) {
+  forEach(supportedTypes, (t) => {
     if (MediaRecorder.isTypeSupported(t)) {
       selectedType = t;
-      break;
+      return false;
     }
-  }
+  });
 
   const recorder = new MediaRecorder(mixedStream, {
     mimeType: selectedType || undefined,
@@ -220,15 +269,19 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
 
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) chunks.push(e.data);
+    if (e.data && gt(e.data.size, 0)) chunks.push(e.data);
   };
 
   const ranges = getSceneTimeRanges(scenes);
-  const totalDuration = ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
+  const totalDuration = gt(ranges.length, 0)
+    ? ranges[ranges.length - 1].end
+    : 30;
 
   return new Promise<Blob>((resolve, reject) => {
     recorder.onstop = () => {
-      const finalBlob = new Blob(chunks, { type: selectedType || "video/webm" });
+      const finalBlob = new Blob(chunks, {
+        type: selectedType || "video/webm",
+      });
       resolve(finalBlob);
     };
 
@@ -239,12 +292,14 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
     recorder.start();
 
     const MAX_EXPORT_TIME = 5;
-    const speedFactor = totalDuration > MAX_EXPORT_TIME ? totalDuration / MAX_EXPORT_TIME : 1;
+    const speedFactor = gt(totalDuration, MAX_EXPORT_TIME)
+      ? totalDuration / MAX_EXPORT_TIME
+      : 1;
 
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
       audioEl.src = voiceUrl || "";
       audioEl.currentTime = 0;
-      audioEl.playbackRate = speedFactor <= 4.0 ? speedFactor : 4.0;
+      audioEl.playbackRate = lte(speedFactor, 4.0) ? speedFactor : 4.0;
       audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
     }
 
@@ -256,22 +311,25 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
       const realElapsed = (now - startTime) / 1000;
       const elapsed = realElapsed * speedFactor;
 
-      if (elapsed >= totalDuration || realElapsed >= MAX_EXPORT_TIME) {
+      if (gte(elapsed, totalDuration) || gte(realElapsed, MAX_EXPORT_TIME)) {
         recorder.stop();
         if (audioEl) audioEl.pause();
         if (audioCtx) audioCtx.close();
         return;
       }
 
-      const matchingRange = ranges.find((r) => elapsed >= r.start && elapsed < r.end) || ranges[ranges.length - 1];
-      const activeScene = scenes.find((sc) => sc.id === matchingRange.id) || scenes[0];
+      const matchingRange =
+        find(ranges, (r) => elapsed >= r.start && elapsed < r.end) ||
+        ranges[ranges.length - 1];
+      const activeScene =
+        find(scenes, (sc) => eq(sc.id, matchingRange.id)) || scenes[0];
 
-      if (hasSceneVoices && audioEl && activeScene.id !== lastSceneId) {
+      if (hasSceneVoices && audioEl && !eq(activeScene.id, lastSceneId)) {
         lastSceneId = activeScene.id;
         if (activeScene.audioUrl) {
           audioEl.src = activeScene.audioUrl;
           audioEl.currentTime = 0;
-          audioEl.playbackRate = speedFactor <= 4.0 ? speedFactor : 4.0;
+          audioEl.playbackRate = lte(speedFactor, 4.0) ? speedFactor : 4.0;
           audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
         } else {
           audioEl.src = "";
@@ -282,10 +340,16 @@ export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImag
       const sceneDuration = matchingRange.duration;
 
       const imgEl = loadedImages[activeScene.id];
-      drawSceneFrameToContext(ctx, activeScene, imgEl, timeInScene, sceneDuration);
+      drawSceneFrameToContext(
+        ctx,
+        activeScene,
+        imgEl,
+        timeInScene,
+        sceneDuration,
+      );
 
-      const prog = 20 + Math.round((elapsed / totalDuration) * 80);
-      onProgress(Math.min(prog, 99));
+      const prog = add(20, round(multiply(divide(elapsed, totalDuration), 80)));
+      onProgress(min([prog, 99]) || prog);
 
       requestAnimationFrame(renderFrame);
     };

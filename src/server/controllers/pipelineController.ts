@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
+import { chunk, filter, map, take, isArray, join, max, floor, ceil } from "lodash";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
@@ -70,7 +71,7 @@ import { randomUUID } from "crypto";
 import os from "os";
 import { exec } from "child_process";
 import { StepLogger } from "@/src/lib/stepLogger.js";
-import { generateMockStoryboard } from "@/src/lib/textProcessor.js";
+import { generateMockStoryboard, smartSplitSentences } from "@/src/lib/textProcessor.js";
 
 const router = express.Router();
 
@@ -150,22 +151,20 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   }
 
   try {
-    const scenesToRewrite = storyboard
-      .map((s: any) => ({
+    const scenesToRewrite = filter(
+      map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || s.script || "",
-      }))
-      .filter((s: any) => s.prompt);
+      })),
+      (s: any) => s.prompt
+    );
 
     if (scenesToRewrite.length === 0) {
       return res.json({ success: true, storyboard });
     }
 
     const chunkSize = 25;
-    const chunks = [];
-    for (let i = 0; i < scenesToRewrite.length; i += chunkSize) {
-      chunks.push(scenesToRewrite.slice(i, i + chunkSize));
-    }
+    const chunks = chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
 
@@ -195,7 +194,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       }
     }
 
-    const updatedStoryboard = storyboard.map((scene: any) => {
+    const updatedStoryboard = map(storyboard, (scene: any) => {
       const rewritten = rewrittenMap.get(scene.id);
       if (rewritten) {
         return { ...scene, prompt: rewritten };
@@ -225,13 +224,14 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
   }
 
   try {
-    const scenesToOptimize = storyboard
-      .map((s: any) => ({
+    const scenesToOptimize = filter(
+      map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || "",
         script: s.script || s.subtitle || "",
-      }))
-      .filter((s: any) => s.prompt || s.script);
+      })),
+      (s: any) => s.prompt || s.script
+    );
 
     if (scenesToOptimize.length === 0) {
       return res.json({ success: true, storyboard });
@@ -242,10 +242,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
     const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? JSON.stringify(visualConfig.characters) : undefined;
 
     const chunkSize = 8;
-    const chunks = [];
-    for (let i = 0; i < scenesToOptimize.length; i += chunkSize) {
-      chunks.push(scenesToOptimize.slice(i, i + chunkSize));
-    }
+    const chunks = chunk(scenesToOptimize, chunkSize);
 
     const optimizedMap = new Map<string, string>();
 
@@ -275,7 +272,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
       }
     }
 
-    const updatedStoryboard = storyboard.map((scene: any) => {
+    const updatedStoryboard = map(storyboard, (scene: any) => {
       const optimized = optimizedMap.get(scene.id);
       if (optimized) {
         return { ...scene, prompt: optimized };
@@ -308,8 +305,8 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   }
 
   try {
-    const thumbsToRewrite = thumbnails.filter((t: any) => t.prompt);
-    const updatedThumbnails = thumbnails.map((t: any) => ({ ...t }));
+    const thumbsToRewrite = filter(thumbnails, (t: any) => t.prompt);
+    const updatedThumbnails = map(thumbnails, (t: any) => ({ ...t }));
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
@@ -363,8 +360,8 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
   }
 
   try {
-    const thumbsToRewrite = thumbnails.filter((t: any) => t.prompt);
-    const updatedThumbnails = thumbnails.map((t: any) => ({ ...t }));
+    const thumbsToRewrite = filter(thumbnails, (t: any) => t.prompt);
+    const updatedThumbnails = map(thumbnails, (t: any) => ({ ...t }));
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
@@ -420,7 +417,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     });
 
     const parsed = safeParseJSON(response.text, []);
-    const characters = (Array.isArray(parsed) ? parsed : []).slice(0, 3);
+    const characters = take(isArray(parsed) ? parsed : [], 3);
     return res.json({ characters });
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
@@ -508,22 +505,20 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
   }
 
   try {
-    const scenesToRewrite = storyboard
-      .map((s: any) => ({
+    const scenesToRewrite = filter(
+      map(storyboard, (s: any) => ({
         id: s.id,
         prompt: s.prompt || s.script || "",
-      }))
-      .filter((s) => s.prompt);
+      })),
+      (s) => s.prompt
+    );
 
     if (scenesToRewrite.length === 0) {
       return res.json({ success: true, storyboard });
     }
 
     const chunkSize = 25;
-    const chunks = [];
-    for (let i = 0; i < scenesToRewrite.length; i += chunkSize) {
-      chunks.push(scenesToRewrite.slice(i, i + chunkSize));
-    }
+    const chunks = chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
 
@@ -553,16 +548,16 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       }
     }
 
-    const updatedStoryboard = storyboard.map((scene: any) => {
+    const updatedStoryboard = map(storyboard, (scene: any) => {
       const rewritten = rewrittenMap.get(scene.id);
       if (rewritten) {
         return { ...scene, prompt: rewritten };
       }
       if (scene.prompt) {
-        const combinedPrompt = finalCharacters
-          .map((c: any) => c.prompt)
-          .filter(Boolean)
-          .join(", ");
+        const combinedPrompt = join(
+          filter(map(finalCharacters, (c: any) => c.prompt), Boolean),
+          ", "
+        );
         if (combinedPrompt) {
           return {
             ...scene,
@@ -626,7 +621,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
     if (Array.isArray(versions)) {
-      versions = versions.map((v: any, idx: number) => ({
+      versions = map(versions, (v: any, idx: number) => ({
         id: v.id || `hk_${idx + 1}`,
         content: v.content || "",
         type: v.type || hookType || "StyleName",
@@ -725,7 +720,7 @@ router.post("/script", async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
-    const targetChapterCount = Math.max(3, Math.floor(targetWordCountMin / 100));
+    const targetChapterCount = max([3, floor(targetWordCountMin / 100)]) || 3;
 
     const combinedScriptPrompt = getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig);
 
@@ -759,7 +754,7 @@ router.post("/script", async (req: Request, res: Response) => {
     let fullScript = activeHookText ? activeHookText + "\n\n" : "";
 
     const chapters = scriptResult.chapters || [];
-    const chapterWordTarget = Math.ceil(targetWordCount / Math.max(1, chapters.length));
+    const chapterWordTarget = ceil(targetWordCount / (max([1, chapters.length]) || 1));
 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
@@ -820,6 +815,67 @@ router.post("/script", async (req: Request, res: Response) => {
   }
 });
 
+function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[] {
+  if (!chapters || chapters.length === 0) return [];
+  
+  const syncedChapters = chapters.map((c: any) => ({ ...c }));
+  
+  // 1. Try to find the exact offset of each chapter's segment in the rewrittenScript
+  let lastIndex = 0;
+  const segmentsFound: { index: number; length: number }[] = [];
+  
+  for (let i = 0; i < syncedChapters.length; i++) {
+    const seg = syncedChapters[i].scriptSegment || "";
+    if (!seg.trim()) {
+      segmentsFound.push({ index: -1, length: 0 });
+      continue;
+    }
+    const idx = rewrittenScript.indexOf(seg, lastIndex);
+    if (idx !== -1) {
+      segmentsFound.push({ index: idx, length: seg.length });
+      lastIndex = idx + seg.length;
+    } else {
+      segmentsFound.push({ index: -1, length: 0 });
+    }
+  }
+  
+  // If all segments are found sequentially, we can fill the gaps (like the hook at the start)
+  const allFound = segmentsFound.every(s => s.index !== -1);
+  if (allFound) {
+    for (let i = 0; i < syncedChapters.length; i++) {
+      const start = (i === 0) ? 0 : segmentsFound[i].index;
+      const end = (i === syncedChapters.length - 1) ? rewrittenScript.length : segmentsFound[i + 1].index;
+      syncedChapters[i].scriptSegment = rewrittenScript.substring(start, end).trim();
+    }
+    return syncedChapters;
+  }
+  
+  // 2. Fallback: If the script was edited and exact segments are not found,
+  // distribute the rewrittenScript sentences proportionally to chapters.
+  const sentences = smartSplitSentences(rewrittenScript);
+  const totalSentences = sentences.length;
+  if (totalSentences === 0) return syncedChapters;
+  
+  const originalLengths = chapters.map((c: any) => (c.scriptSegment || "").length);
+  const totalOriginalLength = originalLengths.reduce((a: number, b: number) => a + b, 0) || 1;
+  
+  let sentenceCursor = 0;
+  for (let i = 0; i < syncedChapters.length; i++) {
+    const ratio = originalLengths[i] / totalOriginalLength;
+    let targetCount = Math.round(ratio * totalSentences);
+    if (i === syncedChapters.length - 1) {
+      targetCount = totalSentences - sentenceCursor;
+    }
+    targetCount = Math.max(1, targetCount);
+    
+    const slice = sentences.slice(sentenceCursor, sentenceCursor + targetCount);
+    syncedChapters[i].scriptSegment = slice.join(" ");
+    sentenceCursor += targetCount;
+  }
+  
+  return syncedChapters;
+}
+
 function diversifyDuplicatePrompts(scenes: any[]): any[] {
   if (!scenes || scenes.length <= 1) return scenes;
 
@@ -875,6 +931,12 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
 
 router.post("/storyboard", async (req: Request, res: Response) => {
   const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, visualDensity, bypassCache, voiceDuration } = req.body;
+  
+  let syncedChapters = chapters;
+  if (chapters && chapters.length > 0 && rewrittenScript) {
+    syncedChapters = syncChaptersWithScript(rewrittenScript, chapters);
+  }
+
   let characterRef: string | undefined = undefined;
   const rawRefChars = referenceCharacters || referenceCharacter;
   if (rawRefChars) {
@@ -903,7 +965,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   }
 
   if (!isGeminiApiKeyAvailable()) {
-    return res.json(generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
+    return res.json(generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
   }
 
   try {
@@ -1002,7 +1064,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
         const combinedInstruction = `${targetPrompt}\n\n${splitInstruction}`;
         const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Lighting mood: ${visualBible.lightingMood}`;
-        const prompt = getVideoDirectorSceneSplitPrompt(chunkIndex, totalChunks, genre, genreVisualGuideline, combinedInstruction, visualStyleCombined, referenceStyle, customSplitRules, isVi, chunkText, JSON.stringify(chapters), characterRef, config?.aspectRatio || AspectRatio.SixteenNine, visualBible.characterSpecs, visualBible.landscapeSpecs);
+        const prompt = getVideoDirectorSceneSplitPrompt(chunkIndex, totalChunks, genre, genreVisualGuideline, combinedInstruction, visualStyleCombined, referenceStyle, customSplitRules, isVi, chunkText, JSON.stringify(syncedChapters), characterRef, config?.aspectRatio || AspectRatio.SixteenNine, visualBible.characterSpecs, visualBible.landscapeSpecs);
 
         const response = await generateContentWithRetry({
           contents: prompt,
@@ -1036,7 +1098,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (!data || !data.scenes || data.scenes.length === 0) {
       console.warn("Gemini returned malformed or incomplete storyboard JSON. Using robust programmatic sentence splitter fallback to guarantee high-density scenes.");
       const oldLogs = data?.rotationLogs;
-      data = generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+      data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
@@ -1076,7 +1138,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
-    const fallbackData: any = generateMockStoryboard(rewrittenScript, chapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+    const fallbackData: any = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
     if (fallbackData?.scenes?.length) {
       fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
     }

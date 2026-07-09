@@ -292,13 +292,12 @@ You MUST process EVERY SINGLE WORD of this script chunk. DO NOT SKIP, DROP, OR S
 ${splitInstruction}
 
 Requirements:
-1. Strict Sequencing: Traverse the ENTIRE script segment from beginning to end. DO NOT STOP until the segment is translated into scenes. Every word must be covered.
+1. Strict Sequencing: Traverse the ENTIRE script segment from the first word to the very last word. Do not skip, drop, or summarize any part. Ensure that no sentences at the beginning or end of the chunk are cut off or omitted. Every word must be covered.
 2. Highly Descriptive Prompts & Hard Contextual Alignment:
     - STRUCTURE MANDATE (THE BLUEPRINT): The generated "prompt" MUST strictly follow this exact structural formula from left to right:
       - If the scene has a character: [Art style/Medium] of [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
       - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
     - STRICT ALIGNMENT WITH NARRATION (CRITICAL): The generated prompt for each scene MUST strictly align with the literal text of the scene's script segment. Do NOT deviate from the storyline or introduce foreign elements. The prompt must be a direct visual translation of the narration.
-    - MANDATORY COMPLETE COVERAGE: You must parse the input chunk from the first word to the very last word. Ensure that no sentences at the end of the chunk are cut off or omitted. Double-check your list of scenes before outputting to guarantee that the last sentence of the input chunk is fully represented in the final scene.
     - MANDATORY SEMANTIC INTEGRITY FOR NARRATION (CRITICAL): Regardless of the chosen split strategy or density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (always containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g. do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene. If a sentence is divided into multiple sub-scenes, rephrase each sub-scene's narration slightly so it remains a complete, meaningful sentence (e.g. carry over the subject).
     - CONTEXT PRESERVATION FOR SPLIT SCENE PROMPTS: The image prompt (prompt) for EACH sub-scene must contain the FULL context of the original complete sentence (subject, action, main setting) so that the generated image is not vague or generic.
       * Example: If the sentence is "In a medieval library, the old wizard reads a glowing book and slowly casts a spell." and it is split into two sub-scenes:
@@ -309,6 +308,7 @@ Requirements:
     - NO GENERIC COPIES & STRICT VISUAL PROGRESSION: Every scene prompt must be highly specific to its script segment. Successive or adjacent scenes MUST NOT have identical or near-identical prompts. Even if the character or location remains the same, you MUST vary the camera shot/distance (e.g., alternate between close-up shot, medium shot, wide shot), camera angle, lighting, or the character's precise action or pose to ensure a clear visual progression and avoid generating identical images.
     - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
     - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
+    - MAP TO CHAPTERS (CRITICAL): Each generated scene must be mapped to a chapter ID from the "Chapters structure context". Set the "chapterId" field of the scene to the corresponding chapter's ID. If a scene represents introductory text (such as the hook, intro, or prologue) before Chapter 1, strictly assign it to the ID of the first chapter in the list.
     - ${NO_FRAME_RULE}
 3. Dynamic Motion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static), video effects, and transitions.
 ${customSplitRules ? "4. CUSTOM USER RULE: " + customSplitRules : ""}
