@@ -227,7 +227,7 @@ export function usePipelineWizard(props: any) {
         const isTimingLogChanged = [prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog].some(Boolean);
 
         let mergedStoryboard = prev.storyboard || [];
-        if ([isServerUpdate, !prev.storyboard, prev.storyboard.length === 0].some(Boolean)) {
+        if ([isServerUpdate, !prev.storyboard, prev?.storyboard?.length === 0].some(Boolean)) {
           mergedStoryboard = normalizedInitialProject.storyboard || [];
         } else if (isTimingLogChanged) {
           mergedStoryboard = prev.storyboard;
@@ -246,7 +246,7 @@ export function usePipelineWizard(props: any) {
         }
 
         let mergedThumbnails = prev.thumbnails || [];
-        if ([isServerUpdate, !prev.thumbnails, prev.thumbnails.length === 0].some(Boolean)) {
+        if ([isServerUpdate, !prev.thumbnails, prev?.thumbnails?.length === 0].some(Boolean)) {
           mergedThumbnails = normalizedInitialProject.thumbnails || [];
         } else {
           mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
