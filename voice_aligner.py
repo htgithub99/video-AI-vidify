@@ -7,7 +7,7 @@ import difflib
 import warnings
 
 WARNING_ACTION = "ignore"
-MODEL_NAME = "base"
+MODEL_NAME = "small"
 
 FILE_READ_MODE = "r"
 FILE_WRITE_MODE = "w"
@@ -103,8 +103,23 @@ def main():
         })
 
     try:
+        # Ghép tất cả script lại để tạo initial_prompt hướng dẫn Whisper về ngữ cảnh
+        combined_script_text = " ".join(s[KEY_TEXT] for s in scenes if s.get(KEY_TEXT))
+        initial_prompt = combined_script_text[:500] if combined_script_text else None
+
         model = whisper.load_model(MODEL_NAME)
-        result = model.transcribe(audio_path, word_timestamps=True)
+        # Thử nhận diện với language="vi" trước (phù hợp tiếng Việt)
+        # Nếu script không có ký tự tiếng Việt, để Whisper tự detect
+        has_vietnamese = any(ord(c) > 0x1E00 for c in combined_script_text)
+        detect_lang = "vi" if has_vietnamese else None
+
+        transcribe_kwargs: dict = {"word_timestamps": True}
+        if detect_lang:
+            transcribe_kwargs["language"] = detect_lang
+        if initial_prompt:
+            transcribe_kwargs["initial_prompt"] = initial_prompt
+
+        result = model.transcribe(audio_path, **transcribe_kwargs)
     except Exception as e:
         error_msg = str(e)
         if "WinError 2" in error_msg or "ffmpeg" in error_msg.lower() or "not found" in error_msg.lower():

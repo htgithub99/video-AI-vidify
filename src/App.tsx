@@ -245,8 +245,6 @@ export default function App() {
         if (!response.ok) {
           throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
         }
-        const savedProject = await response.json();
-        setProjects((prev) => prev.map((p) => (p.id === savedProject.id ? savedProject : p)));
         delete pendingSavesRef.current[updated.id];
       } catch (e) {
         appError(ERROR_MESSAGES.AUTO_SAVE_ERR, e);

@@ -62,19 +62,17 @@ const bufferToWav = (buffer: AudioBuffer, startSec: number, endSec: number): Blo
   const sampleRate = buffer.sampleRate;
   const numChannels = buffer.numberOfChannels;
 
-  const startSample = Math.floor(startSec * sampleRate);
+  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
   const endSample = Math.min(Math.floor(endSec * sampleRate), buffer.length);
-  let numSamples = Math.max(0, endSample - startSample);
+  const readableSamples = Math.max(0, endSample - startSample);
 
-  const MIN_DURATION = 0.5;
-  const minSamples = Math.floor(MIN_DURATION * sampleRate);
-  if (numSamples < minSamples) {
-    numSamples = minSamples;
-  }
+  const MIN_DURATION_SEC = 0.1;
+  const totalSamples = Math.max(readableSamples, Math.floor(MIN_DURATION_SEC * sampleRate));
+  const silenceSamples = totalSamples - readableSamples;
 
   const blockAlign = numChannels * 2;
   const byteRate = sampleRate * blockAlign;
-  const dataSize = numSamples * blockAlign;
+  const dataSize = totalSamples * blockAlign;
   const bufferLength = 44 + dataSize;
 
   const arrayBuf = new ArrayBuffer(bufferLength);
@@ -106,13 +104,19 @@ const bufferToWav = (buffer: AudioBuffer, startSec: number, endSec: number): Blo
     channelData.push(buffer.getChannelData(c));
   }
 
-  const maxReadableSample = Math.min(startSample + numSamples, buffer.length);
-  for (let i = startSample; i < maxReadableSample; i++) {
+  for (let i = startSample; i < endSample; i++) {
     for (let c = 0; c < numChannels; c++) {
       let sample = channelData[c][i] || 0;
       sample = Math.max(-1, Math.min(1, sample));
       const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
       view.setInt16(offset, intSample, true);
+      offset += 2;
+    }
+  }
+
+  for (let i = 0; i < silenceSamples; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      view.setInt16(offset, 0, true);
       offset += 2;
     }
   }
@@ -288,7 +292,6 @@ export function usePipelineWizard(props: any) {
           [prev.scriptRewritten, scriptRewritten],
           [prev.name, normalizedInitialProject.name],
           [prev.description, normalizedInitialProject.description],
-          [prev.updatedAt, normalizedInitialProject.updatedAt],
           [prev.currentStep, normalizedInitialProject.currentStep],
           [prev.creditsUsed, normalizedInitialProject.creditsUsed],
         ];
@@ -310,7 +313,8 @@ export function usePipelineWizard(props: any) {
           assets,
           name: normalizedInitialProject.name,
           description: normalizedInitialProject.description,
-          updatedAt: normalizedInitialProject.updatedAt,
+          // Không đồng bộ updatedAt từ server vào state local:
+          // Việc cập nhật updatedAt sẽ làm project thay đổi → trigger save → vòng lặp vô hạn.
           currentStep: normalizedInitialProject.currentStep,
           creditsUsed: normalizedInitialProject.creditsUsed,
         };
@@ -3830,12 +3834,36 @@ export function usePipelineWizard(props: any) {
     try {
       let currentProject = project;
 
-      const hasMissingAudio = project.storyboard?.some((sc) => [!sc.audioBase64, !sc.audioUrl].some(Boolean));
+      const hasMissingAudio = project.storyboard?.some((sc) => !sc.audioUrl);
       const needToSegment = hasMissingAudio;
 
-      if ([project?.voiceConfig?.audioBase64, needToSegment].every(Boolean)) {
+      const hasVoiceSource = !!(project?.voiceConfig?.audioBase64 || project?.voiceConfig?.audioUrl);
+
+      if (hasVoiceSource && needToSegment) {
         setInfoMsg(vTexts.SYNC_WHISPER_WAIT);
-        const audioBase64 = project.voiceConfig.audioBase64;
+        let audioBase64 = project.voiceConfig.audioBase64;
+        if (!audioBase64 && project.voiceConfig.audioUrl) {
+          try {
+            const audioFetchRes = await fetch(project.voiceConfig.audioUrl);
+            if (audioFetchRes.ok) {
+              const audioArrayBuffer = await audioFetchRes.arrayBuffer();
+              const uint8Array = new Uint8Array(audioArrayBuffer);
+              const chunkSize = 0x8000;
+              let binary = "";
+              for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
+              }
+              audioBase64 = btoa(binary);
+            }
+          } catch (fetchErr) {
+            logger.error("FETCH_AUDIO_URL_FOR_SEGMENT_ERR", fetchErr);
+          }
+        }
+
+        if (!audioBase64) {
+          throw new Error(vTexts.SYNC_WHISPER_ERROR);
+        }
+
         const storyboard = project.storyboard || [];
 
         const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
@@ -3884,8 +3912,16 @@ export function usePipelineWizard(props: any) {
         const segmentedScenes = await Promise.all(
           alignedScenes.map(async (sc: any, index: number) => {
             try {
-              const start = sc._start !== undefined ? sc._start : index > 0 ? (parseTimeToSeconds(alignedScenes[index - 1].endTime) || 0) : 0;
-              const end = sc._end !== undefined ? sc._end : (parseTimeToSeconds(sc.endTime) || 0);
+              // Luôn ưu tiên _start/_end (giá trị số giây gốc từ Python, không bị mất độ chính xác)
+              // Tuyệt đối không parse lại từ string đã format (ví dụ "01:23.456" → mất ms)
+              const start = sc._start !== undefined ? Number(sc._start) : 0;
+              const end = sc._end !== undefined ? Number(sc._end) : 0;
+
+              // Bỏ qua cảnh không có thông tin thời gian hợp lệ
+              if (end <= start) {
+                const { _start, _end, ...cleanScene } = sc;
+                return cleanScene;
+              }
 
               const voiceSegmentBlob = bufferToWav(decodedBuffer, start, end);
               const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
