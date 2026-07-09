@@ -122,3 +122,9 @@ export enum VideoGenre {
   PHILOSOPHY = "Philosophy",
   STORYTELLING = "Storytelling",
 }
+
+export enum MimeType {
+  WAV = "audio/wav",
+  MPEG = "audio/mpeg",
+  JPEG = "image/jpeg",
+}

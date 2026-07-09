@@ -427,7 +427,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setInfoMsg(t.voiceNameCopied);
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
-                                      title="Copy tên giọng"
+                                      title={t.copyVoiceName}
                                       className="p-0.5 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
@@ -453,10 +453,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0 ml-2">
-                                  <Button variant="ghost" size="xs" type="button" onClick={() => handleStartEdit(item)} className="p-1 hover:bg-slate-800 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title="Sửa giọng đọc">
+                                  <Button variant="ghost" size="xs" type="button" onClick={() => handleStartEdit(item)} className="p-1 hover:bg-slate-800 border border-transparent hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title={t.editVoice}>
                                     <Pencil className="w-3 h-3" />
                                   </Button>
-                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavorite(item.id, e)} className="p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title="Xóa giọng đọc">
+                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavorite(item.id, e)} className="p-1 hover:bg-rose-950/30 border border-transparent hover:border-rose-500/20 text-slate-550 hover:text-rose-400 rounded opacity-0 group-hover:opacity-100 shadow-none h-auto w-auto" title={t.deleteVoice}>
                                     <Trash className="w-3 h-3" />
                                   </Button>
                                 </div>
@@ -558,7 +558,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         setInfoMsg(t.stylePromptCopied);
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
-                                      title="Copy mô tả phong cách"
+                                      title={t.copyStyleDesc}
                                       className="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-500 dark:text-slate-500 hover:text-slate-205 dark:hover:text-slate-300 shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
@@ -576,11 +576,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       setEditStyleFormPrompt(item.prompt);
                                     }}
                                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 text-slate-500 dark:text-slate-500 hover:text-slate-205 dark:hover:text-slate-200 rounded shadow-none h-auto w-auto"
-                                    title="Sửa phong cách"
+                                    title={t.editStyle}
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </Button>
-                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavoriteStyle(item.id, e)} className="p-1 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-455 rounded shadow-none h-auto w-auto" title="Xóa phong cách">
+                                  <Button variant="ghost" size="xs" type="button" onClick={(e) => handleDeleteFavoriteStyle(item.id, e)} className="p-1 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-455 rounded shadow-none h-auto w-auto" title={t.deleteStyle}>
                                     <Trash className="w-3 h-3" />
                                   </Button>
                                 </div>
@@ -815,10 +815,10 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     <div className="mt-6 pt-6 border-t border-slate-800 flex flex-row gap-2.5 shrink-0">
                       <a href={zoomedImage.url} download={`${zoomedImage.title.replace(/\s+/g, "_").toLowerCase()}_artwork.jpg`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all border border-slate-700 shadow-sm">
                         <Download className="w-3.5 h-3.5" />
-                        <span>{currentLang === "vi" ? "Tải về" : "Download"}</span>
+                        <span>{t.download}</span>
                       </a>
                       <Button variant="ghost" onClick={() => setZoomedImage(null)} className="flex-1 py-2.5 text-xs font-bold">
-                        {currentLang === "vi" ? "Đóng" : "Close"}
+                        {t.Close}
                       </Button>
                     </div>
                   </div>

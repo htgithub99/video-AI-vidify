@@ -4,7 +4,7 @@ import path from "path";
 import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import { isArray, map, some, includes, filter, find, forEach, eq, gt, subtract } from "lodash";
-import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX } from "../../constants";
+import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX } from "../../constants";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 
@@ -14,7 +14,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     if (project) {
       const projectStr = JSON.stringify(project);
       const cleaned = projectStr.replace(UNSPLASH_IMAGE_REGEX, (match, query) => {
-        const decoded = decodeURIComponent(query).replace(/%2C/g, ",").replace(/\+/g, ",").replace(/,/g, ",");
+        const decoded = decodeURIComponent(query).replace(URL_ENCODED_COMMA_REGEX, ",").replace(URL_ENCODED_PLUS_REGEX, ",").replace(URL_ENCODED_LITERAL_COMMA_REGEX, ",");
         return `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${decoded}`;
       });
       return JSON.parse(cleaned) as VideoProject;

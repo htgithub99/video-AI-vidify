@@ -1,5 +1,6 @@
 import { appWarn, createAppError } from "./logger.js";
 import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
+import { MimeType } from "../constants/enums.js";
 import { eq, lt, max, min, add, subtract, isNil, ceil, isEmpty } from "lodash";
 
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
@@ -36,7 +37,7 @@ export const bufferToWav = (buffer: AudioBuffer): Blob => {
 
   floatTo16BitPCM(view, 44, result);
 
-  return new Blob([arrayBuffer], { type: "audio/wav" });
+  return new Blob([arrayBuffer], { type: MimeType.WAV });
 };
 
 const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array => {
@@ -71,7 +72,7 @@ export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, 
   if (lt(Math.abs(subtract(rate, 1.0)), 0.01) && lt(Math.abs(subtract(pitch, 1.0)), 0.01) && lt(Math.abs(subtract(volume, 1.0)), 0.01)) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
     const isWav = eq(uint8[0], 0x52) && eq(uint8[1], 0x49) && eq(uint8[2], 0x46) && eq(uint8[3], 0x46);
-    const mimeType = isWav ? "audio/wav" : "audio/mpeg";
+    const mimeType = isWav ? MimeType.WAV : MimeType.MPEG;
     return new Blob([arrayBuffer], { type: mimeType });
   }
 

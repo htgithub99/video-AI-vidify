@@ -315,7 +315,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                             onToggleFavoriteVoice(voice.voice_id, voice.name, voice.category || "Custom");
                           }}
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
-                          title="Yêu thích"
+                          title={t.favorite}
                         >
                           <Heart className={`w-4 h-4 transition-all duration-200 ${some(favoriteVoices, (v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`} />
                         </Button>

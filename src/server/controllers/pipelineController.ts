@@ -57,6 +57,8 @@ import {
   SplitStrategy,
   CAPCUT_CONFIG,
   WHITESPACE_REGEX,
+  ALPHANUMERIC_ONLY_REGEX,
+  SINGLE_QUOTE_REGEX,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
@@ -886,8 +888,8 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
     const prevPrompt = scenes[i - 1].prompt?.trim();
 
     if (currentPrompt && prevPrompt) {
-      const normCurrent = currentPrompt.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const normPrev = prevPrompt.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normCurrent = currentPrompt.toLowerCase().replace(ALPHANUMERIC_ONLY_REGEX, "");
+      const normPrev = prevPrompt.toLowerCase().replace(ALPHANUMERIC_ONLY_REGEX, "");
 
       if (normCurrent === normPrev) {
         const selectedAngle = cameraAngles[i % cameraAngles.length];
@@ -1533,7 +1535,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
     }
 
     const listPath = path.join(tempDir, `list_${sessionId}.txt`);
-    const fileListContent = filePaths.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n");
+    const fileListContent = filePaths.map((p) => `file '${p.replace(SINGLE_QUOTE_REGEX, "'\\''")}'`).join("\n");
     fs.writeFileSync(listPath, fileListContent);
 
     const outputPath = path.join(tempDir, `merged_${sessionId}.mp3`);
@@ -1826,7 +1828,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     zip.folder(`${folderKey}/qr_upload`);
     zip.folder(`${folderKey}/Resources`);
     zip.folder(`${folderKey}/Resources/voices`);
-    zip.folder(`${folderKey}/Resources/images`);
+    zip.folder(`${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`);
     zip.folder(`${folderKey}/Resources/voice_images`);
     zip.folder(`${folderKey}/Resources/original_voices`);
     zip.folder(`${folderKey}/smart_crop`);
@@ -1844,8 +1846,8 @@ router.post("/export-zip", async (req: Request, res: Response) => {
         const fullPath = path.join(process.cwd(), relativePath);
         if (fs.existsSync(fullPath)) {
           const imgBuffer = fs.readFileSync(fullPath);
-          zip.file(`${folderKey}/Resources/images/${filename}`, imgBuffer);
-          zip.file(`Resources/images/${filename}`, imgBuffer);
+          zip.file(`${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`, imgBuffer);
+          zip.file(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`, imgBuffer);
           zip.file(`${folderKey}/Resources/voice_images/${filename}`, imgBuffer);
           zip.file(`Resources/voice_images/${filename}`, imgBuffer);
         }
@@ -1988,7 +1990,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
         id: imgMatId,
         type: "image",
         duration: timingDurationUs,
-        local_material_path: `${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}/${folderKey}/Resources/images/${index + 1}_image.jpg`,
+        local_material_path: `${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}/${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${index + 1}_image.jpg`,
       });
 
       videoTrackSegments.push({

@@ -14,7 +14,7 @@ export const formatLogMessage = (template: string, ...args: any[]): string => {
   let result = template;
   args.forEach((arg, index) => {
     const val = arg !== undefined && arg !== null ? String(arg) : "";
-    result = result.replace(new RegExp(`\\{${index}\\}`, "g"), val);
+    result = result.split(`{${index}}`).join(val);
   });
   return result;
 };

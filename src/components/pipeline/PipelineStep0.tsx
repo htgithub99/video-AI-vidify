@@ -318,10 +318,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
               <div className="pt-4 border-t border-slate-800 space-y-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-rose-500 shrink-0" />
-                  <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">{t.hookConfigTitle || "Cấu hình Hook"}</h5>
+                  <h5 className="font-bold text-slate-200 text-xs font-mono uppercase tracking-wider">{t.hookConfigTitle}</h5>
                 </div>{" "}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookType || "Loại Hook"}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookType}</span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
                     <select value={hookStrategy} onChange={(e) => setHookStrategy(e.target.value)} className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
@@ -336,13 +336,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 </div>{" "}
                 <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
                   <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
-                    <span className="text-slate-450">{t.hookDuration || "Thời lượng (giây)"}</span>
+                    <span className="text-slate-450">{t.hookDuration}</span>
                     <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">{hookDuration}s</span>
                   </div>
                   <input type="range" min="3" max="30" value={hookDuration} onChange={(e) => setHookDuration(Number(e.target.value))} className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none" />
                 </div>{" "}
                 <div className="space-y-1.5">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookPositions || "Chiến thuật vị trí"}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookPositions}</span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
                     <select value={hookPosition} onChange={(e) => setHookPosition(e.target.value as any)} className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">

@@ -1,4 +1,5 @@
 import { appLog } from "../../lib/logger.js";
+import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
 import { eq, lt, includes, gt, isEmpty, trim, replace, isNil, add, padStart, toString, round, floor } from "lodash";
 
 export const extractBalancedJSON = (text: string): string | null => {
@@ -186,7 +187,7 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     try {
       return JSON.parse(str);
     } catch {
-      const cleanCommas = replace(replace(str, /,\s*}/g, "}"), /,\s*]/g, "]");
+      const cleanCommas = replace(replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
       try {
         return JSON.parse(cleanCommas);
       } catch {

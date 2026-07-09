@@ -2152,7 +2152,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                           )
                                         }
                                         className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
-                                        placeholder="Tên nhân vật"
+                                        placeholder={t.charNamePlaceholder}
                                       />
                                     </h4>
                                     <Button
@@ -2181,7 +2181,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       )
                                     }
                                     className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
-                                    placeholder="Mô tả tiểu sử nhân vật..."
+                                    placeholder={t.charBioPlaceholder}
                                     title={char.description}
                                   />
                                 </div>
@@ -2292,7 +2292,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap">
-                                      Chưa có ảnh
+                                      {t.noImageYet}
                                     </div>
                                   )}
                                 </div>
@@ -2333,7 +2333,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                       )
                                     }
                                     className="w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900"
-                                    placeholder="Đặc tả nhân vật..."
+                                    placeholder={t.charFeaturePlaceholder}
                                     title={char.prompt}
                                   />
                                 </div>
@@ -2967,7 +2967,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           )}
                           <span>
                             {isUploadingImage
-                              ? "Đang tải lên..."
+                              ? t.uploadingImage
                               : t.Upload_file}
                           </span>
                           <input
@@ -3023,7 +3023,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             <Trash className="w-3.5 h-3.5" />
                           )}
                           <span>
-                            {isDeletingImage ? "Đang xóa..." : t.Delete_Image}
+                            {isDeletingImage ? t.deleting : t.Delete_Image}
                           </span>
                         </Button>
                       )}
@@ -3079,7 +3079,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 setInfoMsg(t.copiedScript);
                                 setTimeout(() => setInfoMsg(""), 3000);
                               }}
-                              title="Copy lời thuyết minh"
+                              title={t.copyNarration}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
                             >
                               <Copy className="w-2.5 h-2.5" />
@@ -3112,7 +3112,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 setInfoMsg(t.copiedSubtitle);
                                 setTimeout(() => setInfoMsg(""), 3000);
                               }}
-                              title="Copy phụ đề"
+                              title={t.copySubtitle}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
                             >
                               <Copy className="w-2.5 h-2.5" />
@@ -3296,7 +3296,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   setInfoMsg(t.copiedPrompt);
                                   setTimeout(() => setInfoMsg(""), 3000);
                                 }}
-                                title="Copy mô tả hình ảnh AI"
+                                title={t.copyAiImagePrompt}
                                 className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
                               >
                                 <Copy className="w-2.5 h-2.5" />

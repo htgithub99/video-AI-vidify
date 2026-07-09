@@ -1,5 +1,5 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_VIDEO_SECTION_REGEX, IMAGE_GEN_IMAGE_SECTION_REGEX, IMAGE_GEN_SAVE_BTN_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX } from "../../constants";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio } from "../../types.js";
@@ -264,7 +264,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               await globalPlaywrightPage.waitForTimeout(1000);
 
               const isVideo = visualConfig?.generateType === GenerateType.Video;
-              const sectionKeyword = isVideo ? /(tạo video|video generation|video)/i : /(tạo hình ảnh|image generation|image)/i;
+              const sectionKeyword = isVideo ? IMAGE_GEN_VIDEO_SECTION_REGEX : IMAGE_GEN_IMAGE_SECTION_REGEX;
               const sectionSpan = globalPlaywrightPage.locator("span").filter({ hasText: sectionKeyword }).last();
 
               if (await sectionSpan.isVisible()) {
@@ -291,14 +291,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                 let fallbackEngineRegex: RegExp;
 
                 if (targetEngineKey === "imagen") {
-                  exactEngineRegex = /(imagen|banana pro)/i;
-                  fallbackEngineRegex = /(imagen|banana pro|banana)/i;
+                  exactEngineRegex = IMAGE_GEN_IMAGEN_EXACT_REGEX;
+                  fallbackEngineRegex = IMAGE_GEN_IMAGEN_FALLBACK_REGEX;
                 } else if (targetEngineKey === "labs-sandbox") {
-                  exactEngineRegex = /(labs-sandbox|sandbox|banana 2 lite)/i;
-                  fallbackEngineRegex = /(labs-sandbox|sandbox|banana 2 lite|banana)/i;
+                  exactEngineRegex = IMAGE_GEN_LABS_EXACT_REGEX;
+                  fallbackEngineRegex = IMAGE_GEN_LABS_FALLBACK_REGEX;
                 } else {
-                  exactEngineRegex = /(veo|omni flash|banana 2\b(?!.*lite))/i;
-                  fallbackEngineRegex = /(veo|omni flash|banana 2)/i;
+                  exactEngineRegex = IMAGE_GEN_VEO_EXACT_REGEX;
+                  fallbackEngineRegex = IMAGE_GEN_VEO_FALLBACK_REGEX;
                 }
                 const engineDropdownBtn = sectionDiv.locator('button[aria-haspopup="menu"]').first();
 
@@ -318,7 +318,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
               const saveBtn = globalPlaywrightPage
                 .locator("button:visible")
-                .filter({ hasText: /^(Lưu|Save)$/i })
+                .filter({ hasText: IMAGE_GEN_SAVE_BTN_REGEX })
                 .first();
               if (await saveBtn.isVisible()) {
                 await saveBtn.click();

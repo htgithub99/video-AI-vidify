@@ -118,7 +118,7 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
       };
 
       setConfig(updated);
-      setCurlFeedback(currentLang === "vi" ? `✓ Đã trích xuất thành công: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "Kiểu StreamChat (SSE)" : "Kiểu Batch"}` : `✓ Successfully parsed: ${parsedAuthToken ? "Bearer, " : ""}${parsedRecaptcha ? "reCAPTCHA, " : ""}${isStreamChat ? "StreamChat (SSE)" : "Batch"}`);
+      setCurlFeedback(`${t.ext_success_extract} ${parsedAuthToken ? t.ext_bearer : ""}${parsedRecaptcha ? t.ext_recaptcha : ""}${isStreamChat ? t.ext_streamchat : t.ext_batch}`);
       setTimeout(() => setCurlFeedback(null), 5000);
     } catch (e) {
       appError("GENERAL_ERROR", e);
@@ -356,10 +356,10 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-                        {currentLang === "vi" ? "Cấu hình API Keys" : "API Keys Configuration"}
-                        <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded-full font-medium">{geminiKey || ai33Key ? (currentLang === "vi" ? "Đã nhập" : "Configured") : currentLang === "vi" ? "Chưa cấu hình" : "Not Set"}</span>
+                        {t.apiKeysConfig}
+                        <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded-full font-medium">{geminiKey || ai33Key ? t.configured : t.notSet}</span>
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">{currentLang === "vi" ? "Các key này sẽ được ưu tiên sử dụng trước các cấu hình trong file .env" : "These keys take precedence over options in your .env file"}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t.apiKeysDesc}</p>
                     </div>
                   </div>
 
@@ -383,14 +383,14 @@ export default function Header({ currentLang, setLang, credits, costTracker, the
                       type="password"
                       value={geminiKey}
                       onChange={(e) => setGeminiKey(e.target.value)}
-                      placeholder={currentLang === "vi" ? "Nhập Google Gemini API Key..." : "Enter Google Gemini API Key..."}
+                      placeholder={t.enterGeminiKey}
                       className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 font-mono transition-all"
                     />
                   </div>
 
                   <div className="bg-slate-950 rounded-xl p-4 border border-slate-800/80 space-y-1.5">
                     <label className="text-xs font-semibold text-slate-350 block">AI33_API_KEY</label>
-                    <input type="password" value={ai33Key} onChange={(e) => setAi33Key(e.target.value)} placeholder={currentLang === "vi" ? "Nhập AI33 TTS Token..." : "Enter AI33 TTS Token..."} className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 font-mono transition-all" />
+                    <input type="password" value={ai33Key} onChange={(e) => setAi33Key(e.target.value)} placeholder={t.enterAi33Key} className="w-full bg-slate-900 border border-slate-700 text-xs text-slate-200 p-2.5 rounded-lg focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 font-mono transition-all" />
                   </div>
                 </div>
 

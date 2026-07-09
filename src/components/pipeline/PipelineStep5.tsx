@@ -244,10 +244,10 @@ export default function PipelineStep5(props: PipelineWizardState) {
             </div>
             {!isRunning && (
               <div className="flex gap-2">
-                <Button variant="outline" size="xs" onClick={handlePasteSamples} className="font-mono text-rose-400 border-slate-700 font-bold" title="Dán 2 prompt stickman mẫu">
+                <Button variant="outline" size="xs" onClick={handlePasteSamples} className="font-mono text-rose-400 border-slate-700 font-bold" title={t.pasteSamplePrompts}>
                   {t.node6_sample_prompts}
                 </Button>
-                <Button variant="outline" size="xs" onClick={handleClearAll} className="text-slate-550 hover:text-rose-400 hover:bg-rose-955/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none" title="Xóa toàn bộ">
+                <Button variant="outline" size="xs" onClick={handleClearAll} className="text-slate-550 hover:text-rose-400 hover:bg-rose-955/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none" title={t.clearAll}>
                   <Trash className="w-2.5 h-2.5" />
                 </Button>
               </div>

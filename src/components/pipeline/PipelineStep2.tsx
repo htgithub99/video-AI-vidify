@@ -18,7 +18,7 @@ const handleDownloadImage = async (url: string, filename: string) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(blobUrl);
   } catch (error) {
-    console.error("Lỗi khi tải ảnh:", error);
+    console.error("Image load error:", error);
     const a = document.createElement("a");
     a.href = url;
     a.target = "_blank";
@@ -290,7 +290,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.02] rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-rose-450 flex items-center gap-1.5 select-none">
-              <span>{t.charConsistencyTitle || "Đồng nhất Nhân vật chính"}</span>
+              <span>{t.charConsistencyTitle}</span>
               <span className="text-[9px] bg-emerald-950/45 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal flex items-center gap-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                 CHARACTER REFERENCE NODE
@@ -326,7 +326,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto"
                       >
                         <Check className="w-2.5 h-2.5 text-amber-100" />
-                        <span>{t.Apply_Character_Thumbnails || "Áp dụng vào ảnh bìa"}</span>
+                        <span>{t.Apply_Character_Thumbnails}</span>
                       </Button>
                     )}
                   </div>
@@ -348,7 +348,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     value={char.name}
                                     onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)}
                                     className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
-                                    placeholder="Tên nhân vật"
+                                    placeholder={t.charNamePlaceholder}
                                   />
                                 </h4>
                                 <Button
@@ -369,7 +369,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                 value={char.description}
                                 onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
                                 className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
-                                placeholder="Mô tả tiểu sử nhân vật..."
+                                placeholder={t.charBioPlaceholder}
                                 title={char.description}
                               />
                             </div>
@@ -451,7 +451,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap">Chưa có ảnh</div>
+                                <div className="flex items-center justify-center py-1 bg-slate-950/20 border border-dashed border-slate-900 rounded text-[7px] text-slate-500 italic text-center whitespace-nowrap">{t.noImageYet}</div>
                               )}
                             </div>
                           </div>
@@ -481,7 +481,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                 value={char.prompt}
                                 onChange={(e) => handleUpdateCharacter(char.id, "prompt", e.target.value)}
                                 className="w-full text-slate-350 text-[8px] leading-relaxed italic bg-emerald-950/10 hover:bg-emerald-950/20 focus:bg-emerald-950/30 border border-emerald-500/10 hover:border-emerald-500/30 focus:border-emerald-500/50 p-1.5 rounded outline-none resize-none h-12 transition-all font-sans scrollbar-thin scrollbar-thumb-emerald-900"
-                                placeholder="Đặc tả nhân vật..."
+                                placeholder={t.charFeaturePlaceholder}
                                 title={char.prompt}
                               />
                             </div>
@@ -631,7 +631,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                       <div className="bg-slate-950/50 backdrop-blur-sm border border-slate-800/80 rounded-xl p-3 mb-4 space-y-2 mt-auto">
                         <div className="flex items-start gap-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.Layout}:</span>
-                          <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.layout || (currentLang === "vi" ? "Bố cục 16:9" : "16:9 Composition")}</span>
+                          <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.layout || t.composition169}</span>
                         </div>
                         {thumb.hasText ? (
                           <>
@@ -646,7 +646,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           </>
                         ) : (
                           <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{currentLang === "vi" ? "Tiêu điểm" : "Focus"}:</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.focusTitle}:</span>
                             <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.subjectFocus}</span>
                           </div>
                         )}
@@ -672,7 +672,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               handleDownloadImage(thumb.imageUrl!, `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`);
                             }}
                             className="shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow"
-                            title={t.Download_Image || "Tải ảnh về"}
+                            title={t.downloadImage}
                           >
                             <Download className="w-4 h-4" />
                           </Button>
