@@ -294,7 +294,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   type="button"
                   onClick={() => {
                     const voiceURI = project.voiceConfig.voiceURI || "preset-vi-bac-female";
@@ -302,17 +302,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                     playVoicePreviewFunc(voiceURI, gender, currentLang, project.voiceConfig.speed || 1.0, project.voiceConfig.pitch || 1.0, project.voiceConfig.previewUrl);
                   }}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-200 border border-slate-700 text-slate-200 font-bold text-[11px] py-1.5 rounded-lg h-auto shadow-none"
+                  className="flex-1 py-1.5 text-[11px] shadow-none h-auto"
                 >
                   {testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? <Pause className="w-3.5 h-3.5 animate-pulse text-amber-400" /> : <Play className="w-3.5 h-3.5 text-rose-450" />}
                   {t.Test_voice}
                 </Button>
                 <Button
-                  variant="ghost"
+                  variant="primary"
                   type="button"
                   onClick={() => handleTriggerAllSceneVoices(project.storyboard, false)}
                   disabled={!!loadingStates["bulkVoiceGenerate_loading"] || !project.storyboard || project.storyboard.length === 0}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-rose-600 hover:bg-rose-500 hover:text-white disabled:bg-slate-800 disabled:opacity-75 disabled:cursor-not-allowed border border-rose-500/30 text-white font-bold text-[11px] py-1.5 rounded-lg shadow-none h-auto active:scale-95"
+                  className="flex-1 py-1.5 text-[11px] shadow-none h-auto"
                   title={t.Generate_all_scene_voiceo}
                 >
                   {loadingStates["bulkVoiceGenerate_loading"] ? (
@@ -322,7 +322,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     </>
                   ) : (
                     <>
-                      <Mic className="w-3.5 h-3.5 text-rose-100" />
+                      <Mic className="w-3.5 h-3.5 text-current" />
                       <span>{t.Generate_Voice}</span>
                     </>
                   )}
@@ -936,7 +936,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <div className="flex items-center justify-between gap-3 relative z-10">
                           <div className="flex items-center gap-2.5 min-w-0">
                             {step2IsPlaying ? (
-                              <Button variant="ghost" type="button" onClick={() => step2AudioRef.current?.pause()} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none relative active:scale-95 p-0 min-w-0">
+                              <Button variant="primary" type="button" onClick={() => step2AudioRef.current?.pause()} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none relative active:scale-95 p-0 min-w-0">
                                 <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping pointer-events-none" />
                                 <div className="flex gap-[1.5px] items-center justify-center font-bold">
                                   <span className="w-0.5 h-2.5 bg-slate-950 rounded-sm" />
@@ -944,7 +944,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 </div>
                               </Button>
                             ) : (
-                              <Button variant="ghost" type="button" onClick={() => step2AudioRef.current?.play().catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none active:scale-95 p-0 min-w-0">
+                              <Button variant="primary" type="button" onClick={() => step2AudioRef.current?.play().catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none active:scale-95 p-0 min-w-0">
                                 <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
                               </Button>
                             )}
@@ -1228,7 +1228,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <div className="flex items-center justify-between gap-3 relative z-10">
                           <div className="flex items-center gap-2.5 min-w-0">
                             {step2IsPlaying ? (
-                              <Button variant="ghost" type="button" onClick={() => step2AudioRef.current?.pause()} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none relative active:scale-95 p-0">
+                              <Button variant="primary" type="button" onClick={() => step2AudioRef.current?.pause()} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none relative active:scale-95 p-0">
                                 <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping pointer-events-none" />
                                 <div className="flex gap-[1.5px] items-center justify-center font-bold">
                                   <span className="w-0.5 h-2.5 bg-slate-950 rounded-sm" />
@@ -1236,7 +1236,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 </div>
                               </Button>
                             ) : (
-                              <Button variant="ghost" type="button" onClick={() => step2AudioRef.current?.play().catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none active:scale-95 p-0">
+                              <Button variant="primary" type="button" onClick={() => step2AudioRef.current?.play().catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e))} className="w-8.5 h-8.5 rounded-full bg-emerald-500 hover:bg-emerald-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none active:scale-95 p-0">
                                 <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
                               </Button>
                             )}
@@ -1587,8 +1587,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </Button>
                         )}
                         {project.visualConfig?.referencePrompt && (
-                          <Button variant="ghost" type="button" onClick={handleSaveCurrentStyle} className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-455 hover:text-white text-white font-bold text-[10px] rounded-lg flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-rose-500/30 h-auto">
-                            <Palette className="w-3 h-3 text-rose-100" />
+                          <Button variant="primary" type="button" onClick={handleSaveCurrentStyle} className="shrink-0 px-3 py-1.5 text-[10px] shadow-none h-auto">
+                            <Palette className="w-3 h-3 text-current" />
                             <span>{t.saveCurrentStyle}</span>
                           </Button>
                         )}
@@ -1950,7 +1950,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   <RefreshCw className="w-4 h-4 animate-spin text-rose-500 shrink-0" />
                   <span>{batchProgressMsg || t.initializingBatchGen}</span>
                 </div>
-                <Button variant="ghost" type="button" onClick={handleCancelBatchGenerate} disabled={isCancellingBatch} className="bg-slate-800 hover:bg-slate-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 px-3 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 border border-slate-700 shadow-none h-auto" title={t.stopImageGen}>
+                <Button variant="secondary" type="button" onClick={handleCancelBatchGenerate} disabled={isCancellingBatch} className="px-3 py-2.5 text-xs shadow-none h-auto" title={t.stopImageGen}>
                   {isCancellingBatch ? <RefreshCw className="w-3.5 h-3.5 text-rose-400 animate-spin" /> : <X className="w-3.5 h-3.5 text-rose-400" />}
                   {isCancellingBatch ? t.cancelling : t.cancel}
                 </Button>
@@ -1958,7 +1958,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
             ) : (
               <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
                 <Button
-                  variant="ghost"
+                  variant="primary"
                   type="button"
                   onClick={handleOptimizeAllPrompts}
                   disabled={isBatchGenerating || !!loadingStates["optimizePrompts"] || (project.storyboard || []).length === 0}
@@ -1970,7 +1970,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </Button>
 
                 <Button
-                  variant="ghost"
+                  variant="primary"
                   type="button"
                   onClick={handleBatchGenerateClick}
                   disabled={isBatchGenerating || (project.storyboard || []).length === 0}

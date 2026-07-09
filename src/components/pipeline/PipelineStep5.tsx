@@ -230,14 +230,13 @@ export default function PipelineStep5(props: PipelineWizardState) {
     setZoomedImage({
       url: item.resultUrl,
       title: t.node6_prompt_label.replace("{id}", String(item.id)),
-      prompt: item.prompt,
     });
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-1 space-y-5">
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-2xl space-y-4 shadow-xl relative overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="lg:col-span-1 space-y-5 flex flex-col justify-stretch">
+        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-2xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-rose-500 shrink-0" />
@@ -248,13 +247,13 @@ export default function PipelineStep5(props: PipelineWizardState) {
                 <Button variant="outline" size="xs" onClick={handlePasteSamples} className="font-mono text-rose-400 border-slate-700 font-bold" title="Dán 2 prompt stickman mẫu">
                   {t.node6_sample_prompts}
                 </Button>
-                <Button variant="outline" size="xs" onClick={handleClearAll} className="text-slate-550 hover:text-rose-400 hover:bg-rose-950/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none" title="Xóa toàn bộ">
+                <Button variant="outline" size="xs" onClick={handleClearAll} className="text-slate-550 hover:text-rose-400 hover:bg-rose-955/30 border-slate-850 hover:border-rose-500/20 px-2 shadow-none" title="Xóa toàn bộ">
                   <Trash className="w-2.5 h-2.5" />
                 </Button>
               </div>
             )}
           </div>
-          <textarea disabled={isRunning} value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={t.node6_placeholder} className="w-full h-[220px] bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-3.5 rounded-xl text-xs leading-relaxed focus:outline-none transition-all font-sans resize-none" />
+          <textarea disabled={isRunning} value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={t.node6_placeholder} className="w-full flex-1 min-h-[180px] bg-slate-955 border border-slate-800 focus:border-rose-500 text-slate-100 p-3.5 rounded-xl text-xs leading-relaxed focus:outline-none transition-all font-sans resize-none" />
           <div className="flex items-center justify-between text-[10px] font-mono text-slate-500">
             <span>{t.node6_detected_prompts.replace("{count}", String(prompts.length))}</span>
           </div>
