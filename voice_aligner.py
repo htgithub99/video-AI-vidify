@@ -56,6 +56,13 @@ def normalize_text(text):
     text = text.translate(str.maketrans('', '', PUNCTUATION_TO_REMOVE))
     return re.sub(RE_WHITESPACE, ' ', text).strip()
 
+def to_char_list(text):
+    if not text:
+        return []
+    norm = normalize_text(text)
+    norm_no_ws = norm.replace(" ", "")
+    return list(norm_no_ws)
+
 def main():
     if len(sys.argv) < 4:
         print(ERROR_MISSING_ARGS, file=sys.stderr, flush=True)
@@ -105,38 +112,79 @@ def main():
         print(ERROR_WHISPER_RUN.format(error=error_msg), file=sys.stderr, flush=True)
         sys.exit(1)
 
-    ai_words = []
+    # Phân bổ thời gian của từ nhận diện bởi Whisper cho từng ký tự cấu thành (đa ngôn ngữ)
+    ai_chars = []
     for segment in result.get(KEY_SEGMENTS, []):
         for word_info in segment.get(KEY_WORDS, []):
-            norm_word = normalize_text(word_info[KEY_WORD])
-            if norm_word:
-                ai_words.append({
-                    KEY_WORD: norm_word, 
-                    KEY_START: word_info[KEY_START], 
-                    KEY_END: word_info[KEY_END]
+            word_text = word_info[KEY_WORD]
+            chars = to_char_list(word_text)
+            if not chars:
+                continue
+            
+            w_start = word_info[KEY_START]
+            w_end = word_info[KEY_END]
+            w_dur = max(0.0, w_end - w_start)
+            w_len = len(chars)
+            
+            for k, char in enumerate(chars):
+                c_start = w_start + k * (w_dur / w_len)
+                c_end = w_start + (k + 1) * (w_dur / w_len)
+                ai_chars.append({
+                    "char": char,
+                    KEY_START: c_start,
+                    KEY_END: c_end
                 })
 
-    script_words = []
-    word_to_scene = []
+    # Tách kịch bản gốc thành mảng ký tự và ánh xạ đến scene_idx
+    script_chars = []
+    char_to_scene = []
     for idx, scene in enumerate(scenes):
-        words = normalize_text(scene[KEY_TEXT]).split()
-        script_words.extend(words)
-        word_to_scene.extend([idx] * len(words))
+        chars = to_char_list(scene[KEY_TEXT])
+        script_chars.extend(chars)
+        char_to_scene.extend([idx] * len(chars))
 
-    whisper_text_list = [w[KEY_WORD] for w in ai_words]
-    sm = difflib.SequenceMatcher(None, script_words, whisper_text_list)
+    whisper_char_list = [c["char"] for c in ai_chars]
+    sm = difflib.SequenceMatcher(None, script_chars, whisper_char_list)
     matches = sm.get_matching_blocks()
 
+    # Lọc bỏ các block khớp quá ngắn (nhiễu ký tự đơn lẻ)
+    filtered_matches = [m for m in matches if m.size >= 2]
+    sorted_matches = sorted(filtered_matches, key=lambda x: x.a)
+
+    # Thuật toán Quy hoạch động để chọn chuỗi khớp đơn điệu (monotonic) tối ưu
+    n_matches = len(sorted_matches)
+    dp = [m.size for m in sorted_matches]
+    parent = [-1] * n_matches
+
+    for i in range(n_matches):
+        for j in range(i):
+            if sorted_matches[i].a >= sorted_matches[j].a + sorted_matches[j].size and \
+               sorted_matches[i].b >= sorted_matches[j].b + sorted_matches[j].size:
+                if dp[j] + sorted_matches[i].size > dp[i]:
+                    dp[i] = dp[j] + sorted_matches[i].size
+                    parent[i] = j
+
+    optimal_matches = []
+    if n_matches > 0:
+        best_idx = dp.index(max(dp))
+        curr = best_idx
+        while curr != -1:
+            optimal_matches.append(sorted_matches[curr])
+            curr = parent[curr]
+        optimal_matches.reverse()
+
+    # Gán mốc thời gian từ chuỗi khớp đơn điệu
     scene_core_times = [{KEY_START: None, KEY_END: None} for _ in range(len(scenes))]
-    for match in matches:
+    for match in optimal_matches:
         for k in range(match.size):
-            scene_idx = word_to_scene[match.a + k]
+            scene_idx = char_to_scene[match.a + k]
             if scene_core_times[scene_idx][KEY_START] is None:
-                scene_core_times[scene_idx][KEY_START] = ai_words[match.b + k][KEY_START]
-            scene_core_times[scene_idx][KEY_END] = ai_words[match.b + k][KEY_END]
+                scene_core_times[scene_idx][KEY_START] = ai_chars[match.b + k][KEY_START]
+            scene_core_times[scene_idx][KEY_END] = ai_chars[match.b + k][KEY_END]
 
     total_duration_sec = result.get(KEY_SEGMENTS, [])[-1].get(KEY_END, 10.0) if result.get(KEY_SEGMENTS) else 10.0
     
+    # Nội suy thời gian cho các cảnh chưa khớp được từ nào
     i = 0
     n = len(scenes)
     while i < n:
@@ -152,15 +200,19 @@ def main():
                     next_start = scene_core_times[k_idx][KEY_START]
                     break
             
+            # Phòng vệ chống chồng chéo thời gian
+            if prev_end > next_start:
+                prev_end = next_start
+            
             gap_len = max(0.0, next_start - prev_end)
             unmatched_scenes = scenes[i:j]
-            total_chars = sum(len(s[KEY_TEXT]) for s in unmatched_scenes)
+            total_chars = sum(len(to_char_list(s[KEY_TEXT])) for s in unmatched_scenes)
             
             current_t = prev_end
             if total_chars > 0:
                 for idx_unmatched, s_unmatched in enumerate(unmatched_scenes):
                     scene_idx = i + idx_unmatched
-                    dur = gap_len * (len(s_unmatched[KEY_TEXT]) / total_chars)
+                    dur = gap_len * (len(to_char_list(s_unmatched[KEY_TEXT])) / total_chars)
                     scene_core_times[scene_idx][KEY_START] = current_t
                     scene_core_times[scene_idx][KEY_END] = current_t + dur
                     current_t += dur
@@ -175,18 +227,27 @@ def main():
         else:
             i += 1
 
+    # Tính toán điểm cắt thực tế cho các cảnh
     scene_cuts = []
     for i in range(len(scenes)):
         s_time = scene_core_times[i][KEY_START]
         e_time = scene_core_times[i][KEY_END]
+        
+        # Phòng vệ: Đảm bảo thời gian bắt đầu của cảnh i không nhỏ hơn mốc kết thúc của cảnh trước
+        if i > 0:
+            prev_end = scene_core_times[i-1][KEY_END]
+            if s_time is not None and prev_end is not None and s_time < prev_end:
+                s_time = prev_end
+        if s_time is not None and e_time is not None and e_time < s_time:
+            e_time = s_time
         
         if i == 0:
             cut_start = 0.0
         else:
             prev_end = scene_core_times[i-1][KEY_END]
             gap_prev = max(0.0, s_time - prev_end)
-            len_prev = len(str(scenes[i-1].get(KEY_TEXT, '')))
-            len_curr = len(str(scenes[i].get(KEY_TEXT, '')))
+            len_prev = len(to_char_list(scenes[i-1].get(KEY_TEXT, '')))
+            len_curr = len(to_char_list(scenes[i].get(KEY_TEXT, '')))
             total_len = len_prev + len_curr
             ratio_prev = len_prev / total_len if total_len > 0 else 0.5
             cut_start = prev_end + gap_prev * ratio_prev
@@ -196,11 +257,14 @@ def main():
         else:
             next_start = scene_core_times[i+1][KEY_START]
             gap_next = max(0.0, next_start - e_time)
-            len_curr = len(str(scenes[i].get(KEY_TEXT, '')))
-            len_next = len(str(scenes[i+1].get(KEY_TEXT, '')))
+            len_curr = len(to_char_list(scenes[i].get(KEY_TEXT, '')))
+            len_next = len(to_char_list(scenes[i+1].get(KEY_TEXT, '')))
             total_len = len_curr + len_next
             ratio_curr = len_curr / total_len if total_len > 0 else 0.5
             cut_end = e_time + gap_next * ratio_curr
+        
+        if cut_end < cut_start:
+            cut_end = cut_start
                 
         scene_cuts.append({
             KEY_ID: scenes[i][KEY_ID],
