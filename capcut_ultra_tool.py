@@ -108,8 +108,8 @@ OPT_AUTO_SUBTITLES = 'auto_subtitles'
 OPT_AI_SFX_GENERATOR = 'ai_sfx_generator'
 OPT_API_KEY = 'api_key'
 
-CMD_KILL_CAPCUT = "taskkill /f /im CapCut.exe"
-CMD_KILL_JIANYING = "taskkill /f /im JianyingPro.exe"
+CMD_KILL_CAPCUT = "taskkill /f /t /im CapCut.exe"
+CMD_KILL_JIANYING = "taskkill /f /t /im JianyingPro.exe"
 
 BGM_TRACK_NAME = "BGM Track"
 BGM_TRACK_ID_PREFIX = "bgm_track_{}"
@@ -771,12 +771,14 @@ class TransitionEngine:
 def kill_capcut_processes():
     try:
         import subprocess
+        import time
         res_cc = subprocess.run(CMD_KILL_CAPCUT, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         res_jy = subprocess.run(CMD_KILL_JIANYING, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         killed_any = (res_cc.returncode == 0) or (res_jy.returncode == 0)
         if killed_any:
             print(LOG_PROCESS_KILLED)
+            time.sleep(1.5) 
     except Exception:
         pass
 
