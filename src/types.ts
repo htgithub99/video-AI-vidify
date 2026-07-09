@@ -290,6 +290,7 @@ export interface VideoProject {
   currentStep?: WizardStep;
   versionHistory?: ProjectVersion[];
   allowBulkDeleteImages?: boolean;
+  isRecreatingStoryboard?: boolean;
 }
 
 export interface PipelineWizardProps {

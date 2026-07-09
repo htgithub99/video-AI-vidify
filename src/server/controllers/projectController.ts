@@ -342,97 +342,112 @@ export const updateProject = async (req: Request, res: Response) => {
       }
 
       if (oldProject?.storyboard && newProject?.storyboard) {
-        const oldImagesCount = _.filter(oldProject.storyboard, (s: any) => s.assetUrl).length;
-        const newImagesCount = _.filter(newProject.storyboard, (s: any) => s.assetUrl).length;
-
-        if (_.gt(_.subtract(oldImagesCount, newImagesCount), 1) && !newProject.allowBulkDeleteImages) {
-          newProject.storyboard = _.map(newProject.storyboard, (newScene: any) => {
-            const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
-            if (oldScene?.assetUrl && !newScene.assetUrl) {
-              return {
-                ...newScene,
-                assetUrl: oldScene.assetUrl,
-                assetUrls: newScene.assetUrls?.length ? newScene.assetUrls : oldScene.assetUrls || [oldScene.assetUrl],
-                assetName: newScene.assetName || oldScene.assetName,
-                assetType: newScene.assetType || oldScene.assetType,
-              };
-            }
-            return newScene;
-          });
-        }
-
         const folderName = getSafeFolderName(newProject.name || oldProject.name);
         const assetsDir = path.join(process.cwd(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
-        const imageDir = path.join(assetsDir, folderName, IMAGES_DIR_NAME);
-        const audioDir = path.join(assetsDir, folderName, VOICES_DIR_NAME);
+        const projectDir = path.join(assetsDir, folderName);
 
-        _.forEach(newProject.storyboard, (newScene: any) => {
-          const newHasImage = !!(newScene?.assetUrl && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !!newScene?.assetUrls?.length;
-
-          if (!newHasImage) {
-            if (fs.existsSync(imageDir)) {
-              try {
-                const files = fs.readdirSync(imageDir);
-                const prefix1 = `scene_${newScene.id}.`;
-                const prefix2 = `scene_${newScene.id}_`;
-
-                _.forEach(files, (file) => {
-                  if (file.startsWith(prefix1) || file.startsWith(prefix2)) {
-                    const filePath = path.join(imageDir, file);
-                    try {
-                      fs.unlinkSync(filePath);
-                      appLog(`${LOG_MESSAGES.DELETE_SCENE_IMAGE_DISK_SUCCESS}${filePath}`);
-                    } catch (err) {
-                      appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
-                    }
-                  }
-                });
-              } catch (err) {
-                appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${imageDir}`, err);
-              }
-            }
-          }
-
-          const newHasAudio = !!(newScene?.audioUrl && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
-          if (!newHasAudio) {
-            if (fs.existsSync(audioDir)) {
-              try {
-                const files = fs.readdirSync(audioDir);
-                const prefix = `scene_${newScene.id}.`;
-                _.forEach(files, (file) => {
-                  if (file.startsWith(prefix)) {
-                    const filePath = path.join(audioDir, file);
-                    try {
-                      fs.unlinkSync(filePath);
-                      appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${filePath}`);
-                    } catch (err) {
-                      appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${filePath}`, err);
-                    }
-                  }
-                });
-              } catch (err) {
-                appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
-              }
-            }
-          }
-        });
-
-        const oldAudioUrl = (oldProject?.voiceConfig as any)?.audioUrl;
-        const newAudioUrl = (newProject?.voiceConfig as any)?.audioUrl;
-        if (oldAudioUrl && (!newAudioUrl || _.eq(newAudioUrl, ""))) {
-          const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
-          if (fs.existsSync(unifiedAudioFile)) {
+        if (newProject.isRecreatingStoryboard) {
+          if (fs.existsSync(projectDir)) {
             try {
-              fs.unlinkSync(unifiedAudioFile);
-              appLog(`${LOG_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_SUCCESS}${unifiedAudioFile}`);
+              fs.rmSync(projectDir, { recursive: true, force: true });
+              fs.mkdirSync(path.join(projectDir, IMAGES_DIR_NAME), { recursive: true });
+              fs.mkdirSync(path.join(projectDir, VOICES_DIR_NAME), { recursive: true });
+              appLog(`${LOG_MESSAGES.BULK_DELETE_PROJECT_DIR_SUCCESS}${projectDir}`);
             } catch (err) {
-              appError(`${ERROR_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_ERR}${unifiedAudioFile}`, err);
+              appError(`${ERROR_MESSAGES.BULK_DELETE_PROJECT_DIR_ERR}${projectDir}`, err);
+            }
+          }
+        } else {
+          const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
+          const audioDir = path.join(projectDir, VOICES_DIR_NAME);
+          const oldImagesCount = _.filter(oldProject.storyboard, (s: any) => s.assetUrl).length;
+          const newImagesCount = _.filter(newProject.storyboard, (s: any) => s.assetUrl).length;
+
+          if (_.gt(_.subtract(oldImagesCount, newImagesCount), 1) && !newProject.allowBulkDeleteImages) {
+            newProject.storyboard = _.map(newProject.storyboard, (newScene: any) => {
+              const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
+              if (oldScene?.assetUrl && !newScene.assetUrl) {
+                return {
+                  ...newScene,
+                  assetUrl: oldScene.assetUrl,
+                  assetUrls: newScene.assetUrls?.length ? newScene.assetUrls : oldScene.assetUrls || [oldScene.assetUrl],
+                  assetName: newScene.assetName || oldScene.assetName,
+                  assetType: newScene.assetType || oldScene.assetType,
+                };
+              }
+              return newScene;
+            });
+          }
+
+          _.forEach(newProject.storyboard, (newScene: any) => {
+            const newHasImage = !!(newScene?.assetUrl && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !!newScene?.assetUrls?.length;
+
+            if (!newHasImage) {
+              if (fs.existsSync(imageDir)) {
+                try {
+                  const files = fs.readdirSync(imageDir);
+                  const prefix1 = `scene_${newScene.id}.`;
+                  const prefix2 = `scene_${newScene.id}_`;
+
+                  _.forEach(files, (file) => {
+                    if (file.startsWith(prefix1) || file.startsWith(prefix2)) {
+                      const filePath = path.join(imageDir, file);
+                      try {
+                        fs.unlinkSync(filePath);
+                        appLog(`${LOG_MESSAGES.DELETE_SCENE_IMAGE_DISK_SUCCESS}${filePath}`);
+                      } catch (err) {
+                        appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
+                      }
+                    }
+                  });
+                } catch (err) {
+                  appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${imageDir}`, err);
+                }
+              }
+            }
+
+            const newHasAudio = !!(newScene?.audioUrl && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
+            if (!newHasAudio) {
+              if (fs.existsSync(audioDir)) {
+                try {
+                  const files = fs.readdirSync(audioDir);
+                  const prefix = `scene_${newScene.id}.`;
+                  _.forEach(files, (file) => {
+                    if (file.startsWith(prefix)) {
+                      const filePath = path.join(audioDir, file);
+                      try {
+                        fs.unlinkSync(filePath);
+                        appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${filePath}`);
+                      } catch (err) {
+                        appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${filePath}`, err);
+                      }
+                    }
+                  });
+                } catch (err) {
+                  appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
+                }
+              }
+            }
+          });
+
+          const oldAudioUrl = (oldProject?.voiceConfig as any)?.audioUrl;
+          const newAudioUrl = (newProject?.voiceConfig as any)?.audioUrl;
+          if (oldAudioUrl && (!newAudioUrl || _.eq(newAudioUrl, ""))) {
+            const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
+            if (fs.existsSync(unifiedAudioFile)) {
+              try {
+                fs.unlinkSync(unifiedAudioFile);
+                appLog(`${LOG_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_SUCCESS}${unifiedAudioFile}`);
+              } catch (err) {
+                appError(`${ERROR_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_ERR}${unifiedAudioFile}`, err);
+              }
             }
           }
         }
       }
 
       delete newProject.allowBulkDeleteImages;
+      delete newProject.isRecreatingStoryboard;
 
       const updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
       const savedProject = await saveProjectDetail(updatedProject);

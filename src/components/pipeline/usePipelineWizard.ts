@@ -1496,7 +1496,7 @@ export function usePipelineWizard(props: any) {
         const updatedProject = {
           ...project,
           storyboard: updatedScenes,
-          allowBulkDeleteImages: true,
+          isRecreatingStoryboard: true,
           voiceConfig: {
             ...project.voiceConfig,
             audioUrl: "",
