@@ -1833,7 +1833,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     try {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
     } catch (cleanupErr) { }
-    logger.error(`Unexpected error running CapCut Ultra: ${err.message}`);
+    logger.error(getBackendMsg("ULTRA_UNEXPECTED_ERR", isVi).replace("{0}", err.message));
     res.write(JSON.stringify({
       success: false,
       error: err.message,
@@ -1845,11 +1845,11 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 router.post("/select-file", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const cmd = `python3 capcut_ultra_tool.py select-file`;
-  logger.log(`Running select-file command: ${cmd}`);
+  logger.log(getBackendMsg("ULTRA_RUN_SELECT_FILE", isVi).replace("{0}", cmd));
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      logger.error(`Select file dialog failed: ${error.message}`);
+      logger.error(getBackendMsg("ULTRA_SELECT_FILE_FAIL", isVi).replace("{0}", error.message));
       return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FILE_FAILED", isVi) });
     }
     return res.json({ success: true, filePath: stdout.trim() });
@@ -1859,11 +1859,11 @@ router.post("/select-file", async (req: Request, res: Response) => {
 router.post("/select-folder", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const cmd = `python3 capcut_ultra_tool.py select-folder`;
-  logger.log(`Running select-folder command: ${cmd}`);
+  logger.log(getBackendMsg("ULTRA_RUN_SELECT_FOLDER", isVi).replace("{0}", cmd));
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      logger.error(`Select folder dialog failed: ${error.message}`);
+      logger.error(getBackendMsg("ULTRA_SELECT_FOLDER_FAIL", isVi).replace("{0}", error.message));
       return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FOLDER_FAILED", isVi) });
     }
     return res.json({ success: true, folderPath: stdout.trim() });

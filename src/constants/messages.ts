@@ -168,6 +168,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_CLEANED_LOCK: "[Hệ thống] 🗑️ Đã xóa file khóa dự án .locked để giải phóng hoàn toàn dự án.",
     ULTRA_UPDATED_META: "[Hệ thống] 📝 Đã cập nhật thời gian sửa đổi trong draft_meta_info.json thành hiện tại.",
     ULTRA_EXIT_ERROR: "Quy trình tối ưu hóa CapCut Ultra thất bại với mã thoát: {0}",
+    ULTRA_UNEXPECTED_ERR: "Lỗi không xác định khi chạy CapCut Ultra: {0}",
+    ULTRA_RUN_SELECT_FILE: "Đang chạy lệnh chọn file: {0}",
+    ULTRA_SELECT_FILE_FAIL: "Hộp thoại chọn file thất bại: {0}",
+    ULTRA_RUN_SELECT_FOLDER: "Đang chạy lệnh chọn thư mục: {0}",
+    ULTRA_SELECT_FOLDER_FAIL: "Hộp thoại chọn thư mục thất bại: {0}",
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -338,6 +343,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_CLEANED_LOCK: "[System] 🗑️ Removed project lock file .locked to fully release the project.",
     ULTRA_UPDATED_META: "[System] 📝 Updated modification time in draft_meta_info.json to present.",
     ULTRA_EXIT_ERROR: "CapCut Ultra optimization process failed with exit code: {0}",
+    ULTRA_UNEXPECTED_ERR: "Unexpected error running CapCut Ultra: {0}",
+    ULTRA_RUN_SELECT_FILE: "Running select-file command: {0}",
+    ULTRA_SELECT_FILE_FAIL: "Select file dialog failed: {0}",
+    ULTRA_RUN_SELECT_FOLDER: "Running select-folder command: {0}",
+    ULTRA_SELECT_FOLDER_FAIL: "Select folder dialog failed: {0}",
   },
 };
 
