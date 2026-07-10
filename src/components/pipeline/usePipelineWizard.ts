@@ -2,9 +2,8 @@ import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
 
-import { formatCleanDuration } from "./pipeline-utils";
-import { formatTimeHelper } from "../../utils/helpers";
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
+import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
 import { appLog, appError, appWarn } from "../../lib/logger.js";
@@ -18,7 +17,7 @@ import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, VOICE_OPTIMIZATION_TEXTS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender, AgeGroup, ProjectInputType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
@@ -57,71 +56,14 @@ const safeResponseJson = async (r: any, f: any) => {
 };
 const fallbackImageCache = new Map<string, string>();
 const getTargetDurationSeconds = (d: any) => 15;
-
-const bufferToWav = (buffer: AudioBuffer, startSec: number, endSec: number): Blob => {
-  const sampleRate = buffer.sampleRate;
-  const numChannels = buffer.numberOfChannels;
-
-  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
-  const endSample = Math.min(Math.floor(endSec * sampleRate), buffer.length);
-  const readableSamples = Math.max(0, endSample - startSample);
-
-  const MIN_DURATION_SEC = 0.1;
-  const totalSamples = Math.max(readableSamples, Math.floor(MIN_DURATION_SEC * sampleRate));
-  const silenceSamples = totalSamples - readableSamples;
-
-  const blockAlign = numChannels * 2;
-  const byteRate = sampleRate * blockAlign;
-  const dataSize = totalSamples * blockAlign;
-  const bufferLength = 44 + dataSize;
-
-  const arrayBuf = new ArrayBuffer(bufferLength);
-  const view = new DataView(arrayBuf);
-
-  const writeString = (v: DataView, offset: number, stringStr: string) => {
-    for (let j = 0; j < stringStr.length; j++) {
-      v.setUint8(offset + j, stringStr.charCodeAt(j));
-    }
-  };
-
-  writeString(view, 0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(view, 8, "WAVE");
-  writeString(view, 12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true);
-  writeString(view, 36, "data");
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  const channelData: Float32Array[] = [];
-  for (let c = 0; c < numChannels; c++) {
-    channelData.push(buffer.getChannelData(c));
-  }
-
-  for (let i = startSample; i < endSample; i++) {
-    for (let c = 0; c < numChannels; c++) {
-      let sample = channelData[c][i] || 0;
-      sample = Math.max(-1, Math.min(1, sample));
-      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-      view.setInt16(offset, intSample, true);
-      offset += 2;
-    }
-  }
-
-  for (let i = 0; i < silenceSamples; i++) {
-    for (let c = 0; c < numChannels; c++) {
-      view.setInt16(offset, 0, true);
-      offset += 2;
-    }
-  }
-
-  return new Blob([view], { type: "audio/wav" });
+const formatRoundedTime = (timeStr: string): string => {
+  if (!timeStr) return "00:00";
+  const secs = parseTimeToSeconds(timeStr);
+  if (secs === null) return timeStr;
+  const rounded = Math.round(secs);
+  const mins = Math.floor(rounded / 60);
+  const s = rounded % 60;
+  return `${mins.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 let handleNextStep = () => { };
 let handlePrevStep = () => { };
@@ -715,16 +657,38 @@ export function usePipelineWizard(props: any) {
         const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
         if (["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"].some((w) => msg.includes(w))) return;
 
-        let enrichedType = type;
+        let processedMsg = msg;
         const msgLower = msg.toLowerCase();
-        if (LOG_SUCCESS_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "success";
-        else if (LOG_PENDING_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "pending";
-        else if (type === "log" && LOG_WARN_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "warn";
-        else if (type === "log" && LOG_ERROR_KEYWORDS.some((term) => msgLower.includes(term))) enrichedType = "error";
+
+        const logsLang = (currentLang === "vi" || currentLang === "en") ? currentLang : "vi";
+        const logTexts = VITE_HMR_LOGS[logsLang];
+
+        if (msgLower.includes("[vite] server connection lost") || msgLower.includes("server connection lost. polling for restart")) {
+          processedMsg = logTexts.SERVER_CONNECTION_LOST;
+        } else if (msgLower.includes("[hmr] failed to reload")) {
+          const fileMatch = msg.match(/Failed to reload (\S+)/i);
+          const filePath = fileMatch ? fileMatch[1] : "";
+          if (filePath) {
+            processedMsg = logTexts.FAILED_RELOAD_WITH_FILE.replace("{filePath}", filePath);
+          } else {
+            processedMsg = logTexts.FAILED_RELOAD_GENERIC;
+          }
+        } else if (msgLower.includes("[vite] connected")) {
+          processedMsg = logTexts.CONNECTED;
+        } else if (msgLower.includes("[vite] hot updated") || msgLower.includes("[vite] hmr update")) {
+          processedMsg = logTexts.HOT_UPDATED;
+        }
+
+        let enrichedType = type;
+        const processedMsgLower = processedMsg.toLowerCase();
+        if (LOG_SUCCESS_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "success";
+        else if (LOG_PENDING_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "pending";
+        else if (type === "log" && LOG_WARN_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "warn";
+        else if (type === "log" && LOG_ERROR_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "error";
 
         const time = new Date().toLocaleTimeString();
         setTimeout(() => {
-          setSystemLogs((prev) => [...prev, { time, type: enrichedType, msg }].slice(-200));
+          setSystemLogs((prev) => [...prev, { time, type: enrichedType, msg: processedMsg }].slice(-200));
         }, 0);
       } catch (e) { }
     };
@@ -1483,28 +1447,74 @@ export function usePipelineWizard(props: any) {
           return { ...scene, prompt: scene.prompt || "" };
         });
 
-        const totalDuration = updatedScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
-        let syncLogText = t.syncLedgerSuccess.replace("{totalDuration}", totalDuration.toFixed(1));
+        const hasVoiceSource = !_.isEmpty(_.get(project, 'voiceConfig.audioBase64')) || !_.isEmpty(_.get(project, 'voiceConfig.audioUrl'));
 
-        updatedScenes.forEach((scene: any, idx: number) => {
-          syncLogText += t.syncLedgerItem
-            .replace("{index}", (idx + 1).toString())
-            .replace("{startTime}", scene.startTime)
-            .replace("{endTime}", scene.endTime)
-            .replace("{duration}", scene.duration.toString())
-            .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
-        });
+        let finalScenes = updatedScenes;
+        let syncLogText = "";
+        let audioBase64 = null;
+
+        if (hasVoiceSource) {
+          const langKey = _.eq(currentLang, "en") ? "en" : "vi";
+          const texts = EXTERNAL_AUDIO_TEXTS[langKey];
+          setBulkVoiceStatus(t.aligningVoiceWithWhisper || texts.ALIGNING);
+          try {
+            audioBase64 = await getVoiceSourceBase64(_.get(project, 'voiceConfig'));
+            if (!_.isEmpty(audioBase64)) {
+              finalScenes = await alignStoryboardVoice(updatedScenes, audioBase64);
+
+              const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              let totalDuration = 10;
+              try {
+                const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
+                const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
+                totalDuration = Math.max(3, decoded.duration);
+              } catch (decodeErr) {
+                logger.warn("FAILED_DECODE_AUDIO_DURATION", decodeErr);
+              } finally {
+                audioCtx.close();
+              }
+
+              syncLogText = texts.SYNC_COMPLETE.replace("{totalDuration}", totalDuration.toFixed(1));
+              finalScenes.forEach((scene: any, idx: number) => {
+                syncLogText += texts.SYNC_ITEM
+                  .replace("{index}", (idx + 1).toString())
+                  .replace("{startTime}", formatRoundedTime(scene.startTime))
+                  .replace("{endTime}", formatRoundedTime(scene.endTime))
+                  .replace("{duration}", Math.round(scene.duration || 0).toString())
+                  .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
+              });
+            }
+          } catch (alignErr: any) {
+            const langKey = currentLang === "en" ? "en" : "vi";
+            const texts = EXTERNAL_AUDIO_TEXTS[langKey];
+            logger.error("STORYBOARD_ALIGN_VOICE_ERR", alignErr);
+            setErrorMsg(texts.ALIGN_ERROR.replace("{error}", alignErr.message));
+          }
+        }
+
+        if (!syncLogText) {
+          const totalDuration = finalScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
+          syncLogText = t.syncLedgerSuccess.replace("{totalDuration}", totalDuration.toFixed(1));
+          finalScenes.forEach((scene: any, idx: number) => {
+            syncLogText += t.syncLedgerItem
+              .replace("{index}", (idx + 1).toString())
+              .replace("{startTime}", formatRoundedTime(scene.startTime))
+              .replace("{endTime}", formatRoundedTime(scene.endTime))
+              .replace("{duration}", Math.round(scene.duration || 0).toString())
+              .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
+          });
+        }
 
         setAlignmentsLog(syncLogText);
 
         const updatedProject = {
           ...project,
-          storyboard: updatedScenes,
+          storyboard: finalScenes,
           isRecreatingStoryboard: true,
           voiceConfig: {
             ...project.voiceConfig,
-            audioUrl: "",
-            audioBase64: undefined,
+            audioUrl: project.voiceConfig?.audioUrl || "",
+            audioBase64: project.voiceConfig?.audioBase64 || undefined,
             timingLog: syncLogText,
           },
         };
@@ -1518,7 +1528,7 @@ export function usePipelineWizard(props: any) {
         const successMsg = t.Storyboard_coordinates_fo;
         setInfoMsg(successMsg);
         console.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
-        return updatedScenes;
+        return finalScenes;
       }
     } catch (e: any) {
       setErrorMsg(t.storyboardPipelineError.replace("{error}", e.message));
@@ -2880,9 +2890,9 @@ export function usePipelineWizard(props: any) {
       updated.forEach((scene: any, idx: number) => {
         syncLogText += t.syncLedgerItem
           .replace("{index}", (idx + 1).toString())
-          .replace("{startTime}", scene.startTime)
-          .replace("{endTime}", scene.endTime)
-          .replace("{duration}", scene.duration.toString())
+          .replace("{startTime}", formatRoundedTime(scene.startTime))
+          .replace("{endTime}", formatRoundedTime(scene.endTime))
+          .replace("{duration}", Math.round(scene.duration || 0).toString())
           .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
       });
 
@@ -3180,6 +3190,76 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const getVoiceSourceBase64 = async (voiceConfig: any) => {
+    let audioBase64 = voiceConfig?.audioBase64;
+    if (!audioBase64 && voiceConfig?.audioUrl) {
+      try {
+        const audioFetchRes = await fetch(voiceConfig.audioUrl);
+        if (audioFetchRes.ok) {
+          const audioArrayBuffer = await audioFetchRes.arrayBuffer();
+          const uint8Array = new Uint8Array(audioArrayBuffer);
+          const chunkSize = 0x8000;
+          let binary = "";
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
+          }
+          audioBase64 = btoa(binary);
+        }
+      } catch (fetchErr) {
+        logger.error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR, fetchErr);
+      }
+    }
+    return audioBase64;
+  };
+
+  const alignStoryboardVoice = async (scenes: any[], audioBase64: string) => {
+    const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audioBase64: audioBase64,
+        scenes: scenes.map((sc) => ({
+          id: sc.id,
+          script: sc.script || sc.subtitle || "",
+        })),
+      }),
+    });
+
+    let alignData: any;
+    try {
+      alignData = await alignResponse.json();
+    } catch (jsonErr) {
+      alignData = {};
+    }
+
+    if (!alignResponse.ok || !alignData.success || !Array.isArray(alignData.alignments)) {
+      const langKey = currentLang === "en" ? "en" : "vi";
+      const texts = EXTERNAL_AUDIO_TEXTS[langKey];
+      throw new Error(alignData.error || texts.SERVER_ALIGN_ERROR);
+    }
+
+    return scenes.map((sc: any) => {
+      const align = alignData.alignments.find((a: any) => a.id === sc.id);
+      if (align) {
+        return {
+          ...sc,
+          duration: align.duration,
+          startTime: formatTimeHelper(align.start),
+          endTime: formatTimeHelper(align.end),
+          _start: align.start,
+          _end: align.end,
+          audioUrl: undefined,
+          audioBase64: undefined,
+        };
+      }
+      return {
+        ...sc,
+        audioUrl: undefined,
+        audioBase64: undefined,
+      };
+    });
+  };
+
   const handleAlignAndSaveVoice = async (audioName: string, audioUrl: string, audioBase64: string, audioType: AudioType, isFromAutoGenerateAll = false) => {
     stopPlaybackSim();
 
@@ -3205,17 +3285,9 @@ export function usePipelineWizard(props: any) {
     setBulkVoiceStatus(t.aligningVoiceWithWhisper || texts.ALIGNING);
 
     try {
-      const updatedScenes = scenes.map((sc: any) => {
-        const cleanText = cleanScriptText(sc.script || sc.subtitle || "");
-        return {
-          ...sc,
-          narrationText: cleanText,
-          textLength: cleanText.length,
-        };
-      });
+      const alignedScenes = await alignStoryboardVoice(scenes, audioBase64);
 
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
       let totalDuration = 10;
       try {
         const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
@@ -3226,47 +3298,14 @@ export function usePipelineWizard(props: any) {
       } finally {
         audioCtx.close();
       }
-
-      const wordCounts = updatedScenes.map((sc: any) => (sc.script || sc.subtitle || "").split(/\s+/).filter(Boolean).length);
-      const totalWords = wordCounts.reduce((a: number, b: number) => a + b, 0);
-
-      let currentSecs = 0;
-      const lazyScenes = updatedScenes.map((sc: any, idx: number) => {
-        const wCount = wordCounts[idx];
-        let duration = 3;
-        if (totalWords > 0) {
-          duration = Math.round((wCount / totalWords) * totalDuration);
-          if (duration < 3) duration = 3;
-        }
-        if (idx === updatedScenes.length - 1) {
-          duration = Math.max(3, totalDuration - currentSecs);
-        }
-
-        const startSecs = currentSecs;
-        const endSecs = currentSecs + duration;
-        currentSecs = endSecs;
-
-        return {
-          ...sc,
-          script: sc.narrationText || sc.script || sc.subtitle || "",
-          subtitle: sc.narrationText || sc.script || sc.subtitle || "",
-          duration: duration,
-          startTime: formatTimeHelper(startSecs),
-          endTime: formatTimeHelper(endSecs),
-          audioUrl: undefined,
-          audioBase64: undefined,
-        };
-      });
-
-      const vTexts = VOICE_OPTIMIZATION_TEXTS[currentLang === "en" ? "en" : "vi"];
-
-      let syncLogText = vTexts.LAZY_ALIGN_START.replace("{totalDuration}", totalDuration.toFixed(1));
-      lazyScenes.forEach((scene: any, idx: number) => {
-        syncLogText += vTexts.LAZY_ALIGN_ITEM.replace("{index}", (idx + 1).toString())
-          .replace("{startTime}", scene.startTime)
-          .replace("{endTime}", scene.endTime)
-          .replace("{duration}", scene.duration.toString())
-          .replace("{script}", (scene.script || "").substring(0, 35));
+      let syncLogText = texts.SYNC_COMPLETE.replace("{totalDuration}", totalDuration.toFixed(1));
+      alignedScenes.forEach((scene: any, idx: number) => {
+        syncLogText += texts.SYNC_ITEM
+          .replace("{index}", (idx + 1).toString())
+          .replace("{startTime}", formatRoundedTime(scene.startTime))
+          .replace("{endTime}", formatRoundedTime(scene.endTime))
+          .replace("{duration}", Math.round(scene.duration || 0).toString())
+          .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
       });
 
       setAlignmentsLog(syncLogText);
@@ -3275,7 +3314,7 @@ export function usePipelineWizard(props: any) {
 
       const lazyProject = {
         ...project,
-        storyboard: lazyScenes,
+        storyboard: alignedScenes,
         voiceConfig: {
           ...project.voiceConfig,
           audioType: audioType,
@@ -3685,7 +3724,7 @@ export function usePipelineWizard(props: any) {
       ctx.fillStyle = "#94a3b8";
       ctx.font = "bold 12px monospace";
       ctx.textAlign = "center";
-      const topLabel = `SCENE ID: ${sc.id || "N/A"} | DURATION: ${formatCleanDuration(sc.duration || 5)}s`;
+      const topLabel = `SCENE ID: ${sc.id || "N/A"} | DURATION: ${Math.round(sc.duration || 5)}s`;
       ctx.fillText(topLabel.toUpperCase(), 640, 45);
 
       const rect_w = 280;
@@ -3829,152 +3868,12 @@ export function usePipelineWizard(props: any) {
     stopPlaybackSim();
     setLoadingExportType(EXPORT_TYPES.ZIP);
 
-    const vTexts = VOICE_OPTIMIZATION_TEXTS[currentLang === "en" ? "en" : "vi"];
-
     try {
-      let currentProject = project;
-
-      const hasMissingAudio = project.storyboard?.some((sc) => !sc.audioUrl);
-      const needToSegment = hasMissingAudio;
-
-      const hasVoiceSource = !!(project?.voiceConfig?.audioBase64 || project?.voiceConfig?.audioUrl);
-
-      if (hasVoiceSource && needToSegment) {
-        setInfoMsg(vTexts.SYNC_WHISPER_WAIT);
-        let audioBase64 = project.voiceConfig.audioBase64;
-        if (!audioBase64 && project.voiceConfig.audioUrl) {
-          try {
-            const audioFetchRes = await fetch(project.voiceConfig.audioUrl);
-            if (audioFetchRes.ok) {
-              const audioArrayBuffer = await audioFetchRes.arrayBuffer();
-              const uint8Array = new Uint8Array(audioArrayBuffer);
-              const chunkSize = 0x8000;
-              let binary = "";
-              for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
-              }
-              audioBase64 = btoa(binary);
-            }
-          } catch (fetchErr) {
-            logger.error("FETCH_AUDIO_URL_FOR_SEGMENT_ERR", fetchErr);
-          }
-        }
-
-        if (!audioBase64) {
-          throw new Error(vTexts.SYNC_WHISPER_ERROR);
-        }
-
-        const storyboard = project.storyboard || [];
-
-        const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            audioBase64: audioBase64,
-            scenes: storyboard.map((sc) => ({
-              id: sc.id,
-              script: sc.script || sc.subtitle || "",
-            })),
-          }),
-        });
-
-        let alignData: any;
-        try {
-          alignData = await alignResponse.json();
-        } catch (jsonErr) {
-          alignData = {};
-        }
-
-        if (![alignResponse.ok, alignData.success, Array.isArray(alignData.alignments)].every(Boolean)) {
-          throw new Error(alignData.error || vTexts.SYNC_WHISPER_ERROR);
-        }
-
-        const alignedScenes = storyboard.map((sc: any) => {
-          const align = alignData.alignments.find((a: any) => a.id === sc.id);
-          if (align) {
-            return {
-              ...sc,
-              duration: align.duration,
-              startTime: formatTimeHelper(align.start),
-              endTime: formatTimeHelper(align.end),
-              _start: align.start,
-              _end: align.end,
-            };
-          }
-          return sc;
-        });
-
-        const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
-        const audioCtxBackground = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const decodedBuffer = await audioCtxBackground.decodeAudioData(arrayBufferRaw);
-        await audioCtxBackground.close();
-
-        const segmentedScenes = await Promise.all(
-          alignedScenes.map(async (sc: any, index: number) => {
-            try {
-              // Luôn ưu tiên _start/_end (giá trị số giây gốc từ Python, không bị mất độ chính xác)
-              // Tuyệt đối không parse lại từ string đã format (ví dụ "01:23.456" → mất ms)
-              const start = sc._start !== undefined ? Number(sc._start) : 0;
-              const end = sc._end !== undefined ? Number(sc._end) : 0;
-
-              // Bỏ qua cảnh không có thông tin thời gian hợp lệ
-              if (end <= start) {
-                const { _start, _end, ...cleanScene } = sc;
-                return cleanScene;
-              }
-
-              const voiceSegmentBlob = bufferToWav(decodedBuffer, start, end);
-              const voiceSegmentBase64 = await new Promise<string>((resolve, reject) => {
-                const r = new FileReader();
-                r.onloadend = () => {
-                  const res = r.result as string;
-                  resolve(res.split(",")[1]);
-                };
-                r.onerror = reject;
-                r.readAsDataURL(voiceSegmentBlob);
-              });
-
-              const { _start, _end, ...cleanScene } = sc;
-              return {
-                ...cleanScene,
-                audioBase64: voiceSegmentBase64,
-                audioUrl: `data:audio/wav;base64,${voiceSegmentBase64}`,
-              };
-            } catch (sliceErr: any) {
-              const { _start, _end, ...cleanScene } = sc;
-              return cleanScene;
-            }
-          }),
-        );
-
-        let finalSyncLogText = `[Whisper Sync before ZIP] Đồng bộ hoàn tất (Tổng thời lượng: ${decodedBuffer.duration.toFixed(1)}s)\n`;
-        segmentedScenes.forEach((scene: any, idx: number) => {
-          finalSyncLogText += `- Cảnh ${idx + 1}: [${scene.startTime} -> ${scene.endTime}] (${scene.duration}s) | ${scene.script.substring(0, 35)}...\n`;
-        });
-
-        const finalProject = {
-          ...project,
-          storyboard: segmentedScenes,
-          voiceConfig: {
-            ...project.voiceConfig,
-            timingLog: finalSyncLogText,
-          },
-        };
-
-        setProject(finalProject);
-        setAlignmentsLog(finalSyncLogText);
-
-        await onSaveProject(finalProject, true);
-
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        currentProject = finalProject;
-      }
-
-      setInfoMsg(t.waitExportProcess || vTexts.PREPARE_ZIP);
+      setInfoMsg(t.waitExportProcess || "Đang chuẩn bị gói dự án...");
       const response = await fetch(CAPCUT_CONFIG.EXPORT_ZIP_ROUTE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: currentProject.id }),
+        body: JSON.stringify({ projectId: project.id }),
       });
 
       if (!response.ok) {
@@ -3982,7 +3881,7 @@ export function usePipelineWizard(props: any) {
       }
 
       const blob = await response.blob();
-      const fileName = `${currentProject.name.replace(WHITESPACE_REGEX, "_")}${CAPCUT_CONFIG.EXPORT_BUNDLE_SUFFIX}`;
+      const fileName = `${project.name.replace(WHITESPACE_REGEX, "_")}${CAPCUT_CONFIG.EXPORT_BUNDLE_SUFFIX}`;
       const url = window.URL.createObjectURL(blob);
       const dlAnchorElem = document.createElement("a");
       dlAnchorElem.setAttribute("href", url);

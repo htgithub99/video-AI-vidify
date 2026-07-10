@@ -5,6 +5,7 @@ import re
 import string
 import difflib
 import warnings
+import unicodedata
 
 WARNING_ACTION = "ignore"
 MODEL_NAME = "small"
@@ -34,12 +35,12 @@ ERROR_MISSING_ARGS = "Lỗi: Thiếu tham số truyền vào."
 ERROR_USAGE = "Cú pháp: python voice_aligner.py <audio_path> <scenes_json_path> <output_json_path>"
 ERROR_AUDIO_NOT_FOUND = "Lỗi: Không tìm thấy file âm thanh tại {path}"
 ERROR_SCENES_NOT_FOUND = "Lỗi: Không tìm thấy file JSON phân cảnh tại {path}"
-ERROR_WHISPER_NOT_INSTALLED = "Lỗi: Chưa cài đặt thư viện openai-whisper."
+ERROR_WHISPER_NOT_INSTALLED = "Lỗi: Chưa cài đặt thư viện whisperx."
 ERROR_READ_JSON = "Lỗi đọc JSON kịch bản: {error}"
-ERROR_WHISPER_RUN = "Lỗi khi chạy Whisper AI: {error}"
+ERROR_WHISPER_RUN = "Lỗi khi chạy WhisperX AI: {error}"
 ERROR_WRITE_JSON = "Lỗi ghi file kết quả JSON: {error}"
 SUCCESS_MESSAGE = "✅ Đồng bộ hóa mốc thời gian hoàn tất!"
-ERROR_FFMPEG_MISSING = "Hệ thống thiếu phần mềm FFmpeg (Bắt buộc cho Whisper). Vui lòng cài đặt FFmpeg (https://ffmpeg.org/download.html) và thêm vào PATH Windows."
+ERROR_FFMPEG_MISSING = "Hệ thống thiếu phần mềm FFmpeg (Bắt buộc cho WhisperX). Vui lòng cài đặt FFmpeg (https://ffmpeg.org/download.html) và thêm vào PATH Windows."
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -52,6 +53,7 @@ warnings.filterwarnings(WARNING_ACTION, category=FutureWarning)
 def normalize_text(text):
     if not text:
         return ""
+    text = unicodedata.normalize('NFC', text)
     text = text.lower()
     text = text.translate(str.maketrans('', '', PUNCTUATION_TO_REMOVE))
     return re.sub(RE_WHITESPACE, ' ', text).strip()
@@ -82,7 +84,7 @@ def main():
         sys.exit(1)
 
     try:
-        import whisper
+        import whisperx
     except ImportError:
         print(ERROR_WHISPER_NOT_INSTALLED, file=sys.stderr, flush=True)
         sys.exit(1)
@@ -103,23 +105,43 @@ def main():
         })
 
     try:
-        # Ghép tất cả script lại để tạo initial_prompt hướng dẫn Whisper về ngữ cảnh
         combined_script_text = " ".join(s[KEY_TEXT] for s in scenes if s.get(KEY_TEXT))
-        initial_prompt = combined_script_text[:500] if combined_script_text else None
+        
+        device = "cpu"
+        batch_size = 16
+        compute_type = "int8"
 
-        model = whisper.load_model(MODEL_NAME)
-        # Thử nhận diện với language="vi" trước (phù hợp tiếng Việt)
-        # Nếu script không có ký tự tiếng Việt, để Whisper tự detect
+        # Load whisperx model
         has_vietnamese = any(ord(c) > 0x1E00 for c in combined_script_text)
-        detect_lang = "vi" if has_vietnamese else None
+        detect_lang = "vi" if has_vietnamese else "en"
 
-        transcribe_kwargs: dict = {"word_timestamps": True}
-        if detect_lang:
-            transcribe_kwargs["language"] = detect_lang
-        if initial_prompt:
-            transcribe_kwargs["initial_prompt"] = initial_prompt
+        model = whisperx.load_model(MODEL_NAME, device, compute_type=compute_type, language=detect_lang)
+        audio = whisperx.load_audio(audio_path)
+        
+        result = model.transcribe(audio, batch_size=batch_size)
+        total_duration_sec = len(audio) / 16000.0  # WhisperX load_audio returns float32 numpy array sampled at 16kHz
+        
+        # Chạy Align Model của WhisperX để căn chỉnh mốc thời gian chi tiết của từng từ
+        try:
+            model_a, metadata = whisperx.load_align_model(language_code=detect_lang, device=device)
+            result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
+        except Exception as align_err:
+            # Fallback nếu mô hình align không tải được
+            pass
 
-        result = model.transcribe(audio_path, **transcribe_kwargs)
+        ai_words = []
+        for segment in result.get("segments", []):
+            if "words" in segment:
+                for w in segment["words"]:
+                    if "start" in w and "end" in w:
+                        word_text = normalize_text(w["word"])
+                        if not word_text:
+                            continue
+                        ai_words.append({
+                            "word": word_text,
+                            KEY_START: w["start"],
+                            KEY_END: w["end"]
+                        })
     except Exception as e:
         error_msg = str(e)
         if "WinError 2" in error_msg or "ffmpeg" in error_msg.lower() or "not found" in error_msg.lower():
@@ -127,46 +149,21 @@ def main():
         print(ERROR_WHISPER_RUN.format(error=error_msg), file=sys.stderr, flush=True)
         sys.exit(1)
 
-    # Phân bổ thời gian của từ nhận diện bởi Whisper cho từng ký tự cấu thành (đa ngôn ngữ)
-    ai_chars = []
-    for segment in result.get(KEY_SEGMENTS, []):
-        for word_info in segment.get(KEY_WORDS, []):
-            word_text = word_info[KEY_WORD]
-            chars = to_char_list(word_text)
-            if not chars:
-                continue
-            
-            w_start = word_info[KEY_START]
-            w_end = word_info[KEY_END]
-            w_dur = max(0.0, w_end - w_start)
-            w_len = len(chars)
-            
-            for k, char in enumerate(chars):
-                c_start = w_start + k * (w_dur / w_len)
-                c_end = w_start + (k + 1) * (w_dur / w_len)
-                ai_chars.append({
-                    "char": char,
-                    KEY_START: c_start,
-                    KEY_END: c_end
-                })
-
-    # Tách kịch bản gốc thành mảng ký tự và ánh xạ đến scene_idx
-    script_chars = []
-    char_to_scene = []
+    # Tách kịch bản gốc thành mảng từ và ánh xạ đến scene_idx
+    script_words = []
+    word_to_scene = []
     for idx, scene in enumerate(scenes):
-        chars = to_char_list(scene[KEY_TEXT])
-        script_chars.extend(chars)
-        char_to_scene.extend([idx] * len(chars))
+        words_in_scene = [normalize_text(w) for w in (scene[KEY_TEXT] or "").split() if normalize_text(w)]
+        script_words.extend(words_in_scene)
+        word_to_scene.extend([idx] * len(words_in_scene))
 
-    whisper_char_list = [c["char"] for c in ai_chars]
-    sm = difflib.SequenceMatcher(None, script_chars, whisper_char_list)
+    whisper_word_list = [w["word"] for w in ai_words]
+    sm = difflib.SequenceMatcher(None, script_words, whisper_word_list, autojunk=False)
     matches = sm.get_matching_blocks()
 
-    # Lọc bỏ các block khớp quá ngắn (nhiễu ký tự đơn lẻ)
-    filtered_matches = [m for m in matches if m.size >= 2]
+    filtered_matches = [m for m in matches if m.size >= 1]
     sorted_matches = sorted(filtered_matches, key=lambda x: x.a)
 
-    # Thuật toán Quy hoạch động để chọn chuỗi khớp đơn điệu (monotonic) tối ưu
     n_matches = len(sorted_matches)
     dp = [m.size for m in sorted_matches]
     parent = [-1] * n_matches
@@ -188,18 +185,14 @@ def main():
             curr = parent[curr]
         optimal_matches.reverse()
 
-    # Gán mốc thời gian từ chuỗi khớp đơn điệu
     scene_core_times = [{KEY_START: None, KEY_END: None} for _ in range(len(scenes))]
     for match in optimal_matches:
         for k in range(match.size):
-            scene_idx = char_to_scene[match.a + k]
+            scene_idx = word_to_scene[match.a + k]
             if scene_core_times[scene_idx][KEY_START] is None:
-                scene_core_times[scene_idx][KEY_START] = ai_chars[match.b + k][KEY_START]
-            scene_core_times[scene_idx][KEY_END] = ai_chars[match.b + k][KEY_END]
+                scene_core_times[scene_idx][KEY_START] = ai_words[match.b + k][KEY_START]
+            scene_core_times[scene_idx][KEY_END] = ai_words[match.b + k][KEY_END]
 
-    total_duration_sec = result.get(KEY_SEGMENTS, [])[-1].get(KEY_END, 10.0) if result.get(KEY_SEGMENTS) else 10.0
-    
-    # Nội suy thời gian cho các cảnh chưa khớp được từ nào
     i = 0
     n = len(scenes)
     while i < n:
@@ -215,7 +208,6 @@ def main():
                     next_start = scene_core_times[k_idx][KEY_START]
                     break
             
-            # Phòng vệ chống chồng chéo thời gian
             if prev_end > next_start:
                 prev_end = next_start
             
@@ -242,13 +234,11 @@ def main():
         else:
             i += 1
 
-    # Tính toán điểm cắt thực tế cho các cảnh
     scene_cuts = []
     for i in range(len(scenes)):
         s_time = scene_core_times[i][KEY_START]
         e_time = scene_core_times[i][KEY_END]
         
-        # Phòng vệ: Đảm bảo thời gian bắt đầu của cảnh i không nhỏ hơn mốc kết thúc của cảnh trước
         if i > 0:
             prev_end = scene_core_times[i-1][KEY_END]
             if s_time is not None and prev_end is not None and s_time < prev_end:

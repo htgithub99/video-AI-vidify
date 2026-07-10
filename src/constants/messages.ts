@@ -605,6 +605,10 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
       vi: "Đang áp dụng đặc điểm nhân vật chính vào toàn bộ ảnh bìa...",
       en: "Applying main character traits to all cover thumbnails...",
     },
+    handleProcessExternalAudio: {
+      vi: "Bắt đầu xử lý và đồng bộ tệp âm thanh bên ngoài...",
+      en: "Starting processing and aligning external audio file...",
+    },
   };
 
   if (!actionName) return "";

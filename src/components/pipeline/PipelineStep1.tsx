@@ -2747,8 +2747,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           #{scene.id}
                         </span>
                         <span className="bg-rose-600/90 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shadow-sm">
-                          {formatCleanDuration(scene.duration)}
-                          {t.s}
+                          {Math.round(scene.duration || 0)}
+                          {t.s || "s"}
                         </span>
                       </div>
 
@@ -2870,8 +2870,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     <span className="text-slate-400 font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded-full ml-2">
                       {formatCleanTime(activeScene.startTime)} -{" "}
                       {formatCleanTime(activeScene.endTime)} (
-                      {formatCleanDuration(activeScene.duration)}
-                      {t.s_6}
+                      {Math.round(activeScene.duration || 0)}
+                      {t.s_6 || "s"})
                     </span>
                   </div>
                 }

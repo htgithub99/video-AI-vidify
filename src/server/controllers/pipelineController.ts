@@ -1578,7 +1578,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
 router.post("/align-voice", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { audioBase64, scenes } = req.body;
+    const { audioBase64, scenes, segment, projectId } = req.body;
     if (!audioBase64) {
       return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
@@ -1603,17 +1603,17 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
     const scriptPath = path.join(process.cwd(), ALIGN_CONFIG.SCRIPT_FILE);
 
-    const checkCmd = `python3 -c "import whisper"`;
+    const checkCmd = `python3 -c "import faster_whisper"`;
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = `python3 -m pip install openai-whisper`;
+        const installCmd = `python3 -m pip install faster-whisper`;
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
-            logger.error(`Failed to install openai-whisper: ${installError.message}`);
+            logger.error(`Failed to install faster-whisper: ${installError.message}`);
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
@@ -1634,7 +1634,15 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     });
 
     const runAligner = () => {
-      const cmd = `python3 "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
+      let cmd = `python3 "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
+      if (segment && projectId) {
+        const outputDir = path.join(process.cwd(), "assets", "projects", projectId, "voices");
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        const urlPrefix = `/assets/projects/${projectId}/voices`;
+        cmd += ` "${outputDir}" "${urlPrefix}"`;
+      }
       logger.log(`Running voice aligner command: ${cmd}`);
 
       exec(cmd, (error, stdout, stderr) => {
@@ -1819,6 +1827,46 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Project not found" });
     }
 
+    const scenes = _.get(project, 'storyboard', []);
+    const voiceUrl = _.get(project, 'voiceConfig.audioUrl');
+
+    if (!_.isEmpty(voiceUrl) && !_.isEmpty(scenes)) {
+      const relativeAudioPath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
+      const fullAudioPath = path.join(process.cwd(), relativeAudioPath);
+      const voicesDir = path.join(process.cwd(), "assets", "projects", projectId, "voices");
+      
+      if (!fs.existsSync(voicesDir)) {
+        fs.mkdirSync(voicesDir, { recursive: true });
+      }
+
+      if (fs.existsSync(fullAudioPath)) {
+        const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
+          return new Promise((resolve) => {
+            const cmd = `ffmpeg -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
+            exec(cmd, (err) => {
+              if (err) {
+                logger.error(`Error cutting segment for ZIP: ${cmd}`, err);
+              }
+              resolve();
+            });
+          });
+        };
+
+        const cutPromises = _.map(scenes, (sc: any) => {
+          const startVal = _.get(sc, '_start');
+          const endVal = _.get(sc, '_end');
+          if (!_.isNil(startVal) && !_.isNil(endVal)) {
+            const outPath = path.join(voicesDir, `scene_${sc.id}.wav`);
+            sc.audioUrl = `/assets/projects/${projectId}/voices/scene_${sc.id}.wav`;
+            return cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+          }
+          return Promise.resolve();
+        });
+
+        await Promise.all(cutPromises);
+      }
+    }
+
     const zip = new JSZip();
     const folderKey = `{${CAPCUT_CONFIG.ACTIVE_FOLDER_UUID}}`;
 
@@ -1839,7 +1887,6 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     zip.file(CAPCUT_CONFIG.COVER_FILENAME, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
     zip.file(`${folderKey}/${CAPCUT_CONFIG.COVER_FILENAME}`, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
 
-    const scenes = project.storyboard || [];
     scenes.forEach((sc, index) => {
       const filename = `${index + 1}_image.jpg`;
       if (sc.assetUrl) {
@@ -1870,7 +1917,6 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       }
     });
 
-    const voiceUrl = project.voiceConfig?.audioUrl;
     if (voiceUrl) {
       const relativePath = voiceUrl.startsWith('/') ? voiceUrl.slice(1) : voiceUrl;
       const fullPath = path.join(process.cwd(), relativePath);

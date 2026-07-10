@@ -148,6 +148,7 @@ export const ERROR_MESSAGES = {
   DELETE_UNIFIED_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ",
   BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
   LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
+  FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
 } as const;
 
 export const LOG_MESSAGES = {
@@ -206,6 +207,7 @@ export const EXTERNAL_AUDIO_TEXTS = {
     SYNC_COMPLETE: "Đồng bộ kịch bản và giọng nói hoàn tất (Tổng thời lượng: {totalDuration}s)\n",
     SYNC_ITEM: "👉 Phân cảnh #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
     ALIGN_ERROR: "Lỗi đồng bộ giọng nói: {error}",
+    SERVER_ALIGN_ERROR: "Lỗi đồng bộ giọng đọc từ server.",
   },
   en: {
     NO_SCENES: "No scenes to synchronize.",
@@ -216,6 +218,7 @@ export const EXTERNAL_AUDIO_TEXTS = {
     SYNC_COMPLETE: "Storyboard and voice sync completed (Total duration: {totalDuration}s)\n",
     SYNC_ITEM: "👉 Scene #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
     ALIGN_ERROR: "Voice synchronization error: {error}",
+    SERVER_ALIGN_ERROR: "Failed to align voice from server.",
   },
 } as const;
 
@@ -266,4 +269,21 @@ export const LLM_CONFIG = {
   BATCH_WAIT_DELAY: 1500,
   DEFAULT_MAX_CHUNK_SIZE: 1300,
   DEFAULT_MIN_CHUNK_SIZE: 900,
+} as const;
+
+export const VITE_HMR_LOGS = {
+  vi: {
+    SERVER_CONNECTION_LOST: "[Vite] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
+    FAILED_RELOAD_WITH_FILE: "[Hệ thống] Không thể tự động cập nhật giao diện thành phần ({filePath}) do có lỗi cú pháp hoặc thiếu tệp tin. Vui lòng tải lại trang (F5) hoặc kiểm tra lại code.",
+    FAILED_RELOAD_GENERIC: "[Hệ thống] Cập nhật giao diện thất bại do lỗi cú pháp hoặc thiếu tệp tin. Vui lòng tải lại trang (F5) hoặc kiểm tra lại code.",
+    CONNECTED: "[Vite] Đã kết nối lại thành công với máy chủ dịch vụ.",
+    HOT_UPDATED: "[Vite] Giao diện đã tự động cập nhật thay đổi mới thành công.",
+  },
+  en: {
+    SERVER_CONNECTION_LOST: "[Vite] Server connection lost. Reconnecting...",
+    FAILED_RELOAD_WITH_FILE: "[System] Failed to auto-reload component ({filePath}) due to syntax errors or missing files. Please reload page (F5) or check your code.",
+    FAILED_RELOAD_GENERIC: "[System] Interface update failed due to syntax errors or missing files. Please reload page (F5) or check your code.",
+    CONNECTED: "[Vite] Successfully reconnected to development server.",
+    HOT_UPDATED: "[Vite] Interface hot updated successfully.",
+  },
 } as const;
