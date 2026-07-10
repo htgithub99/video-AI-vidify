@@ -8,7 +8,7 @@ import warnings
 import unicodedata
 
 WARNING_ACTION = "ignore"
-MODEL_NAME = "small"
+MODEL_NAME = "tiny"
 
 FILE_READ_MODE = "r"
 FILE_WRITE_MODE = "w"

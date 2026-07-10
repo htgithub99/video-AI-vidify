@@ -100,7 +100,7 @@ export enum VoicePresetId {
 }
 
 export enum SplitStrategy {
-  MULTI_PROMPT = "multi_prompt",
+  MIXED_SENTENCES = "mixed_sentences",
   ULTRADENSE = "ultradense",
   WORD = "word",
   HYPERDENSE = "hyperdense",
@@ -144,3 +144,12 @@ export enum LogLevel {
   WARN = "warn",
   ERROR = "error",
 }
+
+export enum SceneDensity {
+  THEO_TU = "THEO_TU",
+  CAU_NGAN = "CAU_NGAN",
+  CAU_KET_HOP = "CAU_KET_HOP",
+  CAU_DAI = "CAU_DAI",
+  THEO_DOAN = "THEO_DOAN",
+}
+

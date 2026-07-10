@@ -1,11 +1,11 @@
-import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS } from "../../constants";
+import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
 import { Button } from "../ui/Button";
 
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 
-const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight } = LucideIcons as any;
+const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders } = LucideIcons as any;
 
 export default function PipelineStep0(props: PipelineWizardState) {
   const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition } = props;
@@ -169,6 +169,37 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>
                 <p className="text-[10px] text-slate-500 leading-normal pl-1">{t.AI_s_bu_c_ph_i_m_r_ng_n_i}</p>
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.txt_2_Split_Density}</span>
+                <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
+                  <Sliders className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
+                  <select
+                    value={project.config.splitStrategy || SplitStrategy.LONG_SENTENCE}
+                    onChange={(e) =>
+                      setProject((prev) => ({
+                        ...prev,
+                        config: {
+                          ...prev.config,
+                          splitStrategy: e.target.value,
+                        },
+                      }))
+                    }
+                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 font-sans w-full"
+                  >
+                    {SPLIT_STRATEGY_OPTIONS.map((opt) => (
+                      <option
+                        key={opt.value}
+                        value={opt.value}
+                        title={t[opt.titleKey as keyof typeof t] || opt.value}
+                        className={`bg-slate-950 ${opt.className}`}
+                      >
+                        {t[opt.labelKey as keyof typeof t] || opt.value}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Kh_n_gi_m_c_ti_u}</span>

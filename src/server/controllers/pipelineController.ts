@@ -8,7 +8,7 @@ import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
-import { generateScenesWithChunking, SceneDensity } from "../../utils/sceneGeneratorHelper.js";
+
 import {
   EXTERNAL_URLS,
   ALIGN_CONFIG,
@@ -28,7 +28,8 @@ import {
   getStyleRewriteBatchPrompt,
   getOptimizePromptsBatchPrompt,
   getChapterWriterPrompt,
-  getVideoDirectorSceneSplitPrompt,
+  getScriptSplitPrompt,
+  getSceneDetailBatchPrompt,
   getDetailedPromptBuilderPrompt,
   getGlobalVisualBiblePrompt,
   getCharacterAnalysisPrompt,
@@ -56,6 +57,7 @@ import {
   GENRE_VISUAL_GUIDELINES,
   VideoGenre,
   SplitStrategy,
+  SceneDensity,
   CAPCUT_CONFIG,
   WHITESPACE_REGEX,
   ALPHANUMERIC_ONLY_REGEX,
@@ -64,9 +66,13 @@ import {
   CONTENT_TYPES,
   TRANSFER_ENCODINGS,
   UltraStreamLogType,
+  DEFAULT_SCENE_CAMERA_MOTION,
+  DEFAULT_SCENE_EFFECTS,
+  DEFAULT_SCENE_TRANSITION,
+  DEFAULT_SCENE_PROMPT_PREFIX,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep, getBilingualMessage, appWarn } from "../../lib/logger.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
@@ -767,7 +773,18 @@ router.post("/script", async (req: Request, res: Response) => {
       const chapter = chapters[i];
       logStep(`${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`);
 
-      const chapterPrompt = getChapterWriterPrompt(chapter.title, chapter.description || "Write detailed story elements for this segment", config.genre, config.writingStyle, isVi, genreGuideline, styleGuideline, chapterWordTarget);
+      const splitStrategy = config.splitStrategy || SplitStrategy.LONG_SENTENCE;
+      const chapterPrompt = getChapterWriterPrompt(
+        chapter.title,
+        chapter.description,
+        config.genre,
+        config.writingStyle,
+        isVi,
+        genreGuideline,
+        styleGuideline,
+        chapterWordTarget,
+        splitStrategy
+      );
 
       const chapterResponse = await generateContentWithRetry({
         contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${JSON.stringify(scriptResult)}\n\nChapter Prompt:\n${chapterPrompt}`,
@@ -824,13 +841,13 @@ router.post("/script", async (req: Request, res: Response) => {
 
 function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[] {
   if (!chapters || chapters.length === 0) return [];
-  
+
   const syncedChapters = chapters.map((c: any) => ({ ...c }));
-  
+
   // 1. Try to find the exact offset of each chapter's segment in the rewrittenScript
   let lastIndex = 0;
   const segmentsFound: { index: number; length: number }[] = [];
-  
+
   for (let i = 0; i < syncedChapters.length; i++) {
     const seg = syncedChapters[i].scriptSegment || "";
     if (!seg.trim()) {
@@ -845,7 +862,7 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
       segmentsFound.push({ index: -1, length: 0 });
     }
   }
-  
+
   // If all segments are found sequentially, we can fill the gaps (like the hook at the start)
   const allFound = segmentsFound.every(s => s.index !== -1);
   if (allFound) {
@@ -856,16 +873,16 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
     }
     return syncedChapters;
   }
-  
+
   // 2. Fallback: If the script was edited and exact segments are not found,
   // distribute the rewrittenScript sentences proportionally to chapters.
   const sentences = smartSplitSentences(rewrittenScript);
   const totalSentences = sentences.length;
   if (totalSentences === 0) return syncedChapters;
-  
+
   const originalLengths = chapters.map((c: any) => (c.scriptSegment || "").length);
   const totalOriginalLength = originalLengths.reduce((a: number, b: number) => a + b, 0) || 1;
-  
+
   let sentenceCursor = 0;
   for (let i = 0; i < syncedChapters.length; i++) {
     const ratio = originalLengths[i] / totalOriginalLength;
@@ -874,12 +891,12 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
       targetCount = totalSentences - sentenceCursor;
     }
     targetCount = Math.max(1, targetCount);
-    
+
     const slice = sentences.slice(sentenceCursor, sentenceCursor + targetCount);
     syncedChapters[i].scriptSegment = slice.join(" ");
     sentenceCursor += targetCount;
   }
-  
+
   return syncedChapters;
 }
 
@@ -938,7 +955,7 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
 
 router.post("/storyboard", async (req: Request, res: Response) => {
   const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, visualDensity, bypassCache, voiceDuration } = req.body;
-  
+
   let syncedChapters = chapters;
   if (chapters && chapters.length > 0 && rewrittenScript) {
     syncedChapters = syncChaptersWithScript(rewrittenScript, chapters);
@@ -955,8 +972,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   }
   const isVi = config?.language === ProjectLanguage.VI;
   const density = visualDensity || 5;
-  const splitStrategy = config?.splitStrategy || "sentence";
-  const customSplitRules = config?.customSplitRules || "";
+  const splitStrategy = config?.splitStrategy || SplitStrategy.LONG_SENTENCE;
 
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
@@ -976,12 +992,18 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   }
 
   try {
-    let mappedDensity: SceneDensity = "CAU_DAI";
-    if (splitStrategy === SplitStrategy.WORD || splitStrategy === SplitStrategy.ULTRADENSE) mappedDensity = "THEO_TU";
-    else if (splitStrategy === SplitStrategy.SHORT_SENTENCE || splitStrategy === SplitStrategy.HYPERDENSE || splitStrategy === SplitStrategy.HIGHPACED) mappedDensity = "CAU_NGAN";
-    else if (splitStrategy === SplitStrategy.MULTI_PROMPT) mappedDensity = "DA_PHAN_CANH";
-    else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE) mappedDensity = "CAU_DAI";
-    else mappedDensity = "THEO_DOAN";
+    let mappedDensity: SceneDensity = SceneDensity.CAU_DAI;
+    if ([SplitStrategy.WORD, SplitStrategy.ULTRADENSE].includes(splitStrategy as SplitStrategy)) {
+      mappedDensity = SceneDensity.THEO_TU;
+    } else if ([SplitStrategy.SHORT_SENTENCE, SplitStrategy.HYPERDENSE, SplitStrategy.HIGHPACED].includes(splitStrategy as SplitStrategy)) {
+      mappedDensity = SceneDensity.CAU_NGAN;
+    } else if (splitStrategy === SplitStrategy.MIXED_SENTENCES) {
+      mappedDensity = SceneDensity.CAU_KET_HOP;
+    } else if ([SplitStrategy.SENTENCE, SplitStrategy.LONG_SENTENCE].includes(splitStrategy as SplitStrategy)) {
+      mappedDensity = SceneDensity.CAU_DAI;
+    } else {
+      mappedDensity = SceneDensity.THEO_DOAN;
+    }
 
     const genre = config?.genre || VideoGenre.STORYTELLING;
     let genreVisualGuideline =
@@ -1039,52 +1061,122 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     let allScenes: any[] = [];
 
     try {
-      allScenes = await generateScenesWithChunking(rewrittenScript, mappedDensity, async (chunkText, targetPrompt, chunkIndex, totalChunks) => {
-        let splitInstruction = ``;
-        if (splitStrategy === SplitStrategy.ULTRADENSE || splitStrategy === SplitStrategy.WORD) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Divide the script into short scenes corresponding to spoken phrases or clauses. MANDATORY SEMANTIC INTEGRITY: Regardless of density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g., do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene.`;
-        } else if (splitStrategy === SplitStrategy.HYPERDENSE || splitStrategy === SplitStrategy.SHORT_SENTENCE) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Split the script into scene chunks corresponding to short sentences or complete clauses. MANDATORY SEMANTIC INTEGRITY: Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments or tiny dangling phrases. The narration text for each scene must make complete grammatical and logical sense on its own.`;
-        } else if (splitStrategy === SplitStrategy.MULTI_PROMPT) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: You MUST split the script by sentences. For each sentence, generate AT LEAST ONE scene and prompt. If a sentence is long, complex, contains multiple clauses, split the sentence into 2 to 3 separate sub-scenes, but ensure each sub-scene's narration is a grammatically complete, semantically meaningful clause with its own subject and verb. Never split a sentence into meaningless fragments.`;
-        } else if (splitStrategy === SplitStrategy.HIGHPACED) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a swift, modern pacing. Cut precisely at punctuation boundaries or complete short clause blocks. Every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence.`;
-        } else if (splitStrategy === SplitStrategy.SENTENCE || splitStrategy === SplitStrategy.LONG_SENTENCE) {
-          splitInstruction = `CRITICAL STYLING / SPLITTING MANDATE: To make the video exceptionally dynamic, engaging, and highly visual, you MUST split the script extremely finely. Every single sentence, spoken clause, or individual thought in the script MUST correspond to EXACTLY ONE scene. NEVER combine multiple sentences or long paragraphs into a single scene! Each scene must be approx 6-8 seconds. DO NOT summarize or skip any part of the script. MANDATORY: Never combine multiple sentences into a single scene. Combining sentences will ruin the pacing and rhythm.`;
-        } else if (splitStrategy === SplitStrategy.DRAMATIC) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a punchy, dramatic pacing of 8-10 seconds per scene. Focus heavily on suspenseful chapter transitions and key narrative beats.`;
-        } else if (splitStrategy === SplitStrategy.PARAGRAPH) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady. Each scene will be longer (approx 10-15 seconds). Maintain absolute contextual continuity. DO NOT summarize or skip any part. MANDATORY: The visual design MUST strictly align with the exact content of that paragraph.`;
-        } else if (splitStrategy === SplitStrategy.EPIC) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo.`;
-        } else if (splitStrategy === SplitStrategy.CINEMATIC) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus.`;
-        } else if (splitStrategy === SplitStrategy.ARTISTIC) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity.`;
-        } else if (splitStrategy === SplitStrategy.SLOWPACED) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling.`;
-        } else if (splitStrategy === SplitStrategy.SUPER_SLOW) {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts.`;
-        } else {
-          splitInstruction = `CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.`;
-        }
+      logStoryboardStep(getBilingualMessage("STORYBOARD_SPLITTING_GEMINI"));
 
-        const combinedInstruction = `${targetPrompt}\n\n${splitInstruction}`;
-        const visualStyleCombined = `${visualStyle || "Cinematic"}. Visual Bible constraints: Color palette is ${visualBible.colorPalette}. Lighting mood: ${visualBible.lightingMood}`;
-        const prompt = getVideoDirectorSceneSplitPrompt(chunkIndex, totalChunks, genre, genreVisualGuideline, combinedInstruction, visualStyleCombined, referenceStyle, customSplitRules, isVi, chunkText, JSON.stringify(syncedChapters), characterRef, config?.aspectRatio || AspectRatio.SixteenNine, visualBible.characterSpecs, visualBible.landscapeSpecs);
+      const splitPrompt = getScriptSplitPrompt(
+        rewrittenScript,
+        JSON.stringify(syncedChapters),
+        splitStrategy,
+        isVi
+      );
 
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: {
-            responseMimeType: "application/json",
-          },
-        });
-        const data = safeParseJSON(response.text, {});
-        if ((response as any).rotationLogs) {
-          storyboardLogs.push(...(response as any).rotationLogs);
-        }
-        return data.scenes || [];
+      const splitResponse = await generateContentWithRetry({
+        contents: splitPrompt,
+        config: {
+          responseMimeType: "application/json",
+        },
       });
+
+      const splitData = safeParseJSON(splitResponse.text, { scenes: [] });
+      let splitScenes = splitData.scenes || [];
+      if (splitResponse.rotationLogs) {
+        storyboardLogs.push(...splitResponse.rotationLogs);
+      }
+
+      if (!Array.isArray(splitScenes) || splitScenes.length === 0 || !splitScenes.every((s: any) => s.script)) {
+        appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
+        logStoryboardStep(getBilingualMessage("STORYBOARD_GEMINI_SPLIT_FALLBACK"));
+        const fallbackRes = generateMockStoryboard(
+          rewrittenScript,
+          syncedChapters,
+          isVi,
+          visualStyle,
+          density,
+          chosenDuration,
+          splitStrategy,
+          config?.aspectRatio || AspectRatio.SixteenNine
+        );
+        splitScenes = fallbackRes.scenes || [];
+      } else {
+        splitScenes = _.map(splitScenes, (scene: any, idx: number) => ({
+          ...scene,
+          id: `sc_${idx + 1}`,
+          script: scene.script || scene.subtitle || "",
+          subtitle: scene.subtitle || scene.script || "",
+        }));
+      }
+
+      logStoryboardStep(getBilingualMessage("STORYBOARD_GENERATING_DETAILS_BATCH", splitScenes.length));
+
+      const batchSize = 8;
+      const chunks = _.chunk(splitScenes, batchSize);
+      const detailedScenesMap = new Map<string, any>();
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkScenes = chunks[i];
+        logStoryboardStep(getBilingualMessage("STORYBOARD_PROCESSING_BATCH", i + 1, chunks.length));
+
+        const minimalScenesJson = JSON.stringify(_.map(chunkScenes, (s: any) => ({
+          id: s.id,
+          script: s.script,
+          subtitle: s.subtitle
+        })), null, 2);
+
+        const batchPrompt = getSceneDetailBatchPrompt(
+          minimalScenesJson,
+          visualStyle,
+          referenceStyle,
+          characterRef,
+          visualBible.characterSpecs,
+          visualBible.landscapeSpecs,
+          isVi,
+          genre,
+          genreVisualGuideline,
+          config?.aspectRatio || AspectRatio.SixteenNine
+        );
+
+        try {
+          const batchResponse = await generateContentWithRetry({
+            contents: batchPrompt,
+            config: {
+              responseMimeType: "application/json",
+            },
+          });
+
+          const batchData = safeParseJSON(batchResponse.text, { scenes: [] });
+          const batchScenes = batchData.scenes || [];
+          if (batchResponse.rotationLogs) {
+            storyboardLogs.push(...batchResponse.rotationLogs);
+          }
+
+          for (const bs of batchScenes) {
+            if (bs.id) {
+              detailedScenesMap.set(bs.id, bs);
+            }
+          }
+        } catch (batchErr: any) {
+          logger.error("STORYBOARD_BATCH_GEN_ERROR", i + 1, batchErr.message);
+          if (batchErr.rotationLogs) {
+            storyboardLogs.push(...batchErr.rotationLogs);
+          }
+        }
+
+        if (i < chunks.length - 1) {
+          await new Promise((res) => setTimeout(res, 1500));
+        }
+      }
+
+      allScenes = _.map(splitScenes, (scene: any) => {
+        const details = detailedScenesMap.get(scene.id) || {};
+        return {
+          ...scene,
+          prompt: details.prompt || `${DEFAULT_SCENE_PROMPT_PREFIX}${scene.script}. --ar ${config?.aspectRatio || AspectRatio.SixteenNine}`,
+          cameraMotion: details.cameraMotion || DEFAULT_SCENE_CAMERA_MOTION,
+          effects: details.effects || DEFAULT_SCENE_EFFECTS,
+          transition: details.transition || DEFAULT_SCENE_TRANSITION,
+        };
+      });
+
     } catch (e: any) {
       logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_CHUNKING, e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
@@ -1103,7 +1195,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     let data: any = { scenes: allScenes, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || data.scenes.length === 0) {
-      console.warn("Gemini returned malformed or incomplete storyboard JSON. Using robust programmatic sentence splitter fallback to guarantee high-density scenes.");
+      appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
       const oldLogs = data?.rotationLogs;
       data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
       if (oldLogs) data.rotationLogs = oldLogs;
@@ -1607,17 +1699,17 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
     const scriptPath = path.join(process.cwd(), ALIGN_CONFIG.SCRIPT_FILE);
 
-    const checkCmd = `python3 -c "import faster_whisper"`;
+    const checkCmd = `python3 -c "import whisperx"`;
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = `python3 -m pip install faster-whisper`;
+        const installCmd = `python3 -m pip install whisperx`;
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
-            logger.error(`Failed to install faster-whisper: ${installError.message}`);
+            logger.error(`Failed to install whisperx: ${installError.message}`);
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
@@ -1805,7 +1897,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
               const now = Date.now();
               metaObj.modify_time = now;
               metaObj.tm_draft_modified = Math.floor(now / 1000);
-              
+
               fs.writeFileSync(metaFilePath, JSON.stringify(metaObj), "utf-8");
               logger.log(getBackendMsg("ULTRA_UPDATED_META", isVi));
             } catch (metaErr: any) {
@@ -1889,7 +1981,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       const relativeAudioPath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
       const fullAudioPath = path.join(process.cwd(), relativeAudioPath);
       const voicesDir = path.join(process.cwd(), "assets", "projects", projectId, "voices");
-      
+
       if (!fs.existsSync(voicesDir)) {
         fs.mkdirSync(voicesDir, { recursive: true });
       }

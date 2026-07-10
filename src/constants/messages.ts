@@ -648,6 +648,26 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
 };
 
 export const LOG_DICTIONARY = {
+  STORYBOARD_SPLITTING_GEMINI: {
+    en: "[Storyboard] Calling Gemini to split script sentences...",
+    vi: "[Storyboard] Đang gọi Gemini thực hiện phân chia câu thoại kịch bản...",
+  },
+  STORYBOARD_GENERATING_DETAILS_BATCH: {
+    en: "[Storyboard] Generating scene details in batches (total {0} scenes)...",
+    vi: "[Storyboard] Đang tạo chi tiết phân cảnh theo từng lô (tổng cộng {0} phân cảnh)...",
+  },
+  STORYBOARD_PROCESSING_BATCH: {
+    en: "[Storyboard] Processing scene batch {0}/{1}...",
+    vi: "[Storyboard] Đang xử lý lô phân cảnh {0}/{1}...",
+  },
+  STORYBOARD_BATCH_GEN_ERROR: {
+    en: "Error generating details for batch {0}: {1}",
+    vi: "Lỗi khi tạo chi tiết phân cảnh cho lô {0}: {1}",
+  },
+  STORYBOARD_GEMINI_SPLIT_FALLBACK: {
+    en: "[Storyboard] ⚠️ Gemini split returned empty or malformed scenes. Falling back to programmatic splitter.",
+    vi: "[Storyboard] ⚠️ Phân chia câu thoại bằng Gemini bị trống hoặc lỗi. Tự động chuyển sang chia câu lập trình dự phòng.",
+  },
   THUMBNAIL_CHAR_SUCCESS: {
     en: "[AI Service] ✅ Successfully applied character consistency to thumbnails!",
     vi: "[Trí tuệ nhân tạo] ✅ Đồng nhất nhân vật chính cho ảnh bìa thành công!",

@@ -1,3 +1,5 @@
+import { SplitStrategy } from "./enums";
+
 export interface PipelineNode {
   id: string;
   nameVi: string;
@@ -387,3 +389,11 @@ export const getDummySeoData = (isVi: boolean, isApiError: boolean = false) => {
     tags: ["ai story rewriter", "tao video tu dong", "tin tuc lich su", "documentary creation"],
   };
 };
+
+export const SPLIT_STRATEGY_OPTIONS = [
+  { value: SplitStrategy.WORD, labelKey: "By_word", titleKey: "Word_aligned_Maximizes_im", className: "text-slate-300" },
+  { value: SplitStrategy.SHORT_SENTENCE, labelKey: "Short_sentence", titleKey: "Fast_paced_vibrant_short_", className: "text-slate-300" },
+  { value: SplitStrategy.LONG_SENTENCE, labelKey: "Long_sentence", titleKey: "Default_balanced_standard", className: "text-slate-300" },
+  { value: SplitStrategy.MIXED_SENTENCES, labelKey: "Mixed_sentences", titleKey: "Mixed_sentences_desc", className: "text-emerald-450 font-bold" },
+  { value: SplitStrategy.PARAGRAPH, labelKey: "Paragraph_density", titleKey: "Logical_paragraph_aligned", className: "text-slate-300" },
+] as const;

@@ -347,14 +347,14 @@ export const updateProject = async (req: Request, res: Response) => {
         const projectDir = path.join(assetsDir, folderName);
 
         if (newProject.isRecreatingStoryboard) {
-          if (fs.existsSync(projectDir)) {
+          const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
+          if (fs.existsSync(imageDir)) {
             try {
-              fs.rmSync(projectDir, { recursive: true, force: true });
-              fs.mkdirSync(path.join(projectDir, IMAGES_DIR_NAME), { recursive: true });
-              fs.mkdirSync(path.join(projectDir, VOICES_DIR_NAME), { recursive: true });
-              appLog(`${LOG_MESSAGES.BULK_DELETE_PROJECT_DIR_SUCCESS}${projectDir}`);
+              fs.rmSync(imageDir, { recursive: true, force: true });
+              fs.mkdirSync(imageDir, { recursive: true });
+              appLog(`${LOG_MESSAGES.BULK_DELETE_PROJECT_DIR_SUCCESS}${imageDir}`);
             } catch (err) {
-              appError(`${ERROR_MESSAGES.BULK_DELETE_PROJECT_DIR_ERR}${projectDir}`, err);
+              appError(`${ERROR_MESSAGES.BULK_DELETE_PROJECT_DIR_ERR}${imageDir}`, err);
             }
           }
         } else {

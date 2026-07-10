@@ -1,4 +1,6 @@
 import { AspectRatio } from "../types.js";
+import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
+import { SplitStrategy } from "./enums.js";
 
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
@@ -173,7 +175,42 @@ You must return a raw JSON Array matching this format perfectly. No markdown cod
   { "id": "hk_unique_1", "content": "The Hook Line...", "type": "StyleName", "selected": true }
 ]`;
 
-export const getChapterWriterPrompt = (chapterTitle: string, chapterDescription: string, genre: string, writingStyle: string, isVi: boolean, genreGuideline: string, styleGuideline: string, chapterWordTarget: number): string => `You are writing ONE CHAPTER of a larger script.
+export const getChapterWriterPrompt = (
+  chapterTitle: string,
+  chapterDescription: string,
+  genre: string,
+  writingStyle: string,
+  isVi: boolean,
+  genreGuideline: string,
+  styleGuideline: string,
+  chapterWordTarget: number,
+  splitStrategy: string
+): string => {
+  let sentenceLengthDirective = "";
+
+  if (
+    [
+      SplitStrategy.WORD,
+      SplitStrategy.ULTRADENSE,
+      SplitStrategy.HYPERDENSE,
+      SplitStrategy.SHORT_SENTENCE,
+      SplitStrategy.HIGHPACED
+    ].includes(splitStrategy as SplitStrategy)
+  ) {
+    sentenceLengthDirective = `\n[MANDATORY SENTENCE STRUCTURE DIRECTIVE - SHORT SENTENCES]:
+- You MUST write the script segments of this chapter using EXTREMELY SHORT, simple, and independent sentences (strictly maximum 10 to 15 words per sentence).
+- ABSOLUTELY DO NOT write long complex compound sentences, run-on sentences, or use complex conjunctions to join multiple clauses. Do not use many commas to link separate thoughts.
+- Each sentence must express a single visual action or subject with complete standalone meaning so that the AI image generator can easily generate matching images.`;
+  } else if (splitStrategy === SplitStrategy.MIXED_SENTENCES) {
+    sentenceLengthDirective = `\n[MANDATORY SENTENCE STRUCTURE DIRECTIVE - MIXED SENTENCES]:
+- You MUST write the script segments using a dynamic combination of both short, punchy sentences (maximum 10-12 words) and standard long sentences (15-25 words). 
+- Alternating sentence lengths creates a natural rhythm and cinematic pacing. Explanations can be longer sentences, while dramatic actions should be short sentences.`;
+  } else if (splitStrategy === SplitStrategy.PARAGRAPH) {
+    sentenceLengthDirective = `\n[MANDATORY SENTENCE STRUCTURE DIRECTIVE - PARAGRAPH]:
+- Normal fluent paragraphs with standard long sentences are allowed, suitable for a slow visual pacing.`;
+  }
+
+  return `You are writing ONE CHAPTER of a larger script.
 [Chapter Info]:
 - Title: ${chapterTitle}
 - Description: ${chapterDescription}
@@ -195,11 +232,13 @@ ${
     ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
     : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
 }
+${sentenceLengthDirective}
 
 Provide strict output complying EXACTLY with this JSON structure:
 {
   "scriptSegment": "Massive, extensive script lines for this chapter contributing to the ${chapterWordTarget}+ word count requirement."
 }`;
+};
 
 export const getImagePromptDesignerPrompt = (genre: string, rewrittenScript: string): string => `You are an elite AI Image Prompt Designer. Your task is to design ONE highly detailed, standalone image prompt that captures the MOST ICONIC, DEFINING MOMENT of the story script. This image will serve as the master reference visual for the entire storyboard.
 
@@ -339,6 +378,122 @@ ${chunkScript}
 
 Chapters structure context:
 ${chaptersStr}`;
+
+export const getScriptSplitPrompt = (
+  script: string,
+  chaptersStr: string,
+  splitStrategy: string,
+  isVi: boolean
+): string => {
+  const strategyConfig = SPLIT_STRATEGY_CONFIGS[splitStrategy];
+  const splitInstruction = strategyConfig?.instruction || "CRITICAL SPLITTING MANDATE: Keep an even, steady pacing. Cut scenes roughly every 5-8 seconds. DO NOT summarize or skip any part of the script.";
+
+  return `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes.
+
+[CRITICAL RULE - NO MODIFICATIONS AND NO LOSS OF TEXT]:
+1. You MUST process the ENTIRE script segment from the first word to the very last word.
+2. DO NOT SKIP, DROP, SUMMARIZE, OR REWRITE ANY PART OF THE NARRATION.
+3. Every single word in the original script MUST be preserved. The concatenation of all "script" fields in your output JSON must perfectly reconstruct the original script, preserving punctuation and spaces.
+4. Each scene segment's "script" and "subtitle" MUST contain the exact text of that segment, written in the original language (${isVi ? "Vietnamese" : "English"}).
+
+[SPLITTING STRATEGY]:
+${splitInstruction}
+
+[MAP TO CHAPTERS]:
+Each split scene segment must be mapped to a chapter ID from the "Chapters structure context" below. Set the "chapterId" field of the scene to the corresponding chapter's ID. If a scene represents introductory text (such as the hook, intro, or prologue) before Chapter 1, strictly assign it to the ID of the first chapter in the list.
+
+Output must comply EXACTLY with this JSON schema (return only raw JSON, no markdown enclosing code blocks):
+{
+  "scenes": [
+    {
+      "id": "sc_1",
+      "chapterId": "ch_unique_chapter_id",
+      "script": "The exact sentence or clause from the script.",
+      "subtitle": "The exact sentence or clause from the script."
+    }
+  ]
+}
+
+Script to divide:
+"""
+${script}
+"""
+
+Chapters structure context:
+${chaptersStr}`;
+};
+
+export const getSceneDetailBatchPrompt = (
+  scenesJson: string,
+  visualStyle: string,
+  referenceStyle: string,
+  characterRef: string | undefined,
+  characterSpecs: string | undefined,
+  landscapeSpecs: string | undefined,
+  isVi: boolean,
+  genre: string,
+  genreVisualGuideline: string,
+  aspectRatio: string
+): string => {
+  return `You are an elite AI Video Director and Visual Designer.
+Your task is to take a batch of storyboard scenes (which already have their script text) and generate high-quality, detailed visual prompts and camera directions for each of them.
+
+[VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
+Use the following visual specifications as your core style and identity reference:
+- General Visual Style: ${visualStyle}
+- Color Palette / Reference Style: ${referenceStyle || "Not specified"}
+- Primary Landscape/Environment Specs:
+  ${landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive the environment, setting, and background details from each scene's script context."}
+- Character Specs (Visual Identity Blueprint):
+  * Manual/Ref Characters: ${characterRef ? characterRef : "None provided"}
+  * Auto-extracted Character Specs: ${characterSpecs ? characterSpecs : "None provided"}
+  (If both are provided, merge them logically. If neither is available, dynamically design the character's physical appearance appropriate to the theme).
+
+[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
+1. Character Visual Continuity (Soft Alignment):
+   When a scene involves any character specified above, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items) into the scene's image prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression (e.g., happy, shocked, intense, pointing, walking) to match the scene's script/action.
+2. Environment Visual Continuity (Soft Alignment):
+   Weave the landscape specifications into the background of the image prompt. Adjust lighting, weather, or time of day to fit the mood of the scene, while keeping the core setting consistent.
+3. Genre-Adaptive Visualization:
+   Embody this guideline for the "${genre}" genre:
+   ${genreVisualGuideline}
+
+[STRICT NARRATIVE RELEVANCY & ANCHORING]
+- You MUST only describe settings, landscapes, and objects that are directly mentioned or logically required by the scene's script segment. Do NOT invent random unrelated elements.
+
+[CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
+- Translate abstract narration, emotional states, and invisible/metaphorical concepts into tangible, physically drawable objects, actions, and body language.
+- Never use words like "invisible", "unseen", or draw literal bookshelves/open books for phrases like "History textbooks often frame the Battle of the Little Bighorn". Show the actual battle instead, using natural composition (terrain, smoke, silhouettes) as the frame.
+
+[PROMPT STRUCTURE MANDATE (THE BLUEPRINT)]
+The generated "prompt" field for each scene MUST strictly follow this exact structural formula from left to right:
+- If the scene has a character: [Art style/Medium] of [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- If the scene does NOT have a character: [Art style/Medium of Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
+- Every prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original script.
+- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
+
+[DYNAMIC MOTION, EFFECTS & TRANSITIONS]
+For each scene, specify:
+- cameraMotion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static).
+- effects: Lighting details matching style and mood.
+- transition: Options like Fade out to black, Dissolve, Wipe, Cross zoom, or None.
+
+Output must comply EXACTLY with this JSON schema (return only raw JSON, no markdown enclosing code blocks):
+{
+  "scenes": [
+    {
+      "id": "scene_id_matching_input",
+      "prompt": "Highly detailed image prompt in English (35-50 words) ending with --ar ${aspectRatio}.",
+      "cameraMotion": "Zoom In",
+      "effects": "Lighting details matching style and mood",
+      "transition": "Fade out to black"
+    }
+  ]
+}
+
+Here are the scenes to process:
+${scenesJson}`;
+};
 
 export const getSeoMarketerPrompt = (rewrittenScript: string, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number, isVi: boolean): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
 Your task is to analyze this video script and generate fully optimized search and click metadata:
@@ -929,10 +1084,3 @@ MANDATORY: You must generate at least 3 chapters in the chapters array. Do not r
   ]
 }`;
 
-export const getSceneDensityPrompt = (chunkLength: number, label: string, maxChars: number, minScenes: number, maxScenes: number): string =>
-  `
-The provided script chunk has a total length of ${chunkLength} characters.
-The user has selected the [${label}] density (equivalent to approximately ${maxChars} characters per scene).
-RECOMMENDED SCENE COUNT: Try to split this chunk into approximately ${minScenes} to ${maxScenes} scenes if it aligns naturally with the sentence structure and narration flow.
-CRITICAL MANDATE: Your absolute highest priority is to cover 100% of the provided script chunk without skipping, summarizing, or truncating any parts (especially the ending sentences). The combined script/narration of all generated scenes must perfectly reconstruct the original script chunk. If you need more scenes or fewer scenes than the recommended range to cover the entire script chunk without combining or skipping sentences, prioritize coverage and correctness over the scene count.
-`.trim();

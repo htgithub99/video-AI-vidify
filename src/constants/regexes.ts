@@ -71,3 +71,9 @@ export const URL_ENCODED_PLUS_REGEX = /\+/g;
 export const URL_ENCODED_LITERAL_COMMA_REGEX = /,/g;
 export const ALPHANUMERIC_ONLY_REGEX = /[^a-z0-9]/g;
 export const SINGLE_QUOTE_REGEX = /'/g;
+
+export const LAST_WORD_IN_SENTENCE_REGEX = /(\b[a-zA-ZÀ-ỹ]+)$/;
+export const SENTENCE_PUNCTUATION_END_REGEX = /[伤害,.;:—\-\s]+$/;
+export const DIGIT_REGEX = /\d/;
+export const ENDS_WITH_DIGIT_REGEX = /\d$/;
+export const STARTS_WITH_DIGIT_REGEX = /^\d/;

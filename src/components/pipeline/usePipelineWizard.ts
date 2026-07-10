@@ -777,7 +777,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     let interval: any = null;
-    if (step2IsSimulatedPlaying && project.voiceConfig?.audioUrl === "simulated_speech") {
+    if (step2IsSimulatedPlaying && project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL) {
       interval = setInterval(() => {
         setStep2SimulatedCurrentTime((prev) => {
           const maxDur = voiceAudioDuration || 10;
@@ -823,7 +823,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     let interval: any = null;
-    if (isPlayingTts && ttsAudioUrl === "simulated") {
+    if (isPlayingTts && ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
       interval = setInterval(() => {
         setSimulatedCurrentTime((prev) => {
           const maxDur = voiceAudioDuration || 10;
@@ -862,7 +862,7 @@ export function usePipelineWizard(props: any) {
   const [renderedVideoBlob, setRenderedVideoBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    if (ttsAudioUrl && ttsAudioUrl !== "simulated" && ttsAudioUrl !== "simulated_speech") {
+    if (ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED && ttsAudioUrl !== SIMULATED_SPEECH_VAL) {
       const audio = new Audio(ttsAudioUrl);
       const onLoadedMetadata = () => {
         setVoiceAudioDuration(audio.duration);
@@ -871,7 +871,7 @@ export function usePipelineWizard(props: any) {
       return () => {
         audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       };
-    } else if (ttsAudioUrl === "simulated" || ttsAudioUrl === "simulated_speech") {
+    } else if (ttsAudioUrl === COMMON_STRINGS.SIMULATED || ttsAudioUrl === SIMULATED_SPEECH_VAL) {
       const estimatedDuration = getTargetDurationSeconds(project.config.duration);
       setVoiceAudioDuration(estimatedDuration);
     } else {
@@ -1366,7 +1366,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.Generation_completed_The_ || "Hoàn thành biên kịch.";
       setInfoMsg(successMsg);
-      console.log(`[Script] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Script] ✅ Thành công: ${successMsg}`);
 
       if (!data.cached) {
         trackOperationCost(10, 0.0005);
@@ -1447,25 +1447,27 @@ export function usePipelineWizard(props: any) {
           return { ...scene, prompt: scene.prompt || "" };
         });
 
-        const hasVoiceSource = !_.isEmpty(_.get(project, 'voiceConfig.audioBase64')) || !_.isEmpty(_.get(project, 'voiceConfig.audioUrl'));
+        let audioUrl = project.voiceConfig?.audioUrl;
+        let audioBase64 = project.voiceConfig?.audioBase64;
+
+        const hasVoiceSource = !_.isEmpty(audioBase64) || !_.isEmpty(audioUrl);
 
         let finalScenes = updatedScenes;
         let syncLogText = "";
-        let audioBase64 = null;
 
         if (hasVoiceSource) {
           const langKey = _.eq(currentLang, "en") ? "en" : "vi";
           const texts = EXTERNAL_AUDIO_TEXTS[langKey];
           setBulkVoiceStatus(t.aligningVoiceWithWhisper || texts.ALIGNING);
           try {
-            audioBase64 = await getVoiceSourceBase64(_.get(project, 'voiceConfig'));
-            if (!_.isEmpty(audioBase64)) {
-              finalScenes = await alignStoryboardVoice(updatedScenes, audioBase64);
+            const rawAudioBase64 = await getVoiceSourceBase64({ audioUrl, audioBase64 });
+            if (!_.isEmpty(rawAudioBase64)) {
+              finalScenes = await alignStoryboardVoice(updatedScenes, rawAudioBase64);
 
               const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
               let totalDuration = 10;
               try {
-                const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
+                const arrayBufferRaw = base64ToArrayBuffer(rawAudioBase64);
                 const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
                 totalDuration = Math.max(3, decoded.duration);
               } catch (decodeErr) {
@@ -1490,19 +1492,16 @@ export function usePipelineWizard(props: any) {
             logger.error("STORYBOARD_ALIGN_VOICE_ERR", alignErr);
             setErrorMsg(texts.ALIGN_ERROR.replace("{error}", alignErr.message));
           }
-        }
-
-        if (!syncLogText) {
-          const totalDuration = finalScenes.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
-          syncLogText = t.syncLedgerSuccess.replace("{totalDuration}", totalDuration.toFixed(1));
-          finalScenes.forEach((scene: any, idx: number) => {
-            syncLogText += t.syncLedgerItem
-              .replace("{index}", (idx + 1).toString())
-              .replace("{startTime}", formatRoundedTime(scene.startTime))
-              .replace("{endTime}", formatRoundedTime(scene.endTime))
-              .replace("{duration}", Math.round(scene.duration || 0).toString())
-              .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
-          });
+        } else {
+          finalScenes = updatedScenes.map((sc: any) => ({
+            ...sc,
+            duration: 0,
+            startTime: "",
+            endTime: "",
+            _start: undefined,
+            _end: undefined,
+          }));
+          syncLogText = t.syncLedgerSuccess.replace("{totalDuration}", "0.0");
         }
 
         setAlignmentsLog(syncLogText);
@@ -1513,8 +1512,8 @@ export function usePipelineWizard(props: any) {
           isRecreatingStoryboard: true,
           voiceConfig: {
             ...project.voiceConfig,
-            audioUrl: project.voiceConfig?.audioUrl || "",
-            audioBase64: project.voiceConfig?.audioBase64 || undefined,
+            audioUrl: audioUrl || "",
+            audioBase64: audioBase64 || undefined,
             timingLog: syncLogText,
           },
         };
@@ -1527,7 +1526,7 @@ export function usePipelineWizard(props: any) {
         trackOperationCost(18, 0.0012);
         const successMsg = t.Storyboard_coordinates_fo;
         setInfoMsg(successMsg);
-        console.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
         return finalScenes;
       }
     } catch (e: any) {
@@ -1607,7 +1606,7 @@ export function usePipelineWizard(props: any) {
         }, 0);
         return updatedProject;
       });
-      console.log(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
+      logger.log(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
     } catch (e: any) {
       if (!isBatch) {
         setErrorMsg(t.imagePipelineError.replace("{error}", e.message));
@@ -1658,7 +1657,7 @@ export function usePipelineWizard(props: any) {
     setIsUploadingImage(false);
     const successMsg = t.imageUploadSuccess.replace("{sceneId}", sceneId);
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCopyPrompt = (promptText: string) => {
@@ -1666,7 +1665,7 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard.writeText(promptText);
     const successMsg = t.Scene_visual_prompt_copie || "Đã sao chép prompt.";
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
   };
 
@@ -1701,7 +1700,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.generateHookSuccess || "Tạo hook thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
+      logger.log(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
     } catch (e: any) {
       setErrorMsg(e.message || t.generateHookFailed || "Lỗi tạo hook.");
     } finally {
@@ -1715,7 +1714,7 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard.writeText(hookText);
     const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
   };
 
@@ -1740,7 +1739,7 @@ export function usePipelineWizard(props: any) {
         setTimeout(() => setCopiedAll(false), 3000);
         const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
         setInfoMsg(successMsg);
-        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       })
       .catch((err) => {
         logger.error("FAILED_COPY_PROMPTS", err);
@@ -1812,7 +1811,7 @@ export function usePipelineWizard(props: any) {
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
       const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
@@ -1855,7 +1854,7 @@ export function usePipelineWizard(props: any) {
         }));
         const successMsg = t.Successfully_applied_styl || "Áp dụng phong cách thiết kế thành công.";
         setInfoMsg(successMsg);
-        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
         setProject((prev) => ({
           ...prev,
@@ -1953,7 +1952,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charAnalyzeFailed} ${e.message}`);
@@ -2066,7 +2065,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
@@ -2366,7 +2365,7 @@ export function usePipelineWizard(props: any) {
 
     const successMsg = t.bulkUploadSuccess.replace("{count}", results.length.toString());
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handlePrevSlide = (sceneId: string, max: number) => {
@@ -2593,7 +2592,7 @@ export function usePipelineWizard(props: any) {
 
     const successMsg = t.deleteAllImagesSuccess;
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCancelBatchGenerate = () => {
@@ -2850,7 +2849,7 @@ export function usePipelineWizard(props: any) {
         });
         const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
         setInfoMsg(successMsg);
-        console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
         setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
@@ -2910,7 +2909,7 @@ export function usePipelineWizard(props: any) {
     setActiveSceneId(null);
     const successMsg = t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
     setInfoMsg(successMsg);
-    console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleTriggerAssetAndThumbnail = async (force = false, btnPosition = "top") => {
@@ -2965,7 +2964,7 @@ export function usePipelineWizard(props: any) {
         trackOperationCost(15, 0.0008);
         const successMsg = t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
         setInfoMsg(successMsg);
-        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(t.thumbnailPipelineError.replace("{error}", e.message));
@@ -3038,7 +3037,7 @@ export function usePipelineWizard(props: any) {
       if (isSuccess) {
         const successMsg = t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
         setInfoMsg(successMsg);
-        console.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(e.message);
@@ -3055,7 +3054,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleDownloadVoice");
     if (!ttsAudioUrl) return;
 
-    if (ttsAudioUrl === "simulated") {
+    if (ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
       setInfoMsg(t.Generating_and_preparing_);
       try {
         setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: true }));
@@ -3073,7 +3072,7 @@ export function usePipelineWizard(props: any) {
           document.body.removeChild(a);
           const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
           setInfoMsg(successMsg);
-          console.log(`[TTS] ✅ Thành công: ${successMsg}`);
+          logger.log(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
           throw new Error("Missing audio URL from synthesis");
         }
@@ -3539,7 +3538,7 @@ export function usePipelineWizard(props: any) {
         } else {
           setInfoMsg(successMsg);
         }
-        console.log(`[SEO] ✅ Thành công: ${successMsg}`);
+        logger.log(`[SEO] ✅ Thành công: ${successMsg}`);
       } else if (data.warning) {
         throw new Error(data.warning);
       }
@@ -3594,7 +3593,7 @@ export function usePipelineWizard(props: any) {
       setOfflineRenderProgress(100);
       const successMsg = t.Cinematic_simulated_video || "Đã xuất video thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (err) {
       logger.warn("OFFLINE_RENDERING_ERROR", err);
       setErrorMsg(t.Failed_to_compile_video_C);
@@ -3609,12 +3608,7 @@ export function usePipelineWizard(props: any) {
     setCurrentSimTime(0);
     setSimActiveScene(project.storyboard[0]);
 
-    if (project.voiceConfig?.audioUrl === "simulated_speech" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = createSpeechUtterance(project.storyboard[0].script);
-      window.speechSynthesis.speak(utterance);
-      startTimerBasedSim();
-    } else if (ttsAudioUrl && ttsAudioUrl !== "simulated") {
+    if (ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED) {
       if (simAudioRef.current) {
         simAudioRef.current.pause();
         simAudioRef.current = null;
@@ -3672,7 +3666,7 @@ export function usePipelineWizard(props: any) {
         const matchingScene = project.storyboard?.find((sc) => sc.id === matchingRange.id);
         if (matchingScene && (!simActiveScene || simActiveScene.id !== matchingScene.id)) {
           setSimActiveScene(matchingScene);
-          if (project.voiceConfig?.audioUrl === "simulated_speech" && "speechSynthesis" in window) {
+          if (project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL && "speechSynthesis" in window) {
             window.speechSynthesis.cancel();
             const utterance = createSpeechUtterance(matchingScene.script);
             window.speechSynthesis.speak(utterance);
@@ -3892,7 +3886,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
       setInfoMsg(successMsg);
-      console.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
       setInfoMsg(t.Error_generating_template || "Lỗi đóng gói file ZIP.");
@@ -3930,7 +3924,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_subtitles.srt`);
       dlAnchorElem.click();
-      console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
+      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
     } finally {
       setLoadingExportType(null);
     }
@@ -3964,7 +3958,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`);
       dlAnchorElem.click();
-      console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
+      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
     } finally {
       setLoadingExportType(null);
     }
@@ -4011,7 +4005,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`);
       dlAnchorElem.click();
-      console.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
+      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
     } finally {
       setLoadingExportType(null);
     }
