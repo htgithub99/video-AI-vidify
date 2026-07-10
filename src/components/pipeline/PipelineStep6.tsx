@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
-import { API_ROUTES } from "../../constants";
+import { appError } from "../../lib/logger";
+import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg } from "../../constants";
 import { Button } from "../ui/Button";
 
 const { Play, Sparkles, Terminal, FileJson, FolderOpen, Key, CheckSquare, Square, Eye, EyeOff } = LucideIcons as any;
@@ -39,7 +40,7 @@ const DEFAULT_CONFIG: UltraConfig = {
   reverse_timeline: false,
   auto_subtitles: false,
   ai_sfx_generator: false,
-  audio_order_list: "intro, voice, outro",
+  audio_order_list: DEFAULT_AUDIO_ORDER_LIST,
   api_key: "",
   sfx_folder: "",
   draft_json_path: "",
@@ -50,7 +51,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
 
   const [config, setConfig] = useState<UltraConfig>(() => {
     try {
-      const saved = localStorage.getItem("capcut_ultra_config");
+      const saved = localStorage.getItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG);
       return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
     } catch (e) {
       return DEFAULT_CONFIG;
@@ -62,12 +63,14 @@ export default function PipelineStep6(props: PipelineWizardState) {
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   useEffect(() => {
-    localStorage.setItem("capcut_ultra_config", JSON.stringify(config));
+    localStorage.setItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG, JSON.stringify(config));
   }, [config]);
 
-  const addLog = (msg: string, type: "info" | "success" | "warn" | "error" = "info") => {
+  const addLog = (msg: string, type: LogLevel = LogLevel.INFO) => {
     const time = new Date().toLocaleTimeString();
-    const prefix = type === "success" ? "✅" : type === "error" ? "❌" : type === "warn" ? "⚠️" : "ℹ️";
+    const prefix = type === LogLevel.SUCCESS ? LOG_LEVEL_SYMBOLS.SUCCESS :
+      type === LogLevel.ERROR ? LOG_LEVEL_SYMBOLS.ERROR :
+        type === LogLevel.WARN ? LOG_LEVEL_SYMBOLS.WARN : LOG_LEVEL_SYMBOLS.INFO;
     setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${msg}`]);
   };
 
@@ -94,7 +97,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       auto_subtitles: true,
       ai_sfx_generator: true,
     }));
-    addLog(t.node7_select_all, "info");
+    addLog(t.node7_select_all, LogLevel.INFO);
   };
 
   const handleDeselectAll = () => {
@@ -113,63 +116,63 @@ export default function PipelineStep6(props: PipelineWizardState) {
       auto_subtitles: false,
       ai_sfx_generator: false,
     }));
-    addLog(t.node7_deselect_all, "info");
+    addLog(t.node7_deselect_all, LogLevel.INFO);
   };
 
   const handleSelectFile = async () => {
     try {
-      addLog(t.node7_log_started_dialog, "info");
+      addLog(t.node7_log_started_dialog, LogLevel.INFO);
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FILE, {});
       if (response.success && response.data?.filePath) {
         setConfig((prev) => ({ ...prev, draft_json_path: response.data.filePath }));
-        addLog(t.node7_log_selected_file.replace("{path}", response.data.filePath), "success");
+        addLog(t.node7_log_selected_file.replace("{path}", response.data.filePath), LogLevel.SUCCESS);
       } else if (response.error) {
         throw new Error(response.error);
       } else {
-        addLog(t.node7_log_canceled_file, "warn");
+        addLog(t.node7_log_canceled_file, LogLevel.WARN);
       }
     } catch (err: any) {
-      addLog(t.node7_log_error_file.replace("{error}", err.message), "error");
+      addLog(t.node7_log_error_file.replace("{error}", err.message), LogLevel.ERROR);
     }
   };
 
   const handleSelectFolder = async () => {
     try {
-      addLog(t.node7_log_started_folder, "info");
+      addLog(t.node7_log_started_folder, LogLevel.INFO);
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {});
       if (response.success && response.data?.folderPath) {
         setConfig((prev) => ({ ...prev, sfx_folder: response.data.folderPath }));
-        addLog(t.node7_log_selected_folder.replace("{path}", response.data.folderPath), "success");
+        addLog(t.node7_log_selected_folder.replace("{path}", response.data.folderPath), LogLevel.SUCCESS);
       } else if (response.error) {
         throw new Error(response.error);
       } else {
-        addLog(t.node7_log_canceled_folder, "warn");
+        addLog(t.node7_log_canceled_folder, LogLevel.WARN);
       }
     } catch (err: any) {
-      addLog(t.node7_log_error_folder.replace("{error}", err.message), "error");
+      addLog(t.node7_log_error_folder.replace("{error}", err.message), LogLevel.ERROR);
     }
   };
 
   const handleRunProcess = async () => {
     if (!config.draft_json_path.trim()) {
-      addLog(t.node7_log_missing_file, "error");
+      addLog(t.node7_log_missing_file, LogLevel.ERROR);
       return;
     }
 
     if (config.ai_sfx_generator) {
       if (!config.api_key.trim()) {
-        addLog(t.node7_log_missing_api, "error");
+        addLog(t.node7_log_missing_api, LogLevel.ERROR);
         return;
       }
       if (!config.sfx_folder.trim()) {
-        addLog(t.node7_log_missing_sfx, "error");
+        addLog(t.node7_log_missing_sfx, LogLevel.ERROR);
         return;
       }
     }
 
     setIsRunning(true);
     setConsoleLogs([]);
-    addLog(t.node7_log_started, "info");
+    addLog(t.node7_log_started, LogLevel.INFO);
 
     try {
       const payload = {
@@ -193,17 +196,60 @@ export default function PipelineStep6(props: PipelineWizardState) {
         },
       };
 
-      addLog(t.node7_log_calling_backend, "info");
-      const response = await safeSystemFetch(API_ROUTES.PIPELINE_RUN_ULTRA, payload);
+      addLog(t.node7_log_calling_backend, LogLevel.INFO);
+      const response = await fetch(API_ROUTES.PIPELINE_RUN_ULTRA, {
+        method: "POST",
+        headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
+        body: JSON.stringify(payload),
+      });
 
-      if (response.success) {
-        addLog(t.node7_log_success, "success");
-        addLog(t.node7_log_backup_saved, "info");
-      } else {
-        throw new Error(response.error || "Unknown error occurred.");
+      if (!response.body) {
+        throw new Error(getBackendMsg("STREAM_NOT_SUPPORTED"));
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let isReadingStream = true;
+
+      while (isReadingStream) {
+        const { value, done } = await reader.read();
+        if (done) {
+          isReadingStream = false;
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.type === UltraStreamLogType.LOG) {
+              addLog(data.message, LogLevel.INFO);
+            } else if (data.type === UltraStreamLogType.ERROR_LOG) {
+              addLog(data.message, LogLevel.WARN);
+            } else if (data.hasOwnProperty("success")) {
+              if (data.success) {
+                addLog(data.message || t.node7_log_success, LogLevel.SUCCESS);
+                addLog(t.node7_log_backup_saved, LogLevel.INFO);
+              } else {
+                throw new Error(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR);
+              }
+            }
+          } catch (err: any) {
+            if (err instanceof SyntaxError) {
+              appError(ErrorMessage.FAILED_TO_PARSE_NDJSON_LINE, line, err);
+            } else {
+              throw err;
+            }
+          }
+        }
       }
     } catch (err: any) {
-      addLog(t.node7_log_error.replace("{error}", err.message), "error");
+      addLog(t.node7_log_error.replace("{error}", err.message), LogLevel.ERROR);
     } finally {
       setIsRunning(false);
     }
@@ -234,7 +280,6 @@ export default function PipelineStep6(props: PipelineWizardState) {
         <p className="text-xs text-slate-450 leading-relaxed">{t.node7_desc}</p>
       </div>
 
-      {/* Bảng điều khiển tiến trình CapCut */}
       <div className="bg-slate-900/60 border border-slate-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col text-left animate-fadeIn">
         <div className="px-5 py-3 border-b border-slate-850 bg-slate-900/40 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono flex items-center gap-1.5 select-none">
@@ -249,9 +294,9 @@ export default function PipelineStep6(props: PipelineWizardState) {
           ) : (
             consoleLogs.map((log, index) => {
               let textClass = "text-slate-300";
-              if (log.includes("✅") || log.includes("SUCCESS")) textClass = "text-teal-400 font-semibold";
-              if (log.includes("❌") || log.includes("ERROR")) textClass = "text-rose-500 font-semibold";
-              if (log.includes("⚠️")) textClass = "text-amber-400";
+              if (log.includes(LOG_LEVEL_SYMBOLS.SUCCESS) || log.includes("SUCCESS")) textClass = "text-teal-400 font-semibold";
+              if (log.includes(LOG_LEVEL_SYMBOLS.ERROR) || log.includes("ERROR")) textClass = "text-rose-500 font-semibold";
+              if (log.includes(LOG_LEVEL_SYMBOLS.WARN)) textClass = "text-amber-400";
               return (
                 <div key={index} className={textClass}>
                   {log}

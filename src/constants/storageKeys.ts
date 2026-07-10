@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   APP_THEME: "app_theme",
   GEMINI_API_KEY: "GEMINI_API_KEY",
   AI33_API_KEY: "AI33_API_KEY",
+  CAPCUT_ULTRA_CONFIG: "capcut_ultra_config",
 } as const;
 
 export type StorageKeyType = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

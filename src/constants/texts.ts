@@ -88,6 +88,16 @@ export const HTTP_METHODS = {
 
 export const CONTENT_TYPES = {
   JSON: "application/json",
+  NDJSON: "application/x-ndjson",
+};
+
+export const HTTP_HEADERS = {
+  CONTENT_TYPE: "Content-Type",
+  TRANSFER_ENCODING: "Transfer-Encoding",
+};
+
+export const TRANSFER_ENCODINGS = {
+  CHUNKED: "chunked",
 };
 
 export const AUDIO_MIME_TYPE = "audio/wav";
@@ -96,7 +106,7 @@ export const BLOB_PREFIX = "blob:";
 export const RESTORE_SCENE_BLOB_ERR = "FAILED_RESTORE_SCENE_BLOB";
 export const RESTORE_BLOB_ERR = "FAILED_RESTORE_BLOB";
 
-export const CONTENT_TYPE_HEADER = "Content-Type";
+export const CONTENT_TYPE_HEADER = HTTP_HEADERS.CONTENT_TYPE;
 
 export const THEME_VALUES = {
   DARK: "dark",
@@ -283,7 +293,16 @@ export const VITE_HMR_LOGS = {
     SERVER_CONNECTION_LOST: "[Vite] Server connection lost. Reconnecting...",
     FAILED_RELOAD_WITH_FILE: "[System] Failed to auto-reload component ({filePath}) due to syntax errors or missing files. Please reload page (F5) or check your code.",
     FAILED_RELOAD_GENERIC: "[System] Interface update failed due to syntax errors or missing files. Please reload page (F5) or check your code.",
-    CONNECTED: "[Vite] Successfully reconnected to development server.",
-    HOT_UPDATED: "[Vite] Interface hot updated successfully.",
+    CONNECTED: "Successfully reconnected to development server.",
+    HOT_UPDATED: "Interface hot updated successfully.",
   },
 } as const;
+
+export const DEFAULT_AUDIO_ORDER_LIST = "intro, voice, outro";
+
+export const LOG_LEVEL_SYMBOLS = {
+  INFO: "ℹ️",
+  SUCCESS: "✅",
+  WARN: "⚠️",
+  ERROR: "❌",
+};

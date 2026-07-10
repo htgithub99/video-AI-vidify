@@ -37,6 +37,7 @@ LOG_SFX_GEMINI_ERR = "-> Lỗi kết nối Gemini: {}. Đang chuyển sang đố
 LOG_SFX_AUTO_MATCH = "-> Đang thực hiện đối sánh từ khóa tự động cho SFX..."
 LOG_SFX_MATCH_SUCCESS = "-> Đã ghép nối thành công {} hiệu ứng âm thanh."
 LOG_PROCESS_KILLED = "🛑 Phát hiện và đã tự động tắt tiến trình CapCut/Jianying đang hoạt động để tránh lỗi ghi đè dữ liệu."
+LOG_WAIT_CLOSE = "⏳ Đang chờ hệ thống đóng hoàn toàn CapCut và giải phóng tài nguyên để tránh lỗi cache..."
 LOG_SCENE_DETAIL = "🎬 Scene {:02d} | Ratio: {} | Type: {} | Motion: {} | Scale: {:.2f} | Transform: ({:.4f}, {:.4f}) | Rot: {:.2f}°"
 LOG_SCENE_DETAIL_SIMPLE = "🎬 Scene {:02d} | Ratio: {} | Motion: {} | Scale: {:.2f} | Transform: ({:.4f}, {:.4f}) | Rot: {:.2f}°"
 LOG_GEMINI_API_REQUEST = "-> Đang gửi yêu cầu gợi ý SFX tới Google Gemini..."
@@ -776,9 +777,13 @@ def kill_capcut_processes():
         res_jy = subprocess.run(CMD_KILL_JIANYING, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         
         killed_any = (res_cc.returncode == 0) or (res_jy.returncode == 0)
+        
+        print(LOG_WAIT_CLOSE)
         if killed_any:
             print(LOG_PROCESS_KILLED)
-            time.sleep(1.5) 
+            time.sleep(5.0) 
+        else:
+            time.sleep(3.0)
     except Exception:
         pass
 

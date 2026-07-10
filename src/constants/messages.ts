@@ -164,6 +164,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_SUCCESS: "Xử lý CapCut Ultra hoàn tất thành công!",
     SELECT_FILE_FAILED: "Lỗi mở hộp thoại chọn file!",
     SELECT_FOLDER_FAILED: "Lỗi mở hộp thoại chọn thư mục!",
+    ULTRA_SPAWN_LOG: "[Hệ thống] 🚀 Khởi chạy công cụ tối ưu hóa CapCut...",
+    ULTRA_CLEANED_LOCK: "[Hệ thống] 🗑️ Đã xóa file khóa dự án .locked để giải phóng hoàn toàn dự án.",
+    ULTRA_UPDATED_META: "[Hệ thống] 📝 Đã cập nhật thời gian sửa đổi trong draft_meta_info.json thành hiện tại.",
+    ULTRA_EXIT_ERROR: "Quy trình tối ưu hóa CapCut Ultra thất bại với mã thoát: {0}",
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -330,6 +334,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_SUCCESS: "CapCut Ultra processed successfully!",
     SELECT_FILE_FAILED: "Error opening file selector!",
     SELECT_FOLDER_FAILED: "Error opening folder selector!",
+    ULTRA_SPAWN_LOG: "[System] 🚀 Spawning CapCut optimization tool...",
+    ULTRA_CLEANED_LOCK: "[System] 🗑️ Removed project lock file .locked to fully release the project.",
+    ULTRA_UPDATED_META: "[System] 📝 Updated modification time in draft_meta_info.json to present.",
+    ULTRA_EXIT_ERROR: "CapCut Ultra optimization process failed with exit code: {0}",
   },
 };
 

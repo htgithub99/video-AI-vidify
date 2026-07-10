@@ -64,6 +64,8 @@ export enum LogEvent {
   ERROR_READ_MERGED_AUDIO = "ERROR_READ_MERGED_AUDIO",
   ERROR_FFMPEG_MERGE = "ERROR_FFMPEG_MERGE",
   UNEXPECTED_ERROR_MERGE_AUDIO = "UNEXPECTED_ERROR_MERGE_AUDIO",
+  CAPCUT_ULTRA_PROCESS_FAILED = "CAPCUT_ULTRA_PROCESS_FAILED",
+  CAPCUT_ULTRA_FS_FAILED = "CAPCUT_ULTRA_FS_FAILED",
 }
 
 export enum ErrorMessage {
@@ -76,6 +78,8 @@ export enum ErrorMessage {
   NO_AUDIO_CHUNKS_PROVIDED = "No audio chunks provided",
   FAILED_TO_READ_MERGED_AUDIO_FILE = "Failed to read merged audio file",
   INTERNAL_SERVER_ERROR = "Internal server error: ",
+  CAPCUT_ULTRA_OPTIMIZATION_ERROR = "Lỗi xử lý tối ưu hóa.",
+  FAILED_TO_PARSE_NDJSON_LINE = "Failed to parse NDJSON line",
 }
 
 export enum VoicePresetId {
@@ -127,4 +131,16 @@ export enum MimeType {
   WAV = "audio/wav",
   MPEG = "audio/mpeg",
   JPEG = "image/jpeg",
+}
+
+export enum UltraStreamLogType {
+  LOG = "log",
+  ERROR_LOG = "error_log",
+}
+
+export enum LogLevel {
+  INFO = "info",
+  SUCCESS = "success",
+  WARN = "warn",
+  ERROR = "error",
 }

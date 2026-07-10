@@ -60,6 +60,10 @@ import {
   WHITESPACE_REGEX,
   ALPHANUMERIC_ONLY_REGEX,
   SINGLE_QUOTE_REGEX,
+  HTTP_HEADERS,
+  CONTENT_TYPES,
+  TRANSFER_ENCODINGS,
+  UltraStreamLogType,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep } from "../../lib/logger.js";
@@ -72,7 +76,7 @@ import { AspectRatio, ProjectLanguage } from "../../types.js";
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
 import os from "os";
-import { exec } from "child_process";
+import { exec, spawn } from "child_process";
 import { StepLogger } from "@/src/lib/stepLogger.js";
 import { generateMockStoryboard, smartSplitSentences } from "@/src/lib/textProcessor.js";
 
@@ -1727,50 +1731,100 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   try {
     fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), "utf-8");
 
-    const cmd = `python3 capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`;
-    logger.log(`Running capcut ultra command: ${cmd}`);
+    res.setHeader(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.NDJSON);
+    res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
 
-    exec(cmd, (error, stdout, stderr) => {
+    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} python3 -u capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
+    const pythonProcess = spawn("python3", ["-u", "capcut_ultra_tool.py", filePath, tempOutputPath, optsJsonPath]);
+
+    pythonProcess.stdout.on("data", (data) => {
+      const lines = data.toString().split("\n");
+      for (const line of lines) {
+        if (line.trim()) {
+          res.write(JSON.stringify({ type: UltraStreamLogType.LOG, message: line.trim() }) + "\n");
+        }
+      }
+    });
+
+    pythonProcess.stderr.on("data", (data) => {
+      const lines = data.toString().split("\n");
+      for (const line of lines) {
+        if (line.trim()) {
+          res.write(JSON.stringify({ type: UltraStreamLogType.ERROR_LOG, message: line.trim() }) + "\n");
+        }
+      }
+    });
+
+    pythonProcess.on("close", (code) => {
       try {
         if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
       } catch (cleanupErr) { }
 
-      if (error) {
+      if (code !== 0) {
         try {
           if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
         } catch (cleanupErr) { }
 
-        logger.error(`CapCut Ultra process failed with exit code ${error.code}: ${error.message}`);
-        if (stdout) logger.error(`Python stdout: ${stdout}`);
-        if (stderr) logger.error(`Python stderr: ${stderr}`);
-
-        const pythonError = stderr || stdout || error.message;
-        return res.status(500).json({
+        logger.error(`CapCut Ultra process failed with exit code ${code}`);
+        res.write(JSON.stringify({
           success: false,
-          error: pythonError.replace("ERROR: ", "").trim(),
-        });
+          error: getBackendMsg("ULTRA_EXIT_ERROR", isVi).replace("{0}", code.toString()),
+        }) + "\n");
+        res.end();
+        return;
       }
 
       try {
         if (fs.existsSync(tempOutputPath)) {
+          const dirPath = path.dirname(filePath);
+          const bakFilePath = path.join(dirPath, "draft_content.json.bak");
+          const lockFilePath = path.join(dirPath, ".locked");
+          const metaFilePath = path.join(dirPath, "draft_meta_info.json");
+
           if (fs.existsSync(filePath)) {
             fs.copyFileSync(filePath, filePath + ".backup_ultra");
-            fs.unlinkSync(filePath);
           }
-          fs.renameSync(tempOutputPath, filePath);
+
+          fs.copyFileSync(tempOutputPath, filePath);
+          fs.copyFileSync(tempOutputPath, bakFilePath);
+          fs.unlinkSync(tempOutputPath);
+
+          if (fs.existsSync(lockFilePath)) {
+            try {
+              fs.unlinkSync(lockFilePath);
+              logger.log(getBackendMsg("ULTRA_CLEANED_LOCK", isVi));
+            } catch (lockErr: any) {
+              logger.error(`Failed to delete .locked: ${lockErr.message}`);
+            }
+          }
+
+          if (fs.existsSync(metaFilePath)) {
+            try {
+              const metaContent = fs.readFileSync(metaFilePath, "utf-8");
+              const metaObj = JSON.parse(metaContent);
+              const now = Date.now();
+              metaObj.modify_time = now;
+              metaObj.tm_draft_modified = Math.floor(now / 1000);
+              
+              fs.writeFileSync(metaFilePath, JSON.stringify(metaObj), "utf-8");
+              logger.log(getBackendMsg("ULTRA_UPDATED_META", isVi));
+            } catch (metaErr: any) {
+              logger.error(`Failed to update draft_meta_info.json: ${metaErr.message}`);
+            }
+          }
         }
+        res.write(JSON.stringify({
+          success: true,
+          message: getBackendMsg("ULTRA_SUCCESS", isVi),
+        }) + "\n");
       } catch (fsErr: any) {
-        logger.error(`File copy/rename failed: ${fsErr.message}`);
-        return res.status(500).json({
+        logger.error(`File copy/rename/update failed: ${fsErr.message}`);
+        res.write(JSON.stringify({
           success: false,
           error: fsErr.message,
-        });
+        }) + "\n");
       }
-
-      return res.json({
-        success: true,
-        message: getBackendMsg("ULTRA_SUCCESS", isVi),
-      });
+      res.end();
     });
   } catch (err: any) {
     try {
@@ -1780,10 +1834,11 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
     } catch (cleanupErr) { }
     logger.error(`Unexpected error running CapCut Ultra: ${err.message}`);
-    return res.status(500).json({
+    res.write(JSON.stringify({
       success: false,
       error: err.message,
-    });
+    }) + "\n");
+    res.end();
   }
 });
 
