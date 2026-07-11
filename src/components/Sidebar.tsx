@@ -1,6 +1,7 @@
 import { cn } from "../lib/utils";
 import { useState } from "react";
-import { Lang, translations } from "../lib/lang.js";
+import { Lang } from "../lib/lang.js";
+import { SIDEBAR_TEXTS } from "../constants/texts";
 import { Video, LayoutDashboard, FolderKanban, Sliders, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/Button";
 
@@ -28,25 +29,25 @@ export default function Sidebar({
   const menuItems = [
     {
       id: "dashboard",
-      label: currentLang === "vi" ? "Tổng quan" : "Dashboard",
+      label: SIDEBAR_TEXTS[currentLang].DASHBOARD,
       icon: LayoutDashboard,
       requiresProject: false,
     },
     {
       id: "projects",
-      label: currentLang === "vi" ? "Nội dung" : "Content",
+      label: SIDEBAR_TEXTS[currentLang].CONTENT,
       icon: FolderKanban,
       requiresProject: false,
     },
     {
       id: "studio",
-      label: currentLang === "vi" ? "Phòng sáng tạo AI" : "AI Studio",
+      label: SIDEBAR_TEXTS[currentLang].AI_STUDIO,
       icon: Sliders,
       requiresProject: true,
     },
     {
       id: "settings",
-      label: currentLang === "vi" ? "Cài đặt" : "Settings",
+      label: SIDEBAR_TEXTS[currentLang].SETTINGS,
       icon: Settings,
       requiresProject: false,
     },
@@ -58,7 +59,6 @@ export default function Sidebar({
         isCollapsed ? "w-16" : "w-64"
       }`)}
     >
-      {/* User Info / Project Avatar */}
       <div className="p-4 border-b border-slate-800 flex flex-col items-center justify-center relative">
         <div className="relative flex items-center justify-center w-full">
           {!isCollapsed ? (
@@ -67,10 +67,10 @@ export default function Sidebar({
                 <Video className="w-8 h-8 text-rose-500" />
               </div>
               <h2 className="text-xs font-bold text-slate-100 max-w-[200px] truncate text-center font-mono">
-                {selectedProjectId && activeProjectName ? activeProjectName : (currentLang === "vi" ? "Nhà Sáng Tạo AI" : "AI Creator")}
+                {selectedProjectId && activeProjectName ? activeProjectName : SIDEBAR_TEXTS[currentLang].AI_CREATOR}
               </h2>
               <p className="text-[10px] text-slate-400 mt-1">
-                {selectedProjectId ? (currentLang === "vi" ? "Dự án đang mở" : "Active Project") : (currentLang === "vi" ? "Chưa mở dự án" : "No project active")}
+                {selectedProjectId ? SIDEBAR_TEXTS[currentLang].ACTIVE_PROJECT : SIDEBAR_TEXTS[currentLang].NO_PROJECT_ACTIVE}
               </p>
             </div>
           ) : (
@@ -81,7 +81,6 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 px-2 py-4 space-y-1.5 overflow-y-auto no-scrollbar">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -113,7 +112,6 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Collapse Trigger Button */}
       <div className="p-3 border-t border-slate-800 flex justify-center items-center">
         <Button
           variant="ghost"

@@ -846,7 +846,6 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
 
   const syncedChapters = chapters.map((c: any) => ({ ...c }));
 
-  // 1. Try to find the exact offset of each chapter's segment in the rewrittenScript
   let lastIndex = 0;
   const segmentsFound: { index: number; length: number }[] = [];
 
@@ -865,7 +864,6 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
     }
   }
 
-  // If all segments are found sequentially, we can fill the gaps (like the hook at the start)
   const allFound = segmentsFound.every(s => s.index !== -1);
   if (allFound) {
     for (let i = 0; i < syncedChapters.length; i++) {
@@ -876,8 +874,6 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
     return syncedChapters;
   }
 
-  // 2. Fallback: If the script was edited and exact segments are not found,
-  // distribute the rewrittenScript sentences proportionally to chapters.
   const sentences = smartSplitSentences(rewrittenScript);
   const totalSentences = sentences.length;
   if (totalSentences === 0) return syncedChapters;

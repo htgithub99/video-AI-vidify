@@ -712,7 +712,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         </AnimatePresence>
       </div>
       <div className="flex-grow w-full flex overflow-hidden min-h-0 relative select-none bg-slate-955">
-        {/* Left Sidebar: Node navigation list */}
         <div className={cn(`transition-all duration-300 flex flex-col bg-slate-900 border-r border-slate-800 shrink-0 h-full overflow-hidden ${leftSidebarOpen ? "w-60" : "w-0 border-r-0"}`)}>
           <div className="p-3 border-b border-slate-800 bg-slate-950/30 flex items-center justify-between shrink-0 select-none">
             <span className="text-[9px] font-bold text-slate-400 tracking-wider font-mono uppercase">{t.FLOW_WORKSPACE}</span>
@@ -750,7 +749,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </div>
         </div>
 
-        {/* Center Section: Main Work Canvas */}
         <div className="flex-1 h-full min-w-0 flex flex-col relative select-none bg-slate-955 overflow-hidden">
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 pointer-events-none select-none">
             <span className="text-[9px] bg-slate-900/90 text-slate-450 border border-slate-800 px-2.5 py-1 rounded-md font-mono backdrop-blur font-bold">{t.FPS_24_COMPLIANT}</span>

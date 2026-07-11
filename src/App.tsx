@@ -359,7 +359,6 @@ export default function App() {
               onNavigateToProjects={() => setActiveTab("projects")}
             />
           ) : (
-            /* Tab Projects: ProjectList view */
             <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
               <ProjectList
                 currentLang={currentLang}

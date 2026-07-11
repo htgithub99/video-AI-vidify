@@ -24,11 +24,10 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
   const maxWidthClass = maxWidth ? (isFullClass ? maxWidth : `max-w-${maxWidth}`) : "max-w-6xl";
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-955/60 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
       <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200", maxWidthClass)} onClick={stopPropagation}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none z-0" />
 
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-10 bg-transparent">
           {title && <h2 className="text-base font-semibold text-slate-100">{title}</h2>}
           <Button 
@@ -41,7 +40,6 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
           </Button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto bg-transparent relative z-10">{children}</div>
       </div>
     </div>,

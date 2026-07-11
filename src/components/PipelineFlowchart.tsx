@@ -16,26 +16,17 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
   const t = translations[currentLang];
 
   const getGroupName = (groupId: number) => {
-    switch (groupId) {
-      case 0:
-        return t.Inputs;
-      case 1:
-        return t.Hook_Engine;
-      case 2:
-        return t.Story_Expansion;
-      case 3:
-        return t.Storyboard;
-      case 4:
-        return t.Visuals;
-      case 5:
-        return t.Audio_Sync;
-      case 6:
-        return t.SEO_Boost;
-      case 7:
-        return t.Video_Editorial;
-      default:
-        return "";
-    }
+    const groups: Record<number, string> = {
+      0: t.Inputs,
+      1: t.Hook_Engine,
+      2: t.Story_Expansion,
+      3: t.Storyboard,
+      4: t.Visuals,
+      5: t.Audio_Sync,
+      6: t.SEO_Boost,
+      7: t.Video_Editorial,
+    };
+    return groups[groupId] || "";
   };
 
   return (
@@ -51,7 +42,6 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
         </div>
       </div>
 
-      {}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {pipelineNodes.map((node, idx) => {
           const isActiveGroup = node.stageGroup === activeStepIndex;
@@ -67,7 +57,6 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
                 isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-850"
               }`)}
             >
-              {/* Active Pulse Glow */}
               {isActiveGroup && (
                 <span className="absolute top-1 right-1 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -93,7 +82,6 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
         })}
       </div>
 
-      {}
       {selectedNode && (
         <div className="mt-4 bg-slate-950 border border-slate-800 rounded p-4 animate-fadeIn flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">

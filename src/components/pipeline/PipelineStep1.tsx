@@ -308,7 +308,6 @@ export default function PipelineStep1(props: PipelineWizardState) {
         </div>
 
         <div className="bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 p-6 rounded-xl border border-slate-800/80 shadow-2xl backdrop-blur-md relative overflow-hidden max-w-full space-y-6 text-left">
-          {/* Decorative premium gradient line */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/[0.02] rounded-full blur-3xl pointer-events-none" />

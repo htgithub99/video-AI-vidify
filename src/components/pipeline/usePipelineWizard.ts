@@ -255,8 +255,6 @@ export function usePipelineWizard(props: any) {
           assets,
           name: normalizedInitialProject.name,
           description: normalizedInitialProject.description,
-          // Không đồng bộ updatedAt từ server vào state local:
-          // Việc cập nhật updatedAt sẽ làm project thay đổi → trigger save → vòng lặp vô hạn.
           currentStep: normalizedInitialProject.currentStep,
           creditsUsed: normalizedInitialProject.creditsUsed,
         };
@@ -265,7 +263,7 @@ export function usePipelineWizard(props: any) {
   }, [normalizedInitialProject]);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
-    return (initialProject as any).currentStep !== undefined ? (initialProject as any).currentStep : 0;
+    return (initialProject as any).currentStep !== undefined ? (initialProject as any).currentStep : WizardStep.SourceInput;
   });
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(true);
@@ -862,7 +860,7 @@ export function usePipelineWizard(props: any) {
   const [renderedVideoBlob, setRenderedVideoBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    if (ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED && ttsAudioUrl !== SIMULATED_SPEECH_VAL) {
+    if (ttsAudioUrl && !([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
       const audio = new Audio(ttsAudioUrl);
       const onLoadedMetadata = () => {
         setVoiceAudioDuration(audio.duration);
@@ -871,7 +869,7 @@ export function usePipelineWizard(props: any) {
       return () => {
         audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       };
-    } else if (ttsAudioUrl === COMMON_STRINGS.SIMULATED || ttsAudioUrl === SIMULATED_SPEECH_VAL) {
+    } else if (ttsAudioUrl && ([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
       const estimatedDuration = getTargetDurationSeconds(project.config.duration);
       setVoiceAudioDuration(estimatedDuration);
     } else {
@@ -1217,7 +1215,7 @@ export function usePipelineWizard(props: any) {
       if ((initialProject as any).currentStep !== undefined) {
         setCurrentStep((initialProject as any).currentStep);
       } else {
-        setCurrentStep(0);
+        setCurrentStep(WizardStep.SourceInput);
       }
 
       if ((initialProject as any).storyboardSourceMode) {

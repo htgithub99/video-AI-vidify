@@ -350,3 +350,25 @@ export const CURL_KEYWORDS = {
   STREAM: "streamChat",
   NARWHAL: "NARWHAL",
 } as const;
+
+export const SIDEBAR_TEXTS = {
+  vi: {
+    DASHBOARD: "Tổng quan",
+    CONTENT: "Nội dung",
+    AI_STUDIO: "Phòng sáng tạo AI",
+    SETTINGS: "Cài đặt",
+    AI_CREATOR: "Nhà Sáng Tạo AI",
+    ACTIVE_PROJECT: "Dự án đang mở",
+    NO_PROJECT_ACTIVE: "Chưa mở dự án",
+  },
+  en: {
+    DASHBOARD: "Dashboard",
+    CONTENT: "Content",
+    AI_STUDIO: "AI Studio",
+    SETTINGS: "Settings",
+    AI_CREATOR: "AI Creator",
+    ACTIVE_PROJECT: "Active Project",
+    NO_PROJECT_ACTIVE: "No project active",
+  },
+} as const;
+
