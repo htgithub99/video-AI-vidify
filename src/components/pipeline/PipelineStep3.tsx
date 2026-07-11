@@ -9,7 +9,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
   const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleTriggerSEOBoost, onSaveProject } = props;
   return (
     <>
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
+      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
         <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
@@ -72,7 +72,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   setProject(updatedProject);
                   onSaveProject(updatedProject, true);
                 }}
-                className="flex-1 bg-transparent border-none text-slate-205 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                className="flex-1 bg-slate-900 border-none text-slate-205 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                   <option key={num} value={num} className="bg-slate-950 text-slate-300">
@@ -136,42 +136,42 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
                       <div>
-                        <div className="flex justify-between mb-1 text-[10px] text-slate-500">
+                        <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.Search}</span>
-                          <span className="text-rose-300 font-bold">{title.searchScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-300 font-bold">{title.searchScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-300 h-full" style={{ width: `${title.searchScore}%` }}></div>
+                          <div className="bg-rose-500 dark:bg-rose-300 h-full" style={{ width: `${title.searchScore}%` }}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="flex justify-between mb-1 text-[10px] text-slate-500">
+                        <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.CTR}</span>
-                          <span className="text-rose-400 font-bold">{title.ctrScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-400 font-bold">{title.ctrScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-400 h-full" style={{ width: `${title.ctrScore}%` }}></div>
+                          <div className="bg-rose-600 dark:bg-rose-400 h-full" style={{ width: `${title.ctrScore}%` }}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="flex justify-between mb-1 text-[10px] text-slate-500">
+                        <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.Compet}</span>
-                          <span className="text-rose-500 font-bold">{title.compScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-500 font-bold">{title.compScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-500 h-full" style={{ width: `${title.compScore}%` }}></div>
+                          <div className="bg-rose-600 dark:bg-rose-500 h-full" style={{ width: `${title.compScore}%` }}></div>
                         </div>
                       </div>
 
                       <div>
-                        <div className="flex justify-between mb-1 text-[10px] text-slate-500">
+                        <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.SEO_Score}</span>
-                          <span className="text-rose-600 font-bold">{title.seoScore}%</span>
+                          <span className="text-rose-700 dark:text-rose-600 font-bold">{title.seoScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-600 h-full" style={{ width: `${title.seoScore}%` }}></div>
+                          <div className="bg-rose-700 dark:bg-rose-600 h-full" style={{ width: `${title.seoScore}%` }}></div>
                         </div>
                       </div>
                     </div>
@@ -247,7 +247,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_hashtags}</span>
                     ))}
                   {(project.seo?.hashtags || []).map((tag, i) => (
-                    <span key={i} className="bg-slate-900 text-rose-300 font-mono text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-800">
+                    <span key={i} className="bg-slate-900 text-slate-700 dark:text-slate-300 font-mono text-[11px] px-2.5 py-1.5 rounded-lg border-none">
                       #{tag.replace(/^#+/, "")}
                     </span>
                   ))}
@@ -282,7 +282,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_keywords}</span>
                     ))}
                   {(project.seo?.tags || []).map((tag, i) => (
-                    <span key={i} className="bg-slate-905 text-slate-300 font-sans text-[10px] px-2 py-1 rounded border border-slate-850">
+                    <span key={i} className="bg-slate-905 text-slate-700 dark:text-slate-300 font-sans text-[10px] px-2 py-1 rounded border-none">
                       {tag}
                     </span>
                   ))}

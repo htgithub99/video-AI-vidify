@@ -1,3 +1,4 @@
+import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
 import { Video, Coins, TrendingUp, Sun, Moon } from "lucide-react";
 import { Button } from "./ui/Button";
@@ -79,7 +80,7 @@ export default function Header({
               variant="ghost"
               size="xs"
               onClick={() => setLang("vi")}
-              className={`px-2 py-1 text-[9px] rounded-lg shadow-none font-bold ${currentLang === "vi" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
+              className={cn(`px-2 py-1 text-[9px] rounded-lg shadow-none font-bold ${currentLang === "vi" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"}`)}
             >
               {t.VI}
             </Button>
@@ -87,7 +88,7 @@ export default function Header({
               variant="ghost"
               size="xs"
               onClick={() => setLang("en")}
-              className={`px-2 py-1 text-[9px] rounded-lg shadow-none font-bold ${currentLang === "en" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-transparent"}`}
+              className={cn(`px-2 py-1 text-[9px] rounded-lg shadow-none font-bold ${currentLang === "en" ? "bg-slate-700 text-slate-100 hover:bg-slate-600" : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"}`)}
             >
               {t.EN}
             </Button>

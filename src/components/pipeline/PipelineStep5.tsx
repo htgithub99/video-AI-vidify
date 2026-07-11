@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
@@ -6,13 +7,15 @@ import JSZip from "jszip";
 import { API_ROUTES, PROMPT_NUMBERING_PREFIX_REGEX } from "../../constants";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import { Button } from "../ui/Button";
+import { PromptStatus, LogLevel } from "../../constants/enums";
+import { PIPELINE_STEP5_TEXTS, LOG_LEVEL_SYMBOLS, COMMON_STRINGS } from "../../constants/texts";
 
 const { Play, Square, Download, Trash, Sparkles, Terminal, RefreshCw, FileText, Eye } = LucideIcons as any;
 
 interface PromptItem {
   id: number;
   prompt: string;
-  status: "idle" | "running" | "success" | "error";
+  status: PromptStatus;
   resultBase64?: string;
   resultUrl?: string;
   errorMsg?: string;
@@ -26,7 +29,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
   const currentEngine = project?.visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   const currentGenerationMode = project?.visualConfig?.generationMode || ImageGenerationMode.LabsFlow;
   const currentAspectRatio = project?.visualConfig?.aspectRatio || AspectRatio.SixteenNine;
-  const currentStyle = project?.visualConfig?.style || "cinematic";
+  const currentStyle = project?.visualConfig?.style || COMMON_STRINGS.CUSTOM;
 
   const [inputText, setInputText] = useState<string>("");
 
@@ -44,9 +47,9 @@ export default function PipelineStep5(props: PipelineWizardState) {
     }
   }, [consoleLogs]);
 
-  const addLog = (msg: string, type: "info" | "success" | "warn" | "error" = "info") => {
+  const addLog = (msg: string, type: LogLevel = LogLevel.INFO) => {
     const time = new Date().toLocaleTimeString();
-    const prefix = type === "success" ? "✅" : type === "error" ? "❌" : type === "warn" ? "⚠️" : "ℹ️";
+    const prefix = LOG_LEVEL_SYMBOLS[type.toUpperCase() as keyof typeof LOG_LEVEL_SYMBOLS] || LOG_LEVEL_SYMBOLS.INFO;
     setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${msg}`]);
   };
 
@@ -55,7 +58,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
     return text
       .split("\n")
       .map((line) => {
-        let cleaned = line.trim().replace(PROMPT_NUMBERING_PREFIX_REGEX, "");
+        const cleaned = line.trim().replace(PROMPT_NUMBERING_PREFIX_REGEX, "");
         return cleaned.trim();
       })
       .filter((line) => line.length > 0);
@@ -68,43 +71,41 @@ export default function PipelineStep5(props: PipelineWizardState) {
         parsed.map((prompt, idx) => ({
           id: idx + 1,
           prompt,
-          status: "idle",
+          status: PromptStatus.IDLE,
         })),
       );
     }
   }, [inputText, isRunning]);
 
   const handlePasteSamples = () => {
-    const sampleText = `1. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.
-2. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.`;
-    setInputText(sampleText);
-    addLog(t.node6_log_sample_loaded, "info");
+    setInputText(PIPELINE_STEP5_TEXTS.PROMPT_SAMPLE);
+    addLog(t.node6_log_sample_loaded, LogLevel.INFO);
   };
 
   const handleStartGeneration = async () => {
     if (prompts.length === 0) {
-      addLog(t.node6_log_invalid_prompts, "warn");
+      addLog(t.node6_log_invalid_prompts, LogLevel.WARN);
       return;
     }
 
     setIsRunning(true);
     isCancelledRef.current = false;
     setConsoleLogs([]);
-    addLog(t.node6_log_start, "info");
+    addLog(t.node6_log_start, LogLevel.INFO);
 
-    setPrompts((prev) => prev.map((p) => ({ ...p, status: "idle", resultBase64: undefined, resultUrl: undefined, errorMsg: undefined, elapsedTime: undefined })));
+    setPrompts((prev) => prev.map((p) => ({ ...p, status: PromptStatus.IDLE, resultBase64: undefined, resultUrl: undefined, errorMsg: undefined, elapsedTime: undefined })));
 
     for (let i = 0; i < prompts.length; i++) {
       if (isCancelledRef.current) {
-        addLog(t.node6_log_cancelled, "warn");
+        addLog(t.node6_log_cancelled, LogLevel.WARN);
         break;
       }
 
       setCurrentIndex(i);
-      setPrompts((prev) => prev.map((p, idx) => (idx === i ? { ...p, status: "running" } : p)));
+      setPrompts((prev) => prev.map((p, idx) => (idx === i ? { ...p, status: PromptStatus.RUNNING } : p)));
 
       const currentItem = prompts[i];
-      addLog(t.node6_log_processing.replace("{index}", String(i + 1)).replace("{total}", String(prompts.length)), "info");
+      addLog(t.node6_log_processing.replace("{index}", String(i + 1)).replace("{total}", String(prompts.length)), LogLevel.INFO);
 
       const startTime = Date.now();
       try {
@@ -136,15 +137,15 @@ export default function PipelineStep5(props: PipelineWizardState) {
               idx === i
                 ? {
                     ...p,
-                    status: "success",
+                    status: PromptStatus.SUCCESS,
                     resultBase64: data.base64,
-                    resultUrl: data.fallbackUrl || `data:image/jpeg;base64,${data.base64}`,
+                    resultUrl: data.fallbackUrl || `${COMMON_STRINGS.BASE64_IMAGE_PREFIX}${COMMON_STRINGS.JPEG_EXT};base64,${data.base64}`,
                     elapsedTime: durationSec,
                   }
                 : p,
             ),
           );
-          addLog(t.node6_log_success.replace("{index}", String(i + 1)).replace("{duration}", String(durationSec)), "success");
+          addLog(t.node6_log_success.replace("{index}", String(i + 1)).replace("{duration}", String(durationSec)), LogLevel.SUCCESS);
         } else {
           throw new Error(data.warning || t.node6_log_api_error);
         }
@@ -155,14 +156,14 @@ export default function PipelineStep5(props: PipelineWizardState) {
             idx === i
               ? {
                   ...p,
-                  status: "error",
+                  status: PromptStatus.ERROR,
                   errorMsg: err.message,
                   elapsedTime: durationSec,
                 }
               : p,
           ),
         );
-        addLog(t.node6_log_error.replace("{index}", String(i + 1)).replace("{error}", err.message), "error");
+        addLog(t.node6_log_error.replace("{index}", String(i + 1)).replace("{error}", err.message), LogLevel.ERROR);
       }
 
       if (i < prompts.length - 1 && !isCancelledRef.current) {
@@ -172,29 +173,29 @@ export default function PipelineStep5(props: PipelineWizardState) {
 
     setIsRunning(false);
     setCurrentIndex(-1);
-    addLog(t.node6_log_completed, "success");
+    addLog(t.node6_log_completed, LogLevel.SUCCESS);
   };
 
   const handleCancelGeneration = () => {
     isCancelledRef.current = true;
     setIsRunning(false);
     setCurrentIndex(-1);
-    addLog(t.node6_log_cancelling, "warn");
+    addLog(t.node6_log_cancelling, LogLevel.WARN);
   };
 
   const handleDownloadAllZip = async () => {
-    const successItems = prompts.filter((p) => p.status === "success" && p.resultBase64);
+    const successItems = prompts.filter((p) => p.status === PromptStatus.SUCCESS && p.resultBase64);
     if (successItems.length === 0) {
-      addLog(t.node6_log_zip_empty, "warn");
+      addLog(t.node6_log_zip_empty, LogLevel.WARN);
       return;
     }
 
-    addLog(t.node6_log_zip_start, "info");
+    addLog(t.node6_log_zip_start, LogLevel.INFO);
     try {
       const zip = new JSZip();
 
       successItems.forEach((item, index) => {
-        const ext = currentGenerateType === GenerateType.Video ? "mp4" : "jpg";
+        const ext = currentGenerateType === GenerateType.Video ? "mp4" : COMMON_STRINGS.JPG_EXT;
         const filename = `${index + 1}_asset.${ext}`;
         zip.file(filename, item.resultBase64!, { base64: true });
       });
@@ -203,7 +204,10 @@ export default function PipelineStep5(props: PipelineWizardState) {
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
       a.href = url;
-      a.download = currentGenerateType === GenerateType.Video ? (currentLang === "vi" ? "danh_sach_video_doc_lap.zip" : "independent_video_list.zip") : currentLang === "vi" ? "danh_sach_anh_doc_lap.zip" : "independent_image_list.zip";
+
+      const zipNameTexts = PIPELINE_STEP5_TEXTS[currentLang as "vi" | "en"] || PIPELINE_STEP5_TEXTS.en;
+      a.download = currentGenerateType === GenerateType.Video ? zipNameTexts.VIDEO_ZIP_NAME : zipNameTexts.IMAGE_ZIP_NAME;
+      
       document.body.appendChild(a);
       a.click();
 
@@ -212,9 +216,9 @@ export default function PipelineStep5(props: PipelineWizardState) {
         URL.revokeObjectURL(url);
       }, 150);
 
-      addLog(t.node6_log_zip_success, "success");
+      addLog(t.node6_log_zip_success, LogLevel.SUCCESS);
     } catch (e: any) {
-      addLog(t.node6_log_zip_error.replace("{error}", e.message), "error");
+      addLog(t.node6_log_zip_error.replace("{error}", e.message), LogLevel.ERROR);
     }
   };
 
@@ -222,7 +226,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
     setInputText("");
     setPrompts([]);
     setConsoleLogs([]);
-    addLog(t.node6_log_cleared, "info");
+    addLog(t.node6_log_cleared, LogLevel.INFO);
   };
 
   const handleZoomResult = (item: PromptItem) => {
@@ -236,7 +240,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       <div className="lg:col-span-1 space-y-5 flex flex-col justify-stretch">
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-2xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-rose-500 shrink-0" />
@@ -282,7 +286,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
             variant="secondary"
             size="lg"
             onClick={handleDownloadAllZip}
-            disabled={prompts.filter((p) => p.status === "success").length === 0}
+            disabled={![...prompts].some((p) => p.status === PromptStatus.SUCCESS)}
             className="px-4"
             title={t.node6_zip_tooltip}
           >
@@ -292,8 +296,8 @@ export default function PipelineStep5(props: PipelineWizardState) {
       </div>
 
       <div className="lg:col-span-2 space-y-6 flex flex-col justify-stretch h-full">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col overflow-hidden min-h-[160px] max-h-[220px] shadow-xl">
-          <div className="p-3 border-b border-slate-800 bg-slate-950 flex items-center gap-2 select-none">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden min-h-[160px] max-h-[220px] shadow-xl">
+          <div className="p-3 border-b border-slate-800 bg-slate-955 flex items-center gap-2 select-none">
             <Terminal className="w-4 h-4 text-rose-500" />
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{t.node6_console_title}</span>
           </div>
@@ -311,7 +315,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-2xl flex-1 flex flex-col shadow-2xl relative overflow-visible min-h-[350px]">
+        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-xl flex-1 flex flex-col shadow-2xl relative overflow-visible min-h-[350px]">
           <div className="border-b border-slate-800 pb-3 flex items-center gap-2 select-none mb-4">
             <Sparkles className="w-4 h-4 text-rose-500 animate-pulse" />
             <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.node6_library_title}</h4>
@@ -333,35 +337,35 @@ export default function PipelineStep5(props: PipelineWizardState) {
                   return (
                     <div
                       key={item.id}
-                      className={`border rounded-2xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${
-                        isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : item.status === "success" ? "bg-slate-900 border-slate-800 hover:border-slate-700" : item.status === "error" ? "bg-red-950/10 border-red-500/30" : "bg-slate-950/50 border-slate-900/60 opacity-60"
-                      }`}
+                      className={cn(`border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${
+                        isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : [PromptStatus.SUCCESS].includes(item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : [PromptStatus.ERROR].includes(item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"
+                      }`)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[9px] font-mono font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-850 text-slate-450 uppercase tracking-widest">{t.node6_prompt_label.replace("{id}", String(item.id))}</span>
 
                         <div className="flex items-center gap-1.5">
                           {item.elapsedTime !== undefined && <span className="text-[8px] font-mono text-slate-500">{item.elapsedTime}s</span>}
-                          {item.status === "running" && (
+                          {[PromptStatus.RUNNING].includes(item.status) && (
                             <span className="flex h-2 w-2 relative">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                             </span>
                           )}
-                          {item.status === "success" && <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15">{t.node6_badge_done}</span>}
-                          {item.status === "error" && <span className="bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15">{t.node6_badge_error}</span>}
+                          {[PromptStatus.SUCCESS].includes(item.status) && <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15">{t.node6_badge_done}</span>}
+                          {[PromptStatus.ERROR].includes(item.status) && <span className="bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15">{t.node6_badge_error}</span>}
                         </div>
                       </div>
 
                       <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3 select-all mb-3">{item.prompt}</p>
 
                       <div className="h-[140px] bg-slate-950 rounded-xl border border-slate-850 overflow-hidden flex items-center justify-center relative group">
-                        {item.status === "running" ? (
+                        {[PromptStatus.RUNNING].includes(item.status) ? (
                           <div className="flex flex-col items-center gap-2">
                             <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
                             <span className="text-[9px] font-mono font-bold text-rose-400 uppercase tracking-widest animate-pulse">{t.node6_rendering}</span>
                           </div>
-                        ) : item.status === "success" && item.resultBase64 ? (
+                        ) : [PromptStatus.SUCCESS].includes(item.status) && item.resultBase64 ? (
                           <>
                             {currentGenerateType === GenerateType.Video ? <video src={item.resultUrl} controls className="w-full h-full object-cover" /> : <img src={item.resultUrl} alt={t.node6_prompt_label.replace("{id}", String(item.id))} className="w-full h-full object-cover" />}
 
@@ -376,7 +380,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
                               </div>
                             )}
                           </>
-                        ) : item.status === "error" ? (
+                        ) : [PromptStatus.ERROR].includes(item.status) ? (
                           <div className="p-4 text-center">
                             <span className="text-[10px] text-red-400 font-mono block leading-relaxed line-clamp-3 select-all">{item.errorMsg}</span>
                           </div>

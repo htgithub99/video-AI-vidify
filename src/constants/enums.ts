@@ -153,3 +153,15 @@ export enum SceneDensity {
   THEO_DOAN = "THEO_DOAN",
 }
 
+export enum PromptStatus {
+  IDLE = "idle",
+  RUNNING = "running",
+  SUCCESS = "success",
+  ERROR = "error",
+}
+
+export enum ThumbnailActionPosition {
+  TOP = "top",
+  EMPTY = "empty",
+}
+

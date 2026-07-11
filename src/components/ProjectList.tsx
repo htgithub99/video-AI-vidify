@@ -1,3 +1,4 @@
+import { cn } from "../lib/utils";
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { VideoProject } from "../types.js";
@@ -80,7 +81,7 @@ export default function ProjectList({
   return (
     <div className="space-y-6">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
         <div>
           <h2 className="text-base font-black tracking-tight text-slate-100 flex items-center gap-2 uppercase font-mono">
             <Film className="w-5 h-5 text-rose-500" />
@@ -97,37 +98,37 @@ export default function ProjectList({
       </div>
 
       {/* Filter Toolbar (Chips Style like YouTube Studio) */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900/50 border border-slate-800/80 p-4 rounded-2xl">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900 border border-slate-800/80 p-4 rounded-xl">
         {/* Chips and filters */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Language filter chips */}
           <button
             onClick={() => setFilterLang("all")}
-            className={`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
               filterLang === "all"
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-800/50 text-slate-400 border border-slate-700/60 hover:bg-slate-800"
-            }`}
+                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+            }`)}
           >
             {currentLang === "vi" ? "Tất cả ngôn ngữ" : "All Languages"}
           </button>
           <button
             onClick={() => setFilterLang("vi")}
-            className={`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
               filterLang === "vi"
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-800/50 text-slate-400 border border-slate-700/60 hover:bg-slate-800"
-            }`}
+                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+            }`)}
           >
             🇻🇳 Tiếng Việt
           </button>
           <button
             onClick={() => setFilterLang("en")}
-            className={`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
               filterLang === "en"
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-800/50 text-slate-400 border border-slate-700/60 hover:bg-slate-800"
-            }`}
+                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+            }`)}
           >
             🇺🇸 English
           </button>
@@ -137,7 +138,7 @@ export default function ProjectList({
             <select
               value={filterGenre}
               onChange={(e) => setFilterGenre(e.target.value)}
-              className="bg-slate-800/50 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 transition-all uppercase"
+              className="bg-slate-950 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 hover:bg-slate-850 transition-all uppercase"
             >
               <option value="all">{currentLang === "vi" ? "TẤT CẢ THỂ LOẠI" : "ALL GENRES"}</option>
               {genres.filter(g => g !== "all").map(g => (
@@ -155,15 +156,15 @@ export default function ProjectList({
             placeholder={currentLang === "vi" ? "Tìm kiếm dự án..." : "Search projects..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950/80 border border-slate-800 text-xs text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all font-sans"
+            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans"
           />
         </div>
       </div>
 
       {/* Main List content */}
       {filteredProjects.length === 0 ? (
-        <div className="text-center py-20 bg-slate-900/10 rounded-2xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 space-y-4">
-          <div className="p-4 bg-slate-900/50 rounded-full border border-slate-800">
+        <div className="text-center py-20 bg-slate-900 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 space-y-4">
+          <div className="p-4 bg-slate-950 rounded-full border border-slate-800">
             <Video className="w-8 h-8 text-slate-600" />
           </div>
           <p className="text-slate-400 text-xs font-semibold max-w-sm leading-relaxed">
@@ -178,7 +179,7 @@ export default function ProjectList({
         </div>
       ) : (
         /* YouTube Studio style Table List view */
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
@@ -204,13 +205,13 @@ export default function ProjectList({
                     <tr
                       key={project.id}
                       onClick={() => onSelectProject(project)}
-                      className="hover:bg-slate-800/20 cursor-pointer transition-all duration-150 group"
+                      className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200"
                     >
                       {/* Project info & thumbnail */}
                       <td className="py-4 px-6">
                         <div className="flex items-start gap-4">
                           {/* 16:9 Thumbnail preview box */}
-                          <div className="w-28 aspect-video bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-center overflow-hidden shrink-0 relative group-hover:border-slate-700 transition-colors">
+                          <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
                             <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
                             {project.config.genre && (
                               <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm">
@@ -270,7 +271,7 @@ export default function ProjectList({
                           <Button
                             variant="ghost"
                             onClick={() => handleOpenEditTarget(project)}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-800 rounded-lg shadow-none"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none"
                             title={t.editProject}
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -279,7 +280,7 @@ export default function ProjectList({
                           <Button
                             variant="ghost"
                             onClick={() => setProjectToDelete(project)}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-800 rounded-lg shadow-none"
+                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none"
                             title={t.delete}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -346,12 +347,12 @@ export default function ProjectList({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
             <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectName} *</label>
-            <input type="text" required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-800/80 border border-slate-700/60 focus:border-rose-500/50 text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans" />
+            <input type="text" required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans" />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectDesc}</label>
-            <textarea placeholder={t.Write_custom_script_idea_} value={desc} rows={3} onChange={(e) => setDesc(e.target.value)} className="w-full bg-slate-800/80 border border-slate-700/60 focus:border-rose-500/50 text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans" />
+            <textarea placeholder={t.Write_custom_script_idea_} value={desc} rows={3} onChange={(e) => setDesc(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all resize-none font-sans" />
           </div>
 
           {/* AI Info Tip Box */}

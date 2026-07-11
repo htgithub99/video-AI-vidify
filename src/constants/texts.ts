@@ -132,6 +132,9 @@ export const COMMON_STRINGS = {
   SLASH_PREFIX: "/",
   BASE64_AUDIO_LENGTH_THRESHOLD: 100,
   CUSTOM: "Custom",
+  NA: "N/A",
+  SUCCESS_MARK: "✓",
+  SUCCESS_KEYWORD_VI: "thành công",
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -307,3 +310,43 @@ export const LOG_LEVEL_SYMBOLS = {
   WARN: "⚠️",
   ERROR: "❌",
 };
+
+export const PIPELINE_STEP5_TEXTS = {
+  PROMPT_SAMPLE: `1. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.\n2. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.`,
+  vi: {
+    VIDEO_ZIP_NAME: "danh_sach_video_doc_lap.zip",
+    IMAGE_ZIP_NAME: "danh_sach_anh_doc_lap.zip",
+  },
+  en: {
+    VIDEO_ZIP_NAME: "independent_video_list.zip",
+    IMAGE_ZIP_NAME: "independent_image_list.zip",
+  }
+} as const;
+
+export const PIPELINE_STEP6_TEXTS = {
+  STDOUT_STDERR: "STDOUT / STDERR",
+} as const;
+
+export const LOG_KEYWORDS = {
+  SUCCESS: "SUCCESS",
+  ERROR: "ERROR",
+} as const;
+
+export const SETTINGS_TEXTS = {
+  vi: {
+    TITLE: "Cài đặt chung",
+    DESC: "Cấu hình API Keys và thông số kết nối Cổng Vẽ AI tại đây",
+    SANDBOX_TITLE: "Cổng Vẽ AI (Sandbox)",
+  },
+  en: {
+    TITLE: "General Settings",
+    DESC: "Manage API keys and AI Drawing Port Sandbox configuration",
+    SANDBOX_TITLE: "AI Drawing Port (Sandbox)",
+  }
+} as const;
+
+export const CURL_KEYWORDS = {
+  STREAM_AGENT: "flowCreationAgent:streamChat",
+  STREAM: "streamChat",
+  NARWHAL: "NARWHAL",
+} as const;

@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import { formatCleanTime } from "../../lib/timeUtils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
@@ -15,7 +16,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
     <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {}
-        <div className="lg:col-span-2 bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-2xl space-y-4 shadow-2xl relative overflow-visible">
+        <div className="lg:col-span-2 bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-4 shadow-2xl relative overflow-visible">
           <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
           <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-10">
             <Eye className="w-5 h-5 text-rose-500" />
@@ -28,7 +29,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               <>
                 {getSceneImageUrl(simActiveScene) ? (
                   <div className="w-full h-full relative">
-                    <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={`w-full h-full object-cover transition-transform duration-1000 ${isPlayingSim && simActiveScene.cameraMotion === "Zoom In" ? "scale-110" : isPlayingSim && simActiveScene.cameraMotion === "Zoom Out" ? "scale-90" : ""}`} />
+                    <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={cn(`w-full h-full object-cover transition-transform duration-1000 ${isPlayingSim && simActiveScene.cameraMotion === "Zoom In" ? "scale-110" : isPlayingSim && simActiveScene.cameraMotion === "Zoom Out" ? "scale-90" : ""}`)} />
                     {!simActiveScene.assetUrl && <div className="absolute top-3 right-3 bg-rose-600/90 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow z-10">{t.Default_Timeline_Image}</div>}
                   </div>
                 ) : (
@@ -41,7 +42,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </div>
 
                 {}
-                <div className="absolute top-3 left-3 bg-slate-950/80 text-[10px] font-mono text-slate-400 p-2 rounded border border-slate-850 flex flex-col">
+                <div className="absolute top-3 left-3 bg-slate-950 text-[10px] font-mono text-slate-400 p-2 rounded border border-slate-850 flex flex-col">
                   <span>
                     {t.Scene}: {simActiveScene.id} ({formatCleanTime(simActiveScene.startTime)} - {formatCleanTime(simActiveScene.endTime)})
                   </span>
@@ -77,7 +78,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
         </div>
 
         {}
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-2xl space-y-6 shadow-2xl relative overflow-visible">
+        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-6 shadow-2xl relative overflow-visible">
           <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
           <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
 
@@ -138,7 +139,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               variant="ghost" 
               onClick={handleOfflineRenderWebM} 
               disabled={isOfflineRendering} 
-              className={`w-full flex items-center justify-between p-3.5 border rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 ${isOfflineRendering ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100"}`}
+              className={cn(`w-full flex items-center justify-between p-3.5 border rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 ${isOfflineRendering ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100"}`)}
             >
               <div className="text-left flex-1">
                 <span className="font-bold block text-rose-400 flex items-center gap-1.5">

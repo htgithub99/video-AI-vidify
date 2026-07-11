@@ -1,7 +1,8 @@
+import { cn } from "../lib/utils";
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
-import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, DEFAULT_PROJECT_CONFIGS } from "../constants";
+import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS } from "../constants";
 import { appError } from "../lib/logger.js";
 import { Key, Shield, Save, CheckCircle2, Server } from "lucide-react";
 import { Button } from "./ui/Button";
@@ -12,14 +13,13 @@ interface SettingsViewProps {
 
 export default function SettingsView({ currentLang }: SettingsViewProps) {
   const t = translations[currentLang];
+  const pageTexts = SETTINGS_TEXTS[currentLang as "vi" | "en"] || SETTINGS_TEXTS.en;
 
-  // API Keys States
   const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey("GEMINI_API_KEY"));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey("AI33_API_KEY"));
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
 
-  // Sandbox States
   const [curlInput, setCurlInput] = useState("");
   const [curlFeedback, setCurlFeedback] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -28,7 +28,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [config, setConfig] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
+      if (saved && ![COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, ""].includes(saved.trim())) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === "object") {
           return {
@@ -36,7 +36,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             authToken: parsed.authToken || "",
             recaptchaToken: parsed.recaptchaToken || "",
             sessionId: parsed.sessionId || DEFAULT_SESSION_ID,
-            imageModelName: parsed.imageModelName || "NARWHAL",
+            imageModelName: parsed.imageModelName || CURL_KEYWORDS.NARWHAL,
             agentSessionId: parsed.agentSessionId || "",
             isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
           };
@@ -50,7 +50,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       authToken: "",
       recaptchaToken: "",
       sessionId: "",
-      imageModelName: "NARWHAL",
+      imageModelName: CURL_KEYWORDS.NARWHAL,
       agentSessionId: "",
       isStreamChat: false,
     };
@@ -131,7 +131,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       const agentSessMatch = val.match(CURL_AGENT_SESSION_ID_REGEX);
       if (agentSessMatch) parsedAgentSessionId = agentSessMatch[1];
 
-      const isStreamChat = val.includes("flowCreationAgent:streamChat") || val.includes("streamChat");
+      const isStreamChat = [CURL_KEYWORDS.STREAM_AGENT, CURL_KEYWORDS.STREAM].some(k => val.includes(k));
 
       const updated = {
         ...config,
@@ -153,21 +153,19 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   };
 
   return (
-    <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-5xl mx-auto space-y-6 text-left">
-      {/* Title Header */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
+    <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left">
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
         <h2 className="text-base font-black tracking-tight text-slate-100 flex items-center gap-2 uppercase font-mono">
           <Key className="w-5 h-5 text-rose-500" />
-          {currentLang === "vi" ? "Cài đặt chung" : "General Settings"}
+          {pageTexts.TITLE}
         </h2>
         <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-          {currentLang === "vi" ? "Cấu hình API Keys và thông số kết nối Cổng Vẽ AI tại đây" : "Manage API keys and AI Drawing Port Sandbox configuration"}
+          {pageTexts.DESC}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* Card 1: API Keys Config */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-slate-800 rounded-xl">
@@ -233,8 +231,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           </div>
         </div>
 
-        {/* Card 2: AI Drawing Port (Sandbox cURL) Config */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 bg-slate-800 rounded-xl">
@@ -242,7 +239,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">
-                  {currentLang === "vi" ? "Cổng Vẽ AI (Sandbox)" : t.Sandbox_Config}
+                  {pageTexts.SANDBOX_TITLE}
                 </h3>
                 <p className="text-[10px] text-slate-400 mt-0.5">{t.Unlimited_Proxy}</p>
               </div>
@@ -269,13 +266,12 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-rose-500/50 rounded-xl p-3 text-xs text-slate-350 font-mono focus:outline-none transition-all resize-none leading-relaxed"
               />
               {curlFeedback && (
-                <div className={`text-[10px] font-bold ${curlFeedback.startsWith("✓") || curlFeedback.includes("thành công") ? "text-emerald-500" : "text-rose-500"}`}>
+                <div className={cn(`text-[10px] font-bold ${[COMMON_STRINGS.SUCCESS_MARK, COMMON_STRINGS.SUCCESS_KEYWORD_VI].some(k => curlFeedback.includes(k)) ? "text-emerald-500" : "text-rose-500"}`)}>
                   {curlFeedback}
                 </div>
               )}
             </div>
 
-            {/* Extracted Params Display */}
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4.5 space-y-3 font-mono text-[10px] text-slate-350 select-text">
               <h4 className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1 shrink-0 select-none">
                 <Server className="w-3 h-3 text-rose-500" />
@@ -284,16 +280,16 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               <div className="flex flex-col border-b border-slate-850 pb-2 gap-0.5 text-left">
                 <span className="text-slate-550 font-bold">{t.Authorization}</span>
                 <span className={config.authToken ? "text-emerald-500 break-all select-all font-semibold" : "text-rose-500/80 break-all select-all"}>
-                  {config.authToken ? `${config.authToken.slice(0, 30)}...` : "N/A"}
+                  {config.authToken ? `${config.authToken.slice(0, 30)}...` : COMMON_STRINGS.NA}
                 </span>
               </div>
               <div className="flex flex-col border-b border-slate-850 pb-2 gap-0.5 text-left">
                 <span className="text-slate-550 font-bold">{t.Project_ID}</span>
-                <span className="text-slate-300 select-all">{config.projectId || "N/A"}</span>
+                <span className="text-slate-300 select-all">{config.projectId || COMMON_STRINGS.NA}</span>
               </div>
               <div className="flex flex-col border-b border-slate-850 pb-2 gap-0.5 text-left">
                 <span className="text-slate-550 font-bold">{t.Session_ID}</span>
-                <span className="text-slate-300 select-all">{config.sessionId || "N/A"}</span>
+                <span className="text-slate-300 select-all">{config.sessionId || COMMON_STRINGS.NA}</span>
               </div>
               <div className="flex justify-between items-center text-left pt-1">
                 <span className="text-slate-550 font-bold">{t.API_Mode}</span>

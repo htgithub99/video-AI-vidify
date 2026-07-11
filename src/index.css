@@ -6,16 +6,16 @@
   --font-logo: "Merienda", cursive;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* Redefine Slate for the High Density theme (Google Labs Dark Mode) */
+  /* Refined Sleek Dark Theme (High Contrast Backgrounds for Flat UI) */
   --color-slate-955: #000000;
-  --color-slate-950: #000000; /* Main Dark Background */
-  --color-slate-900: #0a0a0a; /* Card Background */
-  --color-slate-880: #2F3136;
-  --color-slate-850: #333639;
-  --color-slate-800: #1f1f1f; /* Borders / Inputs */
-  --color-slate-750: #4D5054;
-  --color-slate-700: #2d2d2d;
-  --color-slate-650: #404040;
+  --color-slate-950: #09090b; /* Main Body Background - Zinc 950 */
+  --color-slate-900: #18181b; /* Card Background - Zinc 900 */
+  --color-slate-880: #202024;
+  --color-slate-850: #27272a; /* Zinc 800 */
+  --color-slate-800: #3f3f46; /* Borders / Active Inputs - Zinc 700 */
+  --color-slate-750: #4b4b52;
+  --color-slate-700: #52525b; /* Zinc 600 */
+  --color-slate-650: #6b6b75;
   --color-slate-600: #525252;
   --color-slate-550: #ACAFB5;
   --color-slate-500: #737373;
@@ -94,22 +94,22 @@ body {
 :root.light {
   color-scheme: light;
   
-  /* Inverse Slate for Light Mode - Premium High-Contrast Layout */
-  --color-slate-955: #F8F9FA;
-  --color-slate-950: #F8F9FA; /* main body background */
-  --color-slate-900: #FFFFFF; /* card background */
-  --color-slate-880: #F1F3F4;
-  --color-slate-850: #E8EAED;
-  --color-slate-800: #cbd5e1; /* borders, placeholder inputs, secondary bg */
-  --color-slate-750: #cbd5e1;
-  --color-slate-700: #94a3b8; /* bold borders, lines */
-  --color-slate-650: #64748b; /* border focus, inactive grays */
-  --color-slate-600: #475569; /* muted gray icons and secondary borders */
-  --color-slate-550: #334155;
-  --color-slate-500: #334155; /* muted labels / timestamp text */
-  --color-slate-450: #1e293b;
-  --color-slate-400: #0f172a; /* secondary body text / readable labels */
-  --color-slate-355: #0f172a;
+  /* Inverse for Light Mode - Premium High-Contrast Layout */
+  --color-slate-955: #F4F4F5;
+  --color-slate-950: #F4F4F5; /* Main Background - Zinc 100 */
+  --color-slate-900: #FFFFFF; /* Card Background - White */
+  --color-slate-880: #FAFAFA;
+  --color-slate-850: #E4E4E7; /* Zinc 200 */
+  --color-slate-800: #D4D4D8; /* Zinc 300 */
+  --color-slate-750: #A1A1AA; /* Zinc 400 */
+  --color-slate-700: #71717A; /* Zinc 500 */
+  --color-slate-650: #52525B; /* Zinc 600 */
+  --color-slate-600: #3F3F46; /* Zinc 700 */
+  --color-slate-550: #27272A; /* Zinc 800 */
+  --color-slate-500: #18181B; /* Zinc 900 */
+  --color-slate-450: #09090B; /* Zinc 950 */
+  --color-slate-400: #000000;
+  --color-slate-355: #000000;
   --color-slate-350: #000000;
   --color-slate-300: #000000;
   --color-slate-250: #000000;
@@ -230,12 +230,12 @@ input, textarea, select {
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
-textarea:hover, select:hover {
+textarea:hover {
   border-color: rgba(220, 38, 38, 0.45) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
-textarea:focus, select:focus {
+textarea:focus {
   outline: none !important;
   border-color: var(--color-rose-600) !important;
   box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.25) !important; /* Rose-500 ring shadow */
@@ -259,16 +259,7 @@ a:hover {
   background-color: var(--color-slate-950) !important;
 }
 
-/* Modal and layout border radiuses softer */
-.rounded-2xl {
-  border-radius: 28px !important;
-}
-.rounded-xl {
-  border-radius: 20px !important;
-}
-.rounded-lg, .rounded {
-  border-radius: 16px !important;
-}
+/* Modal and layout border radiuses reset to default (Tailwind xl = 12px) */
 
 /* Clean up shadows */
 .shadow-2xl, .shadow-xl, .shadow-lg, .shadow-md {
@@ -442,7 +433,7 @@ input.accent-amber-500::-moz-range-thumb {
 }
 
 /* --- FLAT AESTHETICS OVERRIDE --- */
-/* Yêu cầu người dùng: Bỏ tất cả box shadow, border của dự án để là đẹp hơn nhé */
+/* Bỏ box shadow và border để dùng Flat Design */
 [class*="shadow"] {
   box-shadow: none !important;
 }
@@ -451,27 +442,58 @@ input.accent-amber-500::-moz-range-thumb {
   border-color: transparent !important;
 }
 
-/* Yêu cầu: "Bạn hãy cho hiệu ứng border cho ô select khi focus, hover, active" */
-/* Vì select/input được bọc trong các div form-group dùng class focus-within, ta nhắm tới chúng */
+/* HIỆU ỨNG MÀU NỀN CHO FORM CONTROLS (Chỉ thêm màu nền khi hover/focus, BỎ VIỀN/BÓNG) */
 [class*="focus-within"] {
-  transition: border-color 0.2s ease !important;
+  transition: all 0.2s ease !important;
+  background-color: var(--color-slate-900) !important;
 }
 
 [class*="focus-within"]:hover {
-  border-color: #525252 !important; /* hover viền xám sáng */
+  border-color: transparent !important;
+  background-color: var(--color-slate-850) !important;
 }
 
 [class*="focus-within"]:focus-within,
 [class*="focus-within"]:active {
-  border-color: #f43f5e !important; /* active/focus viền đỏ Rose */
+  border-color: transparent !important;
+  background-color: var(--color-slate-850) !important;
 }
 
-/* Tắt box shadow, outline của mọi ô input, select, textarea khi tương tác */
+/* Global Input Styles: Đảm bảo có lớp nền phân biệt và text đen/trắng cho mọi node/sidebar */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent), textarea:not(.bg-transparent) {
+  background-color: var(--color-slate-850) !important;
+  color: var(--color-slate-200) !important;
+  border: 1px solid transparent !important;
+}
+
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):hover, textarea:not(.bg-transparent):hover {
+  background-color: var(--color-slate-800) !important;
+}
+
+/* CHỈ thêm border khi focus, KHÔNG đổi nền hay thêm hiệu ứng khác */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):focus, textarea:focus {
+  border-color: var(--color-rose-500) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Thẻ select không có màu nền và không có viền */
+select {
+  background-color: transparent !important;
+  color: var(--color-slate-200) !important;
+  border: none !important;
+}
+
+/* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */
+*, ::before, ::after {
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+}
+
 input, select, textarea,
-input:focus, select:focus, textarea:focus,
 input:hover, select:hover, textarea:hover,
-input:active, select:active, textarea:active,
-[class*="focus:ring"]:focus {
+input:active, select:active, textarea:active {
   box-shadow: none !important;
   outline: none !important;
 }

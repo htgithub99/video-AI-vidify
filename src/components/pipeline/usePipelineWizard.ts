@@ -660,10 +660,10 @@ export function usePipelineWizard(props: any) {
         let processedMsg = msg;
         const msgLower = msg.toLowerCase();
 
-        const logsLang = (currentLang === "vi" || currentLang === "en") ? currentLang : "vi";
-        const logTexts = VITE_HMR_LOGS[logsLang];
+        const logsLang = [COMMON_STRINGS.VI, COMMON_STRINGS.EN].includes(currentLang) ? currentLang : COMMON_STRINGS.VI;
+        const logTexts = VITE_HMR_LOGS[logsLang as "vi" | "en"];
 
-        if (msgLower.includes("[vite] server connection lost") || msgLower.includes("server connection lost. polling for restart")) {
+        if (["[vite] server connection lost", "server connection lost. polling for restart"].some(k => msgLower.includes(k))) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
         } else if (msgLower.includes("[hmr] failed to reload")) {
           const fileMatch = msg.match(/Failed to reload (\S+)/i);
@@ -675,7 +675,7 @@ export function usePipelineWizard(props: any) {
           }
         } else if (msgLower.includes("[vite] connected")) {
           processedMsg = logTexts.CONNECTED;
-        } else if (msgLower.includes("[vite] hot updated") || msgLower.includes("[vite] hmr update")) {
+        } else if (["[vite] hot updated", "[vite] hmr update"].some(k => msgLower.includes(k))) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 

@@ -1,5 +1,8 @@
+import { cn } from "../../lib/utils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Button } from "../ui/Button";
+import { appError } from "../../lib/logger.js";
+import { ErrorMessage, ThumbnailActionPosition } from "../../constants";
 
 import * as LucideIcons from "lucide-react";
 
@@ -18,7 +21,7 @@ const handleDownloadImage = async (url: string, filename: string) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(blobUrl);
   } catch (error) {
-    console.error("Image load error:", error);
+    appError(ErrorMessage.FAILED_TO_FETCH, error);
     const a = document.createElement("a");
     a.href = url;
     a.target = "_blank";
@@ -75,7 +78,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
   return (
     <>
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
+      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
         <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
@@ -88,7 +91,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
           <Button
             variant="primary"
-            onClick={() => handleTriggerAssetAndThumbnail(true, "top")}
+            onClick={() => handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.TOP)}
             disabled={!!loadingStates["assetAndThumbnail_loading"]}
             isLoading={!!loadingStates["assetAndThumbnail_loading"]}
             className="self-start sm:self-auto"
@@ -131,7 +134,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                 >
                   <option value="1" className="bg-slate-950 text-slate-350">
                     1 {t.idea}
@@ -313,7 +316,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   <span className="text-[10px] text-slate-400 font-mono">{t.charDetectedCount.replace("{count}", project.visualConfig.characters.length.toString())}</span>
                   <div className="flex items-center gap-2">
                     <Button type="button" variant="secondary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="xs">
-                      <RefreshCw className={`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`} />
+                      <RefreshCw className={cn(`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`)} />
                       {t.charReAnalyze}
                     </Button>
                     {project.visualConfig.characters.some((c) => c.prompt || c.description) && project.thumbnails && project.thumbnails.length > 0 && (
@@ -347,7 +350,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     type="text"
                                     value={char.name}
                                     onChange={(e) => handleUpdateCharacter(char.id, "name", e.target.value)}
-                                    className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
+                                    className="bg-slate-900 hover:bg-slate-850 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
                                     placeholder={t.charNamePlaceholder}
                                   />
                                 </h4>
@@ -360,7 +363,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     setTimeout(() => setInfoMsg(""), 3000);
                                   }}
                                   title={t.charCopyDesc}
-                                  className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
+                                  className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
                                 >
                                   <Copy className="w-2.5 h-2.5" />
                                 </Button>
@@ -368,7 +371,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                               <textarea
                                 value={char.description}
                                 onChange={(e) => handleUpdateCharacter(char.id, "description", e.target.value)}
-                                className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
+                                className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
                                 placeholder={t.charBioPlaceholder}
                                 title={char.description}
                               />
@@ -487,19 +490,25 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             </div>
                           )}
 
-                          <div className="flex justify-end">
-                            <Button
-                              variant="primary"
-                              type="button"
-                              onClick={() => handleExtractCharacter(char.id)}
-                              disabled={isExtracting || !char.images?.length}
-                              isLoading={isExtracting}
-                              size="xs"
-                              className="text-[9px] px-2 py-1 font-bold"
-                            >
-                              {isExtracting ? t.charExtractingBtn : t.charExtractBtn}
-                            </Button>
-                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => handleExtractCharacter(char.id)}
+                            disabled={isExtracting || !char.images?.length}
+                            className="w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto"
+                          >
+                            {isExtracting ? (
+                              <>
+                                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                                <span>{t.charExtractingBtn}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-2.5 h-2.5 text-emerald-100" />
+                                <span>{t.charExtractBtn}</span>
+                              </>
+                            )}
+                          </Button>
                         </div>
                       </div>
                     );
@@ -549,7 +558,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 ))}
               </div>
             ) : (
-              <div className="bg-slate-950/30 border border-slate-800/80 rounded-2xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 group hover:border-slate-700/60 transition-all duration-300">
+              <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 group hover:border-slate-700/60 transition-all duration-300">
                 <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse">
                   <ImageIcon className="w-5 h-5 text-rose-500" />
                 </div>
@@ -559,7 +568,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={() => handleTriggerAssetAndThumbnail(true, "empty")}
+                  onClick={() => handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.EMPTY)}
                   disabled={!!loadingStates["assetAndThumbnail_loading"]}
                   isLoading={!!loadingStates["assetAndThumbnail_loading"]}
                   className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5"
@@ -634,7 +643,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             navigator.clipboard.writeText(thumb.prompt);
                             setInfoMsg(t.Copied_thumbnail_prompt);
                           }}
-                          className="absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl h-auto w-auto hover:text-white"
+                          className="absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-850 shadow-xl h-auto w-auto hover:text-white"
                           title={t.Copy_Prompt}
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -690,11 +699,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
                           isLoading={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
-                            } active:scale-95`}
+                          className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
+                            } active:scale-95`)}
                           title={t.Render_YouTube_mockup_thu}
                         >
-                          <Sparkles className={`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`} />
+                          <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
                           <span className="relative z-10">{t.Render_Mockup}</span>
                         </Button>
                         {thumb.imageUrl && (

@@ -1,9 +1,10 @@
+import { cn } from "../../lib/utils";
 import { useState, useEffect } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import { appError } from "../../lib/logger";
-import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg } from "../../constants";
+import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, PIPELINE_STEP6_TEXTS, LOG_KEYWORDS } from "../../constants";
 import { Button } from "../ui/Button";
 
 const { Play, Sparkles, Terminal, FileJson, FolderOpen, Key, CheckSquare, Square, Eye, EyeOff } = LucideIcons as any;
@@ -74,6 +75,21 @@ export default function PipelineStep6(props: PipelineWizardState) {
     setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${msg}`]);
   };
 
+  const switches = [
+    { key: "sync_image_to_audio", label: t.node7_opt_sync },
+    { key: "ultra_music_mix", label: t.node7_opt_music_mix },
+    { key: "custom_audio_order", label: t.node7_opt_custom_order },
+    { key: "randomize_video", label: t.node7_opt_randomize },
+    { key: "dynamic_motion", label: t.node7_opt_motion },
+    { key: "auto_transition", label: t.node7_opt_transition },
+    { key: "clear_transitions", label: t.node7_opt_clear_trans },
+    { key: "auto_fill_canvas", label: t.node7_opt_fill_canvas },
+    { key: "normalize_volume", label: t.node7_opt_normalize },
+    { key: "reverse_timeline", label: t.node7_opt_reverse },
+    { key: "auto_subtitles", label: t.node7_opt_subtitles },
+    { key: "ai_sfx_generator", label: t.node7_opt_sfx },
+  ];
+
   const handleToggle = (key: keyof UltraConfig) => {
     setConfig((prev) => ({
       ...prev,
@@ -81,43 +97,19 @@ export default function PipelineStep6(props: PipelineWizardState) {
     }));
   };
 
-  const handleSelectAll = () => {
-    setConfig((prev) => ({
-      ...prev,
-      sync_image_to_audio: true,
-      ultra_music_mix: true,
-      custom_audio_order: true,
-      randomize_video: true,
-      dynamic_motion: true,
-      auto_transition: true,
-      clear_transitions: true,
-      auto_fill_canvas: true,
-      normalize_volume: true,
-      reverse_timeline: true,
-      auto_subtitles: true,
-      ai_sfx_generator: true,
-    }));
-    addLog(t.node7_select_all, LogLevel.INFO);
+  const toggleAllSwitches = (value: boolean) => {
+    setConfig((prev) => {
+      const next = { ...prev };
+      switches.forEach((sw) => {
+        (next as any)[sw.key] = value;
+      });
+      return next;
+    });
+    addLog(value ? t.node7_select_all : t.node7_deselect_all, LogLevel.INFO);
   };
 
-  const handleDeselectAll = () => {
-    setConfig((prev) => ({
-      ...prev,
-      sync_image_to_audio: false,
-      ultra_music_mix: false,
-      custom_audio_order: false,
-      randomize_video: false,
-      dynamic_motion: false,
-      auto_transition: false,
-      clear_transitions: false,
-      auto_fill_canvas: false,
-      normalize_volume: false,
-      reverse_timeline: false,
-      auto_subtitles: false,
-      ai_sfx_generator: false,
-    }));
-    addLog(t.node7_deselect_all, LogLevel.INFO);
-  };
+  const handleSelectAll = () => toggleAllSwitches(true);
+  const handleDeselectAll = () => toggleAllSwitches(false);
 
   const handleSelectFile = async () => {
     try {
@@ -198,7 +190,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
 
       addLog(t.node7_log_calling_backend, LogLevel.INFO);
       const response = await fetch(API_ROUTES.PIPELINE_RUN_ULTRA, {
-        method: "POST",
+        method: HTTP_METHODS.POST,
         headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
         body: JSON.stringify(payload),
       });
@@ -255,21 +247,6 @@ export default function PipelineStep6(props: PipelineWizardState) {
     }
   };
 
-  const switches = [
-    { key: "sync_image_to_audio", label: t.node7_opt_sync },
-    { key: "ultra_music_mix", label: t.node7_opt_music_mix },
-    { key: "custom_audio_order", label: t.node7_opt_custom_order },
-    { key: "randomize_video", label: t.node7_opt_randomize },
-    { key: "dynamic_motion", label: t.node7_opt_motion },
-    { key: "auto_transition", label: t.node7_opt_transition },
-    { key: "clear_transitions", label: t.node7_opt_clear_trans },
-    { key: "auto_fill_canvas", label: t.node7_opt_fill_canvas },
-    { key: "normalize_volume", label: t.node7_opt_normalize },
-    { key: "reverse_timeline", label: t.node7_opt_reverse },
-    { key: "auto_subtitles", label: t.node7_opt_subtitles },
-    { key: "ai_sfx_generator", label: t.node7_opt_sfx },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1 text-left">
@@ -280,13 +257,13 @@ export default function PipelineStep6(props: PipelineWizardState) {
         <p className="text-xs text-slate-450 leading-relaxed">{t.node7_desc}</p>
       </div>
 
-      <div className="bg-slate-900/60 border border-slate-850 rounded-2xl overflow-hidden shadow-2xl flex flex-col text-left animate-fadeIn">
+      <div className="bg-slate-900/60 border border-slate-850 rounded-xl overflow-hidden shadow-2xl flex flex-col text-left animate-fadeIn">
         <div className="px-5 py-3 border-b border-slate-850 bg-slate-900/40 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono flex items-center gap-1.5 select-none">
             <Terminal className="w-3.5 h-3.5 text-rose-500" />
             {t.node7_console_title}
           </span>
-          <span className="text-[9px] font-mono text-slate-600">STDOUT / STDERR</span>
+          <span className="text-[9px] font-mono text-slate-600">{PIPELINE_STEP6_TEXTS.STDOUT_STDERR}</span>
         </div>
         <div className="p-5 bg-slate-950 font-mono text-[11px] leading-relaxed text-slate-350 min-h-[160px] max-h-[300px] overflow-y-auto custom-scrollbar space-y-1.5 select-text">
           {consoleLogs.length === 0 ? (
@@ -294,9 +271,13 @@ export default function PipelineStep6(props: PipelineWizardState) {
           ) : (
             consoleLogs.map((log, index) => {
               let textClass = "text-slate-300";
-              if (log.includes(LOG_LEVEL_SYMBOLS.SUCCESS) || log.includes("SUCCESS")) textClass = "text-teal-400 font-semibold";
-              if (log.includes(LOG_LEVEL_SYMBOLS.ERROR) || log.includes("ERROR")) textClass = "text-rose-500 font-semibold";
-              if (log.includes(LOG_LEVEL_SYMBOLS.WARN)) textClass = "text-amber-400";
+              if ([LOG_LEVEL_SYMBOLS.SUCCESS, LOG_KEYWORDS.SUCCESS].some(k => log.includes(k))) {
+                textClass = "text-teal-400 font-semibold";
+              } else if ([LOG_LEVEL_SYMBOLS.ERROR, LOG_KEYWORDS.ERROR].some(k => log.includes(k))) {
+                textClass = "text-rose-500 font-semibold";
+              } else if ([LOG_LEVEL_SYMBOLS.WARN].some(k => log.includes(k))) {
+                textClass = "text-amber-400";
+              }
               return (
                 <div key={index} className={textClass}>
                   {log}
@@ -308,7 +289,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-5 space-y-5 bg-slate-900/40 p-5 rounded-2xl border border-slate-850 backdrop-blur-sm text-left">
+        <div className="lg:col-span-5 space-y-5 bg-slate-900/40 p-5 rounded-xl border border-slate-850 backdrop-blur-sm text-left">
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1.5 font-mono select-none">
               <FileJson className="w-3.5 h-3.5 text-rose-500" />
@@ -372,7 +353,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         </div>
 
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-850 backdrop-blur-sm space-y-4">
+          <div className="bg-slate-900/40 p-5 rounded-xl border border-slate-850 backdrop-blur-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-850 pb-3">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono select-none">{t.node7_opt_title}</span>
               <div className="flex gap-2">
@@ -391,12 +372,12 @@ export default function PipelineStep6(props: PipelineWizardState) {
               {switches.map((sw) => {
                 const isActive = config[sw.key as keyof UltraConfig] as boolean;
                 return (
-                  <div key={sw.key} onClick={() => handleToggle(sw.key as keyof UltraConfig)} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${isActive ? "bg-rose-500/[0.03] border-rose-500/30" : "bg-slate-950/20 border-slate-850 hover:border-slate-800 hover:bg-slate-900/10"}`}>
+                  <div key={sw.key} onClick={() => handleToggle(sw.key as keyof UltraConfig)} className={cn(`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${isActive ? "bg-rose-500/[0.03] border-rose-500/30" : "bg-slate-950/20 border-slate-850 hover:border-slate-800 hover:bg-slate-900/10"}`)}>
                     <div className="relative shrink-0 mt-0.5">
-                      <div className={`w-8 h-4.5 rounded-full transition-colors duration-200 ${isActive ? "bg-rose-600" : "bg-slate-800"}`} />
-                      <div className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 ${isActive ? "translate-x-3.5" : ""}`} />
+                      <div className={cn(`w-8 h-4.5 rounded-full transition-colors duration-200 ${isActive ? "bg-rose-600" : "bg-slate-800"}`)} />
+                      <div className={cn(`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 ${isActive ? "translate-x-3.5" : ""}`)} />
                     </div>
-                    <span className={`text-[11px] leading-tight font-medium ${isActive ? "text-rose-455 font-semibold" : "text-slate-400"}`}>{sw.label}</span>
+                    <span className={cn(`text-[11px] leading-tight font-medium ${isActive ? "text-rose-455 font-semibold" : "text-slate-400"}`)}>{sw.label}</span>
                   </div>
                 );
               })}

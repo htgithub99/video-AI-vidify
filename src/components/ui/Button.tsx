@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
 
@@ -23,8 +24,8 @@ export const Button: React.FC<IBaseButtonProps> = ({
     primary: "bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-450 hover:to-rose-550 active:from-rose-600 active:to-rose-700 text-white border border-rose-400/20 shadow-md shadow-rose-500/10 hover:shadow-rose-500/25",
     secondary: "bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-100 border border-slate-700/60 hover:border-slate-600 shadow-sm",
     danger: "bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/30",
-    ghost: "bg-transparent hover:bg-slate-800/80 text-slate-400 hover:text-slate-100 border border-transparent active:bg-slate-800 shadow-none",
-    outline: "bg-transparent border border-slate-700 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-100 text-slate-300 active:bg-slate-800/80 shadow-none",
+    ghost: "bg-slate-900 hover:bg-slate-800/80 text-slate-400 hover:text-slate-100 border border-transparent active:bg-slate-800 shadow-none",
+    outline: "bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-850 hover:text-slate-100 text-slate-300 active:bg-slate-800/80 shadow-none",
     unstyled: "",
   };
 
@@ -34,7 +35,7 @@ export const Button: React.FC<IBaseButtonProps> = ({
 
   return (
     <button 
-      className={`${finalBaseStyles} ${sizeStyles} ${variantStyles} ${className}`.trim()} 
+      className={cn(finalBaseStyles, sizeStyles, variantStyles, className)} 
       disabled={disabled || isLoading} 
       {...props}
     >

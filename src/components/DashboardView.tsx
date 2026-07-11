@@ -26,7 +26,7 @@ export default function DashboardView({
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
             {t.dashboardCreatorInfo}
           </h3>
@@ -41,7 +41,7 @@ export default function DashboardView({
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
             {t.dashboardCreditsBalance}
           </h3>
@@ -53,7 +53,7 @@ export default function DashboardView({
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
             {t.dashboardEstimatedCost}
           </h3>
@@ -65,7 +65,7 @@ export default function DashboardView({
       </div>
 
       {latestProject ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 mb-4">
             {t.dashboardLatestProject}
           </h3>
@@ -90,7 +90,7 @@ export default function DashboardView({
           </div>
         </div>
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-sm text-center">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 shadow-sm text-center">
           <Video className="w-12 h-12 text-slate-700 mx-auto mb-4" />
           <h4 className="text-sm font-bold text-slate-100">
             {t.dashboardWelcome}

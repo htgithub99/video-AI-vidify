@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { IBaseModalProps } from "../../types";
@@ -24,7 +25,7 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
 
   return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
-      <div className={`bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-2xl w-full ${maxWidthClass} max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200`} onClick={stopPropagation}>
+      <div className={cn("bg-gradient-to-b from-slate-900/90 to-slate-955/95 border border-slate-800/85 rounded-xl w-full max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200", maxWidthClass)} onClick={stopPropagation}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none z-0" />
 
         {/* Header */}

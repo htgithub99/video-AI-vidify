@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
 import { Button } from "../ui/Button";
 
@@ -11,7 +12,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
   const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition } = props;
   return (
     <>
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
+      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
         <div className="border-b border-slate-800 pb-4 relative z-10">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
@@ -38,9 +39,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900 ${
+                  className={cn(`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900 ${
                     project.input?.type === ProjectInputType.Script ? "bg-slate-900 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
-                  }`}
+                  }`)}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.originalScript}</span>
                   <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.originalScriptDesc}</span>
@@ -58,9 +59,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900/40 ${
+                  className={cn(`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-850 ${
                     project.input?.type === ProjectInputType.Idea ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
-                  }`}
+                  }`)}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.storyIdea}</span>
                   <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.storyIdeaDesc}</span>
@@ -86,7 +87,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
             </div>
           </div>
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-5 shadow-xl relative overflow-hidden">
+            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
               <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
                 <Settings2 className="w-4 h-4 text-rose-500 shrink-0" />
@@ -104,7 +105,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         config: { ...prev.config, genre: e.target.value },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {GENRE_OPTIONS.map((genre) => {
                       return (
@@ -132,7 +133,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {PROJECT_LANGUAGE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
@@ -158,7 +159,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {DURATION_OPTIONS.map((item) => (
                       <option key={item.val} value={item.val} className="bg-slate-950 text-slate-300">
@@ -185,14 +186,14 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 font-sans w-full"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 font-sans w-full"
                   >
                     {SPLIT_STRATEGY_OPTIONS.map((opt) => (
                       <option
                         key={opt.value}
                         value={opt.value}
                         title={t[opt.titleKey as keyof typeof t] || opt.value}
-                        className={`bg-slate-950 ${opt.className}`}
+                        className={cn(`bg-slate-950 ${opt.className}`)}
                       >
                         {t[opt.labelKey as keyof typeof t] || opt.value}
                       </option>
@@ -216,7 +217,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {AUDIENCE_OPTIONS.map((aud) => {
                       return (
@@ -244,7 +245,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         },
                       }))
                     }
-                    className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
                     {WRITING_STYLE_OPTIONS.map((style) => {
                       return (
@@ -276,7 +277,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
                 />
               </div>
               <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
@@ -298,7 +299,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-amber-500 focus:outline-none"
                 />
               </div>
               <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
@@ -320,7 +321,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
+                  className="w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none"
                 />
               </div>
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
@@ -341,9 +342,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-transparent ${project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-800"}`}
+                  className={cn(`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 ${project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850"}`)}
                 >
-                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck ? "translate-x-5" : "translate-x-0"}`} />
+                  <div className={cn(`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck ? "translate-x-5" : "translate-x-0"}`)} />
                 </Button>
               </div>{" "}
               <div className="pt-4 border-t border-slate-800 space-y-4">
@@ -355,7 +356,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookType}</span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                    <select value={hookStrategy} onChange={(e) => setHookStrategy(e.target.value)} className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
+                    <select value={hookStrategy} onChange={(e) => setHookStrategy(e.target.value)} className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                       {HOOK_STRATEGY_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                           {opt.label}
@@ -370,13 +371,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     <span className="text-slate-450">{t.hookDuration}</span>
                     <span className="text-rose-450 bg-rose-500/10 border border-rose-500/10 px-2 py-0.5 rounded-full">{hookDuration}s</span>
                   </div>
-                  <input type="range" min="3" max="30" value={hookDuration} onChange={(e) => setHookDuration(Number(e.target.value))} className="w-full h-1 bg-slate-900 hover:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none" />
+                  <input type="range" min="3" max="30" value={hookDuration} onChange={(e) => setHookDuration(Number(e.target.value))} className="w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer accent-rose-600 focus:outline-none" />
                 </div>{" "}
                 <div className="space-y-1.5">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookPositions}</span>
                   <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                     <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                    <select value={hookPosition} onChange={(e) => setHookPosition(e.target.value as any)} className="flex-1 bg-transparent border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
+                    <select value={hookPosition} onChange={(e) => setHookPosition(e.target.value as any)} className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                       {HOOK_POSITION_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                           {opt.label}
@@ -414,7 +415,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
               </h3>
             </div>
 
-            <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch relative ${loadingStates["processInput"] && !project.scriptRewritten ? "min-h-[460px]" : ""}`}>
+            <div className={cn(`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch relative ${loadingStates["processInput"] && !project.scriptRewritten ? "min-h-[460px]" : ""}`)}>
               <div className="lg:col-span-2 space-y-3 flex flex-col h-full">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -506,7 +507,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     {loadingStates["processInput"] ? (
                       <div className="space-y-3 py-1">
                         {[1, 2, 3].map((num) => (
-                          <div key={num} className="bg-slate-900/50 border border-slate-800/50 p-2.5 rounded-lg space-y-2 animate-pulse">
+                          <div key={num} className="bg-slate-900 border border-slate-800/50 p-2.5 rounded-lg space-y-2 animate-pulse">
                             <div className="h-2.5 bg-slate-800 rounded w-1/4"></div>
                             <div className="h-3 bg-slate-800 rounded w-1/2"></div>
                             <div className="h-2.5 bg-slate-800 rounded w-5/6"></div>
@@ -515,8 +516,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       </div>
                     ) : (
                       (project.chapters || []).map((ch, idx) => (
-                        <div key={ch.id} className="bg-slate-900 border border-slate-800/50 p-2.5 rounded-lg space-y-1">
-                          <span className="text-[9px] text-rose-500 font-mono font-bold uppercase">
+                        <div key={ch.id} className="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl space-y-2 shadow-sm hover:border-rose-500/20 transition-all group">
+                          <span className="inline-flex items-center text-[9px] text-rose-500 font-mono font-bold uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20 shadow-inner">
                             {t.Chapter}: {ch.id}
                           </span>
                           <input
@@ -529,9 +530,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                                 return { ...prev, chapters: updated };
                               });
                             }}
-                            className="w-full bg-transparent border-none text-slate-100 font-bold text-xs focus:outline-none"
+                            className="w-full bg-transparent hover:bg-slate-850 focus:bg-slate-800 border border-transparent focus:border-rose-500/40 rounded-lg px-2 py-1.5 text-slate-100 font-bold text-xs focus:outline-none transition-all placeholder-slate-500/50 -ml-2"
+                            placeholder="Nhập tên chương..."
                           />
-                          <div className="text-[10px] text-slate-400">{ch.scriptSegment}</div>
+                          <div className="text-[11px] text-slate-400 leading-relaxed font-sans">{ch.scriptSegment}</div>
                         </div>
                       ))
                     )}

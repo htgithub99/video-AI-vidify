@@ -1,3 +1,4 @@
+import { cn } from "../../lib/utils";
 import { VoiceSelectionDialog } from "../../components/VoiceSelectionDialog";
 import { appWarn } from "../../lib/logger.js";
 import {
@@ -270,7 +271,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
         onEnded={() => setTestingVoiceURI(null)}
         className="hidden"
       />
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-2xl p-6 space-y-6 shadow-2xl relative overflow-visible">
+      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
         <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
           <div>
@@ -306,7 +307,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 p-6 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-md relative overflow-hidden max-w-full space-y-6 text-left">
+        <div className="bg-gradient-to-br from-slate-900/60 via-slate-950/80 to-slate-900/40 p-6 rounded-xl border border-slate-800/80 shadow-2xl backdrop-blur-md relative overflow-hidden max-w-full space-y-6 text-left">
           {/* Decorative premium gradient line */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-rose-500 via-fuchsia-500 to-indigo-500" />
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
@@ -399,11 +400,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       project.voiceConfig.previewUrl,
                     );
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
+                  className={cn(`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
                     testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female")
                       ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5"
                       : ""
-                  }`}
+                  }`)}
                 >
                   {testingVoiceURI ===
                     (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
@@ -511,7 +512,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </span>
                   <span className="text-[9px] text-slate-500 font-sans flex items-center gap-1.5">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${isPlayingTts || isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`}
+                      className={cn(`w-1.5 h-1.5 rounded-full ${isPlayingTts || isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`)}
                     />
                     {isPlayingTts || isPlayingRealAudio
                       ? t.Live_playing
@@ -520,7 +521,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </div>
 
                 {loadingStates["bulkVoiceGenerate_loading"] ? (
-                  <div className="flex flex-col items-center justify-center p-6 bg-slate-950/50 border border-slate-800 rounded-xl space-y-4 animate-pulse">
+                  <div className="flex flex-col items-center justify-center p-6 bg-slate-950 border border-slate-800 rounded-xl space-y-4 animate-pulse">
                     <div className="flex gap-1.5 items-end h-8">
                       <span className="w-1 bg-rose-500 rounded h-4 animate-[bounce_0.6s_infinite]"></span>
                       <span className="w-1 bg-amber-500 rounded h-7 animate-[bounce_0.6s_infinite_delay-100ms]"></span>
@@ -601,7 +602,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
 
-                    <div className="py-2.5 flex items-center justify-center gap-[4px] h-11 bg-slate-950/80 rounded-lg border border-slate-900 relative overflow-hidden px-1.5">
+                    <div className="py-2.5 flex items-center justify-center gap-[4px] h-11 bg-slate-950 rounded-lg border border-slate-900 relative overflow-hidden px-1.5">
                       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
                       <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
 
@@ -629,7 +630,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 ? undefined
                                 : `${baseCurve}px`,
                             }}
-                            className={`w-0.5 rounded-full transition-all duration-300 ${isMainPlaying ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]" : "bg-slate-800"}`}
+                            className={cn(`w-0.5 rounded-full transition-all duration-300 ${isMainPlaying ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]" : "bg-slate-800"}`)}
                           />
                         );
                       })}
@@ -789,10 +790,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           variant="ghost"
                           type="button"
                           onClick={handleDownloadVoice}
-                          className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${ttsAudioUrl === COMMON_STRINGS.SIMULATED
+                          className={cn(`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${ttsAudioUrl === COMMON_STRINGS.SIMULATED
                               ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300"
                               : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
-                            }`}
+                            }`)}
                           title={t.Download_voiceover_file}
                         >
                           <Download className="w-3.5 h-3.5 text-current shrink-0" />
@@ -826,7 +827,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         navigator.clipboard.writeText(alignmentsLog);
                         setInfoMsg(t.Copied_alignments_ledger);
                       }}
-                      className="text-[9px] text-slate-400 hover:text-slate-100 bg-slate-955 hover:bg-slate-800 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors font-sans font-bold shadow-none h-auto w-auto"
+                      className="text-[9px] text-slate-400 hover:text-slate-100 bg-slate-955 hover:bg-slate-850 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors font-sans font-bold shadow-none h-auto w-auto"
                     >
                       {t.Copy}
                     </Button>
@@ -921,7 +922,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         return (
                           <div
                             key={idx}
-                            className="flex items-start gap-2 p-1 rounded hover:bg-slate-900/50 transition-colors"
+                            className="flex items-start gap-2 p-1 rounded hover:bg-slate-900 transition-colors"
                           >
                             <span className="shrink-0 text-xs">{icon}</span>
                             <span className={textColor}>{line}</span>
@@ -963,17 +964,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setStoryboardSourceMode("audio");
                 setInfoMsg(t.Switching_to_Audio_Voice_);
               }}
-              className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "audio" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`}
+              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "audio" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
             >
               <div
-                className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "audio" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`}
+                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "audio" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
               <div className="flex items-start gap-3">
                 <div
-                  className={`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "audio" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`}
+                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "audio" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
                 >
                   <Music className="w-4 h-4" />
                 </div>
@@ -1000,17 +1001,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setStoryboardSourceMode("script");
                 setInfoMsg(t.Switching_to_full_text_sc);
               }}
-              className={`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "script" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`}
+              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "script" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
             >
               <div
-                className={`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "script" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`}
+                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "script" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
               <div className="flex items-start gap-3">
                 <div
-                  className={`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "script" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`}
+                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "script" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
                 >
                   <FileText className="w-4 h-4" />
                 </div>
@@ -1079,10 +1080,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`}
+                  className={cn(`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
                 >
                   <Sparkles
-                    className={`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`}
+                    className={cn(`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`)}
                   />
                   <span>{t.AI_Speech}</span>
                 </Button>
@@ -1100,10 +1101,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`}
+                  className={cn(`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
                 >
                   <Upload
-                    className={`w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`}
+                    className={cn(`w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`)}
                   />
                   <span>{t.External_Audio}</span>
                 </Button>
@@ -1246,19 +1247,19 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               style={{
                                 height: step2IsPlaying ? "auto" : "3px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "2px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "4px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
                             />
                           </div>
                         </div>
@@ -1404,7 +1405,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "3px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
                             />
                             <span
                               style={{
@@ -1412,7 +1413,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "2px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
                             />
                             <span
                               style={{
@@ -1420,7 +1421,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "4px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
                             />
                           </div>
                         </div>
@@ -1547,7 +1548,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               {t.Reset}
                             </Button>
 
-                            <label className="text-[9px] text-slate-405 hover:text-slate-205 hover:bg-slate-800 border border-slate-800 font-mono px-2 py-0.5 rounded transition-colors font-bold uppercase cursor-pointer block">
+                            <label className="text-[9px] text-slate-405 hover:text-slate-205 hover:bg-slate-850 border border-slate-800 font-mono px-2 py-0.5 rounded transition-colors font-bold uppercase cursor-pointer block">
                               <span>{t.Replace}</span>
                               <input
                                 type="file"
@@ -1619,19 +1620,19 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               style={{
                                 height: step2IsPlaying ? "auto" : "3px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "2px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-405 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-405 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "4px",
                               }}
-                              className={`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`}
+                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
                             />
                           </div>
                         </div>
@@ -1654,10 +1655,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         className="relative z-10"
                       >
                         <label
-                          className={`w-full min-h-[95px] py-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-slate-955/40 ${isAudioDragging ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]" : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"}`}
+                          className={cn(`w-full min-h-[95px] py-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-slate-955/40 ${isAudioDragging ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]" : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"}`)}
                         >
                           <Upload
-                            className={`w-5 h-5 transition-transform ${isAudioDragging ? "text-emerald-400 scale-125" : "text-slate-500"}`}
+                            className={cn(`w-5 h-5 transition-transform ${isAudioDragging ? "text-emerald-400 scale-125" : "text-slate-500"}`)}
                           />
                           <div className="text-center space-y-0.5">
                             <span className="text-[11px] font-bold text-slate-300 block font-sans">
@@ -1715,7 +1716,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               onClick={() =>
                 setShowAdvancedVisualConfig(!showAdvancedVisualConfig)
               }
-              className="flex items-center gap-2 text-xs font-bold text-rose-450 hover:text-rose-350 transition-colors shadow-none p-0 h-auto w-auto hover:bg-transparent"
+              className="flex items-center gap-2 text-xs font-bold text-rose-450 hover:text-rose-350 transition-colors shadow-none p-0 h-auto w-auto hover:bg-slate-900"
               title={t.Modify_visual_configurati}
             >
               <Sliders className="w-4 h-4 text-rose-500 animate-pulse" />
@@ -1747,7 +1748,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               onClick={() =>
                 setShowAdvancedVisualConfig(!showAdvancedVisualConfig)
               }
-              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-100 text-xs font-medium shadow-none p-0 h-auto w-auto hover:bg-transparent"
+              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-100 text-xs font-medium shadow-none p-0 h-auto w-auto hover:bg-slate-900"
             >
               <span>{showAdvancedVisualConfig ? t.Collapse : t.Expand}</span>
               {showAdvancedVisualConfig ? (
@@ -2004,7 +2005,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           size="xs"
                         >
                           <RefreshCw
-                            className={`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`}
+                            className={cn(`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`)}
                           />
                           {t.charReAnalyze}
                         </Button>
@@ -2055,7 +2056,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                             e.target.value,
                                           )
                                         }
-                                        className="bg-transparent hover:bg-slate-900/40 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
+                                        className="bg-slate-900 hover:bg-slate-850 focus:bg-slate-900 border border-transparent hover:border-slate-800/80 focus:border-rose-500/50 rounded px-1 py-0.5 text-[11px] font-bold text-rose-350 outline-none w-full transition-all"
                                         placeholder={t.charNamePlaceholder}
                                       />
                                     </h4>
@@ -2070,7 +2071,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         setTimeout(() => setInfoMsg(""), 3000);
                                       }}
                                       title={t.charCopyDesc}
-                                      className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-800 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
+                                      className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
                                     >
                                       <Copy className="w-2.5 h-2.5" />
                                     </Button>
@@ -2084,7 +2085,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         e.target.value,
                                       )
                                     }
-                                    className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900/50 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
+                                    className="w-full text-[9px] text-slate-400 mt-1.5 leading-relaxed bg-slate-900/30 hover:bg-slate-900 focus:bg-slate-900 border border-slate-855/50 hover:border-slate-700/60 focus:border-rose-500/30 p-1.5 rounded outline-none resize-none h-16 transition-all scrollbar-thin scrollbar-thumb-slate-800"
                                     placeholder={t.charBioPlaceholder}
                                     title={char.description}
                                   />
@@ -2270,7 +2271,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        <div className="bg-slate-950/80 border border-slate-850 rounded-xl p-5 space-y-4 shadow-xl">
+        <div className="bg-slate-950 border border-slate-850 rounded-xl p-5 space-y-4 shadow-xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 pb-3 border-b border-slate-900">
             <div>
               <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-mono">
@@ -2304,7 +2305,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <Button
                 variant="ghost"
                 onClick={handleCopyAllPrompts}
-                className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-none h-auto ${copiedAll ? "bg-emerald-600 text-white hover:bg-emerald-600 hover:text-white" : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"}`}
+                className={cn(`w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-none h-auto ${copiedAll ? "bg-emerald-600 text-white hover:bg-emerald-600 hover:text-white" : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"}`)}
               >
                 {copiedAll ? (
                   <Check className="w-4 h-4" />
@@ -2382,7 +2383,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
           <div className="flex items-center gap-3 text-left w-full md:w-auto">
             <div className="p-2 bg-rose-950/40 rounded-lg text-rose-450 border border-rose-500/10">
               <ImageIcon className="w-5 h-5" />
@@ -2493,7 +2494,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               ))}
             </div>
           ) : (
-            <div className="bg-slate-950/30 border border-slate-800/80 rounded-2xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-2 group hover:border-slate-700/60 transition-all duration-300">
+            <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 my-2 group hover:border-slate-700/60 transition-all duration-300">
               <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 group-hover:border-rose-500/20 transition-all duration-300 animate-pulse">
                 <Layout className="w-5 h-5 text-rose-500" />
               </div>
@@ -2624,7 +2625,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       {loadingStates[
                         LOADING_KEYS.RENDER_SCENE_PREFIX + scene.id
                       ] && (
-                          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
+                          <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
                             <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
                             <span className="text-[10px] font-mono text-rose-300 font-bold tracking-wider uppercase">
                               {t.Drawing}
@@ -2646,7 +2647,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       {scene.cameraMotion &&
                         scene.cameraMotion !== "Static" && (
                           <div className="absolute top-2 right-2 z-10">
-                            <span className="bg-slate-950/80 backdrop-blur-md text-slate-355 text-[9px] font-mono px-1.5 py-0.5 rounded border border-slate-800/60 shadow-sm">
+                            <span className="bg-slate-950 backdrop-blur-md text-slate-355 text-[9px] font-mono px-1.5 py-0.5 rounded border border-slate-800/60 shadow-sm">
                               {getMotionLabel(scene.cameraMotion)}
                             </span>
                           </div>
@@ -2684,7 +2685,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       e.stopPropagation();
                       setStoryboardPage((prev) => Math.max(1, prev - 1));
                     }}
-                    className="bg-slate-900 hover:bg-slate-800 hover:text-slate-200 border border-slate-800 hover:border-slate-700 text-slate-200 font-sans text-sm font-medium px-4 py-2 rounded-xl h-auto shadow-none flex items-center gap-2"
+                    className="bg-slate-900 hover:bg-slate-850 hover:text-slate-200 border border-slate-800 hover:border-slate-700 text-slate-200 font-sans text-sm font-medium px-4 py-2 rounded-xl h-auto shadow-none flex items-center gap-2"
                     title={t.Go_to_previous_page}
                   >
                     ← {t.Previous}
@@ -2712,7 +2713,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       e.stopPropagation();
                       setStoryboardPage((prev) => prev + 1);
                     }}
-                    className="bg-slate-900 hover:bg-slate-800 hover:text-slate-200 border border-slate-800 hover:border-slate-700 text-slate-200 font-sans text-sm font-medium px-4 py-2 rounded-xl h-auto shadow-none flex items-center gap-2"
+                    className="bg-slate-900 hover:bg-slate-850 hover:text-slate-200 border border-slate-800 hover:border-slate-700 text-slate-200 font-sans text-sm font-medium px-4 py-2 rounded-xl h-auto shadow-none flex items-center gap-2"
                     title={t.Go_to_next_page}
                   >
                     {t.Next} →
@@ -2761,7 +2762,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 }
               >
-                <div className="flex flex-col h-full bg-transparent">
+                <div className="flex flex-col h-full bg-slate-900">
                   <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
                     <div className="space-y-4 flex flex-col">
                       <div className="space-y-1.5 text-left">
@@ -2793,7 +2794,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           {loadingStates[
                             LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
                           ] && (
-                              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-4 text-center space-y-2 animate-fadeIn animate-duration-200">
+                              <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-4 text-center space-y-2 animate-fadeIn animate-duration-200">
                                 <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
                                 <span className="text-xs font-mono text-rose-300 font-bold tracking-wider uppercase">
                                   {t.Drawing}
@@ -2842,7 +2843,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </Button>
 
                         <label
-                          className={`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`}
+                          className={cn(`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`)}
                         >
                           {isUploadingImage ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -3250,7 +3251,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-900/50 px-6 py-4.5 border-t border-slate-800 flex items-center justify-end gap-3.5 shrink-0">
+                  <div className="bg-slate-900 px-6 py-4.5 border-t border-slate-800 flex items-center justify-end gap-3.5 shrink-0">
                     <Button
                       variant="ghost"
                       onClick={() => setActiveSceneId(null)}
@@ -3277,7 +3278,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           title={t.confirmRecreateTitle}
           maxWidth="md"
         >
-          <div className="p-6 space-y-6 bg-transparent text-left">
+          <div className="p-6 space-y-6 bg-slate-900 text-left">
             <p className="text-slate-300 text-sm leading-relaxed">
               {t.confirmRecreateMessage}
             </p>
