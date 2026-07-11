@@ -165,3 +165,13 @@ export enum ThumbnailActionPosition {
   EMPTY = "empty",
 }
 
+export enum AppTheme {
+  LIGHT = "light",
+  DARK = "dark",
+}
+
+export enum AppLanguage {
+  VI = "vi",
+  EN = "en",
+}
+
