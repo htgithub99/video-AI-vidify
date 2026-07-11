@@ -1,10 +1,12 @@
+import { appLog } from "./logger.js";
+
 export class StepLogger {
   private logs: string[] = [];
 
   constructor() {}
 
   public log(msg: string): void {
-    console.log(msg);
+    appLog(msg);
     this.logs.push(msg);
   }
 

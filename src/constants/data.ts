@@ -105,7 +105,7 @@ export const stylePresetsKeywords = {
 
 export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ["not found", "404", "unsupported"] as const;
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ["429", "quota", "Quota exceeded", "503", "500", "550", "fetch failed", "Timeout", "undici"] as const;
-export const STICKMAN_KEYWORDS = ["người que", "stickman", "stick figure", "hoạt hình", "stick", "que"] as const;
+export const STICKMAN_KEYWORDS = ["người que", "hình que", "nét que", "stickman", "stick figure", "hoạt hình", "stick"] as const;
 
 export const LOG_SUCCESS_KEYWORDS = ["thành công", "success", "hoàn thành"] as const;
 export const LOG_PENDING_KEYWORDS = ["bắt đầu thực thi", "pending", "đang xử lý", "trigger"] as const;

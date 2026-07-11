@@ -70,9 +70,11 @@ import {
   DEFAULT_SCENE_EFFECTS,
   DEFAULT_SCENE_TRANSITION,
   DEFAULT_SCENE_PROMPT_PREFIX,
+  stylePresetsKeywords,
+  BASE64_DATA_URL_REGEX,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep, getBilingualMessage, appWarn } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog } from "../../lib/logger.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { requestContext } from "../utils/requestContext.js";
@@ -106,7 +108,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
       let mimeType = "image/jpeg";
 
       if (imgBase64.startsWith("data:")) {
-        const match = imgBase64.match(/^data:([^;]+);base64,(.+)$/);
+        const match = imgBase64.match(BASE64_DATA_URL_REGEX);
         if (match) {
           mimeType = match[1];
           base64Data = match[2];
@@ -460,7 +462,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
       let mimeType = "image/jpeg";
 
       if (imgBase64.startsWith("data:")) {
-        const match = imgBase64.match(/^data:([^;]+);base64,(.+)$/);
+        const match = imgBase64.match(BASE64_DATA_URL_REGEX);
         if (match) {
           mimeType = match[1];
           base64Data = match[2];
@@ -982,13 +984,18 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (chosenDuration < 10) chosenDuration = 10;
   }
 
+  let activeStyle = referenceStyle || "";
+  if (!activeStyle && visualStyle && stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords]) {
+    activeStyle = stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords];
+  }
+
   const cached = checkCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
 
   if (!isGeminiApiKeyAvailable()) {
-    return res.json(generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
+    return res.json(generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
   }
 
   try {
@@ -1016,7 +1023,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const logStoryboardStep = (msg: string) => storyboardLogger.log(msg);
 
     logStoryboardStep(getPipelineLog("STORY_STEP1", isVi));
-    const visualBiblePrompt = getGlobalVisualBiblePrompt(rewrittenScript, genre, visualStyle, referenceStyle, characterRef);
+    const visualBiblePrompt = getGlobalVisualBiblePrompt(rewrittenScript, genre, visualStyle, activeStyle, characterRef);
 
     const bibleParts: any[] = [];
     if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
@@ -1025,7 +1032,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         let mimeType = "image/jpeg";
 
         if (imgBase64.startsWith("data:")) {
-          const match = imgBase64.match(/^data:([^;]+);base64,(.+)$/);
+          const match = imgBase64.match(BASE64_DATA_URL_REGEX);
           if (match) {
             mimeType = match[1];
             base64Data = match[2];
@@ -1090,7 +1097,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           rewrittenScript,
           syncedChapters,
           isVi,
-          visualStyle,
+          activeStyle || visualStyle,
           density,
           chosenDuration,
           splitStrategy,
@@ -1125,7 +1132,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         const batchPrompt = getSceneDetailBatchPrompt(
           minimalScenesJson,
           visualStyle,
-          referenceStyle,
+          activeStyle,
           characterRef,
           visualBible.characterSpecs,
           visualBible.landscapeSpecs,
@@ -1197,7 +1204,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (!data || !data.scenes || data.scenes.length === 0) {
       appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
       const oldLogs = data?.rotationLogs;
-      data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+      data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
@@ -1237,7 +1244,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
-    const fallbackData: any = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+    const fallbackData: any = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
     if (fallbackData?.scenes?.length) {
       fallbackData.scenes = diversifyDuplicatePrompts(fallbackData.scenes);
     }
@@ -1325,7 +1332,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     const parsedData = {
       titles: seoResult.titles || [],
       descriptions: seoResult.descriptions || [],
-      hashtags: seoResult.hashtags || [],
+      hashtags: (seoResult.hashtags || []).map((tag: string) => tag.replace(/^#+/, "")),
       tags: seoResult.tags || [],
       rotationLogs: seoLogs,
     };
@@ -1381,7 +1388,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
         let mimeType = "image/jpeg";
 
         if (imgBase64.startsWith("data:")) {
-          const match = imgBase64.match(/^data:([^;]+);base64,(.+)$/);
+          const match = imgBase64.match(BASE64_DATA_URL_REGEX);
           if (match) {
             mimeType = match[1];
             base64Data = match[2];
@@ -1464,7 +1471,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     formData.append("speed", (speed || 1).toString());
     formData.append("with_transcript", "false");
 
-    console.log(`${BACKEND_MESSAGES.TTS_START}${finalVoiceId}`);
+    appLog(`${BACKEND_MESSAGES.TTS_START}${finalVoiceId}`);
     const ttsRes = await fetch(EXTERNAL_URLS.AI33_TTS, {
       method: "POST",
       headers: {
@@ -1484,7 +1491,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     }
 
     const taskId = ttsData.task_id;
-    console.log(`${BACKEND_MESSAGES.TTS_TASK_ID}${taskId}${BACKEND_MESSAGES.TTS_POLLING}`);
+    appLog(`${BACKEND_MESSAGES.TTS_TASK_ID}${taskId}${BACKEND_MESSAGES.TTS_POLLING}`);
 
     let audioUrl = null;
     let attempts = 0;
@@ -1513,7 +1520,7 @@ router.post("/voice", async (req: Request, res: Response) => {
       throw new Error(getMessage("TTS_TASK_TIMED_OUT"));
     }
 
-    console.log(`${BACKEND_MESSAGES.TTS_COMPLETE}${audioUrl}`);
+    appLog(`${BACKEND_MESSAGES.TTS_COMPLETE}${audioUrl}`);
     const audioRes = await fetch(audioUrl);
     if (!audioRes.ok) throw new Error(getMessage("FAILED_DOWNLOAD_AUDIO"));
 

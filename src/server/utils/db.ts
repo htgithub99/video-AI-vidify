@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
 import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg } from "../../constants";
-import { appError } from "../../lib/logger.js";
+import { appError, appLog } from "../../lib/logger.js";
 import _ from 'lodash';
 
 
@@ -131,7 +131,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
       return;
     }
 
-    console.log(getBackendMsg("SQLITE_MIGRATION_START"));
+    appLog(getBackendMsg("SQLITE_MIGRATION_START"));
 
     const db = await initDb();
 
@@ -139,7 +139,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
     const metadataList = JSON.parse(rawList);
 
     if (_.eq(_.isArray(metadataList), false) || _.eq(metadataList.length, 0)) {
-      console.log(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
+      appLog(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
       return;
     }
 
@@ -205,7 +205,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
       if (_.eq(fs.existsSync(backupFile), true)) {
         fs.renameSync(backupFile, path.join(backupDir, "projects.backup.json"));
       }
-      console.log(getBackendMsg("SQLITE_MIGRATION_SUCCESS"));
+      appLog(getBackendMsg("SQLITE_MIGRATION_SUCCESS"));
     } catch (e) {
       appError(getBackendMsg("SQLITE_MIGRATE_BACKUP_ERR"), e);
     }

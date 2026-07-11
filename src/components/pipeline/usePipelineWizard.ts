@@ -3050,6 +3050,37 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const handleRenderAllThumbnailImages = async () => {
+    logAction("handleRenderAllThumbnailImages");
+    const thumbs = project.thumbnails || [];
+    if (thumbs.length === 0) {
+      setErrorMsg(t.No_Thumbnail_Prompts);
+      return;
+    }
+
+    let targets = thumbs.filter((th) => !th.imageUrl);
+    if (targets.length === 0) {
+      targets = [...thumbs];
+    }
+
+    setLoadingStates((prev) => ({ ...prev, renderAllThumbs_loading: true }));
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      for (const thumb of targets) {
+        await handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style, true);
+      }
+      setInfoMsg(t.bulkRenderThumbnailsSuccess);
+    } catch (err: any) {
+      logger.error("BULK_RENDER_THUMBS_FAILED", err);
+      setErrorMsg(err.message);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, renderAllThumbs_loading: false }));
+      setLoading(false);
+    }
+  };
+
   const handleDownloadVoice = async () => {
     logAction("handleDownloadVoice");
     if (!ttsAudioUrl) return;
@@ -4202,6 +4233,7 @@ export function usePipelineWizard(props: any) {
     handleSaveSceneEdits,
     handleTriggerAssetAndThumbnail,
     handleRenderThumbnailImage,
+    handleRenderAllThumbnailImages,
     handleDownloadVoice,
     handleRegenerateUnifiedVoice,
     handleTriggerVoiceGenerate,

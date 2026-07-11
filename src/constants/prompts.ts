@@ -532,23 +532,24 @@ Your process MUST complete all steps internally:
 1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
 2. Layout & Composition (Inspired by high-converting duel/confrontation style):
    - You MUST utilize highly viral YouTube thumbnail layouts, varying them across the generated thumbnails.
-   - Dual/Confrontation Layout: Design a split-screen or high-contrast comparison (e.g., two opposing subjects, factions, or choices on the left and right). In the middle/divider of the split-screen, there must be a giant, striking, vibrant symbol to create curiosity, such as a giant red painted question mark (?), a glowing lightning bolt, a fiery rift, or a bold 'VS' symbol.
-   - Extreme Close-up Reaction: A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half.
+   - Dual/Confrontation Layout: Design a split-screen or high-contrast comparison (e.g., two opposing subjects, factions, or choices on the left and right). In the middle/divider of the split-screen, there must be a giant, striking, vibrant symbol to create curiosity, such as a giant red painted question mark (?), a fiery glowing rift, or a bold historic-looking 'VS' divider. Avoid using modern glowing cyberpunk neon symbols in historical or classic settings.
+   - Extreme Close-up Reaction: A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half. If the setting is historical or classic, demand a classic oil painting style or dramatic Rembrandt lighting to make the expression look authentic and cinematic, rather than generic low-quality AI stock photos.
    - The Hidden Secret: A mysterious glowing object or silhouette in the foreground, with blurred cinematic depth behind it.
 3. Typography & Text Overlay (100% MANDATORY REQUIREMENT):
    - EVERY single design in the array MUST have hasText: true.
    - The textText must be a highly relevant, click-bait text hook derived from the video script, written in ${isVi ? "Vietnamese (e.g., 'QUYẾT ĐỊNH!', 'SỰ THẬT!', 'SAI LẦM!')" : "English (e.g., 'THE TRUTH!', 'DECISION!', 'WHAT IF?')"} in uppercase, keep it extremely short (1 to 4 words maximum) to avoid clutter.
    - Typography should suggest massive, bold, high-contrast block fonts (like Impact, Arial Black, Montserrat Bold).
-   - Underneath the main text, optionally add choice options or direction-pointing indicators (e.g., "ATTACK NOW" -> "WAIT & WIN" or Vietnamese equivalent) to simulate interactive interest.
+   - Underneath the main text, instead of flat game-like buttons, optionally suggest natural thematic elements that simulate interactive choices (e.g., a dusty red flag pointing left and a worn white flag pointing right with choice text, or physical objects placed on a map like a sword vs. shackles).
 4. Prompt Design & Text Integration (CRITICAL FOR IMAGE GENERATION):
    - You MUST write the visual image generation prompts in English.
    - CRITICAL DIRECTIVE: You MUST explicitly describe the text overlay and its visual details directly inside the "prompt" field so the AI image generator (like Flux, Midjourney, or Veo) actually renders the text onto the generated image.
-   - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay at the bottom reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow...".
-   - If there are choices or secondary labels (e.g., 'ATTACK NOW' and 'WAIT & WIN' with arrows), describe them in the prompt: "...at the very bottom edge, there are two interactive-style option banners reading 'OPTION A' and 'OPTION B' with a small arrow pointing between them...".
+   - POSITIONING SAFETY: To prevent UI labels or status overlays from covering the text, specify the text to be placed with a safe margin from the top edge, preferably positioned slightly lower in the upper-center or lower-center areas.
+   - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow, safely positioned with a top padding to avoid edges...".
+   - If there are choices or secondary labels, describe them as physical, in-world rustic objects: "...at the bottom, two physical choice markers represented by weathered items on a table with short text labels 'OPTION A' and 'OPTION B' written clearly beside them...". Avoid flat digital banners or game UI overlays.
    - The overall image style must be highly cinematic, dramatic lighting, high contrast, sharp details, shallow depth of field, with strong color contrast (e.g. warm sunset/dust tones vs. cold shadows).
    - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single thumbnail. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
 
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, no markdown code wraps or backticks:
 {
   "concepts": [
     { "composition": "Visual focus and emotion driver", "textHook": "TEXT" }
@@ -556,13 +557,13 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "thumbnails": [
     {
       "id": "th_1",
-      "prompt": "Highly detailed ${aspectRatio} thumbnail prompt in English. Must describe all visual elements, cinematic lighting, explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator, and you MUST append the exact parameter '--ar ${aspectRatio}' at the very end of the prompt.",
+      "prompt": "Highly detailed ${aspectRatio} thumbnail prompt in English. Must describe all visual elements, cinematic lighting, explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay safely below the top edge that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator, and you MUST append the exact parameter '--ar ${aspectRatio}' at the very end of the prompt.",
       "style": "Dramatic Cinematic",
       "hasText": true,
       "textText": "${isVi ? "SỰ THẬT!" : "THE TRUTH!"}",
       "layout": "Split-screen confrontation with a giant red question mark (?) in the center",
       "typography": "Impact Bold Sans",
-      "colorSuggestion": "Vibrant white text with thick black borders, and secondary choices at the bottom",
+      "colorSuggestion": "Vibrant white text with thick black borders, and safe margins",
       "subjectFocus": "Opposing commanders on left and right sides"
     }
   ]

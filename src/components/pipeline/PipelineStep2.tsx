@@ -45,6 +45,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
     handleApplyThumbnailStyle,
     handleTriggerAssetAndThumbnail,
     handleRenderThumbnailImage,
+    handleRenderAllThumbnailImages,
     handleAnalyzeCharacter,
     handleCharacterImagesUpload,
     handleExtractCharacter,
@@ -515,6 +516,19 @@ export default function PipelineStep2(props: PipelineWizardState) {
               <Layout className="w-5 h-5 text-rose-500" />
               {t.thumbnailHeader}
             </h4>
+            {project.thumbnails && project.thumbnails.length > 0 && (
+              <Button
+                variant="primary"
+                onClick={handleRenderAllThumbnailImages}
+                disabled={!!loadingStates["renderAllThumbs_loading"]}
+                isLoading={!!loadingStates["renderAllThumbs_loading"]}
+                className="flex items-center gap-1.5 shadow-md text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 border border-rose-500/30 active:scale-95 transition-all text-white py-2 h-auto"
+                title={t.bulkRenderThumbnails_loading}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                <span>{t.bulkRenderThumbnails}</span>
+              </Button>
+            )}
           </div>
 
           {!project.thumbnails || project.thumbnails.length === 0 ? (

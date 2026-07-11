@@ -225,7 +225,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     variant="ghost"
                     size="xs"
                     onClick={() => {
-                      const hashtagsText = (project.seo?.hashtags || []).map((tag) => `#${tag}`).join(" ");
+                      const hashtagsText = (project.seo?.hashtags || []).map((tag) => `#${tag.replace(/^#+/, "")}`).join(" ");
                       navigator.clipboard.writeText(hashtagsText);
                       setInfoMsg(t.Copied_Hashtags_to_clipbo);
                     }}
@@ -248,7 +248,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     ))}
                   {(project.seo?.hashtags || []).map((tag, i) => (
                     <span key={i} className="bg-slate-900 text-rose-300 font-mono text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-800">
-                      #{tag}
+                      #{tag.replace(/^#+/, "")}
                     </span>
                   ))}
                 </div>
