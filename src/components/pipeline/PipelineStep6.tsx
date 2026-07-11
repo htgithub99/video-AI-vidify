@@ -231,7 +231,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
               addLog(data.message, LogLevel.INFO);
             } else if (data.type === UltraStreamLogType.ERROR_LOG) {
               addLog(data.message, LogLevel.WARN);
-            } else if (data.hasOwnProperty("success")) {
+            } else if ("success" in data) {
               if (data.success) {
                 addLog(data.message || t.node7_log_success, LogLevel.SUCCESS);
                 addLog(t.node7_log_backup_saved, LogLevel.INFO);
@@ -391,7 +391,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
               {switches.map((sw) => {
                 const isActive = config[sw.key as keyof UltraConfig] as boolean;
                 return (
-                  <div key={sw.key} onClick={() => handleToggle(sw.key as keyof UltraConfig)} className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${isActive ? "bg-rose-500/[0.03] border-rose-500/30" : "bg-slate-950/20 border-slate-850 hover:border-slate-800 hover:bg-slate-900/10"}`}>
+                  <div key={sw.key} onClick={() => handleToggle(sw.key as keyof UltraConfig)} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${isActive ? "bg-rose-500/[0.03] border-rose-500/30" : "bg-slate-950/20 border-slate-850 hover:border-slate-800 hover:bg-slate-900/10"}`}>
                     <div className="relative shrink-0 mt-0.5">
                       <div className={`w-8 h-4.5 rounded-full transition-colors duration-200 ${isActive ? "bg-rose-600" : "bg-slate-800"}`} />
                       <div className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200 ${isActive ? "translate-x-3.5" : ""}`} />

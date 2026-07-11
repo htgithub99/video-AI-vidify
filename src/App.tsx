@@ -1,8 +1,11 @@
 import { ErrorMessage } from "./constants";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
+import Sidebar from "./components/Sidebar.tsx";
 import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
+import SettingsView from "./components/SettingsView.tsx";
+import DashboardView from "./components/DashboardView.tsx";
 import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
@@ -10,6 +13,10 @@ import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, 
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    return cached && cached !== "undefined" && cached !== "null" ? "studio" : "projects";
+  });
 
   useEffect(() => {
     setLogLanguage(currentLang);
@@ -138,6 +145,7 @@ export default function App() {
   const handleSelectProject = useCallback(async (id: string | null) => {
     if (!id) {
       setSelectedProjectId(null);
+      setActiveTab("projects");
       return;
     }
     const project = projectsRef.current.find((p) => p.id === id);
@@ -148,11 +156,13 @@ export default function App() {
         const detailData = await res.json();
         setProjects((prev) => prev.map((p) => (p.id === id ? detailData : p)));
         setSelectedProjectId(id);
+        setActiveTab("studio");
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
       }
     } else {
       setSelectedProjectId(id);
+      setActiveTab("studio");
     }
   }, []);
 
@@ -298,18 +308,71 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-950 transition-colors duration-300 overflow-hidden">
-      <Header currentLang={currentLang} setLang={setLang} credits={credits} costTracker={costTracker} theme={theme} toggleTheme={toggleTheme} />
+    <div className="h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden">
+      <Header
+        currentLang={currentLang}
+        setLang={setLang}
+        credits={credits}
+        costTracker={costTracker}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
 
-      <main className="flex-1 w-full flex flex-col min-h-0 overflow-hidden relative">
-        {selectedProjectId && activeProject ? (
-          <PipelineWizard key={selectedProjectId} theme={theme} currentLang={currentLang} project={activeProject} onSaveProject={handleUpdateProject} setProject={handleUpdateProject} onBackToDashboard={() => handleSelectProject(null)} costTracker={costTracker} setCostTracker={setCostTracker} credits={credits} setCredits={setCredits} />
-        ) : (
-          <div className="flex-grow overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
-            <ProjectList currentLang={currentLang} projects={projects} onSelectProject={(p) => handleSelectProject(p.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
-          </div>
-        )}
-      </main>
+      <div className="flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955">
+        <Sidebar
+          currentLang={currentLang}
+          activeTab={activeTab}
+          setActiveTab={(tab) => {
+            if (tab === "studio" && !selectedProjectId) return;
+            setActiveTab(tab);
+          }}
+          selectedProjectId={selectedProjectId}
+          activeProjectName={activeProject?.name || null}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+
+        <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
+          {activeTab === "studio" && selectedProjectId && activeProject ? (
+            <PipelineWizard
+              key={selectedProjectId}
+              theme={theme}
+              currentLang={currentLang}
+              project={activeProject}
+              onSaveProject={handleUpdateProject}
+              setProject={handleUpdateProject}
+              onBackToDashboard={() => handleSelectProject(null)}
+              costTracker={costTracker}
+              setCostTracker={setCostTracker}
+              credits={credits}
+              setCredits={setCredits}
+            />
+          ) : activeTab === "settings" ? (
+            <SettingsView currentLang={currentLang} />
+          ) : activeTab === "dashboard" ? (
+            <DashboardView
+              currentLang={currentLang}
+              credits={credits}
+              costTracker={costTracker}
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onNavigateToProjects={() => setActiveTab("projects")}
+            />
+          ) : (
+            /* Tab Projects: ProjectList view */
+            <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
+              <ProjectList
+                currentLang={currentLang}
+                projects={projects}
+                onSelectProject={(p) => handleSelectProject(p.id)}
+                onCreateProject={handleCreateProject}
+                onUpdateProject={handleUpdateProjectDetails}
+                onDeleteProject={handleDeleteProject}
+              />
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

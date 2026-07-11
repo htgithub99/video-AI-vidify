@@ -131,6 +131,7 @@ export const COMMON_STRINGS = {
   HTTP_PREFIX: "http",
   SLASH_PREFIX: "/",
   BASE64_AUDIO_LENGTH_THRESHOLD: 100,
+  CUSTOM: "Custom",
 } as const;
 
 export const ERROR_MESSAGES = {

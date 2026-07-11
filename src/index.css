@@ -29,24 +29,26 @@
   --color-slate-200: #ffffff;
   --color-slate-100: #FFFFFF;
 
-  /* Redefine Rose for Electric Blue high contrast alerts and primary action callouts */
-  --color-rose-950: #101c33;
-  --color-rose-900: #1e2e4f;
-  --color-rose-800: #1d4ed8;
-  --color-rose-705: #1e40af;
-  --color-rose-700: #1d4ed8;
-  --color-rose-600: #2563eb;
-  --color-rose-500: #3b82f6;
-  --color-rose-455: #4b93fb;
-  --color-rose-450: #4f46e5;
-  --color-rose-400: #60a5fa;
-  --color-rose-350: #7cb5fc;
-  --color-rose-300: #93c5fd;
-  --color-rose-200: #bfdbfe;
-  --color-rose-100: #dbeafe;
+  /* Redefine Rose for YouTube Brand Red / Coral Accent colors */
+  --color-rose-955: #1c0808;
+  --color-rose-950: #2a0b0b;
+  --color-rose-900: #4c1111;
+  --color-rose-800: #991b1b;
+  --color-rose-705: #b91c1c;
+  --color-rose-700: #dc2626;
+  --color-rose-600: #ff0000; /* YouTube Red */
+  --color-rose-500: #ff4e4e; /* Coral/Bright Red for high visibility */
+  --color-rose-455: #ff6b6b;
+  --color-rose-450: #ff8787;
+  --color-rose-400: #fca5a5;
+  --color-rose-350: #fecaca;
+  --color-rose-300: #fee2e2;
+  --color-rose-200: #fef2f2;
+  --color-rose-100: #ffffff;
 
   --animate-fadeIn: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-shrinkWidth: shrinkWidth 5s linear forwards;
+  --animate-shimmer: shimmer 1.6s infinite linear;
 
   @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.96) translateY(4px); }
@@ -56,6 +58,11 @@
   @keyframes shrinkWidth {
     from { width: 100%; }
     to { width: 0%; }
+  }
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
   }
 }
 
@@ -87,25 +94,25 @@ body {
 :root.light {
   color-scheme: light;
   
-  /* Inverse Slate for Light Mode - Google Labs Light Mode */
-  --color-slate-955: #FFFFFF;
-  --color-slate-950: #FFFFFF; /* main body background */
+  /* Inverse Slate for Light Mode - Premium High-Contrast Layout */
+  --color-slate-955: #F8F9FA;
+  --color-slate-950: #F8F9FA; /* main body background */
   --color-slate-900: #FFFFFF; /* card background */
-  --color-slate-880: #F4F5F7;
-  --color-slate-850: #F1F3F4;
-  --color-slate-800: #f1f5f9; /* borders, placeholder inputs, secondary bg */
-  --color-slate-750: #E2E5E9;
-  --color-slate-700: #e2e8f0; /* bold borders, lines */
-  --color-slate-650: #cbd5e1; /* border focus, inactive grays */
-  --color-slate-600: #94a3b8; /* muted gray icons and secondary borders */
-  --color-slate-550: #7C8085;
-  --color-slate-500: #64748b; /* muted labels / timestamp text */
-  --color-slate-450: #4C5054;
-  --color-slate-400: #334155; /* secondary body text / readable labels */
-  --color-slate-355: #2B2D30;
+  --color-slate-880: #F1F3F4;
+  --color-slate-850: #E8EAED;
+  --color-slate-800: #cbd5e1; /* borders, placeholder inputs, secondary bg */
+  --color-slate-750: #cbd5e1;
+  --color-slate-700: #94a3b8; /* bold borders, lines */
+  --color-slate-650: #64748b; /* border focus, inactive grays */
+  --color-slate-600: #475569; /* muted gray icons and secondary borders */
+  --color-slate-550: #334155;
+  --color-slate-500: #334155; /* muted labels / timestamp text */
+  --color-slate-450: #1e293b;
+  --color-slate-400: #0f172a; /* secondary body text / readable labels */
+  --color-slate-355: #0f172a;
   --color-slate-350: #000000;
   --color-slate-300: #000000;
-  --color-slate-250: #191A1D;
+  --color-slate-250: #000000;
   --color-slate-205: #000000;
   --color-slate-200: #000000;
   --color-slate-100: #000000;
@@ -122,25 +129,38 @@ body {
   --color-blue-200: #172554;
   --color-blue-100: #0f172a;
 
-  /* Adjust Rose mapped to Blue */
-  --color-rose-955: #f8fafc;
-  --color-rose-950: #eff6ff; 
-  --color-rose-900: #dbeafe; 
-  --color-rose-800: #1e3a8a; 
-  --color-rose-705: #2563eb; 
-  --color-rose-700: #1e40af; /* active state (darker blue) */
-  --color-rose-600: #2563eb; /* normal state (vibrant blue) */
-  --color-rose-550: #1e3a8a;
-  --color-rose-500: #1d4ed8; /* hover state (darker blue) */
-  --color-rose-455: #1b3273;
-  --color-rose-450: #1e3a8a;
-  --color-rose-400: #172554; 
-  --color-rose-350: #121e3d;
-  --color-rose-300: #0f172a;
-  --color-rose-200: #0f172a;
-  --color-rose-100: #000000;
+  /* Adjust Rose mapped to Red/Coral in Light Mode - High Contrast Text */
+  --color-rose-955: #fff5f5;
+  --color-rose-950: #fff5f5; 
+  --color-rose-900: #ffe3e3; 
+  --color-rose-800: #991b1b; /* Đỏ thẫm hẳn */
+  --color-rose-705: #a81c1c; 
+  --color-rose-700: #b91c1c; /* active state (darker red) */
+  --color-rose-600: #dc2626; /* normal state (vibrant red) */
+  --color-rose-550: #991b1b;
+  --color-rose-500: #ff0000; /* hover state (brand red) */
+  --color-rose-455: #991b1b; /* Đỏ sẫm để chữ rõ nét */
+  --color-rose-450: #b91c1c; /* Đỏ sẫm để chữ rõ nét */
+  --color-rose-400: #b91c1c; /* Đỏ sẫm để chữ rõ nét */
+  --color-rose-350: #ffe3e3;
+  --color-rose-300: #fff0f0;
+  --color-rose-200: #fff5f5;
+  --color-rose-100: #ffffff;
+}
 
-  /* Map other highlight colors for light mode contrast */
+/* Shimmer Background Utility */
+.shimmer-bg {
+  background: linear-gradient(90deg, var(--color-slate-900) 25%, var(--color-slate-800) 50%, var(--color-slate-900) 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.6s infinite linear !important;
+}
+:root.light .shimmer-bg {
+  background: linear-gradient(90deg, #f1f3f4 25%, #e8eaed 50%, #f1f3f4 75%) !important;
+  background-size: 200% 100% !important;
+}
+
+/* Map other highlight colors for light mode contrast */
+:root.light {
   --color-emerald-950: #ecfdf5;
   --color-emerald-900: #d1fae5;
   --color-emerald-800: #34d399;
@@ -195,13 +215,42 @@ button, a, [role="button"], input[type="submit"], input[type="reset"], input[typ
 }
 
 button:active, a:active, [role="button"]:active {
-  transform: scale(0.97) !important;
+  /* Removed global hardcoded scale to let base Button component handle active scale gracefully */
 }
 
 button:disabled, a:disabled, [role="button"]:disabled {
   cursor: not-allowed !important;
   opacity: 0.5 !important;
   transform: none !important;
+}
+
+/* Unify Focus and Hover Styles for Inputs, Textareas, and Selects */
+input, textarea, select {
+  transition: all 0.2s ease-in-out !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
+textarea:hover, select:hover {
+  border-color: rgba(220, 38, 38, 0.45) !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
+textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--color-rose-600) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.25) !important; /* Rose-500 ring shadow */
+}
+
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--color-rose-600) !important;
+  outline-offset: 2px !important;
+}
+
+a {
+  transition: color 0.2s ease-in-out !important;
+}
+a:hover {
+  color: var(--color-rose-500) !important;
 }
 
 /* Strip backgrounds like aggressive radial gradients to keep it clean */
@@ -391,3 +440,39 @@ input.accent-amber-500::-moz-range-thumb {
 .font-logo {
   font-family: var(--font-logo), var(--font-sans) !important;
 }
+
+/* --- FLAT AESTHETICS OVERRIDE --- */
+/* Yêu cầu người dùng: Bỏ tất cả box shadow, border của dự án để là đẹp hơn nhé */
+[class*="shadow"] {
+  box-shadow: none !important;
+}
+
+:not(input):not(textarea):not(select):not([class*="focus-within"])[class*="border"] {
+  border-color: transparent !important;
+}
+
+/* Yêu cầu: "Bạn hãy cho hiệu ứng border cho ô select khi focus, hover, active" */
+/* Vì select/input được bọc trong các div form-group dùng class focus-within, ta nhắm tới chúng */
+[class*="focus-within"] {
+  transition: border-color 0.2s ease !important;
+}
+
+[class*="focus-within"]:hover {
+  border-color: #525252 !important; /* hover viền xám sáng */
+}
+
+[class*="focus-within"]:focus-within,
+[class*="focus-within"]:active {
+  border-color: #f43f5e !important; /* active/focus viền đỏ Rose */
+}
+
+/* Tắt box shadow, outline của mọi ô input, select, textarea khi tương tác */
+input, select, textarea,
+input:focus, select:focus, textarea:focus,
+input:hover, select:hover, textarea:hover,
+input:active, select:active, textarea:active,
+[class*="focus:ring"]:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+

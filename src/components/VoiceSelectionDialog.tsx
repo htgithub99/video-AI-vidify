@@ -235,18 +235,20 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               <User className="w-3.5 h-3.5" />
               {t.Gender}
             </label>
-            <div className="flex gap-2">
-              {_.map(["", "male", "female"], (g) => (
-                <Button
-                  key={g}
-                  variant={gender === g ? "outline" : "secondary"}
-                  size="sm"
-                  onClick={() => setGender(g)}
-                  className={`flex-1 font-semibold ${gender === g ? "bg-rose-500/10 border-rose-500/50 text-rose-500 shadow-sm" : "bg-slate-900 border-slate-700 text-slate-400"}`}
-                >
-                  {g === "" ? t.All : g === "male" ? t.Male_5 : t.Female_6}
-                </Button>
-              ))}
+            <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+              {_.map(["", "male", "female"], (g) => {
+                const isActive = gender === g;
+                return (
+                  <Button variant="unstyled"
+                    key={g}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`}
+                  >
+                    {g === "" ? t.All : g === "male" ? t.Male_5 : t.Female_6}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 

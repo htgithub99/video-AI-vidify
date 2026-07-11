@@ -384,7 +384,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
               <div className="flex gap-3">
                 <Button
-                  variant="ghost"
+                  variant={testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? "outline" : "secondary"}
                   type="button"
                   onClick={() => {
                     const voiceURI =
@@ -399,11 +399,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       project.voiceConfig.previewUrl,
                     );
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all border shadow-sm ${testingVoiceURI ===
-                      (project.voiceConfig.voiceURI || "preset-vi-bac-female")
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                      : "bg-slate-900/60 border-slate-850 text-slate-300 hover:bg-slate-900 hover:text-white hover:border-slate-700"
-                    }`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
+                    testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female")
+                      ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5"
+                      : ""
+                  }`}
                 >
                   {testingVoiceURI ===
                     (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
@@ -1066,9 +1066,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-rose-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
-              <div className="flex bg-slate-950/80 p-1 border border-slate-900 rounded-lg relative z-10 max-w-sm">
-                <Button
-                  variant="ghost"
+              <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner relative z-10 max-w-sm">
+                <Button variant="unstyled"
                   type="button"
                   onClick={() => {
                     setProject((prev) => ({
@@ -1080,15 +1079,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 border h-auto shadow-none ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 hover:text-slate-100 border-slate-700/50" : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"}`}
+                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`}
                 >
                   <Sparkles
                     className={`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`}
                   />
                   <span>{t.AI_Speech}</span>
                 </Button>
-                <Button
-                  variant="ghost"
+                <Button variant="unstyled"
                   type="button"
                   onClick={() => {
                     setProject((prev) => ({
@@ -1102,7 +1100,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 border h-auto shadow-none ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 hover:text-slate-100 border-slate-700/50" : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50"}`}
+                  className={`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`}
                 >
                   <Upload
                     className={`w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`}

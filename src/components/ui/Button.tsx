@@ -10,7 +10,7 @@ export const Button: React.FC<IBaseButtonProps> = ({
   disabled, 
   ...props 
 }) => {
-  const baseStyles = "inline-flex items-center gap-2 justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 cursor-pointer shadow-sm";
+  const baseStyles = "inline-flex items-center gap-2 justify-center font-semibold transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-rose-500/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 cursor-pointer shadow-sm relative overflow-hidden";
 
   const sizes = {
     xs: "px-2.5 py-1 text-[10px] rounded-lg",
@@ -20,19 +20,21 @@ export const Button: React.FC<IBaseButtonProps> = ({
   };
 
   const variants = {
-    primary: "bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white border border-rose-500/10",
-    secondary: "bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700/60",
-    danger: "bg-red-600/10 hover:bg-red-600/20 active:bg-red-600/30 text-red-500 border border-red-500/20",
-    ghost: "bg-transparent hover:bg-slate-800 text-slate-300 hover:text-slate-100 border border-transparent active:bg-slate-800/80 shadow-none",
-    outline: "bg-transparent border border-slate-700 hover:bg-slate-800 hover:text-slate-200 text-slate-300 active:bg-slate-800/80 shadow-none",
+    primary: "bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-450 hover:to-rose-550 active:from-rose-600 active:to-rose-700 text-white border border-rose-400/20 shadow-md shadow-rose-500/10 hover:shadow-rose-500/25",
+    secondary: "bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-100 border border-slate-700/60 hover:border-slate-600 shadow-sm",
+    danger: "bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-500 hover:text-red-400 border border-red-500/20 hover:border-red-500/30",
+    ghost: "bg-transparent hover:bg-slate-800/80 text-slate-400 hover:text-slate-100 border border-transparent active:bg-slate-800 shadow-none",
+    outline: "bg-transparent border border-slate-700 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-100 text-slate-300 active:bg-slate-800/80 shadow-none",
+    unstyled: "",
   };
 
-  const sizeStyles = sizes[size] || sizes.md;
-  const variantStyles = variants[variant] || variants.primary;
+  const sizeStyles = variant === "unstyled" ? "" : (sizes[size] || sizes.md);
+  const variantStyles = variants[variant] ?? variants.primary;
+  const finalBaseStyles = variant === "unstyled" ? "" : baseStyles;
 
   return (
     <button 
-      className={`${baseStyles} ${sizeStyles} ${variantStyles} ${className}`} 
+      className={`${finalBaseStyles} ${sizeStyles} ${variantStyles} ${className}`.trim()} 
       disabled={disabled || isLoading} 
       {...props}
     >

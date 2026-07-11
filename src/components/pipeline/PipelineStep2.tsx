@@ -3,7 +3,7 @@ import { Button } from "../ui/Button";
 
 import * as LucideIcons from "lucide-react";
 
-const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check, User } = LucideIcons as any;
+const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check, User, Type, Palette, Focus } = LucideIcons as any;
 
 const handleDownloadImage = async (url: string, filename: string) => {
   try {
@@ -615,18 +615,18 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         </span>
                         {thumb.hasText && <span className="bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">{t.withText}</span>}
                       </div>
-                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 to-transparent opacity-90 pointer-events-none"></div>
+                      <div className="absolute inset-x-0 -bottom-2 h-2/3 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent pointer-events-none z-10"></div>
                     </div>
-                    <div className="p-5 flex-1 flex flex-col relative z-10 -mt-2">
+                    <div className="px-5 pb-5 pt-4 flex-1 flex flex-col relative z-20 bg-slate-900 rounded-b-xl -mt-1">
                       {thumb.hasText && thumb.textText && (
-                        <h3 className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-rose-600 dark:from-amber-200 dark:to-rose-300 font-black text-[13px] uppercase tracking-wide mb-2.5 line-clamp-2 drop-shadow-sm" title={thumb.textText}>
+                        <h3 className="text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-rose-500 font-black text-[15px] uppercase tracking-tight mb-3 line-clamp-2 drop-shadow-md" title={thumb.textText}>
                           "{thumb.textText}"
                         </h3>
                       )}
 
-                      <div className="relative group/prompt mb-4">
-                        <p className="text-[11px] text-slate-600 dark:text-slate-300/90 leading-relaxed line-clamp-3" title={thumb.prompt}>
-                          {thumb.prompt}
+                      <div className="relative group/prompt mb-3">
+                        <p className="text-[11px] text-slate-400 font-medium italic leading-relaxed line-clamp-3" title={thumb.prompt}>
+                          "{thumb.prompt}"
                         </p>
                         <Button
                           variant="ghost"
@@ -634,33 +634,53 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             navigator.clipboard.writeText(thumb.prompt);
                             setInfoMsg(t.Copied_thumbnail_prompt);
                           }}
-                          className="absolute -top-2 right-0 bg-slate-950/90 backdrop-blur-md text-slate-300 p-1.5 rounded-lg border border-slate-800 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl h-auto w-auto hover:text-slate-100"
+                          className="absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-800 shadow-xl h-auto w-auto hover:text-white"
                           title={t.Copy_Prompt}
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </Button>
                       </div>
 
-                      <div className="bg-slate-950/50 backdrop-blur-sm border border-slate-800/80 rounded-xl p-3 mb-4 space-y-2 mt-auto">
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.Layout}:</span>
-                          <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.layout || t.composition169}</span>
+                      <div className="mt-auto mb-5 space-y-2.5 pt-4 border-t border-slate-800/50">
+                        <div className="flex items-center gap-3 text-[10.5px]">
+                          <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-rose-500/80 shadow-inner">
+                            <Layout className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                            <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Layout}</span>
+                            <span className="text-slate-200 font-bold truncate" title={thumb.layout || t.composition169}>{thumb.layout || t.composition169}</span>
+                          </div>
                         </div>
                         {thumb.hasText ? (
                           <>
-                            <div className="flex items-start gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.Font}:</span>
-                              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.typography}</span>
+                            <div className="flex items-center gap-3 text-[10.5px]">
+                              <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-indigo-400/80 shadow-inner">
+                                <Type className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                                <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Font}</span>
+                                <span className="text-slate-200 font-bold truncate" title={thumb.typography}>{thumb.typography}</span>
+                              </div>
                             </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.Color}:</span>
-                              <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.colorSuggestion}</span>
+                            <div className="flex items-center gap-3 text-[10.5px]">
+                              <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-amber-400/80 shadow-inner">
+                                <Palette className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                                <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Color}</span>
+                                <span className="text-slate-200 font-bold truncate" title={thumb.colorSuggestion}>{thumb.colorSuggestion}</span>
+                              </div>
                             </div>
                           </>
                         ) : (
-                          <div className="flex items-start gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 shrink-0 w-16">{t.focusTitle}:</span>
-                            <span className="text-[11px] text-slate-700 dark:text-slate-300 font-medium line-clamp-2">{thumb.subjectFocus}</span>
+                          <div className="flex items-center gap-3 text-[10.5px]">
+                            <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-emerald-400/80 shadow-inner">
+                              <Focus className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                              <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.focusTitle}</span>
+                              <span className="text-slate-200 font-bold truncate" title={thumb.subjectFocus}>{thumb.subjectFocus}</span>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -670,7 +690,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
                           disabled={!!loadingStates["renderThumb_" + thumb.id]}
                           isLoading={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
                             } active:scale-95`}
                           title={t.Render_YouTube_mockup_thu}
                         >
