@@ -29,21 +29,21 @@
   --color-slate-200: #ffffff;
   --color-slate-100: #FFFFFF;
 
-  /* Redefine Rose for YouTube Brand Red / Coral Accent colors */
-  --color-rose-955: #1c0808;
-  --color-rose-950: #2a0b0b;
-  --color-rose-900: #4c1111;
-  --color-rose-800: #991b1b;
-  --color-rose-705: #b91c1c;
-  --color-rose-700: #dc2626;
-  --color-rose-600: #ff0000; /* YouTube Red */
-  --color-rose-500: #ff4e4e; /* Coral/Bright Red for high visibility */
-  --color-rose-455: #ff6b6b;
-  --color-rose-450: #ff8787;
-  --color-rose-400: #fca5a5;
-  --color-rose-350: #fecaca;
-  --color-rose-300: #fee2e2;
-  --color-rose-200: #fef2f2;
+  /* Redefine Rose for Amber / Gold Accent colors (1999 Earth Element) */
+  --color-rose-955: #1f1406;
+  --color-rose-950: #382109;
+  --color-rose-900: #78350f;
+  --color-rose-800: #92400e;
+  --color-rose-705: #a84b0d;
+  --color-rose-700: #b45309;
+  --color-rose-600: #d97706; /* Darker Gold */
+  --color-rose-500: #f59e0b; /* Primary Brand Gold */
+  --color-rose-455: #fbbf24;
+  --color-rose-450: #fcd34d;
+  --color-rose-400: #fde68a;
+  --color-rose-350: #fef08a;
+  --color-rose-300: #fef3c7;
+  --color-rose-200: #fffbeb;
   --color-rose-100: #ffffff;
 
   --animate-fadeIn: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -129,22 +129,22 @@ body {
   --color-blue-200: #172554;
   --color-blue-100: #0f172a;
 
-  /* Adjust Rose mapped to Red/Coral in Light Mode - High Contrast Text */
-  --color-rose-955: #fff5f5;
-  --color-rose-950: #fff5f5; 
-  --color-rose-900: #ffe3e3; 
-  --color-rose-800: #991b1b; /* Đỏ thẫm hẳn */
-  --color-rose-705: #a81c1c; 
-  --color-rose-700: #b91c1c; /* active state (darker red) */
-  --color-rose-600: #dc2626; /* normal state (vibrant red) */
-  --color-rose-550: #991b1b;
-  --color-rose-500: #ff0000; /* hover state (brand red) */
-  --color-rose-455: #991b1b; /* Đỏ sẫm để chữ rõ nét */
-  --color-rose-450: #b91c1c; /* Đỏ sẫm để chữ rõ nét */
-  --color-rose-400: #b91c1c; /* Đỏ sẫm để chữ rõ nét */
-  --color-rose-350: #ffe3e3;
-  --color-rose-300: #fff0f0;
-  --color-rose-200: #fff5f5;
+  /* Adjust Rose mapped to Amber/Gold in Light Mode - High Contrast Text */
+  --color-rose-955: #fffbeb;
+  --color-rose-950: #fffbeb; 
+  --color-rose-900: #fef3c7; 
+  --color-rose-800: #78350f; /* Nâu thẫm hẳn */
+  --color-rose-705: #92400e; 
+  --color-rose-700: #92400e; /* active state */
+  --color-rose-600: #b45309; /* normal state */
+  --color-rose-550: #78350f;
+  --color-rose-500: #d97706; /* hover state */
+  --color-rose-455: #92400e; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-450: #b45309; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-400: #b45309; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-350: #fef3c7;
+  --color-rose-300: #fffbeb;
+  --color-rose-200: #ffffff;
   --color-rose-100: #ffffff;
 }
 
@@ -231,14 +231,14 @@ input, textarea, select {
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
 textarea:hover {
-  border-color: rgba(220, 38, 38, 0.45) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
 textarea:focus {
   outline: none !important;
   border-color: var(--color-rose-600) !important;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.25) !important; /* Rose-500 ring shadow */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important; /* Amber-500 ring shadow */
 }
 
 button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
