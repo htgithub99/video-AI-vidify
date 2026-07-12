@@ -12,7 +12,7 @@ export const SENTENCE_SPLIT_REGEX = /[^.!?]+[.!?]*/g;
 export const CLAUSE_SPLIT_REGEX = /([,;:|])\s*/;
 
 export const NON_ALPHANUMERIC_SPACE_REGEX = /[^a-zA-Z0-9\s]/g;
-export const BASE64_IMAGE_DATA_REGEX = /^data:([^;]+);base64,(.+)$/;
+export const BASE64_IMAGE_DATA_REGEX = /^data:([^;]+);base64,([\s\S]+)$/;
 
 export const PLAYWRIGHT_SUBMIT_ICON_REGEX = /^(arrow_forward|add_2|send)$/i;
 export const PLAYWRIGHT_SUBMIT_TEXT_REGEX = /(Tạo|Create|Generate)/i;
@@ -31,9 +31,9 @@ export const CURL_RECAPTCHA_TOKEN_REGEX = /"token"\s*:\s*"([^"]+)"/i;
 export const CURL_AGENT_SESSION_ID_REGEX = /"agentSessionId"\s*:\s*"([^"]+)"/i;
 
 export const BASE64_IMAGE_MIME_REGEX =
-  /^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/;
+  /^data:image\/([a-zA-Z0-9+]+);base64,([\s\S]+)$/;
 
-export const BASE64_DATA_URL_REGEX = /^data:([^;]+);base64,(.+)$/;
+export const BASE64_DATA_URL_REGEX = /^data:([^;]+);base64,([\s\S]+)$/;
 
 export const AUDIO_CLEAN_PREFIX_REGEX =
   /^(Dưới đây là|Đây là|Tuyệt vời|Chắc chắn|Sau đây là|Tôi đã tạo|Hãy cùng xem|Chào bạn|Chắc chắn rồi|Vâng|Được chứ).*?:?\n?/i;
