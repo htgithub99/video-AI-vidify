@@ -22,6 +22,11 @@ const APP_CONFIG = {
   SECOND_INSTANCE: "second-instance",
   CLOSED: "closed",
   ACTIVATE: "activate",
+  CRASH_LOG: "crash-log.txt",
+  UNCAUGHT_EXCEPTION: "uncaughtException",
+  UNHANDLED_REJECTION: "unhandledRejection",
+  SPACE: " ",
+  NEWLINE: "\n",
 };
 
 const MESSAGES = {
@@ -37,6 +42,9 @@ const MESSAGES = {
   LOG_SHUTDOWN: "Tất cả cửa sổ đã đóng. Đang dọn dẹp tiến trình...",
   LOG_START_CHROME: "Đang khởi chạy Chrome browser cho tạo ảnh...",
   CHROME_ERR: "Lỗi mở Chrome:",
+  UNCAUGHT_ERR: "Uncaught Exception:",
+  UNHANDLED_REJECT: "Unhandled Rejection at:",
+  REASON: "reason:",
 };
 
 const PLATFORMS = {

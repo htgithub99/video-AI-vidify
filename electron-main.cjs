@@ -19,7 +19,25 @@ function appLog(...args) {
 
 function appLogError(...args) {
   console.error(...args);
+  try {
+    const logPath = path.join(userDataPath, APP_CONFIG.CRASH_LOG);
+    const logData = _.join(args, APP_CONFIG.SPACE) + APP_CONFIG.NEWLINE;
+    fs.appendFileSync(logPath, logData);
+  } catch (error) {
+    _.noop(error);
+  }
 }
+
+function handleUncaughtException(err) {
+  appLogError(MESSAGES.UNCAUGHT_ERR, err.stack || err);
+}
+
+function handleUnhandledRejection(reason, promise) {
+  appLogError(MESSAGES.UNHANDLED_REJECT, promise, MESSAGES.REASON, reason);
+}
+
+process.on(APP_CONFIG.UNCAUGHT_EXCEPTION, handleUncaughtException);
+process.on(APP_CONFIG.UNHANDLED_REJECTION, handleUnhandledRejection);
 
 function ensureDirectoryExists(dirPath) {
   if (!fs.existsSync(dirPath)) {
