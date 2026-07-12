@@ -4,6 +4,20 @@
     "es2021": true,
     "node": true
   },
+  "ignorePatterns": [
+    "dist-desktop",
+    "dist-desktop-v2",
+    "dist-desktop-v3",
+    "dist-desktop-v4",
+    "build-desktop",
+    "electron-dist",
+    "electron-dist-v2",
+    "builds",
+    "dist",
+    "temp_align",
+    "scratch",
+    "node_modules"
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"

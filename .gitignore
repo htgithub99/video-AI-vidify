@@ -58,9 +58,11 @@ projects_backup_json/
 ffmpeg.exe
 diff.txt
 vite.config.ts.timestamp-*
+dist-desktop*/
+build-desktop*/
+electron-dist*/
 builds/
-electron-dist/
-electron-dist-v2/
 temp_align/
 clean-build.ps1
 .vscode/
+package-lock.json

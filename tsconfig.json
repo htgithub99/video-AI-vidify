@@ -26,6 +26,10 @@
   },
   "exclude": [
     "workspace",
-    "scratch"
+    "scratch",
+    "dist-desktop",
+    "builds",
+    "electron-dist",
+    "electron-dist-v2"
   ]
 }

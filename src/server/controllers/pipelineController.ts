@@ -96,6 +96,20 @@ if (fs.existsSync(ffmpegBinary)) {
 
 const router = express.Router();
 
+function parseBase64Image(imgBase64: string): { data: string; mimeType: string } {
+  let base64Data = imgBase64;
+  let mimeType = "image/jpeg";
+
+  if (imgBase64.startsWith("data:")) {
+    const match = imgBase64.match(BASE64_DATA_URL_REGEX);
+    if (match) {
+      mimeType = match[1];
+      base64Data = match[2];
+    }
+  }
+  return { data: base64Data, mimeType };
+}
+
 router.post("/extract-style", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
@@ -110,20 +124,11 @@ router.post("/extract-style", async (req: Request, res: Response) => {
 
     const parts: any[] = [];
     for (const imgBase64 of images) {
-      let base64Data = imgBase64;
-      let mimeType = "image/jpeg";
-
-      if (imgBase64.startsWith("data:")) {
-        const match = imgBase64.match(BASE64_DATA_URL_REGEX);
-        if (match) {
-          mimeType = match[1];
-          base64Data = match[2];
-        }
-      }
+      const { data, mimeType } = parseBase64Image(imgBase64);
       parts.push({
         inlineData: {
-          data: base64Data,
-          mimeType: mimeType,
+          data,
+          mimeType,
         },
       });
     }
@@ -1030,20 +1035,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const bibleParts: any[] = [];
     if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
       for (const imgBase64 of referenceImages.slice(0, 3)) {
-        let base64Data = imgBase64;
-        let mimeType = "image/jpeg";
-
-        if (imgBase64.startsWith("data:")) {
-          const match = imgBase64.match(BASE64_DATA_URL_REGEX);
-          if (match) {
-            mimeType = match[1];
-            base64Data = match[2];
-          }
-        }
+        const { data, mimeType } = parseBase64Image(imgBase64);
         bibleParts.push({
           inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
+            data,
+            mimeType,
           },
         });
       }
@@ -1386,20 +1382,11 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const thumbParts: any[] = [];
     if (visualConfig.thumbnailReferenceImages && Array.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
       for (const imgBase64 of visualConfig.thumbnailReferenceImages.slice(0, 3)) {
-        let base64Data = imgBase64;
-        let mimeType = "image/jpeg";
-
-        if (imgBase64.startsWith("data:")) {
-          const match = imgBase64.match(BASE64_DATA_URL_REGEX);
-          if (match) {
-            mimeType = match[1];
-            base64Data = match[2];
-          }
-        }
+        const { data, mimeType } = parseBase64Image(imgBase64);
         thumbParts.push({
           inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
+            data,
+            mimeType,
           },
         });
       }
