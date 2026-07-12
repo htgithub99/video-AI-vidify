@@ -185,6 +185,7 @@ export const VOICE_PROVIDER_OPTIONS = [
   { value: "minimax", labelKey: "Minimax" },
   { value: "kokoro", labelKey: "Kokoro" },
   { value: "clone", labelKey: "Clone" },
+  { value: "vbee", labelKey: "Vbee" },
 ] as const;
 
 export const VOICE_LANGUAGE_OPTIONS = [
@@ -397,3 +398,53 @@ export const SPLIT_STRATEGY_OPTIONS = [
   { value: SplitStrategy.MIXED_SENTENCES, labelKey: "Mixed_sentences", titleKey: "Mixed_sentences_desc", className: "text-emerald-450 font-bold" },
   { value: SplitStrategy.PARAGRAPH, labelKey: "Paragraph_density", titleKey: "Logical_paragraph_aligned", className: "text-slate-300" },
 ] as const;
+
+export const VOICE_OWNERSHIP_KEY = "voice_ownership";
+export const VOICE_OWNERSHIP_COMMUNITY = "community";
+export const VBEE_PROVIDER_ID = "vbee";
+export const VBEE_VOICE_PREFIXES = ["vbee-", "vbee"];
+
+export const VOICE_PROVIDER_MAPPINGS = [
+  { prefixes: ["gemini-cloud", "preset-"], provider: "Gemini Speech" },
+  { prefixes: ["elevenlabs"], provider: "ElevenLabs" },
+  { prefixes: ["azure-cloud"], provider: "Azure AI" },
+  { prefixes: ["openai-tts"], provider: "OpenAI TTS" },
+  { prefixes: ["google-cloud"], provider: "Google Cloud" },
+  { prefixes: ["fpt-"], provider: "FPT.AI" },
+  { prefixes: ["zalo-"], provider: "Zalo AI" },
+  { prefixes: ["viettel-"], provider: "Viettel AI" },
+  { prefixes: ["vbee-"], provider: "Vbee" },
+];
+
+export const VOICE_DESCRIPTION_KEYS: Record<string, string> = {
+  "preset-vi-bac-female": "Northern_female",
+  "preset-vi-bac-male": "Northern_male",
+  "preset-vi-trung-female": "Central_female",
+  "preset-vi-trung-male": "Central_male",
+  "preset-vi-nam-female": "Southern_female",
+  "preset-vi-nam-male": "Southern_male",
+  "preset-vi-kid": "Playful_kids_voiceover",
+  "gcp-vi-female": "Google_free_female",
+  "gcp-vi-male": "Google_free_male",
+  "gcp-en-female": "Google_free_English_femal",
+  "fpt-vi-female": "FPT_female_monthly",
+  "fpt-vi-male": "FPT_male_monthly",
+  "zalo-vi-female": "Zalo_female_daily",
+  "viettel-vi-male": "Viettel_male_yearly",
+  "gemini-cloud-vi-female": "Hifidelity_female_cloud_A",
+  "gemini-cloud-vi-male": "Hifidelity_male_cloud_AI",
+  "gemini-cloud-vi": "Muff_free_cloud_AI_defaul",
+};
+
+export const VOICE_PAGE_SIZE = "30";
+export const GENDER_OPTIONS = ["", "male", "female"] as const;
+export const AUDIO_PLAYBACK_FAILED_ERR = "AUDIO_PLAYBACK_FAILED";
+
+export const APP_LOCALES = {
+  VI: "vi-VN",
+  EN: "en-US",
+  VI_SHORT: "vi",
+  EN_SHORT: "en",
+} as const;
+
+export const DEFAULT_PROVIDER = "edge";

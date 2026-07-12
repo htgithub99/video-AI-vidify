@@ -984,6 +984,7 @@ export function usePipelineWizard(props: any) {
             gender: gender,
             speed: finalSpeed,
             pitch: finalPitch,
+            ...(voiceURI.startsWith("vbee-") || voiceURI.includes("vbee") ? { voice_ownership: "community" } : {}),
           }),
         });
 
@@ -3442,6 +3443,7 @@ export function usePipelineWizard(props: any) {
           volume: vConfig.volume || 1.0,
           voiceURI: voiceURI,
           voice_id: voiceURI,
+          ...(voiceURI.startsWith("vbee-") || voiceURI.includes("vbee") ? { voice_ownership: "community" } : {}),
         }),
       });
 

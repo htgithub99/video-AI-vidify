@@ -71,3 +71,17 @@ export const FALLBACK_VOICES_PREVIEWS = {
   SONIA: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-gb&client=tw-ob&q=Good+day.+This+is+Sonia,+providing+an+elegant+British+narration.",
   RYAN: "https://translate.google.com/translate_tts?ie=UTF-8&tl=en-gb&client=tw-ob&q=Hello.+My+name+is+Ryan,+a+warm+and+authoritative+voice+from+the+UK.",
 } as const;
+
+export const API_HEADERS = {
+  AI33_API_KEY: "x-ai33-api-key",
+} as const;
+
+export const API_QUERY_PARAMS = {
+  PROVIDER: "provider",
+  PAGE: "page",
+  PAGE_SIZE: "page_size",
+  LANGUAGE: "language",
+  GENDER: "gender",
+  AGE: "age",
+  SEARCH: "search",
+} as const;

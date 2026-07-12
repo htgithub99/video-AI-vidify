@@ -9,7 +9,8 @@ import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
 import PipelineStep6 from "./pipeline/PipelineStep6";
 import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
-import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage } from "../constants";
+import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage, VOICE_PROVIDER_MAPPINGS, VOICE_DESCRIPTION_KEYS } from "../constants";
+import { VOICE_MODIFIERS } from "../constants/defaultConfigs";
 import _ from "lodash";
 
 
@@ -986,61 +987,17 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   let speed = 1.0;
                                   let pitch = 1.0;
                                   const pUri = voice.voiceURI;
-                                  let provider = project.voiceConfig?.provider || "Gemini Speech";
-                                  if (pUri.startsWith("gemini-cloud") || pUri.startsWith("preset-")) {
-                                    provider = "Gemini Speech";
-                                  } else if (pUri.startsWith("elevenlabs")) {
-                                    provider = "ElevenLabs";
-                                  } else if (pUri.startsWith("azure-cloud")) {
-                                    provider = "Azure AI";
-                                  } else if (pUri.startsWith("openai-tts")) {
-                                    provider = "OpenAI TTS";
-                                  } else if (pUri.startsWith("google-cloud")) {
-                                    provider = "Google Cloud";
-                                  } else if (pUri.startsWith("fpt-")) {
-                                    provider = "FPT.AI";
-                                  } else if (pUri.startsWith("zalo-")) {
-                                    provider = "Zalo AI";
-                                  } else if (pUri.startsWith("viettel-")) {
-                                    provider = "Viettel AI";
+                                  const matchedMapping = _.find(VOICE_PROVIDER_MAPPINGS, (mapping) => 
+                                    _.some(mapping.prefixes, (prefix) => _.startsWith(pUri, prefix))
+                                  );
+                                  const provider = matchedMapping ? matchedMapping.provider : (project.voiceConfig?.provider || "Gemini Speech");
+                                  
+                                  const modifiers = VOICE_MODIFIERS[pUri] || (_.includes(pUri, "child") ? VOICE_MODIFIERS["preset-vi-kid"] : null);
+                                  if (modifiers) {
+                                    speed = modifiers.speed;
+                                    pitch = modifiers.pitch;
                                   }
-                                  if (pUri === "preset-vi-bac-female") {
-                                    speed = 1.0;
-                                    pitch = 1.04;
-                                  } else if (pUri === "preset-vi-nam-female") {
-                                    speed = 1.02;
-                                    pitch = 0.94;
-                                  } else if (pUri === "preset-vi-trung-female") {
-                                    speed = 0.85;
-                                    pitch = 0.95;
-                                  } else if (pUri === "preset-vi-trung-male") {
-                                    speed = 1.15;
-                                    pitch = 1.02;
-                                  } else if (pUri === "preset-vi-kid" || _.includes(pUri, "child")) {
-                                    speed = 1.05;
-                                    pitch = 1.22;
-                                  } else if (pUri === "elevenlabs-cloud-vi") {
-                                    speed = 0.95;
-                                    pitch = 0.98;
-                                  } else if (pUri === "azure-cloud-vi-hoaimy") {
-                                    speed = 1.05;
-                                    pitch = 1.1;
-                                  } else if (pUri === "azure-cloud-vi-namminh") {
-                                    speed = 0.98;
-                                    pitch = 0.9;
-                                  } else if (pUri === "google-cloud-vi-a") {
-                                    speed = 1.0;
-                                    pitch = 1.03;
-                                  } else if (pUri === "google-cloud-vi-b") {
-                                    speed = 1.02;
-                                    pitch = 0.95;
-                                  } else if (pUri === "openai-tts-alloy") {
-                                    speed = 1.0;
-                                    pitch = 1.0;
-                                  } else if (pUri === "openai-tts-nova") {
-                                    speed = 1.05;
-                                    pitch = 1.15;
-                                  }
+
                                   const voiceConfigOverride = {
                                     ...project.voiceConfig,
                                     voiceURI: pUri,
@@ -1074,24 +1031,8 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                     <h4 className="text-xs font-black text-slate-100 truncate leading-snug group-hover:text-rose-450 transition-colors shadow-sm">{voice.name?.replace("✨ Giọng", "") || voice.voiceURI}</h4>
                                     <p className="text-[10px] text-slate-450 italic font-medium leading-relaxed mt-1 line-clamp-2">
                                       {(() => {
-                                        if (voice.voiceURI === "preset-vi-bac-female") return t.Northern_female;
-                                        if (voice.voiceURI === "preset-vi-bac-male") return t.Northern_male;
-                                        if (voice.voiceURI === "preset-vi-trung-female") return t.Central_female;
-                                        if (voice.voiceURI === "preset-vi-trung-male") return t.Central_male;
-                                        if (voice.voiceURI === "preset-vi-nam-female") return t.Southern_female;
-                                        if (voice.voiceURI === "preset-vi-nam-male") return t.Southern_male;
-                                        if (voice.voiceURI === "preset-vi-kid") return t.Playful_kids_voiceover;
-                                        if (voice.voiceURI === "gcp-vi-female") return t.Google_free_female;
-                                        if (voice.voiceURI === "gcp-vi-male") return t.Google_free_male;
-                                        if (voice.voiceURI === "gcp-en-female") return t.Google_free_English_femal;
-                                        if (voice.voiceURI === "fpt-vi-female") return t.FPT_female_monthly;
-                                        if (voice.voiceURI === "fpt-vi-male") return t.FPT_male_monthly;
-                                        if (voice.voiceURI === "zalo-vi-female") return t.Zalo_female_daily;
-                                        if (voice.voiceURI === "viettel-vi-male") return t.Viettel_male_yearly;
-                                        if (voice.voiceURI === "gemini-cloud-vi-female") return t.Hifidelity_female_cloud_A;
-                                        if (voice.voiceURI === "gemini-cloud-vi-male") return t.Hifidelity_male_cloud_AI;
-                                        if (voice.voiceURI === "gemini-cloud-vi") return t.Muff_free_cloud_AI_defaul;
-                                        return voice.localService ? t.Offline_system_synthesize : t.Online_speech_voice;
+                                        const descKey = VOICE_DESCRIPTION_KEYS[voice.voiceURI];
+                                        return descKey ? t[descKey as keyof typeof t] : (voice.localService ? t.Offline_system_synthesize : t.Online_speech_voice);
                                       })()}
                                     </p>
                                   </div>

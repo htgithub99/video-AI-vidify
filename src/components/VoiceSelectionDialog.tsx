@@ -7,7 +7,24 @@ import { Button } from "./ui/Button";
 import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { appError } from "../lib/logger.js";
-import { VOICE_PROVIDER_OPTIONS, VOICE_LANGUAGE_OPTIONS, VOICE_AGE_OPTIONS, ErrorMessage } from "../constants";
+import { 
+  VOICE_PROVIDER_OPTIONS, 
+  VOICE_LANGUAGE_OPTIONS, 
+  VOICE_AGE_OPTIONS, 
+  ErrorMessage,
+  VOICE_OWNERSHIP_KEY,
+  VOICE_OWNERSHIP_COMMUNITY,
+  VBEE_PROVIDER_ID,
+  VOICE_PAGE_SIZE,
+  GENDER_OPTIONS,
+  AUDIO_PLAYBACK_FAILED_ERR,
+  APP_LOCALES,
+  DEFAULT_PROVIDER,
+  API_HEADERS,
+  API_QUERY_PARAMS,
+  API_ROUTES,
+  STORAGE_KEYS
+} from "../constants";
 
 export interface Voice {
   voice_id: string;
@@ -36,10 +53,10 @@ interface VoiceSelectionDialogProps {
 }
 
 const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean = false) => {
-  if (!code) return "";
+  if (_.isEmpty(code)) return "";
   try {
-    const localeToUse = lang === "vi" ? "vi-VN" : "en-US";
-    if (isLocale && code.includes("-")) {
+    const localeToUse = _.isEqual(lang, APP_LOCALES.VI_SHORT) ? APP_LOCALES.VI : APP_LOCALES.EN;
+    if (isLocale && _.includes(code, "-")) {
       const regionCode = _.split(code, "-")[1];
       if (regionCode) {
         const regionNames = new Intl.DisplayNames([localeToUse], {
@@ -68,7 +85,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
   const [language, setLanguage] = useState("");
   const [gender, setGender] = useState("");
   const [age, setAge] = useState("");
-  const [provider, setProvider] = useState("edge");
+  const [provider, setProvider] = useState(DEFAULT_PROVIDER);
 
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -83,19 +100,22 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        provider: provider,
-        page: pageNumber.toString(),
-        page_size: "30",
+        [API_QUERY_PARAMS.PROVIDER]: provider,
+        [API_QUERY_PARAMS.PAGE]: String(pageNumber),
+        [API_QUERY_PARAMS.PAGE_SIZE]: VOICE_PAGE_SIZE,
       });
+      if (_.isEqual(provider, VBEE_PROVIDER_ID)) {
+        params.append(VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY);
+      }
 
-      if (language) params.append("language", language);
-      if (gender) params.append("gender", gender);
-      if (age) params.append("age", age);
-      if (search) params.append("search", search);
+      if (!_.isEmpty(language)) params.append(API_QUERY_PARAMS.LANGUAGE, language);
+      if (!_.isEmpty(gender)) params.append(API_QUERY_PARAMS.GENDER, gender);
+      if (!_.isEmpty(age)) params.append(API_QUERY_PARAMS.AGE, age);
+      if (!_.isEmpty(search)) params.append(API_QUERY_PARAMS.SEARCH, search);
 
-      const res = await fetch(`/api/voices?${params.toString()}`, {
+      const res = await fetch(`${API_ROUTES.VOICES}?${params.toString()}`, {
         headers: {
-          "x-ai33-api-key": getStoredApiKey("AI33_API_KEY"),
+          [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
         },
       });
       if (!res.ok) throw new Error(ErrorMessage.FAILED_TO_FETCH);
@@ -155,7 +175,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
   }, [hasMore, loading]);
 
   const handlePlay = (voice: Voice) => {
-    if (playingId === voice.voice_id) {
+    if (_.isEqual(playingId, voice.voice_id)) {
       if (audioRef.current) {
         audioRef.current.pause();
         setPlayingId(null);
@@ -169,7 +189,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
 
     const audio = new Audio(voice.preview_url);
     audio.onended = () => setPlayingId(null);
-    audio.play().catch((e) => appError("AUDIO_PLAYBACK_FAILED", e));
+    audio.play().catch((e) => appError(AUDIO_PLAYBACK_FAILED_ERR, e));
     audioRef.current = audio;
     setPlayingId(voice.voice_id);
   };
@@ -185,9 +205,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
         </div>
       }
     >
-      <div className="flex flex-col md:flex-row h-full min-h-[500px] bg-slate-900">
-        { }
-        <div className="w-full md:w-72 bg-slate-950/40 border-r border-slate-800/80 p-5 flex flex-col gap-6 overflow-y-auto shrink-0">
+      <div className="flex flex-col h-full min-h-[500px] bg-slate-900">
+        <div className="w-full bg-slate-950/40 border-b border-slate-800/80 p-5 shrink-0 z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div className="space-y-2">
             <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <Search className="w-3.5 h-3.5" />
@@ -237,8 +257,8 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               {t.Gender}
             </label>
             <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
-              {_.map(["", "male", "female"], (g) => {
-                const isActive = gender === g;
+              {_.map(GENDER_OPTIONS, (g) => {
+                const isActive = _.isEqual(gender, g);
                 return (
                   <Button variant="unstyled"
                     key={g}
@@ -246,7 +266,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                     onClick={() => setGender(g)}
                     className={cn(`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
                   >
-                    {g === "" ? t.All : g === "male" ? t.Male_5 : t.Female_6}
+                    {_.isEmpty(g) ? t.All : _.isEqual(g, "male") ? t.Male_5 : t.Female_6}
                   </Button>
                 );
               })}
@@ -268,28 +288,28 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
               </select>
             </div>
           </div>
+          </div>
         </div>
 
-        { }
         <div className="flex-1 overflow-y-auto relative p-5">
-          {voices.length === 0 && !loading && (
+          {_.isEmpty(voices) && !loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
               <Mic className="w-16 h-16 mb-4 opacity-20" />
               <p className="text-sm mt-1 opacity-70">{t.No_voices_found}</p>
             </div>
           )}
 
-          {voices.length === 0 && loading && (
+          {_.isEmpty(voices) && loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
               <div className="w-10 h-10 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin mb-4" />
               <p className="text-sm font-medium animate-pulse">{t.Loading_7}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {_.map(voices, (voice) => {
-              const isSelected = selectedVoiceId === voice.voice_id;
-              const isPlaying = playingId === voice.voice_id;
+              const isSelected = _.isEqual(selectedVoiceId, voice.voice_id);
+              const isPlaying = _.isEqual(playingId, voice.voice_id);
 
               return (
                 <div key={voice.voice_id} className={cn(`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${isSelected ? "bg-rose-500/5 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/20" : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-850 shadow-sm"}`)} onClick={() => onSelectVoice(voice)}>
@@ -320,7 +340,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
                           title={t.favorite}
                         >
-                          <Heart className={cn(`w-4 h-4 transition-all duration-200 ${_.some(favoriteVoices, (v) => v.voiceURI === voice.voice_id) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`)} />
+                          <Heart className={cn(`w-4 h-4 transition-all duration-200 ${_.some(favoriteVoices, (v) => _.isEqual(v.voiceURI, voice.voice_id)) ? "text-rose-500 fill-rose-500 scale-110" : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"}`)} />
                         </Button>
                         {isSelected && (
                           <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
@@ -348,7 +368,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                             const lowerTag = _.toLower(String(tag));
                             const lowerLocale = _.toLower(voice.locale);
                             const lowerLang = _.toLower(voice.language);
-                            return lowerTag !== lowerLocale && lowerTag !== lowerLang;
+                            return !_.includes([lowerLocale, lowerLang], lowerTag);
                           }),
                           (tag, idx) => (
                             <span key={`tag-${idx}`} className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap">
@@ -371,7 +391,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
 
           <div ref={observerTarget} className="h-4 w-full mt-4" />
 
-          {loading && voices.length > 0 && (
+          {loading && !_.isEmpty(voices) && (
             <div className="py-8 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin" />
               <span className="text-sm text-slate-400 animate-pulse">{t.Loading_8}</span>
