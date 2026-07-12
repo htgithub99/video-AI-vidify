@@ -331,7 +331,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 </div>
 
                 <Button
-                  variant="ghost"
+                  variant="unstyled"
                   type="button"
                   onClick={() =>
                     setProject((prev) => ({
@@ -342,9 +342,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={cn(`w-11 h-6 flex items-center rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 ${project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850"}`)}
+                  className={cn(`w-11 h-6 flex items-center justify-start rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 shrink-0 ${project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850"}`)}
                 >
-                  <div className={cn(`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${project.config.factCheck ? "translate-x-5" : "translate-x-0"}`)} />
+                  <div className={cn(`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 shrink-0 ${project.config.factCheck ? "translate-x-5" : "translate-x-0"}`)} />
                 </Button>
               </div>{" "}
               <div className="pt-4 border-t border-slate-800 space-y-4">
