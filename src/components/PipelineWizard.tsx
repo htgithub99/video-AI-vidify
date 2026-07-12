@@ -9,7 +9,9 @@ import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
 import PipelineStep6 from "./pipeline/PipelineStep6";
 import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
-import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS } from "../constants";
+import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage } from "../constants";
+import _ from "lodash";
+
 
 import { motion, AnimatePresence } from "framer-motion";
 import * as LucideIcons from "lucide-react";
@@ -138,9 +140,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     const curProvider = project.voiceConfig?.provider || COMMON_STRINGS.CUSTOM;
 
     if (!curURI) return;
-    if (favoriteVoices.some((v) => v.voiceURI === curURI)) {
+    if (_.some(favoriteVoices, (v) => v.voiceURI === curURI)) {
       setInfoMsg(t.saveVoiceSuccess);
-      setTimeout(() => setInfoMsg(""), 3000);
+      setTimeout(() => setInfoMsg(""), APP_CONFIG.TOAST_DURATION);
       return;
     }
 
@@ -323,7 +325,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   )}
 
                   <div className="space-y-1.5">
-                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Batch_Delay || (currentLang === "vi" ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}</div>
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Batch_Delay || (currentLang === AppLanguage.VI ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}</div>
                     <div className="relative">
                       <select
                         value={project.visualConfig.batchDelay || BatchDelayOption.Default}
@@ -331,9 +333,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
                       >
                         {BATCH_DELAY_OPTIONS.map((opt) => {
-                          const label = t[opt.labelKey as keyof typeof t] || (currentLang === "vi" ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) || opt.value;
+                          const label = t[opt.labelKey as keyof typeof t] || (currentLang === AppLanguage.VI ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) || opt.value;
                           return (
-                            <option key={opt.value} value={opt.value}>
+                            <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
                               {label}
                             </option>
                           );
@@ -351,13 +353,13 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                         className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
                       >
                         {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? [
-                          <option key="gemini-pro" value={ImageGeneratorEngine.Imagen}>{t.Gemini_Pro}</option>,
-                          <option key="gemini-flash" value={ImageGeneratorEngine.Veo3}>{t.Gemini_Flash}</option>,
-                          <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox}>{t.Gemini_Flash_Lite}</option>
+                          <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Gemini_Pro}</option>,
+                          <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Gemini_Flash}</option>,
+                          <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Gemini_Flash_Lite}</option>
                         ] : [
-                          <option key="imagen-3" value={ImageGeneratorEngine.Imagen}>{t.Imagen_3}</option>,
-                          <option key="nano-banana" value={ImageGeneratorEngine.Veo3}>{t.Nano_Banana_2}</option>,
-                          <option key="labs-sandbox" value={ImageGeneratorEngine.LabsSandbox}>{t.Labs_Sandbox}</option>
+                          <option key="imagen-3" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Imagen_3}</option>,
+                          <option key="nano-banana" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Nano_Banana_2}</option>,
+                          <option key="labs-sandbox" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Labs_Sandbox}</option>
                         ]}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -422,7 +424,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       onClick={() => {
                                         navigator.clipboard.writeText(item.name);
                                         setInfoMsg(t.voiceNameCopied);
-                                        setTimeout(() => setInfoMsg(""), 3000);
+                                        setTimeout(() => setInfoMsg(""), APP_CONFIG.TOAST_DURATION);
                                       }}
                                       title={t.copyVoiceName}
                                       className="p-0.5 hover:bg-slate-850 rounded text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto"
@@ -440,7 +442,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                       onClick={() => {
                                         navigator.clipboard.writeText(item.voiceURI);
                                         setInfoMsg(t.voiceIdCopied);
-                                        setTimeout(() => setInfoMsg(""), 3000);
+                                        setTimeout(() => setInfoMsg(""), APP_CONFIG.TOAST_DURATION);
                                       }}
                                       title="Copy Voice ID"
                                       className="p-0.5 hover:bg-slate-850 rounded text-slate-550 hover:text-slate-350 shadow-none h-auto w-auto"
@@ -553,7 +555,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                         e.stopPropagation();
                                         navigator.clipboard.writeText(item.prompt);
                                         setInfoMsg(t.stylePromptCopied);
-                                        setTimeout(() => setInfoMsg(""), 3000);
+                                        setTimeout(() => setInfoMsg(""), APP_CONFIG.TOAST_DURATION);
                                       }}
                                       title={t.copyStyleDesc}
                                       className="shrink-0 p-1.5 bg-slate-900 hover:bg-slate-850 border border-transparent hover:border-slate-700 rounded-lg text-slate-400 hover:text-slate-200 shadow-none h-auto w-auto transition-all"
@@ -942,12 +944,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-950/15 select-none custom-scrollbar min-h-[280px] max-h-[48vh]">
                     {(() => {
                       const filtered = systemVoices.filter((voice) => {
-                        if (voiceLangFilter === "vi" && !voice.lang.toLowerCase().startsWith("vi")) return false;
+                        if (voiceLangFilter === AppLanguage.VI && !voice.lang.toLowerCase().startsWith("vi")) return false;
                         if (voiceLangFilter === "en" && !voice.lang.toLowerCase().startsWith("en")) return false;
 
                         if (voiceSearch) {
                           const q = voiceSearch.toLowerCase();
-                          if (![voice.name, voice.lang, voice.voiceURI].some((field) => field.toLowerCase().includes(q))) return false;
+                          if (!_.some([voice.name, voice.lang, voice.voiceURI], (field) => _.includes(field.toLowerCase(), q))) return false;
                         }
 
                         const voiceGender = getVoiceGender(voice);
@@ -1014,7 +1016,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   } else if (pUri === "preset-vi-trung-male") {
                                     speed = 1.15;
                                     pitch = 1.02;
-                                  } else if (pUri === "preset-vi-kid" || pUri.includes("child")) {
+                                  } else if (pUri === "preset-vi-kid" || _.includes(pUri, "child")) {
                                     speed = 1.05;
                                     pitch = 1.22;
                                   } else if (pUri === "elevenlabs-cloud-vi") {
