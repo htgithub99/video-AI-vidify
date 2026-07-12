@@ -207,7 +207,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             <div className="relative">
               <select value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
                 {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
                 ))}
@@ -223,7 +223,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             <div className="relative">
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
                 {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
                 ))}
@@ -261,7 +261,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             <div className="relative">
               <select value={age} onChange={(e) => setAge(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-3 pr-8 py-2.5 text-sm text-slate-200 outline-none appearance-none transition-all shadow-sm">
                 {_.map(VOICE_AGE_OPTIONS, (opt) => (
-                  <option key={opt.value} value={opt.value}>
+                  <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
                     {t[opt.labelKey as keyof typeof t] || opt.value}
                   </option>
                 ))}
