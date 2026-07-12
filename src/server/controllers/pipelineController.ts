@@ -87,6 +87,12 @@ import os from "os";
 import { exec, spawn } from "child_process";
 import { StepLogger } from "@/src/lib/stepLogger.js";
 import { generateMockStoryboard, smartSplitSentences } from "@/src/lib/textProcessor.js";
+import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
+
+const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
+if (fs.existsSync(ffmpegBinary)) {
+  ffmpeg.setFfmpegPath(ffmpegBinary);
+}
 
 const router = express.Router();
 
@@ -1685,7 +1691,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
       return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
     }
 
-    const tempDir = path.join(process.cwd(), ALIGN_CONFIG.TEMP_DIR);
+    const tempDir = path.join(getDataDirectory(), ALIGN_CONFIG.TEMP_DIR);
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
@@ -1700,15 +1706,16 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
     fs.writeFileSync(scenesPath, JSON.stringify(scenes, null, 2), "utf-8");
 
-    const scriptPath = path.join(process.cwd(), ALIGN_CONFIG.SCRIPT_FILE);
+    const scriptPath = getStaticResourcePath(ALIGN_CONFIG.SCRIPT_FILE);
 
-    const checkCmd = `python3 -c "import whisperx"`;
+    const pyCmd = getPythonCommand();
+    const checkCmd = `"${pyCmd}" -c "import whisperx"`;
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = `python3 -m pip install whisperx`;
+        const installCmd = `"${pyCmd}" -m pip install whisperx`;
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
@@ -1733,9 +1740,10 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     });
 
     const runAligner = () => {
-      let cmd = `python3 "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
+      const pyCmd = getPythonCommand();
+      let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       if (segment && projectId) {
-        const outputDir = path.join(process.cwd(), "assets", "projects", projectId, "voices");
+        const outputDir = path.join(getDataDirectory(), "assets", "projects", projectId, "voices");
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
@@ -1815,7 +1823,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
   const tempOutputPath = filePath + ".ultra_tmp";
   const uniqueId = randomUUID().substring(0, 8);
-  const optsJsonPath = path.join(process.cwd(), `ultra_opts_${uniqueId}.json`);
+  const optsJsonPath = path.join(getDataDirectory(), `ultra_opts_${uniqueId}.json`);
 
   const cmdOpts = {
     ...opts,
@@ -1829,8 +1837,10 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     res.setHeader(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.NDJSON);
     res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
 
-    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} python3 -u capcut_ultra_tool.py "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
-    const pythonProcess = spawn("python3", ["-u", "capcut_ultra_tool.py", filePath, tempOutputPath, optsJsonPath]);
+    const pyCmd = getPythonCommand();
+    const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
+    const pythonProcess = spawn(pyCmd, ["-u", scriptPath, filePath, tempOutputPath, optsJsonPath]);
 
     pythonProcess.stdout.on("data", (data) => {
       const lines = data.toString().split("\n");
@@ -1939,7 +1949,9 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
 router.post("/select-file", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const cmd = `python3 capcut_ultra_tool.py select-file`;
+  const pyCmd = getPythonCommand();
+  const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+  const cmd = `"${pyCmd}" "${scriptPath}" select-file`;
   logger.log(getBackendMsg("ULTRA_RUN_SELECT_FILE", isVi).replace("{0}", cmd));
 
   exec(cmd, (error, stdout, stderr) => {
@@ -1953,7 +1965,9 @@ router.post("/select-file", async (req: Request, res: Response) => {
 
 router.post("/select-folder", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const cmd = `python3 capcut_ultra_tool.py select-folder`;
+  const pyCmd = getPythonCommand();
+  const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+  const cmd = `"${pyCmd}" "${scriptPath}" select-folder`;
   logger.log(getBackendMsg("ULTRA_RUN_SELECT_FOLDER", isVi).replace("{0}", cmd));
 
   exec(cmd, (error, stdout, stderr) => {
@@ -1982,8 +1996,8 @@ router.post("/export-zip", async (req: Request, res: Response) => {
 
     if (!_.isEmpty(voiceUrl) && !_.isEmpty(scenes)) {
       const relativeAudioPath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
-      const fullAudioPath = path.join(process.cwd(), relativeAudioPath);
-      const voicesDir = path.join(process.cwd(), "assets", "projects", projectId, "voices");
+      const fullAudioPath = path.join(getDataDirectory(), relativeAudioPath);
+      const voicesDir = path.join(getDataDirectory(), "assets", "projects", projectId, "voices");
 
       if (!fs.existsSync(voicesDir)) {
         fs.mkdirSync(voicesDir, { recursive: true });
@@ -1992,7 +2006,9 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       if (fs.existsSync(fullAudioPath)) {
         const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
           return new Promise((resolve) => {
-            const cmd = `ffmpeg -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
+            const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
+            const ffmpegCmd = fs.existsSync(ffmpegBinary) ? `"${ffmpegBinary}"` : "ffmpeg";
+            const cmd = `${ffmpegCmd} -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
             exec(cmd, (err) => {
               if (err) {
                 logger.error(`Error cutting segment for ZIP: ${cmd}`, err);
@@ -2041,7 +2057,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       const filename = `${index + 1}_image.jpg`;
       if (sc.assetUrl) {
         const relativePath = sc.assetUrl.startsWith('/') ? sc.assetUrl.slice(1) : sc.assetUrl;
-        const fullPath = path.join(process.cwd(), relativePath);
+        const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const imgBuffer = fs.readFileSync(fullPath);
           zip.file(`${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`, imgBuffer);
@@ -2056,7 +2072,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       const filename = `${index + 1}_voice.wav`;
       if (sc.audioUrl) {
         const relativePath = sc.audioUrl.startsWith('/') ? sc.audioUrl.slice(1) : sc.audioUrl;
-        const fullPath = path.join(process.cwd(), relativePath);
+        const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const audioBuffer = fs.readFileSync(fullPath);
           zip.file(`${folderKey}/Resources/voices/${filename}`, audioBuffer);
@@ -2069,7 +2085,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
 
     if (voiceUrl) {
       const relativePath = voiceUrl.startsWith('/') ? voiceUrl.slice(1) : voiceUrl;
-      const fullPath = path.join(process.cwd(), relativePath);
+      const fullPath = path.join(getDataDirectory(), relativePath);
       if (fs.existsSync(fullPath)) {
         const fullAudioBuffer = fs.readFileSync(fullPath);
         zip.file(`${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`, fullAudioBuffer);

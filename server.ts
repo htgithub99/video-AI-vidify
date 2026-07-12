@@ -3,70 +3,87 @@ import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { exec } from "child_process";
+import _ from "lodash";
 
 import { logger } from "./src/lib/logger.js";
-
-import {
-  initPlaywright,
-  closePlaywright,
-} from "./src/server/services/audioService.js";
-
+import { initPlaywright, closePlaywright } from "./src/server/services/audioService.js";
 import mainRouter from "./src/server/routes/index.js";
 import pipelineRouter from "./src/server/controllers/pipelineController.js";
-
 import { API_ROUTES } from "./src/constants/apiRoutes.js";
+import { requestContext } from "./src/server/utils/requestContext.js";
+import { getDataDirectory } from "./src/server/utils/paths.js";
+
+const SERVER_CONFIG = {
+  PORT: 3002,
+  HOST: "0.0.0.0",
+  PRODUCTION: "production",
+  SIGINT: "SIGINT",
+  SIGTERM: "SIGTERM",
+  WIN32: "win32",
+  ASSETS_ROUTE: "/assets",
+  ASSETS_DIR: "assets",
+  DIST_DIR: "dist",
+  INDEX_FILE: "index.html",
+  SPA_TYPE: "spa" as const,
+  CORS_ORIGIN: "*",
+  CORS_METHODS: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  CORS_HEADERS: [
+    "Content-Type",
+    "Authorization",
+    "x-api-key",
+    "x-gemini-api-key",
+    "x-ai33-api-key"
+  ],
+  LIMIT_500MB: "500mb",
+  HEADER_GEMINI_KEY: "x-gemini-api-key",
+  HEADER_AI33_KEY: "x-ai33-api-key",
+  KILL_CHROME_WIN: `wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`,
+  KILL_CHROME_UNIX: `pkill -f "chrome.*--remote-debugging-port=9222"`,
+  TIMEOUT_SHUTDOWN: 3000,
+} as const;
 
 const app = express();
-const port = 3002;
-
-import { requestContext } from "./src/server/utils/requestContext.js";
 
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "x-api-key",
-      "x-gemini-api-key",
-      "x-ai33-api-key",
-    ],
+    origin: SERVER_CONFIG.CORS_ORIGIN,
+    methods: [...SERVER_CONFIG.CORS_METHODS],
+    allowedHeaders: [...SERVER_CONFIG.CORS_HEADERS],
   }),
 );
 
-app.use(express.json({ limit: "500mb" }));
-app.use(express.urlencoded({ limit: "500mb", extended: true }));
+app.use(express.json({ limit: SERVER_CONFIG.LIMIT_500MB }));
+app.use(express.urlencoded({ limit: SERVER_CONFIG.LIMIT_500MB, extended: true }));
 
 app.use((req, res, next) => {
-  const geminiKey = (req.headers["x-gemini-api-key"] as string) || "";
-  const ai33Key = (req.headers["x-ai33-api-key"] as string) || "";
+  const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || "";
+  const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || "";
   requestContext.run({ geminiKey, ai33Key }, next);
 });
 
-app.use('/assets', express.static(path.join(process.cwd(), 'assets')));
+app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
 app.use(API_ROUTES.BASE_API, mainRouter);
 app.use(API_ROUTES.PIPELINE, pipelineRouter);
 
 const startServer = async () => {
   await initPlaywright();
 
-  if (process.env.NODE_ENV !== "production") {
+  if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: SERVER_CONFIG.SPA_TYPE,
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    const distPath = path.join(process.cwd(), SERVER_CONFIG.DIST_DIR);
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      res.sendFile(path.join(distPath, SERVER_CONFIG.INDEX_FILE));
     });
   }
 
-  app.listen(port, "0.0.0.0", () => {
-    logger.log("SERVER_RUNNING", port);
+  app.listen(SERVER_CONFIG.PORT, SERVER_CONFIG.HOST, () => {
+    logger.log("SERVER_RUNNING", SERVER_CONFIG.PORT);
   });
 };
 
@@ -74,32 +91,21 @@ startServer().catch((error) => {
   logger.error("SERVER_START_ERROR", error);
 });
 
-// npx kill-port 3000
-process.on("SIGINT", async () => {
+const shutdownGracefully = async () => {
   logger.log("PLAYWRIGHT_CLEANING");
-  setTimeout(() => process.exit(0), 3000);
-  try { await closePlaywright(); } catch (e) { }
-  if (process.platform === "win32") {
-    exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
-      process.exit(0);
-    });
-  } else {
-    exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
-      process.exit(0);
-    });
-  }
-});
-process.on("SIGTERM", async () => {
-  logger.log("PLAYWRIGHT_CLEANING");
-  setTimeout(() => process.exit(0), 3000);
-  try { await closePlaywright(); } catch (e) { }
-  if (process.platform === "win32") {
-    exec(`wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`, () => {
-      process.exit(0);
-    });
-  } else {
-    exec(`pkill -f "chrome.*--remote-debugging-port=9222"`, () => {
-      process.exit(0);
-    });
-  }
-});
+  setTimeout(() => process.exit(0), SERVER_CONFIG.TIMEOUT_SHUTDOWN);
+  try {
+    await closePlaywright();
+  } catch (e) {}
+
+  const killCmd = _.isEqual(process.platform, SERVER_CONFIG.WIN32)
+    ? SERVER_CONFIG.KILL_CHROME_WIN
+    : SERVER_CONFIG.KILL_CHROME_UNIX;
+
+  exec(killCmd, () => {
+    process.exit(0);
+  });
+};
+
+process.on(SERVER_CONFIG.SIGINT, shutdownGracefully);
+process.on(SERVER_CONFIG.SIGTERM, shutdownGracefully);
