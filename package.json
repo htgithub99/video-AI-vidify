@@ -95,6 +95,7 @@
         "files": [
             "dist/**/*",
             "electron-main.cjs",
+            "electron-config.cjs",
             "package.json",
             "!builds/**/*",
             "!dist-desktop/**/*"
