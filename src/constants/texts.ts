@@ -372,3 +372,17 @@ export const SIDEBAR_TEXTS = {
   },
 } as const;
 
+export const PLAYER_SIMULATION_CONFIG = {
+  ZOOM_IN_MOTIONS: ["Zoom In"] as string[],
+  ZOOM_OUT_MOTIONS: ["Zoom Out"] as string[],
+  MIN_PROGRESS: 0,
+  MAX_PROGRESS_PERCENT: 100,
+  PROGRESS_STEP: 0.5,
+  PROGRESS_INTERVAL_MS: 100,
+} as const;
+
+export const BUTTON_TOOLTIP_PREFIX = {
+  VI: "Chức năng: ",
+  EN: "Function: ",
+} as const;
+

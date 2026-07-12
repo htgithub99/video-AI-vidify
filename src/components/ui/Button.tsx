@@ -1,6 +1,17 @@
 import { cn } from "../../lib/utils";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
+import { BUTTON_TOOLTIP_PREFIX, DETECTOR_VIETNAMESE_REGEX } from "../../constants";
+
+const getChildrenText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined) return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getChildrenText).join(" ").trim();
+  if (React.isValidElement(node)) {
+    return getChildrenText(node.props.children);
+  }
+  return "";
+};
 
 export const Button: React.FC<IBaseButtonProps> = ({ 
   children, 
@@ -33,10 +44,21 @@ export const Button: React.FC<IBaseButtonProps> = ({
   const variantStyles = variants[variant] ?? variants.primary;
   const finalBaseStyles = variant === "unstyled" ? "" : baseStyles;
 
+  const cleanText = getChildrenText(children).trim();
+  let computedTitle = props.title;
+  if (!computedTitle && cleanText) {
+    if (DETECTOR_VIETNAMESE_REGEX.test(cleanText)) {
+      computedTitle = `${BUTTON_TOOLTIP_PREFIX.VI}${cleanText}`;
+    } else {
+      computedTitle = `${BUTTON_TOOLTIP_PREFIX.EN}${cleanText}`;
+    }
+  }
+
   return (
     <button 
       className={cn(finalBaseStyles, sizeStyles, variantStyles, className)} 
       disabled={disabled || isLoading} 
+      title={computedTitle}
       {...props}
     >
       {isLoading ? (

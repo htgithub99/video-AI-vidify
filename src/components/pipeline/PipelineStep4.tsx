@@ -5,37 +5,29 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
-import { EXPORT_TYPES, EXPORT_URLS } from "../../constants";
+import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
 import { appError } from "../../lib/logger";
 
 const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
-
-const ZOOM_IN_MOTIONS = ["Zoom In"];
-const ZOOM_OUT_MOTIONS = ["Zoom Out"];
-const MIN_PROGRESS = 0;
-const MAX_PROGRESS_PERCENT = 100;
-const PROGRESS_STEP = 0.5;
-const PROGRESS_INTERVAL_MS = 100;
-const ERROR_FULLSCREEN = "Error attempting to enable fullscreen: {0}";
 
 export default function PipelineStep4(props: PipelineWizardState) {
   const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
 
   const playerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fakeProgress, setFakeProgress] = useState(MIN_PROGRESS);
+  const [fakeProgress, setFakeProgress] = useState<number>(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
 
   useEffect(() => {
     let interval: any;
     if (isPlayingSim) {
       interval = setInterval(() => {
         setFakeProgress((prev) => {
-          if (prev >= MAX_PROGRESS_PERCENT) return MIN_PROGRESS;
-          return prev + PROGRESS_STEP;
+          if (prev >= PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT) return PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
+          return prev + PLAYER_SIMULATION_CONFIG.PROGRESS_STEP;
         });
-      }, PROGRESS_INTERVAL_MS);
+      }, PLAYER_SIMULATION_CONFIG.PROGRESS_INTERVAL_MS);
     } else {
-      setFakeProgress(MIN_PROGRESS);
+      setFakeProgress(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
     }
     return () => clearInterval(interval);
   }, [isPlayingSim]);
@@ -43,7 +35,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const percentage = Math.max(MIN_PROGRESS, Math.min(MAX_PROGRESS_PERCENT, (x / rect.width) * MAX_PROGRESS_PERCENT));
+    const percentage = Math.max(
+      PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
+      Math.min(PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT)
+    );
     setFakeProgress(percentage);
   };
 
@@ -58,7 +53,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       playerRef.current?.requestFullscreen().catch((err) => {
-        appError(ERROR_FULLSCREEN.replace("{0}", err.message));
+        appError(t.fullscreenError.replace("{error}", err.message));
       });
     } else {
       document.exitFullscreen();
@@ -67,8 +62,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   const getZoomClass = (motion: string) => {
     if (!isPlayingSim) return "";
-    if (ZOOM_IN_MOTIONS.includes(motion)) return "scale-110";
-    if (ZOOM_OUT_MOTIONS.includes(motion)) return "scale-90";
+    if (PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS.includes(motion)) return "scale-110";
+    if (PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS.includes(motion)) return "scale-90";
     return "";
   };
 
@@ -236,7 +231,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 </div>
 
                 <div className="flex items-center gap-4 text-white">
-                  <button className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none">
+                  <button className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Settings || "Cấu hình"}>
                     <Settings2 className="w-5 h-5 cursor-pointer" />
                   </button>
                   <button onClick={toggleFullscreen} className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Fullscreen || "Toàn màn hình"}>
@@ -247,11 +242,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </div>
           </div>
         </div>
-
+ 
         <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-6 shadow-2xl relative overflow-visible">
           <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
           <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
-
+ 
           <div className="grid grid-cols-1 gap-3.5 text-xs">
             {exportButtons.map((btn, index) => {
               const Icon = btn.icon;
@@ -265,6 +260,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     btn.isPrimary 
                       ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100") 
                       : "bg-slate-950 hover:bg-slate-850 border-slate-800 text-slate-200 hover:text-slate-100")}
+                  title={btn.desc}
                 >
                   <div className="text-left flex-1">
                     <span className={cn("font-bold block flex items-center gap-1.5", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
@@ -278,23 +274,24 @@ export default function PipelineStep4(props: PipelineWizardState) {
               )
             })}
           </div>
-
+ 
           <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl space-y-2">
             <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">{t.Cloud_Exporter_Sync_Setup}</span>
             <div className="flex gap-2">
               <input type="text" placeholder={EXPORT_URLS.DEFAULT_S3_BUCKET} className="w-full bg-slate-900 text-slate-350 text-[11px] p-2 rounded focus:outline-none placeholder-slate-600 border border-slate-800" />
-              <Button variant="primary" size="xs" onClick={() => setInfoMsg(t.Configured_bucket_coordin)}>
+              <Button variant="primary" size="xs" onClick={() => setInfoMsg(t.Configured_bucket_coordin)} title={t.Save}>
                 {t.Save}
               </Button>
             </div>
           </div>
-
+ 
           <div className="pt-4 border-t border-slate-800 flex items-center justify-start mt-6">
             <Button 
               variant="secondary" 
               size="md" 
               onClick={() => setCurrentStep(WizardStep.SEOBoost)} 
               className="flex items-center gap-1.5 px-5 py-3 shadow"
+              title={t.Back}
             >
               <ArrowLeft className="w-4 h-4" />
               {t.Back}

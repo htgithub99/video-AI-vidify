@@ -77,3 +77,5 @@ export const SENTENCE_PUNCTUATION_END_REGEX = /[伤害,.;:—\-\s]+$/;
 export const DIGIT_REGEX = /\d/;
 export const ENDS_WITH_DIGIT_REGEX = /\d$/;
 export const STARTS_WITH_DIGIT_REGEX = /^\d/;
+
+export const DETECTOR_VIETNAMESE_REGEX = /[áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]/i;

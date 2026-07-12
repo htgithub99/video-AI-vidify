@@ -264,6 +264,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         disabled={!!loadingStates["extractThumbnailStyle"]}
                         isLoading={!!loadingStates["extractThumbnailStyle"]}
                         className="flex-1 text-white font-bold text-[10px] active:scale-95"
+                        title={t.System_extracts_Style_Art || t.Extract_Style}
                       >
                         <Sparkles className="w-3 h-3 text-rose-100" />
                         <span>{t.Extract_Style}</span>
@@ -276,6 +277,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           disabled={!!loadingStates["applyThumbnailStyle"]}
                           isLoading={!!loadingStates["applyThumbnailStyle"]}
                           className="flex-1 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] rounded flex items-center justify-center gap-1.5 shadow-none transition-all cursor-pointer border border-amber-500/30 active:scale-95 py-2 h-auto"
+                          title={t.Apply_Style}
                         >
                           <Check className="w-3 h-3 text-amber-100" />
                           <span>{t.Apply_Style}</span>
@@ -305,7 +307,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
             {!project.visualConfig?.characters || project.visualConfig.characters.length === 0 ? (
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 text-[11px] text-slate-355 leading-relaxed italic">{t.charNotAnalyzed}</div>
-                <Button type="button" variant="primary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="sm">
+                <Button type="button" variant="primary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="sm" title={t.charAnalyzeBtn}>
                   {loadingStates["analyzeCharacter"] ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                   {t.charAnalyzeBtn}
                 </Button>
@@ -315,7 +317,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 <div className="flex items-center justify-between border-b border-slate-850 pb-2">
                   <span className="text-[10px] text-slate-400 font-mono">{t.charDetectedCount.replace("{count}", project.visualConfig.characters.length.toString())}</span>
                   <div className="flex items-center gap-2">
-                    <Button type="button" variant="secondary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="xs">
+                    <Button type="button" variant="secondary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="xs" title={t.charReAnalyze}>
                       <RefreshCw className={cn(`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`)} />
                       {t.charReAnalyze}
                     </Button>
@@ -327,6 +329,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         disabled={!!loadingStates["applyCharacter"]}
                         isLoading={!!loadingStates["applyCharacter"]}
                         className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[10px] px-3 py-1.5 rounded flex items-center justify-center gap-1.5 transition-all shadow-none border border-amber-500/30 active:scale-95 h-auto"
+                        title={t.Apply_Character_Thumbnails}
                       >
                         <Check className="w-2.5 h-2.5 text-amber-100" />
                         <span>{t.Apply_Character_Thumbnails}</span>
@@ -432,7 +435,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                                 return {
                                                   ...c,
                                                   images: newImgs,
-                                                };
+                                                  };
                                               }
                                               return c;
                                             });
@@ -447,6 +450,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                           });
                                         }}
                                         className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 hover:bg-rose-600 hover:text-white border border-rose-400/50 rounded-full flex items-center justify-center text-white transition-all z-20 backdrop-blur-sm opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 shadow-none p-0 cursor-pointer h-auto min-w-0"
+                                        title={t.Remove || "Xóa"}
                                       >
                                         <X className="w-1.5 h-1.5" />
                                       </Button>
@@ -476,6 +480,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                     setTimeout(() => setInfoMsg(""), 3000);
                                   }}
                                   className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto"
+                                  title={t.Copy || "Sao chép"}
                                 >
                                   <Copy className="w-2.5 h-2.5" />
                                 </Button>
@@ -496,6 +501,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             onClick={() => handleExtractCharacter(char.id)}
                             disabled={isExtracting || !char.images?.length}
                             className="w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:text-white disabled:from-slate-800 disabled:to-slate-850 disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold text-[9px] rounded flex items-center justify-center gap-1 shadow-none transition-all cursor-pointer border border-emerald-500/30 h-auto"
+                            title={t.charExtractBtn || "Trích xuất đặc tả"}
                           >
                             {isExtracting ? (
                               <>
@@ -704,7 +710,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           title={t.Render_YouTube_mockup_thu}
                         >
                           <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
-                          <span className="relative z-10">{t.Render_Mockup}</span>
+                          <span className="relative z-10">{thumb.imageUrl ? (t.Recreate_Mockup) : t.Render_Mockup}</span>
                         </Button>
                         {thumb.imageUrl && (
                           <Button
@@ -729,11 +735,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 px-5 py-3 shadow">
+          <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Back}>
             <ArrowLeft className="w-4 h-4" />
             {t.Back}
           </Button>
-          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 px-5 py-3 shadow">
+          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Continue}>
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
           </Button>

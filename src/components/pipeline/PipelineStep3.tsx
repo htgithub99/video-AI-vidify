@@ -207,6 +207,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                           setInfoMsg(t.Copied_description_to_cli);
                         }}
                         className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
+                        title={t.Copy}
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -247,7 +248,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_hashtags}</span>
                     ))}
                   {(project.seo?.hashtags || []).map((tag, i) => (
-                    <span key={i} className="bg-slate-900 text-slate-700 dark:text-slate-300 font-mono text-[11px] px-2.5 py-1.5 rounded-lg border-none">
+                    <span key={i} className="bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
                       #{tag.replace(/^#+/, "")}
                     </span>
                   ))}
@@ -282,7 +283,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_keywords}</span>
                     ))}
                   {(project.seo?.tags || []).map((tag, i) => (
-                    <span key={i} className="bg-slate-905 text-slate-700 dark:text-slate-300 font-sans text-[10px] px-2 py-1 rounded border-none">
+                    <span key={i} className="bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
                       {tag}
                     </span>
                   ))}
@@ -293,20 +294,22 @@ export default function PipelineStep3(props: PipelineWizardState) {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <Button 
-            variant="secondary" 
-            size="md" 
-            onClick={() => setCurrentStep(WizardStep.AssetManager)} 
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setCurrentStep(WizardStep.AssetManager)}
             className="flex items-center gap-1.5 px-5 py-3 shadow"
+            title={t.Back}
           >
             <ArrowLeft className="w-4 h-4" />
             {t.Back}
           </Button>
-          <Button 
-            variant="primary" 
-            size="md" 
-            onClick={() => setCurrentStep(WizardStep.Export)} 
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setCurrentStep(WizardStep.Export)}
             className="flex items-center gap-1.5 px-5 py-3 shadow"
+            title={t.Continue}
           >
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
