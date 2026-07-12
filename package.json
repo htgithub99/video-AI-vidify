@@ -81,8 +81,7 @@
         },
         "win": {
             "target": [
-                "nsis",
-                "portable"
+                "zip"
             ]
         },
         "nsis": {
@@ -90,7 +89,8 @@
             "allowToChangeInstallationDirectory": true,
             "createDesktopShortcut": true,
             "createStartMenuShortcut": true,
-            "shortcutName": "Video Workspace"
+            "shortcutName": "Video Workspace",
+            "differentialPackage": false
         },
         "files": [
             "dist/**/*",
@@ -106,6 +106,9 @@
             "ffmpeg.exe",
             "database.db"
         ],
-        "asar": false
+        "asar": true,
+        "asarUnpack": [
+            "**/*.{node,dll,exe,py}"
+        ]
     }
 }

@@ -52,7 +52,10 @@ function isFileMissing(filePath) {
 function setupInitialDatabase() {
   const dataDir = path.join(userDataPath, APP_CONFIG.DATA_DIR);
   const destDbPath = path.join(dataDir, APP_CONFIG.DB_NAME);
-  const srcDbPath = path.join(__dirname, APP_CONFIG.DB_NAME);
+  
+  const isDev = _.isEqual(app.isPackaged, false);
+  const rootPath = isDev ? __dirname : process.resourcesPath;
+  const srcDbPath = path.join(rootPath, APP_CONFIG.DB_NAME);
 
   if (_.every([destDbPath], isFileMissing)) {
     ensureDirectoryExists(dataDir);
