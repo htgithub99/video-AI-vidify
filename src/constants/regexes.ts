@@ -79,3 +79,5 @@ export const ENDS_WITH_DIGIT_REGEX = /\d$/;
 export const STARTS_WITH_DIGIT_REGEX = /^\d/;
 
 export const DETECTOR_VIETNAMESE_REGEX = /[áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]/i;
+export const LEADING_HASHTAGS_REGEX = /^#+/;
+

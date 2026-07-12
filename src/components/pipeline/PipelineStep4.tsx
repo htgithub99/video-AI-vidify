@@ -7,8 +7,11 @@ import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
 import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
 import { appError } from "../../lib/logger";
+import _ from "lodash";
 
 const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
+
+const OFFLINE_RENDER_ID = "offline_render";
 
 export default function PipelineStep4(props: PipelineWizardState) {
   const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
@@ -62,8 +65,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   const getZoomClass = (motion: string) => {
     if (!isPlayingSim) return "";
-    if (PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS.includes(motion)) return "scale-110";
-    if (PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS.includes(motion)) return "scale-90";
+    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS, motion)) return "scale-110";
+    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS, motion)) return "scale-90";
     return "";
   };
 
@@ -96,7 +99,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
       isLoading: loadingExportType === EXPORT_TYPES.PREMIERE,
     },
     {
-      id: "offline_render",
+      id: OFFLINE_RENDER_ID,
       label: t.renderingWebM,
       loadingLabel: t.exportingVideo,
       desc: t.Render_and_compile_full_p,
@@ -242,13 +245,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </div>
           </div>
         </div>
- 
+
         <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-6 shadow-2xl relative overflow-visible">
           <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
           <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
- 
+
           <div className="grid grid-cols-1 gap-3.5 text-xs">
-            {exportButtons.map((btn, index) => {
+            {_.map(exportButtons, (btn, index) => {
               const Icon = btn.icon;
               return (
                 <Button 
@@ -274,7 +277,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               )
             })}
           </div>
- 
+
           <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl space-y-2">
             <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">{t.Cloud_Exporter_Sync_Setup}</span>
             <div className="flex gap-2">
@@ -284,7 +287,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               </Button>
             </div>
           </div>
- 
+
           <div className="pt-4 border-t border-slate-800 flex items-center justify-start mt-6">
             <Button 
               variant="secondary" 

@@ -386,3 +386,13 @@ export const BUTTON_TOOLTIP_PREFIX = {
   EN: "Function: ",
 } as const;
 
+export const SEO_DEFAULT_CONFIGS = {
+  NUM_TITLES: 3,
+  NUM_DESCRIPTIONS: 1,
+  NUM_HASHTAGS: 5,
+  NUM_TAGS: 10,
+  MIN_TITLES_OPTION: 1,
+  MAX_TITLES_OPTION: 10,
+} as const;
+
+

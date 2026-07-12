@@ -2,16 +2,18 @@ import { cn } from "../../lib/utils";
 import React from "react";
 import { IBaseButtonProps } from "../../types";
 import { BUTTON_TOOLTIP_PREFIX, DETECTOR_VIETNAMESE_REGEX } from "../../constants";
+import _ from "lodash";
 
 const getChildrenText = (node: React.ReactNode): string => {
-  if (node === null || node === undefined) return "";
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(getChildrenText).join(" ").trim();
+  if (_.isNil(node)) return "";
+  if (typeof node === "string" || typeof node === "number") return _.toString(node);
+  if (_.isArray(node)) return _.trim(_.join(_.map(node, getChildrenText), " "));
   if (React.isValidElement(node)) {
     return getChildrenText(node.props.children);
   }
   return "";
 };
+
 
 export const Button: React.FC<IBaseButtonProps> = ({ 
   children, 

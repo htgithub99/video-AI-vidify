@@ -2,6 +2,8 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { WizardStep } from "../../types";
 import { Button } from "../ui/Button";
+import _ from "lodash";
+import { SEO_DEFAULT_CONFIGS, LEADING_HASHTAGS_REGEX, ThumbnailActionPosition } from "../../constants";
 
 const { Sparkles, RefreshCw, Sliders, ChevronDown, Search, Copy, ArrowLeft, ArrowRight } = LucideIcons as any;
 
@@ -24,7 +26,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
             type="button"
             variant="primary"
             size="sm"
-            onClick={() => handleTriggerSEOBoost(true, "top")}
+            onClick={() => handleTriggerSEOBoost(true, ThumbnailActionPosition.TOP)}
             isLoading={!!loadingStates["seoBoost_loading"]}
             className="flex items-center gap-1.5 shadow-md self-start sm:self-auto"
             title={t.Optimize_metadata_and_tri}
@@ -56,17 +58,17 @@ export default function PipelineStep3(props: PipelineWizardState) {
             <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3.5 py-2.5 transition-all shadow-sm">
               <Sliders className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
               <select
-                value={project.seoConfig?.numTitles || 3}
+                value={project.seoConfig?.numTitles || SEO_DEFAULT_CONFIGS.NUM_TITLES}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value) || 3;
+                  const val = parseInt(e.target.value) || SEO_DEFAULT_CONFIGS.NUM_TITLES;
                   const updatedProject = {
                     ...project,
                     seoConfig: {
                       ...(project.seoConfig || {}),
                       numTitles: val,
-                      numDescriptions: 1,
-                      numHashtags: 5,
-                      numTags: 10,
+                      numDescriptions: SEO_DEFAULT_CONFIGS.NUM_DESCRIPTIONS,
+                      numHashtags: SEO_DEFAULT_CONFIGS.NUM_HASHTAGS,
+                      numTags: SEO_DEFAULT_CONFIGS.NUM_TAGS,
                     },
                   };
                   setProject(updatedProject);
@@ -74,7 +76,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                 }}
                 className="flex-1 bg-slate-900 border-none text-slate-205 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
               >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                {_.map(_.range(SEO_DEFAULT_CONFIGS.MIN_TITLES_OPTION, SEO_DEFAULT_CONFIGS.MAX_TITLES_OPTION + 1), (num) => (
                   <option key={num} value={num} className="bg-slate-950 text-slate-300">
                     {num} {t.variants}
                   </option>
@@ -86,15 +88,14 @@ export default function PipelineStep3(props: PipelineWizardState) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {" "}
           <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-900 p-5 rounded-xl border border-slate-800">
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Titles_Options_Group}</span>
               <div className="space-y-4">
-                {(!project.seo?.titles || project.seo.titles.length === 0) &&
+                {_.isEmpty(project.seo?.titles) &&
                   (loadingStates["seoBoost_loading"] ? (
                     <div className="space-y-4 w-full">
-                      {[1, 2, 3].map((idx) => (
+                      {_.map(_.range(1, 4), (idx) => (
                         <div key={idx} className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-3 animate-pulse">
                           <div className="h-4 bg-slate-900 rounded-md w-3/4"></div>
                           <div className="grid grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs">
@@ -117,7 +118,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       </div>
                     </div>
                   ))}
-                {(project.seo?.titles || []).map((title, i) => (
+                {_.map(project.seo?.titles || [], (title, i) => (
                   <div key={i} className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-3">
                     <div className="flex items-start justify-between gap-4">
                       <p className="font-bold text-slate-100 text-sm leading-snug">{title.text}</p>
@@ -182,10 +183,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
             <div className="space-y-3">
               <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Description_Options}</span>
               <div className="space-y-4">
-                {(!project.seo?.descriptions || project.seo.descriptions.length === 0) &&
+                {_.isEmpty(project.seo?.descriptions) &&
                   (loadingStates["seoBoost_loading"] ? (
                     <div className="space-y-4 w-full">
-                      {[1, 2].map((idx) => (
+                      {_.map(_.range(1, 3), (idx) => (
                         <div key={idx} className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-2 animate-pulse">
                           <div className="h-3 bg-slate-900 rounded-md w-full"></div>
                           <div className="h-3 bg-slate-900 rounded-md w-5/6"></div>
@@ -195,7 +196,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   ) : (
                     <div className="text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center">{t.Descriptions_are_empty}</div>
                   ))}
-                {(project.seo?.descriptions || []).map((desc, i) => (
+                {_.map(project.seo?.descriptions || [], (desc, i) => (
                   <div key={i} className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2">
                     <div className="flex items-start justify-between gap-4">
                       <p className="text-xs text-slate-300 leading-relaxed font-sans">{desc.text}</p>
@@ -226,7 +227,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     variant="ghost"
                     size="xs"
                     onClick={() => {
-                      const hashtagsText = (project.seo?.hashtags || []).map((tag) => `#${tag.replace(/^#+/, "")}`).join(" ");
+                      const hashtagsText = _.join(
+                        _.map(project.seo?.hashtags || [], (tag) => `#${tag.replace(LEADING_HASHTAGS_REGEX, "")}`),
+                        " "
+                      );
                       navigator.clipboard.writeText(hashtagsText);
                       setInfoMsg(t.Copied_Hashtags_to_clipbo);
                     }}
@@ -237,19 +241,19 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(!project.seo?.hashtags || project.seo.hashtags.length === 0) &&
+                  {_.isEmpty(project.seo?.hashtags) &&
                     (loadingStates["seoBoost_loading"] ? (
                       <div className="flex gap-2 flex-wrap w-full">
-                        {[1, 2, 3, 4].map((idx) => (
+                        {_.map(_.range(1, 5), (idx) => (
                           <div key={idx} className="bg-slate-900/60 border border-slate-800/80 animate-pulse h-7 w-16 rounded-md"></div>
                         ))}
                       </div>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_hashtags}</span>
                     ))}
-                  {(project.seo?.hashtags || []).map((tag, i) => (
+                  {_.map(project.seo?.hashtags || [], (tag, i) => (
                     <span key={i} className="bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
-                      #{tag.replace(/^#+/, "")}
+                      #{tag.replace(LEADING_HASHTAGS_REGEX, "")}
                     </span>
                   ))}
                 </div>
@@ -261,7 +265,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     variant="ghost"
                     size="xs"
                     onClick={() => {
-                      const tagsText = (project.seo?.tags || []).join(", ");
+                      const tagsText = _.join(project.seo?.tags || [], ", ");
                       navigator.clipboard.writeText(tagsText);
                       setInfoMsg(t.Copied_Tags_to_clipboard);
                     }}
@@ -272,17 +276,17 @@ export default function PipelineStep3(props: PipelineWizardState) {
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {(!project.seo?.tags || project.seo.tags.length === 0) &&
+                  {_.isEmpty(project.seo?.tags) &&
                     (loadingStates["seoBoost_loading"] ? (
                       <div className="flex gap-2 flex-wrap w-full">
-                        {[1, 2, 3, 4, 5, 6].map((idx) => (
+                        {_.map(_.range(1, 7), (idx) => (
                           <div key={idx} className="bg-slate-900/60 border border-slate-800/80 animate-pulse h-6 w-12 rounded-md"></div>
                         ))}
                       </div>
                     ) : (
                       <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_keywords}</span>
                     ))}
-                  {(project.seo?.tags || []).map((tag, i) => (
+                  {_.map(project.seo?.tags || [], (tag, i) => (
                     <span key={i} className="bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
                       {tag}
                     </span>
