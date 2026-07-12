@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { createServer as createViteServer } from "vite";
+
 import path from "path";
 import { exec } from "child_process";
 import _ from "lodash";
@@ -69,13 +69,14 @@ const startServer = async () => {
   await initPlaywright();
 
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: SERVER_CONFIG.SPA_TYPE,
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), SERVER_CONFIG.DIST_DIR);
+    const distPath = __dirname;
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, SERVER_CONFIG.INDEX_FILE));
