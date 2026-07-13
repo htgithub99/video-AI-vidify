@@ -35,6 +35,8 @@ export const BASE64_IMAGE_MIME_REGEX =
 
 export const BASE64_DATA_URL_REGEX = /^data:([^;]+);base64,([\s\S]+)$/;
 
+export const ASSET_PROJECT_PATH_REGEX = /(\/assets\/projects\/)[^/]+\//i;
+
 export const AUDIO_CLEAN_PREFIX_REGEX =
   /^(Dưới đây là|Đây là|Tuyệt vời|Chắc chắn|Sau đây là|Tôi đã tạo|Hãy cùng xem|Chào bạn|Chắc chắn rồi|Vâng|Được chứ).*?:?\n?/i;
 export const AUDIO_CLEAN_MARKDOWN_REGEX = /[\*\#\_\-\[\]\(\)]/g;

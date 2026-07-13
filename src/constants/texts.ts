@@ -141,6 +141,7 @@ export const COMMON_STRINGS = {
   THUMB_PREFIX: "thumb_",
   LOREM_FLICKR_SIZE: "800/450",
   IMAGE_DIFF_THRESHOLD: 1,
+  REGEX_REPLACE_GROUP_1: "$1",
 } as const;
 
 export const ERROR_MESSAGES = {

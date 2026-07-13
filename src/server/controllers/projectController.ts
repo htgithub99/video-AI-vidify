@@ -5,7 +5,7 @@ import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX } from "../../constants";
+import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -93,6 +93,12 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
   let sceneUpdated = false;
   assetUrls = assetUrls || [];
 
+  const enforceCorrectFolder = (u: string | undefined) => {
+    const assetsPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}`;
+    if (!u || !_.includes(u, assetsPrefix)) return u;
+    return _.replace(u, ASSET_PROJECT_PATH_REGEX, `${COMMON_STRINGS.REGEX_REPLACE_GROUP_1}${folderName}${COMMON_STRINGS.SLASH_PREFIX}`);
+  };
+
   if (_.includes(assetUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX)) {
     const matches = assetUrl.match(BASE64_IMAGE_MIME_REGEX);
     if (matches) {
@@ -118,6 +124,14 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
 
   if (assetUrl) {
     const isNotBase64 = !_.includes(assetUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX);
+    if (isNotBase64) {
+      const fixedUrl = enforceCorrectFolder(assetUrl);
+      if (!_.eq(fixedUrl, assetUrl)) {
+        assetUrl = fixedUrl;
+        sceneUpdated = true;
+      }
+    }
+
     const needsSync = _.isEmpty(assetUrls) || !_.eq(_.size(assetUrls), 1) || !_.includes(assetUrls, assetUrl);
     if (isNotBase64 && needsSync) {
       assetUrls = [assetUrl];
@@ -140,6 +154,12 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
       sceneUpdated = true;
     } catch (err) {
       appError(`${ERROR_MESSAGES.WRITE_SCENE_AUDIO_ERR}${scene.id}`, err);
+    }
+  } else if (audioUrl) {
+    const fixedAudioUrl = enforceCorrectFolder(audioUrl);
+    if (!_.eq(fixedAudioUrl, audioUrl)) {
+      audioUrl = fixedAudioUrl;
+      sceneUpdated = true;
     }
   }
 
