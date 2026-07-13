@@ -13,11 +13,11 @@ const logger = {
   error: appError,
   warn: appWarn,
 };
-import { EXTERNAL_URLS, API_ROUTES } from "../../constants/apiRoutes";
+import { EXTERNAL_URLS, API_ROUTES, API_HEADERS } from "../../constants/apiRoutes";
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender, AgeGroup, ProjectInputType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
@@ -56,6 +56,38 @@ const safeResponseJson = async (r: any, f: any) => {
 };
 const fallbackImageCache = new Map<string, string>();
 const getTargetDurationSeconds = (d: any) => 15;
+const fetchSystemApi = async (url: string, payload?: object | null, customHeaders?: object): Promise<Response> => {
+  const finalHeaders = _.assign(
+    {
+      [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey("GEMINI_API_KEY"),
+      [API_HEADERS.AI33_API_KEY]: getStoredApiKey("AI33_API_KEY"),
+    },
+    customHeaders || {}
+  );
+  
+  const options: RequestInit = {
+    method: _.isNil(payload) ? HTTP_METHODS.GET : HTTP_METHODS.POST,
+    headers: finalHeaders,
+  };
+  
+  if (!_.isNil(payload)) {
+    options.body = JSON.stringify(payload);
+  }
+  
+  return fetch(url, options);
+};
+
+const safeFetchJsonWithAuth = async (url: string, payload?: object | null, fallback: any = {}): Promise<any> => {
+  try {
+    const response = await fetchSystemApi(url, payload);
+    return await response.json();
+  } catch (error) {
+    logger.error(`API Error at ${url}`, error);
+    return fallback;
+  }
+};
+
 const formatRoundedTime = (timeStr: string): string => {
   if (!timeStr) return "00:00";
   const secs = parseTimeToSeconds(timeStr);
@@ -974,18 +1006,14 @@ export function usePipelineWizard(props: any) {
 
     if (useCloudVoice) {
       try {
-        const res = await fetch("/api/pipeline/voice", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: sampleText,
-            voiceURI: voiceURI,
-            voice_id: voiceURI,
-            gender: gender,
-            speed: finalSpeed,
-            pitch: finalPitch,
-            ...(voiceURI.startsWith("vbee-") || voiceURI.includes("vbee") ? { voice_ownership: "community" } : {}),
-          }),
+        const res = await fetchSystemApi(API_ROUTES.PIPELINE_VOICE, {
+          text: sampleText,
+          voiceURI: voiceURI,
+          voice_id: voiceURI,
+          gender: gender,
+          speed: finalSpeed,
+          pitch: finalPitch,
+          ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee") ? { voice_ownership: "community" } : {}),
         });
 
         if (activePreviewToken !== currentToken) {
@@ -1554,18 +1582,14 @@ export function usePipelineWizard(props: any) {
       setErrorMsg("");
     }
     try {
-      const response = await fetch("/api/pipeline/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: customPrompt,
-          style: project.visualConfig.style,
-          resolution: project.visualConfig.quality,
-          bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-          sandboxConfig: sandboxConfig,
-          visualConfig: project.visualConfig,
-        }),
+      const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+        prompt: customPrompt,
+        style: project.visualConfig.style,
+        resolution: project.visualConfig.quality,
+        bypassCache: isForce,
+        engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+        sandboxConfig: sandboxConfig,
+        visualConfig: project.visualConfig,
       });
       const data = await safeResponseJson(response, {});
 
@@ -2416,11 +2440,7 @@ export function usePipelineWizard(props: any) {
 
     setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: true }));
     try {
-      const response = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images }),
-      });
+      const response = await fetchSystemApi(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images });
       const data = await response.json();
       if (data.style) {
         setProject((prev) => {
@@ -2647,14 +2667,10 @@ export function usePipelineWizard(props: any) {
           sceneId: s.id,
           prompt: s.prompt,
         }));
-        const response = await fetch(API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: batchItems,
-            visualConfig: project.visualConfig,
-            style: project.visualConfig.style,
-          }),
+        const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES, {
+          items: batchItems,
+          visualConfig: project.visualConfig,
+          style: project.visualConfig.style,
         });
 
         if (!response.body) {
@@ -2791,7 +2807,7 @@ export function usePipelineWizard(props: any) {
       setIsCancellingBatch(false);
       setBatchProgressMsg("");
       if (isGeminiChat && concurrency > 1) {
-        fetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, { method: "POST" }).catch(() => { });
+        fetchSystemApi(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {}).catch(() => { });
       }
     }
   };
@@ -2989,20 +3005,15 @@ export function usePipelineWizard(props: any) {
 
       const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
 
-      const response = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: `${cleanPromptText}. Designed in rich high-CTR ${styleText} layout. --ar ${currentAspectRatio}`,
-          style: styleText,
-          resolution: "Standard",
-          bypassCache: isForce,
-          engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-          sandboxConfig: sandboxConfig,
-          visualConfig: project.visualConfig,
-        }),
+      const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+        prompt: `${cleanPromptText}. Designed in rich high-CTR ${styleText} layout. --ar ${currentAspectRatio}`,
+        style: styleText,
+        resolution: "Standard",
+        bypassCache: isForce,
+        engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+        sandboxConfig: sandboxConfig,
+        visualConfig: project.visualConfig,
       });
-      const data = await safeResponseJson(response, {});
       if (data.warning) {
         setErrorMsg(data.warning);
       }
@@ -3242,26 +3253,15 @@ export function usePipelineWizard(props: any) {
   };
 
   const alignStoryboardVoice = async (scenes: any[], audioBase64: string) => {
-    const alignResponse = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        audioBase64: audioBase64,
-        scenes: scenes.map((sc) => ({
-          id: sc.id,
-          script: sc.script || sc.subtitle || "",
-        })),
-      }),
+    let alignData = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+      audioBase64: audioBase64,
+      scenes: _.map(scenes, (sc) => ({
+        id: sc.id,
+        script: sc.script || sc.subtitle || "",
+      })),
     });
 
-    let alignData: any;
-    try {
-      alignData = await alignResponse.json();
-    } catch (jsonErr) {
-      alignData = {};
-    }
-
-    if (!alignResponse.ok || !alignData.success || !Array.isArray(alignData.alignments)) {
+    if (!alignData || !alignData.success || !_.isArray(alignData.alignments)) {
       const langKey = currentLang === "en" ? "en" : "vi";
       const texts = EXTERNAL_AUDIO_TEXTS[langKey];
       throw new Error(alignData.error || texts.SERVER_ALIGN_ERROR);
@@ -3430,24 +3430,18 @@ export function usePipelineWizard(props: any) {
       const voiceURI = vConfig.voiceURI || "preset-vi-bac-female";
       const { finalSpeed, finalPitch } = getVoiceModifiers(voiceURI, vConfig.speed || 1.0, vConfig.pitch || 1.0);
 
-      const response = await fetch("/api/pipeline/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: fullScript,
-          gender: vConfig.gender,
-          age: vConfig.age,
-          emotion: vConfig.emotion,
-          speed: finalSpeed,
-          pitch: finalPitch,
-          volume: vConfig.volume || 1.0,
-          voiceURI: voiceURI,
-          voice_id: voiceURI,
-          ...(voiceURI.startsWith("vbee-") || voiceURI.includes("vbee") ? { voice_ownership: "community" } : {}),
-        }),
+      const audioData = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_VOICE, {
+        text: fullScript,
+        gender: vConfig.gender,
+        age: vConfig.age,
+        emotion: vConfig.emotion,
+        speed: finalSpeed,
+        pitch: finalPitch,
+        volume: vConfig.volume || 1.0,
+        voiceURI: voiceURI,
+        voice_id: voiceURI,
+        ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee") ? { voice_ownership: "community" } : {}),
       });
-
-      const audioData = await safeResponseJson(response, {});
 
       if (!audioData || !audioData.success || !audioData.audioBase64) {
         throw new Error(audioData?.warning || audioData?.error || "No audio returned");
@@ -3538,18 +3532,13 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An);
 
     try {
-      const response = await fetch("/api/pipeline/seo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          originalInput: project.input?.content || "",
-          config: project.config,
-          seoConfig: project.seoConfig,
-          rewrittenScript: project.scriptRewritten,
-          bypassCache: isForce,
-        }),
+      const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_SEO, {
+        originalInput: project.input?.content || "",
+        config: project.config,
+        seoConfig: project.seoConfig,
+        rewrittenScript: project.scriptRewritten,
+        bypassCache: isForce,
       });
-      const data = await safeResponseJson(response, {});
 
       if (data.error) {
         throw new Error(data.error);
