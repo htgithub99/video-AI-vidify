@@ -135,6 +135,12 @@ export const COMMON_STRINGS = {
   NA: "N/A",
   SUCCESS_MARK: "✓",
   SUCCESS_KEYWORD_VI: "thành công",
+  NORMALIZATION_FORM: "NFD",
+  BASE64: "base64",
+  WAV_EXT: ".wav",
+  THUMB_PREFIX: "thumb_",
+  LOREM_FLICKR_SIZE: "800/450",
+  IMAGE_DIFF_THRESHOLD: 1,
 } as const;
 
 export const ERROR_MESSAGES = {
