@@ -48,30 +48,41 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
   const oldPathPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${oldFolderName}${COMMON_STRINGS.SLASH_PREFIX}`;
   const newPathPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${newFolderName}${COMMON_STRINGS.SLASH_PREFIX}`;
 
+  const encodedOldPathPrefix = encodeURI(oldPathPrefix);
+  const encodedNewPathPrefix = encodeURI(newPathPrefix);
+
+  const updateUrl = (url: string | undefined) => {
+    if (!url) return url;
+    if (_.includes(url, oldPathPrefix)) return _.replace(url, oldPathPrefix, newPathPrefix);
+    if (_.includes(url, encodedOldPathPrefix)) return _.replace(url, encodedOldPathPrefix, encodedNewPathPrefix);
+    return url;
+  };
+
   const storyboard = _.map(project.storyboard || [], (scene) => {
     let { assetUrl, assetUrls, audioUrl } = scene;
 
-    if (_.includes(assetUrl, oldPathPrefix)) assetUrl = _.replace(assetUrl, oldPathPrefix, newPathPrefix);
+    assetUrl = updateUrl(assetUrl) as string | undefined;
     
     if (_.size(assetUrls) > 0) {
-      assetUrls = _.map(assetUrls, (url) => _.includes(url, oldPathPrefix) ? _.replace(url, oldPathPrefix, newPathPrefix) : url);
+      assetUrls = _.map(assetUrls, (url) => updateUrl(url) as string);
     }
     
-    if (_.includes(audioUrl, oldPathPrefix)) audioUrl = _.replace(audioUrl, oldPathPrefix, newPathPrefix);
+    audioUrl = updateUrl(audioUrl) as string | undefined;
     
     return { ...scene, assetUrl, assetUrls, audioUrl };
   });
 
   const thumbnails = _.map(project.thumbnails || [], (thumb) => {
     let { imageUrl } = thumb;
-    if (_.includes(imageUrl, oldPathPrefix)) imageUrl = _.replace(imageUrl, oldPathPrefix, newPathPrefix);
+    imageUrl = updateUrl(imageUrl) as string | undefined;
     return { ...thumb, imageUrl };
   });
 
   let voiceConfig = project.voiceConfig;
   const oldVoiceUrl = _.get(voiceConfig, 'audioUrl', '');
-  if (_.includes(oldVoiceUrl, oldPathPrefix)) {
-    voiceConfig = { ...voiceConfig, audioUrl: _.replace(oldVoiceUrl, oldPathPrefix, newPathPrefix) };
+  const updatedVoiceUrl = updateUrl(oldVoiceUrl) as string | undefined;
+  if (updatedVoiceUrl && !_.eq(oldVoiceUrl, updatedVoiceUrl)) {
+    voiceConfig = { ...voiceConfig, audioUrl: updatedVoiceUrl };
   }
 
   return { ...project, storyboard, thumbnails, voiceConfig };
@@ -412,7 +423,6 @@ export const updateProject = async (req: Request, res: Response) => {
         newFolderName = getSafeFolderName(newProject.name);
 
         if (!_.eq(oldFolderName, newFolderName)) {
-          isRenamed = true;
           const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
           const oldDir = path.join(assetsDir, oldFolderName);
           const newDir = path.join(assetsDir, newFolderName);
@@ -420,9 +430,25 @@ export const updateProject = async (req: Request, res: Response) => {
           if (fs.existsSync(oldDir)) {
             try {
               fs.renameSync(oldDir, newDir);
+              isRenamed = true;
             } catch (err) {
-              appError(ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR, err);
+              appError(`${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR}${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR_FALLBACK}`, err);
+              try {
+                fs.cpSync(oldDir, newDir, { recursive: true });
+                isRenamed = true;
+                try {
+                  fs.rmSync(oldDir, { recursive: true, force: true });
+                } catch (rmErr) {
+                  appLog(`${LOG_MESSAGES.DELETE_OLD_LOCKED_DIR_WARN}${oldDir}`);
+                }
+              } catch (cpErr) {
+                appError(ERROR_MESSAGES.COPY_ASSETS_DIR_ERR, cpErr);
+                newProject.name = oldProject.name;
+                isRenamed = false;
+              }
             }
+          } else {
+            isRenamed = true;
           }
         }
       }

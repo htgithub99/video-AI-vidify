@@ -169,6 +169,8 @@ export const ERROR_MESSAGES = {
   BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
   LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
   FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
+  RENAME_ASSETS_DIR_ERR_FALLBACK: " Lỗi đổi tên, đang thử copy đệ quy...",
+  COPY_ASSETS_DIR_ERR: "Lỗi không thể copy thư mục mới",
 } as const;
 
 export const LOG_MESSAGES = {
@@ -176,6 +178,7 @@ export const LOG_MESSAGES = {
   DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ",
   DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
   BULK_DELETE_PROJECT_DIR_SUCCESS: "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
+  DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ",
 } as const;
 
 export const DEFAULT_PROJECT_CONFIGS = {
