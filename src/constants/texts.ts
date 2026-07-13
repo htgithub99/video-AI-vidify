@@ -129,6 +129,7 @@ export const COMMON_STRINGS = {
   SCENE_PREFIX: "sc_",
   DEFAULT_GENRE: "Story",
   HTTP_PREFIX: "http",
+  HTTPS_PREFIX: "https",
   SLASH_PREFIX: "/",
   BASE64_AUDIO_LENGTH_THRESHOLD: 100,
   CUSTOM: "Custom",
@@ -170,7 +171,7 @@ export const ERROR_MESSAGES = {
   BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
   LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
   FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
-  RENAME_ASSETS_DIR_ERR_FALLBACK: " Lỗi đổi tên, đang thử copy đệ quy...",
+  RENAME_ASSETS_DIR_ERR_FALLBACK: "(Đang thử copy đệ quy...)",
   COPY_ASSETS_DIR_ERR: "Lỗi không thể copy thư mục mới",
 } as const;
 

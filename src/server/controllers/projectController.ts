@@ -14,7 +14,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
     const project = await getProjectDetailFromDb(id);
     if (!project) return null;
-    
+
     const projectStr = JSON.stringify(project);
     const cleaned = _.replace(projectStr, UNSPLASH_IMAGE_REGEX, (match, query) => {
       const decoded = decodeURIComponent(query)
@@ -32,7 +32,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
 
 function getSafeFolderName(name: string): string {
   if (_.isEmpty(name)) return COMMON_STRINGS.PROJECT_DEFAULT_NAME;
-  
+
   const safeName = name.normalize(COMMON_STRINGS.NORMALIZATION_FORM)
     .replace(VIETNAMESE_ACCENT_MARKS_REGEX, "")
     .replace(VIETNAMESE_D_LETTER_REGEX, "d")
@@ -45,16 +45,20 @@ function getSafeFolderName(name: string): string {
 }
 
 function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFolderName: string): VideoProject {
-  const oldPathPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${oldFolderName}${COMMON_STRINGS.SLASH_PREFIX}`;
-  const newPathPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${newFolderName}${COMMON_STRINGS.SLASH_PREFIX}`;
-
-  const encodedOldPathPrefix = encodeURI(oldPathPrefix);
-  const encodedNewPathPrefix = encodeURI(newPathPrefix);
-
   const updateUrl = (url: string | undefined) => {
     if (!url) return url;
-    if (_.includes(url, oldPathPrefix)) return _.replace(url, oldPathPrefix, newPathPrefix);
-    if (_.includes(url, encodedOldPathPrefix)) return _.replace(url, encodedOldPathPrefix, encodedNewPathPrefix);
+    if (_.includes(url, COMMON_STRINGS.HTTP_PREFIX) || _.includes(url, COMMON_STRINGS.HTTPS_PREFIX)) return url;
+
+    const match = url.match(ASSET_PROJECT_PATH_REGEX);
+    if (match) {
+      const parts = _.split(match[0], COMMON_STRINGS.SLASH_PREFIX);
+      const currentFolderInUrl = _.nth(parts, 3);
+
+      if (_.eq(currentFolderInUrl, oldFolderName) || _.eq(currentFolderInUrl, project.id)) {
+        return _.replace(url, ASSET_PROJECT_PATH_REGEX, `${COMMON_STRINGS.REGEX_REPLACE_GROUP_1}${newFolderName}${COMMON_STRINGS.SLASH_PREFIX}`);
+      }
+    }
+
     return url;
   };
 
@@ -62,13 +66,13 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
     let { assetUrl, assetUrls, audioUrl } = scene;
 
     assetUrl = updateUrl(assetUrl) as string | undefined;
-    
+
     if (_.size(assetUrls) > 0) {
       assetUrls = _.map(assetUrls, (url) => updateUrl(url) as string);
     }
-    
+
     audioUrl = updateUrl(audioUrl) as string | undefined;
-    
+
     return { ...scene, assetUrl, assetUrls, audioUrl };
   });
 
@@ -143,7 +147,7 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
   }
 
   const hasBase64Audio = _.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD) && !_.some([COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX], (prefix) => _.startsWith(audioBase64, prefix));
-  
+
   if (hasBase64Audio) {
     const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${scene.id}${COMMON_STRINGS.WAV_EXT}`;
     const filePath = path.join(audioDir, fileName);
@@ -285,7 +289,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
 function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   const oldImagesCount = _.size(_.filter(oldProject.storyboard, (s: any) => s.assetUrl));
   const newImagesCount = _.size(_.filter(newProject.storyboard, (s: any) => s.assetUrl));
-  
+
   if (_.gt(_.subtract(oldImagesCount, newImagesCount), COMMON_STRINGS.IMAGE_DIFF_THRESHOLD) && !newProject.allowBulkDeleteImages) {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
@@ -310,7 +314,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
 
   _.forEach(newProject.storyboard, (newScene: any) => {
     const newHasImage = (!_.isEmpty(newScene?.assetUrl) && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !_.isEmpty(newScene?.assetUrls);
-    
+
     if (!newHasImage && fs.existsSync(imageDir)) {
       try {
         const files = fs.readdirSync(imageDir);
@@ -334,7 +338,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
     }
 
     const newHasAudio = (!_.isEmpty(newScene?.audioUrl) && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
-    
+
     if (!newHasAudio && fs.existsSync(audioDir)) {
       try {
         const files = fs.readdirSync(audioDir);
@@ -358,7 +362,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
 
   const oldAudioUrl = _.get(oldProject, 'voiceConfig.audioUrl');
   const newAudioUrl = _.get(newProject, 'voiceConfig.audioUrl');
-  
+
   if (oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
     const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
     if (fs.existsSync(unifiedAudioFile)) {
@@ -427,6 +431,30 @@ export const createProject = async (req: Request, res: Response) => {
   }
 };
 
+function renameProjectAssetsDir(oldDir: string, newDir: string, newProject: any, oldProject: any): boolean {
+  if (!fs.existsSync(oldDir)) return true;
+
+  try {
+    fs.renameSync(oldDir, newDir);
+    return true;
+  } catch (err) {
+    appError(`${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR}${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR_FALLBACK}`, err);
+    try {
+      fs.cpSync(oldDir, newDir, { recursive: true });
+      try {
+        fs.rmSync(oldDir, { recursive: true, force: true });
+      } catch (rmErr) {
+        appLog(`${LOG_MESSAGES.DELETE_OLD_LOCKED_DIR_WARN}${oldDir}`);
+      }
+      return true;
+    } catch (cpErr) {
+      appError(ERROR_MESSAGES.COPY_ASSETS_DIR_ERR, cpErr);
+      newProject.name = oldProject.name;
+      return false;
+    }
+  }
+}
+
 export const updateProject = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -447,29 +475,7 @@ export const updateProject = async (req: Request, res: Response) => {
           const oldDir = path.join(assetsDir, oldFolderName);
           const newDir = path.join(assetsDir, newFolderName);
 
-          if (fs.existsSync(oldDir)) {
-            try {
-              fs.renameSync(oldDir, newDir);
-              isRenamed = true;
-            } catch (err) {
-              appError(`${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR}${ERROR_MESSAGES.RENAME_ASSETS_DIR_ERR_FALLBACK}`, err);
-              try {
-                fs.cpSync(oldDir, newDir, { recursive: true });
-                isRenamed = true;
-                try {
-                  fs.rmSync(oldDir, { recursive: true, force: true });
-                } catch (rmErr) {
-                  appLog(`${LOG_MESSAGES.DELETE_OLD_LOCKED_DIR_WARN}${oldDir}`);
-                }
-              } catch (cpErr) {
-                appError(ERROR_MESSAGES.COPY_ASSETS_DIR_ERR, cpErr);
-                newProject.name = oldProject.name;
-                isRenamed = false;
-              }
-            }
-          } else {
-            isRenamed = true;
-          }
+          isRenamed = renameProjectAssetsDir(oldDir, newDir, newProject, oldProject);
         }
       }
 
@@ -501,7 +507,7 @@ export const updateProject = async (req: Request, res: Response) => {
       if (isRenamed) {
         updatedProject = replaceAssetPaths(updatedProject, oldFolderName, newFolderName);
       }
-      
+
       const savedProject = await saveProjectDetail(updatedProject);
       res.json(savedProject);
     } else {

@@ -10,6 +10,7 @@ import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioTyp
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
+import _ from "lodash";
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -287,7 +288,7 @@ export default function App() {
   const activeProject = projects.find((p) => p.id === selectedProjectId);
 
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
-    const projToUpdate = projects.find((p) => p.id === id);
+    const projToUpdate = _.find(projects, { id });
     if (!projToUpdate) return;
     const updated = {
       ...projToUpdate,
@@ -295,14 +296,22 @@ export default function App() {
       description,
       updatedAt: new Date().toISOString(),
     };
-    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? updated : p)));
     try {
-      await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
+      const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
         method: HTTP_METHODS.PUT,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: JSON.stringify(updated),
       });
+      if (res.ok) {
+        const savedProject = await res.json();
+        setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? savedProject : p)));
+      } else {
+        setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? projToUpdate : p)));
+        appError(`${ERROR_MESSAGES.UPDATING_PROJECT}: STATUS ${res.status}`);
+      }
     } catch (e) {
+      setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? projToUpdate : p)));
       appError(ERROR_MESSAGES.UPDATING_PROJECT, e);
     }
   };
