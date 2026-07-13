@@ -44,6 +44,23 @@ export const EXTERNAL_URLS = {
 export const ALIGN_CONFIG = {
   TEMP_DIR: "temp_align",
   SCRIPT_FILE: "voice_aligner.py",
+  CHECK_FASTER_WHISPER_CMD: '"{0}" -c "import faster_whisper"',
+  INSTALL_FASTER_WHISPER_CMD: '"{0}" -m pip install faster-whisper',
+  VOICES_DIR: "voices",
+  AUDIO_PREFIX: "audio_",
+  SCENES_PREFIX: "scenes_",
+  OUTPUT_PREFIX: "output_",
+  WAV_EXT: ".wav",
+  JSON_EXT: ".json",
+};
+
+export const EXPORT_ZIP_CONFIG = {
+  ERR_MISSING_PROJECT: "Missing projectId",
+  ERR_PROJECT_NOT_FOUND: "Project not found",
+  VOICES_DIR: "voices",
+  SCENE_PREFIX: "scene_",
+  WAV_EXT: ".wav",
+  EXPORT_FILE: "export.zip",
 };
 
 export const ENCODING_UTF8 = "utf-8";

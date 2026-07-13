@@ -9,6 +9,8 @@ import unicodedata
 
 WARNING_ACTION = "ignore"
 MODEL_NAME = "tiny"
+DEVICE = "cpu"
+COMPUTE_TYPE = "int8"
 
 FILE_READ_MODE = "r"
 FILE_WRITE_MODE = "w"
@@ -35,17 +37,17 @@ ERROR_MISSING_ARGS = "Lỗi: Thiếu tham số truyền vào."
 ERROR_USAGE = "Cú pháp: python voice_aligner.py <audio_path> <scenes_json_path> <output_json_path>"
 ERROR_AUDIO_NOT_FOUND = "Lỗi: Không tìm thấy file âm thanh tại {path}"
 ERROR_SCENES_NOT_FOUND = "Lỗi: Không tìm thấy file JSON phân cảnh tại {path}"
-ERROR_WHISPER_NOT_INSTALLED = "Lỗi: Chưa cài đặt thư viện whisperx."
+ERROR_WHISPER_NOT_INSTALLED = "Lỗi: Chưa cài đặt thư viện faster-whisper."
 ERROR_READ_JSON = "Lỗi đọc JSON kịch bản: {error}"
-ERROR_WHISPER_RUN = "Lỗi khi chạy WhisperX AI: {error}"
+ERROR_WHISPER_RUN = "Lỗi khi chạy Faster Whisper: {error}"
 ERROR_WRITE_JSON = "Lỗi ghi file kết quả JSON: {error}"
 SUCCESS_MESSAGE = "✅ Đồng bộ hóa mốc thời gian hoàn tất!"
-ERROR_FFMPEG_MISSING = "Hệ thống thiếu phần mềm FFmpeg (Bắt buộc cho WhisperX). Vui lòng cài đặt FFmpeg (https://ffmpeg.org/download.html) và thêm vào PATH Windows."
+ERROR_FFMPEG_MISSING = "Hệ thống thiếu phần mềm FFmpeg. Vui lòng cài đặt FFmpeg và thêm vào PATH Windows."
 
 if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding=FILE_ENCODING)
 if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding=FILE_ENCODING)
 
 warnings.filterwarnings(WARNING_ACTION, category=UserWarning)
 warnings.filterwarnings(WARNING_ACTION, category=FutureWarning)
@@ -84,7 +86,7 @@ def main():
         sys.exit(1)
 
     try:
-        import whisperx
+        from faster_whisper import WhisperModel
     except ImportError:
         print(ERROR_WHISPER_NOT_INSTALLED, file=sys.stderr, flush=True)
         sys.exit(1)
@@ -105,43 +107,22 @@ def main():
         })
 
     try:
-        combined_script_text = " ".join(s[KEY_TEXT] for s in scenes if s.get(KEY_TEXT))
+        model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE_TYPE)
+        segments, info = model.transcribe(audio_path, word_timestamps=True)
         
-        device = "cpu"
-        batch_size = 16
-        compute_type = "int8"
-
-        # Load whisperx model
-        has_vietnamese = any(ord(c) > 0x1E00 for c in combined_script_text)
-        detect_lang = "vi" if has_vietnamese else "en"
-
-        model = whisperx.load_model(MODEL_NAME, device, compute_type=compute_type, language=detect_lang)
-        audio = whisperx.load_audio(audio_path)
+        total_duration_sec = info.duration
         
-        result = model.transcribe(audio, batch_size=batch_size)
-        total_duration_sec = len(audio) / 16000.0  # WhisperX load_audio returns float32 numpy array sampled at 16kHz
-        
-        # Chạy Align Model của WhisperX để căn chỉnh mốc thời gian chi tiết của từng từ
-        try:
-            model_a, metadata = whisperx.load_align_model(language_code=detect_lang, device=device)
-            result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
-        except Exception as align_err:
-            # Fallback nếu mô hình align không tải được
-            pass
-
         ai_words = []
-        for segment in result.get("segments", []):
-            if "words" in segment:
-                for w in segment["words"]:
-                    if "start" in w and "end" in w:
-                        word_text = normalize_text(w["word"])
-                        if not word_text:
-                            continue
-                        ai_words.append({
-                            "word": word_text,
-                            KEY_START: w["start"],
-                            KEY_END: w["end"]
-                        })
+        for segment in segments:
+            for w in segment.words:
+                word_text = normalize_text(w.word)
+                if not word_text:
+                    continue
+                ai_words.append({
+                    KEY_WORD: word_text,
+                    KEY_START: w.start,
+                    KEY_END: w.end
+                })
     except Exception as e:
         error_msg = str(e)
         if "WinError 2" in error_msg or "ffmpeg" in error_msg.lower() or "not found" in error_msg.lower():
@@ -149,7 +130,6 @@ def main():
         print(ERROR_WHISPER_RUN.format(error=error_msg), file=sys.stderr, flush=True)
         sys.exit(1)
 
-    # Tách kịch bản gốc thành mảng từ và ánh xạ đến scene_idx
     script_words = []
     word_to_scene = []
     for idx, scene in enumerate(scenes):
@@ -157,7 +137,7 @@ def main():
         script_words.extend(words_in_scene)
         word_to_scene.extend([idx] * len(words_in_scene))
 
-    whisper_word_list = [w["word"] for w in ai_words]
+    whisper_word_list = [w[KEY_WORD] for w in ai_words]
     sm = difflib.SequenceMatcher(None, script_words, whisper_word_list, autojunk=False)
     matches = sm.get_matching_blocks()
 
@@ -185,92 +165,74 @@ def main():
             curr = parent[curr]
         optimal_matches.reverse()
 
-    scene_core_times = [{KEY_START: None, KEY_END: None} for _ in range(len(scenes))]
+    n_words = len(script_words)
+    script_word_times = [{KEY_START: None, KEY_END: None} for _ in range(n_words)]
     for match in optimal_matches:
         for k in range(match.size):
-            scene_idx = word_to_scene[match.a + k]
-            if scene_core_times[scene_idx][KEY_START] is None:
-                scene_core_times[scene_idx][KEY_START] = ai_words[match.b + k][KEY_START]
-            scene_core_times[scene_idx][KEY_END] = ai_words[match.b + k][KEY_END]
+            script_idx = match.a + k
+            ai_idx = match.b + k
+            script_word_times[script_idx][KEY_START] = ai_words[ai_idx][KEY_START]
+            script_word_times[script_idx][KEY_END] = ai_words[ai_idx][KEY_END]
 
     i = 0
-    n = len(scenes)
-    while i < n:
-        if scene_core_times[i][KEY_START] is None:
+    while i < n_words:
+        if script_word_times[i][KEY_START] is None:
             j = i
-            while j < n and scene_core_times[j][KEY_START] is None:
+            while j < n_words and script_word_times[j][KEY_START] is None:
                 j += 1
             
-            prev_end = scene_core_times[i-1][KEY_END] if i > 0 else 0.0
-            next_start = total_duration_sec
-            for k_idx in range(j, n):
-                if scene_core_times[k_idx][KEY_START] is not None:
-                    next_start = scene_core_times[k_idx][KEY_START]
-                    break
+            prev_end = script_word_times[i-1][KEY_END] if i > 0 and script_word_times[i-1][KEY_END] is not None else 0.0
+            next_start = script_word_times[j][KEY_START] if j < n_words and script_word_times[j][KEY_START] is not None else total_duration_sec
             
             if prev_end > next_start:
                 prev_end = next_start
-            
+                
             gap_len = max(0.0, next_start - prev_end)
-            unmatched_scenes = scenes[i:j]
-            total_chars = sum(len(to_char_list(s[KEY_TEXT])) for s in unmatched_scenes)
+            
+            missing_chars = [len(to_char_list(script_words[k])) for k in range(i, j)]
+            total_missing_chars = sum(missing_chars)
             
             current_t = prev_end
-            if total_chars > 0:
-                for idx_unmatched, s_unmatched in enumerate(unmatched_scenes):
-                    scene_idx = i + idx_unmatched
-                    dur = gap_len * (len(to_char_list(s_unmatched[KEY_TEXT])) / total_chars)
-                    scene_core_times[scene_idx][KEY_START] = current_t
-                    scene_core_times[scene_idx][KEY_END] = current_t + dur
-                    current_t += dur
-            else:
-                dur = gap_len / len(unmatched_scenes)
-                for idx_unmatched in range(len(unmatched_scenes)):
-                    scene_idx = i + idx_unmatched
-                    scene_core_times[scene_idx][KEY_START] = current_t
-                    scene_core_times[scene_idx][KEY_END] = current_t + dur
-                    current_t += dur
+            for k_idx in range(i, j):
+                if total_missing_chars > 0:
+                    dur = gap_len * (missing_chars[k_idx - i] / total_missing_chars)
+                else:
+                    dur = gap_len / (j - i)
+                script_word_times[k_idx][KEY_START] = current_t
+                script_word_times[k_idx][KEY_END] = current_t + dur
+                current_t += dur
+            
             i = j
         else:
             i += 1
 
+    for i in range(1, n_words):
+        if script_word_times[i][KEY_START] > script_word_times[i-1][KEY_END]:
+            mid = (script_word_times[i][KEY_START] + script_word_times[i-1][KEY_END]) / 2.0
+            script_word_times[i-1][KEY_END] = mid
+            script_word_times[i][KEY_START] = mid
+        elif script_word_times[i][KEY_START] < script_word_times[i-1][KEY_END]:
+            mid = (script_word_times[i][KEY_START] + script_word_times[i-1][KEY_END]) / 2.0
+            script_word_times[i-1][KEY_END] = mid
+            script_word_times[i][KEY_START] = mid
+
+    if n_words > 0:
+        script_word_times[0][KEY_START] = 0.0
+        script_word_times[-1][KEY_END] = total_duration_sec
+
     scene_cuts = []
     for i in range(len(scenes)):
-        s_time = scene_core_times[i][KEY_START]
-        e_time = scene_core_times[i][KEY_END]
+        word_indices = [idx for idx, s_idx in enumerate(word_to_scene) if s_idx == i]
         
-        if i > 0:
-            prev_end = scene_core_times[i-1][KEY_END]
-            if s_time is not None and prev_end is not None and s_time < prev_end:
-                s_time = prev_end
-        if s_time is not None and e_time is not None and e_time < s_time:
-            e_time = s_time
-        
-        if i == 0:
-            cut_start = 0.0
+        if len(word_indices) > 0:
+            first_idx = word_indices[0]
+            last_idx = word_indices[-1]
+            cut_start = script_word_times[first_idx][KEY_START]
+            cut_end = script_word_times[last_idx][KEY_END]
         else:
-            prev_end = scene_core_times[i-1][KEY_END]
-            gap_prev = max(0.0, s_time - prev_end)
-            len_prev = len(to_char_list(scenes[i-1].get(KEY_TEXT, '')))
-            len_curr = len(to_char_list(scenes[i].get(KEY_TEXT, '')))
-            total_len = len_prev + len_curr
-            ratio_prev = len_prev / total_len if total_len > 0 else 0.5
-            cut_start = prev_end + gap_prev * ratio_prev
-        
-        if i == len(scenes) - 1:
-            cut_end = total_duration_sec
-        else:
-            next_start = scene_core_times[i+1][KEY_START]
-            gap_next = max(0.0, next_start - e_time)
-            len_curr = len(to_char_list(scenes[i].get(KEY_TEXT, '')))
-            len_next = len(to_char_list(scenes[i+1].get(KEY_TEXT, '')))
-            total_len = len_curr + len_next
-            ratio_curr = len_curr / total_len if total_len > 0 else 0.5
-            cut_end = e_time + gap_next * ratio_curr
-        
-        if cut_end < cut_start:
+            cut_start = scene_cuts[-1][KEY_END] if i > 0 else 0.0
             cut_end = cut_start
-                
+
         scene_cuts.append({
             KEY_ID: scenes[i][KEY_ID],
             KEY_START: round(cut_start, 3),

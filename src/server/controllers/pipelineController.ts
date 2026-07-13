@@ -12,6 +12,10 @@ import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import {
   EXTERNAL_URLS,
   ALIGN_CONFIG,
+  EXPORT_ZIP_CONFIG,
+  ENCODING_UTF8,
+  ASSETS_DIR_NAME,
+  PROJECTS_DIR_NAME,
   API_ROUTES,
   BACKEND_MESSAGES,
   getBackendMsg,
@@ -1674,7 +1678,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     if (!audioBase64) {
       return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
-    if (!scenes || !Array.isArray(scenes) || scenes.length === 0) {
+    if (_.isEmpty(scenes) || !_.isArray(scenes)) {
       return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
     }
 
@@ -1684,29 +1688,29 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     }
 
     const sessionId = randomUUID();
-    const audioPath = path.join(tempDir, `audio_${sessionId}.wav`);
-    const scenesPath = path.join(tempDir, `scenes_${sessionId}.json`);
-    const outputPath = path.join(tempDir, `output_${sessionId}.json`);
+    const audioPath = path.join(tempDir, `${ALIGN_CONFIG.AUDIO_PREFIX}${sessionId}${ALIGN_CONFIG.WAV_EXT}`);
+    const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
+    const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
 
     const audioBuffer = Buffer.from(audioBase64, "base64");
     fs.writeFileSync(audioPath, audioBuffer);
 
-    fs.writeFileSync(scenesPath, JSON.stringify(scenes, null, 2), "utf-8");
+    fs.writeFileSync(scenesPath, JSON.stringify(scenes, null, 2), ENCODING_UTF8);
 
     const scriptPath = getStaticResourcePath(ALIGN_CONFIG.SCRIPT_FILE);
 
     const pyCmd = getPythonCommand();
-    const checkCmd = `"${pyCmd}" -c "import whisperx"`;
+    const checkCmd = ALIGN_CONFIG.CHECK_FASTER_WHISPER_CMD.replace("{0}", pyCmd);
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = `"${pyCmd}" -m pip install whisperx`;
+        const installCmd = ALIGN_CONFIG.INSTALL_FASTER_WHISPER_CMD.replace("{0}", pyCmd);
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
-            logger.error(`Failed to install whisperx: ${installError.message}`);
+            logger.error(`Failed to install faster-whisper: ${installError.message}`);
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
@@ -1730,11 +1734,11 @@ router.post("/align-voice", async (req: Request, res: Response) => {
       const pyCmd = getPythonCommand();
       let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       if (segment && projectId) {
-        const outputDir = path.join(getDataDirectory(), "assets", "projects", projectId, "voices");
+        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, ALIGN_CONFIG.VOICES_DIR);
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
-        const urlPrefix = `/assets/projects/${projectId}/voices`;
+        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${ALIGN_CONFIG.VOICES_DIR}`;
         cmd += ` "${outputDir}" "${urlPrefix}"`;
       }
       logger.log(`Running voice aligner command: ${cmd}`);
@@ -1764,7 +1768,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
             throw new Error(getBackendMsg("VOICE_ALIGN_MISSING_OUTPUT", isVi));
           }
 
-          const rawResult = fs.readFileSync(outputPath, "utf-8");
+          const rawResult = fs.readFileSync(outputPath, ENCODING_UTF8);
           const result = JSON.parse(rawResult);
 
           fs.unlinkSync(outputPath);
@@ -1970,12 +1974,12 @@ router.post("/export-zip", async (req: Request, res: Response) => {
   try {
     const { projectId } = req.body;
     if (!projectId) {
-      return res.status(400).json({ error: "Missing projectId" });
+      return res.status(400).json({ error: EXPORT_ZIP_CONFIG.ERR_MISSING_PROJECT });
     }
 
     const project = await getProjectDetailFromDb(projectId);
     if (!project) {
-      return res.status(404).json({ error: "Project not found" });
+      return res.status(404).json({ error: EXPORT_ZIP_CONFIG.ERR_PROJECT_NOT_FOUND });
     }
 
     const scenes = _.get(project, 'storyboard', []);
@@ -1984,7 +1988,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     if (!_.isEmpty(voiceUrl) && !_.isEmpty(scenes)) {
       const relativeAudioPath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
       const fullAudioPath = path.join(getDataDirectory(), relativeAudioPath);
-      const voicesDir = path.join(getDataDirectory(), "assets", "projects", projectId, "voices");
+      const voicesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, EXPORT_ZIP_CONFIG.VOICES_DIR);
 
       if (!fs.existsSync(voicesDir)) {
         fs.mkdirSync(voicesDir, { recursive: true });
@@ -2005,18 +2009,15 @@ router.post("/export-zip", async (req: Request, res: Response) => {
           });
         };
 
-        const cutPromises = _.map(scenes, (sc: any) => {
+        for (const sc of scenes) {
           const startVal = _.get(sc, '_start');
           const endVal = _.get(sc, '_end');
           if (!_.isNil(startVal) && !_.isNil(endVal)) {
-            const outPath = path.join(voicesDir, `scene_${sc.id}.wav`);
-            sc.audioUrl = `/assets/projects/${projectId}/voices/scene_${sc.id}.wav`;
-            return cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+            const outPath = path.join(voicesDir, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${sc.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`);
+            sc.audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${EXPORT_ZIP_CONFIG.VOICES_DIR}/${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${sc.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+            await cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
           }
-          return Promise.resolve();
-        });
-
-        await Promise.all(cutPromises);
+        }
       }
     }
 
@@ -2040,10 +2041,10 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     zip.file(CAPCUT_CONFIG.COVER_FILENAME, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
     zip.file(`${folderKey}/${CAPCUT_CONFIG.COVER_FILENAME}`, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
 
-    scenes.forEach((sc, index) => {
+    _.forEach(scenes, (sc, index) => {
       const filename = `${index + 1}_image.jpg`;
       if (sc.assetUrl) {
-        const relativePath = sc.assetUrl.startsWith('/') ? sc.assetUrl.slice(1) : sc.assetUrl;
+        const relativePath = _.startsWith(sc.assetUrl, '/') ? sc.assetUrl.slice(1) : sc.assetUrl;
         const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const imgBuffer = fs.readFileSync(fullPath);
@@ -2055,10 +2056,10 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       }
     });
 
-    scenes.forEach((sc, index) => {
+    _.forEach(scenes, (sc, index) => {
       const filename = `${index + 1}_voice.wav`;
       if (sc.audioUrl) {
-        const relativePath = sc.audioUrl.startsWith('/') ? sc.audioUrl.slice(1) : sc.audioUrl;
+        const relativePath = _.startsWith(sc.audioUrl, '/') ? sc.audioUrl.slice(1) : sc.audioUrl;
         const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const audioBuffer = fs.readFileSync(fullPath);
@@ -2071,7 +2072,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     });
 
     if (voiceUrl) {
-      const relativePath = voiceUrl.startsWith('/') ? voiceUrl.slice(1) : voiceUrl;
+      const relativePath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
       const fullPath = path.join(getDataDirectory(), relativePath);
       if (fs.existsSync(fullPath)) {
         const fullAudioBuffer = fs.readFileSync(fullPath);
@@ -2117,7 +2118,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
 
     const parseTimeToSecondsHelper = (timeStr: string | undefined): number => {
       if (!timeStr) return 0;
-      const parts = timeStr.trim().split(":");
+      const parts = _.split(timeStr.trim(), ":");
       let secs = 0;
       if (parts.length === 3) {
         secs = parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
@@ -2130,7 +2131,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     };
 
     let elapsed = 0;
-    const sceneRanges = scenes.map((sc) => {
+    const sceneRanges = _.map(scenes, (sc) => {
       const startSec = parseTimeToSecondsHelper(sc.startTime);
       const endSec = parseTimeToSecondsHelper(sc.endTime);
       const start = sc.startTime && startSec >= 0 ? startSec : elapsed;
@@ -2149,7 +2150,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       };
     });
 
-    const totalDurationUs = sceneRanges.length > 0 ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
+    const totalDurationUs = !_.isEmpty(sceneRanges) ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
 
     sceneRanges.forEach((scRange, idx) => {
       const startUs = Math.round(scRange.start * 1000000);
