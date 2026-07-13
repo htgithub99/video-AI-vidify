@@ -4,6 +4,7 @@ import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio } from "../../types.js";
 import { Locator, Page } from "playwright";
+import { delayAsync } from "../../lib/shared-utils.js";
 
 export async function smoothMouseMove(page: Page, locator: Locator) {
   try {
@@ -42,7 +43,7 @@ export async function humanType(page: Page, text: string) {
     if (pauseChars.includes(char)) {
       delay += Math.floor(Math.random() * 50 + 30);
     }
-    await new Promise((r) => setTimeout(r, delay));
+    await delayAsync(delay);
   }
 }
 
@@ -389,7 +390,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             isBtnDisabled = true;
           }
           if (!isBtnDisabled) break;
-          await new Promise((r) => setTimeout(r, 500));
+          await delayAsync(500);
         }
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_SUBMIT_LOG);
@@ -704,7 +705,7 @@ export async function closeAllBatchPages() {
 
 async function applyBatchDelay(visualConfig: any): Promise<number> {
   const ms = getBatchDelayMs(visualConfig?.batchDelay);
-  await new Promise((resolve) => setTimeout(resolve, ms));
+  await delayAsync(ms);
   return ms;
 }
 

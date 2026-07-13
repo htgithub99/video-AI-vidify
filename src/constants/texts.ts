@@ -407,3 +407,58 @@ export const SEO_DEFAULT_CONFIGS = {
 } as const;
 
 
+
+export const PROJECT_LIST_TEXTS = {
+  vi: {
+    desc: "Quản lý và biên tập tất cả các dự án sản xuất video AI của bạn",
+    allLangs: "Tất cả ngôn ngữ",
+    viBtn: "🇻🇳 Tiếng Việt",
+    enBtn: "🇺🇸 English",
+    allGenres: "TẤT CẢ THỂ LOẠI",
+    searchPlaceholder: "Tìm kiếm dự án...",
+    noProjectsMatch: "Không tìm thấy dự án phù hợp với bộ lọc.",
+    colVideoProject: "Dự án video",
+    colCredits: "Tiêu hao",
+    colUpdatedAt: "Cập nhật lần cuối",
+    colActions: "Hành động",
+    genreLabels: {
+      Documentary: "Tài Liệu",
+      Explanation: "Giải Thích",
+      Review: "Đánh Giá",
+      History: "Lịch Sử",
+      Science: "Khoa Học",
+      Story: "Kể Chuyện",
+      News: "Tin Tức",
+    } as Record<string, string>,
+  },
+  en: {
+    desc: "Synthesize stories, design video structures with AI...",
+    allLangs: "All Languages",
+    viBtn: "🇻🇳 Tiếng Việt",
+    enBtn: "🇺🇸 English",
+    allGenres: "ALL GENRES",
+    searchPlaceholder: "Search projects...",
+    noProjectsMatch: "No projects matched your criteria.",
+    colVideoProject: "Video Project",
+    colCredits: "Credits",
+    colUpdatedAt: "Updated At",
+    colActions: "Actions",
+    genreLabels: {
+      Documentary: "Documentary",
+      Explanation: "Explanation",
+      Review: "Review",
+      History: "History",
+      Science: "Science",
+      Story: "Story",
+      News: "News",
+    } as Record<string, string>,
+  },
+} as const;
+
+export const PROJECT_LIST_CONSTANTS = {
+  FILTER_ALL: "all",
+  LANG_VI: "vi",
+  LANG_EN: "en",
+  SLEEP_DURATION_MS: 1000,
+  SKELETON_ITEMS: [1, 2, 3],
+} as const;

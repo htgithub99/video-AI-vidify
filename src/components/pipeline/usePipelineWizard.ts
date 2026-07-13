@@ -27,6 +27,7 @@ import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/rege
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
+import { delayAsync } from "../../lib/shared-utils.js";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -1650,7 +1651,7 @@ export function usePipelineWizard(props: any) {
   const handleUploadSceneImage = async (sceneId: string, base64DataUrl: string) => {
     logAction("handleUploadSceneImage");
     setIsUploadingImage(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await delayAsync(600);
     setProject((prev) => {
       const updatedScenes = (prev.storyboard || []).map((sc) => {
         if (sc.id === sceneId) {
@@ -2544,7 +2545,7 @@ export function usePipelineWizard(props: any) {
   const handleDeleteSceneImage = async (sceneId: string, imgIdx: number) => {
     logAction("handleDeleteSceneImage");
     setIsDeletingImage(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await delayAsync(500);
 
     setProject((prev) => {
       const updatedStoryboard = (prev.storyboard || []).map((sc) => {
@@ -3918,7 +3919,7 @@ export function usePipelineWizard(props: any) {
   const handleDownloadSRT = async () => {
     logAction("handleDownloadSRT");
     setLoadingExportType(EXPORT_TYPES.SRT);
-    await new Promise((r) => setTimeout(r, 800));
+    await delayAsync(800);
     try {
       let srt = "";
       if (project.storyboard && project.storyboard.length > 0) {
@@ -3953,7 +3954,7 @@ export function usePipelineWizard(props: any) {
   const handleDownloadCapcutLink = async () => {
     logAction("handleDownloadCapcutLink");
     setLoadingExportType(EXPORT_TYPES.CAPCUT);
-    await new Promise((r) => setTimeout(r, 800));
+    await delayAsync(800);
     try {
       const sceneRanges = getSceneTimeRanges(project.storyboard || []);
       const capcutSchema = {
@@ -3987,7 +3988,7 @@ export function usePipelineWizard(props: any) {
   const handleDownloadPremiereXML = async () => {
     logAction("handleDownloadPremiereXML");
     setLoadingExportType(EXPORT_TYPES.PREMIERE);
-    await new Promise((r) => setTimeout(r, 800));
+    await delayAsync(800);
     try {
       const sceneRanges = getSceneTimeRanges(project.storyboard || []);
       const totalSecs = sceneRanges.length > 0 ? sceneRanges[sceneRanges.length - 1].end : 0;

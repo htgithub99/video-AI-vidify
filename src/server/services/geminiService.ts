@@ -5,6 +5,7 @@ import { requestContext } from "../utils/requestContext.js";
 import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, AVAILABLE_MODELS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from "../../constants";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
+import { delayAsync } from "../../lib/shared-utils.js";
 
 
 export const isGeminiApiKeyAvailable = (): boolean => {
@@ -110,7 +111,7 @@ export const generateContentWithRetry = async (
 
         if (_.lte(attempt, retries) && isRetryable) {
           logStep("GEMINI_RETRYABLE_ERROR", model, waitTime);
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
+          await delayAsync(waitTime);
           delayMs = _.max([delayMs * 1.5, waitTime * 1.2]) || delayMs;
           continue;
         }
@@ -122,7 +123,7 @@ export const generateContentWithRetry = async (
 
     if (_.lt(i, _.subtract(AVAILABLE_MODELS.length, 1))) {
       logStep("GEMINI_COOLDOWN");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await delayAsync(2000);
     }
   }
 

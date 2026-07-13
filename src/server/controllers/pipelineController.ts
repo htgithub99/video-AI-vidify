@@ -92,6 +92,7 @@ import { exec, spawn } from "child_process";
 import { StepLogger } from "@/src/lib/stepLogger.js";
 import { generateMockStoryboard, smartSplitSentences } from "@/src/lib/textProcessor.js";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
+import { delayAsync } from "../../lib/shared-utils.js";
 
 const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
 if (fs.existsSync(ffmpegBinary)) {
@@ -220,7 +221,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       }
 
       if (i < chunks.length - 1) {
-        await new Promise((res) => setTimeout(res, 1500));
+        await delayAsync(1500);
       }
     }
 
@@ -298,7 +299,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
       }
 
       if (i < chunks.length - 1) {
-        await new Promise((res) => setTimeout(res, 3000));
+        await delayAsync(3000);
       }
     }
 
@@ -574,7 +575,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       }
 
       if (i < chunks.length - 1) {
-        await new Promise((res) => setTimeout(res, 1500));
+        await delayAsync(1500);
       }
     }
 
@@ -1171,7 +1172,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         }
 
         if (i < chunks.length - 1) {
-          await new Promise((res) => setTimeout(res, 1500));
+          await delayAsync(1500);
         }
       }
 
@@ -1489,7 +1490,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     let audioUrl = null;
     let attempts = 0;
     while (attempts < 60) {
-      await new Promise((r) => setTimeout(r, 2000));
+      await delayAsync(2000);
       const pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
         headers: {
           "Content-Type": "application/json",

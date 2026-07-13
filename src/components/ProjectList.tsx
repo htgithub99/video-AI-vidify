@@ -6,60 +6,13 @@ import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coin
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { COMMON_STRINGS } from "../constants/index.js";
-
-const FILTER_ALL = "all";
-const LANG_VI = "vi";
-const LANG_EN = "en";
-
-const LOCAL_TEXTS = {
-  vi: {
-    desc: "Quản lý và biên tập tất cả các dự án sản xuất video AI của bạn",
-    allLangs: "Tất cả ngôn ngữ",
-    viBtn: "🇻🇳 Tiếng Việt",
-    enBtn: "🇺🇸 English",
-    allGenres: "TẤT CẢ THỂ LOẠI",
-    searchPlaceholder: "Tìm kiếm dự án...",
-    noProjectsMatch: "Không tìm thấy dự án phù hợp với bộ lọc.",
-    colVideoProject: "Dự án video",
-    colCredits: "Tiêu hao",
-    colUpdatedAt: "Cập nhật lần cuối",
-    colActions: "Hành động",
-    genreLabels: {
-      Documentary: "Tài Liệu",
-      Explanation: "Giải Thích",
-      Review: "Đánh Giá",
-      History: "Lịch Sử",
-      Science: "Khoa Học",
-      Story: "Kể Chuyện",
-      News: "Tin Tức",
-    } as Record<string, string>,
-  },
-  en: {
-    desc: "Synthesize stories, design video structures with AI...",
-    allLangs: "All Languages",
-    viBtn: "🇻🇳 Tiếng Việt",
-    enBtn: "🇺🇸 English",
-    allGenres: "ALL GENRES",
-    searchPlaceholder: "Search projects...",
-    noProjectsMatch: "No projects matched your criteria.",
-    colVideoProject: "Video Project",
-    colCredits: "Credits",
-    colUpdatedAt: "Updated At",
-    colActions: "Actions",
-    genreLabels: {
-      Documentary: "Documentary",
-      Explanation: "Explanation",
-      Review: "Review",
-      History: "History",
-      Science: "Science",
-      Story: "Story",
-      News: "News",
-    } as Record<string, string>,
-  },
-};
+import _ from "lodash";
+import { appError } from "../lib/logger.js";
+import { delayAsync } from "../lib/shared-utils.js";
+import { PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS } from "../constants/index.js";
 
 const getGenreLabel = (genre: string, lang: Lang) => {
-  const labels = LOCAL_TEXTS[lang].genreLabels;
+  const labels = PROJECT_LIST_TEXTS[lang].genreLabels;
   return labels[genre] || genre;
 };
 
@@ -67,8 +20,8 @@ interface ProjectListProps {
   currentLang: Lang;
   projects: VideoProject[];
   onSelectProject: (p: VideoProject) => void;
-  onCreateProject: (name: string, desc: string) => void;
-  onUpdateProject?: (id: string, name: string, desc: string) => void;
+  onCreateProject: (name: string, desc: string) => Promise<void> | void;
+  onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void;
   onDeleteProject: (id: string) => void;
 }
 
@@ -81,17 +34,18 @@ export default function ProjectList({
   onDeleteProject,
 }: ProjectListProps) {
   const t = translations[currentLang];
-  const localT = LOCAL_TEXTS[currentLang];
+  const localT = PROJECT_LIST_TEXTS[currentLang];
   
   const [showModal, setShowModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [projectToDelete, setProjectToDelete] = useState<VideoProject | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterLang, setFilterLang] = useState<string>(FILTER_ALL);
-  const [filterGenre, setFilterGenre] = useState<string>(FILTER_ALL);
+  const [filterLang, setFilterLang] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
+  const [filterGenre, setFilterGenre] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
 
   const handleOpenCreateTarget = () => {
     setEditingId(null);
@@ -107,33 +61,44 @@ export default function ProjectList({
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    if (editingId && onUpdateProject) {
-      onUpdateProject(editingId, name, desc);
-    } else {
-      onCreateProject(name, desc);
-    }
-    setName("");
-    setDesc("");
+    
+    setIsCreating(true);
     setShowModal(false);
-    setEditingId(null);
+    
+    try {
+      await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
+      
+      if (editingId && onUpdateProject) {
+        await onUpdateProject(editingId, name, desc);
+      } else {
+        await onCreateProject(name, desc);
+      }
+    } catch(err) {
+      appError("ProjectList submit error:", err);
+    } finally {
+      setIsCreating(false);
+      setName("");
+      setDesc("");
+      setEditingId(null);
+    }
   };
 
-  const searchLower = searchQuery.toLowerCase();
+  const searchLower = _.toLower(searchQuery);
   
-  const filteredProjects = projects.filter((proj) => {
-    const matchesSearch = [proj.name, proj.description || ""].some((text) => 
-      text.toLowerCase().includes(searchLower)
+  const filteredProjects = _.filter(projects, (proj) => {
+    const matchesSearch = _.some([proj.name, proj.description || ""], (text) => 
+      _.includes(_.toLower(text), searchLower)
     );
-    const matchesLang = filterLang === FILTER_ALL || proj.config.language.toLowerCase() === filterLang;
-    const matchesGenre = filterGenre === FILTER_ALL || proj.config.genre === filterGenre;
+    const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
+    const matchesGenre = _.isEqual(filterGenre, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(proj.config.genre, filterGenre);
 
-    return matchesSearch && matchesLang && matchesGenre;
+    return _.every([matchesSearch, matchesLang, matchesGenre], Boolean);
   });
 
-  const availableGenres = [FILTER_ALL, ...Array.from(new Set(projects.map((p) => p.config.genre).filter(Boolean)))];
+  const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, 'config.genre'), Boolean)))];
 
   return (
     <div className="space-y-6">
@@ -144,7 +109,7 @@ export default function ProjectList({
             {t.projects}
           </h2>
           <p className="text-xs text-slate-400 mt-1 leading-relaxed font-medium">
-            {currentLang === LANG_VI ? localT.desc : t.Synthesize_stories_design || localT.desc}
+            {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
           </p>
         </div>
         <Button variant="primary" onClick={handleOpenCreateTarget} className="flex items-center gap-2 self-start md:self-auto px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl shadow-md shadow-rose-500/10">
@@ -156,9 +121,9 @@ export default function ProjectList({
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900 border border-slate-800/80 p-4 rounded-xl">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
-            onClick={() => setFilterLang(FILTER_ALL)}
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              filterLang === FILTER_ALL
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
             }`)}
@@ -166,9 +131,9 @@ export default function ProjectList({
             {localT.allLangs}
           </button>
           <button
-            onClick={() => setFilterLang(LANG_VI)}
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              filterLang === LANG_VI
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
             }`)}
@@ -176,9 +141,9 @@ export default function ProjectList({
             {localT.viBtn}
           </button>
           <button
-            onClick={() => setFilterLang(LANG_EN)}
+            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              filterLang === LANG_EN
+              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
             }`)}
@@ -192,9 +157,9 @@ export default function ProjectList({
               onChange={(e) => setFilterGenre(e.target.value)}
               className="bg-slate-950 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 hover:bg-slate-850 transition-all uppercase"
             >
-              <option value={FILTER_ALL}>{localT.allGenres}</option>
-              {availableGenres.filter(g => g !== FILTER_ALL).map(g => (
-                <option key={g} value={g}>{getGenreLabel(g, currentLang).toUpperCase()}</option>
+              <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
+              {_.map(_.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)), (g) => (
+                <option key={g} value={g}>{_.toUpper(getGenreLabel(g, currentLang))}</option>
               ))}
             </select>
           )}
@@ -212,7 +177,38 @@ export default function ProjectList({
         </div>
       </div>
 
-      {filteredProjects.length === 0 ? (
+      {isCreating ? (
+        <div className="w-full animate-pulse space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {_.map(PROJECT_LIST_CONSTANTS.SKELETON_ITEMS, (i) => (
+              <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+                <div className="h-3 w-1/3 bg-slate-800 rounded mb-4"></div>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-slate-800/80 shrink-0"></div>
+                  <div className="space-y-2 w-full">
+                    <div className="h-4 bg-slate-800 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-800/80 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+            <div className="h-3 w-1/4 bg-slate-800 rounded mb-5"></div>
+            <div className="flex flex-col sm:flex-row gap-5 items-start">
+              <div className="w-full sm:w-48 aspect-video bg-slate-800/80 rounded-xl shrink-0"></div>
+              <div className="flex-1 space-y-3 w-full">
+                <div className="h-4 bg-slate-800 rounded w-1/3"></div>
+                <div className="h-3 bg-slate-800/80 rounded w-full"></div>
+                <div className="h-3 bg-slate-800/80 rounded w-5/6"></div>
+                <div className="pt-2">
+                  <div className="h-8 w-24 bg-slate-800 rounded-lg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : filteredProjects.length === 0 ? (
         <div className="text-center py-20 bg-slate-900 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center p-6 space-y-4">
           <div className="p-4 bg-slate-950 rounded-full border border-slate-800">
             <Video className="w-8 h-8 text-slate-600" />

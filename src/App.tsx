@@ -11,6 +11,7 @@ import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
 import _ from "lodash";
+import { delayAsync } from "./lib/shared-utils.js";
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -114,7 +115,7 @@ export default function App() {
       }
     });
 
-    const fontTimeout = new Promise((resolve) => setTimeout(resolve, LOADING_CONFIG.FONT_TIMEOUT_MS));
+    const fontTimeout = delayAsync(LOADING_CONFIG.FONT_TIMEOUT_MS);
     const fontReady = document.fonts ? document.fonts.ready : Promise.resolve();
     const waitForFonts = Promise.race([fontReady, fontTimeout]);
 

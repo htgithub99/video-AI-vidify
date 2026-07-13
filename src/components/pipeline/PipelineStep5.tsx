@@ -9,6 +9,7 @@ import { safeSystemFetch } from "../../lib/shared-utils";
 import { Button } from "../ui/Button";
 import { PromptStatus, LogLevel } from "../../constants/enums";
 import { PIPELINE_STEP5_TEXTS, LOG_LEVEL_SYMBOLS, COMMON_STRINGS } from "../../constants/texts";
+import { delayAsync } from "../../lib/shared-utils.js";
 
 const { Play, Square, Download, Trash, Sparkles, Terminal, RefreshCw, FileText, Eye } = LucideIcons as any;
 
@@ -167,7 +168,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
       }
 
       if (i < prompts.length - 1 && !isCancelledRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await delayAsync(2000);
       }
     }
 
