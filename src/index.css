@@ -438,7 +438,7 @@ input.accent-amber-500::-moz-range-thumb {
   box-shadow: none !important;
 }
 
-:not(input):not(textarea):not(select):not([class*="focus-within"])[class*="border"] {
+:not(input):not(textarea):not(select):not(.animate-spin):not([class*="focus-within"])[class*="border"] {
   border-color: transparent !important;
 }
 
