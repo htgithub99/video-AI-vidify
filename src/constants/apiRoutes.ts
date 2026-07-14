@@ -20,11 +20,13 @@ export const API_ROUTES = {
   PIPELINE_VOICE: "/api/pipeline/voice",
   PIPELINE_ALIGN_VOICE: "/api/pipeline/align-voice",
   PIPELINE_RUN_ULTRA: "/api/pipeline/run-ultra",
+  PIPELINE_TEMPLATES: "/api/pipeline/templates",
   PIPELINE_SELECT_FILE: "/api/pipeline/select-file",
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
 };
 
 export const EXTERNAL_URLS = {
+  FFMPEG_URL: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z",
   GOOGLE_TRANSLATE_API: "https://translate.googleapis.com/translate_tts",
   GOOGLE_TRANSLATE_WEB_1: "https://translate.google.com/translate_tts",
   GOOGLE_TRANSLATE_WEB_2: "https://translate.google.com.vn/translate_tts",
@@ -43,7 +45,7 @@ export const EXTERNAL_URLS = {
 
 export const ALIGN_CONFIG = {
   TEMP_DIR: "temp_align",
-  SCRIPT_FILE: "voice_aligner.py",
+  SCRIPT_FILE: "python_scripts/voice_aligner.py",
   CHECK_FASTER_WHISPER_CMD: '"{0}" -c "import faster_whisper"',
   INSTALL_FASTER_WHISPER_CMD: '"{0}" -m pip install faster-whisper',
   VOICES_DIR: "voices",

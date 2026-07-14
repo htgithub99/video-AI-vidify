@@ -175,6 +175,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_SELECT_FOLDER_FAIL: "Hộp thoại chọn thư mục thất bại: {0}",
     TTS_FETCH_POLLING_ERROR: "Lỗi kết nối khi đồng bộ giọng nói: {0}",
     TTS_POLLING_FAILED_RETRYING: "Lỗi đồng bộ, đang thử lại... {0}",
+    TEMPLATE_LIST_FAILED: "Lỗi lấy danh sách mẫu (template)",
+    TEMPLATE_SAVE_FAILED: "Lỗi lưu mẫu dự án (template)",
+    TEMPLATE_NAME_REQUIRED: "Tên và nội dung của mẫu là bắt buộc",
+    TEMPLATE_NOT_FOUND: "Không tìm thấy mẫu dự án yêu cầu",
+    TEMPLATE_DELETE_FAILED: "Lỗi khi xoá mẫu dự án",
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -352,6 +357,11 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_SELECT_FILE_FAIL: "Select file dialog failed: {0}",
     ULTRA_RUN_SELECT_FOLDER: "Running select-folder command: {0}",
     ULTRA_SELECT_FOLDER_FAIL: "Select folder dialog failed: {0}",
+    TEMPLATE_LIST_FAILED: "Failed to list templates",
+    TEMPLATE_SAVE_FAILED: "Failed to save template",
+    TEMPLATE_NAME_REQUIRED: "Name and content are required",
+    TEMPLATE_NOT_FOUND: "Template not found",
+    TEMPLATE_DELETE_FAILED: "Failed to delete template",
   },
 };
 
@@ -1234,7 +1244,8 @@ export const VOICE_ALIGN_LOGS = {
   WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...",
   ERR_DELETE_TEMP_FILES: "Error deleting temp files",
   ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE",
-  ERR_RUNNING_SCRIPT: "Error running voice_aligner.py: ",
+  ERR_RUNNING_SCRIPT: "Error running python_scripts/voice_aligner.py: ",
+  FFMPEG_REQUIRED: "ffmpeg is required for alignment.",
   PYTHON_STDOUT: "Python script stdout: ",
   PYTHON_STDERR: "Python script stderr: ",
 };

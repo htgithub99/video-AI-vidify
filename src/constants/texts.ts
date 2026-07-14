@@ -101,6 +101,27 @@ export const TRANSFER_ENCODINGS = {
   CHUNKED: "chunked",
 };
 
+export const HTTP_STATUS_CODES = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+};
+
+export const TEMPLATE_CONFIG = {
+  PAYLOAD_LIMIT: "50mb",
+  DIR_NAME: "templates/capcut",
+  JSON_EXT: ".json",
+  SORT_FIELD_CREATED_AT: "createdAt",
+  SORT_ORDER_DESC: "desc" as "desc" | "asc",
+  UTF8: "utf8" as BufferEncoding,
+  JSON_SPACE: 2,
+  REGEX_NFD: /[\u0300-\u036f]/g,
+  REGEX_SAFE_NAME: /[^a-zA-Z0-9 -]/g,
+  REGEX_SPACE: /\s+/g,
+  ID_LENGTH: 8,
+};
+
 export const AUDIO_MIME_TYPE = "audio/wav";
 export const SIMULATED_SPEECH_VAL = "simulated_speech";
 export const BLOB_PREFIX = "blob:";
@@ -481,3 +502,69 @@ export const PROJECT_LIST_CONSTANTS = {
   PAGINATION_DELIMITER: "/",
   DASH_DELIMITER: "-",
 } as const;
+
+export const INPUT_MODES = {
+  ZIP: "zip",
+  SPLIT: "split",
+} as const;
+
+export const FOLDER_TYPES = {
+  PARENT: "parent",
+  SFX: "sfx",
+  IMAGES: "images",
+  VOICES: "voices",
+} as const;
+
+export const PIPELINE_STEP6_UI_TEXTS = {
+  TITLE_TEMPLATE: "Dự Án Mẫu",
+  TOOLTIP_TEMPLATE: "Chọn một dự án CapCut mẫu để áp dụng cấu trúc",
+  NO_TEMPLATE: "Chưa có mẫu nào. Hãy tải lên!",
+  BTN_UPLOAD: "Tải mẫu",
+  TITLE_MEDIA: "Nguồn Media",
+  TOOLTIP_MEDIA: "Nguồn chứa hình ảnh và âm thanh",
+  BTN_MODE_ZIP: "Chung (ZIP)",
+  BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
+  BTN_MODE_SPLIT: "Tách riêng",
+  BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh",
+  PLACEHOLDER_ZIP: "Đường dẫn thư mục hoặc File ZIP...",
+  PLACEHOLDER_IMAGES: "Thư mục Hình ảnh...",
+  PLACEHOLDER_VOICES: "Thư mục Âm thanh...",
+  TITLE_MOTION: "Hiệu ứng",
+  TOOLTIP_MOTION: "Hiệu ứng chuyển động của camera và hình ảnh",
+  TITLE_TRANSITION: "Chuyển tiếp",
+  TOOLTIP_TRANSITION: "Hiệu ứng chuyển tiếp giữa các phân cảnh",
+  BTN_AUTO: "Auto Mode (Tự Tạo Mới)",
+  BTN_MANUAL: "Manual (Sửa File Cũ)",
+  BTN_RUN_AUTO: "TỰ ĐỘNG TẠO DỰ ÁN & TỐI ƯU",
+  ERR_SELECT_TEMPLATE: "Vui lòng chọn Dự án Mẫu (Template)!",
+  ERR_SELECT_ZIP: "Vui lòng chọn Thư mục Cha chứa ảnh/audio hoặc File ZIP!",
+  ERR_SELECT_SPLIT: "Vui lòng chọn đủ Thư mục Ảnh và Thư mục Âm Thanh!",
+  LOG_UPLOADING: "Đang tải lên mẫu: ",
+  LOG_UPLOAD_SUCCESS: "Tải lên mẫu thành công!",
+  LOG_UPLOAD_ERROR: "Lỗi tải lên mẫu: ",
+  LOG_SELECT_PARENT: "Đã chọn thư mục cha: ",
+  LOG_SELECT_IMAGES: "Đã chọn thư mục ảnh: ",
+  LOG_SELECT_VOICES: "Đã chọn thư mục audio: ",
+  LOG_ERR_TEMPLATE: "Lỗi tải lên mẫu.",
+} as const;
+
+export const MOTION_OPTIONS = [
+  { value: "default", label: "Tự động (Mặc định)" },
+  { value: "tiktok", label: "Tiktok/Reels (Nhanh, thu hút)" },
+  { value: "podcast", label: "Podcast (Tĩnh, nhẹ nhàng)" },
+  { value: "review", label: "Bán hàng (Zoom cận, focus)" },
+  { value: "vlog", label: "Vlog/Du lịch (Đa dạng, lướt nhanh)" },
+  { value: "story", label: "Kể chuyện (Chậm rãi, huyền bí)" },
+  { value: "news", label: "Tin tức (Trang trọng, đều đặn)" },
+] as const;
+
+export const TRANSITION_OPTIONS = [
+  { value: "default", label: "Tự động (Mặc định)" },
+  { value: "tiktok", label: "Tiktok/Reels (Chớp nháy, cuộn)" },
+  { value: "podcast", label: "Podcast (Làm mờ mềm mại)" },
+  { value: "review", label: "Bán hàng (Trượt ngang, lật)" },
+  { value: "vlog", label: "Vlog/Du lịch (Xoay lốc, mờ ảo)" },
+  { value: "story", label: "Kể chuyện (Tan biến, bóng đen)" },
+  { value: "news", label: "Tin tức (Đẩy cảnh cơ bản)" },
+  { value: "none", label: "Không sử dụng", customClass: "text-rose-400" },
+] as const;

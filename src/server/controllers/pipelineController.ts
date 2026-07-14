@@ -8,6 +8,7 @@ import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
+import { listTemplates, saveTemplate, deleteTemplate } from "../utils/capcutTemplateManager.js";
 
 import {
   EXTERNAL_URLS,
@@ -78,8 +79,10 @@ import {
   BASE64_DATA_URL_REGEX,
   CONTENT_TYPE_HEADER,
   HTTP_METHODS,
-  HTTP_STATUS,
+  HTTP_STATUS_CODES,
+  TEMPLATE_CONFIG,
   TTS_POLLING_CONFIG,
+  HTTP_STATUS,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog } from "../../lib/logger.js";
@@ -1796,7 +1799,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
           return res.json(result);
         } catch (err: any) {
-          logger.error(`Error parsing voice_aligner.py output: ${err.message}`);
+          logger.error(`Error parsing python_scripts/voice_aligner.py output: ${err.message}`);
           if (fs.existsSync(outputPath)) {
             try {
               fs.unlinkSync(outputPath);
@@ -1817,9 +1820,9 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { filePath, geminiApiKey, sfxFolder, opts } = req.body;
+  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle } = req.body;
 
-  if (!filePath) {
+  if (!isAutoMode && !filePath) {
     return res.status(400).json({
       success: false,
       error: getBackendMsg("ULTRA_FILE_REQUIRED", isVi),
@@ -1841,6 +1844,12 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     ...opts,
     api_key: geminiApiKey || "",
     sfx_folder: sfxFolder || "",
+    is_auto_mode: isAutoMode || false,
+    template_id: templateId || "",
+    parent_folder: parentFolder || "",
+    images_dir: imagesDir || "",
+    voices_dir: voicesDir || "",
+    project_style: projectStyle || {}
   };
 
   try {
@@ -1850,7 +1859,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
 
     const pyCmd = getPythonCommand();
-    const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+    const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
     logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
     const pythonProcess = spawn(pyCmd, ["-u", scriptPath, filePath, tempOutputPath, optsJsonPath]);
 
@@ -1962,7 +1971,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 router.post("/select-file", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const pyCmd = getPythonCommand();
-  const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+  const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
   const cmd = `"${pyCmd}" "${scriptPath}" select-file`;
   logger.log(getBackendMsg("ULTRA_RUN_SELECT_FILE", isVi).replace("{0}", cmd));
 
@@ -1978,7 +1987,7 @@ router.post("/select-file", async (req: Request, res: Response) => {
 router.post("/select-folder", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const pyCmd = getPythonCommand();
-  const scriptPath = getStaticResourcePath("capcut_ultra_tool.py");
+  const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
   const cmd = `"${pyCmd}" "${scriptPath}" select-folder`;
   logger.log(getBackendMsg("ULTRA_RUN_SELECT_FOLDER", isVi).replace("{0}", cmd));
 
@@ -2334,7 +2343,49 @@ router.post("/export-zip", async (req: Request, res: Response) => {
 
   } catch (error: any) {
     logger.error("Lỗi xuất CapCut ZIP ở server:", error);
-    return res.status(500).json({ error: error.message });
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.get("/templates", (req: Request, res: Response) => {
+  const isVi = req.query?.lang !== ProjectLanguage.EN;
+  try {
+    const templates = listTemplates();
+    res.json(templates);
+  } catch (error: any) {
+    logger.error(getBackendMsg("TEMPLATE_LIST_FAILED", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_LIST_FAILED", isVi) });
+  }
+});
+
+router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT }), (req: Request, res: Response) => {
+  const isVi = req.query?.lang !== ProjectLanguage.EN;
+  try {
+    const { name, content } = req.body;
+    if (!name || !content) {
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_NAME_REQUIRED", isVi) });
+    }
+    const template = saveTemplate(name, content);
+    res.json(template);
+  } catch (error: any) {
+    logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_SAVE_FAILED", isVi) });
+  }
+});
+
+router.delete("/templates/:id", (req: Request, res: Response) => {
+  const isVi = req.query?.lang !== ProjectLanguage.EN;
+  try {
+    const { id } = req.params;
+    const deleted = deleteTemplate(id);
+    if (deleted) {
+      res.json({ success: true });
+    } else {
+      res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: getBackendMsg("TEMPLATE_NOT_FOUND", isVi) });
+    }
+  } catch (error: any) {
+    logger.error(getBackendMsg("TEMPLATE_DELETE_FAILED", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_DELETE_FAILED", isVi) });
   }
 });
 

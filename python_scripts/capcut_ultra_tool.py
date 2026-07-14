@@ -199,9 +199,15 @@ MOTION_CORNER_RIGHT = "Corner Right"
 MOTION_KEN_BURNS = "Ken Burns"
 MOTION_STATIC_FOCUS = "Static Focus"
 
-GENRE_DOCUMENTARY = "Documentary"
-GENRE_HISTORY = "History"
-GENRE_ACTION = "Action"
+GENRE_TIKTOK = "tiktok"
+GENRE_PODCAST = "podcast"
+GENRE_REVIEW = "review"
+GENRE_VLOG = "vlog"
+GENRE_STORY = "story"
+GENRE_NEWS = "news"
+GENRE_DOCUMENTARY = "documentary"
+GENRE_HISTORY = "history"
+GENRE_ACTION = "action"
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding=UTF8_ENCODING)
@@ -475,13 +481,40 @@ class MotionEngine:
     }
 
     @staticmethod
-    def select_motion(aspect_ratio, motion_history=None):
+    def select_motion(aspect_ratio, motion_history=None, motion_style="default"):
         if aspect_ratio == RATIO_LANDSCAPE:
             allowed = [MOTION_PAN_LEFT, MOTION_PAN_RIGHT, MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_KEN_BURNS, MOTION_STATIC_FOCUS]
         elif aspect_ratio == RATIO_PORTRAIT:
             allowed = [MOTION_PAN_UP, MOTION_PAN_DOWN, MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_PUSH_IN, MOTION_PULL_OUT, MOTION_STATIC_FOCUS]
         else:
             allowed = [MOTION_ZOOM_IN, MOTION_ZOOM_OUT, MOTION_CORNER_LEFT, MOTION_CORNER_RIGHT, MOTION_STATIC_FOCUS]
+
+        w_zoom = WEIGHT_ZOOM
+        w_pan = WEIGHT_PAN
+        w_push = WEIGHT_PUSH
+        w_corner = WEIGHT_CORNER
+        w_kb = WEIGHT_KEN_BURNS
+        w_static = 0.05
+        
+        if motion_style == GENRE_TIKTOK:
+            w_zoom, w_pan, w_static = 2.0, 1.5, 0.0
+            allowed = [m for m in allowed if m not in [MOTION_STATIC_FOCUS, MOTION_KEN_BURNS]]
+        elif motion_style == GENRE_PODCAST:
+            w_static, w_kb, w_zoom = 5.0, 2.0, 0.5
+            allowed = [m for m in allowed if m in [MOTION_STATIC_FOCUS, MOTION_KEN_BURNS, MOTION_ZOOM_IN]]
+        elif motion_style == GENRE_REVIEW:
+            w_zoom = 3.0
+            allowed = [m for m in allowed if m in [MOTION_ZOOM_IN, MOTION_PUSH_IN, MOTION_STATIC_FOCUS]]
+        elif motion_style == GENRE_VLOG:
+            w_pan, w_zoom, w_kb = 1.5, 1.5, 1.0
+        elif motion_style == GENRE_STORY:
+            w_kb, w_pan, w_zoom = 3.0, 2.0, 0.5
+        elif motion_style == GENRE_NEWS:
+            w_static, w_pan = 2.0, 1.5
+            allowed = [m for m in allowed if m in [MOTION_STATIC_FOCUS, MOTION_PAN_UP, MOTION_PAN_DOWN, MOTION_PAN_LEFT, MOTION_PAN_RIGHT]]
+            
+        if not allowed:
+            allowed = [MOTION_STATIC_FOCUS]
 
         if motion_history:
             filtered = [m for m in allowed if m not in motion_history]
@@ -495,17 +528,17 @@ class MotionEngine:
         weights = []
         for m in allowed:
             if m in MotionEngine.MOTION_GROUPS["Zoom"]:
-                weights.append(WEIGHT_ZOOM / len(MotionEngine.MOTION_GROUPS["Zoom"]))
+                weights.append(w_zoom / len(MotionEngine.MOTION_GROUPS["Zoom"]))
             elif m in MotionEngine.MOTION_GROUPS["Pan"]:
-                weights.append(WEIGHT_PAN / len(MotionEngine.MOTION_GROUPS["Pan"]))
+                weights.append(w_pan / len(MotionEngine.MOTION_GROUPS["Pan"]))
             elif m in MotionEngine.MOTION_GROUPS["Push"]:
-                weights.append(WEIGHT_PUSH / len(MotionEngine.MOTION_GROUPS["Push"]))
+                weights.append(w_push / len(MotionEngine.MOTION_GROUPS["Push"]))
             elif m in MotionEngine.MOTION_GROUPS["Corner"]:
-                weights.append(WEIGHT_CORNER / len(MotionEngine.MOTION_GROUPS["Corner"]))
+                weights.append(w_corner / len(MotionEngine.MOTION_GROUPS["Corner"]))
             elif m in MotionEngine.MOTION_GROUPS["Ken Burns"]:
-                weights.append(WEIGHT_KEN_BURNS)
+                weights.append(w_kb)
             else:
-                weights.append(0.05)
+                weights.append(w_static)
 
         total_w = sum(weights)
         if total_w > 0:
@@ -719,6 +752,34 @@ class MotionEngine:
 
 class TransitionEngine:
     TRANSITION_LIBRARY = {
+        GENRE_TIKTOK: [
+            {"name": "Flash", "effect_id": "6008016", "resource_id": "7108928014529069056", "path": ""},
+            {"name": "Whip", "effect_id": "6008050", "resource_id": "7108928014529069090", "path": ""},
+            {"name": "Glitch", "effect_id": "6008090", "resource_id": "7108928014529069130", "path": ""},
+            {"name": "Zoom", "effect_id": "6008060", "resource_id": "7108928014529069100", "path": ""}
+        ],
+        GENRE_PODCAST: [
+            {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""},
+            {"name": "Blur", "effect_id": "6008020", "resource_id": "7108928014529069060", "path": ""}
+        ],
+        GENRE_REVIEW: [
+            {"name": "Slide Left", "effect_id": "6008071", "resource_id": "7108928014529069111", "path": ""},
+            {"name": "Slide Right", "effect_id": "6008072", "resource_id": "7108928014529069112", "path": ""},
+            {"name": "Push", "effect_id": "6008075", "resource_id": "7108928014529069115", "path": ""}
+        ],
+        GENRE_VLOG: [
+            {"name": "Zoom", "effect_id": "6008060", "resource_id": "7108928014529069100", "path": ""},
+            {"name": "Motion Blur", "effect_id": "6008022", "resource_id": "7108928014529069062", "path": ""},
+            {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""}
+        ],
+        GENRE_STORY: [
+            {"name": "Dip to Black", "effect_id": "6008013", "resource_id": "7108928014529069053", "path": ""},
+            {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""}
+        ],
+        GENRE_NEWS: [
+            {"name": "Push", "effect_id": "6008075", "resource_id": "7108928014529069115", "path": ""},
+            {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""}
+        ],
         GENRE_DOCUMENTARY: [
             {"name": "Cross Fade", "effect_id": "6008620", "resource_id": "7108928014529069058", "path": ""},
             {"name": "Dip to Black", "effect_id": "6008013", "resource_id": "7108928014529069053", "path": ""},
@@ -1032,7 +1093,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             applied_motion = "None"
             final_scale, final_x, final_y, final_rot = fill_scale, 0.0, 0.0, 0.0
             if opts.get(OPT_DYNAMIC_MOTION):
-                motion = MotionEngine.select_motion(aspect_ratio, motion_history)
+                motion = MotionEngine.select_motion(aspect_ratio, motion_history, opts.get("_motion_style", "default"))
                 applied_motion, final_scale, final_x, final_y, final_rot = MotionEngine.apply_motion(
                     p_seg, motion, photo_duration, fill_scale, canvas_w, canvas_h
                 )
@@ -1077,7 +1138,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             applied_motion = "None"
             final_scale, final_x, final_y, final_rot = fill_scale, 0.0, 0.0, 0.0
             if opts.get(OPT_DYNAMIC_MOTION):
-                motion = MotionEngine.select_motion(aspect_ratio, motion_history)
+                motion = MotionEngine.select_motion(aspect_ratio, motion_history, opts.get("_motion_style", "default"))
                 applied_motion, final_scale, final_x, final_y, final_rot = MotionEngine.apply_motion(
                     p_seg, motion, photo_duration, fill_scale, canvas_w, canvas_h
                 )
@@ -1173,7 +1234,14 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
         template_transition = transitions_mat[0] if transitions_mat else None
         target_video_segs = photo_segments if timeline_modifying else [v['segment'] for v in all_video_segments]
         
-        genre = opts.get(OPT_SCENE_TYPE, GENRE_DOCUMENTARY)
+        genre = opts.get("_transition_style", "default")
+        if genre == "default":
+            genre = GENRE_DOCUMENTARY
+            
+        if genre == "none":
+            # Xử lý đặc biệt nếu người dùng chọn "Không sử dụng chuyển tiếp"
+            return
+            
         transition_history = []
         for i in range(len(target_video_segs) - 1):
             p_seg = target_video_segs[i]
@@ -1414,7 +1482,42 @@ if __name__ == "__main__":
             print(ERR_OPTS_PARSE.format(e))
             
     try:
+        is_auto_mode = opts.get("is_auto_mode", False)
+        
+        if is_auto_mode:
+            # Import builder dynamically
+            try:
+                from capcut_project_builder import generate_capcut_project
+                template_path = opts.get("template_id", "")
+                parent_folder = opts.get("parent_folder", "")
+                images_dir_opt = opts.get("images_dir", None)
+                voices_dir_opt = opts.get("voices_dir", None)
+                project_name = "AI_Video_" + uuid.uuid4().hex[:6]
+                
+                print(f"[AUTO-MODE] Generating new project '{project_name}' from template...")
+                new_input_path = generate_capcut_project(template_path, parent_folder, project_name, None, images_dir_opt, voices_dir_opt)
+                print(f"[AUTO-MODE] Project created at: {new_input_path}")
+                
+                # Override input_file to point to the newly generated project json
+                input_file = new_input_path
+                # We can also keep output_file same as input_file to overwrite
+                output_file = new_input_path
+            except Exception as ex:
+                print(f"Error in auto generation: {ex}")
+                sys.exit(1)
+
+        # Style Options Parsing
+        style_opts = opts.get("project_style", {})
+        motion_style = style_opts.get("camera_motion", "default")
+        transition_style = style_opts.get("transitions", "default")
+        
+        # Inject styles into opts for SceneAnalyzer/TransitionEngine to use later
+        opts["_motion_style"] = motion_style
+        opts["_transition_style"] = transition_style
+
         process_capcut_ultra(input_file, output_file, opts)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(ERR_GENERIC.format(e), file=sys.stderr)
         sys.exit(1)

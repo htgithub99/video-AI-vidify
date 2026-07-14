@@ -102,6 +102,7 @@
         ],
         "extraResources": [
             "capcut_ultra_tool.py",
+            "capcut_project_builder.py",
             "voice_aligner.py",
             "ffmpeg.exe",
             "database.db"

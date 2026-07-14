@@ -1,13 +1,19 @@
 import { cn } from "../../lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
-import { appError } from "../../lib/logger";
-import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, PIPELINE_STEP6_TEXTS, LOG_KEYWORDS } from "../../constants";
+import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, LOG_KEYWORDS, PIPELINE_STEP6_UI_TEXTS, INPUT_MODES, FOLDER_TYPES, MOTION_OPTIONS, TRANSITION_OPTIONS } from "../../constants";
 import { Button } from "../ui/Button";
+import _ from "lodash";
 
-const { Play, Sparkles, Terminal, FileJson, FolderOpen, Key, CheckSquare, Square, Eye, EyeOff } = LucideIcons as any;
+const { Play, Sparkles, Terminal, FileJson, FolderOpen, CheckSquare, Square, Upload, Settings, Wand2, Wrench } = LucideIcons as any;
+
+interface CapcutTemplate {
+  id: string;
+  name: string;
+  filePath: string;
+}
 
 interface UltraConfig {
   sync_image_to_audio: boolean;
@@ -26,6 +32,14 @@ interface UltraConfig {
   api_key: string;
   sfx_folder: string;
   draft_json_path: string;
+  is_auto_mode: boolean;
+  input_mode: string;
+  template_id: string;
+  parent_folder: string;
+  images_dir: string;
+  voices_dir: string;
+  camera_motion: string;
+  transitions: string;
 }
 
 const DEFAULT_CONFIG: UltraConfig = {
@@ -45,6 +59,14 @@ const DEFAULT_CONFIG: UltraConfig = {
   api_key: "",
   sfx_folder: "",
   draft_json_path: "",
+  is_auto_mode: true,
+  input_mode: INPUT_MODES.ZIP,
+  template_id: "",
+  parent_folder: "",
+  images_dir: "",
+  voices_dir: "",
+  camera_motion: MOTION_OPTIONS[0].value,
+  transitions: TRANSITION_OPTIONS[0].value
 };
 
 export default function PipelineStep6(props: PipelineWizardState) {
@@ -59,13 +81,66 @@ export default function PipelineStep6(props: PipelineWizardState) {
     }
   });
 
-  const [showApiKey, setShowApiKey] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<CapcutTemplate[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG, JSON.stringify(config));
   }, [config]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const res = await fetch(API_ROUTES.PIPELINE_TEMPLATES);
+      if (res.ok) {
+        const data = await res.json();
+        setTemplates(data);
+        if (data.length > 0 && !config.template_id) {
+          setConfig(p => ({ ...p, template_id: data[0].filePath }));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleUploadTemplate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_UPLOADING}${file.name}...`, LogLevel.INFO);
+      const text = await file.text();
+      const content = JSON.parse(text);
+
+      const payload = {
+        name: file.name.replace(".json", ""),
+        content: content
+      };
+
+      const res = await fetch(API_ROUTES.PIPELINE_TEMPLATES, {
+        method: HTTP_METHODS.POST,
+        headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.LOG_UPLOAD_SUCCESS, LogLevel.SUCCESS);
+        fetchTemplates();
+      } else {
+        throw new Error(PIPELINE_STEP6_UI_TEXTS.LOG_ERR_TEMPLATE);
+      }
+    } catch (err: any) {
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_UPLOAD_ERROR}${err.message}`, LogLevel.ERROR);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const addLog = (msg: string, type: LogLevel = LogLevel.INFO) => {
     const time = new Date().toLocaleTimeString();
@@ -91,74 +166,67 @@ export default function PipelineStep6(props: PipelineWizardState) {
   ];
 
   const handleToggle = (key: keyof UltraConfig) => {
-    setConfig((prev) => ({
-      ...prev,
-      [key]: !prev[key] as any,
-    }));
+    setConfig((prev) => ({ ...prev, [key]: !prev[key] as any }));
   };
 
   const toggleAllSwitches = (value: boolean) => {
-    setConfig((prev) => {
-      const next = { ...prev };
-      switches.forEach((sw) => {
-        (next as any)[sw.key] = value;
-      });
-      return next;
-    });
+    setConfig((prev) =>
+      _.reduce(switches, (acc, sw) => {
+        (acc as any)[sw.key] = value;
+        return acc;
+      }, { ...prev })
+    );
     addLog(value ? t.node7_select_all : t.node7_deselect_all, LogLevel.INFO);
   };
 
-  const handleSelectAll = () => toggleAllSwitches(true);
-  const handleDeselectAll = () => toggleAllSwitches(false);
-
   const handleSelectFile = async () => {
     try {
-      addLog(t.node7_log_started_dialog, LogLevel.INFO);
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FILE, {});
       if (response.success && response.data?.filePath) {
         setConfig((prev) => ({ ...prev, draft_json_path: response.data.filePath }));
         addLog(t.node7_log_selected_file.replace("{path}", response.data.filePath), LogLevel.SUCCESS);
-      } else if (response.error) {
-        throw new Error(response.error);
-      } else {
-        addLog(t.node7_log_canceled_file, LogLevel.WARN);
       }
     } catch (err: any) {
-      addLog(t.node7_log_error_file.replace("{error}", err.message), LogLevel.ERROR);
+      addLog(err.message, LogLevel.ERROR);
     }
   };
 
-  const handleSelectFolder = async () => {
+  const handleSelectFolder = async (type: typeof FOLDER_TYPES[keyof typeof FOLDER_TYPES] = FOLDER_TYPES.SFX) => {
     try {
-      addLog(t.node7_log_started_folder, LogLevel.INFO);
       const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {});
       if (response.success && response.data?.folderPath) {
-        setConfig((prev) => ({ ...prev, sfx_folder: response.data.folderPath }));
-        addLog(t.node7_log_selected_folder.replace("{path}", response.data.folderPath), LogLevel.SUCCESS);
-      } else if (response.error) {
-        throw new Error(response.error);
-      } else {
-        addLog(t.node7_log_canceled_folder, LogLevel.WARN);
+        if (type === FOLDER_TYPES.PARENT) {
+          setConfig((prev) => ({ ...prev, parent_folder: response.data.folderPath }));
+          addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_SELECT_PARENT}${response.data.folderPath}`, LogLevel.SUCCESS);
+        } else if (type === FOLDER_TYPES.IMAGES) {
+          setConfig((prev) => ({ ...prev, images_dir: response.data.folderPath }));
+          addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_SELECT_IMAGES}${response.data.folderPath}`, LogLevel.SUCCESS);
+        } else if (type === FOLDER_TYPES.VOICES) {
+          setConfig((prev) => ({ ...prev, voices_dir: response.data.folderPath }));
+          addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_SELECT_VOICES}${response.data.folderPath}`, LogLevel.SUCCESS);
+        } else {
+          setConfig((prev) => ({ ...prev, sfx_folder: response.data.folderPath }));
+        }
       }
     } catch (err: any) {
-      addLog(t.node7_log_error_folder.replace("{error}", err.message), LogLevel.ERROR);
+      addLog(err.message, LogLevel.ERROR);
     }
   };
 
   const handleRunProcess = async () => {
-    if (!config.draft_json_path.trim()) {
-      addLog(t.node7_log_missing_file, LogLevel.ERROR);
-      return;
-    }
-
-    if (config.ai_sfx_generator) {
-      if (!config.api_key.trim()) {
-        addLog(t.node7_log_missing_api, LogLevel.ERROR);
-        return;
+    if (config.is_auto_mode) {
+      if (!config.template_id) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_TEMPLATE, LogLevel.ERROR); return;
       }
-      if (!config.sfx_folder.trim()) {
-        addLog(t.node7_log_missing_sfx, LogLevel.ERROR);
-        return;
+      if (config.input_mode === INPUT_MODES.ZIP && !config.parent_folder) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_ZIP, LogLevel.ERROR); return;
+      }
+      if (config.input_mode === INPUT_MODES.SPLIT && (!config.images_dir || !config.voices_dir)) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_SPLIT, LogLevel.ERROR); return;
+      }
+    } else {
+      if (!config.draft_json_path.trim()) {
+        addLog(t.node7_log_missing_file, LogLevel.ERROR); return;
       }
     }
 
@@ -171,6 +239,15 @@ export default function PipelineStep6(props: PipelineWizardState) {
         filePath: config.draft_json_path.trim(),
         geminiApiKey: config.api_key.trim(),
         sfxFolder: config.sfx_folder.trim(),
+        isAutoMode: config.is_auto_mode,
+        templateId: config.template_id,
+        parentFolder: config.input_mode === INPUT_MODES.ZIP ? config.parent_folder : "",
+        imagesDir: config.input_mode === INPUT_MODES.SPLIT ? config.images_dir : "",
+        voicesDir: config.input_mode === INPUT_MODES.SPLIT ? config.voices_dir : "",
+        projectStyle: {
+          camera_motion: config.camera_motion,
+          transitions: config.transitions
+        },
         opts: {
           sync_image_to_audio: config.sync_image_to_audio,
           ultra_music_mix: config.ultra_music_mix,
@@ -188,31 +265,24 @@ export default function PipelineStep6(props: PipelineWizardState) {
         },
       };
 
-      addLog(t.node7_log_calling_backend, LogLevel.INFO);
       const response = await fetch(API_ROUTES.PIPELINE_RUN_ULTRA, {
         method: HTTP_METHODS.POST,
         headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
         body: JSON.stringify(payload),
       });
 
-      if (!response.body) {
-        throw new Error(getBackendMsg("STREAM_NOT_SUPPORTED"));
-      }
+      if (!response.body) throw new Error(getBackendMsg("STREAM_NOT_SUPPORTED"));
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let isReadingStream = true;
 
-      while (isReadingStream) {
+      while (true) {
         const { value, done } = await reader.read();
-        if (done) {
-          isReadingStream = false;
-          break;
-        }
+        if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
+        const lines = buffer.split("\\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
@@ -226,17 +296,12 @@ export default function PipelineStep6(props: PipelineWizardState) {
             } else if ("success" in data) {
               if (data.success) {
                 addLog(data.message || t.node7_log_success, LogLevel.SUCCESS);
-                addLog(t.node7_log_backup_saved, LogLevel.INFO);
               } else {
                 throw new Error(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR);
               }
             }
           } catch (err: any) {
-            if (err instanceof SyntaxError) {
-              appError(ErrorMessage.FAILED_TO_PARSE_NDJSON_LINE, line, err);
-            } else {
-              throw err;
-            }
+            _.noop();
           }
         }
       }
@@ -248,7 +313,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex flex-col gap-1 text-left">
         <h2 className="text-xl font-extrabold text-slate-100 flex items-center gap-2 tracking-tight uppercase">
           <Sparkles className="w-5 h-5 text-rose-500" />
@@ -257,13 +322,27 @@ export default function PipelineStep6(props: PipelineWizardState) {
         <p className="text-xs text-slate-450 leading-relaxed">{t.node7_desc}</p>
       </div>
 
+      <div className="flex gap-2 bg-slate-900/60 p-1.5 rounded-xl border border-slate-800 max-w-sm mb-4">
+        <button
+          onClick={() => setConfig(p => ({ ...p, is_auto_mode: true }))}
+          className={cn("flex-1 py-2 text-[11px] font-bold tracking-wider uppercase rounded-lg flex items-center justify-center gap-2 transition-all", config.is_auto_mode ? "bg-rose-500 text-white shadow-md" : "text-slate-450 hover:text-slate-200")}>
+          <Wand2 className="w-3.5 h-3.5" />
+          {PIPELINE_STEP6_UI_TEXTS.BTN_AUTO}
+        </button>
+        <button
+          onClick={() => setConfig(p => ({ ...p, is_auto_mode: false }))}
+          className={cn("flex-1 py-2 text-[11px] font-bold tracking-wider uppercase rounded-lg flex items-center justify-center gap-2 transition-all", !config.is_auto_mode ? "bg-slate-700 text-white shadow-md" : "text-slate-450 hover:text-slate-200")}>
+          <Wrench className="w-3.5 h-3.5" />
+          {PIPELINE_STEP6_UI_TEXTS.BTN_MANUAL}
+        </button>
+      </div>
+
       <div className="bg-slate-900/60 border border-slate-850 rounded-xl overflow-hidden shadow-2xl flex flex-col text-left animate-fadeIn">
         <div className="px-5 py-3 border-b border-slate-850 bg-slate-900/40 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold text-slate-400 tracking-wider font-mono flex items-center gap-1.5 select-none">
             <Terminal className="w-3.5 h-3.5 text-rose-500" />
             {t.node7_console_title}
           </span>
-          <span className="text-[9px] font-mono text-slate-600">{PIPELINE_STEP6_TEXTS.STDOUT_STDERR}</span>
         </div>
         <div className="p-5 bg-slate-950 font-mono text-[11px] leading-relaxed text-slate-350 min-h-[160px] max-h-[300px] overflow-y-auto custom-scrollbar space-y-1.5 select-text">
           {consoleLogs.length === 0 ? (
@@ -271,71 +350,136 @@ export default function PipelineStep6(props: PipelineWizardState) {
           ) : (
             consoleLogs.map((log, index) => {
               let textClass = "text-slate-300";
-              if ([LOG_LEVEL_SYMBOLS.SUCCESS, LOG_KEYWORDS.SUCCESS].some(k => log.includes(k))) {
-                textClass = "text-teal-400 font-semibold";
-              } else if ([LOG_LEVEL_SYMBOLS.ERROR, LOG_KEYWORDS.ERROR].some(k => log.includes(k))) {
-                textClass = "text-rose-500 font-semibold";
-              } else if ([LOG_LEVEL_SYMBOLS.WARN].some(k => log.includes(k))) {
-                textClass = "text-amber-400";
-              }
-              return (
-                <div key={index} className={textClass}>
-                  {log}
-                </div>
-              );
+              if (_.some([LOG_LEVEL_SYMBOLS.SUCCESS, LOG_KEYWORDS.SUCCESS], k => _.includes(log, k))) textClass = "text-teal-400 font-semibold";
+              else if (_.some([LOG_LEVEL_SYMBOLS.ERROR, LOG_KEYWORDS.ERROR], k => _.includes(log, k))) textClass = "text-rose-500 font-semibold";
+              else if (_.some([LOG_LEVEL_SYMBOLS.WARN], k => _.includes(log, k))) textClass = "text-amber-400";
+              return <div key={index} className={textClass}>{log}</div>;
             })
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-5 space-y-5 bg-slate-900/40 p-5 rounded-xl border border-slate-850 backdrop-blur-sm text-left">
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1.5 font-mono select-none">
-              <FileJson className="w-3.5 h-3.5 text-rose-500" />
-              {t.node7_input_file_label}
-            </label>
-            <div className="flex gap-2">
-              <input type="text" value={config.draft_json_path} onChange={(e) => setConfig((prev) => ({ ...prev, draft_json_path: e.target.value }))} placeholder={t.node7_placeholder_file} className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono" />
-              <Button type="button" variant="ghost" onClick={handleSelectFile} title={t.node7_choose_file_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 shrink-0 shadow-none">
-                <FolderOpen className="w-4 h-4 text-rose-500" />
-              </Button>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="lg:col-span-5 flex flex-col bg-slate-900/40 p-5 rounded-xl border border-slate-850 backdrop-blur-sm text-left">
+
+          <div className="flex-1">
+            {config.is_auto_mode ? (
+              <div className="space-y-6 animate-fadeIn">
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono select-none" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_TEMPLATE}>
+                      <FileJson className="w-3.5 h-3.5 text-rose-500" />
+                      {PIPELINE_STEP6_UI_TEXTS.TITLE_TEMPLATE}
+                    </label>
+                    <Button variant="ghost" size="xs" onClick={() => fileInputRef.current?.click()} className="h-6 px-2.5 text-[10px] bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-md transition-colors">
+                      <Upload className="w-3 h-3 mr-1 text-rose-400" />
+                      {PIPELINE_STEP6_UI_TEXTS.BTN_UPLOAD}
+                    </Button>
+                    <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleUploadTemplate} />
+                  </div>
+                  <select
+                    value={config.template_id}
+                    onChange={(e) => setConfig(p => ({ ...p, template_id: e.target.value }))}
+                    className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 py-2.5 text-xs text-slate-200 shadow-inner"
+                  >
+                    {templates.length === 0 && <option value="" className="bg-slate-900 text-slate-200">{PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE}</option>}
+                    {templates.map(t => (
+                      <option key={t.id} value={t.filePath} className="bg-slate-900 text-slate-200">{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-800/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono select-none" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_MEDIA}>
+                      <FolderOpen className="w-3.5 h-3.5 text-rose-500" />
+                      {PIPELINE_STEP6_UI_TEXTS.TITLE_MEDIA}
+                    </label>
+                    <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800/80">
+                      <button
+                        onClick={() => setConfig(p => ({ ...p, input_mode: INPUT_MODES.ZIP }))}
+                        className={cn("px-3 py-1 text-[9px] font-bold uppercase rounded-md transition-all", config.input_mode === INPUT_MODES.ZIP ? "bg-slate-800 text-white shadow-sm" : "text-slate-500 hover:text-slate-300")}
+                        title={PIPELINE_STEP6_UI_TEXTS.BTN_MODE_ZIP_TOOLTIP}
+                      >
+                        {PIPELINE_STEP6_UI_TEXTS.BTN_MODE_ZIP}
+                      </button>
+                      <button
+                        onClick={() => setConfig(p => ({ ...p, input_mode: INPUT_MODES.SPLIT }))}
+                        className={cn("px-3 py-1 text-[9px] font-bold uppercase rounded-md transition-all", config.input_mode === INPUT_MODES.SPLIT ? "bg-slate-800 text-white shadow-sm" : "text-slate-500 hover:text-slate-300")}
+                        title={PIPELINE_STEP6_UI_TEXTS.BTN_MODE_SPLIT_TOOLTIP}
+                      >
+                        {PIPELINE_STEP6_UI_TEXTS.BTN_MODE_SPLIT}
+                      </button>
+                    </div>
+                  </div>
+
+                  {config.input_mode === INPUT_MODES.ZIP ? (
+                    <div className="flex gap-2 animate-fadeIn">
+                      <input type="text" value={config.parent_folder} onChange={(e) => setConfig((prev) => ({ ...prev, parent_folder: e.target.value }))} placeholder={PIPELINE_STEP6_UI_TEXTS.PLACEHOLDER_ZIP} className="flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner" />
+                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FOLDER_TYPES.PARENT)} className="px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors">
+                        <FolderOpen className="w-4 h-4 text-rose-500" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 animate-fadeIn">
+                      <div className="flex gap-1.5">
+                        <input type="text" value={config.images_dir} onChange={(e) => setConfig((prev) => ({ ...prev, images_dir: e.target.value }))} placeholder={PIPELINE_STEP6_UI_TEXTS.PLACEHOLDER_IMAGES} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner" />
+                        <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FOLDER_TYPES.IMAGES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
+                          <FolderOpen className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <input type="text" value={config.voices_dir} onChange={(e) => setConfig((prev) => ({ ...prev, voices_dir: e.target.value }))} placeholder={PIPELINE_STEP6_UI_TEXTS.PLACEHOLDER_VOICES} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner" />
+                        <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FOLDER_TYPES.VOICES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
+                          <FolderOpen className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-800/50">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono pl-1" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_MOTION}>{PIPELINE_STEP6_UI_TEXTS.TITLE_MOTION}</label>
+                      <select value={config.camera_motion} onChange={e => setConfig(p => ({ ...p, camera_motion: e.target.value }))} className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 py-2.5 text-xs text-slate-200 shadow-inner">
+                        {_.map(MOTION_OPTIONS, (opt) => (
+                          <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono pl-1" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_TRANSITION}>{PIPELINE_STEP6_UI_TEXTS.TITLE_TRANSITION}</label>
+                      <select value={config.transitions} onChange={e => setConfig(p => ({ ...p, transitions: e.target.value }))} className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 py-2.5 text-xs text-slate-200 shadow-inner">
+                        {_.map(TRANSITION_OPTIONS, (opt) => (
+                          <option key={opt.value} value={opt.value} className={cn("bg-slate-900", (opt as any).customClass || "text-slate-200")}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="space-y-5 animate-fadeIn">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1.5 font-mono select-none">
+                    <FileJson className="w-3.5 h-3.5 text-rose-500" />
+                    {t.node7_input_file_label}
+                  </label>
+                  <div className="flex gap-2">
+                    <input type="text" value={config.draft_json_path} onChange={(e) => setConfig((prev) => ({ ...prev, draft_json_path: e.target.value }))} placeholder={t.node7_placeholder_file} className="flex-1 bg-slate-950/80 border border-slate-800/80 rounded-xl px-4 py-3 text-xs text-slate-200 shadow-inner" />
+                    <Button type="button" variant="ghost" onClick={handleSelectFile} className="px-4 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400">
+                      <FolderOpen className="w-4 h-4 text-rose-500" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1.5 font-mono select-none">
-              <Key className="w-3.5 h-3.5 text-rose-500" />
-              {t.node7_api_key_label}
-            </label>
-            <div className="relative">
-              <input
-                type={showApiKey ? "text" : "password"}
-                value={config.api_key}
-                onChange={(e) => setConfig((prev) => ({ ...prev, api_key: e.target.value }))}
-                placeholder={t.node7_api_key_placeholder}
-                className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl pl-4 pr-10 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono"
-              />
-              <Button type="button" variant="ghost" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer p-0 h-auto w-auto shadow-none">
-                {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[11px] font-bold text-slate-450 uppercase tracking-wider flex items-center gap-1.5 font-mono select-none">
-              <FolderOpen className="w-3.5 h-3.5 text-rose-500" />
-              {t.node7_sfx_folder_label}
-            </label>
-            <div className="flex gap-2">
-              <input type="text" value={config.sfx_folder} onChange={(e) => setConfig((prev) => ({ ...prev, sfx_folder: e.target.value }))} placeholder={t.node7_placeholder_sfx} className="flex-1 bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-rose-500 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono" />
-              <Button type="button" variant="ghost" onClick={handleSelectFolder} title={t.node7_choose_sfx_btn} className="px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-slate-250 shrink-0 shadow-none">
-                <FolderOpen className="w-4 h-4 text-rose-500" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-850">
+          <div className="pt-4 mt-5 border-t border-slate-850">
             <Button variant="primary" size="lg" onClick={handleRunProcess} disabled={isRunning} className="w-full">
               {isRunning ? (
                 <>
@@ -345,7 +489,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>{t.node7_run_btn}</span>
+                  <span>{config.is_auto_mode ? PIPELINE_STEP6_UI_TEXTS.BTN_RUN_AUTO : t.node7_run_btn}</span>
                 </>
               )}
             </Button>
@@ -355,15 +499,16 @@ export default function PipelineStep6(props: PipelineWizardState) {
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-slate-900/40 p-5 rounded-xl border border-slate-850 backdrop-blur-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-850 pb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono select-none">{t.node7_opt_title}</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono select-none flex items-center gap-2">
+                <Settings className="w-4 h-4 text-rose-500" />
+                {t.node7_opt_title}
+              </span>
               <div className="flex gap-2">
-                <Button variant="outline" size="xs" onClick={handleSelectAll} className="text-slate-450 hover:text-slate-200 border-slate-800 flex items-center gap-1 shadow-none">
-                  <CheckSquare className="w-3 h-3 text-rose-500" />
-                  {t.node7_select_all}
+                <Button variant="outline" size="xs" onClick={() => toggleAllSwitches(true)} className="text-slate-450 border-slate-800 flex items-center gap-1 shadow-none">
+                  <CheckSquare className="w-3 h-3 text-rose-500" /> {t.node7_select_all}
                 </Button>
-                <Button variant="outline" size="xs" onClick={handleDeselectAll} className="text-slate-450 hover:text-slate-200 border-slate-800 flex items-center gap-1 shadow-none">
-                  <Square className="w-3 h-3 text-slate-500" />
-                  {t.node7_deselect_all}
+                <Button variant="outline" size="xs" onClick={() => toggleAllSwitches(false)} className="text-slate-450 border-slate-800 flex items-center gap-1 shadow-none">
+                  <Square className="w-3 h-3 text-slate-500" /> {t.node7_deselect_all}
                 </Button>
               </div>
             </div>
@@ -382,13 +527,6 @@ export default function PipelineStep6(props: PipelineWizardState) {
                 );
               })}
             </div>
-
-            {config.custom_audio_order && (
-              <div className="pt-3 border-t border-slate-850 text-left space-y-2 animate-fadeIn">
-                <label className="text-[10px] font-bold text-slate-450 uppercase tracking-wider font-mono">{t.node7_audio_order_label}</label>
-                <input type="text" value={config.audio_order_list} onChange={(e) => setConfig((prev) => ({ ...prev, audio_order_list: e.target.value }))} placeholder={t.node7_placeholder_audio_list} className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-xl px-4.5 py-2.5 text-xs text-slate-200 placeholder-slate-650 transition-all font-mono" />
-              </div>
-            )}
           </div>
         </div>
       </div>
