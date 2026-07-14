@@ -96,7 +96,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const [appModal, setAppModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -104,7 +104,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
     message: string;
     inputValue: string;
     onConfirm: (val?: string) => void;
-  }>({ isOpen: false, title: "", type: MODAL_TYPES.CONFIRM, message: "", inputValue: "", onConfirm: () => {} });
+  }>({ isOpen: false, title: "", type: MODAL_TYPES.CONFIRM, message: "", inputValue: "", onConfirm: () => { } });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -145,7 +145,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       if (res.ok) {
         addLog(PIPELINE_STEP6_UI_TEXTS.LOG_DELETE_SUCCESS, LogLevel.SUCCESS);
         if (_.includes(config.template_id, id)) {
-            setConfig(p => ({ ...p, template_id: "" }));
+          setConfig(p => ({ ...p, template_id: "" }));
         }
         fetchTemplates();
       } else {
@@ -249,7 +249,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         if (!_.isEmpty(_.trim(val))) {
           executeUploadTemplate(file, val!);
         } else {
-           if (fileInputRef.current) fileInputRef.current.value = "";
+          if (fileInputRef.current) fileInputRef.current.value = "";
         }
       }
     });
@@ -391,33 +391,55 @@ export default function PipelineStep6(props: PipelineWizardState) {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      let lastSuccessMessage = "";
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\\n");
+        const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (!line.trim()) continue;
+          let parsed = false;
           try {
             const data = JSON.parse(line);
+            parsed = true;
             if (data.type === UltraStreamLogType.LOG) {
               addLog(data.message, LogLevel.INFO);
             } else if (data.type === UltraStreamLogType.ERROR_LOG) {
               addLog(data.message, LogLevel.WARN);
             } else if ("success" in data) {
               if (data.success) {
-                addLog(data.message || t.node7_log_success, LogLevel.SUCCESS);
+                lastSuccessMessage = data.message || t.node7_log_success;
               } else {
-                throw new Error(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR);
+                addLog(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR, LogLevel.ERROR);
               }
             }
-          } catch (err: any) {
-            _.noop();
+          } catch (_parseErr: any) {
+            if (!parsed && line.trim()) {
+              addLog(line.trim(), LogLevel.INFO);
+            }
           }
         }
+      }
+
+      if (buffer.trim()) {
+        try {
+          const data = JSON.parse(buffer);
+          if ("success" in data) {
+            if (data.success) {
+              lastSuccessMessage = data.message || t.node7_log_success;
+            } else {
+              addLog(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR, LogLevel.ERROR);
+            }
+          }
+        } catch (_ignored) { /* ignore parse error for remaining buffer */ }
+      }
+
+      if (lastSuccessMessage) {
+        addLog(lastSuccessMessage, LogLevel.SUCCESS);
       }
     } catch (err: any) {
       addLog(t.node7_log_error.replace("{error}", err.message), LogLevel.ERROR);
@@ -493,24 +515,24 @@ export default function PipelineStep6(props: PipelineWizardState) {
                     <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleUploadTemplate} />
                   </div>
                   <div className="relative" ref={dropdownRef}>
-                    <div 
+                    <div
                       className="w-full flex items-center justify-between bg-slate-950/80 border border-slate-800/80 hover:border-rose-500/50 rounded-xl px-4 h-10 cursor-pointer text-xs text-slate-200 shadow-inner transition-colors"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
                       <span className="truncate pr-2 text-slate-300 font-medium">
-                        {templates.length === 0 ? PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND : 
+                        {templates.length === 0 ? PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND :
                           templates.find(t => t.filePath === config.template_id)?.name || PIPELINE_STEP6_UI_TEXTS.SELECT_TEMPLATE}
                       </span>
                       <LucideIcons.ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />
                     </div>
-                    
+
                     {isDropdownOpen && (
                       <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
                         {templates.length === 0 ? (
                           <div className="px-4 py-3 text-xs text-slate-500 text-center italic">{PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND}</div>
                         ) : (
                           templates.map(t => (
-                            <div 
+                            <div
                               key={t.id}
                               className={cn(
                                 "group flex items-center justify-between px-3 py-2.5 text-xs hover:bg-slate-800 transition-colors cursor-pointer border-b border-slate-800/50 last:border-0",
@@ -702,15 +724,15 @@ export default function PipelineStep6(props: PipelineWizardState) {
           </div>
         </div>
       </div>
-      
+
       <Modal isOpen={appModal.isOpen} onClose={() => setAppModal(p => ({ ...p, isOpen: false }))} title={appModal.title} maxWidth="max-w-md">
         <div className="p-6 space-y-6">
           <p className="text-slate-300 text-sm">{appModal.message}</p>
           {appModal.type === MODAL_TYPES.PROMPT && (
-            <input 
-              type="text" 
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500" 
-              value={appModal.inputValue} 
+            <input
+              type="text"
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500"
+              value={appModal.inputValue}
               onChange={(e) => setAppModal(p => ({ ...p, inputValue: e.target.value }))}
               autoFocus
             />
@@ -719,7 +741,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
             <Button variant="ghost" onClick={() => setAppModal(p => ({ ...p, isOpen: false }))}>
               {PIPELINE_STEP6_UI_TEXTS.BTN_CANCEL}
             </Button>
-            <Button 
+            <Button
               className={appModal.type === MODAL_TYPES.CONFIRM ? "bg-red-600 hover:bg-red-700 text-white" : "bg-rose-600 hover:bg-rose-700 text-white"}
               onClick={() => {
                 setAppModal(p => ({ ...p, isOpen: false }));
