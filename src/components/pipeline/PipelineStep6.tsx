@@ -48,6 +48,8 @@ interface UltraConfig {
   camera_motion: string;
   transitions: string;
   project_name: string;
+  auto_export_video: boolean;
+  video_output_dir: string;
 }
 
 const DEFAULT_CONFIG: UltraConfig = {
@@ -75,7 +77,9 @@ const DEFAULT_CONFIG: UltraConfig = {
   voices_dir: "",
   camera_motion: MOTION_OPTIONS[0].value,
   transitions: TRANSITION_OPTIONS[0].value,
-  project_name: ""
+  project_name: "",
+  auto_export_video: false,
+  video_output_dir: "",
 };
 
 export default function PipelineStep6(props: PipelineWizardState) {
@@ -317,6 +321,9 @@ export default function PipelineStep6(props: PipelineWizardState) {
         } else if (type === FOLDER_TYPES.VOICES) {
           setConfig((prev) => ({ ...prev, voices_dir: response.data.folderPath }));
           addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_SELECT_VOICES}${response.data.folderPath}`, LogLevel.SUCCESS);
+        } else if (type === FOLDER_TYPES.VIDEO_OUTPUT) {
+          setConfig((prev) => ({ ...prev, video_output_dir: response.data.folderPath }));
+          addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_SELECT_VIDEO_OUTPUT}${response.data.folderPath}`, LogLevel.SUCCESS);
         } else {
           setConfig((prev) => ({ ...prev, sfx_folder: response.data.folderPath }));
         }
@@ -334,13 +341,17 @@ export default function PipelineStep6(props: PipelineWizardState) {
       if (config.input_mode === INPUT_MODES.ZIP && !config.parent_folder) {
         addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_ZIP, LogLevel.ERROR); return;
       }
-      if (config.input_mode === INPUT_MODES.SPLIT && (!config.images_dir || !config.voices_dir)) {
+      if (config.input_mode === INPUT_MODES.SPLIT && ([config.images_dir, config.voices_dir].some(dir => !dir))) {
         addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_SPLIT, LogLevel.ERROR); return;
       }
     } else {
       if (!config.draft_json_path.trim()) {
         addLog(t.node7_log_missing_file, LogLevel.ERROR); return;
       }
+    }
+
+    if (config.auto_export_video && !config.video_output_dir.trim()) {
+      addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_VIDEO_OUTPUT, LogLevel.ERROR); return;
     }
 
     setIsRunning(true);
@@ -358,6 +369,8 @@ export default function PipelineStep6(props: PipelineWizardState) {
         imagesDir: config.input_mode === INPUT_MODES.SPLIT ? config.images_dir : "",
         voicesDir: config.input_mode === INPUT_MODES.SPLIT ? config.voices_dir : "",
         projectName: config.project_name.trim(),
+        autoExportVideo: config.auto_export_video,
+        videoOutputDir: config.auto_export_video ? config.video_output_dir.trim() : "",
         projectStyle: {
           camera_motion: config.camera_motion,
           transitions: config.transitions
@@ -449,8 +462,9 @@ export default function PipelineStep6(props: PipelineWizardState) {
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="flex flex-col gap-1 text-left">
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      <div className="flex flex-col gap-1 text-left relative z-10">
         <h2 className="text-xl font-extrabold text-slate-100 flex items-center gap-2 tracking-tight uppercase">
           <Sparkles className="w-5 h-5 text-rose-500" />
           {t.node7_title}
@@ -584,6 +598,8 @@ export default function PipelineStep6(props: PipelineWizardState) {
                   />
                 </div>
 
+
+
                 <div className="space-y-3 pt-2 border-t border-slate-800/50">
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono select-none" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_MEDIA}>
@@ -650,6 +666,58 @@ export default function PipelineStep6(props: PipelineWizardState) {
                           <option key={opt.value} value={opt.value} className={cn("bg-slate-900", (opt as any).customClass || "text-slate-200")}>{opt.label}</option>
                         ))}
                       </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-800/50">
+                  <div
+                    onClick={() => setConfig(prev => ({ ...prev, auto_export_video: !prev.auto_export_video }))}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none",
+                      config.auto_export_video
+                        ? "bg-amber-500/[0.05] border-amber-500/40"
+                        : "bg-slate-950/20 border-slate-850 hover:border-slate-800 hover:bg-slate-900/10"
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <div className={cn("w-8 h-4.5 rounded-full transition-colors duration-200", config.auto_export_video ? "bg-amber-500" : "bg-slate-800")} />
+                      <div className={cn("absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform duration-200", config.auto_export_video ? "translate-x-3.5" : "")} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className={cn("text-[11px] font-semibold leading-tight", config.auto_export_video ? "text-amber-400" : "text-slate-400")}>
+                        {PIPELINE_STEP6_UI_TEXTS.LABEL_EXPORT_VIDEO}
+                      </span>
+                      <span className="text-[10px] text-slate-600 leading-tight">{PIPELINE_STEP6_UI_TEXTS.TOOLTIP_EXPORT_VIDEO}</span>
+                    </div>
+                  </div>
+
+                  <div className={cn("grid transition-[grid-template-rows,opacity,margin] duration-300 ease-in-out", config.auto_export_video ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0 mt-0")}>
+                    <div className="overflow-hidden">
+                      <div className="space-y-1.5 pb-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono select-none" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_VIDEO_OUTPUT_DIR}>
+                          <LucideIcons.Video className="w-3.5 h-3.5 text-amber-400" />
+                          {PIPELINE_STEP6_UI_TEXTS.TITLE_VIDEO_OUTPUT_DIR}
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={config.video_output_dir}
+                            onChange={(e) => setConfig(prev => ({ ...prev, video_output_dir: e.target.value }))}
+                            placeholder={PIPELINE_STEP6_UI_TEXTS.PLACEHOLDER_VIDEO_OUTPUT_DIR}
+                            className="flex-1 bg-slate-950/80 border border-amber-800/40 focus:border-amber-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => handleSelectFolder(FOLDER_TYPES.VIDEO_OUTPUT)}
+                            className="px-4 h-10 bg-slate-950/80 hover:bg-amber-900/20 border border-amber-800/40 rounded-xl text-amber-400 transition-colors"
+                            title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_VIDEO_OUTPUT_DIR}
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

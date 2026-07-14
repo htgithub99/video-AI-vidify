@@ -513,6 +513,7 @@ export const FOLDER_TYPES = {
   SFX: "sfx",
   IMAGES: "images",
   VOICES: "voices",
+  VIDEO_OUTPUT: "video_output",
 } as const;
 
 export const PIPELINE_STEP6_UI_TEXTS = {
@@ -563,6 +564,15 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
   NO_TEMPLATE_FOUND: "Chưa có mẫu nào",
   SELECT_TEMPLATE: "Chọn mẫu...",
+  TITLE_EXPORT_VIDEO: "XUẤT VIDEO CAPCUT",
+  TOOLTIP_EXPORT_VIDEO: "Tự động xuất video sau khi tạo dự án CapCut thành công",
+  LABEL_EXPORT_VIDEO: "Tự động xuất video sau khi tạo xong",
+  TITLE_VIDEO_OUTPUT_DIR: "Thư mục lưu video",
+  TOOLTIP_VIDEO_OUTPUT_DIR: "Chọn thư mục để lưu file video xuất ra",
+  PLACEHOLDER_VIDEO_OUTPUT_DIR: "Đường dẫn thư mục lưu video...",
+  LOG_SELECT_VIDEO_OUTPUT: "Đã chọn thư mục xuất video: ",
+  ERR_SELECT_VIDEO_OUTPUT: "Vui lòng chọn thư mục lưu video!",
+  LOG_ERROR_PREFIX: "Lỗi: ",
 } as const;
 
 export const MOTION_OPTIONS = [

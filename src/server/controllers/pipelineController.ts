@@ -48,6 +48,7 @@ import {
   STICKMAN_KEYWORDS,
   MARKDOWN_REGEX,
   EMOJI_REGEX,
+  REGEX_AUTO_MODE_PATH,
   LogEvent,
   ErrorMessage,
   getDummyHooks,
@@ -127,11 +128,11 @@ router.post("/extract-style", async (req: Request, res: Response) => {
   try {
     const { images } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const parts: any[] = [];
@@ -167,7 +168,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
-    return res.status(500).json({
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       error: error.message || getBackendMsg("STYLE_EXTRACTION_ERR", isVi),
       rotationLogs: error.rotationLogs,
     });
@@ -178,10 +179,10 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, newStyle, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
-    return res.status(400).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
   if (!newStyle) {
-    return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -246,7 +247,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
-    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -254,7 +255,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, visualConfig, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
-    return res.status(400).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -324,7 +325,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -332,10 +333,10 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, newStyle, aspectRatio } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
-    return res.status(400).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
   if (!newStyle) {
-    return res.status(400).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -378,19 +379,19 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
     res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
-    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 router.post("/rewrite-thumbnails-character", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, characters, aspectRatio } = req.body;
   if (!thumbnails || !Array.isArray(thumbnails)) {
-    return res.status(400).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
 
   let finalCharacters = characters;
   if (!finalCharacters || !Array.isArray(finalCharacters) || finalCharacters.length === 0) {
-    return res.status(400).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
   }
 
   if (!isGeminiApiKeyAvailable()) {
@@ -432,7 +433,7 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
     return res.json({ success: true, thumbnails: updatedThumbnails });
   } catch (err: any) {
     logger.error(`Error in /rewrite-thumbnails-character: ${err.message}`);
-    return res.status(500).json({ error: err.message });
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: err.message });
   }
 });
 router.post("/analyze-character", async (req: Request, res: Response) => {
@@ -440,11 +441,11 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
   try {
     const { script } = req.body;
     if (!script) {
-      return res.status(400).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const prompt = getCharacterAnalysisPrompt(script);
@@ -460,7 +461,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
-    return res.status(500).json({
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
       rotationLogs: error.rotationLogs,
     });
@@ -472,11 +473,11 @@ router.post("/extract-character", async (req: Request, res: Response) => {
   try {
     const { images, characterDescription } = req.body;
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
     if (!isGeminiApiKeyAvailable()) {
-      return res.status(500).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const parts: any[] = [];
@@ -515,7 +516,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
     logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
-    return res.status(500).json({
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
       rotationLogs: error.rotationLogs,
     });
@@ -526,7 +527,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
   if (!storyboard || !Array.isArray(storyboard)) {
-    return res.status(400).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
   }
 
   let finalCharacters = characters;
@@ -534,7 +535,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
     if (characterPrompt) {
       finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
     } else {
-      return res.status(400).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
     }
   }
 
@@ -609,7 +610,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
     res.json({ success: true, storyboard: updatedStoryboard });
   } catch (error: any) {
     logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
-    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -956,7 +957,7 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
   const { sceneScript, setting, time, character, costume, camera, style, aspectRatio, characterPrompt, referencePrompt, currentPrompt } = req.body;
   if (!sceneScript) {
-    return res.status(400).json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
   }
 
   try {
@@ -970,7 +971,7 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
     logger.error(LogEvent.DETAILED_PROMPT_ERROR, error);
-    res.status(500).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -1555,7 +1556,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
-    res.status(500).json({
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: error.message,
       rotationLogs: error.rotationLogs,
@@ -1595,7 +1596,7 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
     const { items, visualConfig, style } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
     }
 
     res.setHeader("Content-Type", "application/x-ndjson");
@@ -1634,7 +1635,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   try {
     const { chunks } = req.body;
     if (!chunks || !Array.isArray(chunks) || chunks.length === 0) {
-      return res.status(400).json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
     }
 
     const tempDir = os.tmpdir();
@@ -1652,7 +1653,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
     }
 
     if (filePaths.length === 0) {
-      return res.status(400).json({ error: "No valid base64 audio data found in chunks" });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "No valid base64 audio data found in chunks" });
     }
 
     const listPath = path.join(tempDir, `list_${sessionId}.txt`);
@@ -1677,7 +1678,7 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
           res.json({ success: true, audioBase64: base64Audio });
         } catch (e) {
           logger.error(LogEvent.ERROR_READ_MERGED_AUDIO, e);
-          res.status(500).json({ error: ErrorMessage.FAILED_TO_READ_MERGED_AUDIO_FILE });
+          res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.FAILED_TO_READ_MERGED_AUDIO_FILE });
         }
       })
       .on("error", (err) => {
@@ -1686,12 +1687,12 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
         filePaths.forEach((p) => fs.existsSync(p) && fs.unlinkSync(p));
         fs.existsSync(listPath) && fs.unlinkSync(listPath);
         fs.existsSync(outputPath) && fs.unlinkSync(outputPath);
-        res.status(500).json({ error: "FFmpeg processing error: " + err.message });
+        res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: "FFmpeg processing error: " + err.message });
       })
       .save(outputPath);
   } catch (err: any) {
     logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, err);
-    res.status(500).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 
@@ -1700,10 +1701,10 @@ router.post("/align-voice", async (req: Request, res: Response) => {
   try {
     const { audioBase64, scenes, segment, projectId } = req.body;
     if (!audioBase64) {
-      return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
     if (_.isEmpty(scenes) || !_.isArray(scenes)) {
-      return res.status(400).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
     }
 
     const tempDir = path.join(getDataDirectory(), ALIGN_CONFIG.TEMP_DIR);
@@ -1739,7 +1740,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
             } catch (cleanupErr) { }
-            return res.status(500).json({
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
               success: false,
               error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message),
             });
@@ -1781,7 +1782,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
           if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
 
           const pythonError = stderr || stdout;
-          return res.status(500).json({
+          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
             success: false,
             error: pythonError ? pythonError : error.message,
           });
@@ -1805,7 +1806,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
               fs.unlinkSync(outputPath);
             } catch (e) { }
           }
-          return res.status(500).json({
+          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
             success: false,
             error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message),
           });
@@ -1814,23 +1815,23 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     }
   } catch (err: any) {
     logger.error(VOICE_ALIGN_LOGS.ERR_UNEXPECTED_ALIGN, err);
-    res.status(500).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName } = req.body;
+  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName, autoExportVideo, videoOutputDir } = req.body;
 
   if (!isAutoMode && !filePath) {
-    return res.status(400).json({
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
       success: false,
       error: getBackendMsg("ULTRA_FILE_REQUIRED", isVi),
     });
   }
 
-  if (!fs.existsSync(filePath)) {
-    return res.status(400).json({
+  if (!isAutoMode && !fs.existsSync(filePath)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
       success: false,
       error: getBackendMsg("ULTRA_FILE_NOT_FOUND", isVi),
     });
@@ -1857,7 +1858,9 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     images_dir: imagesDir || "",
     voices_dir: voicesDir || "",
     project_style: projectStyle || {},
-    project_name: finalProjectName
+    project_name: finalProjectName,
+    auto_export_video: autoExportVideo || false,
+    video_output_dir: videoOutputDir || ""
   };
 
   try {
@@ -1870,26 +1873,31 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
     logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
     const pythonProcess = spawn(pyCmd, ["-u", scriptPath, filePath, tempOutputPath, optsJsonPath]);
+    let autoCreatedDraftPath: string = "";
 
     pythonProcess.stdout.on("data", (data) => {
-      const lines = data.toString().split("\n");
-      for (const line of lines) {
-        if (line.trim()) {
-          res.write(JSON.stringify({ type: UltraStreamLogType.LOG, message: line.trim() }) + "\n");
+      _.forEach(_.split(data.toString(), "\n"), (line) => {
+        const trimmed = _.trim(line);
+        if (!_.isEmpty(trimmed)) {
+          const autoPathMatch = trimmed.match(REGEX_AUTO_MODE_PATH);
+          if (autoPathMatch && autoPathMatch[1]) {
+            autoCreatedDraftPath = _.trim(autoPathMatch[1]);
+          }
+          res.write(JSON.stringify({ type: UltraStreamLogType.LOG, message: trimmed }) + "\n");
         }
-      }
+      });
     });
 
     pythonProcess.stderr.on("data", (data) => {
-      const lines = data.toString().split("\n");
-      for (const line of lines) {
-        if (line.trim()) {
-          res.write(JSON.stringify({ type: UltraStreamLogType.ERROR_LOG, message: line.trim() }) + "\n");
+      _.forEach(_.split(data.toString(), "\n"), (line) => {
+        const trimmed = _.trim(line);
+        if (!_.isEmpty(trimmed)) {
+          res.write(JSON.stringify({ type: UltraStreamLogType.ERROR_LOG, message: trimmed }) + "\n");
         }
-      }
+      });
     });
 
-    pythonProcess.on("close", (code) => {
+    pythonProcess.on("close", async (code) => {
       try {
         if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
       } catch (cleanupErr) { }
@@ -1986,7 +1994,7 @@ router.post("/select-file", async (req: Request, res: Response) => {
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       logger.error(getBackendMsg("ULTRA_SELECT_FILE_FAIL", isVi).replace("{0}", error.message));
-      return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FILE_FAILED", isVi) });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg("SELECT_FILE_FAILED", isVi) });
     }
     return res.json({ success: true, filePath: stdout.trim() });
   });
@@ -2002,7 +2010,7 @@ router.post("/select-folder", async (req: Request, res: Response) => {
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       logger.error(getBackendMsg("ULTRA_SELECT_FOLDER_FAIL", isVi).replace("{0}", error.message));
-      return res.status(500).json({ success: false, error: getBackendMsg("SELECT_FOLDER_FAILED", isVi) });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg("SELECT_FOLDER_FAILED", isVi) });
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });
@@ -2012,7 +2020,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
   try {
     const { projectId } = req.body;
     if (!projectId) {
-      return res.status(400).json({ error: EXPORT_ZIP_CONFIG.ERR_MISSING_PROJECT });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: EXPORT_ZIP_CONFIG.ERR_MISSING_PROJECT });
     }
 
     const project = await getProjectDetailFromDb(projectId);

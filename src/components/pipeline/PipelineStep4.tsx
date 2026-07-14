@@ -129,10 +129,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
   ];
 
   return (
-    <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-4 shadow-2xl relative overflow-visible">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-hidden">
           <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-10">
             <Eye className="w-5 h-5 text-rose-500" />
             {t.renderTitle}
@@ -246,8 +246,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 rounded-xl space-y-6 shadow-2xl relative overflow-visible">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+        <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-6 shadow-xl relative overflow-hidden">
           <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
 
           <div className="grid grid-cols-1 gap-3.5 text-xs">
@@ -302,6 +301,6 @@ export default function PipelineStep4(props: PipelineWizardState) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

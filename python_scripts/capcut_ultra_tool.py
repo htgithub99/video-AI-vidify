@@ -44,6 +44,14 @@ LOG_GEMINI_API_REQUEST = "-> Đang gửi yêu cầu gợi ý SFX tới Google Ge
 LOG_DUP_INFO = "-> Số lượng ảnh ({}) ít hơn âm thanh ({}). Đang tự động nhân bản ảnh..."
 LOG_DEL_INFO = "-> Số lượng ảnh ({}) nhiều hơn âm thanh ({}). Đang cắt bỏ ảnh thừa..."
 LOG_NO_SFX_DIR = "-> Thư mục SFX trống."
+LOG_EXPORT_NO_DIR = "[Xuất Video] ❌ Chưa chỉ định thư mục lưu video!"
+LOG_EXPORT_STARTING = "[Xuất Video] 🎬 Bắt đầu kết xuất video từ dự án CapCut..."
+LOG_EXPORT_NO_MEDIA = "[Xuất Video] ⚠️ Không tìm thấy file ảnh hoặc audio trong dự án để kết xuất!"
+LOG_EXPORT_NO_AUDIO = "[Xuất Video] ⚠️ Không có audio, sẽ kết xuất video im lặng."
+LOG_EXPORT_RENDERING = "[Xuất Video] ⏳ Đang kết xuất video bằng ffmpeg ({} ảnh, {} audio)..."
+LOG_EXPORT_SUCCESS = "[Xuất Video] ✅ Kết xuất video thành công! File lưu tại: {}"
+LOG_EXPORT_FAIL = "[Xuất Video] ❌ Kết xuất thất bại với mã lỗi {}"
+LOG_EXPORT_ERR = "[Xuất Video] ❌ Lỗi kết xuất: {}"
 
 ERR_NO_MEDIA = "Không tìm thấy hình ảnh, video hoặc âm thanh trên dòng thời gian!"
 ERR_CLI_USAGE = "Cú pháp: python capcut_ultra_tool.py <input_json> <output_json> [opts_json_string] HOẶC python capcut_ultra_tool.py <select-file/select-folder>"
@@ -1468,6 +1476,131 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
     print(LOG_SUCCESS)
     return True
 
+import tempfile
+import subprocess
+
+def export_video_with_ffmpeg(draft_json_path, opts):
+    try:
+        export_output_dir = opts.get("video_output_dir", "").strip()
+        if not export_output_dir:
+            print(LOG_EXPORT_NO_DIR)
+            return
+            
+        print(LOG_EXPORT_STARTING)
+        
+        with open(draft_json_path, 'r', encoding='utf-8') as f:
+            draft_content = json.load(f)
+            
+        materials = draft_content.get('materials', {})
+        videos = materials.get('videos', [])
+        audios = materials.get('audios', [])
+        
+        tracks = draft_content.get('tracks', [])
+        video_track = next((t for t in tracks if t.get('type') == 'video'), None)
+        audio_track = next((t for t in tracks if t.get('type') == 'audio' and t.get('name') not in ['BGM Track', 'SFX Track']), None)
+        
+        image_segs = sorted(video_track.get('segments', []) if video_track else [], key=lambda s: s.get('target_timerange', {}).get('start', 0))
+        audio_segs = sorted(audio_track.get('segments', []) if audio_track else [], key=lambda s: s.get('target_timerange', {}).get('start', 0))
+        
+        video_mat_map = {v['id']: (v.get('path') or v.get('file_Path')) for v in videos if 'id' in v and (v.get('path') or v.get('file_Path'))}
+        audio_mat_map = {a['id']: (a.get('path') or a.get('file_Path')) for a in audios if 'id' in a and (a.get('path') or a.get('file_Path'))}
+        
+        image_items = []
+        for seg in image_segs:
+            mat_id = seg.get('material_id')
+            mat_path = video_mat_map.get(mat_id)
+            if mat_path and os.path.exists(mat_path):
+                dur_us = seg.get('target_timerange', {}).get('duration', 5000000)
+                image_items.append({'path': mat_path, 'duration': dur_us / 1000000.0})
+                
+        if not image_items:
+            print(LOG_EXPORT_NO_MEDIA)
+            return
+            
+        main_audio_path = None
+        for seg in audio_segs:
+            mat_id = seg.get('material_id')
+            mat_path = audio_mat_map.get(mat_id)
+            if mat_path and os.path.exists(mat_path):
+                main_audio_path = mat_path
+                break
+                
+        if not main_audio_path:
+            print(LOG_EXPORT_NO_AUDIO)
+            
+        print(LOG_EXPORT_RENDERING.format(len(image_items), 1 if main_audio_path else 0))
+        
+        os.makedirs(export_output_dir, exist_ok=True)
+        
+        export_unique_id = uuid.uuid4().hex[:8]
+        list_file_path = os.path.join(tempfile.gettempdir(), f"ffmpeg_imglist_{export_unique_id}.txt")
+        
+        with open(list_file_path, 'w', encoding='utf-8') as f:
+            for item in image_items:
+                posix_path = item['path'].replace('\\', '/')
+                posix_path = posix_path.replace("'", "'\\''")
+                f.write(f"file '{posix_path}'\n")
+                f.write(f"duration {item['duration']:.3f}\n")
+                
+        project_name = opts.get("project_name", "capcut_export").strip()
+        if not project_name:
+            project_name = "capcut_export"
+        safe_label = re.sub(r'[^a-zA-Z0-9_\-]', '_', project_name)
+        out_video_path = os.path.join(export_output_dir, f"{safe_label}_{export_unique_id}.mp4")
+        
+        ffmpeg_cmd = ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path]
+        if main_audio_path:
+            ffmpeg_cmd.extend(['-i', main_audio_path])
+            
+        ffmpeg_cmd.extend([
+            '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-r', '30',
+            '-pix_fmt', 'yuv420p'
+        ])
+        
+        if main_audio_path:
+            ffmpeg_cmd.extend(['-c:a', 'aac', '-b:a', '192k', '-shortest'])
+        else:
+            ffmpeg_cmd.extend(['-an'])
+            
+        ffmpeg_cmd.extend(['-y', out_video_path])
+        
+        ffmpeg_exe = 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg'
+        static_ffmpeg1 = os.path.join(os.getcwd(), ffmpeg_exe)
+        static_ffmpeg2 = os.path.join(os.path.dirname(__file__), '..', ffmpeg_exe)
+        
+        if os.path.exists(static_ffmpeg1):
+            ffmpeg_cmd[0] = static_ffmpeg1
+        elif os.path.exists(static_ffmpeg2):
+            ffmpeg_cmd[0] = static_ffmpeg2
+            
+        process = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace')
+        for line in iter(process.stdout.readline, ''):
+            if line.strip():
+                print(f"[ffmpeg] {line.strip()}")
+                
+        process.stdout.close()
+        return_code = process.wait()
+        
+        try:
+            if os.path.exists(list_file_path):
+                os.remove(list_file_path)
+        except:
+            pass
+            
+        if return_code == 0:
+            print(LOG_EXPORT_SUCCESS.format(out_video_path))
+        else:
+            print(LOG_EXPORT_FAIL.format(return_code))
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(LOG_EXPORT_ERR.format(str(e)))
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(ERR_CLI_USAGE)
@@ -1537,6 +1670,9 @@ if __name__ == "__main__":
         opts["_transition_style"] = transition_style
 
         process_capcut_ultra(input_file, output_file, opts)
+        
+        if opts.get("auto_export_video", False):
+            export_video_with_ffmpeg(output_file, opts)
     except Exception as e:
         import traceback
         traceback.print_exc()

@@ -1,4 +1,5 @@
 import { cn } from "../../lib/utils";
+import _ from "lodash";
 import { useState, useEffect, useRef } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
@@ -56,20 +57,17 @@ export default function PipelineStep5(props: PipelineWizardState) {
 
   const parsePrompts = (text: string): string[] => {
     if (!text.trim()) return [];
-    return text
-      .split("\n")
-      .map((line) => {
-        const cleaned = line.trim().replace(PROMPT_NUMBERING_PREFIX_REGEX, "");
-        return cleaned.trim();
-      })
-      .filter((line) => line.length > 0);
+    return _.chain(text.split("\n"))
+      .map((line) => line.trim().replace(PROMPT_NUMBERING_PREFIX_REGEX, "").trim())
+      .filter((line) => line.length > 0)
+      .value();
   };
 
   useEffect(() => {
     if (!isRunning) {
       const parsed = parsePrompts(inputText);
       setPrompts(
-        parsed.map((prompt, idx) => ({
+        _.map(parsed, (prompt, idx) => ({
           id: idx + 1,
           prompt,
           status: PromptStatus.IDLE,
@@ -185,7 +183,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
   };
 
   const handleDownloadAllZip = async () => {
-    const successItems = prompts.filter((p) => p.status === PromptStatus.SUCCESS && p.resultBase64);
+    const successItems = _.filter(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS && !!p.resultBase64) as PromptItem[];
     if (successItems.length === 0) {
       addLog(t.node6_log_zip_empty, LogLevel.WARN);
       return;
@@ -239,9 +237,11 @@ export default function PipelineStep5(props: PipelineWizardState) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-      <div className="lg:col-span-1 space-y-5 flex flex-col justify-stretch">
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="lg:col-span-1 space-y-5 flex flex-col justify-stretch">
+          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-5 rounded-xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-rose-500 shrink-0" />
@@ -287,7 +287,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
             variant="secondary"
             size="lg"
             onClick={handleDownloadAllZip}
-            disabled={![...prompts].some((p) => p.status === PromptStatus.SUCCESS)}
+            disabled={!_.some(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS)}
             className="px-4"
             title={t.node6_zip_tooltip}
           >
@@ -316,7 +316,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-5 rounded-xl flex-1 flex flex-col shadow-2xl relative overflow-visible min-h-[350px]">
+        <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-5 rounded-xl flex-1 flex flex-col shadow-xl relative overflow-hidden min-h-[350px]">
           <div className="border-b border-slate-800 pb-3 flex items-center gap-2 select-none mb-4">
             <Sparkles className="w-4 h-4 text-rose-500 animate-pulse" />
             <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.node6_library_title}</h4>
@@ -333,13 +333,13 @@ export default function PipelineStep5(props: PipelineWizardState) {
           ) : (
             <div className="flex-1 overflow-y-auto custom-scrollbar max-h-[50vh] pr-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {prompts.map((item, idx) => {
+                {_.map(prompts, (item, idx) => {
                   const isCurrent = idx === currentIndex;
                   return (
                     <div
                       key={item.id}
                       className={cn(`border rounded-xl p-4 flex flex-col justify-between min-h-[160px] relative overflow-hidden transition-all duration-300 ${
-                        isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : [PromptStatus.SUCCESS].includes(item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : [PromptStatus.ERROR].includes(item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"
+                        isCurrent ? "bg-rose-500/[0.03] border-rose-500 shadow-md ring-1 ring-rose-500/20 scale-[1.01]" : _.includes([PromptStatus.SUCCESS], item.status) ? "bg-slate-900 border-slate-800 hover:border-slate-700" : _.includes([PromptStatus.ERROR], item.status) ? "bg-red-950/10 border-red-500/30" : "bg-slate-950 border-slate-900/60 opacity-60"
                       }`)}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -347,26 +347,26 @@ export default function PipelineStep5(props: PipelineWizardState) {
 
                         <div className="flex items-center gap-1.5">
                           {item.elapsedTime !== undefined && <span className="text-[8px] font-mono text-slate-500">{item.elapsedTime}s</span>}
-                          {[PromptStatus.RUNNING].includes(item.status) && (
+                          {_.includes([PromptStatus.RUNNING], item.status) && (
                             <span className="flex h-2 w-2 relative">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                             </span>
                           )}
-                          {[PromptStatus.SUCCESS].includes(item.status) && <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15">{t.node6_badge_done}</span>}
-                          {[PromptStatus.ERROR].includes(item.status) && <span className="bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15">{t.node6_badge_error}</span>}
+                          {_.includes([PromptStatus.SUCCESS], item.status) && <span className="bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/15">{t.node6_badge_done}</span>}
+                          {_.includes([PromptStatus.ERROR], item.status) && <span className="bg-red-500/10 text-red-400 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-red-500/15">{t.node6_badge_error}</span>}
                         </div>
                       </div>
 
                       <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-3 select-all mb-3">{item.prompt}</p>
 
                       <div className="h-[140px] bg-slate-950 rounded-xl border border-slate-850 overflow-hidden flex items-center justify-center relative group">
-                        {[PromptStatus.RUNNING].includes(item.status) ? (
+                        {_.includes([PromptStatus.RUNNING], item.status) ? (
                           <div className="flex flex-col items-center gap-2">
                             <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
                             <span className="text-[9px] font-mono font-bold text-rose-400 uppercase tracking-widest animate-pulse">{t.node6_rendering}</span>
                           </div>
-                        ) : [PromptStatus.SUCCESS].includes(item.status) && item.resultBase64 ? (
+                        ) : _.includes([PromptStatus.SUCCESS], item.status) && item.resultBase64 ? (
                           <>
                             {currentGenerateType === GenerateType.Video ? <video src={item.resultUrl} controls className="w-full h-full object-cover" /> : <img src={item.resultUrl} alt={t.node6_prompt_label.replace("{id}", String(item.id))} className="w-full h-full object-cover" />}
 
@@ -381,7 +381,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
                               </div>
                             )}
                           </>
-                        ) : [PromptStatus.ERROR].includes(item.status) ? (
+                        ) : _.includes([PromptStatus.ERROR], item.status) ? (
                           <div className="p-4 text-center">
                             <span className="text-[10px] text-red-400 font-mono block leading-relaxed line-clamp-3 select-all">{item.errorMsg}</span>
                           </div>
@@ -396,6 +396,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
