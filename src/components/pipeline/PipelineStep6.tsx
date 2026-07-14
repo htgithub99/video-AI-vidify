@@ -3,11 +3,18 @@ import { useState, useEffect, useRef } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
-import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, LOG_KEYWORDS, PIPELINE_STEP6_UI_TEXTS, INPUT_MODES, FOLDER_TYPES, MOTION_OPTIONS, TRANSITION_OPTIONS } from "../../constants";
+import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, LOG_KEYWORDS, PIPELINE_STEP6_UI_TEXTS, INPUT_MODES, FOLDER_TYPES, MOTION_OPTIONS, TRANSITION_OPTIONS, TEMPLATE_CONFIG } from "../../constants";
 import { Button } from "../ui/Button";
+import { Modal } from "../ui/Modal";
 import _ from "lodash";
 
 const { Play, Sparkles, Terminal, FileJson, FolderOpen, CheckSquare, Square, Upload, Settings, Wand2, Wrench } = LucideIcons as any;
+
+const MODAL_TYPES = {
+  CONFIRM: "confirm",
+  PROMPT: "prompt",
+} as const;
+type ModalType = typeof MODAL_TYPES[keyof typeof MODAL_TYPES];
 
 interface CapcutTemplate {
   id: string;
@@ -40,6 +47,7 @@ interface UltraConfig {
   voices_dir: string;
   camera_motion: string;
   transitions: string;
+  project_name: string;
 }
 
 const DEFAULT_CONFIG: UltraConfig = {
@@ -66,7 +74,8 @@ const DEFAULT_CONFIG: UltraConfig = {
   images_dir: "",
   voices_dir: "",
   camera_motion: MOTION_OPTIONS[0].value,
-  transitions: TRANSITION_OPTIONS[0].value
+  transitions: TRANSITION_OPTIONS[0].value,
+  project_name: ""
 };
 
 export default function PipelineStep6(props: PipelineWizardState) {
@@ -85,6 +94,27 @@ export default function PipelineStep6(props: PipelineWizardState) {
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [templates, setTemplates] = useState<CapcutTemplate[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const [appModal, setAppModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    type: ModalType;
+    message: string;
+    inputValue: string;
+    onConfirm: (val?: string) => void;
+  }>({ isOpen: false, title: "", type: MODAL_TYPES.CONFIRM, message: "", inputValue: "", onConfirm: () => {} });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG, JSON.stringify(config));
@@ -104,22 +134,85 @@ export default function PipelineStep6(props: PipelineWizardState) {
           setConfig(p => ({ ...p, template_id: data[0].filePath }));
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
     }
   };
 
-  const handleUploadTemplate = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const executeDeleteTemplate = async (id: string) => {
     try {
-      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_UPLOADING}${file.name}...`, LogLevel.INFO);
+      const res = await fetch(`${API_ROUTES.PIPELINE_TEMPLATES}/${id}`, { method: HTTP_METHODS.DELETE });
+      if (res.ok) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.LOG_DELETE_SUCCESS, LogLevel.SUCCESS);
+        if (_.includes(config.template_id, id)) {
+            setConfig(p => ({ ...p, template_id: "" }));
+        }
+        fetchTemplates();
+      } else {
+        addLog(PIPELINE_STEP6_UI_TEXTS.LOG_DELETE_ERROR, LogLevel.ERROR);
+      }
+    } catch (e: any) {
+      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
+    }
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    setAppModal({
+      isOpen: true,
+      title: PIPELINE_STEP6_UI_TEXTS.MODAL_TITLE_DELETE,
+      type: MODAL_TYPES.CONFIRM,
+      message: PIPELINE_STEP6_UI_TEXTS.MODAL_MSG_DELETE,
+      inputValue: "",
+      onConfirm: () => executeDeleteTemplate(id)
+    });
+  };
+
+  const executeRenameTemplate = async (id: string, newName: string) => {
+    try {
+      const res = await fetch(`${API_ROUTES.PIPELINE_TEMPLATES}/${id}`, {
+        method: HTTP_METHODS.PUT,
+        headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
+        body: JSON.stringify({ newName: _.trim(newName) })
+      });
+      if (res.ok) {
+        addLog(PIPELINE_STEP6_UI_TEXTS.LOG_RENAME_SUCCESS, LogLevel.SUCCESS);
+        const data = await res.json();
+        fetchTemplates();
+        if (_.includes(config.template_id, id)) {
+          setConfig(p => ({ ...p, template_id: data.filePath }));
+        }
+      } else {
+        addLog(PIPELINE_STEP6_UI_TEXTS.LOG_RENAME_ERROR, LogLevel.ERROR);
+      }
+    } catch (e: any) {
+      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
+    }
+  };
+
+  const handleRenameTemplate = (id: string, currentName: string) => {
+    setAppModal({
+      isOpen: true,
+      title: PIPELINE_STEP6_UI_TEXTS.MODAL_TITLE_RENAME,
+      type: MODAL_TYPES.PROMPT,
+      message: PIPELINE_STEP6_UI_TEXTS.MODAL_MSG_RENAME,
+      inputValue: currentName,
+      onConfirm: (newName) => {
+        if (!_.isEmpty(_.trim(newName)) && newName !== currentName) {
+          executeRenameTemplate(id, newName!);
+        }
+      }
+    });
+  };
+
+  const executeUploadTemplate = async (file: File, customName: string) => {
+    try {
+      const finalName = customName.trim() || _.replace(file.name, TEMPLATE_CONFIG.JSON_EXT, "");
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_UPLOADING}${finalName}...`, LogLevel.INFO);
       const text = await file.text();
       const content = JSON.parse(text);
 
       const payload = {
-        name: file.name.replace(".json", ""),
+        name: finalName,
         content: content
       };
 
@@ -140,6 +233,26 @@ export default function PipelineStep6(props: PipelineWizardState) {
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleUploadTemplate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAppModal({
+      isOpen: true,
+      title: PIPELINE_STEP6_UI_TEXTS.MODAL_TITLE_UPLOAD,
+      type: MODAL_TYPES.PROMPT,
+      message: PIPELINE_STEP6_UI_TEXTS.MODAL_MSG_UPLOAD,
+      inputValue: _.replace(file.name, TEMPLATE_CONFIG.JSON_EXT, ""),
+      onConfirm: (val) => {
+        if (!_.isEmpty(_.trim(val))) {
+          executeUploadTemplate(file, val!);
+        } else {
+           if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      }
+    });
   };
 
   const addLog = (msg: string, type: LogLevel = LogLevel.INFO) => {
@@ -244,6 +357,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         parentFolder: config.input_mode === INPUT_MODES.ZIP ? config.parent_folder : "",
         imagesDir: config.input_mode === INPUT_MODES.SPLIT ? config.images_dir : "",
         voicesDir: config.input_mode === INPUT_MODES.SPLIT ? config.voices_dir : "",
+        projectName: config.project_name.trim(),
         projectStyle: {
           camera_motion: config.camera_motion,
           transitions: config.transitions
@@ -378,16 +492,74 @@ export default function PipelineStep6(props: PipelineWizardState) {
                     </Button>
                     <input type="file" accept=".json" className="hidden" ref={fileInputRef} onChange={handleUploadTemplate} />
                   </div>
-                  <select
-                    value={config.template_id}
-                    onChange={(e) => setConfig(p => ({ ...p, template_id: e.target.value }))}
-                    className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 py-2.5 text-xs text-slate-200 shadow-inner"
-                  >
-                    {templates.length === 0 && <option value="" className="bg-slate-900 text-slate-200">{PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE}</option>}
-                    {templates.map(t => (
-                      <option key={t.id} value={t.filePath} className="bg-slate-900 text-slate-200">{t.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={dropdownRef}>
+                    <div 
+                      className="w-full flex items-center justify-between bg-slate-950/80 border border-slate-800/80 hover:border-rose-500/50 rounded-xl px-4 h-10 cursor-pointer text-xs text-slate-200 shadow-inner transition-colors"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    >
+                      <span className="truncate pr-2 text-slate-300 font-medium">
+                        {templates.length === 0 ? PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND : 
+                          templates.find(t => t.filePath === config.template_id)?.name || PIPELINE_STEP6_UI_TEXTS.SELECT_TEMPLATE}
+                      </span>
+                      <LucideIcons.ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />
+                    </div>
+                    
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-64 overflow-y-auto custom-scrollbar">
+                        {templates.length === 0 ? (
+                          <div className="px-4 py-3 text-xs text-slate-500 text-center italic">{PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND}</div>
+                        ) : (
+                          templates.map(t => (
+                            <div 
+                              key={t.id}
+                              className={cn(
+                                "group flex items-center justify-between px-3 py-2.5 text-xs hover:bg-slate-800 transition-colors cursor-pointer border-b border-slate-800/50 last:border-0",
+                                config.template_id === t.filePath && "bg-slate-800/80"
+                              )}
+                              onClick={() => {
+                                setConfig(p => ({ ...p, template_id: t.filePath }));
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              <span className={cn("truncate flex-1 pr-2 transition-colors", config.template_id === t.filePath ? "text-rose-400 font-semibold" : "text-slate-300 group-hover:text-slate-100")}>{t.name}</span>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-blue-400 transition-colors bg-slate-900/50"
+                                  onClick={(e) => { e.stopPropagation(); handleRenameTemplate(t.id, t.name); }}
+                                  title={PIPELINE_STEP6_UI_TEXTS.MODAL_TITLE_RENAME}
+                                >
+                                  <LucideIcons.Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  className="p-1.5 rounded-md hover:bg-slate-700 text-slate-400 hover:text-red-400 transition-colors bg-slate-900/50"
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(t.id); }}
+                                  title={PIPELINE_STEP6_UI_TEXTS.MODAL_TITLE_DELETE}
+                                >
+                                  <LucideIcons.Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-slate-800/50">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono select-none" title={PIPELINE_STEP6_UI_TEXTS.TOOLTIP_PROJECT_NAME}>
+                      <FileJson className="w-3.5 h-3.5 text-rose-500" />
+                      {PIPELINE_STEP6_UI_TEXTS.TITLE_PROJECT_NAME}
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    value={config.project_name}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, project_name: e.target.value }))}
+                    placeholder={PIPELINE_STEP6_UI_TEXTS.PLACEHOLDER_PROJECT_NAME}
+                    className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner"
+                  />
                 </div>
 
                 <div className="space-y-3 pt-2 border-t border-slate-800/50">
@@ -530,6 +702,36 @@ export default function PipelineStep6(props: PipelineWizardState) {
           </div>
         </div>
       </div>
+      
+      <Modal isOpen={appModal.isOpen} onClose={() => setAppModal(p => ({ ...p, isOpen: false }))} title={appModal.title} maxWidth="max-w-md">
+        <div className="p-6 space-y-6">
+          <p className="text-slate-300 text-sm">{appModal.message}</p>
+          {appModal.type === MODAL_TYPES.PROMPT && (
+            <input 
+              type="text" 
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500" 
+              value={appModal.inputValue} 
+              onChange={(e) => setAppModal(p => ({ ...p, inputValue: e.target.value }))}
+              autoFocus
+            />
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setAppModal(p => ({ ...p, isOpen: false }))}>
+              {PIPELINE_STEP6_UI_TEXTS.BTN_CANCEL}
+            </Button>
+            <Button 
+              className={appModal.type === MODAL_TYPES.CONFIRM ? "bg-red-600 hover:bg-red-700 text-white" : "bg-rose-600 hover:bg-rose-700 text-white"}
+              onClick={() => {
+                setAppModal(p => ({ ...p, isOpen: false }));
+                appModal.onConfirm(appModal.type === MODAL_TYPES.PROMPT ? appModal.inputValue : undefined);
+              }}
+            >
+              {PIPELINE_STEP6_UI_TEXTS.BTN_CONFIRM}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

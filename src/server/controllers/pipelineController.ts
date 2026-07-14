@@ -8,7 +8,7 @@ import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
-import { listTemplates, saveTemplate, deleteTemplate } from "../utils/capcutTemplateManager.js";
+import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 
 import {
   EXTERNAL_URLS,
@@ -1820,7 +1820,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle } = req.body;
+  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName } = req.body;
 
   if (!isAutoMode && !filePath) {
     return res.status(400).json({
@@ -1840,6 +1840,13 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   const uniqueId = randomUUID().substring(0, 8);
   const optsJsonPath = path.join(getDataDirectory(), `ultra_opts_${uniqueId}.json`);
 
+  let finalProjectName = projectName;
+  if (_.isEmpty(_.trim(finalProjectName))) {
+    const d = new Date();
+    const pad = (n: number) => _.padStart(n.toString(), 2, '0');
+    finalProjectName = `AI_CAPCUT_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear().toString().substring(2)}`;
+  }
+
   const cmdOpts = {
     ...opts,
     api_key: geminiApiKey || "",
@@ -1849,7 +1856,8 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     parent_folder: parentFolder || "",
     images_dir: imagesDir || "",
     voices_dir: voicesDir || "",
-    project_style: projectStyle || {}
+    project_style: projectStyle || {},
+    project_name: finalProjectName
   };
 
   try {
@@ -2362,7 +2370,7 @@ router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT })
   const isVi = req.query?.lang !== ProjectLanguage.EN;
   try {
     const { name, content } = req.body;
-    if (!name || !content) {
+    if (_.isEmpty(_.trim(name)) || !content) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_NAME_REQUIRED", isVi) });
     }
     const template = saveTemplate(name, content);
@@ -2386,6 +2394,25 @@ router.delete("/templates/:id", (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_DELETE_FAILED", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_DELETE_FAILED", isVi) });
+  }
+});
+router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
+  const isVi = req.query?.lang !== ProjectLanguage.EN;
+  try {
+    const { id } = req.params;
+    const { newName } = req.body;
+    if (_.isEmpty(_.trim(newName))) {
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_RENAME_REQUIRED", isVi) });
+    }
+    const updated = renameTemplate(id, newName);
+    if (updated) {
+      res.json(updated);
+    } else {
+      res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: getBackendMsg("TEMPLATE_RENAME_NOT_FOUND", isVi) });
+    }
+  } catch (error: any) {
+    logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
   }
 });
 

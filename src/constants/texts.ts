@@ -546,6 +546,23 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   LOG_SELECT_IMAGES: "Đã chọn thư mục ảnh: ",
   LOG_SELECT_VOICES: "Đã chọn thư mục audio: ",
   LOG_ERR_TEMPLATE: "Lỗi tải lên mẫu.",
+  MODAL_TITLE_DELETE: "Xóa mẫu",
+  MODAL_MSG_DELETE: "Bạn có chắc chắn muốn xoá mẫu này không?",
+  MODAL_TITLE_RENAME: "Đổi tên mẫu",
+  MODAL_MSG_RENAME: "Nhập tên mới cho mẫu này:",
+  MODAL_TITLE_UPLOAD: "Tải Mẫu Lên",
+  MODAL_MSG_UPLOAD: "Nhập tên cho mẫu dự án này:",
+  LOG_DELETE_SUCCESS: "Đã xoá mẫu thành công.",
+  LOG_DELETE_ERROR: "Xoá mẫu thất bại.",
+  LOG_RENAME_SUCCESS: "Đã đổi tên mẫu thành công.",
+  LOG_RENAME_ERROR: "Đổi tên mẫu thất bại.",
+  BTN_CONFIRM: "Xác nhận",
+  BTN_CANCEL: "Hủy",
+  TITLE_PROJECT_NAME: "TÊN DỰ ÁN CAPCUT",
+  TOOLTIP_PROJECT_NAME: "Tên dự án CapCut sẽ được sinh ra",
+  PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
+  NO_TEMPLATE_FOUND: "Chưa có mẫu nào",
+  SELECT_TEMPLATE: "Chọn mẫu...",
 } as const;
 
 export const MOTION_OPTIONS = [

@@ -956,7 +956,11 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             raise Exception(ERR_NO_TIMELINE_MOD)
 
         if opts.get(OPT_SYNC_IMAGE_TO_AUDIO):
-            if num_photos < num_audios and num_photos > 0:
+            if num_audios == 1 and num_photos > 1:
+                # Chế độ Unified Audio: Không cắt ảnh, giữ nguyên danh sách ảnh
+                print(f"-> Chế độ Unified Audio: Chia đều 1 âm thanh cho {num_photos} ảnh.")
+                pass
+            elif num_photos < num_audios and num_photos > 0:
                 print(LOG_DUP_INFO.format(num_photos, num_audios))
                 while len(photo_segments) < num_audios:
                     last_item = photo_segments[-1]
@@ -974,12 +978,12 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 photo_segments = photo_segments[:num_audios]
                 num_photos = len(photo_segments)
 
-        target_count = min(num_photos, num_audios)
+        target_count = num_photos if (num_audios == 1 and num_photos > 1) else min(num_photos, num_audios)
 
         scenes = []
         for i in range(target_count):
             p_item = photo_segments[i]
-            a_item = audio_segments[i]
+            a_item = audio_segments[0] if (num_audios == 1) else audio_segments[i]
             p_seg = p_item['segment']
             p_start = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(START_ATTR, 0)
             p_dur = p_seg.get(TARGET_TIMERANGE_ATTR, {}).get(DURATION_ATTR, 0)
@@ -1026,6 +1030,16 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
         current_time = 0
         motion_history = []
         
+        is_unified_audio = (num_audios == 1 and num_photos > 1)
+        if is_unified_audio:
+            single_audio_path = audio_segments[0]['material'][PATH_ATTR]
+            total_audio_duration = get_audio_duration_micros(single_audio_path)
+            unified_photo_dur = int(total_audio_duration / num_photos) if num_photos > 0 else 0
+            
+            audio_segments[0]['segment'][SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: total_audio_duration}
+            audio_segments[0]['segment'][TARGET_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: total_audio_duration}
+            audio_segments[0]['material'][DURATION_ATTR] = total_audio_duration
+
         for i, scene in enumerate(scenes):
             p_item = scene["photo"]
             a_item = scene["audio"]
@@ -1035,11 +1049,16 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             audio_path = a_item['material'][PATH_ATTR]
             audio_duration = get_audio_duration_micros(audio_path)
             
-            a_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: audio_duration}
-            a_seg[TARGET_TIMERANGE_ATTR] = {START_ATTR: current_time, DURATION_ATTR: audio_duration}
-            a_item['material'][DURATION_ATTR] = audio_duration
+            if not is_unified_audio:
+                a_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: audio_duration}
+                a_seg[TARGET_TIMERANGE_ATTR] = {START_ATTR: current_time, DURATION_ATTR: audio_duration}
+                a_item['material'][DURATION_ATTR] = audio_duration
             
-            photo_duration = audio_duration if opts.get(OPT_SYNC_IMAGE_TO_AUDIO) else scene["original_duration"]
+            if opts.get(OPT_SYNC_IMAGE_TO_AUDIO):
+                photo_duration = unified_photo_dur if is_unified_audio else audio_duration
+            else:
+                photo_duration = scene["original_duration"]
+
             p_seg[TARGET_TIMERANGE_ATTR] = {START_ATTR: current_time, DURATION_ATTR: photo_duration}
             p_seg[SOURCE_TIMERANGE_ATTR] = {START_ATTR: 0, DURATION_ATTR: photo_duration}
             
@@ -1492,7 +1511,9 @@ if __name__ == "__main__":
                 parent_folder = opts.get("parent_folder", "")
                 images_dir_opt = opts.get("images_dir", None)
                 voices_dir_opt = opts.get("voices_dir", None)
-                project_name = "AI_Video_" + uuid.uuid4().hex[:6]
+                project_name = opts.get("project_name")
+                if not project_name:
+                    project_name = "AI_Video_" + uuid.uuid4().hex[:6]
                 
                 print(f"[AUTO-MODE] Generating new project '{project_name}' from template...")
                 new_input_path = generate_capcut_project(template_path, parent_folder, project_name, None, images_dir_opt, voices_dir_opt)

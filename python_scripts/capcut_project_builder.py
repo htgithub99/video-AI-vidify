@@ -7,6 +7,12 @@ from pathlib import Path
 MICROSECONDS_PER_SEC = 1000000
 DEFAULT_IMAGE_DURATION = int(5 * MICROSECONDS_PER_SEC) # 5 seconds
 
+def normalize_path_for_capcut(p):
+    p = os.path.abspath(p).replace("\\", "/")
+    if len(p) >= 2 and p[1] == ':':
+        p = p[0].upper() + p[1:]
+    return p
+
 def generate_capcut_project(template_json_path, parent_folder, project_name, data_dir=None, images_dir_opt=None, voices_dir_opt=None):
     """
     Creates a new CapCut project based on a template, importing images and voices
@@ -91,15 +97,17 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         audio_track = {"id": uuid.uuid4().hex, "type": "audio", "segments": []}
         draft_content['tracks'].append(audio_track)
 
-    # DO NOT clean existing segments so we preserve template intros/outros
-    # Instead, we will find the end time of the current track and append after it
-    def get_track_end_time(track):
-        if not track.get('segments'):
-            return 0
-        return max([s.get('target_timerange', {}).get('start', 0) + s.get('target_timerange', {}).get('duration', 0) for s in track['segments']])
+    # XÓA SẠCH các segments mẫu cũ trong track chính để timeline bắt đầu từ 00:00:00
+    video_track['segments'] = []
+    audio_track['segments'] = []
+    
+    # Xóa sạch các segments của Text Track (subtitles cũ)
+    for t in draft_content['tracks']:
+        if t.get('type') == 'text':
+            t['segments'] = []
 
-    current_vid_start = get_track_end_time(video_track)
-    current_aud_start = get_track_end_time(audio_track)
+    current_vid_start = 0
+    current_aud_start = 0
 
     # 5. Populate images (or single file)
     image_files = []
@@ -107,9 +115,9 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         if os.path.isfile(images_dir):
             image_files = [images_dir]
         else:
-            for ext in ['*.jpg', '*.jpeg', '*.png', '*.webp', '*.JPG', '*.PNG']:
+            for ext in ['*.jpg', '*.png', '*.jpeg', '*.webp']:
                 image_files.extend(glob.glob(os.path.join(images_dir, ext)))
-            image_files = sorted(image_files)
+            image_files = sorted(list(set(image_files)))
 
     for img_path in image_files:
         mat_id = uuid.uuid4().hex
@@ -126,9 +134,11 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         draft_content['materials']['videos'].append({
             "id": mat_id,
             "material_id": mat_id,
-            "path": img_path.replace("\\", "/"),
-            "file_Path": img_path.replace("\\", "/"),
-            "type": 0,
+            "path": normalize_path_for_capcut(img_path),
+            "file_Path": normalize_path_for_capcut(img_path),
+            "type": "photo",
+            "category_name": "local",
+            "material_name": os.path.basename(img_path),
             "duration": DEFAULT_IMAGE_DURATION,
             "width": 1920,
             "height": 1080
@@ -153,9 +163,9 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         if os.path.isfile(voices_dir):
             audio_files = [voices_dir]
         else:
-            for ext in ['*.mp3', '*.wav', '*.m4a', '*.MP3', '*.WAV']:
+            for ext in ['*.mp3', '*.wav', '*.m4a']:
                 audio_files.extend(glob.glob(os.path.join(voices_dir, ext)))
-            audio_files = sorted(audio_files)
+            audio_files = sorted(list(set(audio_files)))
 
     for aud_path in audio_files:
         mat_id = uuid.uuid4().hex
@@ -168,9 +178,12 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         draft_content['materials']['audios'].append({
             "id": mat_id,
             "material_id": mat_id,
-            "path": aud_path.replace("\\", "/"),
-            "file_Path": aud_path.replace("\\", "/"),
-            "type": 0,
+            "path": normalize_path_for_capcut(aud_path),
+            "file_Path": normalize_path_for_capcut(aud_path),
+            "type": "extract_music",
+            "category_name": "local",
+            "name": os.path.basename(aud_path),
+            "material_name": os.path.basename(aud_path),
             "duration": DEFAULT_IMAGE_DURATION, # Will be synced by main tool
         })
 

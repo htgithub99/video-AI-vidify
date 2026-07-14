@@ -1,5 +1,8 @@
 export const BACKEND_MESSAGES_LOCALIZED = {
   vi: {
+    TEMPLATE_RENAME_REQUIRED: "Tên mới là bắt buộc.",
+    TEMPLATE_RENAME_NOT_FOUND: "Không tìm thấy mẫu hoặc lỗi đổi tên.",
+    TEMPLATE_RENAME_FAILED: "Lỗi đổi tên mẫu",
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Đang áp dụng cấu hình mới...",
     PLAYWRIGHT_CONFIG_SUCCESS: "[Playwright] Cấu hình thành công!",
     PLAYWRIGHT_CONFIG_SKIP: "[Playwright] Bỏ qua cấu hình tự động:",
@@ -182,6 +185,9 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     TEMPLATE_DELETE_FAILED: "Lỗi khi xoá mẫu dự án",
   },
   en: {
+    TEMPLATE_RENAME_REQUIRED: "New name is required.",
+    TEMPLATE_RENAME_NOT_FOUND: "Template not found or rename failed.",
+    TEMPLATE_RENAME_FAILED: "Error renaming template",
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
     PLAYWRIGHT_CONFIG_SUCCESS: "[Playwright] Configuration successful!",
     PLAYWRIGHT_CONFIG_SKIP: "[Playwright] Skipping automatic configuration:",

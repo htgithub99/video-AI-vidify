@@ -5,6 +5,7 @@ import { getDataDirectory } from "./paths.js";
 import _ from "lodash";
 import { logger } from "../../lib/logger.js";
 import { TEMPLATE_CONFIG } from "../../constants/index.js";
+import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
 
 export interface CapcutTemplate {
   id: string;
@@ -81,9 +82,39 @@ export function deleteTemplate(id: string): boolean {
       fs.unlinkSync(filePath);
       return true;
     } catch (e) {
-      logger.error("Failed to delete template", e);
+      logger.error(BACKEND_MESSAGES_LOCALIZED.vi.TEMPLATE_DELETE_FAILED, e);
       return false;
     }
   }
   return false;
+}
+
+export function renameTemplate(id: string, newName: string): CapcutTemplate | null {
+  const templatesDir = getTemplatesDirectory();
+  const oldFilePath = path.join(templatesDir, `${id}${TEMPLATE_CONFIG.JSON_EXT}`);
+  
+  if (!fs.existsSync(oldFilePath)) return null;
+
+  const safeName = _.chain(newName)
+    .deburr()
+    .replace(TEMPLATE_CONFIG.REGEX_SAFE_NAME, "")
+    .trim()
+    .replace(TEMPLATE_CONFIG.REGEX_SPACE, "_")
+    .value();
+
+  const newFileName = `${safeName}_${randomUUID().substring(0, TEMPLATE_CONFIG.ID_LENGTH)}${TEMPLATE_CONFIG.JSON_EXT}`;
+  const newFilePath = path.join(templatesDir, newFileName);
+
+  try {
+    fs.renameSync(oldFilePath, newFilePath);
+    return {
+      id: newFileName.replace(TEMPLATE_CONFIG.JSON_EXT, ""),
+      name: newName,
+      createdAt: fs.statSync(newFilePath).birthtime.toISOString(),
+      filePath: newFilePath,
+    };
+  } catch (e) {
+    logger.error(BACKEND_MESSAGES_LOCALIZED.vi.TEMPLATE_RENAME_FAILED, e);
+    return null;
+  }
 }
