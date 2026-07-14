@@ -2,10 +2,14 @@ import os
 import json
 import uuid
 import glob
+import re
 from pathlib import Path
 
 MICROSECONDS_PER_SEC = 1000000
 DEFAULT_IMAGE_DURATION = int(5 * MICROSECONDS_PER_SEC) # 5 seconds
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
 def normalize_path_for_capcut(p):
     p = os.path.abspath(p).replace("\\", "/")
@@ -117,7 +121,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         else:
             for ext in ['*.jpg', '*.png', '*.jpeg', '*.webp']:
                 image_files.extend(glob.glob(os.path.join(images_dir, ext)))
-            image_files = sorted(list(set(image_files)))
+            image_files = sorted(list(set(image_files)), key=natural_sort_key)
 
     for img_path in image_files:
         mat_id = uuid.uuid4().hex
@@ -165,7 +169,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         else:
             for ext in ['*.mp3', '*.wav', '*.m4a']:
                 audio_files.extend(glob.glob(os.path.join(voices_dir, ext)))
-            audio_files = sorted(list(set(audio_files)))
+            audio_files = sorted(list(set(audio_files)), key=natural_sort_key)
 
     for aud_path in audio_files:
         mat_id = uuid.uuid4().hex
