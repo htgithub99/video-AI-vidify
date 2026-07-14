@@ -1517,18 +1517,30 @@ def export_video_with_ffmpeg(draft_json_path, opts):
             print(LOG_EXPORT_NO_MEDIA)
             return
             
-        main_audio_path = None
+        audio_items = []
         for seg in audio_segs:
             mat_id = seg.get('material_id')
             mat_path = audio_mat_map.get(mat_id)
             if mat_path and os.path.exists(mat_path):
-                main_audio_path = mat_path
-                break
+                audio_items.append(mat_path)
                 
-        if not main_audio_path:
+        export_unique_id = uuid.uuid4().hex[:8]
+        main_audio_path = None
+        audio_list_file_path = None
+        if len(audio_items) == 1:
+            main_audio_path = audio_items[0]
+        elif len(audio_items) > 1:
+            audio_list_file_path = os.path.join(tempfile.gettempdir(), f"ffmpeg_audlist_{export_unique_id}.txt")
+            with open(audio_list_file_path, 'w', encoding='utf-8') as f:
+                for item in audio_items:
+                    posix_path = item.replace('\\', '/')
+                    posix_path = posix_path.replace("'", "'\\''")
+                    f.write(f"file '{posix_path}'\n")
+                    
+        if not audio_items:
             print(LOG_EXPORT_NO_AUDIO)
             
-        print(LOG_EXPORT_RENDERING.format(len(image_items), 1 if main_audio_path else 0))
+        print(LOG_EXPORT_RENDERING.format(len(image_items), len(audio_items)))
         
         os.makedirs(export_output_dir, exist_ok=True)
         
@@ -1541,6 +1553,10 @@ def export_video_with_ffmpeg(draft_json_path, opts):
                 posix_path = posix_path.replace("'", "'\\''")
                 f.write(f"file '{posix_path}'\n")
                 f.write(f"duration {item['duration']:.3f}\n")
+            if image_items:
+                posix_path = image_items[-1]['path'].replace('\\', '/')
+                posix_path = posix_path.replace("'", "'\\''")
+                f.write(f"file '{posix_path}'\n")
                 
         project_name = opts.get("project_name", "capcut_export").strip()
         if not project_name:
@@ -1549,20 +1565,23 @@ def export_video_with_ffmpeg(draft_json_path, opts):
         out_video_path = os.path.join(export_output_dir, f"{safe_label}_{export_unique_id}.mp4")
         
         ffmpeg_cmd = ['ffmpeg', '-f', 'concat', '-safe', '0', '-i', list_file_path]
-        if main_audio_path:
+        if audio_list_file_path:
+            ffmpeg_cmd.extend(['-f', 'concat', '-safe', '0', '-i', audio_list_file_path])
+        elif main_audio_path:
             ffmpeg_cmd.extend(['-i', main_audio_path])
             
         ffmpeg_cmd.extend([
             '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
             '-c:v', 'libx264',
-            '-preset', 'fast',
-            '-crf', '23',
+            '-preset', 'ultrafast',
+            '-crf', '26',
             '-r', '30',
+            '-threads', '0',
             '-pix_fmt', 'yuv420p'
         ])
         
-        if main_audio_path:
-            ffmpeg_cmd.extend(['-c:a', 'aac', '-b:a', '192k', '-shortest'])
+        if audio_list_file_path or main_audio_path:
+            ffmpeg_cmd.extend(['-c:a', 'aac', '-b:a', '192k'])
         else:
             ffmpeg_cmd.extend(['-an'])
             
