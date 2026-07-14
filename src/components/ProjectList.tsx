@@ -5,7 +5,7 @@ import { VideoProject } from "../types.js";
 import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
-import { COMMON_STRINGS } from "../constants/index.js";
+import { COMMON_STRINGS, ERROR_MESSAGES } from "../constants/index.js";
 import _ from "lodash";
 import { appError } from "../lib/logger.js";
 import { delayAsync } from "../lib/shared-utils.js";
@@ -22,7 +22,7 @@ interface ProjectListProps {
   onSelectProject: (p: VideoProject) => void;
   onCreateProject: (name: string, desc: string) => Promise<void> | void;
   onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void;
-  onDeleteProject: (id: string) => void;
+  onDeleteProject: (id: string) => Promise<void> | void;
 }
 
 export default function ProjectList({
@@ -35,9 +35,9 @@ export default function ProjectList({
 }: ProjectListProps) {
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
-  
+
   const [showModal, setShowModal] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -46,6 +46,11 @@ export default function ProjectList({
   const [searchQuery, setSearchQuery] = useState("");
   const [filterLang, setFilterLang] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
   const [filterGenre, setFilterGenre] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  React.useEffect(() => {
+    setCurrentPage(PROJECT_LIST_CONSTANTS.PAGE_ONE);
+  }, [searchQuery, filterLang, filterGenre]);
 
   const handleOpenCreateTarget = () => {
     setEditingId(null);
@@ -64,32 +69,47 @@ export default function ProjectList({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    
-    setIsCreating(true);
+
+    setIsLoadingAction(true);
     setShowModal(false);
-    
+
     try {
       await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
-      
+
       if (editingId && onUpdateProject) {
         await onUpdateProject(editingId, name, desc);
       } else {
         await onCreateProject(name, desc);
       }
-    } catch(err) {
-      appError("ProjectList submit error:", err);
+    } catch (err) {
+      appError(ERROR_MESSAGES.UPDATING_PROJECT, err);
     } finally {
-      setIsCreating(false);
+      setIsLoadingAction(false);
       setName("");
       setDesc("");
       setEditingId(null);
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return;
+    setIsLoadingAction(true);
+    const idToDelete = projectToDelete.id;
+    setProjectToDelete(null);
+    try {
+      await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
+      await onDeleteProject(idToDelete);
+    } catch (err) {
+      appError(ERROR_MESSAGES.DELETING_PROJECT, err);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+
   const searchLower = _.toLower(searchQuery);
-  
+
   const filteredProjects = _.filter(projects, (proj) => {
-    const matchesSearch = _.some([proj.name, proj.description || ""], (text) => 
+    const matchesSearch = _.some([proj.name, proj.description || ""], (text) =>
       _.includes(_.toLower(text), searchLower)
     );
     const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
@@ -97,6 +117,19 @@ export default function ProjectList({
 
     return _.every([matchesSearch, matchesLang, matchesGenre], Boolean);
   });
+
+  const totalPages = _.max([PROJECT_LIST_CONSTANTS.PAGE_ONE, _.ceil(filteredProjects.length / PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE)]) as number;
+  const validCurrentPage = _.min([currentPage, totalPages]) as number;
+
+  if (!_.isEqual(validCurrentPage, currentPage)) {
+    setCurrentPage(validCurrentPage);
+  }
+
+  const paginatedProjects = _.slice(
+    filteredProjects,
+    (validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE,
+    validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE
+  );
 
   const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, 'config.genre'), Boolean)))];
 
@@ -122,31 +155,28 @@ export default function ProjectList({
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-            }`)}
+              }`)}
           >
             {localT.allLangs}
           </button>
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-            }`)}
+              }`)}
           >
             {localT.viBtn}
           </button>
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${
-              _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
+            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
                 : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-            }`)}
+              }`)}
           >
             {localT.enBtn}
           </button>
@@ -177,7 +207,7 @@ export default function ProjectList({
         </div>
       </div>
 
-      {isCreating ? (
+      {isLoadingAction ? (
         <div className="w-full animate-pulse space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {_.map(PROJECT_LIST_CONSTANTS.SKELETON_ITEMS, (i) => (
@@ -235,7 +265,7 @@ export default function ProjectList({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filteredProjects.map((project) => {
+                {paginatedProjects.map((project) => {
                   const dateStr = new Date(project.updatedAt).toLocaleDateString(t.en_US, {
                     year: "numeric",
                     month: "short",
@@ -330,6 +360,44 @@ export default function ProjectList({
               </tbody>
             </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-900/50">
+              <div className="text-[10px] text-slate-500 font-medium font-mono">
+                {localT.showing} {((validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE) + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setCurrentPage(prev => _.max([prev - 1, 1]) as number)}
+                  disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)}
+                  className={cn(
+                    "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all",
+                    _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)
+                      ? "text-slate-600 cursor-not-allowed bg-slate-900"
+                      : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white"
+                  )}
+                >
+                  {t.Previous}
+                </Button>
+                <div className="text-[10px] text-slate-400 font-bold font-mono px-2">
+                  {validCurrentPage} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {totalPages}
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCurrentPage(prev => _.min([prev + 1, totalPages]) as number)}
+                  disabled={_.isEqual(validCurrentPage, totalPages)}
+                  className={cn(
+                    "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all",
+                    _.isEqual(validCurrentPage, totalPages)
+                      ? "text-slate-600 cursor-not-allowed bg-slate-900"
+                      : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white"
+                  )}
+                >
+                  {t.Next}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -355,12 +423,7 @@ export default function ProjectList({
             </Button>
             <Button
               variant="danger"
-              onClick={() => {
-                if (projectToDelete) {
-                  onDeleteProject(projectToDelete.id);
-                  setProjectToDelete(null);
-                }
-              }}
+              onClick={handleDeleteConfirm}
               className="px-5 py-2 text-xs font-bold rounded-xl"
             >
               {t.delete}

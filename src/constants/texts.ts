@@ -94,6 +94,7 @@ export const CONTENT_TYPES = {
 export const HTTP_HEADERS = {
   CONTENT_TYPE: "Content-Type",
   TRANSFER_ENCODING: "Transfer-Encoding",
+  XI_API_KEY: "xi-api-key",
 };
 
 export const TRANSFER_ENCODINGS = {
@@ -111,6 +112,18 @@ export const CONTENT_TYPE_HEADER = HTTP_HEADERS.CONTENT_TYPE;
 export const THEME_VALUES = {
   DARK: "dark",
   LIGHT: "light",
+} as const;
+
+export const HTTP_STATUS = {
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+} as const;
+
+export const TTS_POLLING_CONFIG = {
+  MAX_ATTEMPTS: 60,
+  INTERVAL_MS: 5000,
+  STATUS_DONE: "done",
+  STATUS_ERROR: "error",
 } as const;
 
 export const COMMON_STRINGS = {
@@ -421,6 +434,7 @@ export const PROJECT_LIST_TEXTS = {
     colCredits: "Tiêu hao",
     colUpdatedAt: "Cập nhật lần cuối",
     colActions: "Hành động",
+    showing: "Hiển thị",
     genreLabels: {
       Documentary: "Tài Liệu",
       Explanation: "Giải Thích",
@@ -443,6 +457,7 @@ export const PROJECT_LIST_TEXTS = {
     colCredits: "Credits",
     colUpdatedAt: "Updated At",
     colActions: "Actions",
+    showing: "Showing",
     genreLabels: {
       Documentary: "Documentary",
       Explanation: "Explanation",
@@ -461,4 +476,8 @@ export const PROJECT_LIST_CONSTANTS = {
   LANG_EN: "en",
   SLEEP_DURATION_MS: 1000,
   SKELETON_ITEMS: [1, 2, 3],
+  ITEMS_PER_PAGE: 5,
+  PAGE_ONE: 1,
+  PAGINATION_DELIMITER: "/",
+  DASH_DELIMITER: "-",
 } as const;

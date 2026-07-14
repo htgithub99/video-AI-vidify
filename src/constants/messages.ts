@@ -173,6 +173,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_SELECT_FILE_FAIL: "Hộp thoại chọn file thất bại: {0}",
     ULTRA_RUN_SELECT_FOLDER: "Đang chạy lệnh chọn thư mục: {0}",
     ULTRA_SELECT_FOLDER_FAIL: "Hộp thoại chọn thư mục thất bại: {0}",
+    TTS_FETCH_POLLING_ERROR: "Lỗi kết nối khi đồng bộ giọng nói: {0}",
+    TTS_POLLING_FAILED_RETRYING: "Lỗi đồng bộ, đang thử lại... {0}",
   },
   en: {
     PLAYWRIGHT_CONFIG_NEW: "[Playwright] Applying new configuration...",
@@ -250,6 +252,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     INTERNAL_SERVER_ERROR: "Internal server error: ",
     HTTP_STATUS_ERROR: "HTTP error! status: ",
     GOOGLE_TTS_FAILED: "Google TTS failed for chunk: {0}",
+    TTS_FETCH_POLLING_ERROR: "Fetch polling error: {0}",
+    TTS_POLLING_FAILED_RETRYING: "Polling task failed, retrying... {0}",
     PLAYWRIGHT_BORDER: "\n=======================================================",
     PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
     PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Browser page is closed or not initialized. Re-initializing...",
@@ -1198,12 +1202,12 @@ export const LOG_DICTIONARY = {
   },
 
   GENERAL_ERROR: {
-    en: "Error:",
-    vi: "Gặp sự cố:",
+    en: "Error: {0}",
+    vi: "Gặp sự cố: {0}",
   },
   GENERAL_SUCCESS: {
-    en: "Success:",
-    vi: "Thành công:",
+    en: "Success: {0}",
+    vi: "Thành công: {0}",
   },
   GOOGLE_TTS_FAILED: {
     en: "Google TTS failed for chunk: {0}",

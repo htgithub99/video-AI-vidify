@@ -76,6 +76,10 @@ import {
   DEFAULT_SCENE_PROMPT_PREFIX,
   stylePresetsKeywords,
   BASE64_DATA_URL_REGEX,
+  CONTENT_TYPE_HEADER,
+  HTTP_METHODS,
+  HTTP_STATUS,
+  TTS_POLLING_CONFIG,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog } from "../../lib/logger.js";
@@ -1467,9 +1471,9 @@ router.post("/voice", async (req: Request, res: Response) => {
 
     appLog(`${BACKEND_MESSAGES.TTS_START}${finalVoiceId}`);
     const ttsRes = await fetch(EXTERNAL_URLS.AI33_TTS, {
-      method: "POST",
+      method: HTTP_METHODS.POST,
       headers: {
-        "xi-api-key": apiKey,
+        [HTTP_HEADERS.XI_API_KEY]: apiKey,
       },
       body: formData,
     });
@@ -1489,22 +1493,38 @@ router.post("/voice", async (req: Request, res: Response) => {
 
     let audioUrl = null;
     let attempts = 0;
-    while (attempts < 60) {
-      await delayAsync(2000);
-      const pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          "xi-api-key": apiKey,
-        },
-      });
+    while (attempts < TTS_POLLING_CONFIG.MAX_ATTEMPTS) {
+      await delayAsync(TTS_POLLING_CONFIG.INTERVAL_MS);
+      let pollRes;
+      try {
+        pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
+          headers: {
+            [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+            [HTTP_HEADERS.XI_API_KEY]: apiKey,
+          },
+        });
+      } catch (fetchErr: any) {
+        logger.warn(getMessage("TTS_FETCH_POLLING_ERROR", undefined, fetchErr.message));
+        attempts++;
+        continue;
+      }
 
-      if (!pollRes.ok) throw new Error(getMessage("TTS_POLL_FAILED", undefined, await pollRes.text()));
+      if (!pollRes.ok) {
+        const errText = await pollRes.text();
+        if (_.includes([HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.FORBIDDEN], pollRes.status)) {
+          throw new Error(getMessage("TTS_POLL_FAILED", undefined, errText));
+        }
+        logger.warn(getMessage("TTS_POLLING_FAILED_RETRYING", undefined, `${pollRes.status} - ${errText}`));
+        attempts++;
+        continue;
+      }
+
       const pollData = await pollRes.json();
 
-      if (pollData.status === "done") {
+      if (_.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_DONE)) {
         audioUrl = pollData.metadata?.audio_url;
         break;
-      } else if (pollData.status === "error") {
+      } else if (_.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_ERROR)) {
         throw new Error(getMessage("TTS_TASK_ERROR_MSG", undefined, pollData.error_message));
       }
       attempts++;
