@@ -247,7 +247,7 @@ export function usePipelineWizard(props: any) {
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(true);
 
-  const [rightSidebarOpen, setRightSidebarOpen] = useState<boolean>(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState<boolean>(false);
 
   const [loading, setLoading] = useState(false);
 

@@ -229,8 +229,8 @@ ${styleGuideline}
 [CRITICAL REQUIREMENT - LENGTH & TTS SAFE]:
 ${
   isVi
-    ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
-    : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use only basic letters and punctuation.`
+    ? `Write [${chapterTitle}] of the script based on the outline, WRITTEN ENTIRELY IN VIETNAMESE (Tiếng Việt). MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use standard punctuation and keep all language accents and diacritics intact.`
+    : `Write [${chapterTitle}] based on the outline. The output text MUST be written entirely in English. MANDATORY: This section must be at least ${chapterWordTarget} words. Write detailed narration and expand deeply. THIS IS FOR TTS VOICE SYNTHESIS, DO NOT USE: special characters (*, #, _, -, [, ], /), emojis, or complex markdown. Use standard punctuation and keep all language accents and diacritics intact.`
 }
 ${sentenceLengthDirective}
 
@@ -1054,7 +1054,7 @@ STEP 2: Drafting Hooks
 Generate exactly ${count || 3} different hooks based on the strategic insights and the topic.
 
 STEP 3: Polish and TTS Normalization
-Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud, and perfect for TTS voice generation. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use only basic letters and punctuation.
+Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud, and perfect for TTS voice generation. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use standard punctuation and keep all language accents and diacritics intact.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps, no introductory text, and no backticks:
 {
