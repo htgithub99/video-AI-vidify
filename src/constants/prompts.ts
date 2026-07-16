@@ -749,7 +749,7 @@ Output a raw JSON object matching this schema (no markdown wrapping):
   ]
 }`;
 
-export const getScriptSanitizePrompt = (rawScript: string, isVi: boolean): string => `You are an AI TTS Normalization Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
+export const getScriptSanitizePrompt = (rawScript: string, isVi: boolean): string => `You are an AI Script Formatting Service. Your job is to take the raw script and clean it so it can be synthesized by TTS engines flawlessly.
 Raw Script:
 """
 ${rawScript}
@@ -760,6 +760,7 @@ Rules:
 2. REMOVE all emojis and special symbols.
 3. SCRIPT EXPANSION: Expand any abbreviation or numeric figure into its full spoken word equivalent in ${isVi ? "Vietnamese" : "English"} (e.g., if language is Vietnamese, expand "100%" to "một trăm phần trăm" and "AI" to "trí tuệ nhân tạo"; if English, expand "100%" to "one hundred percent" and "AI" to "artificial intelligence").
 4. Maintain the exact flow and paragraph structure.
+5. CRITICAL LANGUAGE RULE: Keep all accents and diacritics intact. If the language is Vietnamese, NEVER output text without tones (e.g. write "Bạn không", do NOT write "Ban khong").
 Output a raw JSON object matching this schema (no markdown wrapping):
 {
   "cleanedScript": "The fully cleaned, TTS-safe script text"
@@ -1053,8 +1054,9 @@ Identify the primary target audience, core emotional triggers (curiosity, fear, 
 STEP 2: Drafting Hooks
 Generate exactly ${count || 3} different hooks based on the strategic insights and the topic.
 
-STEP 3: Polish and TTS Normalization
-Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud, and perfect for TTS voice generation. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use standard punctuation and keep all language accents and diacritics intact.
+STEP 3: Polish and Formatting
+Polish and refine the draft hooks to make them extremely punchy, catchy, smooth to read out loud. Do NOT use special characters (*, #, _, -, [, ], /), emojis, hashtags, or markdown. Use standard punctuation.
+CRITICAL LANGUAGE RULE: The output MUST be in exact ${language === "vi" ? "Vietnamese (Tiếng Việt) with full accents and tones. NEVER write Vietnamese without tones (e.g. write 'Bạn không', do NOT write 'Ban khong')" : "English"}.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps, no introductory text, and no backticks:
 {
