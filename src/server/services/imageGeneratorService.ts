@@ -1,5 +1,6 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
 import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_VIDEO_SECTION_REGEX, IMAGE_GEN_IMAGE_SECTION_REGEX, IMAGE_GEN_SAVE_BTN_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX } from "../../constants";
+import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio } from "../../types.js";
@@ -480,7 +481,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
     let warnReason = `${BACKEND_MESSAGES.PLAYWRIGHT_SANDBOX_ERR} (HTTP ${status}). ${BACKEND_MESSAGES.PLAYWRIGHT_RECAPTCHA}`;
     try {
-      const errorJson = typeof errText === "string" ? JSON.parse(errText) : errText;
+      const errorJson = typeof errText === "string" ? jsonUtils.safeParse<any>(errText, {}) : errText;
       if (errorJson?.error?.details?.[0]?.reason) {
         warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
       }
@@ -499,7 +500,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   }
 
   try {
-    const parsed = JSON.parse(responseText);
+    const parsed = jsonUtils.safeParse<any>(responseText, {});
     if (parsed.directBase64) {
       let cleanBase64 = parsed.directBase64;
       if (cleanBase64.includes(",")) {

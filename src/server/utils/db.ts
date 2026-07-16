@@ -7,6 +7,7 @@ import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_
 import { appError, appLog } from "../../lib/logger.js";
 import _ from 'lodash';
 import { getDataDirectory } from "./paths.js";
+import { jsonUtils } from "../../lib/json";
 
 const SQL_STATEMENTS = {
   PRAGMA_WAL: "PRAGMA journal_mode = WAL;",
@@ -98,16 +99,14 @@ export async function getProjectsListFromDb(): Promise<any[]> {
 
     return _.map(rows, (row) => {
       let config = undefined;
-      try {
-        const detail = JSON.parse(row.data);
-        if (!_.isNil(detail.config)) {
+      const detail = jsonUtils.safeParse<any>(row.data, {});
+      if (!_.isNil(detail.config)) {
           config = {
             genre: detail.config.genre,
             language: detail.config.language,
             duration: detail.config.duration,
           };
         }
-      } catch (e) {}
 
       return {
         id: row.id,
@@ -131,7 +130,7 @@ export async function getProjectDetailFromDb(id: string): Promise<VideoProject |
     const db = await initDb();
     const row = await db.get(SQL_STATEMENTS.SELECT_PROJECT_DETAIL, [id]);
     if (!_.isNil(row) && !_.isNil(row.data)) {
-      return JSON.parse(row.data) as VideoProject;
+      return jsonUtils.safeParse<VideoProject>(row.data, null);
     }
   } catch (error) {
     appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
@@ -187,7 +186,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
 
     const db = await initDb();
     const rawList = fs.readFileSync(projectsFile, ENCODING_UTF8);
-    const metadataList = JSON.parse(rawList);
+    const metadataList = jsonUtils.safeParse<any[]>(rawList, []);
 
     if (_.isEqual(_.isArray(metadataList), false) || _.isEqual(metadataList.length, 0)) {
       appLog(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
@@ -209,12 +208,8 @@ export async function migrateJsonToSqlite(): Promise<void> {
       let projectDetail: VideoProject | null = null;
       const detailFile = path.join(projectsDir, `${id}.json`);
       if (_.isEqual(fs.existsSync(detailFile), true)) {
-        try {
-          const detailRaw = fs.readFileSync(detailFile, ENCODING_UTF8);
-          projectDetail = JSON.parse(detailRaw);
-        } catch (e) {
-          appError(`${getBackendMsg("SQLITE_MIGRATE_PARSE_ERR")} ${id}`, e);
-        }
+        const detailRaw = fs.readFileSync(detailFile, ENCODING_UTF8);
+        projectDetail = jsonUtils.safeParse<VideoProject>(detailRaw, null);
       }
 
       if (_.isNil(projectDetail)) {

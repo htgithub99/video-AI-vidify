@@ -9,6 +9,7 @@ import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
+import { jsonUtils } from "../../lib/json.js";
 
 async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
@@ -23,7 +24,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
         .replace(URL_ENCODED_LITERAL_COMMA_REGEX, ",");
       return `${EXTERNAL_URLS.LOREM_FLICKR}/${COMMON_STRINGS.LOREM_FLICKR_SIZE}/${decoded}`;
     });
-    return JSON.parse(cleaned) as VideoProject;
+    return jsonUtils.safeParse<VideoProject>(cleaned, null);
   } catch (error) {
     appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
     return null;

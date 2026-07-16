@@ -1,3 +1,4 @@
+import { StoryboardSourceMode } from "../../constants";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
 import { VoiceSelectionDialog } from "../../components/VoiceSelectionDialog";
@@ -961,20 +962,20 @@ export default function PipelineStep1(props: PipelineWizardState) {
               variant="ghost"
               type="button"
               onClick={() => {
-                setStoryboardSourceMode("audio");
+                setStoryboardSourceMode(StoryboardSourceMode.AUDIO);
                 setInfoMsg(t.Switching_to_Audio_Voice_);
               }}
-              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "audio" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
+              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
             >
               <div
-                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "audio" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
+                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div
-                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "audio" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
+                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
                 >
                   <Music className="w-4 h-4" />
                 </div>
@@ -998,20 +999,20 @@ export default function PipelineStep1(props: PipelineWizardState) {
               variant="ghost"
               type="button"
               onClick={() => {
-                setStoryboardSourceMode("script");
+                setStoryboardSourceMode(StoryboardSourceMode.SCRIPT);
                 setInfoMsg(t.Switching_to_full_text_sc);
               }}
-              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-between min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === "script" ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
+              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
             >
               <div
-                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === "script" ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
+                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div
-                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === "script" ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
+                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
                 >
                   <FileText className="w-4 h-4" />
                 </div>
@@ -1029,7 +1030,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
             </Button>
           </div>
 
-          {storyboardSourceMode === "audio" ? (
+          {storyboardSourceMode === StoryboardSourceMode.AUDIO ? (
             <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/70 space-y-3.5 animate-fade-in text-left relative overflow-hidden">
               <style>{`
  .compact-seeker::-webkit-slider-runnable-track {

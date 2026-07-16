@@ -7,6 +7,7 @@ import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, L
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import _ from "lodash";
+import { jsonUtils } from "../../lib/json";
 
 const { Play, Sparkles, Terminal, FileJson, FolderOpen, CheckSquare, Square, Upload, Settings, Wand2, Wrench } = LucideIcons as any;
 
@@ -88,7 +89,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
   const [config, setConfig] = useState<UltraConfig>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG);
-      return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+      return saved ? { ...DEFAULT_CONFIG, ...jsonUtils.safeParse<any>(saved, {}) } : DEFAULT_CONFIG;
     } catch (e) {
       return DEFAULT_CONFIG;
     }
@@ -139,7 +140,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         }
       }
     } catch (e: any) {
-      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_ERROR_PREFIX}${e.message}`, LogLevel.ERROR);
     }
   };
 
@@ -156,7 +157,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         addLog(PIPELINE_STEP6_UI_TEXTS.LOG_DELETE_ERROR, LogLevel.ERROR);
       }
     } catch (e: any) {
-      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_ERROR_PREFIX}${e.message}`, LogLevel.ERROR);
     }
   };
 
@@ -189,7 +190,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
         addLog(PIPELINE_STEP6_UI_TEXTS.LOG_RENAME_ERROR, LogLevel.ERROR);
       }
     } catch (e: any) {
-      addLog(`Lỗi: ${e.message}`, LogLevel.ERROR);
+      addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_ERROR_PREFIX}${e.message}`, LogLevel.ERROR);
     }
   };
 
@@ -213,7 +214,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       const finalName = customName.trim() || _.replace(file.name, TEMPLATE_CONFIG.JSON_EXT, "");
       addLog(`${PIPELINE_STEP6_UI_TEXTS.LOG_UPLOADING}${finalName}...`, LogLevel.INFO);
       const text = await file.text();
-      const content = JSON.parse(text);
+      const content = jsonUtils.safeParse<any>(text, null);
 
       const payload = {
         name: finalName,
@@ -341,7 +342,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       if (config.input_mode === INPUT_MODES.ZIP && !config.parent_folder) {
         addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_ZIP, LogLevel.ERROR); return;
       }
-      if (config.input_mode === INPUT_MODES.SPLIT && ([config.images_dir, config.voices_dir].some(dir => !dir))) {
+      if (config.input_mode === INPUT_MODES.SPLIT && _.some([config.images_dir, config.voices_dir], _.isEmpty)) {
         addLog(PIPELINE_STEP6_UI_TEXTS.ERR_SELECT_SPLIT, LogLevel.ERROR); return;
       }
     } else {
@@ -410,14 +411,14 @@ export default function PipelineStep6(props: PipelineWizardState) {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
+        const lines = _.split(buffer, "\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
           if (!line.trim()) continue;
           let parsed = false;
           try {
-            const data = JSON.parse(line);
+            const data = jsonUtils.safeParse<any>(line, null);
             parsed = true;
             if (data.type === UltraStreamLogType.LOG) {
               addLog(data.message, LogLevel.INFO);
@@ -440,7 +441,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
 
       if (buffer.trim()) {
         try {
-          const data = JSON.parse(buffer);
+          const data = jsonUtils.safeParse<any>(buffer, null);
           if ("success" in data) {
             if (data.success) {
               lastSuccessMessage = data.message || t.node7_log_success;
@@ -498,7 +499,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
           {consoleLogs.length === 0 ? (
             <div className="text-slate-650 italic">{t.node7_console_waiting}</div>
           ) : (
-            consoleLogs.map((log, index) => {
+            _.map(consoleLogs, (log, index) => {
               let textClass = "text-slate-300";
               if (_.some([LOG_LEVEL_SYMBOLS.SUCCESS, LOG_KEYWORDS.SUCCESS], k => _.includes(log, k))) textClass = "text-teal-400 font-semibold";
               else if (_.some([LOG_LEVEL_SYMBOLS.ERROR, LOG_KEYWORDS.ERROR], k => _.includes(log, k))) textClass = "text-rose-500 font-semibold";
@@ -535,7 +536,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
                     >
                       <span className="truncate pr-2 text-slate-300 font-medium">
                         {templates.length === 0 ? PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND :
-                          templates.find(t => t.filePath === config.template_id)?.name || PIPELINE_STEP6_UI_TEXTS.SELECT_TEMPLATE}
+                          _.find(templates, t => t.filePath === config.template_id)?.name || PIPELINE_STEP6_UI_TEXTS.SELECT_TEMPLATE}
                       </span>
                       <LucideIcons.ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", isDropdownOpen && "rotate-180")} />
                     </div>
@@ -545,7 +546,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
                         {templates.length === 0 ? (
                           <div className="px-4 py-3 text-xs text-slate-500 text-center italic">{PIPELINE_STEP6_UI_TEXTS.NO_TEMPLATE_FOUND}</div>
                         ) : (
-                          templates.map(t => (
+                          _.map(templates, t => (
                             <div
                               key={t.id}
                               className={cn(

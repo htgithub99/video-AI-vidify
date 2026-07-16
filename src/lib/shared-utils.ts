@@ -2,13 +2,11 @@ import { appLog, appError, createAppError } from "./logger";
 import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS } from "../constants";
 import { BatchDelayOption } from "../types";
 import _ from 'lodash';
+import { storageUtils } from './storage';
 
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY): string => {
-  if (!_.eq(typeof window, "undefined")) {
-    return window.localStorage.getItem(keyName) || "";
-  }
-  return "";
+  return storageUtils.get(keyName) || "";
 };
 
 export const safeSystemFetch = async (url: string, payload: any) => {

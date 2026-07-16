@@ -12,6 +12,7 @@ import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
 import _ from "lodash";
 import { delayAsync } from "./lib/shared-utils.js";
+import { jsonUtils } from "./lib/json";
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -93,7 +94,7 @@ export default function App() {
         if (!text?.trim() || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(text?.trim())) {
           return [];
         }
-        const list = JSON.parse(text);
+        const list = jsonUtils.safeParse<any[]>(text, []);
         if (cachedId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cachedId)) {
           const hasProj = list.some((p: any) => p.id === cachedId);
           if (hasProj) {

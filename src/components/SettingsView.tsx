@@ -2,10 +2,27 @@ import { cn } from "../lib/utils";
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
-import { STORAGE_KEYS, DEFAULT_PROJECT_ID, DEFAULT_SESSION_ID, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS } from "../constants";
+import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS } from "../constants";
 import { appError } from "../lib/logger.js";
-import { Key, Shield, Save, CheckCircle2, Server } from "lucide-react";
+import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "./ui/Button";
+import { Modal } from "./ui/Modal";
+import _ from "lodash";
+import { storageUtils } from "../lib/storage";
+import { jsonUtils } from "../lib/json";
+
+const CLEAR_TYPES = {
+  API: "API",
+  SANDBOX: "SANDBOX",
+} as const;
+
+type ClearType = typeof CLEAR_TYPES[keyof typeof CLEAR_TYPES];
+
+const SETTINGS_CONSTS = {
+  FEEDBACK_TIMEOUT: 5000,
+  MOCK_SAVE_DELAY: 850,
+  SUCCESS_STATE_DURATION: 2500,
+} as const;
 
 interface SettingsViewProps {
   currentLang: Lang;
@@ -25,17 +42,19 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
+  const [confirmClearType, setConfirmClearType] = useState<ClearType | null>(null);
+
   const [config, setConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (saved && ![COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, ""].includes(saved.trim())) {
-        const parsed = JSON.parse(saved);
+      const saved = storageUtils.get(STORAGE_KEYS.API_SANDBOX_CONFIG);
+      if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, ""], _.trim(saved))) {
+        const parsed = jsonUtils.safeParse<any>(saved, null);
         if (parsed && typeof parsed === "object") {
           return {
-            projectId: parsed.projectId || DEFAULT_PROJECT_ID,
+            projectId: parsed.projectId || "",
             authToken: parsed.authToken || "",
             recaptchaToken: parsed.recaptchaToken || "",
-            sessionId: parsed.sessionId || DEFAULT_SESSION_ID,
+            sessionId: parsed.sessionId || "",
             imageModelName: parsed.imageModelName || CURL_KEYWORDS.NARWHAL,
             agentSessionId: parsed.agentSessionId || "",
             isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
@@ -46,7 +65,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       appError("ERROR_PARSING_SANDBOX_SETTINGS", e);
     }
     return {
-      projectId: DEFAULT_PROJECT_ID,
+      projectId: "",
       authToken: "",
       recaptchaToken: "",
       sessionId: "",
@@ -60,26 +79,48 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     setSavingState(true);
     setTimeout(() => {
       Object.entries(keysToSave).forEach(([key, val]) => {
-        localStorage.setItem(key, val);
+        storageUtils.set(key, val);
       });
-      window.dispatchEvent(new Event("storage"));
       setSavingState(false);
       setSuccessState(true);
       setTimeout(() => {
         setSuccessState(false);
-      }, 2500);
-    }, 850);
+      }, SETTINGS_CONSTS.SUCCESS_STATE_DURATION);
+    }, SETTINGS_CONSTS.MOCK_SAVE_DELAY);
   };
 
   const handleSaveKeys = () => {
     saveConfigHelper(
       {
-        [STORAGE_KEYS.GEMINI_API_KEY]: geminiKey.trim(),
-        [STORAGE_KEYS.AI33_API_KEY]: ai33Key.trim(),
+        [STORAGE_KEYS.GEMINI_API_KEY]: _.trim(geminiKey),
+        [STORAGE_KEYS.AI33_API_KEY]: _.trim(ai33Key),
       },
       setIsSavingKeys,
       setKeysSavedSuccess,
     );
+  };
+
+  const handleConfirmClear = () => {
+    if (confirmClearType === CLEAR_TYPES.API) {
+      setGeminiKey("");
+      setAi33Key("");
+      storageUtils.remove(STORAGE_KEYS.GEMINI_API_KEY);
+      storageUtils.remove(STORAGE_KEYS.AI33_API_KEY);
+    } else if (confirmClearType === CLEAR_TYPES.SANDBOX) {
+      const defaultConfig = {
+        projectId: "",
+        authToken: "",
+        recaptchaToken: "",
+        sessionId: "",
+        imageModelName: CURL_KEYWORDS.NARWHAL,
+        agentSessionId: "",
+        isStreamChat: false,
+      };
+      setConfig(defaultConfig);
+      setCurlInput("");
+      storageUtils.remove(STORAGE_KEYS.API_SANDBOX_CONFIG);
+    }
+    setConfirmClearType(null);
   };
 
   const handleSaveConfig = () => {
@@ -87,22 +128,23 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   };
 
   const handleCurlPaste = (val: string) => {
-    setCurlInput(val);
-    if (!val.trim()) return;
+    const trimmedVal = _.trim(val);
+    setCurlInput(trimmedVal);
+    if (!trimmedVal) return;
 
     try {
-      const authMatch = val.match(CURL_AUTHORIZATION_BEARER_REGEX);
+      const authMatch = trimmedVal.match(CURL_AUTHORIZATION_BEARER_REGEX);
       let parsedAuthToken = "";
       if (authMatch) {
-        parsedAuthToken = authMatch[1].trim();
+        parsedAuthToken = _.trim(authMatch[1]);
       } else {
-        const rawMatch = val.match(CURL_AUTHORIZATION_JSON_REGEX);
-        if (rawMatch) parsedAuthToken = rawMatch[1].trim();
+        const rawMatch = trimmedVal.match(CURL_AUTHORIZATION_JSON_REGEX);
+        if (rawMatch) parsedAuthToken = _.trim(rawMatch[1]);
       }
 
       if (!parsedAuthToken) {
-        const bearerMatch = val.match(CURL_BEARER_TOKEN_REGEX);
-        if (bearerMatch) parsedAuthToken = bearerMatch[1].trim();
+        const bearerMatch = trimmedVal.match(CURL_BEARER_TOKEN_REGEX);
+        if (bearerMatch) parsedAuthToken = _.trim(bearerMatch[1]);
       }
 
       let parsedProjectId = "";
@@ -128,10 +170,10 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       if (recaptchaMatch) parsedRecaptcha = recaptchaMatch[1];
 
       let parsedAgentSessionId = "";
-      const agentSessMatch = val.match(CURL_AGENT_SESSION_ID_REGEX);
+      const agentSessMatch = trimmedVal.match(CURL_AGENT_SESSION_ID_REGEX);
       if (agentSessMatch) parsedAgentSessionId = agentSessMatch[1];
 
-      const isStreamChat = [CURL_KEYWORDS.STREAM_AGENT, CURL_KEYWORDS.STREAM].some(k => val.includes(k));
+      const isStreamChat = _.some([CURL_KEYWORDS.STREAM_AGENT, CURL_KEYWORDS.STREAM], k => _.includes(trimmedVal, k));
 
       const updated = {
         ...config,
@@ -145,12 +187,15 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
       setConfig(updated);
       setCurlFeedback(`${t.ext_success_extract} ${parsedAuthToken ? t.ext_bearer : ""}${parsedRecaptcha ? t.ext_recaptcha : ""}${isStreamChat ? t.ext_streamchat : t.ext_batch}`);
-      setTimeout(() => setCurlFeedback(null), 5000);
+      setTimeout(() => setCurlFeedback(null), SETTINGS_CONSTS.FEEDBACK_TIMEOUT);
     } catch (e) {
       appError("GENERAL_ERROR", e);
       setCurlFeedback(t.Failed_to_parse_cURL_comm);
     }
   };
+
+  const isApiEmpty = _.every([geminiKey, ai33Key], _.isEmpty);
+  const isSandboxEmpty = _.every([config.authToken, config.projectId, config.sessionId, curlInput], _.isEmpty);
 
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left">
@@ -209,12 +254,21 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex justify-end">
+          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+            <Button
+              variant="primary"
+              onClick={() => setConfirmClearType(CLEAR_TYPES.API)}
+              disabled={isSavingKeys || isApiEmpty}
+              className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{pageTexts.CLEAR_BTN}</span>
+            </Button>
             <Button
               variant="primary"
               onClick={handleSaveKeys}
               disabled={isSavingKeys}
-              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2"
+              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5"
             >
               {isSavingKeys ? (
                 <>
@@ -266,7 +320,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-rose-500/50 rounded-xl p-3 text-xs text-slate-350 font-mono focus:outline-none transition-all resize-none leading-relaxed"
               />
               {curlFeedback && (
-                <div className={cn(`text-[10px] font-bold ${[COMMON_STRINGS.SUCCESS_MARK, COMMON_STRINGS.SUCCESS_KEYWORD_VI].some(k => curlFeedback.includes(k)) ? "text-emerald-500" : "text-rose-500"}`)}>
+                <div className={cn(`text-[10px] font-bold ${_.some([COMMON_STRINGS.SUCCESS_MARK, COMMON_STRINGS.SUCCESS_KEYWORD_VI], k => _.includes(curlFeedback, k)) ? "text-emerald-500" : "text-rose-500"}`)}>
                   {curlFeedback}
                 </div>
               )}
@@ -294,18 +348,27 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               <div className="flex justify-between items-center text-left pt-1">
                 <span className="text-slate-550 font-bold">{t.API_Mode}</span>
                 <span className="text-slate-300 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-[9px] font-bold">
-                  {config.isStreamChat ? "SSE Stream" : "Batch"}
+                  {config.isStreamChat ? pageTexts.SSE_MODE : pageTexts.BATCH_MODE}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex justify-end">
+          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+            <Button
+              variant="primary"
+              onClick={() => setConfirmClearType(CLEAR_TYPES.SANDBOX)}
+              disabled={isSavingConfig || isSandboxEmpty}
+              className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>{pageTexts.CLEAR_BTN}</span>
+            </Button>
             <Button
               variant="primary"
               onClick={handleSaveConfig}
               disabled={isSavingConfig}
-              className="text-xs font-bold px-4 py-2"
+              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all"
             >
               {isSavingConfig ? (
                 <>
@@ -322,6 +385,49 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={!!confirmClearType}
+        onClose={() => setConfirmClearType(null)}
+        title={pageTexts.MODAL_TITLE_CLEAR}
+        maxWidth="max-w-md"
+      >
+        <div className="p-6 pt-4 text-sm text-slate-300">
+          <div className="flex items-start gap-4 mb-5">
+            <div className="p-3 bg-rose-500/10 rounded-full shrink-0">
+              <AlertTriangle className="w-6 h-6 text-rose-500" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{pageTexts.MODAL_WARN_CLEAR}</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {pageTexts.MODAL_DESC_CLEAR_PREFIX}
+                <strong>{confirmClearType === CLEAR_TYPES.API ? pageTexts.API_KEYS_LBL : pageTexts.SANDBOX_LBL}</strong>
+                {pageTexts.MODAL_DESC_CLEAR_SUFFIX}
+              </p>
+              <p className="mt-2 text-[10px] uppercase font-bold text-rose-500 tracking-wider">
+                {pageTexts.MODAL_IRREVERSIBLE}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/50">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmClearType(null)}
+              className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl"
+            >
+              {pageTexts.CANCEL}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmClear}
+              className="bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-xs px-5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-500/20"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {pageTexts.CONFIRM_CLEAR}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

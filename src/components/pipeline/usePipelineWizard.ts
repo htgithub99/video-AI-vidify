@@ -1,6 +1,9 @@
+import { StoryboardSourceMode } from "../../constants";
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { PipelineConstants } from "../../constants/pipelineConstants";
-import { logger } from "../../utils/logger";
+import { logger } from "../../lib/logger";
+import { jsonUtils } from "../../lib/json";
+import { storageUtils } from '../../lib/storage';
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
 
@@ -344,17 +347,15 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES);
+      const stored = storageUtils.get(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES);
       setFavoriteStyles(
-        stored
-          ? JSON.parse(stored)
-          : [
-            {
-              id: "style_1",
-              name: "Cinematic Realistic",
-              prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
-            },
-          ],
+        jsonUtils.safeParse<any[]>(stored, [
+          {
+            id: "style_1",
+            name: "Cinematic Realistic",
+            prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
+          },
+        ])
       );
     } catch (e) {
       logger.error("GENERAL_ERROR", e);
@@ -363,7 +364,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteStyles = (list: any[]) => {
     setFavoriteStyles(list);
-    localStorage.setItem(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
+    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
   };
 
   const handleAddFavoriteStyle = (name: string, promptText: string) => {
@@ -426,18 +427,16 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES);
+      const stored = storageUtils.get(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES);
       setFavoriteVoices(
-        stored
-          ? JSON.parse(stored)
-          : [
-            {
-              id: "fav_1",
-              name: "Brian - Deep, Resonant and Comforting",
-              voiceURI: "nPczCjzI2devNBz1zQrb",
-              channelName: "Mystic Frontiers",
-            },
-          ],
+        jsonUtils.safeParse<any[]>(stored, [
+          {
+            id: "fav_1",
+            name: "Brian - Deep, Resonant and Comforting",
+            voiceURI: "nPczCjzI2devNBz1zQrb",
+            channelName: "Mystic Frontiers",
+          },
+        ])
       );
     } catch (e) {
       logger.error("GENERAL_ERROR", e);
@@ -446,7 +445,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteVoices = (list: any[]) => {
     setFavoriteVoices(list);
-    localStorage.setItem(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
+    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
   };
 
   const handleAddFavoriteVoice = (name: string, voiceURI: string, channelName?: string) => {
@@ -537,9 +536,9 @@ export function usePipelineWizard(props: any) {
 
   const [sandboxConfig, setSandboxConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
+      const saved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
       if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
-        const parsed = JSON.parse(saved);
+        const parsed = jsonUtils.safeParse<any>(saved, null);
         if (parsed && typeof parsed === "object") {
           return parsed;
         }
@@ -558,7 +557,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      localStorage.setItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
+      storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
     }
   }, [sandboxConfig]);
 
@@ -583,9 +582,9 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     const syncConfig = () => {
       try {
-        const saved = localStorage.getItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
+        const saved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
         if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
-          const parsed = JSON.parse(saved);
+          const parsed = jsonUtils.safeParse<any>(saved, null);
           if (parsed && typeof parsed === "object") {
             setSandboxConfig(parsed);
           }
@@ -601,7 +600,7 @@ export function usePipelineWizard(props: any) {
   const [systemLogs, setSystemLogs] = useState<{ time: string; type: string; msg: string }[]>(() => {
     try {
       const savedLogs = sessionStorage.getItem("pipeline_system_logs");
-      if (savedLogs) return JSON.parse(savedLogs);
+      if (savedLogs) return jsonUtils.safeParse<any[]>(savedLogs, []);
     } catch (e) { }
     return [];
   });
@@ -731,8 +730,8 @@ export function usePipelineWizard(props: any) {
 
   const [voiceAudioDuration, setVoiceAudioDuration] = useState<number | null>(null);
 
-  const [storyboardSourceMode, setStoryboardSourceMode] = useState<"audio" | "script">(() => {
-    return (initialProject as any)?.storyboardSourceMode || "script";
+  const [storyboardSourceMode, setStoryboardSourceMode] = useState<StoryboardSourceMode>(() => {
+    return (initialProject as any)?.storyboardSourceMode || StoryboardSourceMode.SCRIPT;
   });
 
   const [isAudioDragging, setIsAudioDragging] = useState(false);
@@ -1194,7 +1193,7 @@ export function usePipelineWizard(props: any) {
       if ((initialProject as any).storyboardSourceMode) {
         setStoryboardSourceMode((initialProject as any).storyboardSourceMode);
       } else {
-        setStoryboardSourceMode("script");
+        setStoryboardSourceMode(StoryboardSourceMode.SCRIPT);
       }
 
       if (initialProject.hookConfig) {
@@ -1401,7 +1400,7 @@ export function usePipelineWizard(props: any) {
             : undefined,
         referenceCharacter: project.visualConfig.characterPrompt || undefined,
         visualDensity: project.visualConfig.density || 5,
-        voiceDuration: storyboardSourceMode === "audio" ? voiceAudioDuration : null,
+        voiceDuration: storyboardSourceMode === StoryboardSourceMode.AUDIO ? voiceAudioDuration : null,
         targetDuration: project.config.targetDuration,
         sourceMode: storyboardSourceMode,
         bypassCache: isForce,
@@ -2647,7 +2646,7 @@ export function usePipelineWizard(props: any) {
           for (const line of lines) {
             if (!line.trim()) continue;
             try {
-              const result = JSON.parse(line);
+              const result = jsonUtils.safeParse<any>(line, null);
 
               setLoadingStates((prev) => ({
                 ...prev,

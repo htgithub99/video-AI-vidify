@@ -175,3 +175,7 @@ export enum AppLanguage {
   EN = "en",
 }
 
+export enum StoryboardSourceMode {
+  AUDIO = "audio",
+  SCRIPT = "script",
+}

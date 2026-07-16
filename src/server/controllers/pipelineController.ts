@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import _ from 'lodash';
 
+import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
@@ -1795,7 +1796,8 @@ router.post("/align-voice", async (req: Request, res: Response) => {
           }
 
           const rawResult = fs.readFileSync(outputPath, ENCODING_UTF8);
-          const result = JSON.parse(rawResult);
+          const result = jsonUtils.safeParse<any>(rawResult, null);
+          if (!result) throw new Error("JSON Parse failed");
 
           fs.unlinkSync(outputPath);
 
@@ -1852,7 +1854,8 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   let realTemplateId = templateId || "";
   if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
     try {
-      const templateContent = JSON.parse(fs.readFileSync(realTemplateId, "utf-8"));
+      const rawContent = fs.readFileSync(realTemplateId, "utf-8");
+      const templateContent = jsonUtils.safeParse<any>(rawContent, {});
       if (templateContent.folderPath) {
         realTemplateId = path.join(templateContent.folderPath, "draft_content.json");
       }
@@ -1895,7 +1898,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     const safeFilePath = filePath || "AUTO_MODE_PLACEHOLDER";
     logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${safeFilePath}" "${tempOutputPath}" "${optsJsonPath}"`);
     const pythonProcess = spawn(pyCmd, ["-u", scriptPath, safeFilePath, tempOutputPath, optsJsonPath]);
-    let autoCreatedDraftPath: string = "";
+    
 
     pythonProcess.stdout.on("data", (data) => {
       _.forEach(_.split(data.toString(), "\n"), (line) => {
@@ -1903,7 +1906,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
         if (!_.isEmpty(trimmed)) {
           const autoPathMatch = trimmed.match(REGEX_AUTO_MODE_PATH);
           if (autoPathMatch && autoPathMatch[1]) {
-            autoCreatedDraftPath = _.trim(autoPathMatch[1]);
+            
           }
           res.write(JSON.stringify({ type: UltraStreamLogType.LOG, message: trimmed }) + "\n");
         }
@@ -1965,7 +1968,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
           if (fs.existsSync(metaFilePath)) {
             try {
               const metaContent = fs.readFileSync(metaFilePath, "utf-8");
-              const metaObj = JSON.parse(metaContent);
+              const metaObj = jsonUtils.safeParse<any>(metaContent, {});
               const now = Date.now();
               metaObj.modify_time = now;
               metaObj.tm_draft_modified = Math.floor(now / 1000);

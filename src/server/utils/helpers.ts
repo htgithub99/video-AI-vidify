@@ -1,6 +1,7 @@
 import { appLog } from "../../lib/logger.js";
 import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
 import _ from 'lodash';
+import { jsonUtils } from "../../lib/json.js";
 
 
 export const extractBalancedJSON = (text: string): string | null => {
@@ -185,36 +186,30 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   }
 
   const tryParseClean = (str: string): any => {
-    try {
-      return JSON.parse(str);
-    } catch {
-      const cleanCommas = _.replace(_.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
-      try {
-        return JSON.parse(cleanCommas);
-      } catch {
-        try {
-          const repaired = repairUnescapedDoubleQuotes(str);
-          return JSON.parse(repaired);
-        } catch {
-          try {
-            const repairedCommas = repairUnescapedDoubleQuotes(cleanCommas);
-            return JSON.parse(repairedCommas);
-          } catch {
-            try {
-              const completed = completeCutoffJSON(str);
-              return JSON.parse(completed);
-            } catch {
-              try {
-                const completedCommas = completeCutoffJSON(cleanCommas);
-                return JSON.parse(completedCommas);
-              } catch {
-                return null;
-              }
-            }
-          }
-        }
-      }
-    }
+    let res = jsonUtils.safeParse<any>(str, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    const cleanCommas = _.replace(_.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
+    res = jsonUtils.safeParse<any>(cleanCommas, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    const repaired = repairUnescapedDoubleQuotes(str);
+    res = jsonUtils.safeParse<any>(repaired, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    const repairedCommas = repairUnescapedDoubleQuotes(cleanCommas);
+    res = jsonUtils.safeParse<any>(repairedCommas, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    const completed = completeCutoffJSON(str);
+    res = jsonUtils.safeParse<any>(completed, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    const completedCommas = completeCutoffJSON(cleanCommas);
+    res = jsonUtils.safeParse<any>(completedCommas, undefined);
+    if (!_.isUndefined(res)) return res;
+
+    return null;
   };
 
   let parsed = tryParseClean(trimmed);
