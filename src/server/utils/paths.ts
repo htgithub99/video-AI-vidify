@@ -47,6 +47,11 @@ export function getStaticResourcePath(filename: string): string {
 }
 
 export function getPythonCommand(): string {
+  const portablePythonPath = getStaticResourcePath(path.join("python_scripts", "python_runtime", "python.exe"));
+  if (fs.existsSync(portablePythonPath)) {
+    return portablePythonPath;
+  }
+
   return _.isEqual(process.platform, PLATFORMS.WIN32)
     ? PYTHON_COMMANDS.PYTHON
     : PYTHON_COMMANDS.PYTHON3;
