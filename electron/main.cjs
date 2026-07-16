@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const _ = require("lodash");
 const { exec } = require("child_process");
-const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES } = require("./electron-config.cjs");
+const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES } = require("./config.cjs");
 
 const userDataPath = app.getPath(APP_CONFIG.USER_DATA);
 process.env[APP_CONFIG.ENV_APP_DATA_DIR] = userDataPath;
@@ -58,7 +58,7 @@ function setupInitialDatabase() {
   const destDbPath = path.join(dataDir, APP_CONFIG.DB_NAME);
   
   const isDev = _.isEqual(app.isPackaged, false);
-  const rootPath = isDev ? __dirname : process.resourcesPath;
+  const rootPath = isDev ? path.join(__dirname, "..") : process.resourcesPath;
   const srcDbPath = path.join(rootPath, APP_CONFIG.DB_NAME);
 
   if (_.every([destDbPath], isFileMissing)) {

@@ -3,7 +3,7 @@
     "private": true,
     "version": "1.0.0",
     "type": "module",
-    "main": "electron-main.cjs",
+    "main": "electron/main.cjs",
     "scripts": {
         "dev": "start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir=\"C:\\\\chrome_debug_profile\" && cross-env NODE_OPTIONS=--dns-result-order=ipv4first tsx server.ts",
         "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
@@ -94,8 +94,7 @@
         },
         "files": [
             "dist/**/*",
-            "electron-main.cjs",
-            "electron-config.cjs",
+            "electron/**/*",
             "package.json",
             "!builds/**/*",
             "!dist-desktop/**/*"
