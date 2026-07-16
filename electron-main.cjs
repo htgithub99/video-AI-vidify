@@ -10,6 +10,10 @@ process.env[APP_CONFIG.ENV_APP_DATA_DIR] = userDataPath;
 process.env[APP_CONFIG.ENV_ELECTRON_RUNNING] = ENV_VALUES.TRUE;
 process.env[APP_CONFIG.ENV_NODE_ENV] = APP_CONFIG.PRODUCTION;
 
+if (app.isPackaged) {
+  process.env.PATH = `${process.resourcesPath}${path.delimiter}${process.env.PATH}`;
+}
+
 let mainWindow = null;
 let serverStarted = false;
 

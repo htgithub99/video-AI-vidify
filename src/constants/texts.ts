@@ -1,5 +1,5 @@
 import { translations } from "../lib/lang.js";
-import { VideoGenre } from "./enums.js";
+import { VideoGenre, SortOrder } from "./enums.js";
 
 export const APP_TEXTS = {
   VN: {
@@ -114,7 +114,7 @@ export const TEMPLATE_CONFIG = {
   DIR_NAME: "templates/capcut",
   JSON_EXT: ".json",
   SORT_FIELD_CREATED_AT: "createdAt",
-  SORT_ORDER_DESC: "desc" as "desc" | "asc",
+  SORT_ORDER_DESC: SortOrder.DESC,
   UTF8: "utf8" as BufferEncoding,
   JSON_SPACE: 2,
   REGEX_NFD: /[\u0300-\u036f]/g,

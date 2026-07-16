@@ -9,7 +9,7 @@ import { COMMON_STRINGS, ERROR_MESSAGES } from "../constants/index.js";
 import _ from "lodash";
 import { appError } from "../lib/logger.js";
 import { delayAsync } from "../lib/shared-utils.js";
-import { PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS } from "../constants/index.js";
+import { PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS, SortOrder } from "../constants/index.js";
 
 const getGenreLabel = (genre: string, lang: Lang) => {
   const labels = PROJECT_LIST_TEXTS[lang].genreLabels;
@@ -108,15 +108,19 @@ export default function ProjectList({
 
   const searchLower = _.toLower(searchQuery);
 
-  const filteredProjects = _.filter(projects, (proj) => {
-    const matchesSearch = _.some([proj.name, proj.description || ""], (text) =>
-      _.includes(_.toLower(text), searchLower)
-    );
-    const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
-    const matchesGenre = _.isEqual(filterGenre, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(proj.config.genre, filterGenre);
+  const filteredProjects = _.orderBy(
+    _.filter(projects, (proj) => {
+      const matchesSearch = _.some([proj.name, proj.description || ""], (text) =>
+        _.includes(_.toLower(text), searchLower)
+      );
+      const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
+      const matchesGenre = _.isEqual(filterGenre, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(proj.config.genre, filterGenre);
 
-    return _.every([matchesSearch, matchesLang, matchesGenre], Boolean);
-  });
+      return _.every([matchesSearch, matchesLang, matchesGenre], Boolean);
+    }),
+    [(p) => new Date(p.updatedAt || 0).getTime()],
+    [SortOrder.DESC]
+  );
 
   const totalPages = _.max([PROJECT_LIST_CONSTANTS.PAGE_ONE, _.ceil(filteredProjects.length / PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE)]) as number;
   const validCurrentPage = _.min([currentPage, totalPages]) as number;

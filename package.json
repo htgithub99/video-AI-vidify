@@ -101,9 +101,7 @@
             "!dist-desktop/**/*"
         ],
         "extraResources": [
-            "capcut_ultra_tool.py",
-            "capcut_project_builder.py",
-            "voice_aligner.py",
+            "python_scripts",
             "ffmpeg.exe",
             "database.db"
         ],
