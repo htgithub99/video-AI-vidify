@@ -66,3 +66,6 @@ temp_align/
 clean-build.ps1
 .vscode/
 package-lock.json
+templates/capcut/*.json
+templates/
+ultra_opts_*.json
