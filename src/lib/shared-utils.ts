@@ -3,6 +3,7 @@ import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS } from "../constants"
 import { BatchDelayOption } from "../types";
 import _ from 'lodash';
 import { storageUtils } from './storage';
+import { jsonUtils } from "./json";
 
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY): string => {
@@ -21,7 +22,7 @@ export const safeSystemFetch = async (url: string, payload: any) => {
         "x-gemini-api-key": geminiKey,
         "x-ai33-api-key": ai33Key,
       },
-      body: JSON.stringify(payload),
+      body: jsonUtils.safeStringify(payload),
     });
 
     const data = await response.json().catch(() => null);

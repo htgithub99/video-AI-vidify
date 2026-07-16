@@ -18,9 +18,14 @@ export const jsonUtils = {
   /**
    * Safely stringifies an object, returning a fallback string if it fails.
    */
-  safeStringify: (obj: any, fallback: string = ""): string => {
+  safeStringify: (
+    obj: any, 
+    replacer?: (number | string)[] | null | ((this: any, key: string, value: any) => any), 
+    space?: string | number,
+    fallback: string = ""
+  ): string => {
     try {
-      return JSON.stringify(obj);
+      return JSON.stringify(obj, replacer as any, space);
     } catch (error) {
       appError('ERROR_STRINGIFYING_JSON', error);
       return fallback;

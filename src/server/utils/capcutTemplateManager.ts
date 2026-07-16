@@ -6,6 +6,7 @@ import _ from "lodash";
 import { logger } from "../../lib/logger.js";
 import { TEMPLATE_CONFIG } from "../../constants/index.js";
 import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
+import { jsonUtils } from "@/src/lib/json.js";
 
 export interface CapcutTemplate {
   id: string;
@@ -78,7 +79,7 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const filePath = path.join(templatesDir, fileName);
 
   const content = { folderPath: folderPath };
-  fs.writeFileSync(filePath, JSON.stringify(content, null, TEMPLATE_CONFIG.JSON_SPACE), TEMPLATE_CONFIG.UTF8);
+  fs.writeFileSync(filePath, jsonUtils.safeStringify(content, null, TEMPLATE_CONFIG.JSON_SPACE), TEMPLATE_CONFIG.UTF8);
 
   return {
     id: _.replace(fileName, TEMPLATE_CONFIG.JSON_EXT, ""),

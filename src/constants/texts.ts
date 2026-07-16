@@ -181,6 +181,7 @@ export const COMMON_STRINGS = {
   BASE64_JPEG_PREFIX: "data:image/jpeg;base64,",
   ARTWORK_PREFIX: "artwork_",
   MP4_EXT: "mp4",
+  DUMMY_URL_BASE: "http://dummy.com",
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -628,3 +629,8 @@ export const TRANSITION_OPTIONS = [
   { value: "news", label: "Tin tức (Đẩy cảnh cơ bản)" },
   { value: "none", label: "Không sử dụng", customClass: "text-rose-400" },
 ] as const;
+
+export const URL_CONSTANTS = {
+  IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"],
+  ID_PARAMS: ["id", "docid", "name"],
+} as const;

@@ -122,7 +122,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG, JSON.stringify(config));
+    localStorage.setItem(STORAGE_KEYS.CAPCUT_ULTRA_CONFIG, jsonUtils.safeStringify(config));
   }, [config]);
 
   useEffect(() => {
@@ -177,7 +177,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       const res = await fetch(`${API_ROUTES.PIPELINE_TEMPLATES}/${id}`, {
         method: HTTP_METHODS.PUT,
         headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
-        body: JSON.stringify({ newName: _.trim(newName) })
+        body: jsonUtils.safeStringify({ newName: _.trim(newName) })
       });
       if (res.ok) {
         addLog(PIPELINE_STEP6_UI_TEXTS.LOG_RENAME_SUCCESS, LogLevel.SUCCESS);
@@ -224,7 +224,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       const res = await fetch(API_ROUTES.PIPELINE_TEMPLATES, {
         method: HTTP_METHODS.POST,
         headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
-        body: JSON.stringify(payload)
+        body: jsonUtils.safeStringify(payload)
       });
 
       if (res.ok) {
@@ -396,7 +396,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
       const response = await fetch(API_ROUTES.PIPELINE_RUN_ULTRA, {
         method: HTTP_METHODS.POST,
         headers: { [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON },
-        body: JSON.stringify(payload),
+        body: jsonUtils.safeStringify(payload),
       });
 
       if (!response.body) throw new Error(getBackendMsg("STREAM_NOT_SUPPORTED"));

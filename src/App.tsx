@@ -41,7 +41,7 @@ export default function App() {
           fetch(`${API_ROUTES.PROJECTS}/${id}`, {
             method: HTTP_METHODS.PUT,
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-            body: JSON.stringify(proj),
+            body: jsonUtils.safeStringify(proj),
             keepalive: true,
           }).catch((e) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, e));
         }
@@ -229,7 +229,7 @@ export default function App() {
       const response = await fetch(API_ROUTES.PROJECTS, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify(newProject),
+        body: jsonUtils.safeStringify(newProject),
       });
       if (response.ok) {
         const savedProject = await response.json();
@@ -253,7 +253,7 @@ export default function App() {
         const response = await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
           method: HTTP_METHODS.PUT,
           headers: { "Content-Type": CONTENT_TYPES.JSON },
-          body: JSON.stringify(updated),
+          body: jsonUtils.safeStringify(updated),
         });
         if (!response.ok) {
           throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
@@ -303,7 +303,7 @@ export default function App() {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
         method: HTTP_METHODS.PUT,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: JSON.stringify(updated),
+        body: jsonUtils.safeStringify(updated),
       });
       if (res.ok) {
         const savedProject = await res.json();

@@ -70,7 +70,7 @@ const fetchSystemApi = async (url: string, payload?: object | null, customHeader
   };
 
   if (!_.isNil(payload)) {
-    options.body = JSON.stringify(payload);
+    options.body = jsonUtils.safeStringify(payload);
   }
 
   return fetch(url, options);
@@ -364,7 +364,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteStyles = (list: any[]) => {
     setFavoriteStyles(list);
-    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
+    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, jsonUtils.safeStringify(list));
   };
 
   const handleAddFavoriteStyle = (name: string, promptText: string) => {
@@ -445,7 +445,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteVoices = (list: any[]) => {
     setFavoriteVoices(list);
-    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
+    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, jsonUtils.safeStringify(list));
   };
 
   const handleAddFavoriteVoice = (name: string, voiceURI: string, channelName?: string) => {
@@ -557,7 +557,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
+      storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, jsonUtils.safeStringify(sandboxConfig));
     }
   }, [sandboxConfig]);
 
@@ -607,12 +607,12 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("pipeline_system_logs", JSON.stringify(systemLogs));
+      sessionStorage.setItem("pipeline_system_logs", jsonUtils.safeStringify(systemLogs));
     } catch (e: any) {
       if (e.name === "QuotaExceededError") {
         const reduced = systemLogs.slice(-100);
         try {
-          sessionStorage.setItem("pipeline_system_logs", JSON.stringify(reduced));
+          sessionStorage.setItem("pipeline_system_logs", jsonUtils.safeStringify(reduced));
         } catch (err) { }
       }
     }
@@ -627,7 +627,7 @@ export function usePipelineWizard(props: any) {
 
     const captureLog = (type: string, args: any[]) => {
       try {
-        const msg = args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(" ");
+        const msg = args.map((a) => (typeof a === "object" ? jsonUtils.safeStringify(a) : String(a))).join(" ");
         if (["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"].some((w) => msg.includes(w))) return;
 
         let processedMsg = msg;
@@ -3844,7 +3844,7 @@ export function usePipelineWizard(props: any) {
       const response = await fetch(CAPCUT_CONFIG.EXPORT_ZIP_ROUTE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: project.id }),
+        body: jsonUtils.safeStringify({ projectId: project.id }),
       });
 
       if (!response.ok) {
@@ -3930,7 +3930,7 @@ export function usePipelineWizard(props: any) {
           },
         })),
       };
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(capcutSchema, null, 2));
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonUtils.safeStringify(capcutSchema, null, 2));
       const dlAnchorElem = document.createElement("a");
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`);

@@ -83,3 +83,4 @@ export const STARTS_WITH_DIGIT_REGEX = /^\d/;
 export const DETECTOR_VIETNAMESE_REGEX = /[áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]/i;
 export const LEADING_HASHTAGS_REGEX = /^#+/;
 export const REGEX_AUTO_MODE_PATH = /\[AUTO-MODE\] Project created at:\s*(.+)/i;
+export const IMAGE_ID_URL_REGEX = /[?&](id|docid|name)=([^&]+)/;

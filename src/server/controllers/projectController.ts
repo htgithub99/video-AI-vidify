@@ -16,7 +16,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     const project = await getProjectDetailFromDb(id);
     if (!project) return null;
 
-    const projectStr = JSON.stringify(project);
+    const projectStr = jsonUtils.safeStringify(project);
     const cleaned = _.replace(projectStr, UNSPLASH_IMAGE_REGEX, (match, query) => {
       const decoded = decodeURIComponent(query)
         .replace(URL_ENCODED_COMMA_REGEX, ",")

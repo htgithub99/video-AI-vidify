@@ -1,3 +1,4 @@
+import { jsonUtils } from "@/src/lib/json.js";
 import { appLog } from "../../lib/logger.js";
 import _ from 'lodash';
 
@@ -12,7 +13,7 @@ const CACHE_TTL = 30 * 60 * 1000;
 
 const getCacheKey = (endpoint: string, body: any): string => {
   const clone = _.omit(body, ["bypassCache", "timestamp", "projectId"]);
-  return `${endpoint}:${JSON.stringify(clone)}`;
+  return `${endpoint}:${jsonUtils.safeStringify(clone)}`;
 };
 
 export const checkCache = (endpoint: string, body: any, bypass = false): any | null => {

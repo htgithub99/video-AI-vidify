@@ -124,7 +124,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   };
 
   const handleSaveConfig = () => {
-    saveConfigHelper({ [STORAGE_KEYS.API_SANDBOX_CONFIG]: JSON.stringify(config) }, setIsSavingConfig, setSavedSuccess);
+    saveConfigHelper({ [STORAGE_KEYS.API_SANDBOX_CONFIG]: jsonUtils.safeStringify(config) }, setIsSavingConfig, setSavedSuccess);
   };
 
   const handleCurlPaste = (val: string) => {

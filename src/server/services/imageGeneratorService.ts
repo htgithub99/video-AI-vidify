@@ -1,5 +1,5 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -55,15 +55,53 @@ export async function humanType(page: Page, text: string) {
 export const getImgIdSafe = (url: string): string => {
   if (!url) return "";
   try {
-    const u = new URL(url);
-    const id = u.searchParams.get("id") || u.searchParams.get("docid");
-    if (id) return id;
-    _.forEach(["token", "sig", "signature", "expires", "t"], (p) => u.searchParams.delete(p));
+    const baseUrl = _.startsWith(url, COMMON_STRINGS.SLASH_PREFIX) ? COMMON_STRINGS.DUMMY_URL_BASE : undefined;
+    const u = new URL(url, baseUrl);
+
+    let foundId = "";
+    const hasId = _.some(URL_CONSTANTS.ID_PARAMS, (param) => {
+      const idValue = u.searchParams.get(param);
+      if (idValue) {
+        foundId = idValue;
+        return true;
+      }
+      return false;
+    });
+
+    if (hasId) return foundId;
+
+    _.forEach(URL_CONSTANTS.IGNORED_PARAMS, (p) => u.searchParams.delete(p));
     return u.toString();
-  } catch (e) {
+  } catch (error) {
+    appError(BACKEND_MESSAGES.PARSE_URL_ERR, error);
+    const match = url.match(IMAGE_ID_URL_REGEX);
+    if (match && match[2]) return match[2];
     return url;
   }
 };
+
+export const browserGetImgIdSafeStr = `function(url) {
+  if (!url) return "";
+  try {
+    var baseUrl = url.startsWith("${COMMON_STRINGS.SLASH_PREFIX}") ? "${COMMON_STRINGS.DUMMY_URL_BASE}" : undefined;
+    var u = new URL(url, baseUrl);
+    var idParams = ${jsonUtils.safeStringify(URL_CONSTANTS.ID_PARAMS)};
+    var id = "";
+    for (var i = 0; i < idParams.length; i++) {
+      var val = u.searchParams.get(idParams[i]);
+      if (val) { id = val; break; }
+    }
+    if (id) return id;
+    
+    var ignoredParams = ${jsonUtils.safeStringify(URL_CONSTANTS.IGNORED_PARAMS)};
+    ignoredParams.forEach(function(p) { u.searchParams.delete(p); });
+    return u.toString();
+  } catch (e) {
+    var match = url.match(${IMAGE_ID_URL_REGEX.toString()});
+    if (match && match[2]) return match[2];
+    return url;
+  }
+}`;
 
 export class SimpleMutex {
   private queue: (() => void)[] = [];
@@ -198,7 +236,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             }
           }
         },
-        { getImgIdStr: getImgIdSafe.toString() },
+        { getImgIdStr: browserGetImgIdSafeStr }
       );
     } catch (err) {
       appError("Failed to inject helpers on current page context:", err);
@@ -273,7 +311,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
 
         try {
-          const currentConfigState = JSON.stringify({
+          const currentConfigState = jsonUtils.safeStringify({
             generateType: visualConfig?.generateType || GenerateType.Image,
             aspectRatio: visualConfig?.aspectRatio || AspectRatio.SixteenNine,
             generateCount: visualConfig?.generateCount || 1,
@@ -425,7 +463,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               return getImgId(img.src);
             })
             .filter(Boolean);
-        }, getImgIdSafe.toString());
+        }, browserGetImgIdSafeStr);
 
         let isBtnDisabled = true;
         for (let i = 0; i < 6; i++) {
@@ -485,14 +523,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             }
             return null;
           },
-          [oldIds, getImgIdSafe.toString(), CONTENT_TYPES.JPEG] as const,
+          [oldIds, browserGetImgIdSafeStr, CONTENT_TYPES.JPEG] as const,
           { timeout: 150000 },
         );
 
         const finalBase64 = await base64Data.jsonValue();
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
 
-        responseText = JSON.stringify({ directBase64: finalBase64 });
+        responseText = jsonUtils.safeStringify({ directBase64: finalBase64 });
         success = true;
       } catch (err: any) {
         appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
@@ -658,7 +696,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
           await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
-          const currentConfigState = JSON.stringify({
+          const currentConfigState = jsonUtils.safeStringify({
             generateType: visualConfig?.generateType || GenerateType.Image,
             imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
           });
@@ -923,7 +961,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               const inputLoc = page.locator(GeminiChatSelector.Input).first();
               await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
-              const currentConfigState = JSON.stringify({
+              const currentConfigState = jsonUtils.safeStringify({
                 generateType: visualConfig?.generateType || GenerateType.Image,
                 imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
               });

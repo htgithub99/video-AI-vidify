@@ -221,7 +221,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
+      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -290,7 +290,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
     const visualStyle = visualConfig?.style || "Cinematic";
     const referenceStyle = visualConfig?.referencePrompt || "";
-    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? JSON.stringify(visualConfig.characters) : undefined;
+    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? jsonUtils.safeStringify(visualConfig.characters) : undefined;
 
     const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
     const chunks = _.chunk(scenesToOptimize, chunkSize);
@@ -299,7 +299,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson);
+      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson);
 
       try {
         const response = await generateContentWithRetry({
@@ -361,7 +361,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getStyleRewriteBatchPrompt(newStyle, JSON.stringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
+      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -416,7 +416,7 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getCharacterRewriteThumbnailsBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
+      const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -575,7 +575,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getCharacterRewriteBatchPrompt(JSON.stringify(finalCharacters), JSON.stringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
+      const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
 
       try {
         const response = await generateContentWithRetry({
@@ -825,7 +825,7 @@ router.post("/script", async (req: Request, res: Response) => {
       );
 
       const chapterResponse = await generateContentWithRetry({
-        contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${JSON.stringify(scriptResult)}\n\nChapter Prompt:\n${chapterPrompt}`,
+        contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\nChapter Prompt:\n${chapterPrompt}`,
         config: {
           responseMimeType: "application/json",
           maxOutputTokens: 2048,
@@ -1001,7 +1001,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     if (typeof rawRefChars === "string") {
       characterRef = rawRefChars.trim() || undefined;
     } else {
-      characterRef = JSON.stringify(rawRefChars);
+      characterRef = jsonUtils.safeStringify(rawRefChars);
     }
   }
   const isVi = config?.language === ProjectLanguage.VI;
@@ -1095,7 +1095,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
       const splitPrompt = getScriptSplitPrompt(
         rewrittenScript,
-        JSON.stringify(syncedChapters),
+        jsonUtils.safeStringify(syncedChapters),
         splitStrategy,
         isVi
       );
@@ -1146,7 +1146,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         const chunkScenes = chunks[i];
         logStoryboardStep(getBilingualMessage("STORYBOARD_PROCESSING_BATCH", i + 1, chunks.length));
 
-        const minimalScenesJson = JSON.stringify(_.map(chunkScenes, (s: any) => ({
+        const minimalScenesJson = jsonUtils.safeStringify(_.map(chunkScenes, (s: any) => ({
           id: s.id,
           script: s.script,
           subtitle: s.subtitle
@@ -1479,7 +1479,7 @@ router.post("/voice", async (req: Request, res: Response) => {
 
     const ttsData = await ttsRes.json();
     if (!ttsData.success || !ttsData.task_id) {
-      throw new Error(getMessage("TTS_NO_TASK_ID", undefined, JSON.stringify(ttsData)));
+      throw new Error(getMessage("TTS_NO_TASK_ID", undefined, jsonUtils.safeStringify(ttsData)));
     }
 
     const taskId = ttsData.task_id;
@@ -1593,7 +1593,7 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
     res.setHeader("Transfer-Encoding", "chunked");
 
     await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
-      res.write(JSON.stringify(progressResult) + "\n");
+      res.write(jsonUtils.safeStringify(progressResult) + "\n");
     });
 
     res.end();
@@ -1710,7 +1710,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     const audioBuffer = Buffer.from(audioBase64, "base64");
     fs.writeFileSync(audioPath, audioBuffer);
 
-    fs.writeFileSync(scenesPath, JSON.stringify(scenes, null, 2), ENCODING_UTF8);
+    fs.writeFileSync(scenesPath, jsonUtils.safeStringify(scenes, null, 2), ENCODING_UTF8);
 
     const scriptPath = getStaticResourcePath(ALIGN_CONFIG.SCRIPT_FILE);
 
@@ -1876,7 +1876,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   };
 
   try {
-    fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), FileEncoding.UTF8 as any);
+    fs.writeFileSync(optsJsonPath, jsonUtils.safeStringify(cmdOpts, null, 2), FileEncoding.UTF8 as any);
 
     res.setHeader(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.NDJSON);
     res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
@@ -1896,7 +1896,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
           if (autoPathMatch && autoPathMatch[1]) {
             
           }
-          res.write(JSON.stringify({ type: UltraStreamLogType.LOG, message: trimmed }) + "\n");
+          res.write(jsonUtils.safeStringify({ type: UltraStreamLogType.LOG, message: trimmed }) + "\n");
         }
       });
     });
@@ -1905,7 +1905,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
       _.forEach(_.split(data.toString(), "\n"), (line) => {
         const trimmed = _.trim(line);
         if (!_.isEmpty(trimmed)) {
-          res.write(JSON.stringify({ type: UltraStreamLogType.ERROR_LOG, message: trimmed }) + "\n");
+          res.write(jsonUtils.safeStringify({ type: UltraStreamLogType.ERROR_LOG, message: trimmed }) + "\n");
         }
       });
     });
@@ -1921,7 +1921,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
         } catch (cleanupErr) { }
 
         logger.error(`CapCut Ultra process failed with exit code ${code}`);
-        res.write(JSON.stringify({
+        res.write(jsonUtils.safeStringify({
           success: false,
           error: getBackendMsg("ULTRA_EXIT_ERROR", isVi).replace("{0}", code.toString()),
         }) + "\n");
@@ -1961,20 +1961,20 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
               metaObj.modify_time = now;
               metaObj.tm_draft_modified = Math.floor(now / 1000);
 
-              fs.writeFileSync(metaFilePath, JSON.stringify(metaObj), FileEncoding.UTF8 as any);
+              fs.writeFileSync(metaFilePath, jsonUtils.safeStringify(metaObj), FileEncoding.UTF8 as any);
               logger.log(getBackendMsg("ULTRA_UPDATED_META", isVi));
             } catch (metaErr: any) {
               logger.error(`Failed to update draft_meta_info.json: ${metaErr.message}`);
             }
           }
         }
-        res.write(JSON.stringify({
+        res.write(jsonUtils.safeStringify({
           success: true,
           message: getBackendMsg("ULTRA_SUCCESS", isVi),
         }) + "\n");
       } catch (fsErr: any) {
         logger.error(`File copy/rename/update failed: ${fsErr.message}`);
-        res.write(JSON.stringify({
+        res.write(jsonUtils.safeStringify({
           success: false,
           error: fsErr.message,
         }) + "\n");
@@ -1989,7 +1989,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
     } catch (cleanupErr) { }
     logger.error(getBackendMsg("ULTRA_UNEXPECTED_ERR", isVi).replace("{0}", err.message));
-    res.write(JSON.stringify({
+    res.write(jsonUtils.safeStringify({
       success: false,
       error: err.message,
     }) + "\n");
@@ -2274,7 +2274,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       capcutMaterials.texts.push({
         id: textMatId,
         type: "text",
-        content: JSON.stringify({
+        content: jsonUtils.safeStringify({
           text: timing.subtitle,
           styles: {
             font_size: 15.0,
@@ -2324,7 +2324,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       ],
     };
 
-    const draftContentStr = JSON.stringify(draftContentObj, null, 2);
+    const draftContentStr = jsonUtils.safeStringify(draftContentObj, null, 2);
 
     const writeDraftFile = (name: string, content: string) => {
       zip.file(name, content);
@@ -2334,11 +2334,11 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_FILENAME, draftContentStr);
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_BAK_FILENAME, draftContentStr);
 
-    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME, JSON.stringify({ editing_items: [], version: 1 }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME, JSON.stringify({ device_id: CAPCUT_CONFIG.DEVICE_ID, client_version: CAPCUT_CONFIG.CLIENT_VERSION, system_info: CAPCUT_CONFIG.SYSTEM_INFO }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, JSON.stringify({ client_os: "win", author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, JSON.stringify({ agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, JSON.stringify({ commercial_use: false, music_copyright_check: true }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME, jsonUtils.safeStringify({ editing_items: [], version: 1 }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME, jsonUtils.safeStringify({ device_id: CAPCUT_CONFIG.DEVICE_ID, client_version: CAPCUT_CONFIG.CLIENT_VERSION, system_info: CAPCUT_CONFIG.SYSTEM_INFO }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, jsonUtils.safeStringify({ client_os: "win", author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, jsonUtils.safeStringify({ agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, jsonUtils.safeStringify({ commercial_use: false, music_copyright_check: true }, null, 2));
 
     const draftMetaInfoObj = {
       draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID,
@@ -2351,14 +2351,14 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME,
       draft_fold_path: "",
     };
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, JSON.stringify(draftMetaInfoObj, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, jsonUtils.safeStringify(draftMetaInfoObj, null, 2));
 
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, JSON.stringify({ project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, JSON.stringify({ cache_items: [], local_res_map: [] }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, JSON.stringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, JSON.stringify({ enable_proxy: false, render_quality: 100 }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, jsonUtils.safeStringify({ project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, jsonUtils.safeStringify({ cache_items: [], local_res_map: [] }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, jsonUtils.safeStringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, jsonUtils.safeStringify({ enable_proxy: false, render_quality: 100 }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, TEMPLATE_TMP_CONTENT(project.name));
-    writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, JSON.stringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
+    writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, jsonUtils.safeStringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
 
     const content = await zip.generateAsync({
       type: "nodebuffer",

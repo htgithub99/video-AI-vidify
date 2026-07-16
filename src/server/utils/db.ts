@@ -152,7 +152,7 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
         project.updatedAt || new Date().toISOString(),
         project.currentStep || 0,
         project.creditsUsed || 0,
-        JSON.stringify(project)
+        jsonUtils.safeStringify(project)
       ],
     );
   } catch (error) {
@@ -271,7 +271,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
           projectDetail!.updatedAt || new Date().toISOString(),
           projectDetail!.currentStep || 0,
           projectDetail!.creditsUsed || 0,
-          JSON.stringify(projectDetail)
+          jsonUtils.safeStringify(projectDetail)
         ],
       );
 
