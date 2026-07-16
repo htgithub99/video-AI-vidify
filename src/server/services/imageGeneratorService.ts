@@ -1,21 +1,24 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_VIDEO_SECTION_REGEX, IMAGE_GEN_IMAGE_SECTION_REGEX, IMAGE_GEN_SAVE_BTN_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio } from "../../types.js";
 import { Locator, Page } from "playwright";
 import { delayAsync } from "../../lib/shared-utils.js";
+import _ from "lodash";
+import { PIPELINE_CONFIG } from "../../constants/config.js";
 
 export async function smoothMouseMove(page: Page, locator: Locator) {
   try {
     const box = await locator.boundingBox();
     if (!box) return;
 
-    const startX = Math.floor(Math.random() * 800 + 100);
-    const startY = Math.floor(Math.random() * 600 + 100);
-    const targetX = Math.floor(box.x + box.width / 2 + (Math.random() - 0.5) * 10);
-    const targetY = Math.floor(box.y + box.height / 2 + (Math.random() - 0.5) * 5);
+    const { START_X_BASE, START_X_RANDOM, START_Y_BASE, START_Y_RANDOM, TARGET_OFFSET_X, TARGET_OFFSET_Y } = PIPELINE_CONFIG.MOUSE_MOVE_BOUNDS;
+    const startX = Math.floor(Math.random() * START_X_RANDOM + START_X_BASE);
+    const startY = Math.floor(Math.random() * START_Y_RANDOM + START_Y_BASE);
+    const targetX = Math.floor(box.x + box.width / 2 + (Math.random() - 0.5) * TARGET_OFFSET_X);
+    const targetY = Math.floor(box.y + box.height / 2 + (Math.random() - 0.5) * TARGET_OFFSET_Y);
 
     await page.mouse.move(startX, startY);
 
@@ -38,11 +41,12 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
 export async function humanType(page: Page, text: string) {
   const chars = text.split("");
   const pauseChars = [" ", ",", "."];
+  const { BASE, RANDOM, PAUSE_BASE, PAUSE_RANDOM } = PIPELINE_CONFIG.TYPING_DELAYS;
   for (const char of chars) {
     await page.keyboard.type(char);
-    let delay = Math.floor(Math.random() * 25 + 10);
-    if (pauseChars.includes(char)) {
-      delay += Math.floor(Math.random() * 50 + 30);
+    let delay = Math.floor(Math.random() * RANDOM + BASE);
+    if (_.includes(pauseChars, char)) {
+      delay += Math.floor(Math.random() * PAUSE_RANDOM + PAUSE_BASE);
     }
     await delayAsync(delay);
   }
@@ -54,7 +58,7 @@ export const getImgIdSafe = (url: string): string => {
     const u = new URL(url);
     const id = u.searchParams.get("id") || u.searchParams.get("docid");
     if (id) return id;
-    ["token", "sig", "signature", "expires", "t"].forEach((p) => u.searchParams.delete(p));
+    _.forEach(["token", "sig", "signature", "expires", "t"], (p) => u.searchParams.delete(p));
     return u.toString();
   } catch (e) {
     return url;
@@ -100,6 +104,7 @@ export interface ImageGeneratorOptions {
     promptInputMethod?: PromptInputMethod;
     generationMode?: ImageGenerationMode;
     geminiChatSpeed?: GeminiChatSpeed;
+    videoDuration?: string;
   };
   sandboxConfig?: {
     projectId?: string;
@@ -111,16 +116,17 @@ export interface ImageGeneratorResult {
   base64: string | null;
   fallbackUrl: string;
   warning?: string;
+  newProjectId?: string;
 }
 
 export const extractKeywords = (text: string): string => {
   if (!text) return "aesthetic,cinematic";
   const clean = text.replace(NON_ALPHANUMERIC_SPACE_REGEX, " ");
-  const words = clean
-    .split(/\s+/)
+  const words = _.chain(clean.split(/\s+/))
     .map((w) => w.trim().toLowerCase())
-    .filter((w) => w.length > 3);
-  const filtered = words.filter((w) => !PROMPT_FILLER_WORDS.includes(w as any));
+    .filter((w) => w.length > 3)
+    .value();
+  const filtered = _.filter(words, (w) => !_.includes(PROMPT_FILLER_WORDS, w as any));
   return filtered.slice(0, 3).join(",");
 };
 
@@ -138,7 +144,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     return generateImageWithGeminiChat(options);
   }
 
-  const isStickman = !![style, prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
+  const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
@@ -161,6 +167,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   let success = false;
   let attempts = 0;
   const maxAttempts = 2;
+  let currentProjectId = cleanProjectId;
 
   try {
     if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
@@ -197,8 +204,6 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       appError("Failed to inject helpers on current page context:", err);
     }
 
-    const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${cleanProjectId}`;
-
     while (attempts < maxAttempts && !success) {
       attempts++;
       appLog(`${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`);
@@ -222,7 +227,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         let isAlreadyOnFlowPage = false;
         try {
           const currentUrl = globalPlaywrightPage.url();
-          if ([cleanProjectId, "labs.google"].every((kw) => currentUrl.includes(kw))) {
+          if (currentProjectId && _.every([currentProjectId, "labs.google"], (kw) => _.includes(currentUrl, kw))) {
             isAlreadyOnFlowPage = true;
           }
         } catch (e) {
@@ -230,11 +235,34 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         }
 
         if (!isAlreadyOnFlowPage) {
-          appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${cleanProjectId} (Attempt ${attempts})...`);
-          await globalPlaywrightPage.goto(targetUrl, {
-            waitUntil: "commit",
-            timeout: 60000,
-          });
+          if (!currentProjectId) {
+            appLog(`[Google Labs] Không có projectId, đang truy cập để tạo dự án mới...`);
+            await globalPlaywrightPage.goto("https://labs.google/fx/vi/tools/flow", {
+              waitUntil: "commit",
+              timeout: 60000,
+            });
+
+            const newProjectBtn = globalPlaywrightPage.locator('button').filter({ hasText: /Dự án mới|New project/i }).first();
+            await newProjectBtn.waitFor({ state: "visible", timeout: 15000 });
+            await newProjectBtn.click();
+
+            await globalPlaywrightPage.waitForURL(/\/project\/[a-zA-Z0-9-]+/, { timeout: 30000 });
+            const newUrl = globalPlaywrightPage.url();
+            const match = newUrl.match(/\/project\/([a-zA-Z0-9-]+)/);
+            if (match && match[1]) {
+              currentProjectId = match[1];
+              appLog(`[Google Labs] Đã tạo dự án mới thành công: ${currentProjectId}`);
+            } else {
+              throw createAppError("Không thể lấy ID dự án sau khi tạo mới.");
+            }
+          } else {
+            const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`;
+            appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${currentProjectId} (Attempt ${attempts})...`);
+            await globalPlaywrightPage.goto(targetUrl, {
+              waitUntil: "commit",
+              timeout: 60000,
+            });
+          }
         }
 
         appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
@@ -255,9 +283,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
             const configBtnLoc = globalPlaywrightPage
-              .locator("button")
+              .locator('button[aria-haspopup="menu"]')
               .filter({
-                has: globalPlaywrightPage.locator("i").filter({ hasText: "tune" }),
+                hasText: /1x|x2|x3|x4|16:9|4:3|1:1|3:4|9:16|Nano|Veo|Imagen/i
               })
               .first();
 
@@ -265,15 +293,16 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               await configBtnLoc.click();
               await globalPlaywrightPage.waitForTimeout(1000);
 
-              const isVideo = visualConfig?.generateType === GenerateType.Video;
-              const sectionKeyword = isVideo ? IMAGE_GEN_VIDEO_SECTION_REGEX : IMAGE_GEN_IMAGE_SECTION_REGEX;
-              const sectionSpan = globalPlaywrightPage.locator("span").filter({ hasText: sectionKeyword }).last();
+              const dropdown = globalPlaywrightPage.locator('[role="menu"][data-state="open"]').first();
 
-              if (await sectionSpan.isVisible()) {
-                const sectionDiv = sectionSpan.locator("xpath=..");
+              if (await dropdown.isVisible()) {
+                const isVideo = visualConfig?.generateType === GenerateType.Video;
+                const targetTypeText = isVideo ? "Video" : /Hình ảnh|Image/i;
+                const typeBtn = dropdown.locator('[role="tab"]').filter({ hasText: targetTypeText }).first();
+                if (await typeBtn.isVisible()) await typeBtn.click();
 
                 const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
-                const ratioBtn = sectionDiv
+                const ratioBtn = dropdown
                   .locator('[role="tab"]')
                   .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
                   .first();
@@ -281,52 +310,69 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
                 const targetCount = visualConfig?.generateCount || 1;
                 const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
-                const countBtn = sectionDiv
+                const countBtn = dropdown
                   .locator('[role="tab"]')
                   .filter({ hasText: new RegExp(`^${countLabel}$`, "i") })
                   .first();
                 if (await countBtn.isVisible()) await countBtn.click();
+
+                if (isVideo && visualConfig?.videoDuration) {
+                  const durationBtn = dropdown
+                    .locator('[role="tab"]')
+                    .filter({ hasText: new RegExp(`^${visualConfig.videoDuration}$`, "i") })
+                    .first();
+                  if (await durationBtn.isVisible()) await durationBtn.click();
+                }
 
                 const targetEngineKey = (visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3).toLowerCase();
 
                 let exactEngineRegex: RegExp;
                 let fallbackEngineRegex: RegExp;
 
-                if (targetEngineKey === "imagen") {
-                  exactEngineRegex = IMAGE_GEN_IMAGEN_EXACT_REGEX;
-                  fallbackEngineRegex = IMAGE_GEN_IMAGEN_FALLBACK_REGEX;
-                } else if (targetEngineKey === "labs-sandbox") {
-                  exactEngineRegex = IMAGE_GEN_LABS_EXACT_REGEX;
-                  fallbackEngineRegex = IMAGE_GEN_LABS_FALLBACK_REGEX;
+                if (isVideo) {
+                  if (targetEngineKey === "veo3-lite") {
+                    exactEngineRegex = /veo 3\.1 - lite/i;
+                    fallbackEngineRegex = /lite/i;
+                  } else if (targetEngineKey === "veo3-fast") {
+                    exactEngineRegex = /veo 3\.1 - fast/i;
+                    fallbackEngineRegex = /fast/i;
+                  } else if (targetEngineKey === "veo3-quality") {
+                    exactEngineRegex = /veo 3\.1 - quality/i;
+                    fallbackEngineRegex = /quality/i;
+                  } else { // Omni Flash (veo3)
+                    exactEngineRegex = /omni flash/i;
+                    fallbackEngineRegex = /omni/i;
+                  }
                 } else {
-                  exactEngineRegex = IMAGE_GEN_VEO_EXACT_REGEX;
-                  fallbackEngineRegex = IMAGE_GEN_VEO_FALLBACK_REGEX;
+                  if (targetEngineKey === "imagen") {
+                    exactEngineRegex = IMAGE_GEN_IMAGEN_EXACT_REGEX;
+                    fallbackEngineRegex = IMAGE_GEN_IMAGEN_FALLBACK_REGEX;
+                  } else if (targetEngineKey === "labs-sandbox") {
+                    exactEngineRegex = IMAGE_GEN_LABS_EXACT_REGEX;
+                    fallbackEngineRegex = IMAGE_GEN_LABS_FALLBACK_REGEX;
+                  } else {
+                    exactEngineRegex = IMAGE_GEN_VEO_EXACT_REGEX;
+                    fallbackEngineRegex = IMAGE_GEN_VEO_FALLBACK_REGEX;
+                  }
                 }
-                const engineDropdownBtn = sectionDiv.locator('button[aria-haspopup="menu"]').first();
+                const engineDropdownBtn = dropdown.locator('button[aria-haspopup="menu"]').first();
 
                 if (await engineDropdownBtn.isVisible()) {
                   const currentEngineText = await engineDropdownBtn.textContent();
                   if (currentEngineText && !exactEngineRegex.test(currentEngineText)) {
                     await engineDropdownBtn.click({ force: true });
                     await globalPlaywrightPage.waitForTimeout(500);
-                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: exactEngineRegex }).first();
+
+                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: exactEngineRegex }).first();
                     if (!(await optionBtn.isVisible())) {
-                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: fallbackEngineRegex }).first();
+                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: fallbackEngineRegex }).first();
                     }
                     if (await optionBtn.isVisible()) await optionBtn.click({ force: true });
                   }
                 }
               }
 
-              const saveBtn = globalPlaywrightPage
-                .locator("button" + ":visible")
-                .filter({ hasText: IMAGE_GEN_SAVE_BTN_REGEX })
-                .first();
-              if (await saveBtn.isVisible()) {
-                await saveBtn.click();
-              } else {
-                await globalPlaywrightPage.keyboard.press("Escape");
-              }
+              await globalPlaywrightPage.keyboard.press("Escape");
               await globalPlaywrightPage.waitForTimeout(500);
 
               lastPlaywrightConfigState = currentConfigState;
@@ -404,13 +450,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
         const base64Data = await globalPlaywrightPage.waitForFunction(
-          ([oldIdsList, getImgIdStr]) => {
-            const getImgId = new Function("return " + getImgIdStr)();
-            const imgs = Array.from(document.querySelectorAll("img"));
-            const genImgs = imgs.filter((img) => img.src && img.src.includes("getMediaUrlRedirect"));
+          ([oldIdsList, getImgIdStr, jpegMimeType]) => {
+            const getImgIdSafe = new Function("return " + getImgIdStr)();
 
-            const newImg = [...genImgs].reverse().find((img) => {
-              const imgId = getImgId(img.src);
+            const imgNodes = document.querySelectorAll("img");
+            let newImg: HTMLImageElement | null = null;
+            Array.from(imgNodes).some((img) => {
+              if (img.src && img.src.includes("data:image/")) {
+                newImg = img;
+                return true;
+              }
+              const imgId = getImgIdSafe(img.src);
               return imgId && !oldIdsList.includes(imgId);
             });
 
@@ -429,13 +479,13 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               canvas.height = newImg.naturalHeight;
               canvas.getContext("2d")?.drawImage(newImg, 0, 0);
               try {
-                const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+                const dataUrl = canvas.toDataURL(jpegMimeType, 0.9);
                 if (dataUrl.length > 1000) return dataUrl;
               } catch (e) { }
             }
             return null;
           },
-          [oldIds, getImgIdSafe.toString()] as const,
+          [oldIds, getImgIdSafe.toString(), CONTENT_TYPES.JPEG] as const,
           { timeout: 150000 },
         );
 
@@ -448,7 +498,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
 
         const closedKeywords = ["closed", "close", "context"];
-        const isClosedError = closedKeywords.some((kw) => err.message?.toLowerCase().includes(kw));
+        const isClosedError = _.some(closedKeywords, (kw) => _.includes(err.message?.toLowerCase(), kw));
         if (isClosedError) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
           await closePlaywright().catch(() => { });
@@ -465,7 +515,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             }
           } catch (reloadErr: any) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
-            if (closedKeywords.some((kw) => reloadErr.message?.toLowerCase().includes(kw))) {
+            if (_.some(closedKeywords, (kw) => _.includes(reloadErr.message?.toLowerCase(), kw))) {
               await closePlaywright().catch(() => { });
             }
           }
@@ -511,6 +561,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         success: true,
         base64: cleanBase64,
         fallbackUrl: parsed.directBase64,
+        newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
       };
     }
   } catch (e) { }
@@ -526,7 +577,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig } = options;
 
-  const isStickman = !![style, prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
+  const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
   let finalPrompt = prompt || "";
   if (isStickman) {
@@ -667,7 +718,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     return {
       success: true,
       base64: base64Result,
-      fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
+      fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}`,
     };
   }
 
@@ -795,7 +846,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     }
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
-      const isStickman = !![style, item.prompt].some((str) => str && STICKMAN_KEYWORDS.some((kw) => str.toLowerCase().includes(kw)));
+      const isStickman = !!_.some([style, item.prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
       let finalPrompt = item.prompt || "";
       if (isStickman) {
@@ -936,7 +987,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           sceneId: item.sceneId,
           success: true,
           base64: base64Result,
-          fallbackUrl: `data:image/jpeg;base64,${base64Result}`,
+          fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}`,
         };
       }
 

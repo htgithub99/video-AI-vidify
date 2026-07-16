@@ -56,6 +56,9 @@ export enum AssetsMode {
 export enum ImageGeneratorEngine {
   Imagen = "imagen",
   Veo3 = "veo3",
+  Veo3Lite = "veo3-lite",
+  Veo3Fast = "veo3-fast",
+  Veo3Quality = "veo3-quality",
   LabsSandbox = "labs-sandbox",
 }
 
@@ -175,6 +178,7 @@ export interface VisualConfig {
   generationMode?: ImageGenerationMode;
   geminiChatSpeed?: GeminiChatSpeed;
   batchDelay?: BatchDelayOption;
+  videoDuration?: string;
 }
 
 export interface CharacterConfig {

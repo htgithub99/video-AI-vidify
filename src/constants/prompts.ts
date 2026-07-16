@@ -423,6 +423,51 @@ Chapters structure context:
 ${chaptersStr}`;
 };
 
+export const getSeoOptimizationPrompt = (rewrittenScript: string, isVi: boolean, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
+Your task is to analyze this video script and generate fully optimized search and click metadata:
+---
+${rewrittenScript}
+---
+
+Your process MUST complete all of these steps internally:
+1. Keyword Analysis: Analyze the content and identify the top 10 search terms (including highly searched long-tail keywords) in ${isVi ? "Vietnamese" : "English"}.
+2. Draft SEO Generation: Generate exactly ${numTitles} click-worthy video titles and exactly ${numDescriptions} descriptions. Provide metrics for each title and description (searchScore, ctrScore, compScore, seoScore) on a scale of 0-100. Generate exactly ${numHashtags} hashtags and exactly ${numTags} search tags.
+3. SEO Optimization & Refinement: Polish the results so that the keywords are naturally integrated into the text. Avoid dry or clinical styles; optimize titles specifically for high CTR on modern media platforms (e.g. YouTube, TikTok).
+
+You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+{
+  "keywords": ["keyword1", "keyword2"],
+  "titles": [
+    { "text": "Optimized Title", "searchScore": 95, "ctrScore": 95, "compScore": 25, "seoScore": 96 }
+  ],
+  "descriptions": [
+    { "text": "Optimized description naturally integrating keywords...", "searchScore": 92, "ctrScore": 90, "compScore": 30, "seoScore": 91 }
+  ],
+  "hashtags": ["hashtag1", "hashtag2"],
+  "tags": ["tag1", "tag2"]
+}`;
+
+export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) above. Inspect their color palette, textures, lighting, character details, and visual atmosphere. Incorporate these elements deeply into the character specs, color palette, and lighting mood you return.";
+
+export const THUMBNAIL_REFERENCE_PROMPT = (refImgStr: string) => `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${refImgStr}". Deeply integrate these aesthetic keywords into the thumbnail prompt.`;
+
+export const THUMBNAIL_IMAGE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) for the thumbnails above. Inspect their color palette, typography vibe, lighting contrast, and composition. Strictly apply these elements to your output prompts.";
+
+export const TEMPLATE_TMP_CONTENT = (projectName: string) => `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${projectName}`;
+
+export const CAMERA_ANGLES = [
+  "low-angle shot, looking up",
+  "high-angle shot, looking down",
+  "close-up portrait shot focusing on expression",
+  "wide-angle panoramic view establishing the environment",
+  "medium shot from side profile",
+  "dramatic over-the-shoulder shot",
+  "extreme close-up shot focusing on details",
+  "three-quarter angle shot showing action"
+];
+
+export const BORDERLESS_KEYWORD = "borderless, no frame, no borders";
+
 export const getSceneDetailBatchPrompt = (
   scenesJson: string,
   visualStyle: string,

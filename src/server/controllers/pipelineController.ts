@@ -86,6 +86,16 @@ import {
   TEMPLATE_CONFIG,
   TTS_POLLING_CONFIG,
   HTTP_STATUS,
+  CAMERA_ANGLES,
+  BORDERLESS_KEYWORD,
+  VISUAL_BIBLE_REFERENCE_PROMPT,
+  getSeoOptimizationPrompt,
+  THUMBNAIL_REFERENCE_PROMPT,
+  THUMBNAIL_IMAGE_REFERENCE_PROMPT,
+  FileEncoding,
+  MimeType,
+  TEMPLATE_TMP_CONTENT,
+  FFMPEG_CONFIG,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog } from "../../lib/logger.js";
@@ -113,7 +123,7 @@ const router = express.Router();
 
 function parseBase64Image(imgBase64: string): { data: string; mimeType: string } {
   let base64Data = imgBase64;
-  let mimeType = "image/jpeg";
+  let mimeType = CONTENT_TYPES.JPEG || "image/jpeg"; 
 
   if (imgBase64.startsWith("data:")) {
     const match = imgBase64.match(BASE64_DATA_URL_REGEX);
@@ -129,7 +139,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images } = req.body;
-    if (!images || !Array.isArray(images) || images.length === 0) {
+    if (!images || !_.isArray(images) || _.isEmpty(images)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
@@ -160,7 +170,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
       let extracted = response.text.trim();
 
       const lower = extracted.toLowerCase();
-      if (STICKMAN_KEYWORDS.some((kw) => lower.includes(kw))) {
+      if (_.some(STICKMAN_KEYWORDS, (kw) => _.includes(lower, kw))) {
         extracted = STICKMAN_STYLE_MODIFIERS;
       }
       return res.json({ style: extracted });
@@ -180,7 +190,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
 router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, newStyle, aspectRatio } = req.body;
-  if (!storyboard || !Array.isArray(storyboard)) {
+  if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
   if (!newStyle) {
@@ -200,7 +210,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       (s: any) => s.prompt
     );
 
-    if (scenesToRewrite.length === 0) {
+    if (_.isEmpty(scenesToRewrite)) {
       return res.json({ success: true, storyboard });
     }
 
@@ -219,7 +229,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (Array.isArray(parsed)) {
+        if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
               rewrittenMap.set(item.id, item.prompt);
@@ -256,7 +266,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
 router.post("/optimize-prompts", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, visualConfig, aspectRatio } = req.body;
-  if (!storyboard || !Array.isArray(storyboard)) {
+  if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
 
@@ -274,7 +284,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
       (s: any) => s.prompt || s.script
     );
 
-    if (scenesToOptimize.length === 0) {
+    if (_.isEmpty(scenesToOptimize)) {
       return res.json({ success: true, storyboard });
     }
 
@@ -297,7 +307,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (Array.isArray(parsed)) {
+        if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
               optimizedMap.set(item.id, item.prompt);
@@ -334,7 +344,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
 router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, newStyle, aspectRatio } = req.body;
-  if (!thumbnails || !Array.isArray(thumbnails)) {
+  if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
   if (!newStyle) {
@@ -359,7 +369,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (Array.isArray(parsed)) {
+        if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
               rewrittenMap.set(item.id, item.prompt);
@@ -387,12 +397,12 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
 router.post("/rewrite-thumbnails-character", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, characters, aspectRatio } = req.body;
-  if (!thumbnails || !Array.isArray(thumbnails)) {
+  if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
 
   let finalCharacters = characters;
-  if (!finalCharacters || !Array.isArray(finalCharacters) || finalCharacters.length === 0) {
+  if (!finalCharacters || !_.isArray(finalCharacters) || _.isEmpty(finalCharacters)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
   }
 
@@ -414,7 +424,7 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (Array.isArray(parsed)) {
+        if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item && item.id && item.prompt) {
               rewrittenMap.set(item.id, item.prompt);
@@ -474,7 +484,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images, characterDescription } = req.body;
-    if (!images || !Array.isArray(images) || images.length === 0) {
+    if (!images || !_.isArray(images) || _.isEmpty(images)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
@@ -528,12 +538,12 @@ router.post("/extract-character", async (req: Request, res: Response) => {
 router.post("/rewrite-prompts-character", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
-  if (!storyboard || !Array.isArray(storyboard)) {
+  if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
   }
 
   let finalCharacters = characters;
-  if (!finalCharacters || !Array.isArray(finalCharacters) || finalCharacters.length === 0) {
+  if (!finalCharacters || !_.isArray(finalCharacters) || _.isEmpty(finalCharacters)) {
     if (characterPrompt) {
       finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
     } else {
@@ -554,7 +564,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       (s) => s.prompt
     );
 
-    if (scenesToRewrite.length === 0) {
+    if (_.isEmpty(scenesToRewrite)) {
       return res.json({ success: true, storyboard });
     }
 
@@ -573,7 +583,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
           config: { responseMimeType: "application/json" },
         });
         const parsed = safeParseJSON(response.text, []);
-        if (Array.isArray(parsed)) {
+        if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
               rewrittenMap.set(item.id, item.prompt);
@@ -661,7 +671,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
-    if (Array.isArray(versions)) {
+    if (_.isArray(versions)) {
       versions = _.map(versions, (v: any, idx: number) => ({
         id: v.id || `hk_${idx + 1}`,
         content: v.content || "",
@@ -868,9 +878,9 @@ router.post("/script", async (req: Request, res: Response) => {
 });
 
 function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[] {
-  if (!chapters || chapters.length === 0) return [];
+  if (!chapters || _.isEmpty(chapters)) return [];
 
-  const syncedChapters = chapters.map((c: any) => ({ ...c }));
+  const syncedChapters = _.map(chapters, (c: any) => ({ ...c }));
 
   let lastIndex = 0;
   const segmentsFound: { index: number; length: number }[] = [];
@@ -890,7 +900,7 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
     }
   }
 
-  const allFound = segmentsFound.every(s => s.index !== -1);
+  const allFound = _.every(segmentsFound, s => s.index !== -1);
   if (allFound) {
     for (let i = 0; i < syncedChapters.length; i++) {
       const start = (i === 0) ? 0 : segmentsFound[i].index;
@@ -904,8 +914,8 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
   const totalSentences = sentences.length;
   if (totalSentences === 0) return syncedChapters;
 
-  const originalLengths = chapters.map((c: any) => (c.scriptSegment || "").length);
-  const totalOriginalLength = originalLengths.reduce((a: number, b: number) => a + b, 0) || 1;
+  const originalLengths = _.map(chapters, (c: any) => (c.scriptSegment || "").length);
+  const totalOriginalLength = _.reduce(originalLengths, (a: number, b: number) => a + b, 0) || 1;
 
   let sentenceCursor = 0;
   for (let i = 0; i < syncedChapters.length; i++) {
@@ -927,7 +937,7 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
 function diversifyDuplicatePrompts(scenes: any[]): any[] {
   if (!scenes || scenes.length <= 1) return scenes;
 
-  const cameraAngles = ["low-angle shot, looking up", "high-angle shot, looking down", "close-up portrait shot focusing on expression", "wide-angle panoramic view establishing the environment", "medium shot from side profile", "dramatic over-the-shoulder shot", "extreme close-up shot focusing on details", "three-quarter angle shot showing action"];
+  const cameraAngles = CAMERA_ANGLES;
 
   for (let i = 1; i < scenes.length; i++) {
     const currentPrompt = scenes[i].prompt?.trim();
@@ -939,10 +949,10 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
 
       if (normCurrent === normPrev) {
         const selectedAngle = cameraAngles[i % cameraAngles.length];
-        const borderlessKeyword = "borderless, no frame, no borders";
+        const borderlessKeyword = BORDERLESS_KEYWORD;
         const lowerPrompt = currentPrompt.toLowerCase();
 
-        if (lowerPrompt.includes(borderlessKeyword)) {
+        if (_.includes(lowerPrompt, borderlessKeyword)) {
           const index = lowerPrompt.lastIndexOf(borderlessKeyword);
           const basePart = currentPrompt.substring(0, index).trim().replace(/,+$/, "");
           const endPart = currentPrompt.substring(index);
@@ -1000,7 +1010,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
-    const wordCount = (rewrittenScript || "").split(/\s+/).filter(Boolean).length;
+    const wordCount = _.filter((rewrittenScript || "").split(/\s+/), Boolean).length;
     const speed = config?.speed || 1.0;
     chosenDuration = Math.round(wordCount / 2.5 / speed);
     if (chosenDuration < 10) chosenDuration = 10;
@@ -1022,13 +1032,13 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
   try {
     let mappedDensity: SceneDensity = SceneDensity.CAU_DAI;
-    if ([SplitStrategy.WORD, SplitStrategy.ULTRADENSE].includes(splitStrategy as SplitStrategy)) {
+    if (_.includes([SplitStrategy.WORD, SplitStrategy.ULTRADENSE], splitStrategy as SplitStrategy)) {
       mappedDensity = SceneDensity.THEO_TU;
-    } else if ([SplitStrategy.SHORT_SENTENCE, SplitStrategy.HYPERDENSE, SplitStrategy.HIGHPACED].includes(splitStrategy as SplitStrategy)) {
+    } else if (_.includes([SplitStrategy.SHORT_SENTENCE, SplitStrategy.HYPERDENSE, SplitStrategy.HIGHPACED], splitStrategy as SplitStrategy)) {
       mappedDensity = SceneDensity.CAU_NGAN;
     } else if (splitStrategy === SplitStrategy.MIXED_SENTENCES) {
       mappedDensity = SceneDensity.CAU_KET_HOP;
-    } else if ([SplitStrategy.SENTENCE, SplitStrategy.LONG_SENTENCE].includes(splitStrategy as SplitStrategy)) {
+    } else if (_.includes([SplitStrategy.SENTENCE, SplitStrategy.LONG_SENTENCE], splitStrategy as SplitStrategy)) {
       mappedDensity = SceneDensity.CAU_DAI;
     } else {
       mappedDensity = SceneDensity.THEO_DOAN;
@@ -1048,7 +1058,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const visualBiblePrompt = getGlobalVisualBiblePrompt(rewrittenScript, genre, visualStyle, activeStyle, characterRef);
 
     const bibleParts: any[] = [];
-    if (referenceImages && Array.isArray(referenceImages) && referenceImages.length > 0) {
+    if (referenceImages && _.isArray(referenceImages) && (!_.isEmpty(referenceImages))) {
       for (const imgBase64 of referenceImages.slice(0, 3)) {
         const { data, mimeType } = parseBase64Image(imgBase64);
         bibleParts.push({
@@ -1061,7 +1071,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     bibleParts.push({
-      text: visualBiblePrompt + (referenceImages && referenceImages.length > 0 ? "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) above. Inspect their color palette, textures, lighting, character details, and visual atmosphere. Incorporate these elements deeply into the character specs, color palette, and lighting mood you return." : ""),
+      text: visualBiblePrompt + (referenceImages && (!_.isEmpty(referenceImages)) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
     });
 
     const bibleResponse = await generateContentWithRetry({
@@ -1103,7 +1113,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         storyboardLogs.push(...splitResponse.rotationLogs);
       }
 
-      if (!Array.isArray(splitScenes) || splitScenes.length === 0 || !splitScenes.every((s: any) => s.script)) {
+      if (!_.isArray(splitScenes) || _.isEmpty(splitScenes) || !_.every(splitScenes, (s: any) => s.script)) {
         appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
         logStoryboardStep(getBilingualMessage("STORYBOARD_GEMINI_SPLIT_FALLBACK"));
         const fallbackRes = generateMockStoryboard(
@@ -1214,7 +1224,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
     let data: any = { scenes: allScenes, rotationLogs: storyboardLogs };
 
-    if (!data || !data.scenes || data.scenes.length === 0) {
+    if (!data || !data.scenes || _.isEmpty(data.scenes)) {
       appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
       const oldLogs = data?.rotationLogs;
       data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
@@ -1227,8 +1237,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     if (chosenDuration && data.scenes && data.scenes.length > 0) {
       const scenes = data.scenes;
-      const wordCounts = scenes.map((s: any) => (s.script || "").split(/\s+/).filter(Boolean).length);
-      const totalWords = wordCounts.reduce((a: number, b: number) => a + b, 0);
+      const wordCounts = _.map(scenes, (s: any) => _.filter((s.script || "").split(/\s+/), Boolean).length);
+      const totalWords = _.reduce(wordCounts, (a: number, b: number) => a + b, 0);
 
       let currentSecs = 0;
       for (let i = 0; i < scenes.length; i++) {
@@ -1296,29 +1306,7 @@ router.post("/seo", async (req: Request, res: Response) => {
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
-    const combinedSeoPrompt = `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
-Your task is to analyze this video script and generate fully optimized search and click metadata:
----
-${rewrittenScript}
----
-
-Your process MUST complete all of these steps internally:
-1. Keyword Analysis: Analyze the content and identify the top 10 search terms (including highly searched long-tail keywords) in ${isVi ? "Vietnamese" : "English"}.
-2. Draft SEO Generation: Generate exactly ${numTitles} click-worthy video titles and exactly ${numDescriptions} descriptions. Provide metrics for each title and description (searchScore, ctrScore, compScore, seoScore) on a scale of 0-100. Generate exactly ${numHashtags} hashtags and exactly ${numTags} search tags.
-3. SEO Optimization & Refinement: Polish the results so that the keywords are naturally integrated into the text. Avoid dry or clinical styles; optimize titles specifically for high CTR on modern media platforms (e.g. YouTube, TikTok).
-
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
-{
-  "keywords": ["keyword1", "keyword2"],
-  "titles": [
-    { "text": "Optimized Title", "searchScore": 95, "ctrScore": 95, "compScore": 25, "seoScore": 96 }
-  ],
-  "descriptions": [
-    { "text": "Optimized description naturally integrating keywords...", "searchScore": 92, "ctrScore": 90, "compScore": 30, "seoScore": 91 }
-  ],
-  "hashtags": ["hashtag1", "hashtag2"],
-  "tags": ["tag1", "tag2"]
-}`;
+    const combinedSeoPrompt = getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags);
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,
@@ -1345,7 +1333,7 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
     const parsedData = {
       titles: seoResult.titles || [],
       descriptions: seoResult.descriptions || [],
-      hashtags: (seoResult.hashtags || []).map((tag: string) => tag.replace(/^#+/, "")),
+      hashtags: _.map(seoResult.hashtags || [], (tag: string) => tag.replace(/^#+/, "")),
       tags: seoResult.tags || [],
       rotationLogs: seoLogs,
     };
@@ -1371,7 +1359,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   }
 
   const thumbnailCount = visualConfig.thumbnailCount || 2;
-  const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage}". Deeply integrate these aesthetic keywords into the thumbnail prompt.` : "";
+  const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
 
   if (!isGeminiApiKeyAvailable()) {
     const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false);
@@ -1395,7 +1383,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi, visualConfig.aspectRatio || "16:9");
 
     const thumbParts: any[] = [];
-    if (visualConfig.thumbnailReferenceImages && Array.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
+    if (visualConfig.thumbnailReferenceImages && _.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
       for (const imgBase64 of visualConfig.thumbnailReferenceImages.slice(0, 3)) {
         const { data, mimeType } = parseBase64Image(imgBase64);
         thumbParts.push({
@@ -1410,7 +1398,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     thumbParts.push({
       text:
         combinedThumbnailsPrompt +
-        (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) for the thumbnails above. Inspect their color palette, typography vibe, lighting contrast, and composition. Strictly apply these elements to your output prompts." : ""),
+        (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : ""),
     });
 
     const combinedResponse = await generateContentWithRetry({
@@ -1546,8 +1534,8 @@ router.post("/voice", async (req: Request, res: Response) => {
 
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const audioBase64 = buffer.toString("base64");
-    const mimeType = audioRes.headers.get("content-type") || "audio/mpeg";
+    const audioBase64 = buffer.toString(FileEncoding.BASE64 as any);
+    const mimeType = audioRes.headers.get("content-type") || MimeType.MPEG;
 
     res.json({
       success: true,
@@ -1597,7 +1585,7 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
   try {
     const { items, visualConfig, style } = req.body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !_.isArray(items) || _.isEmpty(items)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
     }
 
@@ -1636,7 +1624,7 @@ router.post("/clean-batch-images", async (req: Request, res: Response) => {
 router.post("/merge-audio", async (req: Request, res: Response) => {
   try {
     const { chunks } = req.body;
-    if (!chunks || !Array.isArray(chunks) || chunks.length === 0) {
+    if (!chunks || !_.isArray(chunks) || _.isEmpty(chunks)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
     }
 
@@ -1654,20 +1642,20 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
       }
     }
 
-    if (filePaths.length === 0) {
+    if (_.isEmpty(filePaths)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "No valid base64 audio data found in chunks" });
     }
 
     const listPath = path.join(tempDir, `list_${sessionId}.txt`);
-    const fileListContent = filePaths.map((p) => `file '${p.replace(SINGLE_QUOTE_REGEX, "'\\''")}'`).join("\n");
-    fs.writeFileSync(listPath, fileListContent);
+    const fileListContent = _.map(filePaths, (p) => `file '${p.replace(SINGLE_QUOTE_REGEX, "'\\''")}'`).join("\n");
+    fs.writeFileSync(listPath, fileListContent, FileEncoding.UTF8);
 
     const outputPath = path.join(tempDir, `merged_${sessionId}.mp3`);
 
     ffmpeg()
       .input(listPath)
-      .inputOptions(["-f", "concat", "-safe", "0"])
-      .outputOptions(["-c:a", "libmp3lame", "-b:a", "128k", "-y"])
+      .inputOptions(FFMPEG_CONFIG.OPTIONS_CONCAT)
+      .outputOptions(FFMPEG_CONFIG.OPTIONS_OUTPUT_MP3)
       .on("end", () => {
         try {
           const mergedBuffer = fs.readFileSync(outputPath);
@@ -1854,7 +1842,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   let realTemplateId = templateId || "";
   if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
     try {
-      const rawContent = fs.readFileSync(realTemplateId, "utf-8");
+      const rawContent = fs.readFileSync(realTemplateId, FileEncoding.UTF8 as any).toString();
       const templateContent = jsonUtils.safeParse<any>(rawContent, {});
       if (templateContent.folderPath) {
         realTemplateId = path.join(templateContent.folderPath, "draft_content.json");
@@ -1888,7 +1876,7 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   };
 
   try {
-    fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), "utf-8");
+    fs.writeFileSync(optsJsonPath, JSON.stringify(cmdOpts, null, 2), FileEncoding.UTF8 as any);
 
     res.setHeader(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.NDJSON);
     res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
@@ -1967,13 +1955,13 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
           if (fs.existsSync(metaFilePath)) {
             try {
-              const metaContent = fs.readFileSync(metaFilePath, "utf-8");
+              const metaContent = fs.readFileSync(metaFilePath, FileEncoding.UTF8 as any).toString();
               const metaObj = jsonUtils.safeParse<any>(metaContent, {});
               const now = Date.now();
               metaObj.modify_time = now;
               metaObj.tm_draft_modified = Math.floor(now / 1000);
 
-              fs.writeFileSync(metaFilePath, JSON.stringify(metaObj), "utf-8");
+              fs.writeFileSync(metaFilePath, JSON.stringify(metaObj), FileEncoding.UTF8 as any);
               logger.log(getBackendMsg("ULTRA_UPDATED_META", isVi));
             } catch (metaErr: any) {
               logger.error(`Failed to update draft_meta_info.json: ${metaErr.message}`);
@@ -2223,7 +2211,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
 
     const totalDurationUs = !_.isEmpty(sceneRanges) ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
 
-    sceneRanges.forEach((scRange, idx) => {
+    _.forEach(sceneRanges, (scRange, idx) => {
       const startUs = Math.round(scRange.start * 1000000);
       const durationUs = Math.round(scRange.duration * 1000000);
       const filename = `${idx + 1}_voice.wav`;
@@ -2253,7 +2241,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       });
     });
 
-    sceneRanges.forEach((timing, index) => {
+    _.forEach(sceneRanges, (timing, index) => {
       const imgMatId = `material_image_${timing.id}`;
       const timingDurationUs = Math.round(timing.duration * 1000000);
       const timingStartUs = Math.round(timing.start * 1000000);
@@ -2369,7 +2357,7 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, JSON.stringify({ cache_items: [], local_res_map: [] }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, JSON.stringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, JSON.stringify({ enable_proxy: false, render_quality: 100 }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${project.name}`);
+    writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, TEMPLATE_TMP_CONTENT(project.name));
     writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, JSON.stringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
 
     const content = await zip.generateAsync({

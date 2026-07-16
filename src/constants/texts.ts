@@ -89,6 +89,7 @@ export const HTTP_METHODS = {
 export const CONTENT_TYPES = {
   JSON: "application/json",
   NDJSON: "application/x-ndjson",
+  JPEG: "image/jpeg",
 };
 
 export const HTTP_HEADERS = {
@@ -177,6 +178,9 @@ export const COMMON_STRINGS = {
   LOREM_FLICKR_SIZE: "800/450",
   IMAGE_DIFF_THRESHOLD: 1,
   REGEX_REPLACE_GROUP_1: "$1",
+  BASE64_JPEG_PREFIX: "data:image/jpeg;base64,",
+  ARTWORK_PREFIX: "artwork_",
+  MP4_EXT: "mp4",
 } as const;
 
 export const ERROR_MESSAGES = {

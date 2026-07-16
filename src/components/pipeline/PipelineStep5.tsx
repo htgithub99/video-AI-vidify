@@ -5,7 +5,7 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { GenerateType, ImageGeneratorEngine, ImageGenerationMode, AspectRatio } from "../../types";
 import JSZip from "jszip";
-import { API_ROUTES, PROMPT_NUMBERING_PREFIX_REGEX } from "../../constants";
+import { API_ROUTES, PROMPT_NUMBERING_PREFIX_REGEX, PIPELINE_CONFIG } from "../../constants";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import { Button } from "../ui/Button";
 import { PromptStatus, LogLevel } from "../../constants/enums";
@@ -32,12 +32,13 @@ export default function PipelineStep5(props: PipelineWizardState) {
   const currentGenerationMode = project?.visualConfig?.generationMode || ImageGenerationMode.LabsFlow;
   const currentAspectRatio = project?.visualConfig?.aspectRatio || AspectRatio.SixteenNine;
   const currentStyle = project?.visualConfig?.style || COMMON_STRINGS.CUSTOM;
+  const currentVideoDuration = project?.visualConfig?.videoDuration || "8s";
 
   const [inputText, setInputText] = useState<string>("");
 
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [currentIndex, setCurrentIndex] = useState<number>(-1);
+  const [currentIndex, setCurrentIndex] = useState<number>(PIPELINE_CONFIG.INDEX_INVALID);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   const isCancelledRef = useRef<boolean>(false);
@@ -82,7 +83,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
   };
 
   const handleStartGeneration = async () => {
-    if (prompts.length === 0) {
+    if (_.isEmpty(prompts)) {
       addLog(t.node6_log_invalid_prompts, LogLevel.WARN);
       return;
     }
@@ -92,7 +93,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
     setConsoleLogs([]);
     addLog(t.node6_log_start, LogLevel.INFO);
 
-    setPrompts((prev) => prev.map((p) => ({ ...p, status: PromptStatus.IDLE, resultBase64: undefined, resultUrl: undefined, errorMsg: undefined, elapsedTime: undefined })));
+    setPrompts((prev) => _.map(prev, (p) => ({ ...p, status: PromptStatus.IDLE, resultBase64: undefined, resultUrl: undefined, errorMsg: undefined, elapsedTime: undefined })));
 
     for (let i = 0; i < prompts.length; i++) {
       if (isCancelledRef.current) {
@@ -101,7 +102,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
       }
 
       setCurrentIndex(i);
-      setPrompts((prev) => prev.map((p, idx) => (idx === i ? { ...p, status: PromptStatus.RUNNING } : p)));
+      setPrompts((prev) => _.map(prev, (p, idx) => (idx === i ? { ...p, status: PromptStatus.RUNNING } : p)));
 
       const currentItem = prompts[i];
       addLog(t.node6_log_processing.replace("{index}", String(i + 1)).replace("{total}", String(prompts.length)), LogLevel.INFO);
@@ -117,6 +118,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
             imageGeneratorEngine: currentEngine,
             generationMode: currentGenerationMode,
             aspectRatio: currentAspectRatio,
+            videoDuration: currentVideoDuration,
           },
           sandboxConfig,
         };
@@ -128,17 +130,23 @@ export default function PipelineStep5(props: PipelineWizardState) {
         }
 
         const data = result.data;
-        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        const durationSec = Math.round((Date.now() - startTime) / PIPELINE_CONFIG.MS_PER_SEC);
 
         if (data.success && data.base64) {
+          if (data.newProjectId && data.newProjectId !== sandboxConfig.projectId) {
+            props.setSandboxConfig((prev: any) => ({
+              ...prev,
+              projectId: data.newProjectId,
+            }));
+          }
           setPrompts((prev) =>
-            prev.map((p, idx) =>
+            _.map(prev, (p, idx) =>
               idx === i
                 ? {
                     ...p,
                     status: PromptStatus.SUCCESS,
                     resultBase64: data.base64,
-                    resultUrl: data.fallbackUrl || `${COMMON_STRINGS.BASE64_IMAGE_PREFIX}${COMMON_STRINGS.JPEG_EXT};base64,${data.base64}`,
+                    resultUrl: data.fallbackUrl || `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${data.base64}`,
                     elapsedTime: durationSec,
                   }
                 : p,
@@ -149,9 +157,9 @@ export default function PipelineStep5(props: PipelineWizardState) {
           throw new Error(data.warning || t.node6_log_api_error);
         }
       } catch (err: any) {
-        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        const durationSec = Math.round((Date.now() - startTime) / PIPELINE_CONFIG.MS_PER_SEC);
         setPrompts((prev) =>
-          prev.map((p, idx) =>
+          _.map(prev, (p, idx) =>
             idx === i
               ? {
                   ...p,
@@ -166,25 +174,25 @@ export default function PipelineStep5(props: PipelineWizardState) {
       }
 
       if (i < prompts.length - 1 && !isCancelledRef.current) {
-        await delayAsync(2000);
+        await delayAsync(PIPELINE_CONFIG.STEP5_DELAY_MS);
       }
     }
 
     setIsRunning(false);
-    setCurrentIndex(-1);
+    setCurrentIndex(PIPELINE_CONFIG.INDEX_INVALID);
     addLog(t.node6_log_completed, LogLevel.SUCCESS);
   };
 
   const handleCancelGeneration = () => {
     isCancelledRef.current = true;
     setIsRunning(false);
-    setCurrentIndex(-1);
+    setCurrentIndex(PIPELINE_CONFIG.INDEX_INVALID);
     addLog(t.node6_log_cancelling, LogLevel.WARN);
   };
 
   const handleDownloadAllZip = async () => {
     const successItems = _.filter(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS && !!p.resultBase64) as PromptItem[];
-    if (successItems.length === 0) {
+    if (_.isEmpty(successItems)) {
       addLog(t.node6_log_zip_empty, LogLevel.WARN);
       return;
     }
@@ -193,8 +201,8 @@ export default function PipelineStep5(props: PipelineWizardState) {
     try {
       const zip = new JSZip();
 
-      successItems.forEach((item, index) => {
-        const ext = currentGenerateType === GenerateType.Video ? "mp4" : COMMON_STRINGS.JPG_EXT;
+      _.forEach(successItems, (item, index) => {
+        const ext = currentGenerateType === GenerateType.Video ? COMMON_STRINGS.MP4_EXT : COMMON_STRINGS.JPG_EXT;
         const filename = `${index + 1}_asset.${ext}`;
         zip.file(filename, item.resultBase64!, { base64: true });
       });
@@ -303,10 +311,10 @@ export default function PipelineStep5(props: PipelineWizardState) {
             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{t.node6_console_title}</span>
           </div>
           <div className="flex-1 p-4 bg-slate-955 text-[10px] font-mono text-slate-400 overflow-y-auto space-y-2 select-text custom-scrollbar">
-            {consoleLogs.length === 0 ? (
+            {_.isEmpty(consoleLogs) ? (
               <div className="text-slate-650 italic">{t.node6_console_waiting}</div>
             ) : (
-              consoleLogs.map((log, i) => (
+              _.map(consoleLogs, (log, i) => (
                 <div key={i} className="leading-relaxed whitespace-pre-wrap select-all">
                   {log}
                 </div>
@@ -322,7 +330,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
             <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.node6_library_title}</h4>
           </div>
 
-          {prompts.length === 0 ? (
+          {_.isEmpty(prompts) ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 select-none">
               <div className="w-12 h-12 bg-slate-950 border border-slate-800 text-slate-650 rounded-full flex items-center justify-center shadow-inner mb-3">
                 <FileText className="w-5 h-5" />
@@ -375,7 +383,7 @@ export default function PipelineStep5(props: PipelineWizardState) {
                                 <Button type="button" variant="ghost" onClick={() => handleZoomResult(item)} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow-none h-auto w-auto transition-all" title={t.Image_Lightbox_Preview}>
                                   <Eye className="w-4 h-4" />
                                 </Button>
-                                <a href={item.resultUrl} download={`artwork_${item.id}.jpg`} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all" title={t.download}>
+                                <a href={item.resultUrl} download={`${COMMON_STRINGS.ARTWORK_PREFIX}${item.id}.${COMMON_STRINGS.JPG_EXT}`} className="p-2 bg-slate-900 border border-slate-700 rounded-xl text-white hover:text-rose-400 hover:scale-105 cursor-pointer shadow transition-all" title={t.download}>
                                   <Download className="w-4 h-4" />
                                 </a>
                               </div>

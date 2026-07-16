@@ -297,6 +297,19 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     </div>
                   </div>
 
+                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow && project.visualConfig.generateType === GenerateType.Video && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Video_Duration}</div>
+                      <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                        {["4s", "6s", "8s", "10s"].map((dur) => (
+                          <Button variant="unstyled" type="button" key={dur} onClick={() => updateVisualConfig({ videoDuration: dur })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            {t[`Duration_${dur}` as keyof typeof t] || dur}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Chrome_Mode}</div>
                     <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
@@ -357,6 +370,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Gemini_Pro}</option>,
                           <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Gemini_Flash}</option>,
                           <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Gemini_Flash_Lite}</option>
+                        ] : project.visualConfig.generateType === GenerateType.Video ? [
+                          <option key="omni-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">🎬 Omni Flash</option>,
+                          <option key="veo-lite" value={ImageGeneratorEngine.Veo3Lite} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Lite</option>,
+                          <option key="veo-fast" value={ImageGeneratorEngine.Veo3Fast} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Fast</option>,
+                          <option key="veo-quality" value={ImageGeneratorEngine.Veo3Quality} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Quality</option>
                         ] : [
                           <option key="imagen-3" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Imagen_3}</option>,
                           <option key="nano-banana" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Nano_Banana_2}</option>,

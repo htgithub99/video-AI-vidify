@@ -105,7 +105,7 @@ let workspaceRef: any = null;
 const isProjectContentEqual = (p1: any, p2: any) => {
   if (!p1 || !p2) return p1 === p2;
   const keysToCompare = ["name", "description", "input", "config", "hookConfig", "voiceConfig", "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig", "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"];
-  const isEmpty = (v: any) => [undefined, null, ""].includes(v) || (Array.isArray(v) && v.length === 0) || (typeof v === "object" && Object.keys(v).length === 0);
+  const isEmpty = (v: any) => [undefined, null, ""].includes(v) || (_.isArray(v) && _.isEmpty(v)) || (typeof v === "object" && Object.keys(v).length === 0);
   return keysToCompare.every((key) => {
     const val1 = p1[key];
     const val2 = p2[key];
@@ -148,7 +148,7 @@ export function usePipelineWizard(props: any) {
         const isTimingLogChanged = [prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog].some(Boolean);
 
         let mergedStoryboard = prev.storyboard || [];
-        if ([isServerUpdate, !prev.storyboard, prev?.storyboard?.length === 0].some(Boolean)) {
+        if ([isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)].some(Boolean)) {
           mergedStoryboard = normalizedInitialProject.storyboard || [];
         } else if (isTimingLogChanged) {
           mergedStoryboard = prev.storyboard;
@@ -167,7 +167,7 @@ export function usePipelineWizard(props: any) {
         }
 
         let mergedThumbnails = prev.thumbnails || [];
-        if ([isServerUpdate, !prev.thumbnails, prev?.thumbnails?.length === 0].some(Boolean)) {
+        if ([isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)].some(Boolean)) {
           mergedThumbnails = normalizedInitialProject.thumbnails || [];
         } else {
           mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
@@ -1541,6 +1541,13 @@ export function usePipelineWizard(props: any) {
         else throw new Error(data.warning);
       }
 
+      if (data.newProjectId && data.newProjectId !== sandboxConfig.projectId) {
+        setSandboxConfig((prev: any) => ({
+          ...prev,
+          projectId: data.newProjectId,
+        }));
+      }
+
       let imageUrl = "";
       if (data.success && data.base64) {
         imageUrl = `data:image/jpeg;base64,${data.base64}`;
@@ -1687,7 +1694,7 @@ export function usePipelineWizard(props: any) {
   const handleCopyAllPrompts = () => {
     logAction("handleCopyAllPrompts");
     const storyboard = project.storyboard || [];
-    if (storyboard.length === 0) {
+    if (_.isEmpty(storyboard)) {
       setInfoMsg(t.No_scenes_available_to_co);
       return;
     }
@@ -1716,7 +1723,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleReferenceImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
-    if (ArrayFiles.length === 0) return;
+    if (_.isEmpty(ArrayFiles)) return;
 
     try {
       const newBase64Images: string[] = [];
@@ -1749,7 +1756,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleExtractStyle");
 
     const images = project.visualConfig?.referenceImages;
-    if (!images || images.length === 0) return;
+    if (!images || _.isEmpty(images)) return;
 
     setLoadingStates((prev) => ({ ...prev, extractStyle: true }));
     setLoading(true);
@@ -1790,7 +1797,7 @@ export function usePipelineWizard(props: any) {
 
   const handleApplyStyleToScenes = async () => {
     logAction("handleApplyStyleToScenes");
-    if (!project.storyboard || project.storyboard.length === 0) {
+    if (!project.storyboard || _.isEmpty(project.storyboard)) {
       setInfoMsg(t.No_scenes_to_apply_style);
       return;
     }
@@ -1932,7 +1939,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleCharacterImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
-    if (ArrayFiles.length === 0) return;
+    if (_.isEmpty(ArrayFiles)) return;
 
     try {
       const newBase64Images: string[] = [];
@@ -1979,7 +1986,7 @@ export function usePipelineWizard(props: any) {
     const char = project.visualConfig?.characters?.find((c) => c.id === charId);
     if (!char) return;
     const images = char.images;
-    if (!images || images.length === 0) {
+    if (!images || _.isEmpty(images)) {
       setErrorMsg(t.charNoImages);
       return;
     }
@@ -2046,13 +2053,13 @@ export function usePipelineWizard(props: any) {
 
   const handleApplyCharacterToScenes = async () => {
     logAction("handleApplyCharacterToScenes");
-    if (!project.storyboard || project.storyboard.length === 0) {
+    if (!project.storyboard || _.isEmpty(project.storyboard)) {
       setInfoMsg(t.charNoScenes);
       return;
     }
     const characters = project.visualConfig?.characters || [];
     const activeChars = characters.filter((c) => c.prompt || c.description);
-    if (activeChars.length === 0) {
+    if (_.isEmpty(activeChars)) {
       setInfoMsg(t.charNoPrompt);
       return;
     }
@@ -2100,13 +2107,13 @@ export function usePipelineWizard(props: any) {
 
   const handleApplyCharacterToThumbnails = async () => {
     logAction("handleApplyCharacterToThumbnails");
-    if (!project.thumbnails || project.thumbnails.length === 0) {
+    if (!project.thumbnails || _.isEmpty(project.thumbnails)) {
       setInfoMsg(t.No_thumbnails_to_apply_style || "Chưa có ảnh bìa để áp dụng phong cách.");
       return;
     }
     const characters = project.visualConfig?.characters || [];
     const activeChars = characters.filter((c) => c.prompt || c.description);
-    if (activeChars.length === 0) {
+    if (_.isEmpty(activeChars)) {
       setInfoMsg(t.charNoPrompt);
       return;
     }
@@ -2166,7 +2173,7 @@ export function usePipelineWizard(props: any) {
 
   const handleBulkUploadImages = async (files: FileList) => {
     logAction("handleBulkUploadImages");
-    if (!files || files.length === 0) return;
+    if (!files || _.isEmpty(files)) return;
 
     const sortedFiles = Array.from(files).sort((a, b) =>
       a.name.localeCompare(b.name, undefined, {
@@ -2176,7 +2183,7 @@ export function usePipelineWizard(props: any) {
     );
 
     const storyboard = project.storyboard || [];
-    if (storyboard.length === 0) return;
+    if (_.isEmpty(storyboard)) return;
 
     const readFileAsBase64 = (file: File): Promise<string> => {
       return new Promise((resolve, reject) => {
@@ -2257,7 +2264,7 @@ export function usePipelineWizard(props: any) {
       }
     }
 
-    if (results.length === 0) {
+    if (_.isEmpty(results)) {
       setInfoMsg(t.No_matching_image_files_f);
       return;
     }
@@ -2347,7 +2354,7 @@ export function usePipelineWizard(props: any) {
     logAction("handleThumbnailReferenceImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
-    if (ArrayFiles.length === 0) return;
+    if (_.isEmpty(ArrayFiles)) return;
 
     try {
       const newBase64Images: string[] = [];
@@ -2379,7 +2386,7 @@ export function usePipelineWizard(props: any) {
   const handleExtractThumbnailStyle = async () => {
     logAction("handleExtractThumbnailStyle");
     const images = project.visualConfig?.thumbnailReferenceImages;
-    if (!images || images.length === 0) return;
+    if (!images || _.isEmpty(images)) return;
 
     setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: true }));
     try {
@@ -2414,7 +2421,7 @@ export function usePipelineWizard(props: any) {
 
   const handleApplyThumbnailStyle = async () => {
     logAction("handleApplyThumbnailStyle");
-    if (!project.thumbnails || project.thumbnails.length === 0) {
+    if (!project.thumbnails || _.isEmpty(project.thumbnails)) {
       setInfoMsg(t.No_thumbnails_to_apply_style);
       return;
     }
@@ -2570,17 +2577,17 @@ export function usePipelineWizard(props: any) {
     cancelBatchImageRef.current = false;
 
     const scenes = project.storyboard || [];
-    if (scenes.length === 0) {
+    if (_.isEmpty(scenes)) {
       setErrorMsg(t.No_storyboard_scenes_foun);
       return;
     }
 
     let targetScenes = scenes.filter((s) => {
       const urls = s.assetUrls || (s.assetUrl ? [s.assetUrl] : []);
-      return urls.length === 0;
+      return _.isEmpty(urls);
     });
 
-    if (targetScenes.length === 0) {
+    if (_.isEmpty(targetScenes)) {
       targetScenes = [...scenes];
     }
 
@@ -2960,6 +2967,13 @@ export function usePipelineWizard(props: any) {
       if (data.warning) {
         setErrorMsg(data.warning);
       }
+
+      if (data.newProjectId && data.newProjectId !== sandboxConfig.projectId) {
+        setSandboxConfig((prev: any) => ({
+          ...prev,
+          projectId: data.newProjectId,
+        }));
+      }
       let imgUrl = "";
       let isSuccess = false;
       if (data.success && data.base64) {
@@ -3006,13 +3020,13 @@ export function usePipelineWizard(props: any) {
   const handleRenderAllThumbnailImages = async () => {
     logAction("handleRenderAllThumbnailImages");
     const thumbs = project.thumbnails || [];
-    if (thumbs.length === 0) {
+    if (_.isEmpty(thumbs)) {
       setErrorMsg(t.No_Thumbnail_Prompts);
       return;
     }
 
     let targets = thumbs.filter((th) => !th.imageUrl);
-    if (targets.length === 0) {
+    if (_.isEmpty(targets)) {
       targets = [...thumbs];
     }
 
@@ -3042,7 +3056,7 @@ export function usePipelineWizard(props: any) {
       setInfoMsg(t.Generating_and_preparing_);
       try {
         setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: true }));
-        if (!project.storyboard || project.storyboard.length === 0) {
+        if (!project.storyboard || _.isEmpty(project.storyboard)) {
           throw new Error(t.You_must_generate_the_sto);
         }
         const mergedUrl = await handleTriggerAllSceneVoices(project.storyboard, true);
@@ -3239,7 +3253,7 @@ export function usePipelineWizard(props: any) {
     const texts = EXTERNAL_AUDIO_TEXTS[lang];
 
     const scenes = project.storyboard || [];
-    if (scenes.length === 0) {
+    if (_.isEmpty(scenes)) {
       setErrorMsg(t.No_scenes_to_generate_voi || texts.NO_SCENES);
       return;
     }
@@ -3340,7 +3354,7 @@ export function usePipelineWizard(props: any) {
     stopPlaybackSim();
 
     const scenes = providedScenes || project.storyboard || [];
-    if (scenes.length === 0) {
+    if (_.isEmpty(scenes)) {
       setErrorMsg(t.No_scenes_to_generate_voi);
       return;
     }
@@ -3566,7 +3580,7 @@ export function usePipelineWizard(props: any) {
   };
 
   const startPlaybackSim = () => {
-    if (!project.storyboard || project.storyboard.length === 0) return;
+    if (!project.storyboard || _.isEmpty(project.storyboard)) return;
     setIsPlayingSim(true);
     setCurrentSimTime(0);
     setSimActiveScene(project.storyboard[0]);
