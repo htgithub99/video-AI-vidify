@@ -363,9 +363,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                     await engineDropdownBtn.click({ force: true });
                     await globalPlaywrightPage.waitForTimeout(500);
 
-                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: exactEngineRegex }).first();
+                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: exactEngineRegex }).first();
                     if (!(await optionBtn.isVisible())) {
-                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]:visible').filter({ hasText: fallbackEngineRegex }).first();
+                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: fallbackEngineRegex }).first();
                     }
                     if (await optionBtn.isVisible()) await optionBtn.click({ force: true });
                   }
