@@ -1,5 +1,5 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, DEFAULT_PROJECT_ID, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_VIDEO_SECTION_REGEX, IMAGE_GEN_IMAGE_SECTION_REGEX, IMAGE_GEN_SAVE_BTN_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_VIDEO_SECTION_REGEX, IMAGE_GEN_IMAGE_SECTION_REGEX, IMAGE_GEN_SAVE_BTN_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -31,7 +31,7 @@ export async function smoothMouseMove(page: Page, locator: Locator) {
     await page.mouse.move(targetX, targetY);
     await randomDelay(100, 250);
   } catch (e) {
-    await locator.hover().catch(() => {});
+    await locator.hover().catch(() => { });
   }
 }
 
@@ -149,7 +149,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   const kws = extractKeywords(prompt);
   const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
 
-  const projectId = sandboxConfig.projectId || DEFAULT_PROJECT_ID;
+  const projectId = sandboxConfig.projectId;
   let cleanProjectId = projectId;
   if (cleanProjectId.startsWith("projects/")) {
     cleanProjectId = cleanProjectId.replace("projects/", "");
@@ -182,7 +182,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                     value,
                     configurable: true,
                   });
-                } catch (e) {}
+                } catch (e) { }
                 return target;
               };
             }
@@ -420,7 +420,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   behavior: "instant",
                   block: "center",
                 });
-              } catch (e) {}
+              } catch (e) { }
 
               if (!newImg.complete || newImg.naturalWidth === 0) return null;
 
@@ -431,7 +431,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               try {
                 const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
                 if (dataUrl.length > 1000) return dataUrl;
-              } catch (e) {}
+              } catch (e) { }
             }
             return null;
           },
@@ -451,7 +451,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         const isClosedError = closedKeywords.some((kw) => err.message?.toLowerCase().includes(kw));
         if (isClosedError) {
           appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
-          await closePlaywright().catch(() => {});
+          await closePlaywright().catch(() => { });
         }
 
         if (attempts < maxAttempts) {
@@ -466,7 +466,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           } catch (reloadErr: any) {
             appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
             if (closedKeywords.some((kw) => reloadErr.message?.toLowerCase().includes(kw))) {
-              await closePlaywright().catch(() => {});
+              await closePlaywright().catch(() => { });
             }
           }
         } else {
@@ -485,7 +485,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       if (errorJson?.error?.details?.[0]?.reason) {
         warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     return {
       success: false,
@@ -513,7 +513,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         fallbackUrl: parsed.directBase64,
       };
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return {
     success: false,
@@ -699,7 +699,7 @@ export async function closeAllBatchPages() {
       if (!page.isClosed()) {
         await page.close();
       }
-    } catch (e) {}
+    } catch (e) { }
   }
   globalBatchPages = [];
 }
@@ -1074,7 +1074,7 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
         await randomDelay(1000, 1800);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -1125,7 +1125,7 @@ async function configureGeminiGenerateType(page: Page, visualConfig: any, forceS
         await randomDelay(1200, 2000);
         await page.keyboard.press("Escape");
         await randomDelay(600, 1200);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -1146,7 +1146,7 @@ async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: a
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_PASTING_PROMPT);
     try {
       const context = page.context();
-      await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => { });
       const clipboardSuccess = await page.evaluate(async (text) => {
         try {
           await navigator.clipboard.writeText(text);

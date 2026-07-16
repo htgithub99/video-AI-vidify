@@ -547,7 +547,7 @@ export function usePipelineWizard(props: any) {
       logger.error("ERROR_LOADING_SANDBOX", e);
     }
     return {
-      projectId: "cbcf7518-13d7-4eab-b59d-952d5814de53",
+      projectId: "",
       authToken: "",
       recaptchaToken: "",
       sessionId: "",

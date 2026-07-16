@@ -176,7 +176,6 @@ export const PROMPT_FILLER_WORDS = ["beautiful", "detailed", "artistic", "image"
 
 export const STICKMAN_STYLE_MODIFIERS = "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
 
-export const DEFAULT_PROJECT_ID = "cbcf7518-13d7-4eab-b59d-952d5814de53";
 export const DEFAULT_SESSION_ID = ";1781857807598";
 
 export const VOICE_PROVIDER_OPTIONS = [
