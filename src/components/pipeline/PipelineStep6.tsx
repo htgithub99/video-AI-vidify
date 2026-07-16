@@ -448,7 +448,7 @@ export default function PipelineStep6(props: PipelineWizardState) {
               addLog(data.error || ErrorMessage.CAPCUT_ULTRA_OPTIMIZATION_ERROR, LogLevel.ERROR);
             }
           }
-        } catch (_ignored) { /* ignore parse error for remaining buffer */ }
+        } catch (_ignored) {  }
       }
 
       if (lastSuccessMessage) {

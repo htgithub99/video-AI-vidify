@@ -1,4 +1,6 @@
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
+import { PipelineConstants } from "../../constants/pipelineConstants";
+import { logger } from "../../utils/logger";
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
 
@@ -6,23 +8,15 @@ import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { appLog, appError, appWarn } from "../../lib/logger.js";
-
-const logger = {
-  log: appLog,
-  error: appError,
-  warn: appWarn,
-};
 import { EXTERNAL_URLS, API_ROUTES, API_HEADERS } from "../../constants/apiRoutes";
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender, AgeGroup, ProjectInputType } from "../../types";
+import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
-import { STORAGE_KEYS } from "../../constants/storageKeys";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
@@ -66,16 +60,16 @@ const fetchSystemApi = async (url: string, payload?: object | null, customHeader
     },
     customHeaders || {}
   );
-  
+
   const options: RequestInit = {
     method: _.isNil(payload) ? HTTP_METHODS.GET : HTTP_METHODS.POST,
     headers: finalHeaders,
   };
-  
+
   if (!_.isNil(payload)) {
     options.body = JSON.stringify(payload);
   }
-  
+
   return fetch(url, options);
 };
 
@@ -105,57 +99,6 @@ let videoRef: any = null;
 let simVideoRef: any = null;
 let workspaceRef: any = null;
 
-const defaultVoiceConfig = {
-  provider: "edge",
-  audioType: AudioType.TTS,
-  gender: Gender.Male,
-  age: AgeGroup.Adult,
-  emotion: "neutral",
-  speed: 1.0,
-  pitch: 1.0,
-  volume: 1.0,
-  voiceURI: "preset-vi-bac-female",
-};
-
-const defaultProjectInput = {
-  type: ProjectInputType.Script,
-  content: "",
-};
-
-const defaultProjectConfig = {
-  genre: "Tâm lý",
-  language: "vi" as any,
-  duration: "15",
-  rewriteLevel: 50,
-  similarityReduction: 5,
-  creativityLevel: 6,
-  factCheck: true,
-  audience: "Đại chúng",
-  writingStyle: "Tự nhiên",
-};
-
-const defaultHookConfig = {
-  type: "Auto",
-  duration: 10,
-  count: 3,
-  positions: "start" as any,
-  versions: [],
-};
-
-const defaultVisualConfig = {
-  source: "imagen",
-  style: "Cinematic",
-  quality: "1080p",
-  density: 5,
-  characterConsistency: true,
-  assetsMode: "mixed" as any,
-  imageGeneratorEngine: "veo3" as any,
-  generateType: "image" as any,
-  aspectRatio: "16:9",
-  promptInputMethod: "paste" as any,
-  generateCount: 1,
-};
-
 const isProjectContentEqual = (p1: any, p2: any) => {
   if (!p1 || !p2) return p1 === p2;
   const keysToCompare = ["name", "description", "input", "config", "hookConfig", "voiceConfig", "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig", "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"];
@@ -180,11 +123,11 @@ export function usePipelineWizard(props: any) {
     if (!initialProject) return initialProject;
     return {
       ...initialProject,
-      voiceConfig: initialProject.voiceConfig || defaultVoiceConfig,
-      input: initialProject.input || defaultProjectInput,
-      config: initialProject.config || defaultProjectConfig,
-      hookConfig: initialProject.hookConfig || defaultHookConfig,
-      visualConfig: initialProject.visualConfig || defaultVisualConfig,
+      voiceConfig: initialProject.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG,
+      input: initialProject.input || PipelineConstants.DEFAULT_PROJECT_INPUT,
+      config: initialProject.config || PipelineConstants.DEFAULT_PROJECT_CONFIG,
+      hookConfig: initialProject.hookConfig || PipelineConstants.DEFAULT_HOOK_CONFIG,
+      visualConfig: initialProject.visualConfig || PipelineConstants.DEFAULT_VISUAL_CONFIG,
     };
   }, [initialProject]);
 
@@ -401,7 +344,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.FAVORITE_STYLES);
+      const stored = localStorage.getItem(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES);
       setFavoriteStyles(
         stored
           ? JSON.parse(stored)
@@ -420,7 +363,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteStyles = (list: any[]) => {
     setFavoriteStyles(list);
-    localStorage.setItem(STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
+    localStorage.setItem(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, JSON.stringify(list));
   };
 
   const handleAddFavoriteStyle = (name: string, promptText: string) => {
@@ -483,7 +426,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.FAVORITE_VOICES);
+      const stored = localStorage.getItem(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES);
       setFavoriteVoices(
         stored
           ? JSON.parse(stored)
@@ -503,7 +446,7 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteVoices = (list: any[]) => {
     setFavoriteVoices(list);
-    localStorage.setItem(STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
+    localStorage.setItem(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, JSON.stringify(list));
   };
 
   const handleAddFavoriteVoice = (name: string, voiceURI: string, channelName?: string) => {
@@ -594,7 +537,7 @@ export function usePipelineWizard(props: any) {
 
   const [sandboxConfig, setSandboxConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
+      const saved = localStorage.getItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
       if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === "object") {
@@ -615,7 +558,7 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      localStorage.setItem(STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
+      localStorage.setItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, JSON.stringify(sandboxConfig));
     }
   }, [sandboxConfig]);
 
@@ -640,7 +583,7 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     const syncConfig = () => {
       try {
-        const saved = localStorage.getItem(STORAGE_KEYS.API_SANDBOX_CONFIG);
+        const saved = localStorage.getItem(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
         if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
           const parsed = JSON.parse(saved);
           if (parsed && typeof parsed === "object") {
@@ -1325,11 +1268,11 @@ export function usePipelineWizard(props: any) {
       const restoredProject: VideoProject = {
         ...initialProject,
         storyboard: restoredStoryboard,
-        voiceConfig: restoredVoiceConfig || defaultVoiceConfig,
-        input: initialProject.input || defaultProjectInput,
-        config: initialProject.config || defaultProjectConfig,
-        hookConfig: initialProject.hookConfig || defaultHookConfig,
-        visualConfig: initialProject.visualConfig || defaultVisualConfig,
+        voiceConfig: restoredVoiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG,
+        input: initialProject.input || PipelineConstants.DEFAULT_PROJECT_INPUT,
+        config: initialProject.config || PipelineConstants.DEFAULT_PROJECT_CONFIG,
+        hookConfig: initialProject.hookConfig || PipelineConstants.DEFAULT_HOOK_CONFIG,
+        visualConfig: initialProject.visualConfig || PipelineConstants.DEFAULT_VISUAL_CONFIG,
       };
 
       isRestoringRef.current = true;
@@ -1394,7 +1337,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.Generation_completed_The_ || "Hoàn thành biên kịch.";
       setInfoMsg(successMsg);
-      logger.log(`[Script] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Script] ✅ Thành công: ${successMsg}`);
 
       if (!data.cached) {
         trackOperationCost(10, 0.0005);
@@ -1554,7 +1497,7 @@ export function usePipelineWizard(props: any) {
         trackOperationCost(18, 0.0012);
         const successMsg = t.Storyboard_coordinates_fo;
         setInfoMsg(successMsg);
-        logger.log(`[Storyboard] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Storyboard] ✅ Thành công: ${successMsg}`);
         return finalScenes;
       }
     } catch (e: any) {
@@ -1630,7 +1573,7 @@ export function usePipelineWizard(props: any) {
         }, 0);
         return updatedProject;
       });
-      logger.log(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
+      logger.info(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
     } catch (e: any) {
       if (!isBatch) {
         setErrorMsg(t.imagePipelineError.replace("{error}", e.message));
@@ -1681,7 +1624,7 @@ export function usePipelineWizard(props: any) {
     setIsUploadingImage(false);
     const successMsg = t.imageUploadSuccess.replace("{sceneId}", sceneId);
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCopyPrompt = (promptText: string) => {
@@ -1689,7 +1632,7 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard.writeText(promptText);
     const successMsg = t.Scene_visual_prompt_copie || "Đã sao chép prompt.";
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
   };
 
@@ -1724,7 +1667,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.generateHookSuccess || "Tạo hook thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
+      logger.info(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
     } catch (e: any) {
       setErrorMsg(e.message || t.generateHookFailed || "Lỗi tạo hook.");
     } finally {
@@ -1738,7 +1681,7 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard.writeText(hookText);
     const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     setTimeout(() => setInfoMsg(""), 4000);
   };
 
@@ -1763,7 +1706,7 @@ export function usePipelineWizard(props: any) {
         setTimeout(() => setCopiedAll(false), 3000);
         const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
         setInfoMsg(successMsg);
-        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       })
       .catch((err) => {
         logger.error("FAILED_COPY_PROMPTS", err);
@@ -1835,7 +1778,7 @@ export function usePipelineWizard(props: any) {
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
       const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
@@ -1878,7 +1821,7 @@ export function usePipelineWizard(props: any) {
         }));
         const successMsg = t.Successfully_applied_styl || "Áp dụng phong cách thiết kế thành công.";
         setInfoMsg(successMsg);
-        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
         setProject((prev) => ({
           ...prev,
@@ -1976,7 +1919,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charAnalyzeFailed} ${e.message}`);
@@ -2089,7 +2032,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("GENERAL_ERROR", e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
@@ -2137,7 +2080,7 @@ export function usePipelineWizard(props: any) {
         }));
         const successMsg = t.charApplySuccess;
         setInfoMsg(successMsg);
-        appLog("STORYBOARD_CHAR_SUCCESS");
+        logger.info("STORYBOARD_CHAR_SUCCESS");
       } else {
         setProject((prev) => ({
           ...prev,
@@ -2197,7 +2140,7 @@ export function usePipelineWizard(props: any) {
         });
         const successMsg = t.charApplySuccess;
         setInfoMsg(successMsg);
-        appLog("THUMBNAIL_CHAR_SUCCESS");
+        logger.info("THUMBNAIL_CHAR_SUCCESS");
       } else {
         setProject((prev) => {
           const updatedProject = {
@@ -2389,7 +2332,7 @@ export function usePipelineWizard(props: any) {
 
     const successMsg = t.bulkUploadSuccess.replace("{count}", results.length.toString());
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handlePrevSlide = (sceneId: string, max: number) => {
@@ -2459,7 +2402,7 @@ export function usePipelineWizard(props: any) {
         });
         const successMsg = t.Thumbnail_style_extracted;
         setInfoMsg(successMsg);
-        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       } else if (data.error) {
         setErrorMsg(data.error);
       }
@@ -2508,7 +2451,7 @@ export function usePipelineWizard(props: any) {
         });
         const successMsg = t.Successfully_applied_styl;
         setInfoMsg(successMsg);
-        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       } else {
         setProject((prev) => {
           const updatedProject = {
@@ -2612,7 +2555,7 @@ export function usePipelineWizard(props: any) {
 
     const successMsg = t.deleteAllImagesSuccess;
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleCancelBatchGenerate = () => {
@@ -2865,7 +2808,7 @@ export function usePipelineWizard(props: any) {
         });
         const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
         setInfoMsg(successMsg);
-        logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
         setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
@@ -2925,7 +2868,7 @@ export function usePipelineWizard(props: any) {
     setActiveSceneId(null);
     const successMsg = t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
     setInfoMsg(successMsg);
-    logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+    logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleTriggerAssetAndThumbnail = async (force = false, btnPosition = "top") => {
@@ -2980,7 +2923,7 @@ export function usePipelineWizard(props: any) {
         trackOperationCost(15, 0.0008);
         const successMsg = t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
         setInfoMsg(successMsg);
-        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(t.thumbnailPipelineError.replace("{error}", e.message));
@@ -3048,7 +2991,7 @@ export function usePipelineWizard(props: any) {
       if (isSuccess) {
         const successMsg = t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
         setInfoMsg(successMsg);
-        logger.log(`[Thumbnail] ✅ Thành công: ${successMsg}`);
+        logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
     } catch (e: any) {
       setErrorMsg(e.message);
@@ -3114,7 +3057,7 @@ export function usePipelineWizard(props: any) {
           document.body.removeChild(a);
           const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
           setInfoMsg(successMsg);
-          logger.log(`[TTS] ✅ Thành công: ${successMsg}`);
+          logger.info(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
           throw new Error("Missing audio URL from synthesis");
         }
@@ -3414,7 +3357,7 @@ export function usePipelineWizard(props: any) {
     setBulkVoiceStatus("");
 
     try {
-      const vConfig = voiceConfigOverride || project.voiceConfig || defaultVoiceConfig;
+      const vConfig = voiceConfigOverride || project.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG;
       const updatedScenes = [...scenes];
 
       let fullScript = project.scriptRewritten || "";
@@ -3559,7 +3502,7 @@ export function usePipelineWizard(props: any) {
         } else {
           setInfoMsg(successMsg);
         }
-        logger.log(`[SEO] ✅ Thành công: ${successMsg}`);
+        logger.info(`[SEO] ✅ Thành công: ${successMsg}`);
       } else if (data.warning) {
         throw new Error(data.warning);
       }
@@ -3614,7 +3557,7 @@ export function usePipelineWizard(props: any) {
       setOfflineRenderProgress(100);
       const successMsg = t.Cinematic_simulated_video || "Đã xuất video thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (err) {
       logger.warn("OFFLINE_RENDERING_ERROR", err);
       setErrorMsg(t.Failed_to_compile_video_C);
@@ -3907,7 +3850,7 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
       setInfoMsg(successMsg);
-      logger.log(`[Hệ thống] ✅ Thành công: ${successMsg}`);
+      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {
       logger.error("CAPCUT_ZIP_GEN_ERROR", zipError);
       setInfoMsg(t.Error_generating_template || "Lỗi đóng gói file ZIP.");
@@ -3945,7 +3888,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_subtitles.srt`);
       dlAnchorElem.click();
-      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
+      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
     } finally {
       setLoadingExportType(null);
     }
@@ -3979,7 +3922,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`);
       dlAnchorElem.click();
-      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
+      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
     } finally {
       setLoadingExportType(null);
     }
@@ -4026,7 +3969,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("href", dataStr);
       dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`);
       dlAnchorElem.click();
-      logger.log(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
+      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
     } finally {
       setLoadingExportType(null);
     }

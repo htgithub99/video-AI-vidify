@@ -9,6 +9,7 @@ import { getProjectDetailFromDb } from "../utils/db.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
+import { PIPELINE_CONFIG } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -202,7 +203,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       return res.json({ success: true, storyboard });
     }
 
-    const chunkSize = 25;
+    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE;
     const chunks = _.chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
@@ -229,7 +230,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
       }
 
       if (i < chunks.length - 1) {
-        await delayAsync(1500);
+        await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
       }
     }
 
@@ -280,7 +281,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
     const referenceStyle = visualConfig?.referencePrompt || "";
     const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? JSON.stringify(visualConfig.characters) : undefined;
 
-    const chunkSize = 8;
+    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
     const chunks = _.chunk(scenesToOptimize, chunkSize);
 
     const optimizedMap = new Map<string, string>();
@@ -307,7 +308,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
       }
 
       if (i < chunks.length - 1) {
-        await delayAsync(3000);
+        await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
       }
     }
 
@@ -583,7 +584,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       }
 
       if (i < chunks.length - 1) {
-        await delayAsync(1500);
+        await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
       }
     }
 
@@ -1821,7 +1822,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName, autoExportVideo, videoOutputDir } = req.body;
+  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName, autoExportVideo, videoOutputDir, projectId } = req.body;
 
   if (!isAutoMode && !filePath) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -1848,15 +1849,35 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     finalProjectName = `AI_CAPCUT_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear().toString().substring(2)}`;
   }
 
+  let realTemplateId = templateId || "";
+  if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
+    try {
+      const templateContent = JSON.parse(fs.readFileSync(realTemplateId, "utf-8"));
+      if (templateContent.folderPath) {
+        realTemplateId = path.join(templateContent.folderPath, "draft_content.json");
+      }
+    } catch (e) {
+      logger.error("Error reading template file:", e);
+    }
+  }
+
+  let finalImagesDir = imagesDir || "";
+  let finalVoicesDir = voicesDir || "";
+
+  if (projectId) {
+    finalImagesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, "images");
+    finalVoicesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, "voices");
+  }
+
   const cmdOpts = {
     ...opts,
     api_key: geminiApiKey || "",
     sfx_folder: sfxFolder || "",
     is_auto_mode: isAutoMode || false,
-    template_id: templateId || "",
+    template_id: realTemplateId,
     parent_folder: parentFolder || "",
-    images_dir: imagesDir || "",
-    voices_dir: voicesDir || "",
+    images_dir: finalImagesDir,
+    voices_dir: finalVoicesDir,
     project_style: projectStyle || {},
     project_name: finalProjectName,
     auto_export_video: autoExportVideo || false,
@@ -1871,8 +1892,9 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
     const pyCmd = getPythonCommand();
     const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
-    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${filePath}" "${tempOutputPath}" "${optsJsonPath}"`);
-    const pythonProcess = spawn(pyCmd, ["-u", scriptPath, filePath, tempOutputPath, optsJsonPath]);
+    const safeFilePath = filePath || "AUTO_MODE_PLACEHOLDER";
+    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${safeFilePath}" "${tempOutputPath}" "${optsJsonPath}"`);
+    const pythonProcess = spawn(pyCmd, ["-u", scriptPath, safeFilePath, tempOutputPath, optsJsonPath]);
     let autoCreatedDraftPath: string = "";
 
     pythonProcess.stdout.on("data", (data) => {
@@ -2377,15 +2399,21 @@ router.get("/templates", (req: Request, res: Response) => {
 router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT }), (req: Request, res: Response) => {
   const isVi = req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { name, content } = req.body;
-    if (_.isEmpty(_.trim(name)) || !content) {
+    const { name, folderPath } = req.body;
+    if (_.isEmpty(_.trim(name)) || _.isEmpty(_.trim(folderPath))) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_NAME_REQUIRED", isVi) });
     }
-    const template = saveTemplate(name, content);
+    const template = saveTemplate(name, folderPath);
     res.json(template);
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_SAVE_FAILED", isVi) });
+    let errorMsg = getBackendMsg("TEMPLATE_SAVE_FAILED", isVi);
+    if (error.message === "EXCEED_MAX_TEMPLATES") {
+      errorMsg = isVi ? "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới." : "Maximum 2 templates allowed. Please delete one to add a new template.";
+    } else if (error.message === "INVALID_CAPCUT_TEMPLATE") {
+      errorMsg = isVi ? "Thư mục bạn chọn không phải là dự án Capcut hợp lệ (Thiếu file draft_content.json)." : "The selected folder is not a valid Capcut project (Missing draft_content.json).";
+    }
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: errorMsg });
   }
 });
 

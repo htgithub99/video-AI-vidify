@@ -506,6 +506,7 @@ export const PROJECT_LIST_CONSTANTS = {
 export const INPUT_MODES = {
   ZIP: "zip",
   SPLIT: "split",
+  CURRENT: "current",
 } as const;
 
 export const FOLDER_TYPES = {
@@ -527,6 +528,8 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
   BTN_MODE_SPLIT: "Tách riêng",
   BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh",
+  BTN_MODE_CURRENT: "Dự án hiện tại",
+  BTN_MODE_CURRENT_TOOLTIP: "Sử dụng hình ảnh và âm thanh từ dự án đang mở",
   PLACEHOLDER_ZIP: "Đường dẫn thư mục hoặc File ZIP...",
   PLACEHOLDER_IMAGES: "Thư mục Hình ảnh...",
   PLACEHOLDER_VOICES: "Thư mục Âm thanh...",
@@ -573,6 +576,8 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   LOG_SELECT_VIDEO_OUTPUT: "Đã chọn thư mục xuất video: ",
   ERR_SELECT_VIDEO_OUTPUT: "Vui lòng chọn thư mục lưu video!",
   LOG_ERROR_PREFIX: "Lỗi: ",
+  DEFAULT_TEMPLATE_NAME: "Template Mới",
+  ERR_NO_TEMPLATE_NAME: "Vui lòng nhập tên template!",
 } as const;
 
 export const MOTION_OPTIONS = [

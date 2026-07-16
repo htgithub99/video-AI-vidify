@@ -1,3 +1,6 @@
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 import os
 import json
 import random
@@ -847,9 +850,9 @@ def kill_capcut_processes():
         
         killed_any = (res_cc.returncode == 0) or (res_jy.returncode == 0)
         
-        print(LOG_WAIT_CLOSE)
+        logging.info(LOG_WAIT_CLOSE)
         if killed_any:
-            print(LOG_PROCESS_KILLED)
+            logging.info(LOG_PROCESS_KILLED)
             time.sleep(5.0) 
         else:
             time.sleep(3.0)
@@ -858,8 +861,8 @@ def kill_capcut_processes():
 
 def process_capcut_ultra(input_json_path, output_json_path, opts):
     kill_capcut_processes()
-    print(LOG_START_PROCESS.format(input_json_path))
-    print(LOG_OPTS.format(opts))
+    logging.info(LOG_START_PROCESS.format(input_json_path))
+    logging.info(LOG_OPTS.format(opts))
 
     if opts.get('seed') is not None:
         random.seed(opts.get('seed'))
@@ -940,14 +943,14 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
 
     num_photos = len(photo_segments)
     num_audios = len(audio_segments)
-    print(LOG_COUNT_PHOTOS.format(num_photos))
-    print(LOG_COUNT_AUDIOS.format(num_audios))
+    logging.info(LOG_COUNT_PHOTOS.format(num_photos))
+    logging.info(LOG_COUNT_AUDIOS.format(num_audios))
 
     if len(all_video_segments) == 0 and len(all_audio_segments) == 0:
         raise Exception(ERR_NO_MEDIA)
 
     if opts.get('clear_transitions'):
-        print(LOG_CLEAR_TRANSITIONS)
+        logging.info(LOG_CLEAR_TRANSITIONS)
         trans_ids = {t['id'] for t in transitions_mat}
         for p_item in all_video_segments:
             seg = p_item['segment']
@@ -964,12 +967,11 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             raise Exception(ERR_NO_TIMELINE_MOD)
 
         if opts.get(OPT_SYNC_IMAGE_TO_AUDIO):
-            if num_audios == 1 and num_photos > 1:
-                # Chế độ Unified Audio: Không cắt ảnh, giữ nguyên danh sách ảnh
-                print(f"-> Chế độ Unified Audio: Chia đều 1 âm thanh cho {num_photos} ảnh.")
+            if num_audios == 1 and num_photos > 1:
+                logging.info(f"-> Chế độ Unified Audio: Chia đều 1 âm thanh cho {num_photos} ảnh.")
                 pass
             elif num_photos < num_audios and num_photos > 0:
-                print(LOG_DUP_INFO.format(num_photos, num_audios))
+                logging.info(LOG_DUP_INFO.format(num_photos, num_audios))
                 while len(photo_segments) < num_audios:
                     last_item = photo_segments[-1]
                     new_seg = copy.deepcopy(last_item['segment'])
@@ -978,7 +980,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                     photo_segments.append({'segment': new_seg, 'material': last_item['material']})
                 num_photos = len(photo_segments)
             elif num_photos > num_audios:
-                print(LOG_DEL_INFO.format(num_photos, num_audios))
+                logging.info(LOG_DEL_INFO.format(num_photos, num_audios))
                 extra_photos = photo_segments[num_audios:]
                 for item in extra_photos:
                     if item['segment'] in main_video_track['segments']:
@@ -1014,7 +1016,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
 
         if opts.get(OPT_CUSTOM_AUDIO_ORDER) and opts.get(OPT_AUDIO_ORDER_LIST):
             order_str = opts.get(OPT_AUDIO_ORDER_LIST)
-            print(LOG_CUSTOM_ORDER.format(order_str))
+            logging.info(LOG_CUSTOM_ORDER.format(order_str))
             keywords = [k.strip().lower() for k in order_str.split(",") if k.strip()]
             
             def get_scene_priority(scene):
@@ -1027,14 +1029,14 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
             scenes.sort(key=get_scene_priority)
 
         if opts.get(OPT_RANDOMIZE_VIDEO):
-            print(LOG_RANDOMIZING)
+            logging.info(LOG_RANDOMIZING)
             random.shuffle(scenes)
 
         if opts.get(OPT_REVERSE_TIMELINE):
-            print(LOG_REVERSING)
+            logging.info(LOG_REVERSING)
             scenes.reverse()
 
-        print(LOG_SYNCING.format(target_count))
+        logging.info(LOG_SYNCING.format(target_count))
         current_time = 0
         motion_history = []
         
@@ -1129,13 +1131,13 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                     motion_history.pop(0)
             
             scene_type = SceneAnalyzer.classify_scene_type(i, target_count, scene_text)
-            print(LOG_SCENE_DETAIL.format(i+1, aspect_ratio, scene_type, applied_motion, final_scale, final_x, final_y, final_rot))
+            logging.info(LOG_SCENE_DETAIL.format(i+1, aspect_ratio, scene_type, applied_motion, final_scale, final_x, final_y, final_rot))
 
             current_time += photo_duration
         total_duration = current_time
         data['duration'] = total_duration
     else:
-        print(LOG_NO_TIMELINE_CHANGE)
+        logging.info(LOG_NO_TIMELINE_CHANGE)
         total_duration = data.get('duration', 0)
         if total_duration <= 0:
             for t in tracks:
@@ -1173,10 +1175,10 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 if len(motion_history) > 3:
                     motion_history.pop(0)
                 
-            print(LOG_SCENE_DETAIL_SIMPLE.format(i+1, aspect_ratio, applied_motion, final_scale, final_x, final_y, final_rot))
+            logging.info(LOG_SCENE_DETAIL_SIMPLE.format(i+1, aspect_ratio, applied_motion, final_scale, final_x, final_y, final_rot))
 
     if opts.get(OPT_NORMALIZE_VOLUME):
-        print(LOG_NORMALIZE)
+        logging.info(LOG_NORMALIZE)
         for a_item in all_audio_segments:
             mat = a_item['material']
             mat[VOLUME_ATTR] = 1.0
@@ -1188,7 +1190,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                     seg['volume'] = 1.0
 
     if opts.get(OPT_ULTRA_MUSIC_MIX):
-        print(LOG_MIXING)
+        logging.info(LOG_MIXING)
         bgm_files = []
         dirs_to_scan = []
         if opts.get(OPT_SFX_FOLDER):
@@ -1254,10 +1256,10 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 bgm_track["segments"].append(new_seg)
                 current_bgm_time += seg_dur
         else:
-            print(LOG_NO_BGM_FOUND)
+            logging.info(LOG_NO_BGM_FOUND)
 
     if opts.get(OPT_AUTO_TRANSITION):
-        print(LOG_INSERT_TRANSITIONS)
+        logging.info(LOG_INSERT_TRANSITIONS)
         template_transition = transitions_mat[0] if transitions_mat else None
         target_video_segs = photo_segments if timeline_modifying else [v['segment'] for v in all_video_segments]
         
@@ -1265,8 +1267,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
         if genre == "default":
             genre = GENRE_DOCUMENTARY
             
-        if genre == "none":
-            # Xử lý đặc biệt nếu người dùng chọn "Không sử dụng chuyển tiếp"
+        if genre == "none":
             return
             
         transition_history = []
@@ -1310,7 +1311,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 p_seg[EXTRA_REFS_ATTR].append(trans_id)
 
     if opts.get(OPT_AUTO_SUBTITLES):
-        print(LOG_SUBTITLES)
+        logging.info(LOG_SUBTITLES)
         text_materials = data.get('materials', {}).get('texts', [])
         for tm in text_materials:
             try:
@@ -1333,10 +1334,10 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 
                 tm['content'] = json.dumps(c_dict, ensure_ascii=False)
             except Exception as e:
-                print(ERR_SUBTITLE_CONFIG.format(e))
+                logging.info(ERR_SUBTITLE_CONFIG.format(e))
 
     if opts.get(OPT_AI_SFX_GENERATOR) and opts.get(OPT_SFX_FOLDER):
-        print(LOG_AI_SFX)
+        logging.info(LOG_AI_SFX)
         sfx_dir = opts.get(OPT_SFX_FOLDER)
         if os.path.exists(sfx_dir) and os.path.isdir(sfx_dir):
             valid_exts = ('.mp3', '.wav', '.m4a', '.aac', '.flac')
@@ -1385,7 +1386,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                 sfx_mapping = {}
                 if gemini_api_key:
                     try:
-                        print(LOG_GEMINI_API_REQUEST)
+                        logging.info(LOG_GEMINI_API_REQUEST)
                         scenes_text = json.dumps(scenes_desc, ensure_ascii=False, indent=2)
                         sfx_list_str = "\n".join(all_sfx_files)
                         
@@ -1400,11 +1401,11 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                             if fn and fn in all_sfx_files:
                                 sfx_mapping[idx] = fn
                     except Exception as gem_err:
-                        print(LOG_SFX_GEMINI_ERR.format(gem_err))
+                        logging.info(LOG_SFX_GEMINI_ERR.format(gem_err))
                         gemini_api_key = None
                         
                 if not gemini_api_key:
-                    print(LOG_SFX_AUTO_MATCH)
+                    logging.info(LOG_SFX_AUTO_MATCH)
                     for item in scenes_desc:
                         idx = item["index"]
                         desc = item["description"].lower()
@@ -1419,7 +1420,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                             sfx_mapping[idx] = matched_file
                 
                 if sfx_mapping:
-                    print(LOG_SFX_MATCH_SUCCESS.format(len(sfx_mapping)))
+                    logging.info(LOG_SFX_MATCH_SUCCESS.format(len(sfx_mapping)))
                     sfx_track = next((t for t in tracks if t.get('name') == SFX_TRACK_NAME), None)
                     if sfx_track:
                         sfx_track['segments'].clear()
@@ -1462,9 +1463,9 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
                         }
                         sfx_track["segments"].append(new_seg)
                 else:
-                    print(LOG_NO_SFX_MATCH)
+                    logging.info(LOG_NO_SFX_MATCH)
             else:
-                print(LOG_NO_SFX_DIR)
+                logging.info(LOG_NO_SFX_DIR)
 
     for t in tracks:
         if SEGMENTS_ATTR in t:
@@ -1473,7 +1474,7 @@ def process_capcut_ultra(input_json_path, output_json_path, opts):
     with open(output_json_path, WRITE_MODE, encoding=UTF8_ENCODING) as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
-    print(LOG_SUCCESS)
+    logging.info(LOG_SUCCESS)
     return True
 
 import tempfile
@@ -1483,10 +1484,10 @@ def export_video_with_ffmpeg(draft_json_path, opts):
     try:
         export_output_dir = opts.get("video_output_dir", "").strip()
         if not export_output_dir:
-            print(LOG_EXPORT_NO_DIR)
+            logging.info(LOG_EXPORT_NO_DIR)
             return
             
-        print(LOG_EXPORT_STARTING)
+        logging.info(LOG_EXPORT_STARTING)
         
         with open(draft_json_path, 'r', encoding='utf-8') as f:
             draft_content = json.load(f)
@@ -1514,7 +1515,7 @@ def export_video_with_ffmpeg(draft_json_path, opts):
                 image_items.append({'path': mat_path, 'duration': dur_us / 1000000.0})
                 
         if not image_items:
-            print(LOG_EXPORT_NO_MEDIA)
+            logging.info(LOG_EXPORT_NO_MEDIA)
             return
             
         audio_items = []
@@ -1538,9 +1539,9 @@ def export_video_with_ffmpeg(draft_json_path, opts):
                     f.write(f"file '{posix_path}'\n")
                     
         if not audio_items:
-            print(LOG_EXPORT_NO_AUDIO)
+            logging.info(LOG_EXPORT_NO_AUDIO)
             
-        print(LOG_EXPORT_RENDERING.format(len(image_items), len(audio_items)))
+        logging.info(LOG_EXPORT_RENDERING.format(len(image_items), len(audio_items)))
         
         os.makedirs(export_output_dir, exist_ok=True)
         
@@ -1599,7 +1600,7 @@ def export_video_with_ffmpeg(draft_json_path, opts):
         process = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace')
         for line in iter(process.stdout.readline, ''):
             if line.strip():
-                print(f"[ffmpeg] {line.strip()}")
+                logging.info(f"[ffmpeg] {line.strip()}")
                 
         process.stdout.close()
         return_code = process.wait()
@@ -1611,18 +1612,18 @@ def export_video_with_ffmpeg(draft_json_path, opts):
             pass
             
         if return_code == 0:
-            print(LOG_EXPORT_SUCCESS.format(out_video_path))
+            logging.info(LOG_EXPORT_SUCCESS.format(out_video_path))
         else:
-            print(LOG_EXPORT_FAIL.format(return_code))
+            logging.info(LOG_EXPORT_FAIL.format(return_code))
             
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(LOG_EXPORT_ERR.format(str(e)))
+        logging.info(LOG_EXPORT_ERR.format(str(e)))
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(ERR_CLI_USAGE)
+        logging.info(ERR_CLI_USAGE)
         sys.exit(1)
         
     cmd_arg = sys.argv[1]
@@ -1635,7 +1636,7 @@ if __name__ == "__main__":
         sys.exit(0)
         
     if len(sys.argv) < 3:
-        print(ERR_CLI_USAGE)
+        logging.info(ERR_CLI_USAGE)
         sys.exit(1)
         
     input_file = sys.argv[1]
@@ -1650,13 +1651,12 @@ if __name__ == "__main__":
             else:
                 opts = json.loads(opts_arg)
         except Exception as e:
-            print(ERR_OPTS_PARSE.format(e))
+            logging.info(ERR_OPTS_PARSE.format(e))
             
     try:
         is_auto_mode = opts.get("is_auto_mode", False)
         
-        if is_auto_mode:
-            # Import builder dynamically
+        if is_auto_mode:
             try:
                 from capcut_project_builder import generate_capcut_project
                 template_path = opts.get("template_id", "")
@@ -1667,24 +1667,17 @@ if __name__ == "__main__":
                 if not project_name:
                     project_name = "AI_Video_" + uuid.uuid4().hex[:6]
                 
-                print(f"[AUTO-MODE] Generating new project '{project_name}' from template...")
+                logging.info(f"[AUTO-MODE] Generating new project '{project_name}' from template...")
                 new_input_path = generate_capcut_project(template_path, parent_folder, project_name, None, images_dir_opt, voices_dir_opt)
-                print(f"[AUTO-MODE] Project created at: {new_input_path}")
-                
-                # Override input_file to point to the newly generated project json
-                input_file = new_input_path
-                # We can also keep output_file same as input_file to overwrite
+                logging.info(f"[AUTO-MODE] Project created at: {new_input_path}")
+                input_file = new_input_path
                 output_file = new_input_path
             except Exception as ex:
-                print(f"Error in auto generation: {ex}")
-                sys.exit(1)
-
-        # Style Options Parsing
+                logging.info(f"Error in auto generation: {ex}")
+                sys.exit(1)
         style_opts = opts.get("project_style", {})
         motion_style = style_opts.get("camera_motion", "default")
-        transition_style = style_opts.get("transitions", "default")
-        
-        # Inject styles into opts for SceneAnalyzer/TransitionEngine to use later
+        transition_style = style_opts.get("transitions", "default")
         opts["_motion_style"] = motion_style
         opts["_transition_style"] = transition_style
 
@@ -1695,5 +1688,5 @@ if __name__ == "__main__":
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(ERR_GENERIC.format(e), file=sys.stderr)
+        logging.error(ERR_GENERIC.format(e))
         sys.exit(1)

@@ -52,8 +52,17 @@ export function listTemplates(): CapcutTemplate[] {
   return _.orderBy(templates, [TEMPLATE_CONFIG.SORT_FIELD_CREATED_AT], [TEMPLATE_CONFIG.SORT_ORDER_DESC]);
 }
 
-export function saveTemplate(name: string, content: any): CapcutTemplate {
+export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const templatesDir = getTemplatesDirectory();
+
+  const currentTemplates = listTemplates();
+  if (currentTemplates.length >= 2) {
+    throw new Error("EXCEED_MAX_TEMPLATES");
+  }
+
+  if (!fs.existsSync(path.join(folderPath, "draft_content.json"))) {
+    throw new Error("INVALID_CAPCUT_TEMPLATE");
+  }
 
   const uuidRegex = new RegExp(`(?:_([a-zA-Z0-9]{${TEMPLATE_CONFIG.ID_LENGTH}}))+$`);
   const cleanName = _.replace(name, uuidRegex, "");
@@ -68,6 +77,7 @@ export function saveTemplate(name: string, content: any): CapcutTemplate {
   const fileName = `${safeName}_${randomUUID().substring(0, TEMPLATE_CONFIG.ID_LENGTH)}${TEMPLATE_CONFIG.JSON_EXT}`;
   const filePath = path.join(templatesDir, fileName);
 
+  const content = { folderPath: folderPath };
   fs.writeFileSync(filePath, JSON.stringify(content, null, TEMPLATE_CONFIG.JSON_SPACE), TEMPLATE_CONFIG.UTF8);
 
   return {

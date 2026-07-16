@@ -1,3 +1,6 @@
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 import os
 import json
 import uuid
@@ -21,13 +24,11 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
     """
     Creates a new CapCut project based on a template, importing images and voices
     from the given parent_folder or independent image/voice dirs.
-    """
-    # 1. Determine local CapCut drafts folder (Windows)
+    """
     local_app_data = os.environ.get('LOCALAPPDATA', '')
     capcut_drafts_dir = os.path.join(local_app_data, 'CapCut', 'User Data', 'Projects', 'com.lveditor.draft')
     
-    if not os.path.exists(capcut_drafts_dir):
-        # Fallback if CapCut is not installed or different path
+    if not os.path.exists(capcut_drafts_dir):
         capcut_drafts_dir = os.path.join(os.environ.get('USERPROFILE', ''), 'AppData', 'Local', 'CapCut', 'User Data', 'Projects', 'com.lveditor.draft')
         if not os.path.exists(capcut_drafts_dir):
             if data_dir:
@@ -37,9 +38,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
             os.makedirs(capcut_drafts_dir, exist_ok=True)
             
     project_dir = os.path.join(capcut_drafts_dir, project_name)
-    os.makedirs(project_dir, exist_ok=True)
-
-    # 2. Extract ZIP or resolve paths
+    os.makedirs(project_dir, exist_ok=True)
     source_dir = parent_folder
     images_dir = images_dir_opt
     voices_dir = voices_dir_opt
@@ -60,9 +59,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
     if source_dir and not voices_dir:
         voices_dir = os.path.join(source_dir, 'voices')
         if not os.path.exists(voices_dir):
-            voices_dir = source_dir
-
-    # 3. Create meta info
+            voices_dir = source_dir
     meta_info = {
         "draft_materials": [{"value": [], "type": 0}],
         "draft_name": project_name,
@@ -73,13 +70,9 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         "draft_type": "video"
     }
     with open(os.path.join(project_dir, 'draft_meta_info.json'), 'w', encoding='utf-8') as f:
-        json.dump(meta_info, f, ensure_ascii=False, indent=2)
-
-    # 4. Read template content
+        json.dump(meta_info, f, ensure_ascii=False, indent=2)
     with open(template_json_path, 'r', encoding='utf-8') as f:
-        draft_content = json.load(f)
-
-    # Init structure if not exist
+        draft_content = json.load(f)
     if 'materials' not in draft_content:
         draft_content['materials'] = {}
     if 'videos' not in draft_content['materials']: draft_content['materials']['videos'] = []
@@ -88,9 +81,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
     if 'canvases' not in draft_content['materials']: draft_content['materials']['canvases'] = []
 
     if 'tracks' not in draft_content:
-        draft_content['tracks'] = []
-        
-    # Find tracks
+        draft_content['tracks'] = []
     video_track = next((t for t in draft_content['tracks'] if t.get('type') == 'video'), None)
     audio_track = next((t for t in draft_content['tracks'] if t.get('type') == 'audio'), None)
 
@@ -99,21 +90,15 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
         draft_content['tracks'].insert(0, video_track)
     if not audio_track:
         audio_track = {"id": uuid.uuid4().hex, "type": "audio", "segments": []}
-        draft_content['tracks'].append(audio_track)
-
-    # XÓA SẠCH các segments mẫu cũ trong track chính để timeline bắt đầu từ 00:00:00
+        draft_content['tracks'].append(audio_track)
     video_track['segments'] = []
-    audio_track['segments'] = []
-    
-    # Xóa sạch các segments của Text Track (subtitles cũ)
+    audio_track['segments'] = []
     for t in draft_content['tracks']:
         if t.get('type') == 'text':
             t['segments'] = []
 
     current_vid_start = 0
-    current_aud_start = 0
-
-    # 5. Populate images (or single file)
+    current_aud_start = 0
     image_files = []
     if images_dir:
         if os.path.isfile(images_dir):
@@ -159,9 +144,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
             "volume": 1.0,
             "clip": {"alpha": 1.0, "scale": {"x": 1.0, "y": 1.0}, "transform": {"x": 0.0, "y": 0.0}}
         })
-        current_vid_start += DEFAULT_IMAGE_DURATION
-
-    # 6. Populate audios (or single file)
+        current_vid_start += DEFAULT_IMAGE_DURATION
     audio_files = []
     if voices_dir:
         if os.path.isfile(voices_dir):
@@ -200,9 +183,7 @@ def generate_capcut_project(template_json_path, parent_folder, project_name, dat
             "visible": True,
             "volume": 1.0
         })
-        current_aud_start += DEFAULT_IMAGE_DURATION
-
-    # Save
+        current_aud_start += DEFAULT_IMAGE_DURATION
     out_json_path = os.path.join(project_dir, 'draft_content.json')
     with open(out_json_path, 'w', encoding='utf-8') as f:
         json.dump(draft_content, f, ensure_ascii=False, indent=2)
