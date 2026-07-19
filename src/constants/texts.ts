@@ -607,6 +607,16 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   LOG_ERROR_PREFIX: "Lỗi: ",
   DEFAULT_TEMPLATE_NAME: "Template Mới",
   ERR_NO_TEMPLATE_NAME: "Vui lòng nhập tên template!",
+  AUTO_GET_MEDIA: "Tự động lấy ảnh và giọng nói từ dự án hiện tại.",
+} as const;
+
+export const PIPELINE_MODAL_TYPES = {
+  CONFIRM: "confirm",
+  PROMPT: "prompt",
+} as const;
+
+export const COMMON_OPTIONS = {
+  NONE: "none",
 } as const;
 
 export const MOTION_OPTIONS = [
