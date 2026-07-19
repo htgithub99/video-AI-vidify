@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý License Vidify</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Màn hình Đăng Nhập -->
+    <div id="login-screen" class="screen active">
+        <div class="login-card">
+            <h2>🔑 Đăng Nhập Admin</h2>
+            <p>Vui lòng đăng nhập để tiếp tục</p>
+            <input type="text" id="admin-username-input" placeholder="Tài khoản...">
+            <input type="password" id="admin-password-input" placeholder="Mật khẩu...">
+            <input type="text" id="api-url-input" placeholder="Google Web App URL...">
+            <button id="login-btn">Đăng Nhập</button>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
+    <!-- Màn hình Quản Lý -->
+    <div id="dashboard-screen" class="screen">
+        <header>
+            <h1>Quản Lý License (Bản Quyền)</h1>
+            <button id="logout-btn" class="btn-outline">Đăng Xuất</button>
+        </header>
+        
+        <main>
+            <!-- Phần Cấu hình Quota -->
+            <section class="card config-section">
+                <div class="list-header">
+                    <h3>Cấu Hình Giới Hạn Gói Miễn Phí (Free Quotas)</h3>
+                    <button id="save-config-btn" class="btn-primary">Lưu Cấu Hình</button>
+                </div>
+                <div class="form-group quota-group">
+                    <div class="quota-col">
+                        <h4>Gói Miễn Phí (FREE)</h4>
+                        <label>Số Video/ngày: <input type="number" id="free-quota-video" min="0"></label>
+                        <label>Số Ảnh/ngày: <input type="number" id="free-quota-image" min="0"></label>
+                        <label>Số Ký tự/ngày: <input type="number" id="free-quota-voice" min="0"></label>
+                    </div>
+                    <div class="quota-col">
+                        <h4>Gói Trả Phí (PRO)</h4>
+                        <label style="color: #4f46e5; font-weight: 600;">
+                            <input type="checkbox" id="pro-unlimited"> Dùng Không Giới Hạn (Unlimited)
+                        </label>
+                        <label>Số Video/ngày: <input type="number" id="pro-quota-video" min="0"></label>
+                        <label>Số Ảnh/ngày: <input type="number" id="pro-quota-image" min="0"></label>
+                        <label>Số Ký tự/ngày: <input type="number" id="pro-quota-voice" min="0"></label>
+                    </div>
+                </div>
+                <div id="config-msg"></div>
+            </section>
+
+            <!-- Cấu hình Quota ở đây... -->
+
+            <!-- Bảng Danh Sách User -->
+            <section class="card list-section">
+                <div class="list-header">
+                    <h3>Danh Sách Người Dùng</h3>
+                    <div>
+                        <button id="open-create-modal-btn" class="btn-primary" style="margin-right: 0.5rem;">+ Thêm Mới</button>
+                        <button id="refresh-btn" class="btn-secondary">Làm Mới 🔄</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Khách hàng</th>
+                                <th>Khóa (License Key)</th>
+                                <th>Gói</th>
+                                <th>Status</th>
+                                <th>Sử dụng (Video/Image/Voice)</th>
+                                <th>Ngày Tạo</th>
+                                <th>Hết Hạn</th>
+                                <th>Thiết bị</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dữ liệu render từ JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="loading-msg" class="loading">Đang tải dữ liệu...</div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Tạo/Sửa User -->
+    <div id="user-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="user-modal-title">Tạo License Mới</h3>
+                <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="flex-direction: column;">
+                    <label>Tên khách hàng / Email:</label>
+                    <input type="text" id="modal-username" placeholder="Nhập tên...">
+                    
+                    <label style="margin-top: 1rem;">Gói Cước:</label>
+                    <select id="modal-plan-type">
+                        <option value="FREE">Gói Miễn Phí (FREE)</option>
+                        <option value="PRO_WEEKLY">Gói Trả Phí (1 Tuần)</option>
+                        <option value="PRO_MONTHLY">Gói Trả Phí (1 Tháng)</option>
+                        <option value="PRO_LIFETIME">Gói Trả Phí (Vĩnh Viễn)</option>
+                    </select>
+
+                    <div id="modal-expires-wrapper" style="display: none; flex-direction: column; margin-top: 1rem;">
+                        <label>Ngày Hết Hạn (Để trống nếu Vĩnh viễn):</label>
+                        <input type="date" id="modal-expires">
+                    </div>
+                </div>
+                <div id="modal-user-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('user-modal')">Hủy</button>
+                <button id="save-user-btn" class="btn-primary">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xóa User -->
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Xác nhận Hành Động</h3>
+                <button class="modal-close" onclick="closeModal('delete-modal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn muốn thực hiện hành động nào đối với mã: <strong id="delete-key-display"></strong>?</p>
+                <ul style="margin-top: 1rem; color: #4b5563; font-size: 0.9rem; padding-left: 1.5rem;">
+                    <li style="margin-bottom: 0.5rem;"><strong>Xóa Mềm (Khóa):</strong> Người dùng bị chặn quyền truy cập, nhưng lịch sử dữ liệu vẫn còn trên hệ thống.</li>
+                    <li><strong>Xóa Cứng:</strong> Xóa vĩnh viễn tài khoản và lịch sử dữ liệu khỏi CSDL.</li>
+                </ul>
+                <div id="modal-delete-msg"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('delete-modal')">Hủy</button>
+                <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b;">Xóa Mềm (Khóa)</button>
+                <button id="btn-hard-delete" class="btn-danger">Xóa Cứng</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

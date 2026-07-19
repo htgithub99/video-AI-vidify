@@ -63,9 +63,12 @@ build-desktop*/
 electron-dist*/
 builds/
 temp_align/
-clean-build.ps1
-.vscode/
-package-lock.json
+
+# Python scripts
+__pycache__/
+*.py[cod]
+*$py.class
+python_runtime/
+
 templates/capcut/*.json
-templates/
 ultra_opts_*.json

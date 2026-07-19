@@ -1,0 +1,500 @@
+@import url('https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
+  --font-logo: "Merienda", cursive;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Refined Sleek Dark Theme (High Contrast Backgrounds for Flat UI) */
+  --color-slate-955: #000000;
+  --color-slate-950: #09090b; /* Main Body Background - Zinc 950 */
+  --color-slate-900: #18181b; /* Card Background - Zinc 900 */
+  --color-slate-880: #202024;
+  --color-slate-850: #27272a; /* Zinc 800 */
+  --color-slate-800: #3f3f46; /* Borders / Active Inputs - Zinc 700 */
+  --color-slate-750: #4b4b52;
+  --color-slate-700: #52525b; /* Zinc 600 */
+  --color-slate-650: #6b6b75;
+  --color-slate-600: #525252;
+  --color-slate-550: #ACAFB5;
+  --color-slate-500: #737373;
+  --color-slate-450: #C7C9CD;
+  --color-slate-400: #a3a3a3;
+  --color-slate-355: #DFE1E5;
+  --color-slate-350: #e5e5e5;
+  --color-slate-300: #ffffff;
+  --color-slate-250: #ECEFF1;
+  --color-slate-205: #ffffff;
+  --color-slate-200: #ffffff;
+  --color-slate-100: #FFFFFF;
+
+  /* Redefine Rose for Amber / Gold Accent colors (1999 Earth Element) */
+  --color-rose-955: #1f1406;
+  --color-rose-950: #382109;
+  --color-rose-900: #78350f;
+  --color-rose-800: #92400e;
+  --color-rose-705: #a84b0d;
+  --color-rose-700: #b45309;
+  --color-rose-600: #d97706; /* Darker Gold */
+  --color-rose-500: #f59e0b; /* Primary Brand Gold */
+  --color-rose-455: #fbbf24;
+  --color-rose-450: #fcd34d;
+  --color-rose-400: #fde68a;
+  --color-rose-350: #fef08a;
+  --color-rose-300: #fef3c7;
+  --color-rose-200: #fffbeb;
+  --color-rose-100: #ffffff;
+
+  --animate-fadeIn: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-shrinkWidth: shrinkWidth 5s linear forwards;
+  --animate-shimmer: shimmer 1.6s infinite linear;
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.96) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes shrinkWidth {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+body {
+  background-color: var(--color-slate-950);
+  color: var(--color-slate-200);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+:root.light {
+  color-scheme: light;
+  
+  /* Inverse for Light Mode - Premium High-Contrast Layout */
+  --color-slate-955: #F4F4F5;
+  --color-slate-950: #F4F4F5; /* Main Background - Zinc 100 */
+  --color-slate-900: #FFFFFF; /* Card Background - White */
+  --color-slate-880: #FAFAFA;
+  --color-slate-850: #E4E4E7; /* Zinc 200 */
+  --color-slate-800: #D4D4D8; /* Zinc 300 */
+  --color-slate-750: #A1A1AA; /* Zinc 400 */
+  --color-slate-700: #71717A; /* Zinc 500 */
+  --color-slate-650: #52525B; /* Zinc 600 */
+  --color-slate-600: #3F3F46; /* Zinc 700 */
+  --color-slate-550: #27272A; /* Zinc 800 */
+  --color-slate-500: #18181B; /* Zinc 900 */
+  --color-slate-450: #09090B; /* Zinc 950 */
+  --color-slate-400: #000000;
+  --color-slate-355: #000000;
+  --color-slate-350: #000000;
+  --color-slate-300: #000000;
+  --color-slate-250: #000000;
+  --color-slate-205: #000000;
+  --color-slate-200: #000000;
+  --color-slate-100: #000000;
+
+  /* Override blue in light mode to provide excellent accessibility contrast */
+  --color-blue-950: #eff6ff;
+  --color-blue-900: #dbeafe;
+  --color-blue-800: #3b82f6;
+  --color-blue-700: #2563eb;
+  --color-blue-600: #1d4ed8;
+  --color-blue-500: #1e40af;
+  --color-blue-400: #2563eb; /* high visibility blue text substitute */
+  --color-blue-300: #1e3a8a; /* darker blue accent */
+  --color-blue-200: #172554;
+  --color-blue-100: #0f172a;
+
+  /* Adjust Rose mapped to Amber/Gold in Light Mode - High Contrast Text */
+  --color-rose-955: #fffbeb;
+  --color-rose-950: #fffbeb; 
+  --color-rose-900: #fef3c7; 
+  --color-rose-800: #78350f; /* Nâu thẫm hẳn */
+  --color-rose-705: #92400e; 
+  --color-rose-700: #92400e; /* active state */
+  --color-rose-600: #b45309; /* normal state */
+  --color-rose-550: #78350f;
+  --color-rose-500: #d97706; /* hover state */
+  --color-rose-455: #92400e; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-450: #b45309; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-400: #b45309; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-350: #fef3c7;
+  --color-rose-300: #fffbeb;
+  --color-rose-200: #ffffff;
+  --color-rose-100: #ffffff;
+}
+
+/* Shimmer Background Utility */
+.shimmer-bg {
+  background: linear-gradient(90deg, var(--color-slate-900) 25%, var(--color-slate-800) 50%, var(--color-slate-900) 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.6s infinite linear !important;
+}
+:root.light .shimmer-bg {
+  background: linear-gradient(90deg, #f1f3f4 25%, #e8eaed 50%, #f1f3f4 75%) !important;
+  background-size: 200% 100% !important;
+}
+
+/* Map other highlight colors for light mode contrast */
+:root.light {
+  --color-emerald-950: #ecfdf5;
+  --color-emerald-900: #d1fae5;
+  --color-emerald-800: #34d399;
+  --color-emerald-500: #059669;
+  --color-emerald-400: #047857;
+  --color-emerald-300: #064e3b;
+  
+  --color-amber-950: #fffbeb;
+  --color-amber-900: #fef3c7;
+  --color-amber-800: #fbbf24;
+  --color-amber-500: #d97706;
+  --color-amber-400: #b45309;
+  --color-amber-300: #78350f;
+  
+  --color-purple-950: #faf5ff;
+  --color-purple-900: #f3e8ff;
+  --color-purple-800: #c084fc;
+  --color-purple-500: #7e22ce;
+  --color-purple-400: #6b21a8;
+  --color-purple-300: #4c1d95;
+
+  /* Fallback overrides for arbitrary hardcoded hexs used in code to support light mode */
+  --color-bg-05: #f8f9fa;
+  --color-bg-0a: #ffffff;
+  --color-bg-0e: #f3f4f6;
+  --color-bg-11: #f3f4f6;
+  --color-bg-12: #f9fafb;
+  --color-border-22: #e5e7eb;
+  --color-border-1b: #e5e7eb;
+  --color-border-1e: #e5e7eb;
+  --color-text-e0: #0f172a;
+  --color-text-88: #6b7280;
+  --color-text-66: #4b5563;
+  --color-text-55: #374151;
+  --color-text-aa: #4b5563;
+}
+
+/* MINIMALIST OVERRIDES & MICRO-INTERACTIONS */
+@layer utilities {
+  .uppercase {
+    text-transform: none !important;
+  }
+  .tracking-wider, .tracking-widest, .tracking-tight {
+    letter-spacing: normal !important;
+  }
+}
+
+/* Micro-interactions: Ensure interactive elements have cursor pointers and hover states */
+button, a, [role="button"], input[type="submit"], input[type="reset"], input[type="button"], select {
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+button:active, a:active, [role="button"]:active {
+  /* Removed global hardcoded scale to let base Button component handle active scale gracefully */
+}
+
+button:disabled, a:disabled, [role="button"]:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+  transform: none !important;
+}
+
+/* Unify Focus and Hover Styles for Inputs, Textareas, and Selects */
+input, textarea, select {
+  transition: all 0.2s ease-in-out !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
+textarea:hover {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
+textarea:focus {
+  outline: none !important;
+  border-color: var(--color-rose-600) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important; /* Amber-500 ring shadow */
+}
+
+button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--color-rose-600) !important;
+  outline-offset: 2px !important;
+}
+
+a {
+  transition: color 0.2s ease-in-out !important;
+}
+a:hover {
+  color: var(--color-rose-500) !important;
+}
+
+/* Strip backgrounds like aggressive radial gradients to keep it clean */
+.bg-\[radial-gradient\(\#1e293b_1\.1px\,transparent_1\.1px\)\] {
+  background-image: none !important;
+  background-color: var(--color-slate-950) !important;
+}
+
+/* Modal and layout border radiuses reset to default (Tailwind xl = 12px) */
+
+/* Clean up shadows */
+.shadow-2xl, .shadow-xl, .shadow-lg, .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+:root.light .shadow-2xl, :root.light .shadow-xl, :root.light .shadow-lg, :root.light .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
+}
+:root.light body {
+  background-color: var(--color-slate-950);
+  color: var(--color-slate-200);
+}
+
+/* Elegant shadow overlay for dialog/modal backdrops in light mode */
+:root.light .fixed.bg-slate-950\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px);
+}
+:root.light .fixed.bg-slate-900\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* flowchart badge */
+:root.light .bg-\[\#0f1d16\] {
+  background-color: #d1fae5 !important;
+  border-color: #34d399 !important;
+  color: #065f46 !important;
+}
+
+/* Header credentials popup */
+:root.light .bg-\[\#111115\]\/50 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+:root.light .border-\[\#23232c\] {
+  border-color: #cbd5e1 !important;
+}
+
+/* general scrollbar override for light mode */
+:root.light ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+}
+:root.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+/* Custom, highly-visible, polished styled range inputs for light & dark mode */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 28px; /* higher tactile hit target */
+  padding: 0;
+  width: 100%;
+}
+
+/* Track styles - Dark mode defaults */
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  background: #121824; /* deeper track in dark mode */
+  border: 1.5px solid #2d3748;
+  border-radius: 9999px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+input[type="range"]:hover::-webkit-slider-runnable-track {
+  background: #1a2234;
+  border-color: #4a5568;
+}
+
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  background: #121824;
+  border: 1.5px solid #2d3748;
+  border-radius: 9999px;
+}
+
+/* WEB_KIT THUMB - Dark mode default */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6.5px; /* perfectly centered */
+  border: 2px solid #ffffff;
+  height: 19px;
+  width: 19px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #1a202c, 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+}
+
+/* MOZILLA THUMB - Dark mode default */
+input[type="range"]::-moz-range-thumb {
+  border: 2px solid #ffffff;
+  height: 19px;
+  width: 19px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #1a202c, 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.18);
+}
+
+/* LIGHT MODE EXPLICIT HOOKS (High contrast, clearly visible) */
+:root.light input[type="range"]::-webkit-slider-runnable-track {
+  background: #cbd5e1; /* highly distinct gray track on white card background */
+  border: 1.5px solid #94a3b8;
+}
+
+:root.light input[type="range"]::-moz-range-track {
+  background: #cbd5e1;
+  border: 1.5px solid #94a3b8;
+}
+
+:root.light input[type="range"]:hover::-webkit-slider-runnable-track {
+  background: #94a3b8;
+  border-color: #64748b;
+}
+
+:root.light input[type="range"]::-webkit-slider-thumb {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #475569, 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+
+:root.light input[type="range"]::-moz-range-thumb {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #475569, 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+
+/* Map direct colors depending on accent overrides */
+input.accent-rose-500::-webkit-slider-thumb,
+input.accent-rose-600::-webkit-slider-thumb {
+  background-color: var(--color-rose-500, #3b82f6) !important;
+}
+input.accent-pink-500::-webkit-slider-thumb {
+  background-color: #ec4899 !important;
+}
+input.accent-sky-500::-webkit-slider-thumb {
+  background-color: #3b82f6 !important;
+}
+input.accent-amber-500::-webkit-slider-thumb {
+  background-color: #f59e0b !important;
+}
+
+input.accent-rose-500::-moz-range-thumb,
+input.accent-rose-600::-moz-range-thumb {
+  background-color: var(--color-rose-500, #3b82f6) !important;
+}
+input.accent-pink-500::-moz-range-thumb {
+  background-color: #ec4899 !important;
+}
+input.accent-sky-500::-moz-range-thumb {
+  background-color: #3b82f6 !important;
+}
+input.accent-amber-500::-moz-range-thumb {
+  background-color: #f59e0b !important;
+}
+
+.font-logo {
+  font-family: var(--font-logo), var(--font-sans) !important;
+}
+
+/* --- FLAT AESTHETICS OVERRIDE --- */
+/* Bỏ box shadow và border để dùng Flat Design */
+[class*="shadow"] {
+  box-shadow: none !important;
+}
+
+:not(input):not(textarea):not(select):not(.animate-spin):not([class*="focus-within"])[class*="border"] {
+  border-color: transparent !important;
+}
+
+/* HIỆU ỨNG MÀU NỀN CHO FORM CONTROLS (Chỉ thêm màu nền khi hover/focus, BỎ VIỀN/BÓNG) */
+[class*="focus-within"] {
+  transition: all 0.2s ease !important;
+  background-color: var(--color-slate-900) !important;
+}
+
+[class*="focus-within"]:hover {
+  border-color: transparent !important;
+  background-color: var(--color-slate-850) !important;
+}
+
+[class*="focus-within"]:focus-within,
+[class*="focus-within"]:active {
+  border-color: transparent !important;
+  background-color: var(--color-slate-850) !important;
+}
+
+/* Global Input Styles: Đảm bảo có lớp nền phân biệt và text đen/trắng cho mọi node/sidebar */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent), textarea:not(.bg-transparent) {
+  background-color: var(--color-slate-850) !important;
+  color: var(--color-slate-200) !important;
+  border: 1px solid transparent !important;
+}
+
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):hover, textarea:not(.bg-transparent):hover {
+  background-color: var(--color-slate-800) !important;
+}
+
+/* CHỈ thêm border khi focus, KHÔNG đổi nền hay thêm hiệu ứng khác */
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):focus, textarea:focus {
+  border-color: var(--color-rose-500) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Thẻ select không có màu nền và không có viền */
+select {
+  background-color: transparent !important;
+  color: var(--color-slate-200) !important;
+  border: none !important;
+}
+
+/* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */
+*, ::before, ::after {
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+}
+
+input, select, textarea,
+input:hover, select:hover, textarea:hover,
+input:active, select:active, textarea:active {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
