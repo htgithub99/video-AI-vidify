@@ -23,6 +23,7 @@ export const SecurityConstants = {
   GAS_API_URL: process.env.GAS_API_URL || '',
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
+  TOAST_DURATION: 3000,
 };
 
 export const SecurityMessages = {
@@ -43,9 +44,12 @@ export const SecurityMessages = {
   ACTIVATION_SUBTITLE: 'Vui lòng nhập License Key để sử dụng Vidify',
   INPUT_PLACEHOLDER: 'Nhập License Key (VD: PRO-123...)',
   ACTIVATION_ERROR_MSG: 'Mã kích hoạt không hợp lệ, hoặc thiết bị bị từ chối.',
+  ACTIVATION_SUCCESS_MSG: 'Kích hoạt thành công!',
   ACTIVATING_BUTTON: 'Đang kích hoạt...',
   ACTIVATE_BUTTON: 'Kích Hoạt Ngay',
   PRO_VERSION: '👑 PRO Version',
   FREE_VERSION: '🆓 FREE Version',
-  CHANGE_KEY: 'Đổi Key'
+  CHANGE_KEY: 'Đổi Key',
+  TOAST_ERROR: 'Lỗi',
+  TOAST_SUCCESS: 'Thành Công'
 };

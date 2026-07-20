@@ -6,7 +6,14 @@ const AdminConstants = {
     PLAN_PRO: 'PRO',
     PLAN_FREE: 'FREE',
     STATUS_ACTIVE: 'ACTIVE',
-    PLAN_PRO_LIFETIME: 'PRO_LIFETIME'
+    PLAN_PRO_LIFETIME: 'PRO_LIFETIME',
+    TOAST_DURATION: 3000,
+    TOAST_ANIMATION_MS: 300
+};
+
+const ToastType = {
+    SUCCESS: 'success',
+    ERROR: 'error'
 };
 
 const AdminMessages = {
@@ -15,6 +22,7 @@ const AdminMessages = {
     LOGIN_PROGRESS: "Đang đăng nhập...",
     LOGIN_ERROR_API: "Lỗi kết nối API!",
     LOGIN_DEFAULT: "Đang Nhập",
+    LOGIN_ERROR_DEFAULT: "Sai tài khoản hoặc mật khẩu!",
     INVALID_TOKEN: "Token không hợp lệ!",
     FETCH_ERROR: "Lỗi khi tải dữ liệu: ",
     SAVE_PROGRESS: "Đang lưu...",
@@ -29,8 +37,19 @@ const AdminMessages = {
     MODAL_SAVE_DEFAULT: "Lưu",
     DELETE_PROGRESS: "Đang xử lý...",
     HARD_DELETE_PROGRESS: "Đang xóa...",
+    DELETE_SOFT_SUCCESS: "Xóa mềm (khóa) thành công!",
+    DELETE_HARD_SUCCESS: "Xóa cứng thành công!",
     RESET_DEVICE_CONFIRM: "Bạn có chắc chắn muốn Reset Thiết Bị cho Key: {0}?\nLưu ý: Khách hàng sẽ có thể đăng nhập trên một máy tính mới.",
-    RESET_DEVICE_ERROR: "Lỗi khi reset thiết bị: "
+    RESET_DEVICE_ERROR: "Lỗi khi reset thiết bị: ",
+    RESET_DEVICE_SUCCESS: "Đã reset thiết bị thành công!",
+    TOAST_SUCCESS: "Thành Công",
+    TOAST_ERROR: "Lỗi"
+};
+
+const Logger = {
+    info: (...args) => console.info('[INFO]', ...args),
+    error: (...args) => console.error('[ERROR]', ...args),
+    warn: (...args) => console.warn('[WARN]', ...args)
 };
 
 let adminToken = localStorage.getItem(AdminConstants.TOKEN_KEY) || '';
@@ -41,7 +60,6 @@ const dashboardScreen = document.getElementById('dashboard-screen');
 const loginBtn = document.getElementById('login-btn');
 const usernameInput = document.getElementById('admin-username-input');
 const passwordInput = document.getElementById('admin-password-input');
-const loginError = document.getElementById('login-error');
 const logoutBtn = document.getElementById('logout-btn');
 
 const tbody = document.querySelector('#users-table tbody');
@@ -49,7 +67,6 @@ const loadingMsg = document.getElementById('loading-msg');
 const refreshBtn = document.getElementById('refresh-btn');
 
 const saveConfigBtn = document.getElementById('save-config-btn');
-const configMsg = document.getElementById('config-msg');
 const inputQuotaVideo = document.getElementById('free-quota-video');
 const inputQuotaImage = document.getElementById('free-quota-image');
 const inputQuotaVoice = document.getElementById('free-quota-voice');
@@ -59,6 +76,49 @@ const inputProQuotaImage = document.getElementById('pro-quota-image');
 const inputProQuotaVoice = document.getElementById('pro-quota-voice');
 const inputProUnlimited = document.getElementById('pro-unlimited');
 
+function showToast(message, type = ToastType.SUCCESS) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const iconSvg = type === ToastType.SUCCESS 
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><path d="M20 6 9 17l-5-5"/></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`;
+
+    const title = type === ToastType.SUCCESS ? AdminMessages.TOAST_SUCCESS : AdminMessages.TOAST_ERROR;
+
+    toast.innerHTML = `
+        ${iconSvg}
+        <div class="toast-content">
+            <span class="toast-title">${title}</span>
+            <span class="toast-message">${escapeHTML(message)}</span>
+        </div>
+        <button class="toast-close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <div class="toast-progress">
+            <div class="toast-progress-bar"></div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    const closeBtn = toast.querySelector('.toast-close');
+    let isRemoving = false;
+
+    const removeToast = () => {
+        if (isRemoving) return;
+        isRemoving = true;
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), AdminConstants.TOAST_ANIMATION_MS);
+    };
+
+    closeBtn.addEventListener('click', removeToast);
+    setTimeout(removeToast, AdminConstants.TOAST_DURATION);
+}
+
 inputProUnlimited.addEventListener('change', (e) => {
     const disabled = _.get(e, 'target.checked', false);
     inputProQuotaVideo.disabled = disabled;
@@ -66,7 +126,7 @@ inputProUnlimited.addEventListener('change', (e) => {
     inputProQuotaVoice.disabled = disabled;
 });
 
-if (!_.isEmpty(adminToken) && !_.isEmpty(apiUrl) && apiUrl !== 'THAY_LINK_GOOGLE_WEB_APP_CUA_BAN_VAO_DAY') {
+if (_.every([adminToken, apiUrl], val => !_.isEmpty(val)) && apiUrl !== 'THAY_LINK_GOOGLE_WEB_APP_CUA_BAN_VAO_DAY') {
     showDashboard();
 }
 
@@ -76,12 +136,12 @@ loginBtn.addEventListener('click', async () => {
     const url = API_BASE_URL;
 
     if (url === 'THAY_LINK_GOOGLE_WEB_APP_CUA_BAN_VAO_DAY') {
-        loginError.textContent = AdminMessages.MISSING_LINK;
+        showToast(AdminMessages.MISSING_LINK, ToastType.ERROR);
         return;
     }
 
     if (_.some([user, pass], _.isEmpty)) {
-        loginError.textContent = AdminMessages.MISSING_INFO;
+        showToast(AdminMessages.MISSING_INFO, ToastType.ERROR);
         return;
     }
 
@@ -106,10 +166,11 @@ loginBtn.addEventListener('click', async () => {
             localStorage.setItem(AdminConstants.API_URL_KEY, apiUrl);
             showDashboard();
         } else {
-            loginError.textContent = _.get(data, 'error', 'Sai tài khoản hoặc mật khẩu!');
+            showToast(_.get(data, 'error', AdminMessages.LOGIN_ERROR_DEFAULT), ToastType.ERROR);
         }
     } catch (e) {
-        loginError.textContent = AdminMessages.LOGIN_ERROR_API;
+        Logger.error(e);
+        showToast(AdminMessages.LOGIN_ERROR_API, ToastType.ERROR);
     } finally {
         loginBtn.disabled = false;
         loginBtn.textContent = AdminMessages.LOGIN_DEFAULT;
@@ -147,7 +208,7 @@ async function fetchAPI(action, data = {}) {
         
         if (_.has(resJson, 'error')) {
             if (_.get(resJson, 'code') === 401) {
-                alert(AdminMessages.INVALID_TOKEN);
+                showToast(AdminMessages.INVALID_TOKEN, ToastType.ERROR);
                 logoutBtn.click();
                 throw new Error("Invalid token");
             }
@@ -155,7 +216,7 @@ async function fetchAPI(action, data = {}) {
         }
         return resJson;
     } catch (err) {
-        console.error(err);
+        Logger.error(err);
         throw err;
     }
 }
@@ -205,8 +266,7 @@ async function loadUsers() {
         });
     } catch (error) {
         loadingMsg.style.display = 'none';
-        loadingMsg.textContent = AdminMessages.FETCH_ERROR + _.get(error, 'message');
-        loadingMsg.style.display = 'block';
+        showToast(AdminMessages.FETCH_ERROR + _.get(error, 'message'), ToastType.ERROR);
     }
 }
 
@@ -232,14 +292,13 @@ async function loadConfig() {
             inputProUnlimited.dispatchEvent(new Event('change'));
         }
     } catch (error) {
-        console.error("Lỗi khi load config: ", error);
+        Logger.error("Lỗi khi load config: ", error);
     }
 }
 
 saveConfigBtn.addEventListener('click', async () => {
     saveConfigBtn.disabled = true;
     saveConfigBtn.textContent = AdminMessages.SAVE_PROGRESS;
-    configMsg.textContent = '';
     
     try {
         await fetchAPI('admin_update_config', {
@@ -252,12 +311,9 @@ saveConfigBtn.addEventListener('click', async () => {
             pro_unlimited: inputProUnlimited.checked,
             max_devices: parseInt(document.getElementById('config-max-devices').value) || 1
         });
-        configMsg.className = 'success-msg';
-        configMsg.textContent = AdminMessages.SAVE_SUCCESS;
-        setTimeout(() => configMsg.textContent = '', 3000);
+        showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
     } catch (error) {
-        configMsg.className = 'error-msg';
-        configMsg.textContent = AdminMessages.SAVE_ERROR + _.get(error, 'message');
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
     } finally {
         saveConfigBtn.disabled = false;
         saveConfigBtn.textContent = AdminMessages.SAVE_DEFAULT;
@@ -279,7 +335,6 @@ document.getElementById('open-create-modal-btn').addEventListener('click', () =>
     document.getElementById('modal-plan-type').value = AdminConstants.PLAN_FREE;
     document.getElementById('modal-expires').value = '';
     document.getElementById('modal-expires-wrapper').style.display = 'none';
-    document.getElementById('modal-user-msg').textContent = '';
     document.getElementById('user-modal').classList.add('active');
 });
 
@@ -297,7 +352,6 @@ window.openEditModal = function(key, username, planType, expiresAt) {
     }
     
     document.getElementById('modal-expires-wrapper').style.display = 'flex';
-    document.getElementById('modal-user-msg').textContent = '';
     document.getElementById('user-modal').classList.add('active');
 }
 
@@ -313,15 +367,13 @@ document.getElementById('modal-plan-type').addEventListener('change', (e) => {
 
 document.getElementById('save-user-btn').addEventListener('click', async () => {
     const btn = document.getElementById('save-user-btn');
-    const msg = document.getElementById('modal-user-msg');
     
     const username = document.getElementById('modal-username').value.trim();
     const planType = document.getElementById('modal-plan-type').value;
     let expiresAt = document.getElementById('modal-expires').value;
     
     if (_.isNil(editingKey) && _.isEmpty(username)) {
-        msg.className = 'error-msg';
-        msg.textContent = AdminMessages.MODAL_MISSING_NAME;
+        showToast(AdminMessages.MODAL_MISSING_NAME, ToastType.ERROR);
         return;
     }
     
@@ -331,17 +383,14 @@ document.getElementById('save-user-btn').addEventListener('click', async () => {
     
     btn.disabled = true;
     btn.textContent = AdminMessages.SAVE_PROGRESS;
-    msg.textContent = '';
     
     try {
         if (!_.isNil(editingKey)) {
             await fetchAPI('admin_update_key', { license_key: editingKey, plan_type: planType, expires_at: expiresAt });
-            msg.className = 'success-msg';
-            msg.textContent = AdminMessages.MODAL_UPDATE_SUCCESS;
+            showToast(AdminMessages.MODAL_UPDATE_SUCCESS, ToastType.SUCCESS);
         } else {
             const res = await fetchAPI('admin_create_key', { username, plan_type: planType });
-            msg.className = 'success-msg';
-            msg.textContent = AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, 'license_key');
+            showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, 'license_key'), ToastType.SUCCESS);
         }
         
         setTimeout(() => {
@@ -349,8 +398,7 @@ document.getElementById('save-user-btn').addEventListener('click', async () => {
             loadUsers();
         }, 1500);
     } catch (error) {
-        msg.className = 'error-msg';
-        msg.textContent = AdminMessages.SAVE_ERROR + _.get(error, 'message');
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
     } finally {
         btn.disabled = false;
         btn.textContent = AdminMessages.MODAL_SAVE_DEFAULT;
@@ -360,33 +408,28 @@ document.getElementById('save-user-btn').addEventListener('click', async () => {
 window.openDeleteModal = function(key) {
     deletingKey = key;
     document.getElementById('delete-key-display').textContent = key;
-    document.getElementById('modal-delete-msg').textContent = '';
     document.getElementById('delete-modal').classList.add('active');
 }
 
 document.getElementById('btn-soft-delete').addEventListener('click', async () => {
-    const msg = document.getElementById('modal-delete-msg');
-    msg.textContent = AdminMessages.DELETE_PROGRESS;
     try {
         await fetchAPI('admin_revoke_key', { license_key: deletingKey });
+        showToast(AdminMessages.DELETE_SOFT_SUCCESS, ToastType.SUCCESS);
         closeModal('delete-modal');
         loadUsers();
     } catch (error) {
-        msg.className = 'error-msg';
-        msg.textContent = AdminMessages.SAVE_ERROR + _.get(error, 'message');
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
     }
 });
 
 document.getElementById('btn-hard-delete').addEventListener('click', async () => {
-    const msg = document.getElementById('modal-delete-msg');
-    msg.textContent = AdminMessages.HARD_DELETE_PROGRESS;
     try {
         await fetchAPI('admin_delete_key', { license_key: deletingKey });
+        showToast(AdminMessages.DELETE_HARD_SUCCESS, ToastType.SUCCESS);
         closeModal('delete-modal');
         loadUsers();
     } catch (error) {
-        msg.className = 'error-msg';
-        msg.textContent = AdminMessages.SAVE_ERROR + _.get(error, 'message');
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
     }
 });
 
@@ -396,14 +439,16 @@ window.resetDevice = async function(key) {
     
     try {
         await fetchAPI('admin_reset_device', { license_key: key });
+        showToast(AdminMessages.RESET_DEVICE_SUCCESS, ToastType.SUCCESS);
         loadUsers();
     } catch (error) {
-        alert(AdminMessages.RESET_DEVICE_ERROR + _.get(error, 'message'));
+        showToast(AdminMessages.RESET_DEVICE_ERROR + _.get(error, 'message'), ToastType.ERROR);
     }
 }
 
 function escapeHTML(str) {
-    return str.replace(/[&<>'"]/g, 
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
         tag => ({
             '&': '&amp;',
             '<': '&lt;',

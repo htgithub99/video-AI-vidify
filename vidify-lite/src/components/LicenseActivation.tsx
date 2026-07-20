@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLicense } from '../contexts/LicenseContext';
-import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
-import { SecurityMessages, PlanType } from '../constants/security';
+import { KeyRound, Loader2, AlertCircle, Check, X } from 'lucide-react';
+import { SecurityMessages, PlanType, SecurityConstants } from '../constants/security';
 import _ from 'lodash';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { licenseInfo, isLoading, activateLicense, logoutLicense } = useLicense();
     const [inputKey, setInputKey] = useState('');
-    const [error, setError] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [isActivating, setIsActivating] = useState(false);
 
     useEffect(() => {
@@ -33,9 +35,10 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (_.isNil(licenseInfo)) {
         return (
+            <>
             <div className="flex items-center justify-center min-h-screen bg-slate-955 p-4">
                 <div className="w-full max-w-md bg-slate-900 rounded-lg p-8 border border-transparent">
-                    <div className="flex flex-col items-center mb-8 text-center">
+                    <div className="flex flex-col items-center text-center mb-8">
                         <div className="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 border border-rose-500/30">
                             <KeyRound className="w-8 h-8 text-rose-500" />
                         </div>
@@ -47,10 +50,14 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                             e.preventDefault();
                             if (_.isEmpty(inputKey.trim())) return;
                             setIsActivating(true);
-                            setError('');
+                            setErrorMsg('');
+                            setSuccessMsg('');
                             const success = await activateLicense(inputKey.trim());
                             if (!success) {
-                                setError(SecurityMessages.ACTIVATION_ERROR_MSG);
+                                setErrorMsg(SecurityMessages.ACTIVATION_ERROR_MSG);
+                            } else {
+                                setSuccessMsg(SecurityMessages.ACTIVATION_SUCCESS_MSG);
+                                setTimeout(() => setSuccessMsg(''), SecurityConstants.TOAST_DURATION);
                             }
                             setIsActivating(false);
                         }}
@@ -67,16 +74,9 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                             />
                         </div>
 
-                        {!_.isEmpty(error) && (
-                            <div className="flex items-center p-3 text-red-400 bg-red-400/10 border border-red-400/20 rounded-md">
-                                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                                <span className="text-sm">{error}</span>
-                            </div>
-                        )}
-
                         <button
                             type="submit"
-                            disabled={isActivating || _.isEmpty(inputKey.trim())}
+                            disabled={_.some([isActivating, _.isEmpty(inputKey.trim())])}
                             className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-rose-600 hover:bg-rose-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isActivating ? (
@@ -89,6 +89,56 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                     </form>
                 </div>
             </div>
+
+            <div className="fixed bottom-6 right-6 z-[999999] flex flex-col gap-3 pointer-events-none">
+                <AnimatePresence>
+                    {!_.isEmpty(errorMsg) && (
+                        <motion.div
+                            key="errorMsg"
+                            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                            className="bg-slate-900 shadow-2xl shadow-rose-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden"
+                        >
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500" />
+                            <AlertCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5 ml-1" />
+                            <div className="flex-grow flex flex-col gap-0.5 text-left">
+                                <span className="text-[10px] uppercase font-mono font-bold text-rose-500 tracking-wider">{SecurityMessages.TOAST_ERROR}</span>
+                                <p className="leading-snug text-slate-300 font-medium">{errorMsg}</p>
+                            </div>
+                            <button type="button" onClick={() => setErrorMsg('')} className="text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500/10">
+                                <div className="h-full bg-rose-500 animate-shrinkWidth" />
+                            </div>
+                        </motion.div>
+                    )}
+                    {!_.isEmpty(successMsg) && (
+                        <motion.div
+                            key="successMsg"
+                            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                            className="bg-slate-900 shadow-2xl shadow-emerald-950/20 p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden"
+                        >
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
+                            <Check className="w-4.5 h-4.5 text-emerald-500 shrink-0 mt-0.5 ml-1 animate-pulse" />
+                            <div className="flex-grow flex flex-col gap-0.5 text-left">
+                                <span className="text-[10px] uppercase font-mono font-bold text-emerald-500 tracking-wider">{SecurityMessages.TOAST_SUCCESS}</span>
+                                <p className="leading-snug text-slate-300 font-medium">{successMsg}</p>
+                            </div>
+                            <button type="button" onClick={() => setSuccessMsg('')} className="text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500/10">
+                                <div className="h-full bg-emerald-500 animate-shrinkWidth" />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+            </>
         );
     }
 
@@ -100,12 +150,12 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                     ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' 
                     : 'bg-slate-850 border-transparent text-slate-400'
                 }`}>
-                    <span className="text-sm font-medium">
+                    <span className="text-xs font-bold tracking-wide">
                         {_.includes(licenseInfo.plan_type, PlanType.PRO) ? SecurityMessages.PRO_VERSION : SecurityMessages.FREE_VERSION}
                     </span>
                     <button 
                         onClick={logoutLicense}
-                        className="text-xs opacity-70 hover:opacity-100 hover:text-rose-400 transition-colors underline"
+                        className="text-xs font-medium px-2 py-1 bg-slate-955 rounded hover:bg-slate-900 transition-colors"
                     >
                         {SecurityMessages.CHANGE_KEY}
                     </button>
