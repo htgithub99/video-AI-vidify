@@ -1,9 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { API_ROUTES } from '../constants/apiRoutes';
+import { SecurityConstants, LicenseStatus } from '../constants/security';
+import { appError } from '../lib/logger';
+import _ from 'lodash';
 
 export interface LicenseInfo {
-    status: 'ACTIVE' | 'REVOKED' | 'EXPIRED';
-    plan_type: 'FREE' | 'PRO';
+    status: LicenseStatus;
+    plan_type: string;
     usage: {
         video: number;
         image: number;
@@ -22,7 +25,7 @@ interface LicenseContextType {
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
 export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [licenseKey, setLicenseKey] = useState<string | null>(localStorage.getItem('vidify_license_key'));
+    const [licenseKey, setLicenseKey] = useState<string | null>(localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY));
     const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -35,27 +38,27 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             });
             const data = await res.json();
             
-            if (data.success && data.data.status === 'ACTIVE') {
-                setLicenseInfo(data.data);
+            if (_.get(data, 'success') && _.get(data, 'data.status') === LicenseStatus.ACTIVE) {
+                setLicenseInfo(_.get(data, 'data'));
                 setIsLoading(false);
                 return true;
-            } else {
-                setLicenseInfo(null);
-                setLicenseKey(null);
-                localStorage.removeItem('vidify_license_key');
-                setIsLoading(false);
-                return false;
             }
+            
+            setLicenseInfo(null);
+            setLicenseKey(null);
+            localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+            setIsLoading(false);
+            return false;
         } catch (error) {
-            console.error("Lỗi kiểm tra license:", error);
+            appError("Lỗi kiểm tra license:", error);
             setIsLoading(false);
             return false;
         }
     };
 
     useEffect(() => {
-        if (licenseKey) {
-            checkLicense(licenseKey);
+        if (!_.isEmpty(licenseKey)) {
+            checkLicense(licenseKey as string);
         } else {
             setIsLoading(false);
         }
@@ -66,7 +69,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
         const isValid = await checkLicense(key);
         if (isValid) {
             setLicenseKey(key);
-            localStorage.setItem('vidify_license_key', key);
+            localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
             return true;
         }
         return false;
@@ -75,7 +78,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     const logoutLicense = () => {
         setLicenseKey(null);
         setLicenseInfo(null);
-        localStorage.removeItem('vidify_license_key');
+        localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
     };
 
     return (
@@ -87,7 +90,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
 export const useLicense = () => {
     const context = useContext(LicenseContext);
-    if (!context) {
+    if (_.isNil(context)) {
         throw new Error("useLicense must be used within a LicenseProvider");
     }
     return context;

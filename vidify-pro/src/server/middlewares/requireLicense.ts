@@ -1,60 +1,43 @@
 import { Request, Response, NextFunction } from 'express';
 import { LicenseService } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
+import _ from 'lodash';
+import { SecurityConstants, SecurityMessages, FeatureType, PlanType } from '../../constants/security.js';
 
-// Bỏ FREE_QUOTAS hardcode, sẽ lấy từ cấu hình trả về của License Server
-
-/**
- * Middleware kiểm tra License Key và Quota trước khi cho phép gọi API
- * Cần truyền license_key qua Header: `x-license-key`
- */
-export const requireLicense = (featureType?: 'video' | 'image' | 'voice') => {
+export const requireLicense = (featureType?: FeatureType) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const licenseKey = req.headers['x-license-key'] as string;
+            const licenseKey = _.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string;
 
-            if (!licenseKey) {
-                return res.status(401).json({ error: 'Missing License Key', code: 'LICENSE_MISSING' });
+            if (_.isEmpty(licenseKey)) {
+                return res.status(401).json({ error: SecurityMessages.MISSING_LICENSE_KEY, code: 'LICENSE_MISSING' });
             }
 
             const license = await LicenseService.validateKey(licenseKey);
 
-            if (!license) {
-                return res.status(403).json({ error: 'Invalid or Revoked License', code: 'LICENSE_INVALID' });
+            if (_.isNil(license)) {
+                return res.status(403).json({ error: SecurityMessages.INVALID_OR_REVOKED_LICENSE, code: 'LICENSE_INVALID' });
             }
 
-            // Gắn vào request để API sau có thể sử dụng nếu cần
-            (req as any).licenseInfo = license;
+            _.set(req, 'licenseInfo', license);
 
-            // Nếu không truyền featureType, chỉ cần check key hợp lệ là đủ (Ví dụ khi lấy danh sách)
-            if (!featureType) {
+            if (_.isNil(featureType)) {
                 return next();
             }
 
-            let currentUsage = 0;
-            let maxLimit = 0;
-            const isPro = license.plan_type.startsWith('PRO');
+            const isPro = _.includes(license.plan_type, PlanType.PRO);
 
-            // Nếu là PRO và bật tính năng Unlimited -> Bỏ qua check Quota
-            if (isPro && license.quotas.pro_unlimited) {
+            if (isPro && _.get(license, 'quotas.pro_unlimited', false)) {
                 return next();
             }
 
-            if (featureType === 'video') {
-                currentUsage = license.usage.video;
-                maxLimit = isPro ? license.quotas.pro_video : license.quotas.free_video;
-            } else if (featureType === 'image') {
-                currentUsage = license.usage.image;
-                maxLimit = isPro ? license.quotas.pro_image : license.quotas.free_image;
-            } else if (featureType === 'voice') {
-                currentUsage = license.usage.voice;
-                maxLimit = isPro ? license.quotas.pro_voice : license.quotas.free_voice;
-            }
+            const currentUsage = _.get(license, `usage.${featureType}`, 0);
+            const maxLimit = isPro ? _.get(license, `quotas.pro_${featureType}`, 0) : _.get(license, `quotas.free_${featureType}`, 0);
 
             if (currentUsage >= maxLimit) {
-                const planName = isPro ? "Pro plan" : "Free plan";
+                const planName = isPro ? SecurityMessages.PRO_PLAN : SecurityMessages.FREE_PLAN;
                 return res.status(403).json({
-                    error: `You have reached the limit for ${featureType} generation on your ${planName}.`,
+                    error: SecurityMessages.QUOTA_EXCEEDED_TEMPLATE.replace('{0}', featureType).replace('{1}', planName),
                     code: 'QUOTA_EXCEEDED'
                 });
             }
@@ -62,7 +45,7 @@ export const requireLicense = (featureType?: 'video' | 'image' | 'voice') => {
             next();
         } catch (error) {
             appError("RequireLicense Middleware Error", error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            res.status(500).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
         }
     };
 };

@@ -1,42 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLicense } from '../contexts/LicenseContext';
 import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
+import { SecurityMessages, PlanType } from '../constants/security';
+import _ from 'lodash';
+
 export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { licenseInfo, isLoading, activateLicense, logoutLicense } = useLicense();
     const [inputKey, setInputKey] = useState('');
     const [error, setError] = useState('');
     const [isActivating, setIsActivating] = useState(false);
 
+    useEffect(() => {
+        if (!isLoading && _.isNil(licenseInfo)) {
+            const loader = document.getElementById('app-loading');
+            if (!_.isNil(loader)) {
+                loader.classList.add('fade-out');
+                setTimeout(() => {
+                    loader.remove();
+                }, 400);
+            }
+        }
+    }, [isLoading, licenseInfo]);
+
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                <span className="ml-3 text-lg font-medium">Đang kiểm tra bản quyền...</span>
+            <div className="flex items-center justify-center min-h-screen bg-slate-955 text-slate-205">
+                <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+                <span className="ml-3 text-lg font-medium">{SecurityMessages.ACTIVATING_MESSAGE}</span>
             </div>
         );
     }
 
-    if (!licenseInfo) {
-        // Chưa có key hoặc key không hợp lệ
+    if (_.isNil(licenseInfo)) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4">
-                <div className="w-full max-w-md bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-gray-700">
+            <div className="flex items-center justify-center min-h-screen bg-slate-955 p-4">
+                <div className="w-full max-w-md bg-slate-900 rounded-lg p-8 border border-transparent">
                     <div className="flex flex-col items-center mb-8 text-center">
-                        <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mb-4 border border-indigo-500/30">
-                            <KeyRound className="w-8 h-8 text-indigo-400" />
+                        <div className="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 border border-rose-500/30">
+                            <KeyRound className="w-8 h-8 text-rose-500" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Kích Hoạt Bản Quyền</h2>
-                        <p className="text-gray-400">Vui lòng nhập License Key để sử dụng Vidify</p>
+                        <h2 className="text-2xl font-bold text-slate-205 mb-2">{SecurityMessages.ACTIVATION_TITLE}</h2>
+                        <p className="text-slate-400">{SecurityMessages.ACTIVATION_SUBTITLE}</p>
                     </div>
                     <form 
                         onSubmit={async (e) => {
                             e.preventDefault();
-                            if (!inputKey.trim()) return;
+                            if (_.isEmpty(inputKey.trim())) return;
                             setIsActivating(true);
                             setError('');
                             const success = await activateLicense(inputKey.trim());
                             if (!success) {
-                                setError('Mã kích hoạt không hợp lệ, hoặc thiết bị bị từ chối.');
+                                setError(SecurityMessages.ACTIVATION_ERROR_MSG);
                             }
                             setIsActivating(false);
                         }}
@@ -47,14 +61,14 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                                 type="text"
                                 value={inputKey}
                                 onChange={(e) => setInputKey(e.target.value)}
-                                placeholder="Nhập License Key (VD: PRO-123...)"
-                                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-mono"
+                                placeholder={SecurityMessages.INPUT_PLACEHOLDER}
+                                className="w-full px-4 py-3 bg-slate-850 border border-transparent rounded-md text-slate-205 placeholder-slate-500 focus:outline-none focus:border-rose-500 focus-within:bg-slate-850 transition-all font-mono"
                                 required
                             />
                         </div>
 
-                        {error && (
-                            <div className="flex items-center p-3 text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg">
+                        {!_.isEmpty(error) && (
+                            <div className="flex items-center p-3 text-red-400 bg-red-400/10 border border-red-400/20 rounded-md">
                                 <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                                 <span className="text-sm">{error}</span>
                             </div>
@@ -62,15 +76,15 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
 
                         <button
                             type="submit"
-                            disabled={isActivating || !inputKey.trim()}
-                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isActivating || _.isEmpty(inputKey.trim())}
+                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-rose-600 hover:bg-rose-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isActivating ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                    Đang kích hoạt...
+                                    {SecurityMessages.ACTIVATING_BUTTON}
                                 </>
-                            ) : 'Kích Hoạt Ngay'}
+                            ) : SecurityMessages.ACTIVATE_BUTTON}
                         </button>
                     </form>
                 </div>
@@ -78,28 +92,25 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
         );
     }
 
-    // Đã có key hợp lệ -> Trả về ứng dụng chính
     return (
         <>
-            {/* Banner nhỏ hiển thị thông tin gói trên cùng (nếu muốn) */}
             <div className="fixed top-0 right-0 z-50 p-4 pointer-events-none">
-                <div className={`pointer-events-auto px-4 py-2 rounded-full shadow-lg backdrop-blur-md border flex items-center gap-3 transition-all ${
-                    licenseInfo.plan_type === 'PRO' 
-                    ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300' 
-                    : 'bg-gray-800/80 border-gray-700 text-gray-300'
+                <div className={`pointer-events-auto px-4 py-2 rounded-full border flex items-center gap-3 transition-all ${
+                    _.includes(licenseInfo.plan_type, PlanType.PRO) 
+                    ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' 
+                    : 'bg-slate-850 border-transparent text-slate-400'
                 }`}>
                     <span className="text-sm font-medium">
-                        {licenseInfo.plan_type === 'PRO' ? '👑 PRO Version' : '🆓 FREE Version'}
+                        {_.includes(licenseInfo.plan_type, PlanType.PRO) ? SecurityMessages.PRO_VERSION : SecurityMessages.FREE_VERSION}
                     </span>
                     <button 
                         onClick={logoutLicense}
-                        className="text-xs opacity-70 hover:opacity-100 transition-opacity underline"
+                        className="text-xs opacity-70 hover:opacity-100 hover:text-rose-400 transition-colors underline"
                     >
-                        Đổi Key
+                        {SecurityMessages.CHANGE_KEY}
                     </button>
                 </div>
             </div>
-
             {children}
         </>
     );

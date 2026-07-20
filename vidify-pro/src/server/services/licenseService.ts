@@ -3,30 +3,29 @@ import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-
-const DEVICE_ID_FILE = path.join(process.cwd(), 'device_id.json');
+import { SecurityConstants, SecurityMessages, FeatureType, LicenseStatus } from '../../constants/security.js';
+import { appError } from '../../lib/logger.js';
 
 function getHardwareId(): string {
-    if (fs.existsSync(DEVICE_ID_FILE)) {
+    const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
+    
+    if (fs.existsSync(deviceIdFile)) {
         try {
-            const data = JSON.parse(fs.readFileSync(DEVICE_ID_FILE, 'utf8'));
-            if (data.deviceId) return data.deviceId;
+            const data = JSON.parse(fs.readFileSync(deviceIdFile, 'utf8'));
+            if (_.has(data, 'deviceId')) return _.get(data, 'deviceId');
         } catch (e) {
-            console.error("Error reading device_id.json", e);
+            appError(SecurityMessages.ERROR_READING_DEVICE_ID, e);
         }
     }
     
     const newId = crypto.randomUUID();
-    fs.writeFileSync(DEVICE_ID_FILE, JSON.stringify({ deviceId: newId }), 'utf8');
+    fs.writeFileSync(deviceIdFile, JSON.stringify({ deviceId: newId }), 'utf8');
     return newId;
 }
 
-// Cần thay bằng URL của Google Apps Script (Web App) sau khi Deploy
-const GAS_API_URL = process.env.GAS_API_URL || 'https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec';
-
 export interface LicenseInfo {
-    status: 'ACTIVE' | 'REVOKED' | 'EXPIRED';
-    plan_type: 'FREE' | 'PRO_LIFETIME' | 'PRO_MONTHLY' | 'PRO_WEEKLY';
+    status: LicenseStatus;
+    plan_type: string;
     expires_at: string | null;
     usage: {
         video: number;
@@ -45,16 +44,13 @@ export interface LicenseInfo {
 }
 
 export class LicenseService {
-    /**
-     * Xác thực khóa kích hoạt từ Google Sheets
-     */
     static async validateKey(licenseKey: string): Promise<LicenseInfo | null> {
-        if (!licenseKey) return null;
+        if (_.isEmpty(licenseKey)) return null;
         
         const deviceId = getHardwareId();
         
         try {
-            const response = await fetch(GAS_API_URL, {
+            const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -66,45 +62,41 @@ export class LicenseService {
             
             const data: any = await response.json();
             
-            if (data.error) {
-                console.error("License Validation Error:", data.error);
+            if (_.has(data, 'error')) {
+                appError(SecurityMessages.LICENSE_VALIDATION_ERROR, _.get(data, 'error'));
                 return null;
             }
             
             return {
-                status: data.status,
-                plan_type: data.plan_type,
-                expires_at: data.expires_at || null,
+                status: _.get(data, 'status'),
+                plan_type: _.get(data, 'plan_type'),
+                expires_at: _.get(data, 'expires_at', null),
                 usage: {
-                    video: data.usage.video || 0,
-                    image: data.usage.image || 0,
-                    voice: data.usage.voice || 0,
+                    video: _.get(data, 'usage.video', 0),
+                    image: _.get(data, 'usage.image', 0),
+                    voice: _.get(data, 'usage.voice', 0),
                 },
                 quotas: {
-                    free_video: data.quotas?.free_video || 0,
-                    free_image: data.quotas?.free_image || 0,
-                    free_voice: data.quotas?.free_voice || 0,
-                    pro_video: data.quotas?.pro_video || 0,
-                    pro_image: data.quotas?.pro_image || 0,
-                    pro_voice: data.quotas?.pro_voice || 0,
-                    pro_unlimited: data.quotas?.pro_unlimited || false,
+                    free_video: _.get(data, 'quotas.free_video', 0),
+                    free_image: _.get(data, 'quotas.free_image', 0),
+                    free_voice: _.get(data, 'quotas.free_voice', 0),
+                    pro_video: _.get(data, 'quotas.pro_video', 0),
+                    pro_image: _.get(data, 'quotas.pro_image', 0),
+                    pro_voice: _.get(data, 'quotas.pro_voice', 0),
+                    pro_unlimited: _.get(data, 'quotas.pro_unlimited', false),
                 }
             };
         } catch (error) {
-            console.error("Failed to connect to License Server:", error);
-            // Trong môi trường Offline hoặc đứt mạng, có thể chặn luôn
+            appError(SecurityMessages.FAILED_TO_CONNECT, error);
             return null;
         }
     }
 
-    /**
-     * Tăng số lượt sử dụng sau khi tạo thành công
-     */
-    static async incrementUsage(licenseKey: string, feature: 'video' | 'image' | 'voice', amount: number = 1): Promise<boolean> {
-        if (!licenseKey) return false;
+    static async incrementUsage(licenseKey: string, feature: FeatureType, amount: number = 1): Promise<boolean> {
+        if (_.isEmpty(licenseKey)) return false;
 
         try {
-            const response = await fetch(GAS_API_URL, {
+            const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -116,13 +108,13 @@ export class LicenseService {
             });
             
             const data: any = await response.json();
-            if (data.error) {
-                console.error("Usage Update Error:", data.error);
+            if (_.has(data, 'error')) {
+                appError(SecurityMessages.USAGE_UPDATE_ERROR, _.get(data, 'error'));
                 return false;
             }
             return true;
         } catch (error) {
-            console.error("Failed to update usage:", error);
+            appError(SecurityMessages.FAILED_TO_UPDATE_USAGE, error);
             return false;
         }
     }
