@@ -38,7 +38,8 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             });
             const data = await res.json();
             
-            if (_.get(data, 'success') && _.get(data, 'data.status') === LicenseStatus.ACTIVE) {
+            const status = _.get(data, 'data.status');
+            if (_.get(data, 'success') && [LicenseStatus.ACTIVE, LicenseStatus.REVOKED, 'EXPIRED'].includes(status)) {
                 setLicenseInfo(_.get(data, 'data'));
                 setIsLoading(false);
                 return true;

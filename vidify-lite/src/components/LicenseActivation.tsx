@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLicense } from '../contexts/LicenseContext';
 import { KeyRound, Loader2, AlertCircle, Check, X } from 'lucide-react';
-import { SecurityMessages, PlanType, SecurityConstants } from '../constants/security';
+import { SecurityMessages, PlanType, SecurityConstants, LicenseStatus } from '../constants/security';
 import _ from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -144,7 +144,15 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
 
     return (
         <>
-            <div className="fixed top-0 right-0 z-50 p-4 pointer-events-none">
+            <div className="fixed top-0 right-0 z-50 p-4 pointer-events-none flex flex-col gap-2 items-end">
+                {licenseInfo.status !== LicenseStatus.ACTIVE && (
+                    <div className="pointer-events-auto px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center gap-2 shadow-sm">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold tracking-wide">
+                            {licenseInfo.status === 'REVOKED' ? 'Tài khoản bị khóa (Chỉ xem)' : 'Tài khoản hết hạn (Chỉ xem)'}
+                        </span>
+                    </div>
+                )}
                 <div className={`pointer-events-auto px-4 py-2 rounded-full border flex items-center gap-3 transition-all ${
                     _.includes(licenseInfo.plan_type, PlanType.PRO) 
                     ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' 
