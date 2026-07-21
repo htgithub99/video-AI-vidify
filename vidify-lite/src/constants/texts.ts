@@ -419,6 +419,58 @@ export const SETTINGS_TEXTS = {
   }
 } as const;
 
+export const SETTINGS_VIEW_TEXTS = {
+  vi: {
+    SYSTEM_TITLE: "Tài Nguyên Cá Nhân",
+    SYSTEM_DESC: "Dữ liệu nhập ở đây được ưu tiên sử dụng thay cho dữ liệu hệ thống. Mọi thứ được lưu trữ cục bộ trên trình duyệt.",
+    API_KEYS_TITLE: "Khóa API Cá Nhân",
+    SAVE_BTN: "Lưu",
+    SAVE_BTN_TOOLTIP: "Lưu khóa API vào trình duyệt",
+    ACCOUNTS_TITLE: "Tài khoản Google",
+    ACCOUNTS_DESC: "Tài khoản Cá Nhân",
+    EMAIL_PLACEHOLDER: "Email...",
+    PWD_PLACEHOLDER: "Mật khẩu...",
+    RECOVERY_PLACEHOLDER: "Email Khôi phục (Tuỳ chọn)",
+    GEMINI_PLACEHOLDER: "Nhập khóa Gemini...",
+    AI33_PLACEHOLDER: "Nhập khóa AI33...",
+    ADD_BTN_TOOLTIP: "Thêm tài khoản vào danh sách",
+    NO_ACCOUNTS: "Chưa có tài khoản",
+    HIDDEN_PWD: "••••••••",
+  },
+  en: {
+    SYSTEM_TITLE: "Personal Resources",
+    SYSTEM_DESC: "Data entered here is prioritized over system data. Everything is stored locally in your browser.",
+    API_KEYS_TITLE: "Personal API Keys",
+    SAVE_BTN: "Save",
+    SAVE_BTN_TOOLTIP: "Save API keys to browser",
+    ACCOUNTS_TITLE: "Google Accounts",
+    ACCOUNTS_DESC: "Personal Accounts",
+    EMAIL_PLACEHOLDER: "Email...",
+    PWD_PLACEHOLDER: "Password...",
+    RECOVERY_PLACEHOLDER: "Recovery Email (Optional)",
+    GEMINI_PLACEHOLDER: "Enter Gemini key...",
+    AI33_PLACEHOLDER: "Enter AI33 key...",
+    ADD_BTN_TOOLTIP: "Add account to list",
+    NO_ACCOUNTS: "No accounts",
+    HIDDEN_PWD: "••••••••",
+  }
+} as const;
+
+export const PIPELINE_STEP2_TEXTS = {
+  vi: {
+    THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
+    THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.",
+    BATCH_COUNT_LABEL: "Ảnh & Tiêu đề",
+    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
+  },
+  en: {
+    THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.",
+    THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
+    BATCH_COUNT_LABEL: "Images & Titles",
+    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
+  }
+} as const;
+
 export const CURL_KEYWORDS = {
   STREAM_AGENT: "flowCreationAgent:streamChat",
   STREAM: "streamChat",

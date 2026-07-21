@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyHtX6kjnNUjRj2PGX39GBB7UQZAm5_xGpuKN3twSAW-SSBcBxmRCRMA6eaddpV37bf/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbx26p481i1m5HpuPDIlsaupE16Qf5-9WuO-1EU3c0UUdaWaaAEXY97pwW0x514XsBg/exec';
 
 const AdminConstants = {
     TOKEN_KEY: 'adminToken',
@@ -154,7 +154,7 @@ let deletingKey = null;
 
 function escapeHTML(str) {
     if (!str) return '';
-    return String(str).replace(/[&<>'"]/g, 
+    return String(str).replace(/[&<>'"]/g,
         tag => ({
             '&': '&amp;',
             '<': '&lt;',
@@ -186,11 +186,11 @@ function setButtonLoading(btn, isLoading, loadingText = '') {
 function showToast(message, type = ToastType.SUCCESS) {
     const container = el(DOMIds.TOAST_CONTAINER);
     if (!container) return;
-    
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
-    const iconSvg = type === ToastType.SUCCESS 
+
+    const iconSvg = type === ToastType.SUCCESS
         ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><path d="M20 6 9 17l-5-5"/></svg>`
         : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`;
 
@@ -237,7 +237,7 @@ async function fetchAPI(action, data = {}) {
             })
         });
         const resJson = await response.json();
-        
+
         if (_.has(resJson, 'error')) {
             if (_.get(resJson, 'code') === AdminConstants.API_ERROR_UNAUTHORIZED) {
                 showToast(AdminMessages.INVALID_TOKEN, ToastType.ERROR);
@@ -319,7 +319,7 @@ function handleLogout() {
 async function loadUsers() {
     const tbody = elq(DOMIds.TBODY);
     tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 3rem; color: var(--text-muted); font-style: italic;">${AdminMessages.DATA_LOADING}</td></tr>`;
-    
+
     try {
         const res = await fetchAPI(AdminActions.GET_USERS);
         window.adminUsersData = _.get(res, 'users', []);
@@ -334,7 +334,7 @@ function applyFilters() {
     const searchStr = (el(DOMIds.SEARCH_INPUT)?.value || '').toLowerCase();
     const planFilter = el(DOMIds.FILTER_PLAN)?.value || AdminConstants.FILTER_ALL;
     const statusFilter = el(DOMIds.FILTER_STATUS)?.value || AdminConstants.FILTER_ALL;
-    
+
     filteredUsers = _.filter(window.adminUsersData || [], u => {
         let matchSearch = true;
         if (!_.isEmpty(searchStr)) {
@@ -353,16 +353,16 @@ function applyFilters() {
 function renderTable() {
     const tbody = elq(DOMIds.TBODY);
     tbody.innerHTML = '';
-    
+
     const totalItems = filteredUsers.length;
     const totalPages = Math.ceil(totalItems / pageSize) || 1;
-    
+
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
-    
+
     const localizePlan = (plan) => {
         if (plan === AdminConstants.PLAN_FREE) return AdminMessages.PLAN_FREE_LABEL;
         if (plan === AdminConstants.PLAN_PRO) return AdminMessages.PLAN_PRO_LABEL;
@@ -382,17 +382,17 @@ function renderTable() {
         if (status === AdminConstants.STATUS_REVOKED) return 'revoked';
         return 'expired';
     };
-    
+
     const htmlRows = _.map(paginatedUsers, user => {
         const usageText = `<span title="Video">V:${_.get(user, 'usage.video')}</span> <span style="color:var(--input-bg)">|</span> <span title="Image">I:${_.get(user, 'usage.image')}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">C:${_.get(user, 'usage.voice')}</span>`;
         const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, 'plan_type'));
         const expiresAtStr = _.get(user, 'expires_at') ? new Date(_.get(user, 'expires_at')).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
-        
+
         const btnDeviceModal = `<button class="action-btn action-warn" onclick="openDeviceModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_DEVICES}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         </button>`;
         const btnCopy = `<button class="copy-btn" onclick="copyToClipboard('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_COPY}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>`;
-        
+
         return `
             <tr>
                 <td><strong>${escapeHTML(_.get(user, 'username'))}</strong></td>
@@ -427,7 +427,7 @@ function renderTable() {
             </tr>
         `;
     });
-    
+
     tbody.innerHTML = htmlRows.join('');
     renderPagination(totalPages);
 }
@@ -436,14 +436,14 @@ function renderPagination(totalPages) {
     const controls = el(DOMIds.PAGINATION_CONTROLS);
     if (!controls) return;
     controls.innerHTML = '';
-    
+
     const btnPrev = document.createElement('button');
     btnPrev.className = 'page-btn';
     btnPrev.textContent = '«';
     btnPrev.disabled = currentPage === 1;
     btnPrev.onclick = () => { currentPage--; renderTable(); };
     controls.appendChild(btnPrev);
-    
+
     for (let i = 1; i <= totalPages; i++) {
         const btnPage = document.createElement('button');
         btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -451,7 +451,7 @@ function renderPagination(totalPages) {
         btnPage.onclick = () => { currentPage = i; renderTable(); };
         controls.appendChild(btnPage);
     }
-    
+
     const btnNext = document.createElement('button');
     btnNext.className = 'page-btn';
     btnNext.textContent = '»';
@@ -464,21 +464,21 @@ async function loadConfig() {
     try {
         const res = await fetchAPI(AdminActions.GET_CONFIG);
         const q = _.get(res, 'config', {});
-        
+
         el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, 'free_video', 0);
         el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, 'free_image', 0);
         el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, 'free_voice', 0);
-        
+
         el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, 'pro_video', 0);
         el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, 'pro_image', 0);
         el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, 'pro_voice', 0);
-        
+
         const isUnlimited = String(_.get(q, 'pro_unlimited', 'false')) === 'true';
         el(DOMIds.PRO_UNLIMITED).checked = isUnlimited;
         el(DOMIds.PRO_QUOTA_VIDEO).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_IMAGE).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_VOICE).disabled = isUnlimited;
-        
+
         if (el(DOMIds.CONFIG_MAX_DEVICES)) {
             el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, 'max_devices', 1);
         }
@@ -490,7 +490,7 @@ async function loadConfig() {
 async function handleSaveConfig() {
     const saveConfigBtn = el(DOMIds.SAVE_CONFIG_BTN);
     setButtonLoading(saveConfigBtn, true, AdminMessages.SAVE_PROGRESS);
-    
+
     try {
         await fetchAPI(AdminActions.UPDATE_CONFIG, {
             free_quota_video: parseInt(el(DOMIds.FREE_QUOTA_VIDEO).value) || 0,
@@ -510,7 +510,7 @@ async function handleSaveConfig() {
     }
 }
 
-window.closeModal = function(id) {
+window.closeModal = function (id) {
     el(id)?.classList.remove('active');
 }
 
@@ -523,21 +523,21 @@ function handleOpenCreateModal() {
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
     el(DOMIds.MODAL_EXPIRES).value = '';
-    
+
     el(DOMIds.MODAL_EXPIRES_WRAPPER).style.display = AdminConstants.DISPLAY_FLEX;
-    
+
     el(DOMIds.USER_MODAL).classList.add('active');
 }
 
-window.openEditModal = function(key) {
+window.openEditModal = function (key) {
     const user = _.find(window.adminUsersData || [], u => _.get(u, 'license_key') === key);
     if (!user) return;
-    
+
     editingKey = key;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_EDIT_TITLE;
     el(DOMIds.MODAL_USERNAME).value = _.get(user, 'username');
     el(DOMIds.MODAL_USERNAME).disabled = true;
-    
+
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
     let hasOption = _.some(Array.from(planSelect.options), opt => _.get(opt, 'value') === _.get(user, 'plan_type'));
     if (!hasOption) {
@@ -547,30 +547,30 @@ window.openEditModal = function(key) {
         planSelect.appendChild(newOption);
     }
     planSelect.value = _.get(user, 'plan_type');
-    
+
     el(DOMIds.MODAL_STATUS).value = _.get(user, 'status');
     el(DOMIds.MODAL_STATUS).disabled = false;
-    
+
     if (!_.isEmpty(_.get(user, 'expires_at'))) {
         el(DOMIds.MODAL_EXPIRES).value = new Date(_.get(user, 'expires_at')).toISOString().split('T')[0];
     } else {
         el(DOMIds.MODAL_EXPIRES).value = '';
     }
-    
+
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     if (!_.includes([AdminConstants.PLAN_FREE, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, 'plan_type'))) {
         wrapper.style.display = AdminConstants.DISPLAY_FLEX;
     } else {
         wrapper.style.display = AdminConstants.DISPLAY_NONE;
     }
-    
+
     el(DOMIds.USER_MODAL).classList.add('active');
 }
 
 function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     const selectedPlan = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
-    
+
     if (!_.isNil(editingKey) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
         wrapper.style.display = AdminConstants.DISPLAY_FLEX;
     } else {
@@ -584,18 +584,18 @@ async function handleSaveUser() {
     const planType = el(DOMIds.MODAL_PLAN_TYPE).value;
     const status = el(DOMIds.MODAL_STATUS).value;
     let expiresAt = el(DOMIds.MODAL_EXPIRES).value;
-    
+
     if (_.isNil(editingKey) && _.isEmpty(username)) {
         showToast(AdminMessages.MODAL_MISSING_NAME, ToastType.ERROR);
         return;
     }
-    
+
     if (!_.isEmpty(expiresAt)) {
         expiresAt = new Date(expiresAt).toISOString();
     }
-    
+
     setButtonLoading(btn, true, AdminMessages.SAVE_USER_PROGRESS);
-    
+
     try {
         if (!_.isNil(editingKey)) {
             await fetchAPI(AdminActions.UPDATE_KEY, { license_key: editingKey, plan_type: planType, status: status, expires_at: expiresAt });
@@ -604,7 +604,7 @@ async function handleSaveUser() {
             const res = await fetchAPI(AdminActions.CREATE_KEY, { username, plan_type: planType });
             showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, 'license_key'), ToastType.SUCCESS);
         }
-        
+
         setTimeout(() => {
             closeModal(DOMIds.USER_MODAL);
             loadUsers();
@@ -617,7 +617,7 @@ async function handleSaveUser() {
     }
 }
 
-window.openDeleteModal = function(key) {
+window.openDeleteModal = function (key) {
     deletingKey = key;
     el(DOMIds.DELETE_KEY_DISPLAY).textContent = key;
     el(DOMIds.DELETE_MODAL).classList.add('active');
@@ -655,7 +655,7 @@ async function handleHardDelete() {
 
 async function handleResetDevice() {
     if (!resettingKey) return;
-    
+
     const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', resettingKey);
     if (!confirm(confirmMsg)) return;
 
@@ -665,7 +665,7 @@ async function handleResetDevice() {
     try {
         await fetchAPI(AdminActions.RESET_DEVICE, { license_key: resettingKey });
         showToast(AdminMessages.RESET_DEVICE_SUCCESS, ToastType.SUCCESS);
-        
+
         closeModal(DOMIds.DEVICE_MODAL);
         loadUsers();
     } catch (error) {
@@ -675,7 +675,7 @@ async function handleResetDevice() {
     }
 }
 
-window.copyToClipboard = function(text) {
+window.copyToClipboard = function (text) {
     navigator.clipboard.writeText(text).then(() => {
         showToast(AdminMessages.COPY_SUCCESS + text, ToastType.SUCCESS);
     }).catch(err => {
@@ -684,12 +684,12 @@ window.copyToClipboard = function(text) {
     });
 }
 
-window.openDeviceModal = function(key) {
+window.openDeviceModal = function (key) {
     const user = _.find(window.adminUsersData || [], u => _.get(u, 'license_key') === key);
     if (!user) return;
-    
+
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
-    
+
     const emptyStateHtml = `
         <div class="empty-device">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
@@ -722,29 +722,29 @@ window.openDeviceModal = function(key) {
             deviceIdStr = renderCard(_.get(user, 'device_id'));
         }
     }
-    
+
     container.innerHTML = deviceIdStr;
-    
+
     const resetBtn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     if (!_.isEmpty(_.get(user, 'device_id'))) {
         resetBtn.style.display = AdminConstants.DISPLAY_FLEX;
-        resetBtn.onclick = function() {
+        resetBtn.onclick = function () {
             resetDevice(key);
             closeModal(DOMIds.DEVICE_MODAL);
         };
     } else {
         resetBtn.style.display = AdminConstants.DISPLAY_NONE;
     }
-    
+
     el(DOMIds.DEVICE_MODAL).classList.add('active');
 }
 
 async function handleSyncExpired() {
     const btn = el('sync-expired-btn');
     if (!btn) return;
-    
+
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SYNC);
-    
+
     try {
         const result = await fetchAPI(AdminActions.SYNC_EXPIRED);
         const count = _.get(result, 'count', 0);
@@ -762,9 +762,9 @@ async function handleSyncExpired() {
 function initEventListeners() {
     el(DOMIds.LOGIN_BTN)?.addEventListener('click', handleLogin);
     el(DOMIds.LOGOUT_BTN)?.addEventListener('click', handleLogout);
-    
+
     el('sync-expired-btn')?.addEventListener('click', handleSyncExpired);
-    
+
     el(DOMIds.PRO_UNLIMITED)?.addEventListener('change', (e) => {
         const disabled = _.get(e, 'target.checked', false);
         el(DOMIds.PRO_QUOTA_VIDEO).disabled = disabled;
@@ -773,7 +773,7 @@ function initEventListeners() {
     });
 
     el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener('click', handleSaveConfig);
-    
+
     el(DOMIds.SEARCH_INPUT)?.addEventListener('input', applyFilters);
     el(DOMIds.FILTER_PLAN)?.addEventListener('change', applyFilters);
     el(DOMIds.FILTER_STATUS)?.addEventListener('change', applyFilters);
@@ -807,7 +807,7 @@ function initEventListeners() {
         configDropdownMenu.addEventListener('click', (e) => {
             e.stopPropagation();
         });
-        
+
         el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener('click', () => {
             configDropdownMenu.style.display = AdminConstants.DISPLAY_NONE;
         });

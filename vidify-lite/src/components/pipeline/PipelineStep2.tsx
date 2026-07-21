@@ -4,7 +4,7 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { appError } from "../../lib/logger.js";
-import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS } from "../../constants";
+import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS, PIPELINE_STEP2_TEXTS } from "../../constants";
 
 import * as LucideIcons from "lucide-react";
 
@@ -57,11 +57,14 @@ export default function PipelineStep2(props: PipelineWizardState) {
     handleExtractCharacter,
     handleApplyCharacterToThumbnails,
     handleTriggerSEOBoost,
+    currentLang,
   } = props;
+
+  const stepTexts = PIPELINE_STEP2_TEXTS[currentLang as keyof typeof PIPELINE_STEP2_TEXTS] || PIPELINE_STEP2_TEXTS.en;
 
   const handleUpdateCharacter = (charId: string, field: "name" | "description" | "prompt", value: string) => {
     setProject((prev) => {
-      const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
+      const updatedChars = _.map(prev.visualConfig?.characters || [], (c) => {
         if (c.id === charId) {
           return {
             ...c,
@@ -133,11 +136,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
             <div className="bg-slate-950/45 border border-slate-800 p-4 rounded-xl flex flex-col space-y-4">
               <div className="flex items-center gap-2 mb-1 border-b border-slate-800/60 pb-3">
                 <Sliders className="w-4 h-4 text-slate-400" />
-                <span className="text-[11px] font-bold text-slate-300 font-mono uppercase tracking-wider">{t.Settings || "Cài Đặt Cấu Hình"}</span>
+                <span className="text-[11px] font-bold text-slate-300 font-mono uppercase tracking-wider">{t.Settings}</span>
               </div>
-              
+
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-1">{t.Batch_Count} (Ảnh & Tiêu đề)</span>
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-1">{t.Batch_Count} {stepTexts.BATCH_COUNT_LABEL ? `(${stepTexts.BATCH_COUNT_LABEL})` : ''}</span>
                 <div className="relative flex items-center bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 transition-all shadow-sm focus-within:border-rose-500/80 min-w-[120px]">
                   <select
                     value={project.visualConfig.thumbnailCount || 2}
@@ -301,6 +304,25 @@ export default function PipelineStep2(props: PipelineWizardState) {
                     </div>
                   </div>
                 )}
+
+                {_.isEmpty(project.visualConfig?.thumbnailReferenceImages) && (
+                  <div className="pt-2 flex flex-col gap-2 border-t border-slate-800/50">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleExtractThumbnailStyle}
+                        disabled={true}
+                        isLoading={!!loadingStates["extractThumbnailStyle"]}
+                        className="flex-1 text-white font-bold text-[10px] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t.System_extracts_Style_Art || t.Extract_Style}
+                      >
+                        <Sparkles className="w-3 h-3 text-rose-100" />
+                        <span>{t.Extract_Style}</span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -313,7 +335,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
               <span>{t.charConsistencyTitle}</span>
               <span className="text-[9px] bg-emerald-950/45 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-mono font-normal flex items-center gap-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                CHARACTER REFERENCE NODE
+                {stepTexts.CHAR_REF_NODE}
               </span>
             </h4>
           </div>
@@ -336,7 +358,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                       <RefreshCw className={cn(`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`)} />
                       {t.charReAnalyze}
                     </Button>
-                    {project.visualConfig.characters.some((c) => c.prompt || c.description) && project.thumbnails && project.thumbnails.length > 0 && (
+                    {_.some(project.visualConfig.characters, (c) => c.prompt || c.description) && !_.isEmpty(project.thumbnails) && (
                       <Button
                         type="button"
                         variant="primary"
@@ -443,7 +465,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setProject((prev) => {
-                                            const updatedChars = (prev.visualConfig?.characters || []).map((c) => {
+                                            const updatedChars = _.map(prev.visualConfig?.characters || [], (c) => {
                                               if (c.id === char.id) {
                                                 const newImgs = [...(c.images || [])];
                                                 newImgs.splice(idx, 1);
@@ -548,215 +570,215 @@ export default function PipelineStep2(props: PipelineWizardState) {
 
           {/* CỘT PHẢI: KẾT QUẢ ẢNH BÌA */}
           <div className="space-y-4 h-full flex flex-col">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-            <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              <Layout className="w-5 h-5 text-rose-500" />
-              {t.thumbnailHeader}
-            </h4>
-            {project.thumbnails && project.thumbnails.length > 0 && (
-              <Button
-                variant="primary"
-                onClick={handleRenderAllThumbnailImages}
-                disabled={!!loadingStates["renderAllThumbs_loading"]}
-                isLoading={!!loadingStates["renderAllThumbs_loading"]}
-                className="flex items-center gap-1.5 shadow-md text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 border border-rose-500/30 active:scale-95 transition-all text-white py-2 h-auto"
-                title={t.bulkRenderThumbnails_loading}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                <span>{t.bulkRenderThumbnails}</span>
-              </Button>
-            )}
-          </div>
-
-          {!project.thumbnails || project.thumbnails.length === 0 ? (
-            loadingStates["assetAndThumbnail_loading"] ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-pulse">
-                {[1, 2].map((idx) => (
-                  <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col sm:flex-row p-4 gap-4">
-                    <div className="sm:w-1/2 aspect-video bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800/65">
-                      <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
-                    </div>
-                    <div className="flex-1 space-y-3 pt-2">
-                      <div className="h-4 bg-slate-900 rounded-md w-1/3"></div>
-                      <div className="h-3 bg-slate-900 rounded-md w-full"></div>
-                      <div className="h-3 bg-slate-900 rounded-md w-5/6"></div>
-                      <div className="h-2.5 bg-slate-900 rounded-md w-2/3"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-10 text-center flex flex-col items-center justify-center w-full h-full flex-1 space-y-4 group hover:border-slate-700/60 transition-all duration-300">
-                <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse">
-                  <ImageIcon className="w-5 h-5 text-rose-500" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">{t.No_Thumbnail_Prompts}</h4>
-                  <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">{t.Draft_eye_catching_visual}</p>
-                </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+              <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <Layout className="w-5 h-5 text-rose-500" />
+                {t.thumbnailHeader}
+              </h4>
+              {project.thumbnails && project.thumbnails.length > 0 && (
                 <Button
-                  variant="secondary"
-                  onClick={() => {
-                    handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.EMPTY);
-                    if (handleTriggerSEOBoost) handleTriggerSEOBoost(true, ThumbnailActionPosition.EMPTY);
-                  }}
-                  disabled={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
-                  isLoading={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
-                  className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5"
-                  title={t.Draft_visual_arrangements}
+                  variant="primary"
+                  onClick={handleRenderAllThumbnailImages}
+                  disabled={!!loadingStates["renderAllThumbs_loading"]}
+                  isLoading={!!loadingStates["renderAllThumbs_loading"]}
+                  className="flex items-center gap-1.5 shadow-md text-xs font-bold bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 border border-rose-500/30 active:scale-95 transition-all text-white py-2 h-auto"
+                  title={t.bulkRenderThumbnails_loading}
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                  <span>{t.Generate_Thumbnails}</span>
+                  <span>{t.bulkRenderThumbnails}</span>
                 </Button>
-              </div>
-            )
-          ) : (
-            <div className="relative">
-              {loadingStates["assetAndThumbnail_loading"] && (
-                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
-                  <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
-                    <Sparkles className="w-8 h-8 text-rose-500" />
-                  </div>
-                  <div className="space-y-1 max-w-sm">
-                    <p className="font-bold text-slate-205 text-sm">{t.Drafting_CTR_thumbnail}</p>
-                    <p className="text-[11px] text-slate-455 font-sans leading-relaxed">{t.Drafting_eye_catching_vis}</p>
-                  </div>
-                </div>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {(project.thumbnails || []).map((thumb) => (
-                  <div key={thumb.id} className="bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5">
-                    <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
-                      {thumb.imageUrl ? (
-                        <>
-                          <img
-                            referrerPolicy="no-referrer"
-                            src={thumb.imageUrl}
-                            alt={t.thumbnail}
-                            className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-700"
-                            onClick={() =>
-                              setZoomedImage({
-                                url: thumb.imageUrl!,
-                                title: `Thumbnail (${thumb.style} Look)`,
-                                prompt: thumb.prompt,
-                              })
-                            }
-                          />
-                        </>
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none">
-                          <ImageIcon className="w-8 h-8 text-rose-500/50 mb-2" />
-                          <span className="text-slate-500/50 font-mono text-[10px] tracking-widest uppercase">{t.No_Render_Done}</span>
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 flex gap-2 flex-wrap z-10">
-                        <span className="bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                          {thumb.style} {t.Look}
-                        </span>
-                        {thumb.hasText && <span className="bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">{t.withText}</span>}
+            </div>
+
+            {!project.thumbnails || project.thumbnails.length === 0 ? (
+              loadingStates["assetAndThumbnail_loading"] ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-pulse">
+                  {_.map([1, 2], (idx) => (
+                    <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col sm:flex-row p-4 gap-4">
+                      <div className="sm:w-1/2 aspect-video bg-slate-900 rounded-lg flex items-center justify-center border border-slate-800/65">
+                        <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
                       </div>
-                      <div className="absolute inset-x-0 -bottom-2 h-2/3 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent pointer-events-none z-10"></div>
+                      <div className="flex-1 space-y-3 pt-2">
+                        <div className="h-4 bg-slate-900 rounded-md w-1/3"></div>
+                        <div className="h-3 bg-slate-900 rounded-md w-full"></div>
+                        <div className="h-3 bg-slate-900 rounded-md w-5/6"></div>
+                        <div className="h-2.5 bg-slate-900 rounded-md w-2/3"></div>
+                      </div>
                     </div>
-                    <div className="px-5 pb-5 pt-4 flex-1 flex flex-col relative z-20 bg-slate-900 rounded-b-xl -mt-1">
-                      {thumb.hasText && thumb.textText && (
-                        <h3 className="text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-rose-500 font-black text-[15px] uppercase tracking-tight mb-3 line-clamp-2 drop-shadow-md" title={thumb.textText}>
-                          "{thumb.textText}"
-                        </h3>
-                      )}
-
-                      <div className="relative group/prompt mb-3">
-                        <p className="text-[11px] text-slate-400 font-medium italic leading-relaxed line-clamp-3" title={thumb.prompt}>
-                          "{thumb.prompt}"
-                        </p>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            navigator.clipboard.writeText(thumb.prompt);
-                            setInfoMsg(t.Copied_thumbnail_prompt);
-                          }}
-                          className="absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-850 shadow-xl h-auto w-auto hover:text-white"
-                          title={t.Copy_Prompt}
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-
-                      <div className="mt-auto mb-5 space-y-2.5 pt-4 border-t border-slate-800/50">
-                        <div className="flex items-center gap-3 text-[10.5px]">
-                          <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-rose-500/80 shadow-inner">
-                            <Layout className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                            <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Layout}</span>
-                            <span className="text-slate-200 font-bold truncate" title={thumb.layout || t.composition169}>{thumb.layout || t.composition169}</span>
-                          </div>
-                        </div>
-                        {thumb.hasText ? (
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-10 text-center flex flex-col items-center justify-center w-full h-full flex-1 space-y-4 group hover:border-slate-700/60 transition-all duration-300">
+                  <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse">
+                    <ImageIcon className="w-5 h-5 text-rose-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">{t.No_Thumbnail_Prompts}</h4>
+                    <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">{t.Draft_eye_catching_visual}</p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.EMPTY);
+                      if (handleTriggerSEOBoost) handleTriggerSEOBoost(true, ThumbnailActionPosition.EMPTY);
+                    }}
+                    disabled={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
+                    isLoading={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
+                    className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5"
+                    title={t.Draft_visual_arrangements}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                    <span>{t.Generate_Thumbnails}</span>
+                  </Button>
+                </div>
+              )
+            ) : (
+              <div className="relative">
+                {loadingStates["assetAndThumbnail_loading"] && (
+                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
+                    <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
+                      <Sparkles className="w-8 h-8 text-rose-500" />
+                    </div>
+                    <div className="space-y-1 max-w-sm">
+                      <p className="font-bold text-slate-205 text-sm">{t.Drafting_CTR_thumbnail}</p>
+                      <p className="text-[11px] text-slate-455 font-sans leading-relaxed">{t.Drafting_eye_catching_vis}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {_.map(project.thumbnails || [], (thumb) => (
+                    <div key={thumb.id} className="bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5">
+                      <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                        {thumb.imageUrl ? (
                           <>
-                            <div className="flex items-center gap-3 text-[10.5px]">
-                              <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-indigo-400/80 shadow-inner">
-                                <Type className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                                <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Font}</span>
-                                <span className="text-slate-200 font-bold truncate" title={thumb.typography}>{thumb.typography}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 text-[10.5px]">
-                              <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-amber-400/80 shadow-inner">
-                                <Palette className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                                <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Color}</span>
-                                <span className="text-slate-200 font-bold truncate" title={thumb.colorSuggestion}>{thumb.colorSuggestion}</span>
-                              </div>
-                            </div>
+                            <img
+                              referrerPolicy="no-referrer"
+                              src={thumb.imageUrl}
+                              alt={t.thumbnail}
+                              className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-700"
+                              onClick={() =>
+                                setZoomedImage({
+                                  url: thumb.imageUrl!,
+                                  title: `Thumbnail (${thumb.style} Look)`,
+                                  prompt: thumb.prompt,
+                                })
+                              }
+                            />
                           </>
                         ) : (
-                          <div className="flex items-center gap-3 text-[10.5px]">
-                            <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-emerald-400/80 shadow-inner">
-                              <Focus className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                              <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.focusTitle}</span>
-                              <span className="text-slate-200 font-bold truncate" title={thumb.subjectFocus}>{thumb.subjectFocus}</span>
-                            </div>
+                          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/20 to-orange-500/20 flex flex-col items-center justify-center pointer-events-none">
+                            <ImageIcon className="w-8 h-8 text-rose-500/50 mb-2" />
+                            <span className="text-slate-500/50 font-mono text-[10px] tracking-widest uppercase">{t.No_Render_Done}</span>
                           </div>
                         )}
+                        <div className="absolute top-3 left-3 flex gap-2 flex-wrap z-10">
+                          <span className="bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
+                            {thumb.style} {t.Look}
+                          </span>
+                          {thumb.hasText && <span className="bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">{t.withText}</span>}
+                        </div>
+                        <div className="absolute inset-x-0 -bottom-2 h-2/3 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent pointer-events-none z-10"></div>
                       </div>
-                      <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
-                        <Button
-                          variant="primary"
-                          onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
-                          disabled={!!loadingStates["renderThumb_" + thumb.id]}
-                          isLoading={!!loadingStates["renderThumb_" + thumb.id]}
-                          className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
-                            } active:scale-95`)}
-                          title={t.Render_YouTube_mockup_thu}
-                        >
-                          <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
-                          <span className="relative z-10">{thumb.imageUrl ? (t.Recreate_Mockup) : t.Render_Mockup}</span>
-                        </Button>
-                        {thumb.imageUrl && (
-                          <Button
-                            variant="secondary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadImage(thumb.imageUrl!, `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`);
-                            }}
-                            className="shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow"
-                            title={t.downloadImage}
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
+                      <div className="px-5 pb-5 pt-4 flex-1 flex flex-col relative z-20 bg-slate-900 rounded-b-xl -mt-1">
+                        {thumb.hasText && thumb.textText && (
+                          <h3 className="text-transparent bg-clip-text bg-gradient-to-br from-amber-500 to-rose-500 font-black text-[15px] uppercase tracking-tight mb-3 line-clamp-2 drop-shadow-md" title={thumb.textText}>
+                            "{thumb.textText}"
+                          </h3>
                         )}
+
+                        <div className="relative group/prompt mb-3">
+                          <p className="text-[11px] text-slate-400 font-medium italic leading-relaxed line-clamp-3" title={thumb.prompt}>
+                            "{thumb.prompt}"
+                          </p>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              navigator.clipboard.writeText(thumb.prompt);
+                              setInfoMsg(t.Copied_thumbnail_prompt);
+                            }}
+                            className="absolute -top-2 right-0 bg-slate-900/90 backdrop-blur-md text-slate-300 p-1.5 rounded-full border border-slate-700/50 opacity-0 group-hover/prompt:opacity-100 transition-all cursor-pointer hover:bg-slate-850 shadow-xl h-auto w-auto hover:text-white"
+                            title={t.Copy_Prompt}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+
+                        <div className="mt-auto mb-5 space-y-2.5 pt-4 border-t border-slate-800/50">
+                          <div className="flex items-center gap-3 text-[10.5px]">
+                            <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-rose-500/80 shadow-inner">
+                              <Layout className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                              <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Layout}</span>
+                              <span className="text-slate-200 font-bold truncate" title={thumb.layout || t.composition169}>{thumb.layout || t.composition169}</span>
+                            </div>
+                          </div>
+                          {thumb.hasText ? (
+                            <>
+                              <div className="flex items-center gap-3 text-[10.5px]">
+                                <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-indigo-400/80 shadow-inner">
+                                  <Type className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                                  <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Font}</span>
+                                  <span className="text-slate-200 font-bold truncate" title={thumb.typography}>{thumb.typography}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 text-[10.5px]">
+                                <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-amber-400/80 shadow-inner">
+                                  <Palette className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                                  <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.Color}</span>
+                                  <span className="text-slate-200 font-bold truncate" title={thumb.colorSuggestion}>{thumb.colorSuggestion}</span>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-3 text-[10.5px]">
+                              <div className="w-7 h-7 rounded-lg bg-slate-800/40 flex items-center justify-center shrink-0 border border-slate-700/40 text-emerald-400/80 shadow-inner">
+                                <Focus className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                                <span className="font-extrabold uppercase tracking-widest text-slate-500 text-[8px]">{t.focusTitle}</span>
+                                <span className="text-slate-200 font-bold truncate" title={thumb.subjectFocus}>{thumb.subjectFocus}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className={(!thumb.hasText ? "mt-auto pt-2" : "pt-1") + (thumb.imageUrl ? " flex gap-2 w-full" : "")}>
+                          <Button
+                            variant="primary"
+                            onClick={() => handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style)}
+                            disabled={!!loadingStates["renderThumb_" + thumb.id]}
+                            isLoading={!!loadingStates["renderThumb_" + thumb.id]}
+                            className={cn(`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group/btn ${thumb.imageUrl ? "bg-slate-800 hover:bg-slate-700 text-slate-200 shadow border border-slate-700/50" : "bg-gradient-to-br from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-400 text-white shadow-lg shadow-rose-500/20 border border-rose-500/30"
+                              } active:scale-95`)}
+                            title={t.Render_YouTube_mockup_thu}
+                          >
+                            <Sparkles className={cn(`w-4 h-4 ${thumb.imageUrl ? "text-slate-400" : "text-amber-300"}`)} />
+                            <span className="relative z-10">{thumb.imageUrl ? (t.Recreate_Mockup) : t.Render_Mockup}</span>
+                          </Button>
+                          {thumb.imageUrl && (
+                            <Button
+                              variant="secondary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(thumb.imageUrl!, `thumbnail-${thumb.id || "idea"}-${thumb.style || "Look"}.png`);
+                              }}
+                              className="shrink-0 p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-xl text-slate-200 transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow"
+                              title={t.downloadImage}
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         </div>
 

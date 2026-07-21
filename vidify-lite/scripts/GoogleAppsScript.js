@@ -6,11 +6,16 @@ const ConfigCols = { KEY: 0, VALUE: 1 };
 const AdminCols = { USERNAME: 0, PASSWORD: 1, TOKEN: 2 };
 const HttpCode = { OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, INTERNAL_ERROR: 500 };
 
+const KeysCols = { KEY: 0, VALUE: 1, ASSIGNED_TO: 2 };
+const AccountsCols = { EMAIL: 0, PASSWORD: 1, RECOVERY_EMAIL: 2, STATUS: 3, ASSIGNED_TO: 4 };
+
 const Config = {
   SHEET_USERS: "Users",
   SHEET_USAGE: "Usage",
   SHEET_CONFIG: "Config",
   SHEET_ADMINS: "Admins",
+  SHEET_KEYS: "Keys",
+  SHEET_ACCOUNTS: "Accounts",
   CONFIG_KEYS: [
     "free_quota_video", "free_quota_image", "free_quota_voice",
     "pro_quota_video", "pro_quota_image", "pro_quota_voice", "pro_unlimited"
@@ -70,11 +75,25 @@ function doPost(e) {
       if (action === 'admin_reset_device') return adminResetDevice(params);
       if (action === 'admin_get_config') return adminGetConfig();
       if (action === 'admin_update_config') return adminUpdateConfig(params);
-      if (action === 'admin_sync_expired') return adminSyncExpired();
+      if (action === 'admin_get_api_keys') return adminGetApiKeys();
+      if (action === 'admin_get_accounts') return adminGetAccounts();
+      if (action === 'admin_update_api_keys') return updateApiKeys(params); // reuse same function since it just updates
+      if (action === 'admin_add_account') return addAccount(params);
+      if (action === 'admin_update_account') return updateAccountAdmin(params);
+      if (action === 'admin_delete_account') return deleteAccountAdmin(params);
+      if (action === 'admin_delete_api_keys') return deleteApiKeysAdmin(params);
+      if (action === 'admin_update_account_status') return updateAccountStatus(params);
     }
     
     if (action === 'verify_key') return verifyKey(params);
     if (action === 'update_usage') return updateUsage(params);
+    
+    // New Settings endpoints
+    if (action === 'get_api_keys') return getApiKeys(params);
+    if (action === 'update_api_keys') return updateApiKeys(params);
+    if (action === 'get_accounts') return getAccounts(params);
+    if (action === 'add_account') return addAccount(params);
+    if (action === 'update_account_status') return updateAccountStatus(params);
     
     return jsonResponse({ error: Messages.INVALID_ACTION, code: HttpCode.BAD_REQUEST });
   } catch (error) {
@@ -410,6 +429,208 @@ function jsonResponse(data) {
   return output;
 }
 
+function matchAssignedTo(rowAssignedTo, licenseKey, planType) {
+  if (!rowAssignedTo) return false;
+  if (rowAssignedTo === "ALL") return true;
+  if (planType && rowAssignedTo === planType) return true;
+  if (licenseKey && rowAssignedTo === licenseKey) return true;
+  return false;
+}
+
+function getApiKeys(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const licenseKey = params.license_key || "";
+  const planType = params.plan_type || "";
+
+  const data = sheet.getDataRange().getValues();
+  let geminiKey = "";
+  let ai33Key = "";
+  
+  // Chúng ta sẽ ưu tiên gán theo thứ tự: ALL -> PlanType -> LicenseKey
+  // Bằng cách duyệt và cập nhật liên tục nếu độ ưu tiên cao hơn
+  let geminiPriority = -1;
+  let ai33Priority = -1;
+  
+  const getPriority = (assigned) => {
+    if (assigned === "ALL") return 0;
+    if (assigned === planType) return 1;
+    if (assigned === licenseKey) return 2;
+    return -1;
+  };
+
+  for (let i = 1; i < data.length; i++) {
+    const k = data[i][KeysCols.KEY];
+    const v = data[i][KeysCols.VALUE] || "";
+    const assigned = data[i][KeysCols.ASSIGNED_TO] || "ALL";
+    const prio = getPriority(assigned);
+    
+    if (prio !== -1) {
+      if (k === "GEMINI_API_KEY" && prio >= geminiPriority) {
+        geminiKey = v;
+        geminiPriority = prio;
+      }
+      if (k === "AI33_API_KEY" && prio >= ai33Priority) {
+        ai33Key = v;
+        ai33Priority = prio;
+      }
+    }
+  }
+  
+  return jsonResponse({ apiKeys: { geminiKey, ai33Key } });
+}
+
+function adminGetApiKeys() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const data = sheet.getDataRange().getValues();
+  const keys = [];
+  for (let i = 1; i < data.length; i++) {
+    keys.push({
+      id: i,
+      key: data[i][KeysCols.KEY] || "",
+      value: data[i][KeysCols.VALUE] || "",
+      assignedTo: data[i][KeysCols.ASSIGNED_TO] || "ALL"
+    });
+  }
+  return jsonResponse({ keys });
+}
+
+function updateApiKeys(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const { geminiKey, ai33Key, assignedTo = "ALL" } = params;
+  const data = sheet.getDataRange().getValues();
+  
+  const updateOrAdd = (key, value) => {
+    // Chỉ ghi đè nếu tồn tại cùng AssignedTo
+    const rowIndex = data.findIndex((row, idx) => idx > 0 && row[KeysCols.KEY] === key && (row[KeysCols.ASSIGNED_TO] || "ALL") === assignedTo);
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex + 1, KeysCols.VALUE + 1).setValue(value || "");
+    } else {
+      sheet.appendRow([key, value || "", assignedTo]);
+    }
+  };
+  
+  updateOrAdd("GEMINI_API_KEY", geminiKey);
+  updateOrAdd("AI33_API_KEY", ai33Key);
+  
+  return jsonResponse({ status: "success" });
+}
+
+function deleteApiKeysAdmin(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const { assignedTo } = params;
+  if (!assignedTo) return jsonResponse({ error: "Thiếu assignedTo", code: HttpCode.BAD_REQUEST });
+  
+  const data = sheet.getDataRange().getValues();
+  // Xóa từ dưới lên để không bị lệch index
+  for (let i = data.length - 1; i > 0; i--) {
+    if ((data[i][KeysCols.ASSIGNED_TO] || "ALL") === assignedTo) {
+      sheet.deleteRow(i + 1);
+    }
+  }
+  
+  return jsonResponse({ status: "success" });
+}
+
+function getAccounts(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const licenseKey = params.license_key || "";
+  const planType = params.plan_type || "";
+
+  const data = sheet.getDataRange().getValues();
+  const accounts = [];
+  for (let i = 1; i < data.length; i++) {
+    const assigned = data[i][AccountsCols.ASSIGNED_TO] || "ALL";
+    if (matchAssignedTo(assigned, licenseKey, planType)) {
+      accounts.push({
+        id: i, // row index
+        email: data[i][AccountsCols.EMAIL] || "",
+        password: data[i][AccountsCols.PASSWORD] || "",
+        recoveryEmail: data[i][AccountsCols.RECOVERY_EMAIL] || "",
+        status: data[i][AccountsCols.STATUS] || "Active",
+        assignedTo: assigned
+      });
+    }
+  }
+  return jsonResponse({ accounts });
+}
+
+function adminGetAccounts() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const data = sheet.getDataRange().getValues();
+  const accounts = [];
+  for (let i = 1; i < data.length; i++) {
+    accounts.push({
+      id: i,
+      email: data[i][AccountsCols.EMAIL] || "",
+      password: data[i][AccountsCols.PASSWORD] || "",
+      recoveryEmail: data[i][AccountsCols.RECOVERY_EMAIL] || "",
+      status: data[i][AccountsCols.STATUS] || "Active",
+      assignedTo: data[i][AccountsCols.ASSIGNED_TO] || "ALL"
+    });
+  }
+  return jsonResponse({ accounts });
+}
+
+function addAccount(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const acc = params.account;
+  if (!acc || !acc.email) return jsonResponse({ error: "Thiếu thông tin tài khoản", code: HttpCode.BAD_REQUEST });
+  
+  sheet.appendRow([acc.email, acc.password || "", acc.recoveryEmail || "", acc.status || "Active", acc.assignedTo || "ALL"]);
+  return jsonResponse({ status: "success" });
+}
+
+function updateAccountStatus(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const { rowIndex, status } = params;
+  if (!rowIndex || !status) return jsonResponse({ error: "Thiếu thông tin", code: HttpCode.BAD_REQUEST });
+  
+  sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(status);
+  return jsonResponse({ status: "success" });
+}
+
+function updateAccountAdmin(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const acc = params.account;
+  if (!acc || !acc.id || !acc.email) return jsonResponse({ error: "Thiếu thông tin tài khoản", code: HttpCode.BAD_REQUEST });
+  
+  sheet.getRange(acc.id + 1, AccountsCols.EMAIL + 1).setValue(acc.email);
+  sheet.getRange(acc.id + 1, AccountsCols.PASSWORD + 1).setValue(acc.password || "");
+  sheet.getRange(acc.id + 1, AccountsCols.RECOVERY_EMAIL + 1).setValue(acc.recoveryEmail || "");
+  sheet.getRange(acc.id + 1, AccountsCols.ASSIGNED_TO + 1).setValue(acc.assignedTo || "ALL");
+  
+  return jsonResponse({ status: "success" });
+}
+
+function deleteAccountAdmin(params) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+  
+  const { rowIndex } = params;
+  if (!rowIndex) return jsonResponse({ error: "Thiếu thông tin rowIndex", code: HttpCode.BAD_REQUEST });
+  
+  sheet.deleteRow(rowIndex + 1);
+  return jsonResponse({ status: "success" });
+}
+
 function setupSeedData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
@@ -463,6 +684,22 @@ function setupSeedData() {
     usageSheet.appendRow(["PRO-99999", 5, 20, 1000, nowStr]);
     usageSheet.appendRow(["PRO-LIFE", 10, 50, 5000, nowStr]);
     usageSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#fce5cd");
+  }
+
+  let keysSheet = ss.getSheetByName(Config.SHEET_KEYS);
+  if (!keysSheet) {
+    keysSheet = ss.insertSheet(Config.SHEET_KEYS);
+    keysSheet.appendRow(["Key", "Value", "AssignedTo"]);
+    keysSheet.appendRow(["GEMINI_API_KEY", "", "ALL"]);
+    keysSheet.appendRow(["AI33_API_KEY", "", "ALL"]);
+    keysSheet.getRange("A1:C1").setFontWeight("bold").setBackground("#d9ead3");
+  }
+
+  let accountsSheet = ss.getSheetByName(Config.SHEET_ACCOUNTS);
+  if (!accountsSheet) {
+    accountsSheet = ss.insertSheet(Config.SHEET_ACCOUNTS);
+    accountsSheet.appendRow(["Email", "Password", "RecoveryEmail", "Status", "AssignedTo"]);
+    accountsSheet.getRange("A1:E1").setFontWeight("bold").setBackground("#c9daf8");
   }
 
   SpreadsheetApp.getUi().alert(Messages.SEED_SUCCESS);

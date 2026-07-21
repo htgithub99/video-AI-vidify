@@ -61,7 +61,8 @@ app.use(express.urlencoded({ limit: SERVER_CONFIG.LIMIT_500MB, extended: true })
 app.use((req, res, next) => {
   const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || "";
   const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || "";
-  requestContext.run({ geminiKey, ai33Key }, next);
+  const licenseKey = (req.headers["x-license-key"] as string) || "";
+  requestContext.run({ geminiKey, ai33Key, licenseKey }, next);
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));

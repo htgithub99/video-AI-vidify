@@ -3,6 +3,8 @@ import { LicenseService } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
 import { SecurityConstants, SecurityMessages, FeatureType, PlanType, LicenseStatus } from '../../constants/security.js';
+import { HTTP_METHODS, API_ROUTES } from '../../constants/index.js';
+import { requestContext } from '../utils/requestContext.js';
 
 export const requireLicense = (featureType?: FeatureType) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -20,7 +22,7 @@ export const requireLicense = (featureType?: FeatureType) => {
             }
 
             if (!_.isEqual(license.status, LicenseStatus.ACTIVE)) {
-                const isViewingProjects = _.isEqual(req.method, 'GET') && _.includes(req.originalUrl, '/projects');
+                const isViewingProjects = _.isEqual(req.method, HTTP_METHODS.GET) && _.includes(req.originalUrl, API_ROUTES.PROJECTS);
                 if (!isViewingProjects) {
                     return res.status(403).json({ 
                         error: SecurityMessages.INACTIVE_ACCOUNT_VIEW_ONLY, 
@@ -29,7 +31,12 @@ export const requireLicense = (featureType?: FeatureType) => {
                 }
             }
 
-            _.set(req, 'licenseInfo', license);
+            _.set(req, SecurityConstants.LICENSE_INFO_KEY, license);
+            
+            const store = requestContext.getStore();
+            if (store) {
+                store.planType = license.plan_type;
+            }
 
             if (_.isNil(featureType)) {
                 return next();
@@ -38,12 +45,14 @@ export const requireLicense = (featureType?: FeatureType) => {
             const proPlans = [PlanType.PRO, PlanType.PRO_LIFETIME, PlanType.PRO_MONTHLY, PlanType.PRO_WEEKLY];
             const isPro = _.some(proPlans, plan => _.includes(license.plan_type, plan));
 
-            if (isPro && _.get(license, 'quotas.pro_unlimited', false)) {
+            if (isPro && _.get(license, SecurityConstants.QUOTAS_PRO_UNLIMITED, false)) {
                 return next();
             }
 
-            const currentUsage = _.get(license, `usage.${featureType}`, 0);
-            const maxLimit = isPro ? _.get(license, `quotas.pro_${featureType}`, 0) : _.get(license, `quotas.free_${featureType}`, 0);
+            const currentUsage = _.get(license, `${SecurityConstants.USAGE_PREFIX}${featureType}`, 0);
+            const maxLimit = isPro 
+                ? _.get(license, `${SecurityConstants.QUOTAS_PRO_PREFIX}${featureType}`, 0) 
+                : _.get(license, `${SecurityConstants.QUOTAS_FREE_PREFIX}${featureType}`, 0);
 
             if (currentUsage >= maxLimit) {
                 const planName = isPro ? SecurityMessages.PRO_PLAN : SecurityMessages.FREE_PLAN;
