@@ -4,7 +4,6 @@ import { usePipelineWizard } from "./pipeline/usePipelineWizard";
 import PipelineStep0 from "./pipeline/PipelineStep0";
 import PipelineStep1 from "./pipeline/PipelineStep1";
 import PipelineStep2 from "./pipeline/PipelineStep2";
-import PipelineStep3 from "./pipeline/PipelineStep3";
 import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
 import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
@@ -20,7 +19,7 @@ import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { AlertCircle, Download, Pause, Terminal, Workflow } from "lucide-react";
 
-const { ArrowLeft, Settings2, Volume2, Play, User, Layers, Check, Sparkles, Search, X, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
+const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Volume2, Play, User, Layers, Check, Sparkles, Search, X, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
 
 export default function PipelineWizard(props: PipelineWizardProps) {
   const wizard = usePipelineWizard(props);
@@ -183,6 +182,23 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         </div>
 
         <div className="flex items-center gap-2 relative">
+
+          <Tooltip content={t.Image_Generation_Settings} position="bottom">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => {
+                setShowGenSettings(!showGenSettings);
+                setShowFavVoices(false);
+                setShowFavStyles(false);
+                setShowLogsModal(false);
+              }}
+              className={cn(`p-2 rounded-lg border shadow-none h-auto w-auto ${showGenSettings ? "bg-rose-500/10 border-rose-500/20 text-rose-500 hover:text-rose-500 hover:bg-rose-500/10" : "bg-slate-900 border-transparent text-slate-500 hover:text-slate-200 hover:bg-slate-850"}`)}
+            >
+              <ImageIcon className="w-4 h-4" />
+            </Button>
+          </Tooltip>
 
           <Tooltip content={t.favVoicesTitle} position="bottom">
             <Button
@@ -464,6 +480,160 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             )}
           </AnimatePresence>
 
+          <AnimatePresence>
+            {showGenSettings && (
+              <motion.div initial={{ opacity: 0, y: -15, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.98 }} transition={{ duration: 0.15, ease: "easeOut" }} style={{ transformOrigin: "top right" }} className="absolute top-full right-[50px] mt-2 w-[300px] bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-[9999] overflow-hidden">
+                <div className="p-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Mode}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.LabsFlow })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode !== ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        {t.Labs_Flow_Mode}
+                      </Button>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generationMode: ImageGenerationMode.GeminiChat })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        {t.Gemini_Chat_Mode}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generate_Type}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType !== GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <ImageIcon className="w-3.5 h-3.5" /> {t.Image}
+                      </Button>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <Video className="w-3.5 h-3.5" /> {t.Video}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      {Object.values(AspectRatio).map((ratio) => (
+                        <Button variant="unstyled" type="button" key={ratio} onClick={() => updateVisualConfig({ aspectRatio: ratio })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.aspectRatio === ratio || (!project.visualConfig.aspectRatio && ratio === AspectRatio.SixteenNine) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                          {ratio}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Input_Method_Labs}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Type })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod === PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <Type className="w-3 h-3" /> {t.Type_Text}
+                      </Button>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ promptInputMethod: PromptInputMethod.Paste })} className={cn(`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.promptInputMethod !== PromptInputMethod.Type ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <ClipboardPaste className="w-3 h-3" /> {t.Quick_Paste}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Sample_Count}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      {[1, 2, 3, 4].map((count) => (
+                        <Button variant="unstyled" type="button" key={count} onClick={() => updateVisualConfig({ generateCount: count })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.generateCount === count || (count === 1 && !project.visualConfig.generateCount) ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                          {count === 1 ? "1x" : `x${count}`}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow && project.visualConfig.generateType === GenerateType.Video && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Video_Duration}</div>
+                      <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                        {["4s", "6s", "8s", "10s"].map((dur) => (
+                          <Button variant="unstyled" type="button" key={dur} onClick={() => updateVisualConfig({ videoDuration: dur })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.videoDuration === dur || (!project.visualConfig.videoDuration && dur === "8s") ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                            {t[`Duration_${dur}` as keyof typeof t] || dur}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Chrome_Mode}</div>
+                    <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: true })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless !== false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        {t.Chrome_Hidden}
+                      </Button>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ chromeHeadless: false })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${project.visualConfig.chromeHeadless === false ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        {t.Chrome_Visible}
+                      </Button>
+                    </div>
+                  </div>
+                  {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generation_Speed}</div>
+                      <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+                        {GEMINI_CHAT_SPEED_OPTIONS.map((opt) => {
+                          const label = t[opt.labelKey as keyof typeof t] || opt.fallbackLabel;
+                          const isActive = project.visualConfig.geminiChatSpeed === opt.value || (!project.visualConfig.geminiChatSpeed && opt.value === GeminiChatSpeed.Slow);
+                          return (
+                            <Button variant="unstyled" type="button" key={opt.value} onClick={() => updateVisualConfig({ geminiChatSpeed: opt.value as any })} className={cn(`flex-1 py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                              {label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Batch_Delay || (currentLang === AppLanguage.VI ? APP_TEXTS.VN.BATCH_DELAY : APP_TEXTS.EN.BATCH_DELAY)}</div>
+                    <div className="relative">
+                      <select
+                        value={project.visualConfig.batchDelay || BatchDelayOption.Default}
+                        onChange={(e) => updateVisualConfig({ batchDelay: e.target.value as BatchDelayOption })}
+                        className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
+                      >
+                        {BATCH_DELAY_OPTIONS.map((opt) => {
+                          const label = t[opt.labelKey as keyof typeof t] || (currentLang === AppLanguage.VI ? APP_TEXTS.VN[opt.labelKey as keyof typeof APP_TEXTS.VN] : APP_TEXTS.EN[opt.labelKey as keyof typeof APP_TEXTS.EN]) || opt.value;
+                          return (
+                            <option key={opt.value} value={opt.value} className="bg-slate-900 text-slate-200">
+                              {label}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Drawing_Model}</div>
+                    <div className="relative">
+                      <select
+                        value={project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3}
+                        onChange={(e) => updateVisualConfig({ imageGeneratorEngine: e.target.value as any })}
+                        className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2.5 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
+                      >
+                        {project.visualConfig.generationMode === ImageGenerationMode.GeminiChat ? [
+                          <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Gemini_Pro}</option>,
+                          <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Gemini_Flash}</option>,
+                          <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Gemini_Flash_Lite}</option>
+                        ] : project.visualConfig.generateType === GenerateType.Video ? [
+                          <option key="omni-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">🎬 Omni Flash</option>,
+                          <option key="veo-lite" value={ImageGeneratorEngine.Veo3Lite} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Lite</option>,
+                          <option key="veo-fast" value={ImageGeneratorEngine.Veo3Fast} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Fast</option>,
+                          <option key="veo-quality" value={ImageGeneratorEngine.Veo3Quality} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Quality</option>
+                        ] : [
+                          <option key="imagen-3" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Imagen_3}</option>,
+                          <option key="nano-banana" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Nano_Banana_2}</option>,
+                          <option key="labs-sandbox" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Labs_Sandbox}</option>
+                        ]}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <Tooltip content={t.System_Logs} position="bottom">
             <Button
               variant="ghost"
@@ -569,14 +739,14 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className="text-[8px] font-mono text-slate-500 bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded-md font-bold">{t.NODES}</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-3.5 custom-scrollbar bg-slate-950/10">
-            {[0, 1, 2, 3, 4, 5, 6].map((stepIdx) => {
+            {[0, 1, 2, 4].map((stepIdx, arrayIdx) => {
               const shortLabel = t.stepShortLabels?.[stepIdx] || "";
               const tooltip = t.stepTooltips?.[stepIdx] || "";
               const isCompleted = stepIdx < currentStep;
               const isCurrent = stepIdx === currentStep;
               return (
                 <div key={stepIdx} className="relative">
-                  {stepIdx < 6 && <div className="absolute left-[22px] top-11 bottom-[-22px] w-[2px] bg-gradient-to-b from-rose-500/20 to-slate-800 z-0" />}
+                  {arrayIdx < 3 && <div className="absolute left-[22px] top-11 bottom-[-22px] w-[2px] bg-gradient-to-b from-rose-500/20 to-slate-800 z-0" />}
 
                   <Button
                     variant="unstyled"
@@ -584,12 +754,12 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     title={tooltip}
                     className={cn(`w-full text-left p-2.5 rounded-xl relative z-10 flex items-center gap-3 select-none h-auto justify-start transition-all ${isCurrent ? "bg-rose-500/10 text-rose-500 font-extrabold ring-1 ring-rose-500/30" : isCompleted ? "bg-slate-900/40 text-slate-400 hover:bg-slate-900" : "bg-slate-900 text-slate-500 hover:text-slate-300 hover:bg-slate-850"}`)}
                   >
-                    <div className={cn(`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 ring-2 ring-rose-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`)}>0{stepIdx + 1}</div>
+                    <div className={cn(`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-[10px] font-black shrink-0 transition-all ${isCurrent ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 ring-2 ring-rose-500/20" : isCompleted ? "bg-slate-800 text-slate-300" : "bg-slate-900 text-slate-500"}`)}>0{arrayIdx + 1}</div>
 
                     <div className="flex-1 min-w-0">
                       <div className={cn(`text-[8px] font-mono leading-none tracking-wider uppercase ${isCurrent ? "text-rose-400" : "text-slate-500"}`)}>
                         {t.NODE}
-                        {stepIdx + 1}
+                        {arrayIdx + 1}
                       </div>
                       <div className="text-[10px] font-black uppercase truncate mt-0.5 text-left">{shortLabel}</div>
                     </div>
@@ -620,11 +790,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             {visitedSteps[WizardStep.AssetManager] && (
               <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.AssetManager ? "" : "hidden"}`)}>
                 <PipelineStep2 {...wizard} />
-              </div>
-            )}
-            {visitedSteps[WizardStep.SEOBoost] && (
-              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SEOBoost ? "" : "hidden"}`)}>
-                <PipelineStep3 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.Export] && (
@@ -831,11 +996,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                                   let speed = 1.0;
                                   let pitch = 1.0;
                                   const pUri = voice.voiceURI;
-                                  const matchedMapping = _.find(VOICE_PROVIDER_MAPPINGS, (mapping) => 
+                                  const matchedMapping = _.find(VOICE_PROVIDER_MAPPINGS, (mapping) =>
                                     _.some(mapping.prefixes, (prefix) => _.startsWith(pUri, prefix))
                                   );
                                   const provider = matchedMapping ? matchedMapping.provider : (project.voiceConfig?.provider || "Gemini Speech");
-                                  
+
                                   const modifiers = VOICE_MODIFIERS[pUri] || (_.includes(pUri, "child") ? VOICE_MODIFIERS["preset-vi-kid"] : null);
                                   if (modifiers) {
                                     speed = modifiers.speed;

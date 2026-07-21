@@ -192,6 +192,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_EXPORT_FAILED: "❌ [Xuất Video] Kết xuất thất bại: {0}",
     ULTRA_EXPORT_WARN_NO_AUDIO: "⚠️ [Xuất Video] Không có audio, sẽ kết xuất video im lặng.",
     PARSE_URL_ERR: "[Playwright] Không thể parse URL id",
+    FFMPEG_RENDER_ERROR: "Lỗi kết xuất video FFMPEG",
   },
   en: {
     TEMPLATE_RENAME_REQUIRED: "New name is required.",
@@ -386,6 +387,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ULTRA_EXPORT_FAILED: "❌ [Export Video] Export failed: {0}",
     ULTRA_EXPORT_WARN_NO_AUDIO: "⚠️ [Export Video] No audio found, rendering silent video.",
     PARSE_URL_ERR: "[Playwright] Cannot parse URL id",
+    FFMPEG_RENDER_ERROR: "FFMPEG render error",
   },
 };
 

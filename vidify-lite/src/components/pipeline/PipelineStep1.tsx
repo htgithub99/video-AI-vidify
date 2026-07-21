@@ -1,6 +1,7 @@
 import { StoryboardSourceMode } from "../../constants";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
+import { Tooltip } from "../ui/Tooltip";
 import { VoiceSelectionDialog } from "../../components/VoiceSelectionDialog";
 import { appWarn } from "../../lib/logger.js";
 import {
@@ -42,7 +43,7 @@ const {
   Volume2,
   Music,
   Download,
-  Terminal,
+
   Check,
   FileText,
   Sparkles,
@@ -149,10 +150,11 @@ export default function PipelineStep1(props: PipelineWizardState) {
     scenesPerPage,
     paginatedStoryboard,
     ttsAudioUrl,
-    alignmentsLog,
-    bulkVoiceStatus,
+
+
     isPlayingTts,
     setIsPlayingTts,
+
     audioPreviewRef,
     voicePlayerSectionRef,
     voiceAudioDuration,
@@ -275,37 +277,40 @@ export default function PipelineStep1(props: PipelineWizardState) {
       />
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-        <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+        <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20">
           <div>
-            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <Layout className="w-5 h-5 text-rose-500" />
-              {t.storyboardDirector} &amp; {t.Scene_Voiceovers}
+            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20">
+              <Tooltip content="Màn hình phân rã kịch bản thành các phân cảnh chi tiết, mỗi phân cảnh tương ứng với một đoạn hội thoại và hình ảnh cụ thể." position="bottom" align="start">
+                <span className="flex items-center gap-2 cursor-help"><Layout className="w-5 h-5 text-rose-500" /> {t.storyboardDirector} &amp; {t.Scene_Voiceovers}</span>
+              </Tooltip>
             </h3>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-slate-400 text-xs mt-1 relative z-10">
               {t.Design_sequential_visual_}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2.5 self-start sm:self-auto">
-            <Button
-              variant="primary"
-              type="button"
-              onClick={() => handleTriggerStoryboardSplit(true, "top")}
-              disabled={!!loadingStates["storyboardSplit_loading"]}
-              className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 hover:text-white border border-rose-400/20 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 h-auto"
-              title={t.Automatically_split_story}
-            >
-              {loadingStates["storyboardSplit_loading"] ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{t.Processing}</span>
-                </>
-              ) : (
-                <>
-                  <Layout className="w-4 h-4 text-rose-200" />
-                  <span>{t.Generate_Storyboard}</span>
-                </>
-              )}
-            </Button>
+          <div className="flex flex-wrap gap-2.5 self-start sm:self-auto relative z-20">
+            <Tooltip content="AI tự động phân tách kịch bản dài thành các cảnh quay ngắn gọn để tiện cho việc sinh ảnh." position="bottom" align="end">
+              <Button
+                variant="primary"
+                type="button"
+                onClick={() => handleTriggerStoryboardSplit(true, "top")}
+                disabled={!!loadingStates["storyboardSplit_loading"]}
+                className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 hover:text-white border border-rose-400/20 disabled:from-slate-800 disabled:to-slate-800 disabled:opacity-75 disabled:cursor-not-allowed text-white font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all shadow-lg hover:shadow-rose-500/20 active:scale-95 h-auto relative z-20"
+                title={t.Automatically_split_story}
+              >
+                {loadingStates["storyboardSplit_loading"] ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{t.Processing}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    <span>{t.AI_Auto_Split_Storyboard}</span>
+                  </>
+                )}
+              </Button>
+            </Tooltip>
           </div>
         </div>
 
@@ -465,7 +470,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="bg-slate-900/95 border border-slate-850 p-4 rounded-xl space-y-4 shadow-xl relative">
                 <style>{`
  @keyframes active-soundwave {
@@ -568,40 +573,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       />
                     )}
 
-                    <div className="bg-slate-905 p-2.5 rounded-lg border border-slate-850 flex flex-wrap items-center justify-between gap-3 shadow-inner">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 flex items-center justify-center bg-gradient-to-br from-rose-500/10 to-amber-500/10 rounded-lg border border-rose-500/20 text-rose-400">
-                          <Music className="w-4 h-4 shrink-0" />
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-slate-450 font-sans font-medium">
-                            {t.AI_Speech_Channel}
-                          </div>
-                          <div className="text-[11px] text-slate-200 font-bold flex items-center gap-1 mt-0.5">
-                            <span className="text-slate-300">
-                              {project.voiceConfig.gender === "female"
-                                ? t.Female_Speaker
-                                : project.voiceConfig.gender === "male"
-                                  ? t.Male_Speaker
-                                  : t.Standard_Speaker}
-                            </span>
-                            <span className="w-1 h-1 rounded-full bg-slate-700" />
-                            <span className="text-[9px] text-rose-400 font-semibold uppercase bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                              {project.voiceConfig.emotion || "Normal"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-950 px-2 py-1 rounded border border-slate-800 text-[9px] font-mono text-slate-450 text-right space-y-0.5">
-                        <div className="font-bold text-slate-350">
-                          {t.txt_16_bit_WAV}
-                        </div>
-                        <div className="text-[8px] text-slate-600">
-                          {t.txt_44_1kHz_Mono}
-                        </div>
-                      </div>
-                    </div>
+                    
 
                     <div className="py-2.5 flex items-center justify-center gap-[4px] h-11 bg-slate-950 rounded-lg border border-slate-900 relative overflow-hidden px-1.5">
                       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
@@ -806,140 +778,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 )}
               </div>
 
-              <div className="border border-slate-800 rounded-lg bg-slate-950/90 overflow-hidden font-mono text-[10px] leading-relaxed relative flex flex-col min-h-[220px] max-h-[320px]">
-                <div className="bg-slate-900 px-3 py-1.5 flex items-center justify-between border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    {loadingStates["bulkVoiceGenerate_loading"] || loadingStates["storyboardSplit_loading"] ? (
-                      <span className="relative flex h-2 w-2 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                      </span>
-                    ) : (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                    )}
-                    <span className="text-[9px] text-slate-300 font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
-                      {t.Console_Synchronization_l}
-                    </span>
-                  </div>
-                  {alignmentsLog && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        navigator.clipboard.writeText(alignmentsLog);
-                        setInfoMsg(t.Copied_alignments_ledger);
-                      }}
-                      className="text-[9px] text-slate-400 hover:text-slate-100 bg-slate-955 hover:bg-slate-850 border border-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors font-sans font-bold shadow-none h-auto w-auto"
-                    >
-                      {t.Copy}
-                    </Button>
-                  )}
-                </div>
-
-                <div className="p-3 overflow-y-auto custom-scrollbar space-y-1.5 text-[11px] flex-1">
-                  {loadingStates["storyboardSplit_loading"] ? (
-                    <div className="space-y-2 select-none">
-                      <div className="flex items-center gap-2 text-rose-400 animate-pulse">
-                        <span>🎬</span>
-                        <span>
-                          {t.SYSTEM || "[SYSTEM]"} {t.MULTI_STEP_SYSTEM_FLOW_Di}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-amber-300 animate-pulse font-mono pl-4">
-                        <span className="animate-spin text-[10px]">⚙️</span>
-                        <span>
-                          {t.Mapping_detailed_timeline}
-                        </span>
-                      </div>
-                    </div>
-                  ) : loadingStates["bulkVoiceGenerate_loading"] ? (
-                    <div className="space-y-2 select-none">
-                      <div className="flex items-center gap-2 text-rose-400 animate-pulse">
-                        <span>🚀</span>
-                        <span>
-                          {t.SYSTEM} {t.Launching_Real_time_Align}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-amber-300 animate-pulse font-mono pl-4">
-                        <span className="animate-spin text-[10px]">⚙️</span>
-                        <span>
-                          {bulkVoiceStatus || t.PROCESS_Generating_audio_}
-                        </span>
-                      </div>
-                    </div>
-                  ) : alignmentsLog ? (
-                    alignmentsLog
-                      .split("\n")
-                      .filter((line) => line.trim().length > 0)
-                      .map((line, idx) => {
-                        let icon = "⚙️";
-                        let textColor = "text-slate-400";
-
-                        if (
-                          line.includes("[Bắt đầu]") ||
-                          line.includes("[Launch]") ||
-                          line.includes("[Start]")
-                        ) {
-                          icon = "🚀";
-                          textColor = "text-emerald-400 font-semibold";
-                        } else if (
-                          line.includes("[Cấu hình]") ||
-                          line.includes("[Config]")
-                        ) {
-                          icon = "🔧";
-                          textColor = "text-sky-400";
-                        } else if (
-                          line.includes("[Thực thi]") ||
-                          line.includes("[Process]")
-                        ) {
-                          icon = "🔄";
-                          textColor = "text-amber-400";
-                        } else if (
-                          line.includes("[Chất lượng]") ||
-                          line.includes("[Quality]")
-                        ) {
-                          icon = "⚡";
-                          textColor = "text-rose-400 font-semibold";
-                        } else if (
-                          line.startsWith("👉") ||
-                          line.includes("Phân cảnh") ||
-                          line.includes("Scene")
-                        ) {
-                          icon = "⏱️";
-                          textColor = "text-indigo-300 font-sans";
-                        } else if (
-                          line.includes("[Hoàn thành]") ||
-                          line.includes("[Status]")
-                        ) {
-                          icon = "✅";
-                          textColor = "text-emerald-400 font-semibold";
-                        } else if (
-                          line.includes("[Phụ đề]") ||
-                          line.includes("[Subtitles]")
-                        ) {
-                          icon = "📋";
-                          textColor = "text-fuchsia-400";
-                        }
-
-                        return (
-                          <div
-                            key={idx}
-                            className="flex items-start gap-2 p-1 rounded hover:bg-slate-900 transition-colors"
-                          >
-                            <span className="shrink-0 text-xs">{icon}</span>
-                            <span className={textColor}>{line}</span>
-                          </div>
-                        );
-                      })
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-500 py-6 text-center space-y-2">
-                      <Terminal className="w-6 h-6 text-slate-700 animate-pulse" />
-                      <span className="text-[10px] font-sans leading-normal">
-                        {t.Console_is_waiting_for_ti}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              
             </div>
           </div>
         )}
@@ -1069,25 +908,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-rose-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner relative z-10 max-w-sm">
-                <Button variant="unstyled"
-                  type="button"
-                  onClick={() => {
-                    setProject((prev) => ({
-                      ...prev,
-                      voiceConfig: {
-                        ...prev.voiceConfig,
-                        audioType: AudioType.Generated,
-                        audioUrl: ttsAudioUrl || SIMULATED_SPEECH_VAL,
-                      },
-                    }));
-                  }}
-                  className={cn(`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
-                >
-                  <Sparkles
-                    className={cn(`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`)}
-                  />
-                  <span>{t.AI_Speech}</span>
-                </Button>
+                
                 <Button variant="unstyled"
                   type="button"
                   onClick={() => {
@@ -1690,7 +1511,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               </div>
             </div>
           ) : (
-            <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-800/70 space-y-3 animate-fade-in text-left">
+            <div className="hidden bg-slate-900/40 p-4 rounded-xl border border-slate-800/70 space-y-3 animate-fade-in text-left">
               <textarea
                 value={project.scriptRewritten || ""}
                 onChange={(e) =>
@@ -2272,7 +2093,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
           )}
         </div>
 
-        <div className="bg-slate-950 border border-slate-850 rounded-xl p-5 space-y-4 shadow-xl">
+        <div className="hidden bg-slate-950 border border-slate-850 rounded-xl p-5 space-y-4 shadow-xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 pb-3 border-b border-slate-900">
             <div>
               <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2 font-mono">

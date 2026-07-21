@@ -2,12 +2,13 @@ import _ from "lodash";
 import { cn } from "../../lib/utils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import { appError } from "../../lib/logger.js";
-import { ErrorMessage, ThumbnailActionPosition } from "../../constants";
+import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS } from "../../constants";
 
 import * as LucideIcons from "lucide-react";
 
-const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check, User, Type, Palette, Focus } = LucideIcons as any;
+const { ImageIcon, RefreshCw, ChevronDown, Upload, X, Sparkles, Copy, Layout, ArrowLeft, ArrowRight, Download, Check, User, Type, Palette, Focus, Sliders } = LucideIcons as any;
 
 const handleDownloadImage = async (url: string, filename: string) => {
   try {
@@ -34,6 +35,7 @@ const handleDownloadImage = async (url: string, filename: string) => {
 };
 
 import { WizardStep } from "../../types";
+import PipelineStep3 from "./PipelineStep3.js";
 
 export default function PipelineStep2(props: PipelineWizardState) {
   const {
@@ -54,6 +56,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
     handleCharacterImagesUpload,
     handleExtractCharacter,
     handleApplyCharacterToThumbnails,
+    handleTriggerSEOBoost,
   } = props;
 
   const handleUpdateCharacter = (charId: string, field: "name" | "description" | "prompt", value: string) => {
@@ -81,26 +84,32 @@ export default function PipelineStep2(props: PipelineWizardState) {
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-        <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+        <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-20">
           <div>
-            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-rose-500" />
-              {t.assetMgr}
+            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20">
+              <Tooltip content="Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề." position="bottom" align="start">
+                <span className="flex items-center gap-2 cursor-help"><ImageIcon className="w-5 h-5 text-rose-500" /> {t.assetMgr}</span>
+              </Tooltip>
             </h3>
-            <p className="text-slate-400 text-xs mt-1">{t.Select_visual_styles_defi}</p>
+            <p className="text-slate-400 text-xs mt-1 relative z-10">{t.Select_visual_styles_defi}</p>
           </div>
 
-          <Button
-            variant="primary"
-            onClick={() => handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.TOP)}
-            disabled={!!loadingStates["assetAndThumbnail_loading"]}
-            isLoading={!!loadingStates["assetAndThumbnail_loading"]}
-            className="self-start sm:self-auto"
-            title={t.Create_prompt_guides_and_}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{t.Generate_Thumbnails}</span>
-          </Button>
+          <Tooltip content="Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click." position="top" align="end">
+            <Button
+              variant="primary"
+              onClick={() => {
+                handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.TOP);
+                if (handleTriggerSEOBoost) handleTriggerSEOBoost(true, ThumbnailActionPosition.TOP);
+              }}
+              disabled={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
+              isLoading={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
+              className="self-start sm:self-auto relative z-20"
+              title={t.Create_prompt_guides_and_}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>{t.Generate_Thumbnails}</span>
+            </Button>
+          </Tooltip>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
           <div className="lg:col-span-3 bg-slate-950/45 border border-slate-800 p-5 rounded-xl flex flex-col space-y-3">
@@ -121,39 +130,44 @@ export default function PipelineStep2(props: PipelineWizardState) {
             />
           </div>
           <div className="lg:col-span-2 space-y-4 flex flex-col">
-            <div className="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-slate-800/80">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-2">{t.Batch_Count}</span>
-              <div className="relative flex items-center bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 transition-all shadow-sm focus-within:border-rose-500/80">
-                <select
-                  value={project.visualConfig.thumbnailCount || 2}
-                  onChange={(e) =>
-                    setProject((prev) => ({
-                      ...prev,
-                      visualConfig: {
-                        ...prev.visualConfig,
-                        thumbnailCount: Number(e.target.value),
-                      },
-                    }))
-                  }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
-                  <option value="1" className="bg-slate-950 text-slate-350">
-                    1 {t.idea}
-                  </option>
-                  <option value="2" className="bg-slate-950 text-slate-350">
-                    2 {t.ideas}
-                  </option>
-                  <option value="3" className="bg-slate-950 text-slate-350">
-                    3 {t.ideas}
-                  </option>
-                  <option value="4" className="bg-slate-950 text-slate-350">
-                    4 {t.ideas}
-                  </option>
-                  <option value="5" className="bg-slate-950 text-slate-350">
-                    5 {t.ideas}
-                  </option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+            <div className="bg-slate-950/45 border border-slate-800 p-4 rounded-xl flex flex-col space-y-4">
+              <div className="flex items-center gap-2 mb-1 border-b border-slate-800/60 pb-3">
+                <Sliders className="w-4 h-4 text-slate-400" />
+                <span className="text-[11px] font-bold text-slate-300 font-mono uppercase tracking-wider">{t.Settings || "Cài Đặt Cấu Hình"}</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider pl-1">{t.Batch_Count} (Ảnh & Tiêu đề)</span>
+                <div className="relative flex items-center bg-slate-900 border border-slate-700/80 rounded-lg px-2 py-1 transition-all shadow-sm focus-within:border-rose-500/80 min-w-[120px]">
+                  <select
+                    value={project.visualConfig.thumbnailCount || 2}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setProject((prev) => ({
+                        ...prev,
+                        visualConfig: {
+                          ...prev.visualConfig,
+                          thumbnailCount: val,
+                        },
+                        seoConfig: {
+                          ...(prev.seoConfig || {}),
+                          numTitles: val,
+                          numDescriptions: SEO_DEFAULT_CONFIGS.NUM_DESCRIPTIONS,
+                          numHashtags: SEO_DEFAULT_CONFIGS.NUM_HASHTAGS,
+                          numTags: SEO_DEFAULT_CONFIGS.NUM_TAGS,
+                        },
+                      }));
+                    }}
+                    className="flex-1 w-full bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                  >
+                    <option value="1" className="bg-slate-950 text-slate-350">1 {t.idea}</option>
+                    <option value="2" className="bg-slate-950 text-slate-350">2 {t.ideas}</option>
+                    <option value="3" className="bg-slate-950 text-slate-350">3 {t.ideas}</option>
+                    <option value="4" className="bg-slate-950 text-slate-350">4 {t.ideas}</option>
+                    <option value="5" className="bg-slate-950 text-slate-350">5 {t.ideas}</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                </div>
               </div>
             </div>
 
@@ -196,9 +210,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   <span className="text-[10px] font-bold text-slate-200">{t.Upload_style_images}</span>
                 </div>
 
-                {project.visualConfig?.thumbnailReferenceImages && project.visualConfig.thumbnailReferenceImages.length > 0 && (
+                {!_.isEmpty(project.visualConfig?.thumbnailReferenceImages) && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {project.visualConfig.thumbnailReferenceImages.map((imgBase64, idx) => (
+                    {_.map(project.visualConfig.thumbnailReferenceImages, (imgBase64, idx) => (
                       <div key={idx} className="relative w-16 h-16 rounded-lg group shadow-sm">
                         <div className="w-full h-full border border-slate-800 bg-black rounded-lg overflow-hidden">
                           <img src={imgBase64} alt={`Style reference ${idx + 1}`} className="w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
@@ -231,7 +245,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   </div>
                 )}
 
-                {project.visualConfig?.thumbnailReferenceImages && project.visualConfig.thumbnailReferenceImages.length > 0 && (
+                {!_.isEmpty(project.visualConfig?.thumbnailReferenceImages) && (
                   <div className="pt-2 flex flex-col gap-2 border-t border-slate-800/50">
                     {project.visualConfig?.thumbnailReferencePrompt && (
                       <div className="bg-rose-955/20 border border-rose-500/30 rounded-md p-2 flex items-center justify-between gap-2">
@@ -305,7 +319,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-inner">
-            {!project.visualConfig?.characters || project.visualConfig.characters.length === 0 ? (
+            {_.isEmpty(project.visualConfig?.characters) ? (
               <div className="flex items-center justify-between gap-3">
                 <div className="flex-1 text-[11px] text-slate-355 leading-relaxed italic">{t.charNotAnalyzed}</div>
                 <Button type="button" variant="primary" onClick={handleAnalyzeCharacter} disabled={!!loadingStates["analyzeCharacter"]} size="sm" title={t.charAnalyzeBtn}>
@@ -340,7 +354,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {project.visualConfig.characters.map((char) => {
+                  {_.map(project.visualConfig.characters, (char) => {
                     const isExtracting = !!loadingStates[`extractCharacter_${char.id}`];
                     return (
                       <div key={char.id} className="bg-slate-955/65 rounded-xl p-3 border border-slate-855 flex flex-col justify-between gap-2.5 relative shadow-md">
@@ -416,9 +430,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                             </div>
 
                             <div className="min-w-0 w-full">
-                              {char.images && char.images.length > 0 ? (
+                              {!_.isEmpty(char.images) ? (
                                 <div className="flex flex-wrap gap-1 max-h-[32px] overflow-y-auto p-0.5 bg-slate-900/10 rounded border border-slate-900/30">
-                                  {char.images.map((imgBase64, idx) => (
+                                  {_.map(char.images, (imgBase64, idx) => (
                                     <div key={idx} className="relative w-6 h-6 rounded group shadow-sm">
                                       <div className="w-full h-full border border-slate-800 bg-black rounded overflow-hidden">
                                         <img src={imgBase64} alt={`${char.name} ref ${idx + 1}`} className="w-full h-full object-cover opacity-90 transition-opacity group-hover:opacity-100" />
@@ -436,7 +450,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                                 return {
                                                   ...c,
                                                   images: newImgs,
-                                                  };
+                                                };
                                               }
                                               return c;
                                             });
@@ -526,8 +540,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 border-t border-slate-800 pt-5 mt-5">
+          {/* CỘT TRÁI: KẾT QUẢ SEO */}
+          <div className="h-full">
+            <PipelineStep3 {...props} />
+          </div>
+
+          {/* CỘT PHẢI: KẾT QUẢ ẢNH BÌA */}
+          <div className="space-y-4 h-full flex flex-col">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
             <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
               <Layout className="w-5 h-5 text-rose-500" />
               {t.thumbnailHeader}
@@ -565,7 +586,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 ))}
               </div>
             ) : (
-              <div className="bg-slate-950/30 border border-slate-800/80 rounded-xl p-10 text-center flex flex-col items-center justify-center max-w-md mx-auto space-y-4 group hover:border-slate-700/60 transition-all duration-300">
+              <div className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-10 text-center flex flex-col items-center justify-center w-full h-full flex-1 space-y-4 group hover:border-slate-700/60 transition-all duration-300">
                 <div className="w-12 h-12 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center text-rose-500 shadow-md group-hover:scale-105 transition-all duration-300 animate-pulse">
                   <ImageIcon className="w-5 h-5 text-rose-500" />
                 </div>
@@ -575,14 +596,17 @@ export default function PipelineStep2(props: PipelineWizardState) {
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={() => handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.EMPTY)}
-                  disabled={!!loadingStates["assetAndThumbnail_loading"]}
-                  isLoading={!!loadingStates["assetAndThumbnail_loading"]}
+                  onClick={() => {
+                    handleTriggerAssetAndThumbnail(true, ThumbnailActionPosition.EMPTY);
+                    if (handleTriggerSEOBoost) handleTriggerSEOBoost(true, ThumbnailActionPosition.EMPTY);
+                  }}
+                  disabled={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
+                  isLoading={!!loadingStates["assetAndThumbnail_loading"] || !!loadingStates["seoBoost_loading"]}
                   className="bg-rose-950/40 text-rose-300 hover:text-white hover:bg-rose-600 border border-rose-500/20 hover:border-rose-500 text-[10px] flex items-center justify-center gap-1.5"
                   title={t.Draft_visual_arrangements}
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                  <span>{t.Generate_Thumbnail}</span>
+                  <span>{t.Generate_Thumbnails}</span>
                 </Button>
               </div>
             )
@@ -733,14 +757,15 @@ export default function PipelineStep2(props: PipelineWizardState) {
               </div>
             </div>
           )}
+          </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-between mt-6">
           <Button variant="secondary" size="md" onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Back}>
             <ArrowLeft className="w-4 h-4" />
             {t.Back}
           </Button>
-          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.SEOBoost)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Continue}>
+          <Button variant="primary" size="md" onClick={() => setCurrentStep(WizardStep.Export)} className="flex items-center gap-1.5 px-5 py-3 shadow" title={t.Continue}>
             {t.Continue}
             <ArrowRight className="w-4 h-4" />
           </Button>

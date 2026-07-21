@@ -35,3 +35,10 @@ export const PIPELINE_CONFIG = {
     "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"
   ],
 };
+
+export const FFMPEG_RESOLUTIONS = {
+  low: { width: 854, height: 480, fps: 24, bitrate: "1000k" },
+  high: { width: 1280, height: 720, fps: 30, bitrate: "2500k" },
+  highest: { width: 1920, height: 1080, fps: 30, bitrate: "5000k" },
+  "4k": { width: 3840, height: 2160, fps: 30, bitrate: "10000k" },
+};

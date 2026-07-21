@@ -194,3 +194,22 @@ export enum SortOrder {
   ASC = "asc",
   DESC = "desc",
 }
+
+export enum VideoQuality {
+  LOW = "low",
+  HIGH = "high",
+  HIGHEST = "highest",
+  ULTRA_4K = "4k",
+}
+
+export enum ResourceSourceMode {
+  ZIP = "ZIP",
+  SPLIT = "SPLIT",
+  CURRENT = "CURRENT",
+}
+
+export enum FolderSelectionType {
+  PARENT = "PARENT",
+  IMAGES = "IMAGES",
+  VOICES = "VOICES",
+}

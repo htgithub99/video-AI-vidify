@@ -7,7 +7,6 @@ export enum WizardStep {
   SEOBoost = 3,
   Export = 4,
   IndependentGenerator = 5,
-  CapCutUltra = 6,
 }
 
 export enum ProjectInputType {

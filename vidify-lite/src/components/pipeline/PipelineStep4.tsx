@@ -3,21 +3,101 @@ import { formatCleanTime } from "../../lib/timeUtils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
-import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
+import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS } from "../../constants";
+import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { appError } from "../../lib/logger";
+import { safeSystemFetch } from "../../lib/shared-utils";
 import _ from "lodash";
 
-const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
-
-const OFFLINE_RENDER_ID = "offline_render";
+const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
+  const { t, setCurrentStep, isPlayingSim, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
 
   const playerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [previewVideoUrl, setPreviewVideoUrl] = useState("");
+  const [ffmpegQuality, setFfmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
+  const [projectName, setProjectName] = useState(props.project?.name || "");
+  const [inputMode, setInputMode] = useState<ResourceSourceMode>(ResourceSourceMode.CURRENT);
+  const [parentFolder, setParentFolder] = useState("");
+  const [imagesDir, setImagesDir] = useState("");
+  const [voicesDir, setVoicesDir] = useState("");
+  const [isRenderLoading, setIsRenderLoading] = useState(false);
+
+  const handleSelectFolder = async (type: string) => {
+    try {
+      const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {});
+      if (response.success && response.data?.folderPath) {
+        if (type === FolderSelectionType.PARENT) {
+          setParentFolder(response.data.folderPath);
+        } else if (type === FolderSelectionType.IMAGES) {
+          setImagesDir(response.data.folderPath);
+        } else if (type === FolderSelectionType.VOICES) {
+          setVoicesDir(response.data.folderPath);
+        }
+      }
+    } catch (err: any) {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.FOLDER_SELECT_ERR + err.message);
+    }
+  };
+
+  const isValidToRender = () => {
+    if (_.isEmpty(props.project?.storyboard)) {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_STORYBOARD);
+      return false;
+    }
+    const missingImages = _.some(props.project.storyboard, sc => !getSceneImageUrl(sc));
+    if (missingImages) {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_IMAGES);
+      return false;
+    }
+    const hasVoice = !!props.project?.voiceConfig?.audioBase64 || _.some(props.project.storyboard, sc => !!sc.audioBase64);
+    if (!hasVoice) {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_AUDIO);
+      return false;
+    }
+    return true;
+  };
+
+  const handleOfflineRenderFFmpeg = async () => {
+    if (!isValidToRender()) return;
+    setIsRenderLoading(true);
+    props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDERING_WAIT);
+    try {
+      const payload = {
+        scenes: _.map(props.project.storyboard, sc => ({
+            id: sc.id,
+            duration: sc.duration,
+            imageBase64: getSceneImageUrl(sc), 
+            audioBase64: sc.audioBase64 
+        })),
+        globalAudioUrl: props.project?.voiceConfig?.audioBase64,
+        quality: ffmpegQuality
+      };
+      
+      const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.success) {
+         setPreviewVideoUrl(data.url);
+         props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
+      } else {
+         props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + data.error);
+      }
+    } catch (e: any) {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + e.message);
+    } finally {
+      setIsRenderLoading(false);
+    }
+  };
   const [fakeProgress, setFakeProgress] = useState<number>(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
 
   useEffect(() => {
@@ -62,52 +142,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
       document.exitFullscreen();
     }
   };
-
-  const getZoomClass = (motion: string) => {
-    if (!isPlayingSim) return "";
-    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS, motion)) return "scale-110";
-    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS, motion)) return "scale-90";
-    return "";
-  };
-
-  const exportButtons = [
-    {
-      id: EXPORT_TYPES.CAPCUT,
-      label: t.exportCapcut,
-      loadingLabel: t.exportingCapcut,
-      desc: t.Exports_timeline_JSON_fil,
-      handler: handleDownloadCapcutLink,
-      icon: Download,
-      isLoading: loadingExportType === EXPORT_TYPES.CAPCUT,
-    },
-    {
-      id: EXPORT_TYPES.PREMIERE,
-      label: t.exportPremiere,
-      loadingLabel: t.exportingPremiere,
-      desc: t.Construct_XML_track_metad,
-      handler: handleDownloadPremiereXML,
-      icon: Download,
-      isLoading: loadingExportType === EXPORT_TYPES.PREMIERE,
-    },
-    {
-      id: EXPORT_TYPES.PREMIERE,
-      label: t.exportDavinci,
-      loadingLabel: t.exportingDavinci,
-      desc: t.Download_FCPXML_timing_fi,
-      handler: handleDownloadPremiereXML,
-      icon: Download,
-      isLoading: loadingExportType === EXPORT_TYPES.PREMIERE,
-    },
-    {
-      id: OFFLINE_RENDER_ID,
-      label: t.renderingWebM,
-      loadingLabel: t.exportingVideo,
-      desc: t.Render_and_compile_full_p,
-      handler: handleOfflineRenderWebM,
-      icon: Video,
-      isLoading: isOfflineRendering,
-      isPrimary: true,
-    },
+  const exportButtons: any[] = [
     {
       id: EXPORT_TYPES.ZIP,
       label: t.downloadZip,
@@ -116,26 +151,20 @@ export default function PipelineStep4(props: PipelineWizardState) {
       handler: handleDownloadJSONProject,
       icon: Download,
       isLoading: loadingExportType === EXPORT_TYPES.ZIP,
-    },
-    {
-      id: EXPORT_TYPES.SRT,
-      label: t.Download_SRT,
-      loadingLabel: t.exportingSRT,
-      desc: t.Extract_synced_subtitle_t,
-      handler: handleDownloadSRT,
-      icon: Download,
-      isLoading: loadingExportType === EXPORT_TYPES.SRT,
-    },
+    }
   ];
 
   return (
-    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      </div>
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-hidden">
-          <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-10">
-            <Eye className="w-5 h-5 text-rose-500" />
-            {t.renderTitle}
+        <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-30">
+          <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-20">
+            <Tooltip content="Xem trước bố cục hình ảnh và âm thanh với chất lượng thấp (Low Res) trước khi quyết định tạo video hoàn chỉnh." position="bottom" align="start">
+              <span className="flex items-center gap-2 cursor-help"><Eye className="w-5 h-5 text-rose-500" /> Trình Phát Thử</span>
+            </Tooltip>
           </h3>
 
           <div 
@@ -145,37 +174,18 @@ export default function PipelineStep4(props: PipelineWizardState) {
             <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             
             <div className="absolute inset-0 flex items-center justify-center z-0">
-              {simActiveScene ? (
-                <>
-                  {getSceneImageUrl(simActiveScene) ? (
-                    <div className="w-full h-full relative bg-slate-900">
-                      <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={cn(`w-full h-full object-cover transition-transform duration-1000 ${getZoomClass(simActiveScene.cameraMotion)}`)} />
-                      {!simActiveScene.assetUrl && <div className="absolute top-4 right-4 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20">{t.Default_Timeline_Image}</div>}
-                    </div>
-                  ) : (
-                    <div className="text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex items-center justify-center bg-slate-950">{t.noPhotoRenderedYet?.replace("{sceneId}", simActiveScene.id)}</div>
-                  )}
-
-                  <div className="absolute bottom-16 left-4 right-4 text-center z-20 pointer-events-none">
-                    <span 
-                      className="bg-black/60 backdrop-blur-sm text-yellow-400 font-bold px-5 py-2 rounded-md border border-white/5 text-sm sm:text-base md:text-lg font-sans tracking-wide drop-shadow-2xl inline-block max-w-[90%] pointer-events-auto"
-                      style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.9)" }}
-                    >
-                      {simActiveScene.subtitle}
-                    </span>
-                  </div>
-
-                  <div className="absolute top-4 left-4 z-20 flex flex-col pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-white font-bold text-base md:text-lg drop-shadow-md">
-                      {t.Scene}: {simActiveScene.id}
-                    </span>
-                    <span className="text-slate-300 text-xs md:text-sm drop-shadow-md font-medium mt-1">
-                      {t.Camera_VFX}: {getMotionLabel(simActiveScene.cameraMotion)}
-                    </span>
-                  </div>
-                </>
+              {isRenderLoading ? (
+                 <div className="text-white flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs font-mono tracking-widest uppercase">{PIPELINE_STEP4_TEXTS.EXPORTING_FFMPEG}</span>
+                 </div>
+              ) : previewVideoUrl ? (
+                 <video ref={videoRef} src={previewVideoUrl} controls className="w-full h-full object-cover z-20" autoPlay />
               ) : (
-                <div className="text-center text-slate-500 text-xs w-full h-full flex items-center justify-center bg-slate-950">{t.Nothing_to_simulate}</div>
+                 <div className="text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex flex-col items-center justify-center bg-slate-950">
+                    <div className="mb-4">{t.Nothing_to_simulate || PIPELINE_STEP4_TEXTS.NO_FFMPEG_VIDEO}</div>
+                    <div className="text-[11px] text-slate-600">{PIPELINE_STEP4_TEXTS.USE_CREATE_BTN_HINT}</div>
+                 </div>
               )}
             </div>
 
@@ -244,62 +254,214 @@ export default function PipelineStep4(props: PipelineWizardState) {
               </div>
             </div>
           </div>
+          
+          {previewVideoUrl && (
+            <div className="flex justify-end pt-3">
+              <Button 
+                variant="primary" 
+                size="md"
+                onClick={() => {
+                  const a = document.createElement("a");
+                  a.style.display = "none";
+                  a.href = previewVideoUrl;
+                  a.download = `${projectName.replace(/\s+/g, "_") || 'project'}_HD.mp4`;
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                    document.body.removeChild(a);
+                  }, 150);
+                }}
+                className="bg-emerald-600 hover:bg-emerald-500 border-emerald-500/50 shadow-lg text-white font-bold flex items-center gap-2"
+                title={PIPELINE_STEP4_TEXTS.BTN_DOWNLOAD_HINT}
+              >
+                <Download className="w-4 h-4" />
+                {PIPELINE_STEP4_TEXTS.BTN_DOWNLOAD}
+              </Button>
+            </div>
+          )}
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-6 shadow-xl relative overflow-hidden">
-          <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
+        <div className="flex flex-col space-y-6 relative z-40">
+          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-5 shadow-xl relative overflow-visible z-50">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
+            </div>
+            
+            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 relative z-20 border-b border-slate-800/60 pb-3">
+              <Tooltip content="Tuỳ chỉnh tên dự án, thư mục lưu trữ và tài nguyên âm thanh/hình ảnh để chuẩn bị cho quá trình tạo video." position="bottom" align="start">
+                <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-4 h-4 text-slate-400" /> Cấu Hình Đầu Ra</span>
+              </Tooltip>
+            </h3>
+            
+            <div className="space-y-4 relative z-10">
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                  <Tooltip content="Đặt tên cho video của bạn. Tên này sẽ được dùng làm tên thư mục và tên file video khi xuất bản." position="top">
+                    <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.FileText className="w-3.5 h-3.5 text-rose-500" /> Tên Video</span>
+                  </Tooltip>
+                </label>
+                <input 
+                  type="text" 
+                  value={projectName} 
+                  onChange={(e) => setProjectName(e.target.value)} 
+                  placeholder={PIPELINE_STEP4_TEXTS.PROJECT_NAME_PLACEHOLDER} 
+                  className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner transition-all outline-none" 
+                />
+              </div>
 
-          <div className="grid grid-cols-1 gap-3.5 text-xs">
-            {_.map(exportButtons, (btn, index) => {
-              const Icon = btn.icon;
-              return (
-                <Button 
-                  key={index}
-                  variant="ghost" 
-                  onClick={btn.handler} 
-                  disabled={btn.isLoading} 
-                  className={cn("w-full flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border", 
-                    btn.isPrimary 
-                      ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100") 
-                      : "bg-slate-950 hover:bg-slate-850 border-slate-800 text-slate-200 hover:text-slate-100")}
-                  title={btn.desc}
-                >
-                  <div className="text-left flex-1">
-                    <span className={cn("font-bold block flex items-center gap-1.5", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
-                      {btn.isLoading ? <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> : (btn.isPrimary && <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />)}
-                      {btn.isLoading ? btn.loadingLabel : btn.label}
-                    </span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5 font-normal text-left">{btn.desc}</span>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                  <Tooltip content="Chọn cách thức hệ thống lấy hình ảnh và âm thanh để ghép vào video." position="top">
+                    <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.Database className="w-3.5 h-3.5 text-rose-500" /> Nguồn Tài Nguyên</span>
+                  </Tooltip>
+                </label>
+                <div className="grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1">
+                  {[
+                    { id: ResourceSourceMode.ZIP, label: 'File ZIP', tooltip: 'Hệ thống tự giải nén và sử dụng hình ảnh, âm thanh từ thư mục .zip hoặc thư mục dự án bạn chọn.', align: 'start' as const },
+                    { id: ResourceSourceMode.SPLIT, label: 'Thư mục Riêng', tooltip: 'Trỏ đường dẫn thủ công đến 2 thư mục riêng biệt: Một chứa ảnh, một chứa âm thanh.', align: 'center' as const },
+                    { id: ResourceSourceMode.CURRENT, label: 'Dự Án Hiện Tại', tooltip: 'Tự động sử dụng trực tiếp các hình ảnh và âm thanh mà bạn vừa tạo ở các bước trước.', align: 'end' as const }
+                  ].map(mode => (
+                    <div key={mode.id} className="flex [&>div]:w-full">
+                      <Tooltip content={mode.tooltip} position="top" align={mode.align}>
+                        <button 
+                          onClick={() => setInputMode(mode.id)} 
+                          className={cn(
+                            "w-full px-3 py-1.5 text-[9px] font-bold uppercase rounded-md transition-all duration-200", 
+                            inputMode === mode.id 
+                              ? "bg-slate-800 text-white shadow-md ring-1 ring-white/10" 
+                              : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/50"
+                          )}
+                        >
+                          {mode.label}
+                        </button>
+                      </Tooltip>
+                    </div>
+                  ))}
+                </div>
+
+                {inputMode === ResourceSourceMode.ZIP ? (
+                  <div className="flex gap-2 animate-fadeIn mt-3">
+                    <input type="text" value={parentFolder} onChange={(e) => setParentFolder(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER} className="flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none" />
+                    <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.PARENT)} className="px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors">
+                      <LucideIcons.FolderOpen className="w-4 h-4 text-rose-500" />
+                    </Button>
                   </div>
-                  {btn.isLoading ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Icon className={cn("w-5 h-5 shrink-0", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
-                </Button>
-              )
-            })}
-          </div>
+                ) : inputMode === ResourceSourceMode.SPLIT ? (
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 animate-fadeIn mt-3">
+                    <div className="flex gap-1.5">
+                      <input type="text" value={imagesDir} onChange={(e) => setImagesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
+                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
+                        <LucideIcons.FolderOpen className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input type="text" value={voicesDir} onChange={(e) => setVoicesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
+                      <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.VOICES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
+                        <LucideIcons.FolderOpen className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 animate-fadeIn p-2 border border-slate-800/80 rounded-xl bg-slate-900/30 items-center justify-center h-10 mt-3">
+                    <span className="text-xs text-slate-400 italic text-center px-4">{PIPELINE_STEP4_TEXTS.AUTO_GATHER_MEDIA_HINT}</span>
+                  </div>
+                )}
+              </div>
 
-          <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl space-y-2">
-            <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">{t.Cloud_Exporter_Sync_Setup}</span>
-            <div className="flex gap-2">
-              <input type="text" placeholder={EXPORT_URLS.DEFAULT_S3_BUCKET} className="w-full bg-slate-900 text-slate-350 text-[11px] p-2 rounded focus:outline-none placeholder-slate-600 border border-slate-800" />
-              <Button variant="primary" size="xs" onClick={() => setInfoMsg(t.Configured_bucket_coordin)} title={t.Save}>
-                {t.Save}
-              </Button>
+              <div className="pt-4 mt-2 border-t border-slate-800/60 w-full space-y-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
+                    <Tooltip content="Độ phân giải video khi xuất bằng FFmpeg." position="top">
+                      <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.Monitor className="w-3.5 h-3.5 text-rose-500" /> Chất Lượng Video</span>
+                    </Tooltip>
+                  </label>
+                  <select
+                    value={ffmpegQuality}
+                    onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)}
+                    className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none cursor-pointer"
+                  >
+                    <option value={VideoQuality.LOW}>{PIPELINE_STEP4_TEXTS.QUALITY_480P}</option>
+                    <option value={VideoQuality.HIGH}>{PIPELINE_STEP4_TEXTS.QUALITY_720P}</option>
+                    <option value={VideoQuality.HIGHEST}>{PIPELINE_STEP4_TEXTS.QUALITY_1080P}</option>
+                    <option value={VideoQuality.ULTRA_4K}>{PIPELINE_STEP4_TEXTS.QUALITY_4K}</option>
+                  </select>
+                </div>
+                
+                <div className="w-full [&>div]:w-full">
+                  <Tooltip content="Tiến hành ghép nối hình ảnh, âm thanh thành một video hoàn chỉnh với độ phân giải mong muốn sử dụng công nghệ FFmpeg." position="top">
+                    <Button 
+                      variant="ghost"
+                      onClick={handleOfflineRenderFFmpeg}
+                      disabled={isRenderLoading}
+                      className="w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300 bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100"
+                    >
+                    <div className="text-left flex-1">
+                      <span className="font-bold flex items-center gap-2 text-amber-400 block whitespace-nowrap">
+                        {isRenderLoading ? <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> : <span className="inline-block w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />}
+                        {isRenderLoading ? PIPELINE_STEP4_TEXTS.RENDERING : PIPELINE_STEP4_TEXTS.BTN_RENDER_FFMPEG}
+                      </span>
+                    </div>
+                    {isRenderLoading ? (
+                      <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
+                    ) : (
+                      <LucideIcons.Video className="w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110" />
+                    )}
+                  </Button>
+                </Tooltip>
+              </div>
+            </div>
+
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-start mt-6">
-            <Button 
-              variant="secondary" 
-              size="md" 
-              onClick={() => setCurrentStep(WizardStep.SEOBoost)} 
-              className="flex items-center gap-1.5 px-5 py-3 shadow"
-              title={t.Back}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {t.Back}
-            </Button>
+          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-40">
+            <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 relative z-10 border-b border-slate-800/60 pb-3">
+              <LucideIcons.Send className="w-4 h-4 text-rose-500" />
+              {t.Professional_Project_Pack}
+            </h3>
+
+            <div className="grid grid-cols-1 gap-3.5 text-xs relative z-10 mt-1">
+              {_.map(exportButtons, (btn, index) => {
+                const Icon = btn.icon;
+                return (
+                  <Button 
+                    key={index}
+                    variant="ghost" 
+                    onClick={btn.handler} 
+                    disabled={btn.isLoading} 
+                    className={cn("w-full group flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border transition-all duration-300", 
+                      btn.isPrimary 
+                        ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 hover:border-rose-800 border-rose-950/80 text-slate-200 hover:text-white shadow-[0_0_15px_rgba(225,29,72,0.05)] hover:shadow-[0_0_20px_rgba(225,29,72,0.15)]") 
+                        : "bg-slate-950 hover:bg-slate-850 border-slate-800/80 text-slate-300 hover:text-slate-100")}
+                    title={btn.desc}
+                  >
+                    <div className="text-left flex-1">
+                      <span className={cn("font-bold block flex items-center gap-2", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
+                        {btn.isLoading ? <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> : (btn.isPrimary && <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.6)]" />)}
+                        {btn.isLoading ? btn.loadingLabel : btn.label}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block mt-1 font-normal text-left leading-relaxed">{btn.desc}</span>
+                    </div>
+                    {btn.isLoading ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Icon className={cn("w-5 h-5 shrink-0 transition-transform duration-300 group-hover:scale-110", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
+                  </Button>
+                )
+              })}
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-start mt-2 border-t border-slate-800/60 pt-4 relative z-10">
+        <Button 
+          variant="secondary" 
+          size="md" 
+          onClick={() => setCurrentStep(WizardStep.SEOBoost)} 
+          className="flex items-center gap-1.5 px-5 py-3 shadow"
+          title={t.Back}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          {t.Back}
+        </Button>
       </div>
     </div>
   );

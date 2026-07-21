@@ -1,96 +1,26 @@
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
-import { WizardStep } from "../../types";
 import { Button } from "../ui/Button";
 import _ from "lodash";
-import { SEO_DEFAULT_CONFIGS, LEADING_HASHTAGS_REGEX, ThumbnailActionPosition } from "../../constants";
+import { LEADING_HASHTAGS_REGEX, PIPELINE_STEP3_TEXTS } from "../../constants";
 
-const { Sparkles, RefreshCw, Sliders, ChevronDown, Search, Copy, ArrowLeft, ArrowRight } = LucideIcons as any;
+const { Search, Copy, Target } = LucideIcons as any;
 
 export default function PipelineStep3(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleTriggerSEOBoost, onSaveProject } = props;
+  const { t, project, loadingStates, setInfoMsg } = props;
   return (
-    <>
-      <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-        <div className="border-b border-slate-800 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
-          <div>
-            <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-rose-500" />
-              {t.seoOptimizer}
-            </h3>
-            <p className="text-slate-400 text-xs mt-1">{t.seoDescription}</p>
-          </div>
-
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={() => handleTriggerSEOBoost(true, ThumbnailActionPosition.TOP)}
-            isLoading={!!loadingStates["seoBoost_loading"]}
-            className="flex items-center gap-1.5 shadow-md self-start sm:self-auto"
-            title={t.Optimize_metadata_and_tri}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>{t.Optimize_SEO}</span>
-          </Button>
-        </div>
-        <div className="bg-slate-950/45 border border-slate-805 p-5 rounded-xl space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-xs text-slate-400 font-mono font-bold uppercase block">{t.SEO_Optimization_Input}</label>
-            <span className="text-[10px] text-slate-600 font-mono ring-1 ring-slate-800 px-1.5 py-0.5 rounded">{t.INPUT_STATE}</span>
-          </div>
-          <textarea
-            value={project.scriptRewritten || ""}
-            onChange={(e) =>
-              setProject((prev) => ({
-                ...prev,
-                scriptRewritten: e.target.value,
-              }))
-            }
-            placeholder={t.Empty_script_Paste_here}
-            className="bg-slate-900 border border-slate-800 rounded-lg p-3 w-full text-xs text-slate-300 leading-relaxed font-sans outline-none focus:border-rose-500 min-h-[120px] max-h-60 custom-scrollbar resize-y"
-          />
-        </div>
-        <div className="pb-6 border-b border-slate-800">
-          <div className="space-y-1.5 max-w-sm">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Number_of_Title_Variants_}</span>
-            <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3.5 py-2.5 transition-all shadow-sm">
-              <Sliders className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-              <select
-                value={project.seoConfig?.numTitles || SEO_DEFAULT_CONFIGS.NUM_TITLES}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value) || SEO_DEFAULT_CONFIGS.NUM_TITLES;
-                  const updatedProject = {
-                    ...project,
-                    seoConfig: {
-                      ...(project.seoConfig || {}),
-                      numTitles: val,
-                      numDescriptions: SEO_DEFAULT_CONFIGS.NUM_DESCRIPTIONS,
-                      numHashtags: SEO_DEFAULT_CONFIGS.NUM_HASHTAGS,
-                      numTags: SEO_DEFAULT_CONFIGS.NUM_TAGS,
-                    },
-                  };
-                  setProject(updatedProject);
-                  onSaveProject(updatedProject, true);
-                }}
-                className="flex-1 bg-slate-900 border-none text-slate-205 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-              >
-                {_.map(_.range(SEO_DEFAULT_CONFIGS.MIN_TITLES_OPTION, SEO_DEFAULT_CONFIGS.MAX_TITLES_OPTION + 1), (num) => (
-                  <option key={num} value={num} className="bg-slate-950 text-slate-300">
-                    {num} {t.variants}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
-            </div>
-          </div>
+    <div className="space-y-6 relative overflow-visible h-full flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1 shrink-0">
+          <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">
+            <Target className="w-5 h-5 text-rose-500" />
+            {t.seoOptimizer || PIPELINE_STEP3_TEXTS.SEO_RESULT}
+          </h4>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          <div className="lg:col-span-2 space-y-5 flex flex-col h-full bg-slate-900 p-5 rounded-xl border border-slate-800">
+        <div className="flex flex-col gap-5 items-stretch flex-1">
+          <div className="space-y-5 flex flex-col bg-slate-900/40 p-5 rounded-xl border border-slate-800/50 flex-1">
             <div className="space-y-3">
-              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Titles_Options_Group}</span>
+              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Titles_Options_Group || PIPELINE_STEP3_TEXTS.TITLES_OPTIONS}</span>
               <div className="space-y-4">
                 {_.isEmpty(project.seo?.titles) &&
                   (loadingStates["seoBoost_loading"] ? (
@@ -113,8 +43,8 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         <Search className="w-4 h-4 text-rose-500" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs font-semibold text-slate-300">{t.No_SEO_Data}</p>
-                        <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">{t.Click_Optimize_Boost_at_t}</p>
+                        <p className="text-xs font-semibold text-slate-300">{t.No_SEO_Data || PIPELINE_STEP3_TEXTS.NO_SEO_DATA}</p>
+                        <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">{t.Click_Optimize_Boost_at_t || PIPELINE_STEP3_TEXTS.CLICK_OPTIMIZE_HINT}</p>
                       </div>
                     </div>
                   ))}
@@ -127,10 +57,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         size="xs"
                         onClick={() => {
                           navigator.clipboard.writeText(title.text);
-                          setInfoMsg(t.Copied_title_to_clipboard);
+                          setInfoMsg(t.Copied_title_to_clipboard || PIPELINE_STEP3_TEXTS.COPIED_TITLE);
                         }}
                         className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto w-auto shadow-none"
-                        title={t.Copy_title}
+                        title={t.Copy_title || PIPELINE_STEP3_TEXTS.COPY_TITLE}
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -138,7 +68,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-900 text-xs font-mono">
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
-                          <span>{t.Search}</span>
+                          <span>{t.Search || PIPELINE_STEP3_TEXTS.SEARCH_TITLE}</span>
                           <span className="text-rose-600 dark:text-rose-300 font-bold">{title.searchScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
@@ -148,7 +78,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
-                          <span>{t.CTR}</span>
+                          <span>{t.CTR || PIPELINE_STEP3_TEXTS.CTR_TITLE}</span>
                           <span className="text-rose-600 dark:text-rose-400 font-bold">{title.ctrScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
@@ -158,7 +88,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
-                          <span>{t.Compet}</span>
+                          <span>{t.Compet || PIPELINE_STEP3_TEXTS.COMPETITION_TITLE}</span>
                           <span className="text-rose-600 dark:text-rose-500 font-bold">{title.compScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
@@ -168,7 +98,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
-                          <span>{t.SEO_Score}</span>
+                          <span>{t.SEO_Score || PIPELINE_STEP3_TEXTS.SEO_SCORE_TITLE}</span>
                           <span className="text-rose-700 dark:text-rose-600 font-bold">{title.seoScore}%</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
@@ -181,7 +111,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
             </div>
             <div className="space-y-3">
-              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Description_Options}</span>
+              <span className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Description_Options || PIPELINE_STEP3_TEXTS.DESC_OPTIONS}</span>
               <div className="space-y-4">
                 {_.isEmpty(project.seo?.descriptions) &&
                   (loadingStates["seoBoost_loading"] ? (
@@ -194,7 +124,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center">{t.Descriptions_are_empty}</div>
+                    <div className="text-[11px] text-slate-500 border border-slate-800 bg-slate-950/40 p-4 rounded-xl text-center">{t.Descriptions_are_empty || PIPELINE_STEP3_TEXTS.DESCRIPTIONS_EMPTY}</div>
                   ))}
                 {_.map(project.seo?.descriptions || [], (desc, i) => (
                   <div key={i} className="bg-slate-950/60 hover:border-rose-500/20 transition-all border border-slate-800/80 p-4 rounded-xl space-y-2">
@@ -205,10 +135,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         size="xs"
                         onClick={() => {
                           navigator.clipboard.writeText(desc.text);
-                          setInfoMsg(t.Copied_description_to_cli);
+                          setInfoMsg(t.Copied_description_to_cli || PIPELINE_STEP3_TEXTS.COPIED_DESC);
                         }}
                         className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
-                        title={t.Copy}
+                        title={t.Copy || PIPELINE_STEP3_TEXTS.COPY_DESC}
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -218,11 +148,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
             </div>
           </div>
-          <div className="space-y-5">
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
+          <div className="bg-slate-900/40 border border-slate-800/50 p-5 rounded-xl space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.hashtags}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.hashtags || PIPELINE_STEP3_TEXTS.HASHTAGS}</span>
                   <Button
                     variant="ghost"
                     size="xs"
@@ -232,10 +161,10 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         " "
                       );
                       navigator.clipboard.writeText(hashtagsText);
-                      setInfoMsg(t.Copied_Hashtags_to_clipbo);
+                      setInfoMsg(t.Copied_Hashtags_to_clipbo || PIPELINE_STEP3_TEXTS.COPIED_HASHTAGS);
                     }}
                     className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
-                    title={t.Copy_Hashtags}
+                    title={t.Copy_Hashtags || PIPELINE_STEP3_TEXTS.COPY_HASHTAGS}
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
@@ -249,7 +178,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_hashtags}</span>
+                      <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_hashtags || PIPELINE_STEP3_TEXTS.NO_HASHTAGS}</span>
                     ))}
                   {_.map(project.seo?.hashtags || [], (tag, i) => (
                     <span key={i} className="bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
@@ -260,17 +189,17 @@ export default function PipelineStep3(props: PipelineWizardState) {
               </div>
               <div className="space-y-2 pt-3 border-t border-slate-900">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.tags}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-mono tracking-widest font-bold">{t.tags || PIPELINE_STEP3_TEXTS.TAGS}</span>
                   <Button
                     variant="ghost"
                     size="xs"
                     onClick={() => {
                       const tagsText = _.join(project.seo?.tags || [], ", ");
                       navigator.clipboard.writeText(tagsText);
-                      setInfoMsg(t.Copied_Tags_to_clipboard);
+                      setInfoMsg(t.Copied_Tags_to_clipboard || PIPELINE_STEP3_TEXTS.COPIED_TAGS);
                     }}
                     className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 shadow-none"
-                    title={t.Copy_Tags}
+                    title={t.Copy_Tags || PIPELINE_STEP3_TEXTS.COPY_TAGS}
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
@@ -284,7 +213,7 @@ export default function PipelineStep3(props: PipelineWizardState) {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_keywords}</span>
+                      <span className="text-[10px] text-slate-500 font-mono tracking-tight">{t.No_keywords || PIPELINE_STEP3_TEXTS.NO_TAGS}</span>
                     ))}
                   {_.map(project.seo?.tags || [], (tag, i) => (
                     <span key={i} className="bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[11px] px-2.5 py-1.5 rounded-lg shadow-sm">
@@ -296,30 +225,5 @@ export default function PipelineStep3(props: PipelineWizardState) {
             </div>
           </div>
         </div>
-
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={() => setCurrentStep(WizardStep.AssetManager)}
-            className="flex items-center gap-1.5 px-5 py-3 shadow"
-            title={t.Back}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.Back}
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => setCurrentStep(WizardStep.Export)}
-            className="flex items-center gap-1.5 px-5 py-3 shadow"
-            title={t.Continue}
-          >
-            {t.Continue}
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </>
   );
 }

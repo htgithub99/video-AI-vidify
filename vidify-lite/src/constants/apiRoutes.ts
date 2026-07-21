@@ -5,6 +5,9 @@ export const API_ROUTES = {
   PROJECTS: "/api/projects",
   PIPELINE_EXTRACT_STYLE: "/api/pipeline/extract-style",
   PIPELINE_REWRITE_PROMPTS: "/api/pipeline/rewrite-prompts",
+  PIPELINE_ANALYZE_CHARACTER: "/api/pipeline/analyze-character",
+  PIPELINE_EXTRACT_CHARACTER: "/api/pipeline/extract-character",
+  PIPELINE_REWRITE_PROMPTS_CHARACTER: "/api/pipeline/rewrite-prompts-character",
   PIPELINE_OPTIMIZE_PROMPTS: "/api/pipeline/optimize-prompts",
   PIPELINE_REWRITE_THUMBNAILS: "/api/pipeline/rewrite-thumbnails",
   PIPELINE_REWRITE_THUMBNAILS_CHARACTER: "/api/pipeline/rewrite-thumbnails-character",
@@ -23,6 +26,7 @@ export const API_ROUTES = {
   PIPELINE_TEMPLATES: "/api/pipeline/templates",
   PIPELINE_SELECT_FILE: "/api/pipeline/select-file",
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
+  PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
 };
 
 export const EXTERNAL_URLS = {

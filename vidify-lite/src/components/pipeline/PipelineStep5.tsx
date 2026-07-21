@@ -8,6 +8,7 @@ import JSZip from "jszip";
 import { API_ROUTES, PROMPT_NUMBERING_PREFIX_REGEX, PIPELINE_CONFIG } from "../../constants";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import { PromptStatus, LogLevel } from "../../constants/enums";
 import { PIPELINE_STEP5_TEXTS, LOG_LEVEL_SYMBOLS, COMMON_STRINGS } from "../../constants/texts";
 import { delayAsync } from "../../lib/shared-utils.js";
@@ -249,11 +250,12 @@ export default function PipelineStep5(props: PipelineWizardState) {
       <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         <div className="lg:col-span-1 space-y-5 flex flex-col justify-stretch">
-          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-5 rounded-xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-hidden">
+          <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-5 rounded-xl flex-1 flex flex-col space-y-4 shadow-xl relative overflow-visible z-20">
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-rose-500 shrink-0" />
-              <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.node6_prompts_list}</h4>
+              <Tooltip content="Nhập danh sách Prompts, mỗi prompt một dòng. AI sẽ đọc và sinh ra ảnh/video hàng loạt." position="bottom" align="start">
+                <span className="flex items-center gap-2 cursor-help"><FileText className="w-4 h-4 text-rose-500 shrink-0" /> <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.node6_prompts_list}</h4></span>
+              </Tooltip>
             </div>
             {!isRunning && (
               <div className="flex gap-2">
@@ -279,28 +281,32 @@ export default function PipelineStep5(props: PipelineWizardState) {
               <span>{t.node6_stop_gen}</span>
             </Button>
           ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={handleStartGeneration}
-              disabled={prompts.length === 0}
-              className="flex-1 font-bold"
-            >
-              <Play className="w-4 h-4 fill-white" />
-              <span>{t.node6_start_gen}</span>
-            </Button>
+            <Tooltip content="Bắt đầu chạy AI render ra hình ảnh hoặc video cho toàn bộ Prompts." position="top" align="center">
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleStartGeneration}
+                disabled={prompts.length === 0}
+                className="flex-1 font-bold relative z-20"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>{t.node6_start_gen}</span>
+              </Button>
+            </Tooltip>
           )}
 
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={handleDownloadAllZip}
-            disabled={!_.some(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS)}
-            className="px-4"
-            title={t.node6_zip_tooltip}
-          >
-            <Download className="w-4 h-4" />
-          </Button>
+          <Tooltip content="Tải về toàn bộ thư mục chứa các assets đã render thành công." position="top" align="end">
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={handleDownloadAllZip}
+              disabled={!_.some(prompts, (p: PromptItem) => p.status === PromptStatus.SUCCESS)}
+              className="px-4 relative z-20"
+              title={t.node6_zip_tooltip}
+            >
+              <Download className="w-4 h-4" />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 

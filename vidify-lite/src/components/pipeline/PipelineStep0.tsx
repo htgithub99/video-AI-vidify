@@ -2,6 +2,7 @@ import _ from "lodash";
 import { cn } from "../../lib/utils";
 import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
@@ -15,12 +16,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-        <div className="border-b border-slate-800 pb-4 relative z-10">
-          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-            <Settings2 className="w-5 h-5 text-rose-500" />
-            {t.stepInput}
+        <div className="border-b border-slate-800 pb-4 relative z-20">
+          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20">
+            <Tooltip content="Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản." position="bottom" align="start">
+              <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-5 h-5 text-rose-500" /> {t.stepInput}</span>
+            </Tooltip>
           </h3>
-          <p className="text-slate-400 text-xs mt-1">{t.Select_your_story_materia}</p>
+          <p className="text-slate-400 text-xs mt-1 relative z-10">{t.Select_your_story_materia}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -90,9 +92,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
           <div className="space-y-6">
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="border-b border-slate-800 pb-3 flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-rose-500 shrink-0" />
-                <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.C_u_h_nh_K_ch_b_n}</h4>
+              <div className="border-b border-slate-800 pb-3 flex items-center gap-2 relative z-20">
+                <Tooltip content="Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh." position="bottom" align="start">
+                  <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-4 h-4 text-rose-500 shrink-0" /> <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.C_u_h_nh_K_ch_b_n}</h4></span>
+                </Tooltip>
               </div>
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.Th_lo_i_video}</span>
@@ -392,20 +395,22 @@ export default function PipelineStep0(props: PipelineWizardState) {
             </div>
           </div>
         </div>
-        <div className="pt-4 flex items-center justify-end">
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            onClick={() => handleProcessInputAndConfig(true)}
-            disabled={!(project.input?.content || "").trim()}
-            isLoading={!!loadingStates["processInput"]}
-            title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
-            className="px-6 py-3.5"
-          >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>{t.Generate_Script}</span>
-          </Button>
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-end relative z-20">
+          <Tooltip content="Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI." position="top" align="end">
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              onClick={() => handleProcessInputAndConfig(true)}
+              disabled={!(project.input?.content || "").trim()}
+              isLoading={!!loadingStates["processInput"]}
+              title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
+              className="px-6 py-3.5"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>{t.Generate_Script}</span>
+            </Button>
+          </Tooltip>
         </div>
         {(project.scriptRewritten || loadingStates["processInput"]) && (
           <div className="pt-6 border-t border-slate-800 space-y-6">

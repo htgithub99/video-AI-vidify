@@ -104,6 +104,7 @@ import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAl
 import { requestContext } from "../utils/requestContext.js";
 
 import { AspectRatio, ProjectLanguage } from "../../types.js";
+import { VideoQuality } from "../../constants/enums.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
@@ -113,6 +114,7 @@ import { StepLogger } from "@/src/lib/stepLogger.js";
 import { generateMockStoryboard, smartSplitSentences } from "@/src/lib/textProcessor.js";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
 import { delayAsync } from "../../lib/shared-utils.js";
+import { renderFFmpegVideo } from "../utils/ffmpegRender.js";
 
 const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
 if (fs.existsSync(ffmpegBinary)) {
@@ -2440,6 +2442,22 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
+  }
+});
+
+router.post("/ffmpeg-render", express.json({ limit: "500mb" }), async (req: Request, res: Response) => {
+  try {
+    const { scenes, globalAudioUrl, quality } = req.body;
+    const outputUrl = await renderFFmpegVideo({
+      scenes,
+      globalAudioUrl,
+      quality: quality as VideoQuality
+    });
+    res.json({ success: true, url: outputUrl });
+  } catch (error: any) {
+    const isVi = req.headers["accept-language"]?.includes("vi");
+    logger.error(getBackendMsg("FFMPEG_RENDER_ERROR", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
 });
 
