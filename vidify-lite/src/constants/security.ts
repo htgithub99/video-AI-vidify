@@ -33,7 +33,7 @@ export enum FeatureType {
 
 export const SecurityConstants = {
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
-  GAS_API_URL: 'https://script.google.com/macros/s/AKfycbx26p481i1m5HpuPDIlsaupE16Qf5-9WuO-1EU3c0UUdaWaaAEXY97pwW0x514XsBg/exec',
+  GAS_API_URL: 'https://script.google.com/macros/s/AKfycby0oIrDRoqL3INVE0Gy9rEaubNKdhLhFIwkIlHkQrpCmnJt76QQWtyXigCIAj8UeXEC/exec',
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,

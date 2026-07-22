@@ -11,7 +11,7 @@
 
     <div id="login-screen" class="screen active">
         <div class="login-card">
-            <h2>🔑 Đăng Nhập Admin</h2>
+            <h2 title="Đăng Nhập Admin">🔑 Đăng Nhập</h2>
             <p>Vui lòng đăng nhập để tiếp tục</p>
             <input type="text" id="admin-username-input" placeholder="Tài khoản...">
             <input type="password" id="admin-password-input" placeholder="Mật khẩu...">
@@ -22,7 +22,7 @@
 
     <div id="dashboard-screen" class="screen">
         <header>
-            <h1>Quản Lý License (Bản Quyền)</h1>
+            <h1 title="Quản Lý License (Bản Quyền)">Quản Lý License</h1>
             <div style="display: flex; gap: 1rem; align-items: center; position: relative;">
                 <div class="dropdown" id="config-dropdown-container">
                     <button class="btn-secondary dropdown-toggle" id="config-toggle-btn" style="display: flex; align-items: center; gap: 0.5rem;">
@@ -31,41 +31,39 @@
                     </button>
                     <div class="dropdown-menu" id="config-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; width: 650px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 100;">
                         <div class="list-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <h3 style="margin: 0;">Cấu Hình Giới Hạn Tài Khoản</h3>
-                            <button id="save-config-btn" class="btn-primary" style="padding: 0.4rem 1rem;">Lưu Cấu Hình</button>
+                            <h3 style="margin: 0;" title="Cấu Hình Giới Hạn Tài Khoản">Giới Hạn</h3>
+                            <button id="save-config-btn" class="btn-primary" style="padding: 0.4rem 1rem;" title="Lưu Cấu Hình">Lưu</button>
                         </div>
                         <div class="quota-grid">
-                            <!-- Gói Miễn Phí -->
                             <div class="quota-col quota-free">
                                 <div class="quota-col-header">
                                     <span class="badge free">FREE</span>
-                                    <h4>Gói Miễn Phí</h4>
+                                    <h4>Miễn Phí</h4>
                                 </div>
                                 <div class="quota-col-body">
                                     <div class="input-group">
-                                        <label>Số Video / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="free-quota-video">
+                                        <label title="Số Video / ngày">Số Video</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-video">
                                     </div>
                                     <div class="input-group">
-                                        <label>Số Ảnh / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="free-quota-image">
+                                        <label title="Số Ảnh / ngày">Số Ảnh</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-image">
                                     </div>
                                     <div class="input-group">
-                                        <label>Số Ký tự / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="free-quota-voice">
+                                        <label title="Số Ký tự / ngày">Số Ký Tự</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-voice">
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Gói PRO -->
                             <div class="quota-col quota-pro">
                                 <div class="quota-col-header">
                                     <span class="badge pro">PRO</span>
-                                    <h4>Gói Trả Phí</h4>
+                                    <h4>Trả Phí</h4>
                                 </div>
                                 <div class="quota-col-body">
                                     <label class="unlimited-toggle" for="pro-unlimited">
-                                        <span>✨ Dùng Không Giới Hạn (Unlimited)</span>
+                                        <span title="Dùng Không Giới Hạn (Unlimited)">✨ Không Giới Hạn</span>
                                         <div class="toggle-switch">
                                             <input type="checkbox" id="pro-unlimited">
                                             <span class="slider"></span>
@@ -73,16 +71,16 @@
                                     </label>
                                     
                                     <div class="input-group" id="pro-video-wrapper">
-                                        <label>Số Video / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="pro-quota-video">
+                                        <label title="Số Video / ngày">Số Video</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-video">
                                     </div>
                                     <div class="input-group" id="pro-image-wrapper">
-                                        <label>Số Ảnh / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="pro-quota-image">
+                                        <label title="Số Ảnh / ngày">Số Ảnh</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-image">
                                     </div>
                                     <div class="input-group" id="pro-voice-wrapper">
-                                        <label>Số Ký tự / ngày</label>
-                                        <input type="text" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" id="pro-quota-voice">
+                                        <label title="Số Ký tự / ngày">Số Ký Tự</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-voice">
                                     </div>
                                 </div>
                             </div>
@@ -97,31 +95,30 @@
 
             <section class="card list-section">
                 <div class="list-header">
-                    <h3>Danh Sách Người Dùng</h3>
+                    <h3 title="Danh Sách Người Dùng">Người Dùng</h3>
                     <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: flex-end;">
-                        <!-- Filters -->
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="text" id="search-input" placeholder="Tìm tên, key..." style="padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--input-bg); color: white; outline: none; font-size: 0.85rem; width: 200px;">
                             <select id="filter-plan" style="padding: 0.4rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--input-bg); color: white; outline: none; font-size: 0.85rem;">
                                 <option value="ALL">Tất cả gói</option>
-                                <option value="FREE">Miễn phí (FREE)</option>
-                                <option value="PRO">Trả phí (PRO)</option>
-                                <option value="PRO_LIFETIME">Vĩnh viễn (PRO_LIFE)</option>
+                                <option value="FREE">Gói FREE</option>
+                                <option value="PRO">Gói PRO</option>
+                                <option value="PRO_LIFETIME">Vĩnh Viễn</option>
                             </select>
                             <select id="filter-status" style="padding: 0.4rem 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: var(--input-bg); color: white; outline: none; font-size: 0.85rem;">
-                                <option value="ALL">Tất cả trạng thái</option>
-                                <option value="ACTIVE">Hoạt động (ACTIVE)</option>
-                                <option value="REVOKED">Bị khóa (REVOKED)</option>
-                                <option value="EXPIRED">Hết hạn (EXPIRED)</option>
+                                <option value="ALL">Tất cả</option>
+                                <option value="ACTIVE">Hoạt động</option>
+                                <option value="REVOKED">Bị khóa</option>
+                                <option value="EXPIRED">Hết hạn</option>
                             </select>
                         </div>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            <button id="sync-expired-btn" class="btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                            <button id="sync-expired-btn" class="btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);" title="Đồng bộ Hết Hạn">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
-                                Đồng bộ Hết Hạn
+                                Đồng Bộ
                             </button>
-                            <button id="open-create-modal-btn" class="btn-primary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem;">+ Thêm Mới</button>
-                            <button id="refresh-btn" class="btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem;">
+                            <button id="open-create-modal-btn" class="btn-primary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem;" title="Thêm Mới">+ Thêm</button>
+                            <button id="refresh-btn" class="btn-secondary" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem;" title="Làm Mới">
                                 Làm Mới 
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                             </button>
@@ -132,14 +129,13 @@
                     <table id="users-table">
                         <thead>
                             <tr>
-                                <th>Khách Hàng</th>
-                                <th>Khóa (License Key)</th>
+                                <th title="Khách Hàng">Khách Hàng</th>
+                                <th title="Khóa (License Key)">Khóa</th>
                                 <th class="text-center">Gói</th>
                                 <th class="text-center">Trạng Thái</th>
-                                <th class="text-center" title="Video / Image / Character (Voice)">Sử dụng (V/I/C)</th>
+                                <th class="text-center" title="Video / Image / Character (Voice)">Sử Dụng</th>
                                 <th class="text-center">Ngày Tạo</th>
                                 <th class="text-center">Hết Hạn</th>
-
                                 <th class="text-center">Hành Động</th>
                             </tr>
                         </thead>
@@ -157,7 +153,6 @@
                         </select>
                     </div>
                     <div class="pagination-controls" id="pagination-controls">
-                        <!-- Buttons will be injected here -->
                     </div>
                 </div>
             </section>
@@ -167,37 +162,37 @@
     <div id="user-modal" class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <h3 id="user-modal-title">Tạo License Mới</h3>
-                <button class="modal-close" onclick="closeModal('user-modal')">✕</button>
+                <h3 id="user-modal-title" title="Tạo License Mới">Tạo Mới</h3>
+                <button class="modal-close" data-modal="user-modal">✕</button>
             </div>
             <div class="modal-body">
                 <div class="form-group" style="flex-direction: column;">
-                    <label>Tên khách hàng / Email:</label>
+                    <label title="Tên khách hàng / Email">Tên Khách:</label>
                     <input type="text" id="modal-username" placeholder="Nhập tên...">
                     
                     <label style="margin-top: 1rem;">Gói (Plan):</label>
                     <select id="modal-plan-type">
-                        <option value="FREE">Miễn phí (FREE)</option>
-                        <option value="PRO">Trả phí (PRO)</option>
-                        <option value="PRO_LIFETIME">Vĩnh viễn (PRO_LIFE)</option>
+                        <option value="FREE">Gói FREE</option>
+                        <option value="PRO">Gói PRO</option>
+                        <option value="PRO_LIFETIME">Vĩnh Viễn</option>
                     </select>
 
                     <label style="margin-top: 1rem;">Trạng Thái:</label>
                     <select id="modal-status">
-                        <option value="ACTIVE">Hoạt động (ACTIVE)</option>
-                        <option value="REVOKED">Bị khóa (REVOKED)</option>
-                        <option value="EXPIRED">Hết hạn (EXPIRED)</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="REVOKED">Bị khóa</option>
+                        <option value="EXPIRED">Hết hạn</option>
                     </select>
 
                     <div id="modal-expires-wrapper" style="display: none; flex-direction: column; margin-top: 1rem;">
-                        <label>Ngày Hết Hạn (Để trống nếu Vĩnh viễn):</label>
+                        <label title="Ngày Hết Hạn (Để trống nếu Vĩnh viễn)">Hết Hạn:</label>
                         <input type="date" id="modal-expires">
                     </div>
                 </div>
                 
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('user-modal')">Hủy</button>
+                <button class="btn-secondary modal-close-btn" data-modal="user-modal">Hủy</button>
                 <button id="save-user-btn" class="btn-primary">Lưu</button>
             </div>
         </div>
@@ -206,8 +201,8 @@
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <h3>Xác nhận Hành Động</h3>
-                <button class="modal-close" onclick="closeModal('delete-modal')">✕</button>
+                <h3 title="Xác nhận Hành Động">Xác Nhận</h3>
+                <button class="modal-close" data-modal="delete-modal">✕</button>
             </div>
             <div class="modal-body">
                 <p>Bạn muốn thực hiện hành động nào đối với mã: <strong id="delete-key-display"></strong>?</p>
@@ -218,9 +213,9 @@
                 
             </div>
             <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('delete-modal')">Hủy</button>
-                <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b;">Xóa Mềm (Khóa)</button>
-                <button id="btn-hard-delete" class="btn-danger">Xóa Cứng</button>
+                <button class="btn-secondary modal-close-btn" data-modal="delete-modal">Hủy</button>
+                <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b;" title="Xóa Mềm (Khóa)">Khóa</button>
+                <button id="btn-hard-delete" class="btn-danger" title="Xóa Cứng">Xóa</button>
             </div>
         </div>
     </div>
@@ -231,17 +226,16 @@
     <div id="device-modal" class="modal-overlay">
         <div class="modal-container" style="max-width: 400px;">
             <div class="modal-header">
-                <h3 id="device-modal-title">Quản Lý Thiết Bị</h3>
-                <button class="modal-close" onclick="closeModal('device-modal')">✕</button>
+                <h3 id="device-modal-title" title="Quản Lý Thiết Bị">Thiết Bị</h3>
+                <button class="modal-close" data-modal="device-modal">✕</button>
             </div>
             <div class="modal-body">
                 <div id="device-list-container" style="margin-bottom: 1.5rem; max-height: 200px; overflow-y: auto;">
-                    <!-- Devices go here -->
                 </div>
                 <div style="display: flex; justify-content: flex-end;">
-                    <button id="modal-reset-device-btn" class="btn-danger" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem;">
+                    <button id="modal-reset-device-btn" class="btn-danger" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem;" title="Gỡ Tất Cả Thiết Bị">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                        Gỡ Tất Cả Thiết Bị
+                        Gỡ Thiết Bị
                     </button>
                 </div>
             </div>

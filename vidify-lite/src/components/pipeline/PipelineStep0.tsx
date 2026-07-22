@@ -9,7 +9,14 @@ import * as LucideIcons from "lucide-react";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
 
-const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders } = LucideIcons as any;
+const STEP0_TEXTS = {
+  TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.",
+  TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.",
+  TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.",
+  CHAPTER_PLACEHOLDER: "Nhập tên chương..."
+};
+
+const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders, Info } = LucideIcons as any;
 
 export default function PipelineStep0(props: PipelineWizardState) {
   const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition, handleAutoGenerateVideo } = props;
@@ -19,8 +26,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
         <div className="border-b border-slate-800 pb-4 relative z-20">
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2 relative z-20">
-            <Tooltip content="Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản." position="bottom" align="start">
-              <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-5 h-5 text-rose-500" /> {t.stepInput}</span>
+            <Tooltip content={STEP0_TEXTS.TOOLTIP_INPUT_METHOD} position="bottom" align="start">
+              <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-5 h-5 text-rose-500" /> {t.stepInput} <Info className="w-4 h-4 text-slate-500" /></span>
             </Tooltip>
           </h3>
           <p className="text-slate-400 text-xs mt-1 relative z-10">{t.Select_your_story_materia}</p>
@@ -102,8 +109,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-5 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
               <div className="border-b border-slate-800 pb-3 flex items-center gap-2 relative z-20">
-                <Tooltip content="Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh." position="bottom" align="start">
-                  <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-4 h-4 text-rose-500 shrink-0" /> <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.C_u_h_nh_K_ch_b_n}</h4></span>
+                <Tooltip content={STEP0_TEXTS.TOOLTIP_CONFIG_DETAIL} position="bottom" align="start">
+                  <span className="flex items-center gap-2 cursor-help"><Settings2 className="w-4 h-4 text-rose-500 shrink-0" /> <h4 className="font-bold text-slate-100 text-xs font-mono uppercase tracking-wider">{t.C_u_h_nh_K_ch_b_n} <Info className="w-3 h-3 text-slate-500" /></h4></span>
                 </Tooltip>
               </div>
               <div className="space-y-1.5">
@@ -405,13 +412,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
           </div>
         </div>
         <div className="pt-4 border-t border-slate-800 flex items-center justify-end relative z-20 gap-3">
-          <Tooltip content={AUTO_GENERATE_TEXTS.BTN_AUTO_TOOLTIP} position="top" align="end">
+          <Tooltip content={STEP0_TEXTS.TOOLTIP_AUTO_GENERATE} position="top" align="end">
             <Button
               type="button"
               variant="secondary"
               size="lg"
               onClick={() => handleAutoGenerateVideo()}
-              disabled={_.isEmpty(_.trim(project.input?.content)) || !!loadingStates["autoGenerateAll"]}
+              disabled={_.isEmpty(_.trim(project.input?.content)) || !!loadingStates["autoGenerateAll"] || !!loadingStates["processInput"]}
               isLoading={!!loadingStates["autoGenerateAll"]}
               className="px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300"
             >
@@ -425,8 +432,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
               variant="primary"
               size="lg"
               onClick={() => handleProcessInputAndConfig(true)}
-              disabled={!(project.input?.content || "").trim()}
-              isLoading={!!loadingStates["processInput"]}
+              disabled={_.isEmpty(_.trim(project.input?.content)) || !!loadingStates["autoGenerateAll"] || !!loadingStates["processInput"]}
+              isLoading={!!loadingStates["processInput"] && !loadingStates["autoGenerateAll"]}
               title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
               className="px-6 py-3.5"
             >

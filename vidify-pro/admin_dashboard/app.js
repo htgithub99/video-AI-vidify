@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbx26p481i1m5HpuPDIlsaupE16Qf5-9WuO-1EU3c0UUdaWaaAEXY97pwW0x514XsBg/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycby0oIrDRoqL3INVE0Gy9rEaubNKdhLhFIwkIlHkQrpCmnJt76QQWtyXigCIAj8UeXEC/exec';
 
 const AdminConstants = {
     TOKEN_KEY: 'adminToken',
@@ -17,12 +17,33 @@ const AdminConstants = {
     API_ERROR_UNAUTHORIZED: 401,
     DISPLAY_FLEX: 'flex',
     DISPLAY_NONE: 'none',
-    DISPLAY_BLOCK: 'block'
+    DISPLAY_BLOCK: 'block',
+    MIN_PAGE: 1,
+    DEFAULT_QUOTA: 0,
+    DEFAULT_MAX_DEVICES: 1,
+    UNKNOWN_STR: 'unknown'
+};
+
+const AdminRegex = {
+    NUMBERS_ONLY: /[^0-9]/g
 };
 
 const ToastType = {
     SUCCESS: 'success',
     ERROR: 'error'
+};
+
+const Icons = {
+    SPINNER: `<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
+    SUCCESS: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><path d="M20 6 9 17l-5-5"/></svg>`,
+    ERROR: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
+    CLOSE_TOAST: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+    EDIT: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+    DEVICE: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
+    DELETE: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+    COPY: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+    DEVICE_ICON: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    DEVICE_EMPTY: `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`
 };
 
 const DOMIds = {
@@ -109,9 +130,9 @@ const AdminMessages = {
     ACTION_LOADING_RESET_DEVICE: "Đang gỡ...",
     ACTION_LOADING_SYNC: "Đang đồng bộ...",
     DATA_LOADING: "Đang tải dữ liệu...",
-    PLAN_FREE_LABEL: "Miễn phí (FREE)",
-    PLAN_PRO_LABEL: "Trả phí (PRO)",
-    PLAN_LIFETIME_LABEL: "Vĩnh viễn (PRO_LIFE)",
+    PLAN_FREE_LABEL: "Gói FREE",
+    PLAN_PRO_LABEL: "Gói PRO",
+    PLAN_LIFETIME_LABEL: "Vĩnh Viễn",
     STATUS_ACTIVE_LABEL: "Hoạt động",
     STATUS_REVOKED_LABEL: "Bị khóa",
     STATUS_EXPIRED_LABEL: "Hết hạn",
@@ -136,9 +157,9 @@ const AdminActions = {
 };
 
 const Logger = {
-    info: (...args) => console.info('[INFO]', ...args),
-    error: (...args) => console.error('[ERROR]', ...args),
-    warn: (...args) => console.warn('[WARN]', ...args)
+    info: (...args) => { if (window.console && window.console.info) window.console.info('[INFO]', ...args); },
+    error: (...args) => { if (window.console && window.console.error) window.console.error('[ERROR]', ...args); },
+    warn: (...args) => { if (window.console && window.console.warn) window.console.warn('[WARN]', ...args); }
 };
 
 const el = (id) => document.getElementById(id);
@@ -165,14 +186,14 @@ function escapeHTML(str) {
     );
 }
 
-const spinnerSVG = `<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+
 
 function setButtonLoading(btn, isLoading, loadingText = '') {
     if (!btn) return;
     if (isLoading) {
         btn.dataset.originalHtml = btn.innerHTML;
         btn.classList.add('btn-loading');
-        btn.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">${spinnerSVG} <span>${loadingText}</span></div>`;
+        btn.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">${Icons.SPINNER} <span>${loadingText}</span></div>`;
         btn.disabled = true;
     } else {
         btn.classList.remove('btn-loading');
@@ -190,9 +211,7 @@ function showToast(message, type = ToastType.SUCCESS) {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
 
-    const iconSvg = type === ToastType.SUCCESS
-        ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><path d="M20 6 9 17l-5-5"/></svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`;
+    const iconSvg = type === ToastType.SUCCESS ? Icons.SUCCESS : Icons.ERROR;
 
     const title = type === ToastType.SUCCESS ? AdminMessages.TOAST_SUCCESS : AdminMessages.TOAST_ERROR;
 
@@ -203,7 +222,7 @@ function showToast(message, type = ToastType.SUCCESS) {
             <span class="toast-message">${escapeHTML(message)}</span>
         </div>
         <button class="toast-close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            ${Icons.CLOSE_TOAST}
         </button>
         <div class="toast-progress">
             <div class="toast-progress-bar"></div>
@@ -355,10 +374,10 @@ function renderTable() {
     tbody.innerHTML = '';
 
     const totalItems = filteredUsers.length;
-    const totalPages = Math.ceil(totalItems / pageSize) || 1;
+    const totalPages = Math.ceil(totalItems / pageSize) || AdminConstants.MIN_PAGE;
 
     if (currentPage > totalPages) currentPage = totalPages;
-    if (currentPage < 1) currentPage = 1;
+    if (currentPage < AdminConstants.MIN_PAGE) currentPage = AdminConstants.MIN_PAGE;
 
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
@@ -389,9 +408,9 @@ function renderTable() {
         const expiresAtStr = _.get(user, 'expires_at') ? new Date(_.get(user, 'expires_at')).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
 
         const btnDeviceModal = `<button class="action-btn action-warn" onclick="openDeviceModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_DEVICES}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            ${Icons.DEVICE}
         </button>`;
-        const btnCopy = `<button class="copy-btn" onclick="copyToClipboard('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_COPY}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>`;
+        const btnCopy = `<button class="copy-btn" onclick="copyToClipboard('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_COPY}">${Icons.COPY}</button>`;
 
         return `
             <tr>
@@ -416,11 +435,11 @@ function renderTable() {
                 <td class="text-center">
                     <div style="display: flex; justify-content: center; gap: 0.25rem;">
                         <button class="action-btn action-info" onclick="openEditModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_EDIT}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            ${Icons.EDIT}
                         </button>
                         ${btnDeviceModal}
                         <button class="action-btn action-danger" onclick="openDeleteModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_DELETE}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            ${Icons.DELETE}
                         </button>
                     </div>
                 </td>
@@ -440,11 +459,11 @@ function renderPagination(totalPages) {
     const btnPrev = document.createElement('button');
     btnPrev.className = 'page-btn';
     btnPrev.textContent = '«';
-    btnPrev.disabled = currentPage === 1;
+    btnPrev.disabled = currentPage === AdminConstants.MIN_PAGE;
     btnPrev.onclick = () => { currentPage--; renderTable(); };
     controls.appendChild(btnPrev);
 
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = AdminConstants.MIN_PAGE; i <= totalPages; i++) {
         const btnPage = document.createElement('button');
         btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
         btnPage.textContent = i;
@@ -465,13 +484,13 @@ async function loadConfig() {
         const res = await fetchAPI(AdminActions.GET_CONFIG);
         const q = _.get(res, 'config', {});
 
-        el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, 'free_video', 0);
-        el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, 'free_image', 0);
-        el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, 'free_voice', 0);
+        el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, 'free_video', AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, 'free_image', AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, 'free_voice', AdminConstants.DEFAULT_QUOTA);
 
-        el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, 'pro_video', 0);
-        el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, 'pro_image', 0);
-        el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, 'pro_voice', 0);
+        el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, 'pro_video', AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, 'pro_image', AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, 'pro_voice', AdminConstants.DEFAULT_QUOTA);
 
         const isUnlimited = String(_.get(q, 'pro_unlimited', 'false')) === 'true';
         el(DOMIds.PRO_UNLIMITED).checked = isUnlimited;
@@ -480,7 +499,7 @@ async function loadConfig() {
         el(DOMIds.PRO_QUOTA_VOICE).disabled = isUnlimited;
 
         if (el(DOMIds.CONFIG_MAX_DEVICES)) {
-            el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, 'max_devices', 1);
+            el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, 'max_devices', AdminConstants.DEFAULT_MAX_DEVICES);
         }
     } catch (error) {
         Logger.error(error);
@@ -493,14 +512,14 @@ async function handleSaveConfig() {
 
     try {
         await fetchAPI(AdminActions.UPDATE_CONFIG, {
-            free_quota_video: parseInt(el(DOMIds.FREE_QUOTA_VIDEO).value) || 0,
-            free_quota_image: parseInt(el(DOMIds.FREE_QUOTA_IMAGE).value) || 0,
-            free_quota_voice: parseInt(el(DOMIds.FREE_QUOTA_VOICE).value) || 0,
-            pro_quota_video: parseInt(el(DOMIds.PRO_QUOTA_VIDEO).value) || 0,
-            pro_quota_image: parseInt(el(DOMIds.PRO_QUOTA_IMAGE).value) || 0,
-            pro_quota_voice: parseInt(el(DOMIds.PRO_QUOTA_VOICE).value) || 0,
+            free_quota_video: parseInt(el(DOMIds.FREE_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            free_quota_image: parseInt(el(DOMIds.FREE_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            free_quota_voice: parseInt(el(DOMIds.FREE_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
+            pro_quota_video: parseInt(el(DOMIds.PRO_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            pro_quota_image: parseInt(el(DOMIds.PRO_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            pro_quota_voice: parseInt(el(DOMIds.PRO_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
             pro_unlimited: el(DOMIds.PRO_UNLIMITED).checked,
-            max_devices: el(DOMIds.CONFIG_MAX_DEVICES) ? (parseInt(el(DOMIds.CONFIG_MAX_DEVICES).value) || 1) : 1
+            max_devices: el(DOMIds.CONFIG_MAX_DEVICES) ? (parseInt(el(DOMIds.CONFIG_MAX_DEVICES).value) || AdminConstants.DEFAULT_MAX_DEVICES) : AdminConstants.DEFAULT_MAX_DEVICES
         });
         showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
     } catch (error) {
@@ -539,7 +558,7 @@ window.openEditModal = function (key) {
     el(DOMIds.MODAL_USERNAME).disabled = true;
 
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
-    let hasOption = _.some(Array.from(planSelect.options), opt => _.get(opt, 'value') === _.get(user, 'plan_type'));
+    let hasOption = _.some(_.toArray(planSelect.options), opt => _.get(opt, 'value') === _.get(user, 'plan_type'));
     if (!hasOption) {
         const newOption = document.createElement('option');
         newOption.value = _.get(user, 'plan_type');
@@ -657,7 +676,7 @@ async function handleResetDevice() {
     if (!resettingKey) return;
 
     const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', resettingKey);
-    if (!confirm(confirmMsg)) return;
+    if (!window.confirm(confirmMsg)) return;
 
     const btn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_RESET_DEVICE);
@@ -692,7 +711,7 @@ window.openDeviceModal = function (key) {
 
     const emptyStateHtml = `
         <div class="empty-device">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            ${Icons.DEVICE_EMPTY}
             <p>${AdminMessages.EMPTY_DEVICE_MSG}</p>
         </div>
     `;
@@ -700,7 +719,7 @@ window.openDeviceModal = function (key) {
     const renderCard = (dId) => `
         <div class="device-card">
             <div class="device-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                ${Icons.DEVICE_ICON}
             </div>
             <div class="device-info">
                 <span class="device-id" title="${escapeHTML(dId)}">${escapeHTML(dId)}</span>
@@ -759,7 +778,28 @@ async function handleSyncExpired() {
     }
 }
 
+function preventNonNumericInput() {
+    const numericInputs = document.querySelectorAll('.numeric-input');
+    _.forEach(numericInputs, input => {
+        input.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(AdminRegex.NUMBERS_ONLY, '');
+        });
+    });
+}
+
+function delegateModalCloses() {
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal-close-btn')) {
+            const modalId = e.target.getAttribute('data-modal');
+            if (modalId) closeModal(modalId);
+        }
+    });
+}
+
 function initEventListeners() {
+    preventNonNumericInput();
+    delegateModalCloses();
+
     el(DOMIds.LOGIN_BTN)?.addEventListener('click', handleLogin);
     el(DOMIds.LOGOUT_BTN)?.addEventListener('click', handleLogout);
 
@@ -779,7 +819,7 @@ function initEventListeners() {
     el(DOMIds.FILTER_STATUS)?.addEventListener('change', applyFilters);
     el(DOMIds.PAGE_SIZE)?.addEventListener('change', (e) => {
         pageSize = parseInt(_.get(e, 'target.value', AdminConstants.DEFAULT_PAGE_SIZE));
-        currentPage = 1;
+        currentPage = AdminConstants.MIN_PAGE;
         renderTable();
     });
 

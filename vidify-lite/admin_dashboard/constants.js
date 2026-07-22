@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyHtX6kjnNUjRj2PGX39GBB7UQZAm5_xGpuKN3twSAW-SSBcBxmRCRMA6eaddpV37bf/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycby0oIrDRoqL3INVE0Gy9rEaubNKdhLhFIwkIlHkQrpCmnJt76QQWtyXigCIAj8UeXEC/exec';
 
 const AdminConstants = {
     TOKEN_KEY: 'adminToken',
@@ -33,6 +33,7 @@ const AdminConstants = {
     ACTION_EDIT_ACC: 'edit_acc',
     ACTION_DELETE_ACC: 'delete_acc',
     ACTION_DELETE_KEYS: 'delete_keys',
+    ACTION_EDIT_KEYS: 'edit_keys',
     PAGINATION_PREV: '«',
     PAGINATION_NEXT: '»',
     DATE_T_SPLIT: 'T',
@@ -49,7 +50,8 @@ const AdminConstants = {
     },
     HTTP_POST: 'POST',
     PLUGIN_DROPDOWN: 'dropdown_input',
-    SELECTED: 'selected'
+    SELECTED: 'selected',
+    UNKNOWN_STR: 'unknown'
 };
 
 const DataAttributes = {
@@ -57,7 +59,8 @@ const DataAttributes = {
     ACTION: 'data-action',
     KEY: 'data-key',
     ACCOUNT_ID: 'data-account-id',
-    ASSIGNEE: 'data-assignee'
+    ASSIGNEE: 'data-assignee',
+    ID: 'data-id'
 };
 
 const ApiFields = {
@@ -106,7 +109,9 @@ const ApiFields = {
     ROW_INDEX: 'rowIndex',
     GEMINI_KEY: 'geminiKey',
     AI33_KEY: 'ai33Key',
-    MESSAGE: 'message'
+    MESSAGE: 'message',
+    CREATED_AT: 'createdAt',
+    UPDATED_AT: 'updatedAt'
 };
 
 const EventTypes = {
@@ -215,7 +220,10 @@ const DOMIds = {
     ACC_PASSWORD_INPUT: 'acc-pwd-input',
     ACC_RECOVERY_INPUT: 'acc-recovery-input',
     ACC_ASSIGNEE_INPUT: 'acc-assign-input',
-    SYNC_BTN: 'sync-expired-btn'
+    SYNC_BTN: 'sync-expired-btn',
+    CONFIRM_MODAL: 'confirm-modal',
+    CONFIRM_MESSAGE_DISPLAY: 'confirm-message-display',
+    BTN_CONFIRM_ACTION: 'btn-confirm-action'
 };
 
 const AdminMessages = {
@@ -237,6 +245,8 @@ const AdminMessages = {
     MODAL_UPDATE_SUCCESS: "Đã cập nhật!",
     MODAL_CREATE_SUCCESS: "Mã mới: ",
     MODAL_SAVE_DEFAULT: "Lưu",
+    BTN_UPDATE: "Cập Nhật",
+    BTN_CANCEL: "Hủy",
     SAVE_USER_PROGRESS: "Đang lưu...",
     SAVE_USER_SUCCESS: "Đã lưu!",
     SAVE_USER_DEFAULT: "Lưu",

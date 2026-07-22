@@ -6,9 +6,10 @@ let apiUrl = API_BASE_URL;
 let currentPage = AdminConstants.DEFAULT_PAGE;
 let pageSize = AdminConstants.DEFAULT_PAGE_SIZE;
 let filteredUsers = [];
-let editingKey = null;
-let deletingKey = null;
-let resettingKey = null;
+let editingUserId = null;
+let deletingUserId = null;
+let deletingUserKey = null;
+let resettingUserId = null;
 window.editingAccountId = null;
 
 function escapeHTML(str) {
@@ -226,7 +227,7 @@ function renderTable() {
         const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE));
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         
-        const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
+        const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
         const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
         
         return `
@@ -251,9 +252,9 @@ function renderTable() {
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${expiresAtStr}</td>
                 <td class="text-center">
                     <div style="display: flex; justify-content: center; gap: 0.25rem;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         ${btnDeviceModal}
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE}" data-id="${_.get(user, ApiFields.ID)}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
                     </div>
                 </td>
             </tr>
@@ -342,12 +343,32 @@ async function handleSaveConfig() {
     }
 }
 
+function resetResourceForms() {
+    window.editingKeyId = null;
+    el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
+    if (tsKeysInstance) tsKeysInstance.setValue(AdminConstants.ASSIGN_ALL);
+    else el(DOMIds.KEYS_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+    el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.MODAL_SAVE_DEFAULT);
+
+    window.editingAccountId = null;
+    el(DOMIds.ACC_EMAIL_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.ACC_PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.ACC_RECOVERY_INPUT).value = AdminConstants.EMPTY_STR;
+    if (tsAccInstance) tsAccInstance.setValue(AdminConstants.ASSIGN_ALL);
+    else el(DOMIds.ACC_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+    el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD);
+}
+
 function closeModal(id) {
     el(id)?.classList.remove(AdminClasses.ACTIVE);
+    if (id === DOMIds.RESOURCE_MODAL) {
+        resetResourceForms();
+    }
 }
 
 function handleOpenCreateModal() {
-    editingKey = null;
+    editingUserId = null;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_CREATE_TITLE;
     el(DOMIds.MODAL_USERNAME).value = AdminConstants.EMPTY_STR;
     el(DOMIds.MODAL_USERNAME).disabled = false;
@@ -360,11 +381,11 @@ function handleOpenCreateModal() {
     el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
-function openEditModal(key) {
-    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.LICENSE_KEY) === key);
+function openEditModal(id) {
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
     
-    editingKey = key;
+    editingUserId = id;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_EDIT_TITLE;
     el(DOMIds.MODAL_USERNAME).value = _.get(user, ApiFields.USERNAME);
     el(DOMIds.MODAL_USERNAME).disabled = true;
@@ -402,7 +423,7 @@ function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     const selectedPlan = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
     
-    if (!_.isNil(editingKey) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
+    if (!_.isNil(editingUserId) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
         wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     } else {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
@@ -416,7 +437,7 @@ async function handleSaveUser() {
     const status = el(DOMIds.MODAL_STATUS).value;
     let expiresAt = el(DOMIds.MODAL_EXPIRES).value;
     
-    if (_.isNil(editingKey) && _.isEmpty(username)) {
+    if (_.isNil(editingUserId) && _.isEmpty(username)) {
         showToast(AdminMessages.MODAL_MISSING_NAME, ToastType.ERROR);
         return;
     }
@@ -428,8 +449,8 @@ async function handleSaveUser() {
     setButtonLoading(btn, true, AdminMessages.SAVE_USER_PROGRESS);
     
     try {
-        if (!_.isNil(editingKey)) {
-            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.LICENSE_KEY]: editingKey, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.EXPIRES_AT]: expiresAt });
+        if (!_.isNil(editingUserId)) {
+            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.EXPIRES_AT]: expiresAt });
             showToast(AdminMessages.MODAL_UPDATE_SUCCESS, ToastType.SUCCESS);
         } else {
             const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_TYPE]: planType });
@@ -448,9 +469,10 @@ async function handleSaveUser() {
     }
 }
 
-function openDeleteModal(key) {
-    deletingKey = key;
-    el(DOMIds.DELETE_KEY_DISPLAY).textContent = key;
+function openDeleteModal(id, keyStr) {
+    deletingUserId = id;
+    deletingUserKey = keyStr;
+    el(DOMIds.DELETE_KEY_DISPLAY).textContent = keyStr;
     el(DOMIds.DELETE_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
@@ -458,7 +480,7 @@ async function handleSoftDelete() {
     const btn = el(DOMIds.BTN_SOFT_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE);
     try {
-        await fetchAPI(AdminActions.REVOKE_KEY, { [ApiFields.LICENSE_KEY]: deletingKey });
+        await fetchAPI(AdminActions.REVOKE_KEY, { [ApiFields.ID]: deletingUserId });
         showToast(AdminMessages.DELETE_SOFT_SUCCESS, ToastType.SUCCESS);
         closeModal(DOMIds.DELETE_MODAL);
         loadUsers();
@@ -473,7 +495,7 @@ async function handleHardDelete() {
     const btn = el(DOMIds.BTN_HARD_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE);
     try {
-        await fetchAPI(AdminActions.DELETE_KEY, { [ApiFields.LICENSE_KEY]: deletingKey });
+        await fetchAPI(AdminActions.DELETE_KEY, { [ApiFields.ID]: deletingUserId });
         showToast(AdminMessages.DELETE_HARD_SUCCESS, ToastType.SUCCESS);
         closeModal(DOMIds.DELETE_MODAL);
         loadUsers();
@@ -485,16 +507,19 @@ async function handleHardDelete() {
 }
 
 async function handleResetDevice() {
-    if (!resettingKey) return;
+    if (!resettingUserId) return;
     
-    const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', resettingKey);
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === resettingUserId);
+    const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
+    
+    const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', keyStr);
     if (!confirm(confirmMsg)) return;
 
     const btn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_RESET_DEVICE);
 
     try {
-        await fetchAPI(AdminActions.RESET_DEVICE, { [ApiFields.LICENSE_KEY]: resettingKey });
+        await fetchAPI(AdminActions.RESET_DEVICE, { [ApiFields.ID]: resettingUserId });
         showToast(AdminMessages.RESET_DEVICE_SUCCESS, ToastType.SUCCESS);
         
         closeModal(DOMIds.DEVICE_MODAL);
@@ -515,8 +540,8 @@ function copyToClipboard(text) {
     });
 }
 
-function openDeviceModal(key) {
-    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.LICENSE_KEY) === key);
+function openDeviceModal(id) {
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
     
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
@@ -540,7 +565,7 @@ function openDeviceModal(key) {
     const resetBtn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     if (!_.isEmpty(_.get(user, ApiFields.DEVICE_ID))) {
         resetBtn.style.display = AdminClasses.DISPLAY_FLEX;
-        resettingKey = key;
+        resettingUserId = id;
     } else {
         resetBtn.style.display = AdminClasses.DISPLAY_NONE;
     }
@@ -591,19 +616,21 @@ function delegateTableActions() {
     document.addEventListener(EventTypes.CLICK, function(e) {
         const target = e.target.closest(AdminSelectors.ACTION_BTNS);
         if (!target) return;
-        
-        const action = target.getAttribute(DataAttributes.ACTION);
+            const action = target.getAttribute(DataAttributes.ACTION);
         const key = target.getAttribute(DataAttributes.KEY);
         const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID);
-        const assignedTo = target.getAttribute(DataAttributes.ASSIGNEE);
+        const uid = target.getAttribute(DataAttributes.ID);
         
-        if (action === AdminConstants.ACTION_EDIT && key) openEditModal(key);
-        if (action === AdminConstants.ACTION_DEVICE && key) openDeviceModal(key);
-        if (action === AdminConstants.ACTION_DELETE && key) openDeleteModal(key);
+        if (action === AdminConstants.ACTION_EDIT && uid) openEditModal(uid);
+        if (action === AdminConstants.ACTION_DEVICE && uid) openDeviceModal(uid);
+        if (action === AdminConstants.ACTION_DELETE && uid) openDeleteModal(uid, key);
         if (action === AdminConstants.ACTION_COPY && key) copyToClipboard(key);
-        if (action === AdminConstants.ACTION_EDIT_ACC && accountId) editAccountAdmin(_.toInteger(accountId));
-        if (action === AdminConstants.ACTION_DELETE_ACC && accountId) deleteAccountAdmin(_.toInteger(accountId));
-        if (action === AdminConstants.ACTION_DELETE_KEYS && assignedTo) deleteApiKeysAdmin(assignedTo);
+        if (action === AdminConstants.ACTION_EDIT_ACC && accountId) editAccountAdmin(accountId);
+        if (action === AdminConstants.ACTION_DELETE_ACC && accountId) deleteAccountAdmin(accountId);
+        
+        const keyId = target.getAttribute(DataAttributes.ID);
+        if (action === AdminConstants.ACTION_DELETE_KEYS && keyId) deleteApiKeysAdmin(keyId);
+        if (action === AdminConstants.ACTION_EDIT_KEYS && keyId) editApiKeysAdmin(keyId);
     });
 }
 
@@ -615,6 +642,11 @@ function initEventListeners() {
     el(DOMIds.LOGIN_BTN)?.addEventListener(EventTypes.CLICK, handleLogin);
     el(DOMIds.LOGOUT_BTN)?.addEventListener(EventTypes.CLICK, handleLogout);
     el(DOMIds.SYNC_BTN)?.addEventListener(EventTypes.CLICK, handleSyncExpired);
+    
+    el(DOMIds.BTN_CONFIRM_ACTION)?.addEventListener(EventTypes.CLICK, () => {
+        if (_.isFunction(window.currentConfirmCallback)) window.currentConfirmCallback();
+        closeModal(DOMIds.CONFIRM_MODAL);
+    });
     
     el(DOMIds.PRO_UNLIMITED)?.addEventListener(EventTypes.CHANGE, (e) => {
         const disabled = _.get(e, 'target.checked', false);
@@ -725,19 +757,17 @@ async function handleSaveKeys() {
 
     setButtonLoading(btn, true, AdminMessages.LOADING_SAVE);
     try {
-        await fetchAPI(AdminActions.UPDATE_API_KEYS, {
+        const payload = {
             [ApiFields.GEMINI_KEY]: gemini,
             [ApiFields.AI33_KEY]: ai33,
             [ApiFields.ASSIGNED_TO]: assignee
-        });
-        showToast(AdminMessages.KEYS_SAVE_SUCCESS, ToastType.SUCCESS);
-        el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
-        el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
-        if (tsKeysInstance) {
-            tsKeysInstance.setValue(AdminConstants.ASSIGN_ALL);
-        } else {
-            el(DOMIds.KEYS_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+        };
+        if (window.editingKeyId) {
+            payload[ApiFields.ID] = window.editingKeyId;
         }
+        await fetchAPI(AdminActions.UPDATE_API_KEYS, payload);
+        showToast(AdminMessages.KEYS_SAVE_SUCCESS, ToastType.SUCCESS);
+        resetResourceForms();
         loadApiKeysAdmin();
     } catch (e) {
         showToast(AdminMessages.SAVE_ERROR + e.message, ToastType.ERROR);
@@ -832,15 +862,46 @@ function populateAssignSelects() {
     }
 }
 
-async function deleteApiKeysAdmin(assignedTo) {
-    if (!confirm(AdminMessages.DELETE_KEYS_CONFIRM.replace('{0}', assignedTo))) return;
-    try {
-        await fetchAPI(AdminActions.DELETE_API_KEYS, { [ApiFields.ASSIGNED_TO]: assignedTo });
-        showToast(AdminMessages.DELETE_KEYS_SUCCESS, ToastType.SUCCESS);
-        loadApiKeysAdmin();
-    } catch (e) {
-        showToast(AdminMessages.DELETE_KEYS_ERROR + e.message, ToastType.ERROR);
+function editApiKeysAdmin(keyId) {
+    const keys = _.get(window, 'adminApiKeysData', []);
+    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
+    if (!keyRecord) return;
+    
+    const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO);
+    if (tsKeysInstance) {
+        tsKeysInstance.setValue(assignedTo);
+    } else {
+        el(DOMIds.KEYS_ASSIGNEE_INPUT).value = assignedTo;
     }
+    
+    el(DOMIds.KEYS_GEMINI_INPUT).value = _.get(keyRecord, ApiFields.GEMINI_KEY) || AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_AI33_INPUT).value = _.get(keyRecord, ApiFields.AI33_KEY) || AdminConstants.EMPTY_STR;
+    
+    window.editingKeyId = keyId;
+    el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
+    el(DOMIds.KEYS_GEMINI_INPUT).focus();
+}
+
+function openConfirmModal(message, callback) {
+    el(DOMIds.CONFIRM_MESSAGE_DISPLAY).innerHTML = message;
+    window.currentConfirmCallback = callback;
+    el(DOMIds.CONFIRM_MODAL).classList.add(AdminClasses.ACTIVE);
+}
+
+function deleteApiKeysAdmin(keyId) {
+    const keys = _.get(window, 'adminApiKeysData', []);
+    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
+    const assignedTo = keyRecord ? _.get(keyRecord, ApiFields.ASSIGNED_TO) : 'ALL';
+    
+    openConfirmModal(AdminMessages.DELETE_KEYS_CONFIRM.replace('{0}', assignedTo), async () => {
+        try {
+            await fetchAPI(AdminActions.DELETE_API_KEYS, { [ApiFields.ID]: keyId });
+            showToast(AdminMessages.DELETE_KEYS_SUCCESS, ToastType.SUCCESS);
+            loadApiKeysAdmin();
+        } catch (e) {
+            showToast(AdminMessages.DELETE_KEYS_ERROR + e.message, ToastType.ERROR);
+        }
+    });
 }
 
 function editAccountAdmin(id) {
@@ -858,18 +919,19 @@ function editAccountAdmin(id) {
     }
     
     window.editingAccountId = id;
-    el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.BTN_SAVE);
+    el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
 }
 
-async function deleteAccountAdmin(id) {
-    if (!confirm(AdminMessages.DELETE_ACCOUNT_CONFIRM)) return;
-    try {
-        await fetchAPI(AdminActions.DELETE_ACCOUNT, { [ApiFields.ROW_INDEX]: id });
-        showToast(AdminMessages.DELETE_ACCOUNT_SUCCESS, ToastType.SUCCESS);
-        loadAccountsAdmin();
-    } catch (e) {
-        showToast(AdminMessages.DELETE_ACCOUNT_ERROR + e.message, ToastType.ERROR);
-    }
+function deleteAccountAdmin(id) {
+    openConfirmModal(AdminMessages.DELETE_ACCOUNT_CONFIRM, async () => {
+        try {
+            await fetchAPI(AdminActions.DELETE_ACCOUNT, { [ApiFields.ID]: id });
+            showToast(AdminMessages.DELETE_ACCOUNT_SUCCESS, ToastType.SUCCESS);
+            loadAccountsAdmin();
+        } catch (e) {
+            showToast(AdminMessages.DELETE_ACCOUNT_ERROR + e.message, ToastType.ERROR);
+        }
+    });
 }
 
 async function loadApiKeysAdmin() {
@@ -878,21 +940,27 @@ async function loadApiKeysAdmin() {
     try {
         const res = await fetchAPI(AdminActions.GET_API_KEYS);
         const keys = _.get(res, ApiFields.KEYS, []);
-        
-        const renderedAssignments = new Set();
+        window.adminApiKeysData = keys;
         
         tbody.innerHTML = _.map(keys, k => {
-            const isFirst = !renderedAssignments.has(_.get(k, ApiFields.ASSIGNED_TO));
-            renderedAssignments.add(_.get(k, ApiFields.ASSIGNED_TO));
-            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], _.get(k, ApiFields.ASSIGNED_TO)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            const assignee = _.get(k, ApiFields.ASSIGNED_TO);
+            const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
+            const ai33Value = _.get(k, ApiFields.AI33_KEY);
+            const keyId = _.get(k, ApiFields.ID);
+            
+            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], assignee) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
             
             return `
             <tr>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(k, ApiFields.KEY))}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${_.get(k, ApiFields.VALUE) ? AdminMessages.PASSWORD_MASK + _.get(k, ApiFields.VALUE).slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA)}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);"><span class="badge ${badgeClass}">${escapeHTML(_.get(k, ApiFields.ASSIGNED_TO))}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assignee)}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    ${isFirst ? `<button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-assignee="${_.get(k, ApiFields.ASSIGNED_TO)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>` : AdminConstants.EMPTY_STR}
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
+                    </div>
                 </td>
             </tr>
         `}).join(AdminConstants.EMPTY_STR);
@@ -919,15 +987,15 @@ async function loadAccountsAdmin() {
             <tr>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">
                     <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; transition: 0.2s; cursor: pointer;">
                         ${options}
                     </select>
                 </td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);"><span class="badge ${badgeClass}">${escapeHTML(_.get(a, ApiFields.ASSIGNED_TO))}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(_.get(a, ApiFields.ASSIGNED_TO))}</span></td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <div class="actions-cell">
+                    <div class="actions-cell" style="justify-content: center;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
                     </div>

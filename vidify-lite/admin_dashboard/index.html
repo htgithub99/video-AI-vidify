@@ -229,6 +229,23 @@
                 <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b;" title="Xóa Mềm (Khóa)">Khóa</button>
                 <button id="btn-hard-delete" class="btn-danger" title="Xóa Vĩnh Viễn">Xóa Cứng</button>
             </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 1060;">
+        <div class="modal-container" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 title="Xác nhận Hành Động">Xác Nhận</h3>
+                <button class="modal-close modal-close-btn" data-modal="confirm-modal" title="Hủy thao tác">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message-display" style="margin-bottom: 1rem;"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-close-btn" data-modal="confirm-modal" title="Hủy thao tác">Hủy</button>
+                <button id="btn-confirm-action" class="btn-danger" title="Xác nhận">Xác nhận</button>
+            </div>
         </div>
     </div>
     <div id="toast-container" class="toast-container"></div>
@@ -266,7 +283,7 @@
 
                 <div id="tab-content-keys" class="tab-content active" style="display: block;">
                     
-                    <div style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; position: relative; z-index: 20;">
                         <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 1rem;" title="Thêm / Cập nhật API Keys">Cập Nhật</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1.5fr 1.5fr auto; gap: 1rem; align-items: end;">
                             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -298,10 +315,10 @@
                         <table id="keys-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                             <thead style="position: sticky; top: 0; background: var(--card-bg);">
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
-                                    <th style="padding: 0.5rem;">Loại</th>
-                                    <th style="padding: 0.5rem;">Giá Trị</th>
-                                    <th style="padding: 0.5rem;">Gán Cho</th>
-                                    <th style="padding: 0.5rem;">Hành Động</th>
+                                    <th style="padding: 0.5rem;" class="text-center">Gán Cho</th>
+                                    <th style="padding: 0.5rem;">Gemini Key</th>
+                                    <th style="padding: 0.5rem;">AI33 Key</th>
+                                    <th style="padding: 0.5rem;" class="text-center">Hành Động</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -311,7 +328,7 @@
 
                 <div id="tab-content-accounts" class="tab-content" style="display: none;">
                     
-                    <div style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <div style="background: rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; position: relative; z-index: 20;">
                         <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 1rem;" title="Thêm / Cập nhật Tài Khoản">Cập Nhật</h4>
                         <div style="display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr auto; gap: 1rem; align-items: end;">
                             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -348,10 +365,10 @@
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left;">
                                     <th style="padding: 0.5rem;">Email</th>
                                     <th style="padding: 0.5rem;">Khôi Phục</th>
-                                    <th style="padding: 0.5rem;">Trạng Thái</th>
-                                    <th style="padding: 0.5rem;">Gán Cho</th>
+                                    <th style="padding: 0.5rem;" class="text-center">Trạng Thái</th>
+                                    <th style="padding: 0.5rem;" class="text-center">Gán Cho</th>
                                     <th style="padding: 0.5rem;">Mật Khẩu</th>
-                                    <th style="padding: 0.5rem;">Hành Động</th>
+                                    <th style="padding: 0.5rem;" class="text-center">Hành Động</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
