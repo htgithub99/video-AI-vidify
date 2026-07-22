@@ -25,7 +25,7 @@ const _ = {
   cloneDeep: function (obj) { return JSON.parse(JSON.stringify(obj)); }
 };
 
-const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_TYPE: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8 };
+const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_TYPE: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8, QUOTA_TYPE: 9 };
 const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, LAST_RESET: 7 };
 const ConfigCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, KEY: 3, VALUE: 4 };
 const AdminCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, PASSWORD: 4, TOKEN: 5 };
@@ -42,12 +42,13 @@ const Config = {
   SHEET_ACCOUNTS: "accounts",
   CONFIG_KEYS: [
     "free_quota_video", "free_quota_image", "free_quota_voice",
-    "pro_quota_video", "pro_quota_image", "pro_quota_voice", "pro_unlimited"
+    "pro_quota_video", "pro_quota_image", "pro_quota_voice", "pro_unlimited",
+    "lifetime_quota_video", "lifetime_quota_image", "lifetime_quota_voice", "lifetime_unlimited"
   ],
   HEADERS: {
     ADMINS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "PASSWORD", "TOKEN"],
     CONFIG: ["ID", "CREATED_AT", "UPDATED_AT", "KEY", "VALUE"],
-    USERS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "LICENSE_KEY", "PLAN_TYPE", "STATUS", "EXPIRES_AT", "DEVICE_ID"],
+    USERS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "LICENSE_KEY", "PLAN_TYPE", "STATUS", "EXPIRES_AT", "DEVICE_ID", "QUOTA_TYPE"],
     USAGE: ["ID", "CREATED_AT", "UPDATED_AT", "LICENSE_KEY", "VIDEO_COUNT", "IMAGE_COUNT", "VOICE_CHARS", "LAST_RESET"],
     KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY"],
     ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"]
@@ -58,6 +59,11 @@ const StatusEnum = {
   ACTIVE: "ACTIVE",
   REVOKED: "REVOKED",
   EXPIRED: "EXPIRED"
+};
+
+const QuotaType = {
+  DAILY: "DAILY",
+  TOTAL: "TOTAL"
 };
 
 const PlanType = {
@@ -136,6 +142,10 @@ const ConfigKeys = {
   PRO_QUOTA_IMAGE: "pro_quota_image",
   PRO_QUOTA_VOICE: "pro_quota_voice",
   PRO_UNLIMITED: "pro_unlimited",
+  LIFETIME_QUOTA_VIDEO: "lifetime_quota_video",
+  LIFETIME_QUOTA_IMAGE: "lifetime_quota_image",
+  LIFETIME_QUOTA_VOICE: "lifetime_quota_voice",
+  LIFETIME_UNLIMITED: "lifetime_unlimited",
   MAX_DEVICES: "max_devices"
 };
 
@@ -150,7 +160,10 @@ const Constants = {
   COLOR_ADMIN: "#d9ead3",
   COLOR_CONFIG: "#c9daf8",
   COLOR_USERS: "#fff2cc",
-  COLOR_USAGE: "#fce5cd"
+  COLOR_USAGE: "#fce5cd",
+  DATE_SPLIT_CHAR: "T",
+  UUID_SPLIT_CHAR: "-",
+  STRING_TRUE: "true"
 };
 
 const AppLogger = {
@@ -273,11 +286,24 @@ function verifyKey(params) {
       }
     }
 
+    const quotaType = row[UserCols.QUOTA_TYPE] || QuotaType.DAILY;
+    let usage = getUsageData(key);
+    
+    // Reset if daily
+    if (quotaType === QuotaType.DAILY) {
+      const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
+      const lastResetDate = String(usage.last_reset || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
+      if (lastResetDate !== today) {
+        usage = { video: 0, image: 0, voice: 0, last_reset: getCurrentISO() };
+      }
+    }
+
     return jsonResponse({
       status: currentStatus,
       plan_type: row[UserCols.PLAN_TYPE],
+      quota_type: quotaType,
       expires_at: expiresAt || null,
-      usage: getUsageData(key),
+      usage: usage,
       quotas: quotas
     });
   }
@@ -304,9 +330,28 @@ function updateUsage(params) {
 
   if (usageIndex > 0) {
     const row = data[usageIndex];
-    if (feature === FeatureEnum.VIDEO) usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1).setValue(_.toInteger(row[UsageCols.VIDEO] || 0) + amount);
-    if (feature === FeatureEnum.IMAGE) usageSheet.getRange(usageIndex + 1, UsageCols.IMAGE + 1).setValue(_.toInteger(row[UsageCols.IMAGE] || 0) + amount);
-    if (feature === FeatureEnum.VOICE) usageSheet.getRange(usageIndex + 1, UsageCols.VOICE + 1).setValue(_.toInteger(row[UsageCols.VOICE] || 0) + amount);
+    const userRow = _.find(usersData, (r, idx) => idx > 0 && r[UserCols.LICENSE_KEY] === key);
+    const quotaType = userRow ? (userRow[UserCols.QUOTA_TYPE] || QuotaType.DAILY) : QuotaType.DAILY;
+    const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
+    const lastResetDate = String(row[UsageCols.LAST_RESET] || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
+    
+    let currentVideo = _.toInteger(row[UsageCols.VIDEO] || 0);
+    let currentImage = _.toInteger(row[UsageCols.IMAGE] || 0);
+    let currentVoice = _.toInteger(row[UsageCols.VOICE] || 0);
+
+    if (quotaType === QuotaType.DAILY && lastResetDate !== today) {
+      currentVideo = 0;
+      currentImage = 0;
+      currentVoice = 0;
+      usageSheet.getRange(usageIndex + 1, UsageCols.LAST_RESET + 1).setValue(getCurrentISO());
+    }
+
+    if (feature === FeatureEnum.VIDEO) currentVideo += amount;
+    if (feature === FeatureEnum.IMAGE) currentImage += amount;
+    if (feature === FeatureEnum.VOICE) currentVoice += amount;
+    
+    // Lưu lại cả 3 cột để đảm bảo các giá trị đã reset được cập nhật nếu khác ngày
+    usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1, 1, 3).setValues([[currentVideo, currentImage, currentVoice]]);
     usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(getCurrentISO());
   } else {
     const now = getCurrentISO();
@@ -372,6 +417,7 @@ function adminGetUsers() {
       updated_at: row[UserCols.UPDATED_AT],
       expires_at: row[UserCols.EXPIRES_AT],
       device_id: row[UserCols.DEVICE_ID],
+      quota_type: row[UserCols.QUOTA_TYPE] || QuotaType.DAILY,
       usage: uRow ? {
         video: uRow[UsageCols.VIDEO] || 0,
         image: uRow[UsageCols.IMAGE] || 0,
@@ -388,10 +434,11 @@ function adminCreateKey(params) {
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
   const username = _.get(params, 'username', Constants.UNKNOWN);
   const planType = _.get(params, 'plan_type', PlanType.FREE);
-  const newKey = _.toUpper(_.split(generateUUID(), '-')[0]);
+  const quotaType = _.get(params, 'quota_type', QuotaType.DAILY);
+  const newKey = _.toUpper(_.split(generateUUID(), Constants.UUID_SPLIT_CHAR)[0]);
 
   const now = getCurrentISO();
-  usersSheet.appendRow([generateUUID(), now, now, username, newKey, planType, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY]);
+  usersSheet.appendRow([generateUUID(), now, now, username, newKey, planType, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, quotaType]);
 
   return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_CREATED, license_key: newKey });
 }
@@ -439,6 +486,7 @@ function adminUpdateKey(params) {
   const newPlan = _.get(params, 'plan_type');
   const newExpires = _.get(params, 'expires_at');
   const newStatus = _.get(params, 'status');
+  const newQuotaType = _.get(params, 'quota_type');
 
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
 
@@ -448,6 +496,7 @@ function adminUpdateKey(params) {
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.ID] === id);
   if (rowIndex > 0) {
     if (newPlan) usersSheet.getRange(rowIndex + 1, UserCols.PLAN_TYPE + 1).setValue(newPlan);
+    if (newQuotaType) usersSheet.getRange(rowIndex + 1, UserCols.QUOTA_TYPE + 1).setValue(newQuotaType);
     usersSheet.getRange(rowIndex + 1, UserCols.EXPIRES_AT + 1).setValue(newExpires || Constants.EMPTY_STRING);
 
     if (newStatus) {
@@ -511,7 +560,8 @@ function adminUpdateConfig(params) {
 function getConfig() {
   const defaultConfig = {
     free_video: 0, free_image: 0, free_voice: 0,
-    pro_video: 0, pro_image: 0, pro_voice: 0, pro_unlimited: false
+    pro_video: 0, pro_image: 0, pro_voice: 0, pro_unlimited: false,
+    lifetime_video: 0, lifetime_image: 0, lifetime_voice: 0, lifetime_unlimited: false
   };
   const configSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_CONFIG);
   if (!configSheet) return defaultConfig;
@@ -529,7 +579,11 @@ function getConfig() {
     if (k === ConfigKeys.PRO_QUOTA_VIDEO) conf.pro_video = _.toInteger(v) || 0;
     if (k === ConfigKeys.PRO_QUOTA_IMAGE) conf.pro_image = _.toInteger(v) || 0;
     if (k === ConfigKeys.PRO_QUOTA_VOICE) conf.pro_voice = _.toInteger(v) || 0;
-    if (k === ConfigKeys.PRO_UNLIMITED) conf.pro_unlimited = (String(v) === "true");
+    if (k === ConfigKeys.PRO_UNLIMITED) conf.pro_unlimited = (String(v) === Constants.STRING_TRUE);
+    if (k === ConfigKeys.LIFETIME_QUOTA_VIDEO) conf.lifetime_video = _.toInteger(v) || 0;
+    if (k === ConfigKeys.LIFETIME_QUOTA_IMAGE) conf.lifetime_image = _.toInteger(v) || 0;
+    if (k === ConfigKeys.LIFETIME_QUOTA_VOICE) conf.lifetime_voice = _.toInteger(v) || 0;
+    if (k === ConfigKeys.LIFETIME_UNLIMITED) conf.lifetime_unlimited = (String(v) === Constants.STRING_TRUE);
     if (k === ConfigKeys.MAX_DEVICES) conf.max_devices = _.toInteger(v) || 1;
   });
 
@@ -810,6 +864,10 @@ function setupSeedData() {
       [ConfigKeys.PRO_QUOTA_IMAGE, 500],
       [ConfigKeys.PRO_QUOTA_VOICE, 100000],
       [ConfigKeys.PRO_UNLIMITED, false],
+      [ConfigKeys.LIFETIME_QUOTA_VIDEO, 50],
+      [ConfigKeys.LIFETIME_QUOTA_IMAGE, 500],
+      [ConfigKeys.LIFETIME_QUOTA_VOICE, 100000],
+      [ConfigKeys.LIFETIME_UNLIMITED, false],
       [ConfigKeys.MAX_DEVICES, 2]
     ];
     _.forEach(configs, cfg => configSheet.appendRow([generateUUID(), now, now, ...cfg]));
@@ -823,11 +881,11 @@ function setupSeedData() {
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
 
-    usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", PlanType.FREE, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", PlanType.PRO, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", PlanType.PRO_LIFETIME, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", PlanType.FREE, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", PlanType.PRO, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", PlanType.PRO_LIFETIME, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
 
-    usersSheet.getRange("A1:I1").setFontWeight("bold").setBackground(Constants.COLOR_USERS);
+    usersSheet.getRange("A1:J1").setFontWeight("bold").setBackground(Constants.COLOR_USERS);
   }
 
   let usageSheet = ss.getSheetByName(Config.SHEET_USAGE);

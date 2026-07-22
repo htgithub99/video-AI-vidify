@@ -226,6 +226,9 @@ function renderTable() {
         const usageText = AdminTemplates.USAGE_TEXT(_.get(user, ApiFields.USAGE_VIDEO), _.get(user, ApiFields.USAGE_IMAGE), _.get(user, ApiFields.USAGE_VOICE));
         const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE));
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
+        const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
+        const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
+        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.1rem 0.3rem; border-radius:3px; background:rgba(255,255,255,0.1); margin-left:0.3rem;" title="${quotaType}">${quotaTypeLabel}</span>`;
         
         const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
         const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
@@ -245,8 +248,9 @@ function renderTable() {
                 <td class="text-center">
                     <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
                 </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">
-                    ${usageText}
+                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
+                    <div>${usageText}</div>
+                    ${quotaTypeBadge}
                 </td>
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${new Date(_.get(user, ApiFields.CREATED_AT)).toLocaleDateString()}</td>
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${expiresAtStr}</td>
@@ -311,6 +315,16 @@ async function loadConfig() {
         el(DOMIds.PRO_QUOTA_VIDEO).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_IMAGE).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_VOICE).disabled = isUnlimited;
+
+        el(DOMIds.LIFETIME_QUOTA_VIDEO).value = _.get(q, ApiFields.LIFETIME_QUOTA_VIDEO, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.LIFETIME_QUOTA_IMAGE).value = _.get(q, ApiFields.LIFETIME_QUOTA_IMAGE, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.LIFETIME_QUOTA_VOICE).value = _.get(q, ApiFields.LIFETIME_QUOTA_VOICE, AdminConstants.DEFAULT_QUOTA);
+        
+        const isLifetimeUnlimited = String(_.get(q, ApiFields.LIFETIME_UNLIMITED, AdminConstants.PARSE_TRUE)) === AdminConstants.PARSE_TRUE;
+        el(DOMIds.LIFETIME_UNLIMITED).checked = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_VIDEO).disabled = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_IMAGE).disabled = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_VOICE).disabled = isLifetimeUnlimited;
         
         if (el(DOMIds.CONFIG_MAX_DEVICES)) {
             el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, ApiFields.MAX_DEVICES, AdminConstants.DEFAULT_MAX_DEVICES);
@@ -333,6 +347,10 @@ async function handleSaveConfig() {
             [ApiFields.PRO_QUOTA_IMAGE]: _.toInteger(el(DOMIds.PRO_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
             [ApiFields.PRO_QUOTA_VOICE]: _.toInteger(el(DOMIds.PRO_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
             [ApiFields.PRO_UNLIMITED]: el(DOMIds.PRO_UNLIMITED).checked,
+            [ApiFields.LIFETIME_QUOTA_VIDEO]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_QUOTA_IMAGE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_QUOTA_VOICE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_UNLIMITED]: el(DOMIds.LIFETIME_UNLIMITED).checked,
             [ApiFields.MAX_DEVICES]: el(DOMIds.CONFIG_MAX_DEVICES) ? (_.toInteger(el(DOMIds.CONFIG_MAX_DEVICES).value) || AdminConstants.DEFAULT_MAX_DEVICES) : AdminConstants.DEFAULT_MAX_DEVICES
         });
         showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
@@ -375,6 +393,7 @@ function handleOpenCreateModal() {
     el(DOMIds.MODAL_PLAN_TYPE).value = AdminConstants.PLAN_FREE;
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
+    el(DOMIds.MODAL_QUOTA_TYPE).value = QuotaType.DAILY;
     el(DOMIds.MODAL_EXPIRES).value = AdminConstants.EMPTY_STR;
     
     el(DOMIds.MODAL_EXPIRES_WRAPPER).style.display = AdminClasses.DISPLAY_FLEX;
@@ -402,6 +421,7 @@ function openEditModal(id) {
     
     el(DOMIds.MODAL_STATUS).value = _.get(user, ApiFields.STATUS);
     el(DOMIds.MODAL_STATUS).disabled = false;
+    el(DOMIds.MODAL_QUOTA_TYPE).value = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
     
     if (!_.isEmpty(_.get(user, ApiFields.EXPIRES_AT))) {
         el(DOMIds.MODAL_EXPIRES).value = new Date(_.get(user, ApiFields.EXPIRES_AT)).toISOString().split(AdminConstants.DATE_T_SPLIT)[AdminConstants.DATE_ISO_INDEX];
@@ -435,6 +455,7 @@ async function handleSaveUser() {
     const username = el(DOMIds.MODAL_USERNAME).value.trim();
     const planType = el(DOMIds.MODAL_PLAN_TYPE).value;
     const status = el(DOMIds.MODAL_STATUS).value;
+    const quotaType = el(DOMIds.MODAL_QUOTA_TYPE).value;
     let expiresAt = el(DOMIds.MODAL_EXPIRES).value;
     
     if (_.isNil(editingUserId) && _.isEmpty(username)) {
@@ -450,10 +471,10 @@ async function handleSaveUser() {
     
     try {
         if (!_.isNil(editingUserId)) {
-            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.EXPIRES_AT]: expiresAt });
+            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.QUOTA_TYPE]: quotaType, [ApiFields.EXPIRES_AT]: expiresAt });
             showToast(AdminMessages.MODAL_UPDATE_SUCCESS, ToastType.SUCCESS);
         } else {
-            const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_TYPE]: planType });
+            const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_TYPE]: planType, [ApiFields.QUOTA_TYPE]: quotaType });
             showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, ApiFields.LICENSE_KEY), ToastType.SUCCESS);
         }
         

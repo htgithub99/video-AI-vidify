@@ -1,203 +1,34 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzE90rgVkEXO6xOXm2yGx56tm2oY5xckm5g1lwxmUsbxHaBa9d2a99vVSMO4Tf7dNVk/exec';
-
-const AdminConstants = {
-    TOKEN_KEY: 'adminToken',
-    API_URL_KEY: 'apiUrl',
-    PLAN_PRO: 'PRO',
-    PLAN_FREE: 'FREE',
-    STATUS_ACTIVE: 'ACTIVE',
-    STATUS_REVOKED: 'REVOKED',
-    STATUS_EXPIRED: 'EXPIRED',
-    PLAN_PRO_LIFETIME: 'PRO_LIFETIME',
-    TOAST_DURATION: 3000,
-    TOAST_ANIMATION_MS: 300,
-    FILTER_ALL: 'ALL',
-    MODAL_FADE_DELAY: 1500,
-    DEFAULT_PAGE_SIZE: 10,
-    API_ERROR_UNAUTHORIZED: 401,
-    DISPLAY_FLEX: 'flex',
-    DISPLAY_NONE: 'none',
-    DISPLAY_BLOCK: 'block',
-    MIN_PAGE: 1,
-    DEFAULT_QUOTA: 0,
-    DEFAULT_MAX_DEVICES: 1,
-    UNKNOWN_STR: 'unknown'
-};
-
-const AdminRegex = {
-    NUMBERS_ONLY: /[^0-9]/g
-};
-
-const ToastType = {
-    SUCCESS: 'success',
-    ERROR: 'error'
-};
-
-const Icons = {
-    SPINNER: `<svg class="spinning" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`,
-    SUCCESS: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><path d="M20 6 9 17l-5-5"/></svg>`,
-    ERROR: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toast-icon"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`,
-    CLOSE_TOAST: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
-    EDIT: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
-    DEVICE: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
-    DELETE: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
-    COPY: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
-    DEVICE_ICON: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
-    DEVICE_EMPTY: `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`
-};
-
-const DOMIds = {
-    LOGIN_SCREEN: 'login-screen',
-    DASHBOARD_SCREEN: 'dashboard-screen',
-    LOGIN_BTN: 'login-btn',
-    USERNAME_INPUT: 'admin-username-input',
-    PASSWORD_INPUT: 'admin-password-input',
-    LOGOUT_BTN: 'logout-btn',
-    TBODY: '#users-table tbody',
-    LOADING_MSG: 'loading-msg',
-    SAVE_CONFIG_BTN: 'save-config-btn',
-    FREE_QUOTA_VIDEO: 'free-quota-video',
-    FREE_QUOTA_IMAGE: 'free-quota-image',
-    FREE_QUOTA_VOICE: 'free-quota-voice',
-    PRO_QUOTA_VIDEO: 'pro-quota-video',
-    PRO_QUOTA_IMAGE: 'pro-quota-image',
-    PRO_QUOTA_VOICE: 'pro-quota-voice',
-    PRO_UNLIMITED: 'pro-unlimited',
-    CONFIG_MAX_DEVICES: 'config-max-devices',
-    TOAST_CONTAINER: 'toast-container',
-    SEARCH_INPUT: 'search-input',
-    FILTER_PLAN: 'filter-plan',
-    FILTER_STATUS: 'filter-status',
-    PAGE_SIZE: 'page-size',
-    PAGINATION_CONTROLS: 'pagination-controls',
-    CONFIG_TOGGLE_BTN: 'config-toggle-btn',
-    CONFIG_DROPDOWN_MENU: 'config-dropdown-menu',
-    OPEN_CREATE_MODAL_BTN: 'open-create-modal-btn',
-    USER_MODAL_TITLE: 'user-modal-title',
-    MODAL_USERNAME: 'modal-username',
-    MODAL_PLAN_TYPE: 'modal-plan-type',
-    MODAL_STATUS: 'modal-status',
-    MODAL_EXPIRES: 'modal-expires',
-    MODAL_EXPIRES_WRAPPER: 'modal-expires-wrapper',
-    USER_MODAL: 'user-modal',
-    SAVE_USER_BTN: 'save-user-btn',
-    DELETE_KEY_DISPLAY: 'delete-key-display',
-    DELETE_MODAL: 'delete-modal',
-    BTN_SOFT_DELETE: 'btn-soft-delete',
-    BTN_HARD_DELETE: 'btn-hard-delete',
-    DEVICE_MODAL: 'device-modal',
-    DEVICE_LIST_CONTAINER: 'device-list-container',
-    MODAL_RESET_DEVICE_BTN: 'modal-reset-device-btn'
-};
-
-const AdminMessages = {
-    MISSING_LINK: "Bạn chưa thay thế đường link Google Web App vào file app.js!",
-    MISSING_INFO: "Vui lòng nhập đầy đủ thông tin!",
-    LOGIN_PROGRESS: "Đang đăng nhập...",
-    LOGIN_ERROR_API: "Lỗi kết nối đến máy chủ!",
-    LOGIN_DEFAULT: "Đăng Nhập",
-    LOGIN_ERROR_DEFAULT: "Sai tài khoản hoặc mật khẩu!",
-    INVALID_TOKEN: "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại!",
-    FETCH_ERROR: "Lỗi khi tải dữ liệu: ",
-    SAVE_PROGRESS: "Đang lưu...",
-    SAVE_SUCCESS: "Đã lưu cấu hình thành công!",
-    SAVE_ERROR: "Có lỗi xảy ra: ",
-    SAVE_DEFAULT: "Lưu Cấu Hình",
-    MODAL_CREATE_TITLE: "Tạo License Mới",
-    MODAL_EDIT_TITLE: "Sửa License",
-    MODAL_MISSING_NAME: "Vui lòng nhập tên khách hàng!",
-    MODAL_UPDATE_SUCCESS: "Đã cập nhật thành công!",
-    MODAL_CREATE_SUCCESS: "Tạo thành công! License Key: ",
-    MODAL_SAVE_DEFAULT: "Lưu",
-    SAVE_USER_PROGRESS: "Đang lưu...",
-    SAVE_USER_SUCCESS: "Lưu thông tin thành công!",
-    SAVE_USER_DEFAULT: "Lưu",
-    DELETE_SOFT_SUCCESS: "Đã khóa tài khoản thành công!",
-    DELETE_HARD_SUCCESS: "Đã xóa vĩnh viễn tài khoản!",
-    DELETE_ERROR_DEFAULT: "Lỗi khi xóa!",
-    RESET_DEVICE_CONFIRM: "Bạn có chắc chắn muốn Reset Thiết Bị cho Key: {0}?\nLưu ý: Khách hàng sẽ có thể đăng nhập trên một máy tính mới.",
-    RESET_DEVICE_ERROR: "Lỗi khi reset thiết bị: ",
-    RESET_DEVICE_SUCCESS: "Đã reset thiết bị thành công!",
-    SYNC_SUCCESS: "Đã đồng bộ! Có {0} tài khoản hết hạn.",
-    TOAST_SUCCESS: "Thành Công",
-    TOAST_ERROR: "Lỗi",
-    EMPTY_DEVICE_MSG: "Chưa có thiết bị nào liên kết",
-    DEVICE_CONNECTED: "Đang kết nối",
-    COPY_SUCCESS: "Đã copy License Key: ",
-    COPY_ERROR: "Không thể copy. Vui lòng thử lại!",
-    ACTION_LOADING_SOFT_DELETE: "Đang khóa...",
-    ACTION_LOADING_HARD_DELETE: "Đang xóa...",
-    ACTION_LOADING_RESET_DEVICE: "Đang gỡ...",
-    ACTION_LOADING_SYNC: "Đang đồng bộ...",
-    DATA_LOADING: "Đang tải dữ liệu...",
-    PLAN_FREE_LABEL: "Gói FREE",
-    PLAN_PRO_LABEL: "Gói PRO",
-    PLAN_LIFETIME_LABEL: "Vĩnh Viễn",
-    STATUS_ACTIVE_LABEL: "Hoạt động",
-    STATUS_REVOKED_LABEL: "Bị khóa",
-    STATUS_EXPIRED_LABEL: "Hết hạn",
-    EXPIRES_LIFETIME: "Vĩnh viễn",
-    ACTION_MODAL_DEVICES: "Quản lý Thiết bị",
-    ACTION_MODAL_COPY: "Copy",
-    ACTION_MODAL_EDIT: "Sửa",
-    ACTION_MODAL_DELETE: "Xóa / Khóa"
-};
-
-const AdminActions = {
-    LOGIN: 'admin_login',
-    GET_USERS: 'admin_get_users',
-    GET_CONFIG: 'admin_get_config',
-    UPDATE_CONFIG: 'admin_update_config',
-    CREATE_KEY: 'admin_create_key',
-    UPDATE_KEY: 'admin_update_key',
-    REVOKE_KEY: 'admin_revoke_key',
-    DELETE_KEY: 'admin_delete_key',
-    RESET_DEVICE: 'admin_reset_device',
-    SYNC_EXPIRED: 'admin_sync_expired'
-};
-
-const Logger = {
-    info: (...args) => { if (window.console && window.console.info) window.console.info('[INFO]', ...args); },
-    error: (...args) => { if (window.console && window.console.error) window.console.error('[ERROR]', ...args); },
-    warn: (...args) => { if (window.console && window.console.warn) window.console.warn('[WARN]', ...args); }
-};
-
 const el = (id) => document.getElementById(id);
 const elq = (selector) => document.querySelector(selector);
 
-let adminToken = localStorage.getItem(AdminConstants.TOKEN_KEY) || '';
+let adminToken = localStorage.getItem(AdminConstants.TOKEN_KEY) || AdminConstants.EMPTY_STR;
 let apiUrl = API_BASE_URL;
-let currentPage = 1;
+let currentPage = AdminConstants.DEFAULT_PAGE;
 let pageSize = AdminConstants.DEFAULT_PAGE_SIZE;
 let filteredUsers = [];
-let editingKey = null;
-let deletingKey = null;
+let editingUserId = null;
+let deletingUserId = null;
+let deletingUserKey = null;
+let resettingUserId = null;
+window.editingAccountId = null;
 
 function escapeHTML(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>'"]/g,
-        tag => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            "'": '&#39;',
-            '"': '&quot;'
-        }[tag] || tag)
+    if (_.isNil(str)) return AdminConstants.EMPTY_STR;
+    return _.replace(_.toString(str), AdminRegex.ESCAPE_HTML, 
+        tag => _.get(AdminConstants.HTML_ENTITIES, tag, tag)
     );
 }
 
-
-
-function setButtonLoading(btn, isLoading, loadingText = '') {
-    if (!btn) return;
+function setButtonLoading(btn, isLoading, loadingText = AdminConstants.EMPTY_STR) {
+    if (_.isNil(btn)) return;
     if (isLoading) {
         btn.dataset.originalHtml = btn.innerHTML;
-        btn.classList.add('btn-loading');
-        btn.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">${Icons.SPINNER} <span>${loadingText}</span></div>`;
+        btn.classList.add(AdminClasses.BTN_LOADING);
+        btn.innerHTML = AdminTemplates.LOADING_BTN(loadingText);
         btn.disabled = true;
     } else {
-        btn.classList.remove('btn-loading');
-        if (btn.dataset.originalHtml) {
+        btn.classList.remove(AdminClasses.BTN_LOADING);
+        if (!_.isNil(btn.dataset.originalHtml)) {
             btn.innerHTML = btn.dataset.originalHtml;
         }
         btn.disabled = false;
@@ -206,64 +37,50 @@ function setButtonLoading(btn, isLoading, loadingText = '') {
 
 function showToast(message, type = ToastType.SUCCESS) {
     const container = el(DOMIds.TOAST_CONTAINER);
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-
-    const iconSvg = type === ToastType.SUCCESS ? Icons.SUCCESS : Icons.ERROR;
-
+    if (_.isNil(container)) return;
+    
+    const toast = document.createElement(TagNames.DIV);
+    toast.className = `${AdminClasses.TOAST} ${type === ToastType.SUCCESS ? AdminClasses.TOAST_SUCCESS : AdminClasses.TOAST_ERROR}`;
+    
+    const iconSvg = type === ToastType.SUCCESS ? AdminIcons.SUCCESS_TOAST : AdminIcons.ERROR_TOAST;
     const title = type === ToastType.SUCCESS ? AdminMessages.TOAST_SUCCESS : AdminMessages.TOAST_ERROR;
 
-    toast.innerHTML = `
-        ${iconSvg}
-        <div class="toast-content">
-            <span class="toast-title">${title}</span>
-            <span class="toast-message">${escapeHTML(message)}</span>
-        </div>
-        <button class="toast-close">
-            ${Icons.CLOSE_TOAST}
-        </button>
-        <div class="toast-progress">
-            <div class="toast-progress-bar"></div>
-        </div>
-    `;
-
+    toast.innerHTML = AdminTemplates.TOAST(iconSvg, title, escapeHTML(message));
     container.appendChild(toast);
 
-    const closeBtn = toast.querySelector('.toast-close');
+    const closeBtn = toast.querySelector(AdminSelectors.TOAST_CLOSE);
     let isRemoving = false;
 
     const removeToast = () => {
         if (isRemoving) return;
         isRemoving = true;
-        toast.classList.add('removing');
+        toast.classList.add(AdminClasses.REMOVING);
         setTimeout(() => toast.remove(), AdminConstants.TOAST_ANIMATION_MS);
     };
 
-    closeBtn.addEventListener('click', removeToast);
+    if (closeBtn) closeBtn.addEventListener(EventTypes.CLICK, removeToast);
     setTimeout(removeToast, AdminConstants.TOAST_DURATION);
 }
 
 async function fetchAPI(action, data = {}) {
     try {
         const response = await fetch(apiUrl, {
-            method: 'POST',
+            method: AdminConstants.HTTP_POST,
             body: JSON.stringify({
-                action: action,
-                admin_token: adminToken,
+                [ApiFields.ACTION]: action,
+                [ApiFields.ADMIN_TOKEN]: adminToken,
                 ...data
             })
         });
         const resJson = await response.json();
-
-        if (_.has(resJson, 'error')) {
-            if (_.get(resJson, 'code') === AdminConstants.API_ERROR_UNAUTHORIZED) {
+        
+        if (_.has(resJson, ApiFields.ERROR)) {
+            if (_.get(resJson, ApiFields.CODE) === AdminConstants.API_ERROR_UNAUTHORIZED) {
                 showToast(AdminMessages.INVALID_TOKEN, ToastType.ERROR);
                 el(DOMIds.LOGOUT_BTN).click();
                 throw new Error(AdminMessages.INVALID_TOKEN);
             }
-            throw new Error(_.get(resJson, 'error'));
+            throw new Error(_.get(resJson, ApiFields.ERROR));
         }
         return resJson;
     } catch (err) {
@@ -273,8 +90,8 @@ async function fetchAPI(action, data = {}) {
 }
 
 function showDashboard() {
-    el(DOMIds.LOGIN_SCREEN).classList.remove('active');
-    el(DOMIds.DASHBOARD_SCREEN).classList.add('active');
+    el(DOMIds.LOGIN_SCREEN).classList.remove(AdminClasses.ACTIVE);
+    el(DOMIds.DASHBOARD_SCREEN).classList.add(AdminClasses.ACTIVE);
     loadUsers();
     loadConfig();
 }
@@ -298,23 +115,23 @@ async function handleLogin() {
 
     try {
         const response = await fetch(API_BASE_URL, {
-            method: 'POST',
+            method: AdminConstants.HTTP_POST,
             body: JSON.stringify({
-                action: AdminActions.LOGIN,
-                username: user,
-                password: pass
+                [ApiFields.ACTION]: AdminActions.LOGIN,
+                [ApiFields.USERNAME]: user,
+                [ApiFields.PASSWORD]: pass
             })
         });
 
         const data = await response.json();
-        if (_.get(data, 'status') === ToastType.SUCCESS && _.has(data, 'token')) {
-            adminToken = _.get(data, 'token');
+        if (_.get(data, ApiFields.STATUS) === ToastType.SUCCESS && _.has(data, ApiFields.TOKEN)) {
+            adminToken = _.get(data, ApiFields.TOKEN);
             apiUrl = API_BASE_URL;
             localStorage.setItem(AdminConstants.TOKEN_KEY, adminToken);
             localStorage.setItem(AdminConstants.API_URL_KEY, apiUrl);
             showDashboard();
         } else {
-            showToast(_.get(data, 'error', AdminMessages.LOGIN_ERROR_DEFAULT), ToastType.ERROR);
+            showToast(_.get(data, ApiFields.ERROR, AdminMessages.LOGIN_ERROR_DEFAULT), ToastType.ERROR);
         }
     } catch (e) {
         Logger.error(e);
@@ -327,61 +144,64 @@ async function handleLogin() {
 
 function handleLogout() {
     localStorage.removeItem(AdminConstants.TOKEN_KEY);
-    adminToken = '';
+    adminToken = AdminConstants.EMPTY_STR;
     apiUrl = API_BASE_URL;
-    el(DOMIds.DASHBOARD_SCREEN).classList.remove('active');
-    el(DOMIds.LOGIN_SCREEN).classList.add('active');
-    el(DOMIds.USERNAME_INPUT).value = '';
-    el(DOMIds.PASSWORD_INPUT).value = '';
+    el(DOMIds.DASHBOARD_SCREEN).classList.remove(AdminClasses.ACTIVE);
+    el(DOMIds.LOGIN_SCREEN).classList.add(AdminClasses.ACTIVE);
+    el(DOMIds.USERNAME_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
 }
 
 async function loadUsers() {
     const tbody = elq(DOMIds.TBODY);
-    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 3rem; color: var(--text-muted); font-style: italic;">${AdminMessages.DATA_LOADING}</td></tr>`;
-
+    tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_USERS, AdminMessages.DATA_LOADING);
+    
     try {
         const res = await fetchAPI(AdminActions.GET_USERS);
-        window.adminUsersData = _.get(res, 'users', []);
+        window.adminUsersData = _.get(res, ApiFields.USERS, []);
+        
+        populateAssignSelects();
         applyFilters();
     } catch (error) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding: 3rem; color: var(--error);">${AdminMessages.FETCH_ERROR + escapeHTML(_.get(error, 'message'))}</td></tr>`;
-        showToast(AdminMessages.FETCH_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        const errMsg = _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR);
+        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_USERS, AdminMessages.FETCH_ERROR + escapeHTML(errMsg));
+        showToast(AdminMessages.FETCH_ERROR + errMsg, ToastType.ERROR);
     }
 }
 
 function applyFilters() {
-    const searchStr = (el(DOMIds.SEARCH_INPUT)?.value || '').toLowerCase();
-    const planFilter = el(DOMIds.FILTER_PLAN)?.value || AdminConstants.FILTER_ALL;
-    const statusFilter = el(DOMIds.FILTER_STATUS)?.value || AdminConstants.FILTER_ALL;
-
-    filteredUsers = _.filter(window.adminUsersData || [], u => {
+    const searchStr = (_.get(el(DOMIds.SEARCH_INPUT), 'value', AdminConstants.EMPTY_STR)).toLowerCase();
+    const planFilter = _.get(el(DOMIds.FILTER_PLAN), 'value', AdminConstants.FILTER_ALL);
+    const statusFilter = _.get(el(DOMIds.FILTER_STATUS), 'value', AdminConstants.FILTER_ALL);
+    
+    filteredUsers = _.filter(_.get(window, 'adminUsersData', []), u => {
         let matchSearch = true;
         if (!_.isEmpty(searchStr)) {
-            const uname = (_.get(u, 'username') || '').toLowerCase();
-            const ukey = (_.get(u, 'license_key') || '').toLowerCase();
+            const uname = (_.get(u, ApiFields.USERNAME) || AdminConstants.EMPTY_STR).toLowerCase();
+            const ukey = (_.get(u, ApiFields.LICENSE_KEY) || AdminConstants.EMPTY_STR).toLowerCase();
             matchSearch = _.some([uname, ukey], str => _.includes(str, searchStr));
         }
-        let matchPlan = (planFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, 'plan_type') === planFilter;
-        let matchStatus = (statusFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, 'status') === statusFilter;
+        let matchPlan = (planFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.PLAN_TYPE) === planFilter;
+        let matchStatus = (statusFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.STATUS) === statusFilter;
         return _.every([matchSearch, matchPlan, matchStatus], Boolean);
     });
-    currentPage = 1;
+    currentPage = AdminConstants.DEFAULT_PAGE;
     renderTable();
 }
 
 function renderTable() {
     const tbody = elq(DOMIds.TBODY);
-    tbody.innerHTML = '';
-
-    const totalItems = filteredUsers.length;
+    tbody.innerHTML = AdminConstants.EMPTY_STR;
+    
+    const totalItems = _.size(filteredUsers);
     const totalPages = Math.ceil(totalItems / pageSize) || AdminConstants.MIN_PAGE;
-
+    
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < AdminConstants.MIN_PAGE) currentPage = AdminConstants.MIN_PAGE;
-
+    
     const startIndex = (currentPage - 1) * pageSize;
-    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
-
+    const paginatedUsers = _.slice(filteredUsers, startIndex, startIndex + pageSize);
+    
     const localizePlan = (plan) => {
         if (plan === AdminConstants.PLAN_FREE) return AdminMessages.PLAN_FREE_LABEL;
         if (plan === AdminConstants.PLAN_PRO) return AdminMessages.PLAN_PRO_LABEL;
@@ -397,83 +217,81 @@ function renderTable() {
     };
 
     const getStatusClass = (status) => {
-        if (status === AdminConstants.STATUS_ACTIVE) return 'active';
-        if (status === AdminConstants.STATUS_REVOKED) return 'revoked';
-        return 'expired';
+        if (status === AdminConstants.STATUS_ACTIVE) return AdminClasses.ACTIVE;
+        if (status === AdminConstants.STATUS_REVOKED) return AdminClasses.BADGE_REVOKED;
+        return AdminClasses.BADGE_EXPIRED;
     };
-
+    
     const htmlRows = _.map(paginatedUsers, user => {
-        const usageText = `<span title="Video">V:${_.get(user, 'usage.video')}</span> <span style="color:var(--input-bg)">|</span> <span title="Image">I:${_.get(user, 'usage.image')}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">C:${_.get(user, 'usage.voice')}</span>`;
-        const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, 'plan_type'));
-        const expiresAtStr = _.get(user, 'expires_at') ? new Date(_.get(user, 'expires_at')).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
-
-        const btnDeviceModal = `<button class="action-btn action-warn" onclick="openDeviceModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_DEVICES}">
-            ${Icons.DEVICE}
-        </button>`;
-        const btnCopy = `<button class="copy-btn" onclick="copyToClipboard('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_COPY}">${Icons.COPY}</button>`;
-
+        const usageText = AdminTemplates.USAGE_TEXT(_.get(user, ApiFields.USAGE_VIDEO), _.get(user, ApiFields.USAGE_IMAGE), _.get(user, ApiFields.USAGE_VOICE));
+        const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE));
+        const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
+        const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
+        const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
+        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.1rem 0.3rem; border-radius:3px; background:rgba(255,255,255,0.1); margin-left:0.3rem;" title="${quotaType}">${quotaTypeLabel}</span>`;
+        
+        const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
+        const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
+        
         return `
             <tr>
-                <td><strong>${escapeHTML(_.get(user, 'username'))}</strong></td>
+                <td><strong>${escapeHTML(_.get(user, ApiFields.USERNAME))}</strong></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:0.5rem">
-                        <span style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">${escapeHTML(_.get(user, 'license_key'))}</span>
+                        <span style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">${escapeHTML(_.get(user, ApiFields.LICENSE_KEY))}</span>
                         ${btnCopy}
                     </div>
                 </td>
                 <td class="text-center">
-                    <span class="badge ${isPro ? 'pro' : 'free'}">${escapeHTML(localizePlan(_.get(user, 'plan_type')))}</span>
+                    <span class="badge ${isPro ? AdminClasses.BADGE_PRO : AdminClasses.BADGE_FREE}">${escapeHTML(localizePlan(_.get(user, ApiFields.PLAN_TYPE)))}</span>
                 </td>
                 <td class="text-center">
-                    <span class="badge ${getStatusClass(_.get(user, 'status'))}">${escapeHTML(localizeStatus(_.get(user, 'status')))}</span>
+                    <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
                 </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">
-                    ${usageText}
+                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
+                    <div>${usageText}</div>
+                    ${quotaTypeBadge}
                 </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${new Date(_.get(user, 'created_at')).toLocaleDateString()}</td>
+                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${new Date(_.get(user, ApiFields.CREATED_AT)).toLocaleDateString()}</td>
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${expiresAtStr}</td>
                 <td class="text-center">
                     <div style="display: flex; justify-content: center; gap: 0.25rem;">
-                        <button class="action-btn action-info" onclick="openEditModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_EDIT}">
-                            ${Icons.EDIT}
-                        </button>
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         ${btnDeviceModal}
-                        <button class="action-btn action-danger" onclick="openDeleteModal('${_.get(user, 'license_key')}')" title="${AdminMessages.ACTION_MODAL_DELETE}">
-                            ${Icons.DELETE}
-                        </button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE}" data-id="${_.get(user, ApiFields.ID)}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
                     </div>
                 </td>
             </tr>
         `;
     });
-
-    tbody.innerHTML = htmlRows.join('');
+    
+    tbody.innerHTML = _.join(htmlRows, AdminConstants.EMPTY_STR);
     renderPagination(totalPages);
 }
 
 function renderPagination(totalPages) {
     const controls = el(DOMIds.PAGINATION_CONTROLS);
-    if (!controls) return;
-    controls.innerHTML = '';
-
-    const btnPrev = document.createElement('button');
-    btnPrev.className = 'page-btn';
-    btnPrev.textContent = '«';
+    if (_.isNil(controls)) return;
+    controls.innerHTML = AdminConstants.EMPTY_STR;
+    
+    const btnPrev = document.createElement(TagNames.BUTTON);
+    btnPrev.className = AdminClasses.PAGE_BTN;
+    btnPrev.textContent = AdminConstants.PAGINATION_PREV;
     btnPrev.disabled = currentPage === AdminConstants.MIN_PAGE;
     btnPrev.onclick = () => { currentPage--; renderTable(); };
     controls.appendChild(btnPrev);
-
-    for (let i = AdminConstants.MIN_PAGE; i <= totalPages; i++) {
-        const btnPage = document.createElement('button');
-        btnPage.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        const btnPage = document.createElement(TagNames.BUTTON);
+        btnPage.className = `${AdminClasses.PAGE_BTN} ${i === currentPage ? AdminClasses.ACTIVE : AdminConstants.EMPTY_STR}`;
         btnPage.textContent = i;
         btnPage.onclick = () => { currentPage = i; renderTable(); };
         controls.appendChild(btnPage);
     }
-
-    const btnNext = document.createElement('button');
-    btnNext.className = 'page-btn';
-    btnNext.textContent = '»';
+    
+    const btnNext = document.createElement(TagNames.BUTTON);
+    btnNext.className = AdminClasses.PAGE_BTN;
+    btnNext.textContent = AdminConstants.PAGINATION_NEXT;
     btnNext.disabled = currentPage === totalPages;
     btnNext.onclick = () => { currentPage++; renderTable(); };
     controls.appendChild(btnNext);
@@ -482,24 +300,34 @@ function renderPagination(totalPages) {
 async function loadConfig() {
     try {
         const res = await fetchAPI(AdminActions.GET_CONFIG);
-        const q = _.get(res, 'config', {});
-
-        el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, 'free_video', AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, 'free_image', AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, 'free_voice', AdminConstants.DEFAULT_QUOTA);
-
-        el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, 'pro_video', AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, 'pro_image', AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, 'pro_voice', AdminConstants.DEFAULT_QUOTA);
-
-        const isUnlimited = String(_.get(q, 'pro_unlimited', 'false')) === 'true';
+        const q = _.get(res, ApiFields.CONFIG, {});
+        
+        el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, ApiFields.FREE_VIDEO, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, ApiFields.FREE_IMAGE, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, ApiFields.FREE_VOICE, AdminConstants.DEFAULT_QUOTA);
+        
+        el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, ApiFields.PRO_VIDEO, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, ApiFields.PRO_IMAGE, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, ApiFields.PRO_VOICE, AdminConstants.DEFAULT_QUOTA);
+        
+        const isUnlimited = String(_.get(q, ApiFields.PRO_UNLIMITED, AdminConstants.PARSE_TRUE)) === AdminConstants.PARSE_TRUE;
         el(DOMIds.PRO_UNLIMITED).checked = isUnlimited;
         el(DOMIds.PRO_QUOTA_VIDEO).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_IMAGE).disabled = isUnlimited;
         el(DOMIds.PRO_QUOTA_VOICE).disabled = isUnlimited;
 
+        el(DOMIds.LIFETIME_QUOTA_VIDEO).value = _.get(q, ApiFields.LIFETIME_QUOTA_VIDEO, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.LIFETIME_QUOTA_IMAGE).value = _.get(q, ApiFields.LIFETIME_QUOTA_IMAGE, AdminConstants.DEFAULT_QUOTA);
+        el(DOMIds.LIFETIME_QUOTA_VOICE).value = _.get(q, ApiFields.LIFETIME_QUOTA_VOICE, AdminConstants.DEFAULT_QUOTA);
+        
+        const isLifetimeUnlimited = String(_.get(q, ApiFields.LIFETIME_UNLIMITED, AdminConstants.PARSE_TRUE)) === AdminConstants.PARSE_TRUE;
+        el(DOMIds.LIFETIME_UNLIMITED).checked = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_VIDEO).disabled = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_IMAGE).disabled = isLifetimeUnlimited;
+        el(DOMIds.LIFETIME_QUOTA_VOICE).disabled = isLifetimeUnlimited;
+        
         if (el(DOMIds.CONFIG_MAX_DEVICES)) {
-            el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, 'max_devices', AdminConstants.DEFAULT_MAX_DEVICES);
+            el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, ApiFields.MAX_DEVICES, AdminConstants.DEFAULT_MAX_DEVICES);
         }
     } catch (error) {
         Logger.error(error);
@@ -509,91 +337,116 @@ async function loadConfig() {
 async function handleSaveConfig() {
     const saveConfigBtn = el(DOMIds.SAVE_CONFIG_BTN);
     setButtonLoading(saveConfigBtn, true, AdminMessages.SAVE_PROGRESS);
-
+    
     try {
         await fetchAPI(AdminActions.UPDATE_CONFIG, {
-            free_quota_video: parseInt(el(DOMIds.FREE_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
-            free_quota_image: parseInt(el(DOMIds.FREE_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
-            free_quota_voice: parseInt(el(DOMIds.FREE_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
-            pro_quota_video: parseInt(el(DOMIds.PRO_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
-            pro_quota_image: parseInt(el(DOMIds.PRO_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
-            pro_quota_voice: parseInt(el(DOMIds.PRO_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
-            pro_unlimited: el(DOMIds.PRO_UNLIMITED).checked,
-            max_devices: el(DOMIds.CONFIG_MAX_DEVICES) ? (parseInt(el(DOMIds.CONFIG_MAX_DEVICES).value) || AdminConstants.DEFAULT_MAX_DEVICES) : AdminConstants.DEFAULT_MAX_DEVICES
+            [ApiFields.FREE_QUOTA_VIDEO]: _.toInteger(el(DOMIds.FREE_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.FREE_QUOTA_IMAGE]: _.toInteger(el(DOMIds.FREE_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.FREE_QUOTA_VOICE]: _.toInteger(el(DOMIds.FREE_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.PRO_QUOTA_VIDEO]: _.toInteger(el(DOMIds.PRO_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.PRO_QUOTA_IMAGE]: _.toInteger(el(DOMIds.PRO_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.PRO_QUOTA_VOICE]: _.toInteger(el(DOMIds.PRO_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.PRO_UNLIMITED]: el(DOMIds.PRO_UNLIMITED).checked,
+            [ApiFields.LIFETIME_QUOTA_VIDEO]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_QUOTA_IMAGE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_QUOTA_VOICE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.LIFETIME_UNLIMITED]: el(DOMIds.LIFETIME_UNLIMITED).checked,
+            [ApiFields.MAX_DEVICES]: el(DOMIds.CONFIG_MAX_DEVICES) ? (_.toInteger(el(DOMIds.CONFIG_MAX_DEVICES).value) || AdminConstants.DEFAULT_MAX_DEVICES) : AdminConstants.DEFAULT_MAX_DEVICES
         });
         showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(saveConfigBtn, false);
     }
 }
 
-window.closeModal = function (id) {
-    el(id)?.classList.remove('active');
+function resetResourceForms() {
+    window.editingKeyId = null;
+    el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
+    if (tsKeysInstance) tsKeysInstance.setValue(AdminConstants.ASSIGN_ALL);
+    else el(DOMIds.KEYS_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+    el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.MODAL_SAVE_DEFAULT);
+
+    window.editingAccountId = null;
+    el(DOMIds.ACC_EMAIL_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.ACC_PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.ACC_RECOVERY_INPUT).value = AdminConstants.EMPTY_STR;
+    if (tsAccInstance) tsAccInstance.setValue(AdminConstants.ASSIGN_ALL);
+    else el(DOMIds.ACC_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+    el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD);
+}
+
+function closeModal(id) {
+    el(id)?.classList.remove(AdminClasses.ACTIVE);
+    if (id === DOMIds.RESOURCE_MODAL) {
+        resetResourceForms();
+    }
 }
 
 function handleOpenCreateModal() {
-    editingKey = null;
+    editingUserId = null;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_CREATE_TITLE;
-    el(DOMIds.MODAL_USERNAME).value = '';
+    el(DOMIds.MODAL_USERNAME).value = AdminConstants.EMPTY_STR;
     el(DOMIds.MODAL_USERNAME).disabled = false;
     el(DOMIds.MODAL_PLAN_TYPE).value = AdminConstants.PLAN_FREE;
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
-    el(DOMIds.MODAL_EXPIRES).value = '';
-
-    el(DOMIds.MODAL_EXPIRES_WRAPPER).style.display = AdminConstants.DISPLAY_FLEX;
-
-    el(DOMIds.USER_MODAL).classList.add('active');
+    el(DOMIds.MODAL_QUOTA_TYPE).value = QuotaType.DAILY;
+    el(DOMIds.MODAL_EXPIRES).value = AdminConstants.EMPTY_STR;
+    
+    el(DOMIds.MODAL_EXPIRES_WRAPPER).style.display = AdminClasses.DISPLAY_FLEX;
+    el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
-window.openEditModal = function (key) {
-    const user = _.find(window.adminUsersData || [], u => _.get(u, 'license_key') === key);
+function openEditModal(id) {
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
-
-    editingKey = key;
+    
+    editingUserId = id;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_EDIT_TITLE;
-    el(DOMIds.MODAL_USERNAME).value = _.get(user, 'username');
+    el(DOMIds.MODAL_USERNAME).value = _.get(user, ApiFields.USERNAME);
     el(DOMIds.MODAL_USERNAME).disabled = true;
-
+    
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
-    let hasOption = _.some(_.toArray(planSelect.options), opt => _.get(opt, 'value') === _.get(user, 'plan_type'));
+    let hasOption = _.some(_.toArray(planSelect.options), opt => _.get(opt, ApiFields.VALUE) === _.get(user, ApiFields.PLAN_TYPE));
     if (!hasOption) {
-        const newOption = document.createElement('option');
-        newOption.value = _.get(user, 'plan_type');
-        newOption.textContent = _.get(user, 'plan_type');
+        const newOption = document.createElement(TagNames.OPTION);
+        newOption.value = _.get(user, ApiFields.PLAN_TYPE);
+        newOption.textContent = _.get(user, ApiFields.PLAN_TYPE);
         planSelect.appendChild(newOption);
     }
-    planSelect.value = _.get(user, 'plan_type');
-
-    el(DOMIds.MODAL_STATUS).value = _.get(user, 'status');
+    planSelect.value = _.get(user, ApiFields.PLAN_TYPE);
+    
+    el(DOMIds.MODAL_STATUS).value = _.get(user, ApiFields.STATUS);
     el(DOMIds.MODAL_STATUS).disabled = false;
-
-    if (!_.isEmpty(_.get(user, 'expires_at'))) {
-        el(DOMIds.MODAL_EXPIRES).value = new Date(_.get(user, 'expires_at')).toISOString().split('T')[0];
+    el(DOMIds.MODAL_QUOTA_TYPE).value = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
+    
+    if (!_.isEmpty(_.get(user, ApiFields.EXPIRES_AT))) {
+        el(DOMIds.MODAL_EXPIRES).value = new Date(_.get(user, ApiFields.EXPIRES_AT)).toISOString().split(AdminConstants.DATE_T_SPLIT)[AdminConstants.DATE_ISO_INDEX];
     } else {
-        el(DOMIds.MODAL_EXPIRES).value = '';
+        el(DOMIds.MODAL_EXPIRES).value = AdminConstants.EMPTY_STR;
     }
-
+    
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
-    if (!_.includes([AdminConstants.PLAN_FREE, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, 'plan_type'))) {
-        wrapper.style.display = AdminConstants.DISPLAY_FLEX;
+    if (!_.includes([AdminConstants.PLAN_FREE, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE))) {
+        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     } else {
-        wrapper.style.display = AdminConstants.DISPLAY_NONE;
+        wrapper.style.display = AdminClasses.DISPLAY_NONE;
     }
-
-    el(DOMIds.USER_MODAL).classList.add('active');
+    
+    el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     const selectedPlan = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
-
-    if (!_.isNil(editingKey) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
-        wrapper.style.display = AdminConstants.DISPLAY_FLEX;
+    
+    if (!_.isNil(editingUserId) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
+        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     } else {
-        wrapper.style.display = AdminConstants.DISPLAY_NONE;
+        wrapper.style.display = AdminClasses.DISPLAY_NONE;
     }
 }
 
@@ -602,56 +455,58 @@ async function handleSaveUser() {
     const username = el(DOMIds.MODAL_USERNAME).value.trim();
     const planType = el(DOMIds.MODAL_PLAN_TYPE).value;
     const status = el(DOMIds.MODAL_STATUS).value;
+    const quotaType = el(DOMIds.MODAL_QUOTA_TYPE).value;
     let expiresAt = el(DOMIds.MODAL_EXPIRES).value;
-
-    if (_.isNil(editingKey) && _.isEmpty(username)) {
+    
+    if (_.isNil(editingUserId) && _.isEmpty(username)) {
         showToast(AdminMessages.MODAL_MISSING_NAME, ToastType.ERROR);
         return;
     }
-
+    
     if (!_.isEmpty(expiresAt)) {
         expiresAt = new Date(expiresAt).toISOString();
     }
-
+    
     setButtonLoading(btn, true, AdminMessages.SAVE_USER_PROGRESS);
-
+    
     try {
-        if (!_.isNil(editingKey)) {
-            await fetchAPI(AdminActions.UPDATE_KEY, { license_key: editingKey, plan_type: planType, status: status, expires_at: expiresAt });
+        if (!_.isNil(editingUserId)) {
+            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.QUOTA_TYPE]: quotaType, [ApiFields.EXPIRES_AT]: expiresAt });
             showToast(AdminMessages.MODAL_UPDATE_SUCCESS, ToastType.SUCCESS);
         } else {
-            const res = await fetchAPI(AdminActions.CREATE_KEY, { username, plan_type: planType });
-            showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, 'license_key'), ToastType.SUCCESS);
+            const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_TYPE]: planType, [ApiFields.QUOTA_TYPE]: quotaType });
+            showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, ApiFields.LICENSE_KEY), ToastType.SUCCESS);
         }
-
+        
         setTimeout(() => {
             closeModal(DOMIds.USER_MODAL);
             loadUsers();
         }, AdminConstants.MODAL_FADE_DELAY);
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
         btn.textContent = AdminMessages.MODAL_SAVE_DEFAULT;
     }
 }
 
-window.openDeleteModal = function (key) {
-    deletingKey = key;
-    el(DOMIds.DELETE_KEY_DISPLAY).textContent = key;
-    el(DOMIds.DELETE_MODAL).classList.add('active');
+function openDeleteModal(id, keyStr) {
+    deletingUserId = id;
+    deletingUserKey = keyStr;
+    el(DOMIds.DELETE_KEY_DISPLAY).textContent = keyStr;
+    el(DOMIds.DELETE_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 async function handleSoftDelete() {
     const btn = el(DOMIds.BTN_SOFT_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE);
     try {
-        await fetchAPI(AdminActions.REVOKE_KEY, { license_key: deletingKey });
+        await fetchAPI(AdminActions.REVOKE_KEY, { [ApiFields.ID]: deletingUserId });
         showToast(AdminMessages.DELETE_SOFT_SUCCESS, ToastType.SUCCESS);
         closeModal(DOMIds.DELETE_MODAL);
         loadUsers();
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
@@ -661,196 +516,526 @@ async function handleHardDelete() {
     const btn = el(DOMIds.BTN_HARD_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE);
     try {
-        await fetchAPI(AdminActions.DELETE_KEY, { license_key: deletingKey });
+        await fetchAPI(AdminActions.DELETE_KEY, { [ApiFields.ID]: deletingUserId });
         showToast(AdminMessages.DELETE_HARD_SUCCESS, ToastType.SUCCESS);
         closeModal(DOMIds.DELETE_MODAL);
         loadUsers();
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
 }
 
 async function handleResetDevice() {
-    if (!resettingKey) return;
-
-    const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', resettingKey);
-    if (!window.confirm(confirmMsg)) return;
+    if (!resettingUserId) return;
+    
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === resettingUserId);
+    const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
+    
+    const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', keyStr);
+    if (!confirm(confirmMsg)) return;
 
     const btn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_RESET_DEVICE);
 
     try {
-        await fetchAPI(AdminActions.RESET_DEVICE, { license_key: resettingKey });
+        await fetchAPI(AdminActions.RESET_DEVICE, { [ApiFields.ID]: resettingUserId });
         showToast(AdminMessages.RESET_DEVICE_SUCCESS, ToastType.SUCCESS);
-
+        
         closeModal(DOMIds.DEVICE_MODAL);
         loadUsers();
     } catch (error) {
-        showToast(AdminMessages.RESET_DEVICE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.RESET_DEVICE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
 }
 
-window.copyToClipboard = function (text) {
+function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
         showToast(AdminMessages.COPY_SUCCESS + text, ToastType.SUCCESS);
     }).catch(err => {
-        Logger.error("Copy failed", err);
+        Logger.error(AdminMessages.LOG_COPY_FAILED, err);
         showToast(AdminMessages.COPY_ERROR, ToastType.ERROR);
     });
 }
 
-window.openDeviceModal = function (key) {
-    const user = _.find(window.adminUsersData || [], u => _.get(u, 'license_key') === key);
+function openDeviceModal(id) {
+    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
-
+    
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
+    let deviceIdStr = AdminTemplates.DEVICE_EMPTY(AdminMessages.EMPTY_DEVICE_MSG);
 
-    const emptyStateHtml = `
-        <div class="empty-device">
-            ${Icons.DEVICE_EMPTY}
-            <p>${AdminMessages.EMPTY_DEVICE_MSG}</p>
-        </div>
-    `;
-
-    const renderCard = (dId) => `
-        <div class="device-card">
-            <div class="device-icon">
-                ${Icons.DEVICE_ICON}
-            </div>
-            <div class="device-info">
-                <span class="device-id" title="${escapeHTML(dId)}">${escapeHTML(dId)}</span>
-                <span class="device-status">${AdminMessages.DEVICE_CONNECTED}</span>
-            </div>
-        </div>
-    `;
-
-    let deviceIdStr = emptyStateHtml;
     try {
-        const parsedDevices = JSON.parse(_.get(user, 'device_id', '[]'));
+        const parsedDevices = JSON.parse(_.get(user, ApiFields.DEVICE_ID, AdminMessages.ARRAY_EMPTY_JSON));
         if (_.isArray(parsedDevices) && !_.isEmpty(parsedDevices)) {
-            deviceIdStr = _.map(parsedDevices, d => renderCard(d)).join('');
+            deviceIdStr = _.map(parsedDevices, d => AdminTemplates.DEVICE_CARD(d, AdminMessages.DEVICE_CONNECTED)).join(AdminConstants.EMPTY_STR);
         } else if (_.isString(parsedDevices) && !_.isEmpty(parsedDevices)) {
-            deviceIdStr = renderCard(parsedDevices);
+            deviceIdStr = AdminTemplates.DEVICE_CARD(parsedDevices, AdminMessages.DEVICE_CONNECTED);
         }
     } catch (e) {
-        if (!_.isEmpty(_.get(user, 'device_id'))) {
-            deviceIdStr = renderCard(_.get(user, 'device_id'));
+        if (!_.isEmpty(_.get(user, ApiFields.DEVICE_ID))) {
+            deviceIdStr = AdminTemplates.DEVICE_CARD(_.get(user, ApiFields.DEVICE_ID), AdminMessages.DEVICE_CONNECTED);
         }
     }
-
+    
     container.innerHTML = deviceIdStr;
-
+    
     const resetBtn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
-    if (!_.isEmpty(_.get(user, 'device_id'))) {
-        resetBtn.style.display = AdminConstants.DISPLAY_FLEX;
-        resetBtn.onclick = function () {
-            resetDevice(key);
-            closeModal(DOMIds.DEVICE_MODAL);
-        };
+    if (!_.isEmpty(_.get(user, ApiFields.DEVICE_ID))) {
+        resetBtn.style.display = AdminClasses.DISPLAY_FLEX;
+        resettingUserId = id;
     } else {
-        resetBtn.style.display = AdminConstants.DISPLAY_NONE;
+        resetBtn.style.display = AdminClasses.DISPLAY_NONE;
     }
-
-    el(DOMIds.DEVICE_MODAL).classList.add('active');
+    
+    el(DOMIds.DEVICE_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 async function handleSyncExpired() {
-    const btn = el('sync-expired-btn');
+    const btn = el(DOMIds.SYNC_BTN);
     if (!btn) return;
-
+    
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SYNC);
-
+    
     try {
         const result = await fetchAPI(AdminActions.SYNC_EXPIRED);
-        const count = _.get(result, 'count', 0);
+        const count = _.get(result, ApiFields.COUNT, 0);
         showToast(AdminMessages.SYNC_SUCCESS.replace('{0}', count), ToastType.SUCCESS);
         if (count > 0) {
             loadUsers();
         }
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, 'message'), ToastType.ERROR);
+        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
 }
 
 function preventNonNumericInput() {
-    const numericInputs = document.querySelectorAll('.numeric-input');
+    const numericInputs = document.querySelectorAll(AdminSelectors.NUMERIC_INPUT);
     _.forEach(numericInputs, input => {
-        input.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(AdminRegex.NUMBERS_ONLY, '');
+        input.addEventListener(EventTypes.INPUT, function() {
+            this.value = this.value.replace(AdminRegex.NUMBERS_ONLY, AdminConstants.EMPTY_STR);
         });
     });
 }
 
 function delegateModalCloses() {
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal-close-btn')) {
-            const modalId = e.target.getAttribute('data-modal');
+    const closeBtns = document.querySelectorAll(AdminSelectors.MODAL_CLOSE_BTN);
+    _.forEach(closeBtns, btn => {
+        btn.addEventListener(EventTypes.CLICK, function() {
+            const modalId = this.getAttribute(DataAttributes.MODAL);
             if (modalId) closeModal(modalId);
-        }
+        });
+    });
+}
+
+function delegateTableActions() {
+    document.addEventListener(EventTypes.CLICK, function(e) {
+        const target = e.target.closest(AdminSelectors.ACTION_BTNS);
+        if (!target) return;
+            const action = target.getAttribute(DataAttributes.ACTION);
+        const key = target.getAttribute(DataAttributes.KEY);
+        const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID);
+        const uid = target.getAttribute(DataAttributes.ID);
+        
+        if (action === AdminConstants.ACTION_EDIT && uid) openEditModal(uid);
+        if (action === AdminConstants.ACTION_DEVICE && uid) openDeviceModal(uid);
+        if (action === AdminConstants.ACTION_DELETE && uid) openDeleteModal(uid, key);
+        if (action === AdminConstants.ACTION_COPY && key) copyToClipboard(key);
+        if (action === AdminConstants.ACTION_EDIT_ACC && accountId) editAccountAdmin(accountId);
+        if (action === AdminConstants.ACTION_DELETE_ACC && accountId) deleteAccountAdmin(accountId);
+        
+        const keyId = target.getAttribute(DataAttributes.ID);
+        if (action === AdminConstants.ACTION_DELETE_KEYS && keyId) deleteApiKeysAdmin(keyId);
+        if (action === AdminConstants.ACTION_EDIT_KEYS && keyId) editApiKeysAdmin(keyId);
     });
 }
 
 function initEventListeners() {
     preventNonNumericInput();
     delegateModalCloses();
-
-    el(DOMIds.LOGIN_BTN)?.addEventListener('click', handleLogin);
-    el(DOMIds.LOGOUT_BTN)?.addEventListener('click', handleLogout);
-
-    el('sync-expired-btn')?.addEventListener('click', handleSyncExpired);
-
-    el(DOMIds.PRO_UNLIMITED)?.addEventListener('change', (e) => {
+    delegateTableActions();
+    
+    el(DOMIds.LOGIN_BTN)?.addEventListener(EventTypes.CLICK, handleLogin);
+    el(DOMIds.LOGOUT_BTN)?.addEventListener(EventTypes.CLICK, handleLogout);
+    el(DOMIds.SYNC_BTN)?.addEventListener(EventTypes.CLICK, handleSyncExpired);
+    
+    el(DOMIds.BTN_CONFIRM_ACTION)?.addEventListener(EventTypes.CLICK, () => {
+        if (_.isFunction(window.currentConfirmCallback)) window.currentConfirmCallback();
+        closeModal(DOMIds.CONFIRM_MODAL);
+    });
+    
+    el(DOMIds.PRO_UNLIMITED)?.addEventListener(EventTypes.CHANGE, (e) => {
         const disabled = _.get(e, 'target.checked', false);
         el(DOMIds.PRO_QUOTA_VIDEO).disabled = disabled;
         el(DOMIds.PRO_QUOTA_IMAGE).disabled = disabled;
         el(DOMIds.PRO_QUOTA_VOICE).disabled = disabled;
     });
 
-    el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener('click', handleSaveConfig);
-
-    el(DOMIds.SEARCH_INPUT)?.addEventListener('input', applyFilters);
-    el(DOMIds.FILTER_PLAN)?.addEventListener('change', applyFilters);
-    el(DOMIds.FILTER_STATUS)?.addEventListener('change', applyFilters);
-    el(DOMIds.PAGE_SIZE)?.addEventListener('change', (e) => {
-        pageSize = parseInt(_.get(e, 'target.value', AdminConstants.DEFAULT_PAGE_SIZE));
-        currentPage = AdminConstants.MIN_PAGE;
+    el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, handleSaveConfig);
+    
+    el(DOMIds.SEARCH_INPUT)?.addEventListener(EventTypes.INPUT, applyFilters);
+    el(DOMIds.FILTER_PLAN)?.addEventListener(EventTypes.CHANGE, applyFilters);
+    el(DOMIds.FILTER_STATUS)?.addEventListener(EventTypes.CHANGE, applyFilters);
+    el(DOMIds.PAGE_SIZE)?.addEventListener(EventTypes.CHANGE, (e) => {
+        pageSize = _.toInteger(_.get(e, 'target.value', AdminConstants.DEFAULT_PAGE_SIZE));
+        currentPage = AdminConstants.DEFAULT_PAGE;
         renderTable();
     });
 
-    el(DOMIds.OPEN_CREATE_MODAL_BTN)?.addEventListener('click', handleOpenCreateModal);
-    el(DOMIds.MODAL_PLAN_TYPE)?.addEventListener('change', handlePlanTypeChange);
-    el(DOMIds.SAVE_USER_BTN)?.addEventListener('click', handleSaveUser);
-    el(DOMIds.BTN_SOFT_DELETE)?.addEventListener('click', handleSoftDelete);
-    el(DOMIds.BTN_HARD_DELETE)?.addEventListener('click', handleHardDelete);
+    el(DOMIds.OPEN_CREATE_MODAL_BTN)?.addEventListener(EventTypes.CLICK, handleOpenCreateModal);
+    el(DOMIds.MODAL_PLAN_TYPE)?.addEventListener(EventTypes.CHANGE, handlePlanTypeChange);
+    el(DOMIds.SAVE_USER_BTN)?.addEventListener(EventTypes.CLICK, handleSaveUser);
+    el(DOMIds.BTN_SOFT_DELETE)?.addEventListener(EventTypes.CLICK, handleSoftDelete);
+    el(DOMIds.BTN_HARD_DELETE)?.addEventListener(EventTypes.CLICK, handleHardDelete);
+    el(DOMIds.MODAL_RESET_DEVICE_BTN)?.addEventListener(EventTypes.CLICK, handleResetDevice);
 
     const configToggleBtn = el(DOMIds.CONFIG_TOGGLE_BTN);
     const configDropdownMenu = el(DOMIds.CONFIG_DROPDOWN_MENU);
 
     if (configToggleBtn && configDropdownMenu) {
-        configToggleBtn.addEventListener('click', (e) => {
+        configToggleBtn.addEventListener(EventTypes.CLICK, (e) => {
             e.stopPropagation();
-            configDropdownMenu.style.display = configDropdownMenu.style.display === AdminConstants.DISPLAY_NONE ? AdminConstants.DISPLAY_BLOCK : AdminConstants.DISPLAY_NONE;
+            configDropdownMenu.style.display = configDropdownMenu.style.display === AdminClasses.DISPLAY_NONE ? AdminClasses.DISPLAY_BLOCK : AdminClasses.DISPLAY_NONE;
         });
 
-        document.addEventListener('click', (e) => {
+        document.addEventListener(EventTypes.CLICK, (e) => {
             if (!configToggleBtn.contains(e.target) && !configDropdownMenu.contains(e.target)) {
-                configDropdownMenu.style.display = AdminConstants.DISPLAY_NONE;
+                configDropdownMenu.style.display = AdminClasses.DISPLAY_NONE;
             }
         });
 
-        configDropdownMenu.addEventListener('click', (e) => {
+        configDropdownMenu.addEventListener(EventTypes.CLICK, (e) => {
             e.stopPropagation();
         });
-
-        el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener('click', () => {
-            configDropdownMenu.style.display = AdminConstants.DISPLAY_NONE;
+        
+        el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, () => {
+            configDropdownMenu.style.display = AdminClasses.DISPLAY_NONE;
         });
+    }
+
+    const resourceToggleBtn = el(DOMIds.RESOURCE_TOGGLE_BTN);
+    const resourceModal = el(DOMIds.RESOURCE_MODAL);
+    
+    if (resourceToggleBtn) {
+        resourceToggleBtn.addEventListener(EventTypes.CLICK, () => {
+            resourceModal.classList.add(AdminClasses.ACTIVE);
+            loadApiKeysAdmin();
+        });
+    }
+
+    const tabKeysBtn = el(DOMIds.TAB_KEYS_BTN);
+    const tabAccountsBtn = el(DOMIds.TAB_ACCOUNTS_BTN);
+    const tabContentKeys = el(DOMIds.TAB_CONTENT_KEYS);
+    const tabContentAccounts = el(DOMIds.TAB_CONTENT_ACCOUNTS);
+
+    if (tabKeysBtn && tabAccountsBtn) {
+        tabKeysBtn.addEventListener(EventTypes.CLICK, () => {
+            tabKeysBtn.classList.add(AdminClasses.ACTIVE);
+            tabAccountsBtn.classList.remove(AdminClasses.ACTIVE);
+            
+            tabContentKeys.style.display = AdminClasses.DISPLAY_BLOCK;
+            tabContentAccounts.style.display = AdminClasses.DISPLAY_NONE;
+            loadApiKeysAdmin();
+        });
+
+        tabAccountsBtn.addEventListener(EventTypes.CLICK, () => {
+            tabAccountsBtn.classList.add(AdminClasses.ACTIVE);
+            tabKeysBtn.classList.remove(AdminClasses.ACTIVE);
+            
+            tabContentAccounts.style.display = AdminClasses.DISPLAY_BLOCK;
+            tabContentKeys.style.display = AdminClasses.DISPLAY_NONE;
+            loadAccountsAdmin();
+        });
+    }
+
+    el(DOMIds.SAVE_KEYS_BTN)?.addEventListener(EventTypes.CLICK, handleSaveKeys);
+    el(DOMIds.ADD_ACC_BTN)?.addEventListener(EventTypes.CLICK, handleSaveAccount);
+    
+    document.addEventListener(EventTypes.CHANGE, function(e) {
+        if (e.target.classList.contains(AdminSelectors.ACC_STATUS_SELECT.substring(1))) {
+            const accId = e.target.getAttribute(DataAttributes.ACCOUNT_ID);
+            const status = e.target.value;
+            if (accId) updateAccStatus(Number(accId), status);
+        }
+    });
+}
+
+async function handleSaveKeys() {
+    const btn = el(DOMIds.SAVE_KEYS_BTN);
+    const assignee = el(DOMIds.KEYS_ASSIGNEE_INPUT).value.trim() || AdminConstants.ASSIGN_ALL;
+    const gemini = el(DOMIds.KEYS_GEMINI_INPUT).value.trim();
+    const ai33 = el(DOMIds.KEYS_AI33_INPUT).value.trim();
+    
+    if (!gemini && !ai33) {
+        showToast(AdminMessages.VALIDATION_NEED_KEY, ToastType.ERROR);
+        return;
+    }
+
+    setButtonLoading(btn, true, AdminMessages.LOADING_SAVE);
+    try {
+        const payload = {
+            [ApiFields.GEMINI_KEY]: gemini,
+            [ApiFields.AI33_KEY]: ai33,
+            [ApiFields.ASSIGNED_TO]: assignee
+        };
+        if (window.editingKeyId) {
+            payload[ApiFields.ID] = window.editingKeyId;
+        }
+        await fetchAPI(AdminActions.UPDATE_API_KEYS, payload);
+        showToast(AdminMessages.KEYS_SAVE_SUCCESS, ToastType.SUCCESS);
+        resetResourceForms();
+        loadApiKeysAdmin();
+    } catch (e) {
+        showToast(AdminMessages.SAVE_ERROR + e.message, ToastType.ERROR);
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+async function handleSaveAccount() {
+    const btn = el(DOMIds.ADD_ACC_BTN);
+    const email = el(DOMIds.ACC_EMAIL_INPUT).value.trim();
+    const pwd = el(DOMIds.ACC_PASSWORD_INPUT).value.trim();
+    const recovery = el(DOMIds.ACC_RECOVERY_INPUT).value.trim();
+    const assign = el(DOMIds.ACC_ASSIGNEE_INPUT).value.trim() || AdminConstants.ASSIGN_ALL;
+
+    if (!email) {
+        showToast(AdminMessages.MISSING_ACC_INFO, ToastType.ERROR);
+        return;
+    }
+
+    const isEditing = !_.isNil(window.editingAccountId);
+    setButtonLoading(btn, true, isEditing ? AdminMessages.LOADING_UPDATE : AdminMessages.LOADING_ADD);
+    try {
+        if (isEditing) {
+            await fetchAPI(AdminActions.UPDATE_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.ID]: window.editingAccountId, [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.ASSIGNED_TO]: assign } });
+            showToast(AdminMessages.ACCOUNT_UPDATE_SUCCESS, ToastType.SUCCESS);
+            window.editingAccountId = null;
+            btn.innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD);
+        } else {
+            await fetchAPI(AdminActions.ADD_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.STATUS]: AdminConstants.ACCOUNT_STATUS_ACTIVE, [ApiFields.ASSIGNED_TO]: assign } });
+            showToast(AdminMessages.ACCS_SAVE_SUCCESS, ToastType.SUCCESS);
+        }
+        
+        el(DOMIds.ACC_EMAIL_INPUT).value = AdminConstants.EMPTY_STR;
+        el(DOMIds.ACC_PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
+        el(DOMIds.ACC_RECOVERY_INPUT).value = AdminConstants.EMPTY_STR;
+        if (tsAccInstance) {
+            tsAccInstance.setValue(AdminConstants.ASSIGN_ALL);
+        } else {
+            el(DOMIds.ACC_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
+        }
+        
+        loadAccountsAdmin();
+    } catch (e) {
+        showToast(AdminMessages.SAVE_ERROR + e.message, ToastType.ERROR);
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+let tsKeysInstance = null;
+let tsAccInstance = null;
+
+function populateAssignSelects() {
+    const users = _.get(window, 'adminUsersData', []);
+    
+    let optionsHtml = AdminConstants.EMPTY_STR;
+    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
+    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.PLAN_FREE, AdminMessages.ASSIGN_FREE_LABEL);
+    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.PLAN_PRO, AdminMessages.ASSIGN_PRO_LABEL);
+    
+    const userOptions = _.map(users, u => AdminTemplates.SELECT_OPTION(
+        escapeHTML(_.get(u, ApiFields.LICENSE_KEY)), 
+        `${escapeHTML(_.get(u, ApiFields.USERNAME) || _.get(u, ApiFields.EMAIL) || _.get(u, ApiFields.LICENSE_KEY))} - ${escapeHTML(_.get(u, ApiFields.LICENSE_KEY).substring(0, AdminConstants.KEY_PREVIEW_LENGTH))}...`
+    )).join(AdminConstants.EMPTY_STR);
+    
+    optionsHtml += AdminTemplates.OPTGROUP(AdminMessages.ASSIGN_SPECIFIC_LABEL, userOptions);
+    
+    const keysSelect = el(DOMIds.KEYS_ASSIGNEE_INPUT);
+    const accSelect = el(DOMIds.ACC_ASSIGNEE_INPUT);
+    
+    if (tsKeysInstance) tsKeysInstance.destroy();
+    if (tsAccInstance) tsAccInstance.destroy();
+    
+    if (keysSelect) {
+        keysSelect.innerHTML = optionsHtml;
+        tsKeysInstance = new TomSelect(keysSelect, {
+            create: true,
+            maxItems: AdminConstants.MAX_ITEMS_SELECT,
+            placeholder: AdminMessages.SEARCH_PLACEHOLDER,
+            dropdownParent: 'body',
+            plugins: [AdminConstants.PLUGIN_DROPDOWN]
+        });
+    }
+    if (accSelect) {
+        accSelect.innerHTML = optionsHtml;
+        tsAccInstance = new TomSelect(accSelect, {
+            create: true,
+            maxItems: AdminConstants.MAX_ITEMS_SELECT,
+            placeholder: AdminMessages.SEARCH_PLACEHOLDER,
+            dropdownParent: 'body',
+            plugins: [AdminConstants.PLUGIN_DROPDOWN]
+        });
+    }
+}
+
+function editApiKeysAdmin(keyId) {
+    const keys = _.get(window, 'adminApiKeysData', []);
+    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
+    if (!keyRecord) return;
+    
+    const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO);
+    if (tsKeysInstance) {
+        tsKeysInstance.setValue(assignedTo);
+    } else {
+        el(DOMIds.KEYS_ASSIGNEE_INPUT).value = assignedTo;
+    }
+    
+    el(DOMIds.KEYS_GEMINI_INPUT).value = _.get(keyRecord, ApiFields.GEMINI_KEY) || AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_AI33_INPUT).value = _.get(keyRecord, ApiFields.AI33_KEY) || AdminConstants.EMPTY_STR;
+    
+    window.editingKeyId = keyId;
+    el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
+    el(DOMIds.KEYS_GEMINI_INPUT).focus();
+}
+
+function openConfirmModal(message, callback) {
+    el(DOMIds.CONFIRM_MESSAGE_DISPLAY).innerHTML = message;
+    window.currentConfirmCallback = callback;
+    el(DOMIds.CONFIRM_MODAL).classList.add(AdminClasses.ACTIVE);
+}
+
+function deleteApiKeysAdmin(keyId) {
+    const keys = _.get(window, 'adminApiKeysData', []);
+    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
+    const assignedTo = keyRecord ? _.get(keyRecord, ApiFields.ASSIGNED_TO) : 'ALL';
+    
+    openConfirmModal(AdminMessages.DELETE_KEYS_CONFIRM.replace('{0}', assignedTo), async () => {
+        try {
+            await fetchAPI(AdminActions.DELETE_API_KEYS, { [ApiFields.ID]: keyId });
+            showToast(AdminMessages.DELETE_KEYS_SUCCESS, ToastType.SUCCESS);
+            loadApiKeysAdmin();
+        } catch (e) {
+            showToast(AdminMessages.DELETE_KEYS_ERROR + e.message, ToastType.ERROR);
+        }
+    });
+}
+
+function editAccountAdmin(id) {
+    const accs = _.get(window, 'adminAccountsData', []);
+    const acc = _.find(accs, a => _.get(a, ApiFields.ID) === id);
+    if (!acc) return;
+    
+    el(DOMIds.ACC_EMAIL_INPUT).value = _.get(acc, ApiFields.EMAIL);
+    el(DOMIds.ACC_PASSWORD_INPUT).value = _.get(acc, ApiFields.PASSWORD);
+    el(DOMIds.ACC_RECOVERY_INPUT).value = _.get(acc, ApiFields.RECOVERY_EMAIL);
+    if (tsAccInstance) {
+        tsAccInstance.setValue(_.get(acc, ApiFields.ASSIGNED_TO));
+    } else {
+        el(DOMIds.ACC_ASSIGNEE_INPUT).value = _.get(acc, ApiFields.ASSIGNED_TO);
+    }
+    
+    window.editingAccountId = id;
+    el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
+}
+
+function deleteAccountAdmin(id) {
+    openConfirmModal(AdminMessages.DELETE_ACCOUNT_CONFIRM, async () => {
+        try {
+            await fetchAPI(AdminActions.DELETE_ACCOUNT, { [ApiFields.ID]: id });
+            showToast(AdminMessages.DELETE_ACCOUNT_SUCCESS, ToastType.SUCCESS);
+            loadAccountsAdmin();
+        } catch (e) {
+            showToast(AdminMessages.DELETE_ACCOUNT_ERROR + e.message, ToastType.ERROR);
+        }
+    });
+}
+
+async function loadApiKeysAdmin() {
+    const tbody = elq(DOMIds.KEYS_TBODY);
+    tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_KEYS, AdminMessages.DATA_LOADING);
+    try {
+        const res = await fetchAPI(AdminActions.GET_API_KEYS);
+        const keys = _.get(res, ApiFields.KEYS, []);
+        window.adminApiKeysData = keys;
+        
+        tbody.innerHTML = _.map(keys, k => {
+            const assignee = _.get(k, ApiFields.ASSIGNED_TO);
+            const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
+            const ai33Value = _.get(k, ApiFields.AI33_KEY);
+            const keyId = _.get(k, ApiFields.ID);
+            
+            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], assignee) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
+            
+            return `
+            <tr>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assignee)}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
+                    </div>
+                </td>
+            </tr>
+        `}).join(AdminConstants.EMPTY_STR);
+    } catch (e) {
+        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_KEYS, e.message);
+    }
+}
+
+async function loadAccountsAdmin() {
+    const tbody = elq(DOMIds.ACCS_TBODY);
+    tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_ACCOUNTS, AdminMessages.DATA_LOADING);
+    try {
+        const res = await fetchAPI(AdminActions.GET_ACCOUNTS);
+        const accs = _.get(res, ApiFields.ACCOUNTS, []);
+        window.adminAccountsData = accs;
+        
+        tbody.innerHTML = _.map(accs, a => {
+            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], _.get(a, ApiFields.ASSIGNED_TO)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            const options = `
+                <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ACTIVE ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
+                <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ERROR ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
+            `;
+            return `
+            <tr>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">
+                    <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; transition: 0.2s; cursor: pointer;">
+                        ${options}
+                    </select>
+                </td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(_.get(a, ApiFields.ASSIGNED_TO))}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div class="actions-cell" style="justify-content: center;">
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
+                    </div>
+                </td>
+            </tr>
+        `}).join(AdminConstants.EMPTY_STR);
+    } catch (e) {
+        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_ACCOUNTS, e.message);
+    }
+}
+
+async function updateAccStatus(id, status) {
+    try {
+        await fetchAPI(AdminActions.UPDATE_ACCOUNT_STATUS, { [ApiFields.ROW_INDEX]: id, [ApiFields.STATUS]: status });
+        showToast(AdminMessages.UPDATE_STATUS_SUCCESS, ToastType.SUCCESS);
+    } catch (e) {
+        showToast(AdminMessages.UPDATE_STATUS_ERROR + e.message, ToastType.ERROR);
     }
 }
 

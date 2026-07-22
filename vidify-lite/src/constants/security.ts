@@ -10,6 +10,8 @@ export enum GasActions {
   UPDATE_API_KEYS = 'update_api_keys',
   ADD_ACCOUNT = 'add_account',
   UPDATE_ACCOUNT_STATUS = 'update_account_status',
+  VERIFY_KEY = 'verify_key',
+  UPDATE_USAGE = 'update_usage',
 }
 
 export enum AccountStatus {
@@ -43,15 +45,32 @@ export const SecurityConstants = {
   QUOTA_EXCEEDED_CODE: 'QUOTA_EXCEEDED',
   LICENSE_INFO_KEY: 'licenseInfo',
   QUOTAS_PRO_UNLIMITED: 'quotas.pro_unlimited',
+  QUOTAS_LIFETIME_UNLIMITED: 'quotas.lifetime_unlimited',
   USAGE_PREFIX: 'usage.',
   QUOTAS_PRO_PREFIX: 'quotas.pro_',
   QUOTAS_FREE_PREFIX: 'quotas.free_',
+  QUOTAS_LIFETIME_PREFIX: 'quotas.lifetime_',
+  HTTP_POST: 'POST',
+  CONTENT_TYPE_JSON: 'application/json',
+  UTF8_ENCODING: 'utf8',
+  QUOTA_TYPE_TOTAL: 'TOTAL',
+};
+
+export const LocalizationConstants = {
+  FEATURE_VIDEO: 'Video',
+  FEATURE_IMAGE: 'Ảnh',
+  FEATURE_VOICE: 'Giọng nói',
+  PLAN_LIFETIME: 'Vĩnh Viễn',
+  PLAN_PRO: 'PRO',
+  PLAN_FREE: 'Miễn Phí',
 };
 
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: 'Không tìm thấy Mã Bản Quyền (License Key). Vui lòng kích hoạt lại.',
   INVALID_OR_REVOKED_LICENSE: 'Tài khoản của bạn không hợp lệ hoặc đã bị khóa/hết hạn.',
   QUOTA_EXCEEDED_TEMPLATE: 'Bạn đã đạt giới hạn tạo {0} cho {1} hôm nay.',
+  QUOTA_TOTAL_EXCEEDED: 'Tài khoản của bạn đã sử dụng hết giới hạn tạo {0} của gói {1}. Vui lòng nâng cấp hoặc mua thêm để tiếp tục!',
+  QUOTA_DAILY_EXCEEDED: 'Bạn đã sử dụng hết lượt tạo {0} hôm nay (Gói {1}). Vui lòng quay lại vào ngày mai hoặc nâng cấp tài khoản!',
   INACTIVE_ACCOUNT_VIEW_ONLY: 'Tài khoản của bạn đã bị khóa hoặc hết hạn. Bạn chỉ có thể xem các dự án cũ.',
   PRO_PLAN: 'Gói Trả Phí (PRO)',
   FREE_PLAN: 'Gói Miễn Phí (FREE)',

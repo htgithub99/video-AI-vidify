@@ -48,7 +48,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                         Cấu Hình
                     </button>
-                    <div class="dropdown-menu" id="config-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; width: 650px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 100;">
+                    <div class="dropdown-menu" id="config-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; width: 850px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 100;">
                         <div class="list-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <h3 style="margin: 0;" title="Giới Hạn Tài Khoản">Giới Hạn</h3>
                             <button id="save-config-btn" class="btn-primary" title="Lưu cấu hình hệ thống" style="padding: 0.4rem 1rem;">Lưu</button>
@@ -100,6 +100,35 @@
                                     <div class="input-group" id="pro-voice-wrapper">
                                         <label title="Số lượng Ký tự cho phép mỗi ngày">Số Ký tự</label>
                                         <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-voice">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="quota-col quota-lifetime">
+                                <div class="quota-col-header">
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">VIP</span>
+                                    <h4>Gói Vĩnh Viễn</h4>
+                                </div>
+                                <div class="quota-col-body">
+                                    <label class="unlimited-toggle" for="lifetime-unlimited">
+                                        <span title="Dùng Không Giới Hạn (Unlimited)">Không Giới Hạn</span>
+                                        <div class="toggle-switch">
+                                            <input type="checkbox" id="lifetime-unlimited">
+                                            <span class="slider"></span>
+                                        </div>
+                                    </label>
+                                    
+                                    <div class="input-group" id="lifetime-video-wrapper">
+                                        <label title="Số lượng Video giới hạn">Số Video</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-video">
+                                    </div>
+                                    <div class="input-group" id="lifetime-image-wrapper">
+                                        <label title="Số lượng Ảnh giới hạn">Số Ảnh</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-image">
+                                    </div>
+                                    <div class="input-group" id="lifetime-voice-wrapper">
+                                        <label title="Số lượng Ký tự giới hạn">Số Ký tự</label>
+                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-voice">
                                     </div>
                                 </div>
                             </div>
@@ -196,6 +225,12 @@
                         <option value="ACTIVE">Hoạt động</option>
                         <option value="REVOKED">Bị khóa</option>
                         <option value="EXPIRED">Hết hạn</option>
+                    </select>
+
+                    <label style="margin-top: 1rem;" title="Kiểu reset điểm">Loại Giới Hạn:</label>
+                    <select id="modal-quota-type">
+                        <option value="DAILY">Reset theo ngày (Daily)</option>
+                        <option value="TOTAL">Dùng tổng cộng (Total)</option>
                     </select>
 
                     <div id="modal-expires-wrapper" style="display: none; flex-direction: column; margin-top: 1rem;">

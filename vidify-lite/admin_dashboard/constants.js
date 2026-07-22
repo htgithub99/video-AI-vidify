@@ -51,7 +51,8 @@ const AdminConstants = {
     HTTP_POST: 'POST',
     PLUGIN_DROPDOWN: 'dropdown_input',
     SELECTED: 'selected',
-    UNKNOWN_STR: 'unknown'
+    UNKNOWN_STR: 'unknown',
+    SPLIT_DASH: '-'
 };
 
 const DataAttributes = {
@@ -96,6 +97,11 @@ const ApiFields = {
     PRO_QUOTA_VIDEO: 'pro_quota_video',
     PRO_QUOTA_IMAGE: 'pro_quota_image',
     PRO_QUOTA_VOICE: 'pro_quota_voice',
+    LIFETIME_QUOTA_VIDEO: 'lifetime_quota_video',
+    LIFETIME_QUOTA_IMAGE: 'lifetime_quota_image',
+    LIFETIME_QUOTA_VOICE: 'lifetime_quota_voice',
+    LIFETIME_UNLIMITED: 'lifetime_unlimited',
+    QUOTA_TYPE: 'quota_type',
     COUNT: 'count',
     KEYS: 'keys',
     ACCOUNTS: 'accounts',
@@ -110,8 +116,8 @@ const ApiFields = {
     GEMINI_KEY: 'geminiKey',
     AI33_KEY: 'ai33Key',
     MESSAGE: 'message',
-    CREATED_AT: 'createdAt',
-    UPDATED_AT: 'updatedAt'
+    CREATED_AT_CAMEL: 'createdAt',
+    UPDATED_AT_CAMEL: 'updatedAt'
 };
 
 const EventTypes = {
@@ -161,6 +167,11 @@ const ToastType = {
     ERROR: 'error'
 };
 
+const QuotaType = {
+    DAILY: 'DAILY',
+    TOTAL: 'TOTAL'
+};
+
 const DOMIds = {
     LOGIN_SCREEN: 'login-screen',
     DASHBOARD_SCREEN: 'dashboard-screen',
@@ -180,6 +191,10 @@ const DOMIds = {
     PRO_QUOTA_IMAGE: 'pro-quota-image',
     PRO_QUOTA_VOICE: 'pro-quota-voice',
     PRO_UNLIMITED: 'pro-unlimited',
+    LIFETIME_QUOTA_VIDEO: 'lifetime-quota-video',
+    LIFETIME_QUOTA_IMAGE: 'lifetime-quota-image',
+    LIFETIME_QUOTA_VOICE: 'lifetime-quota-voice',
+    LIFETIME_UNLIMITED: 'lifetime-unlimited',
     CONFIG_MAX_DEVICES: 'config-max-devices',
     TOAST_CONTAINER: 'toast-container',
     SEARCH_INPUT: 'search-input',
@@ -198,6 +213,7 @@ const DOMIds = {
     MODAL_STATUS: 'modal-status',
     MODAL_EXPIRES: 'modal-expires',
     MODAL_EXPIRES_WRAPPER: 'modal-expires-wrapper',
+    MODAL_QUOTA_TYPE: 'modal-quota-type',
     USER_MODAL: 'user-modal',
     SAVE_USER_BTN: 'save-user-btn',
     DELETE_KEY_DISPLAY: 'delete-key-display',
@@ -308,7 +324,9 @@ const AdminMessages = {
     PASSWORD_MASK: "••••••••",
     USAGE_FORMAT: "V:{0} | I:{1} | C:{2}",
     LOG_COPY_FAILED: "Lỗi sao chép",
-    ARRAY_EMPTY_JSON: "[]"
+    ARRAY_EMPTY_JSON: "[]",
+    QUOTA_DAILY_LABEL: "Theo ngày",
+    QUOTA_TOTAL_LABEL: "Tổng"
 };
 
 const AdminActions = {
@@ -390,6 +408,6 @@ const AdminTemplates = {
     BTN_WITH_ICON: (icon, text) => `${icon} ${text}`,
     SELECT_OPTION: (val, label, selected = false) => `<option value="${val}" ${selected ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${label}</option>`,
     OPTGROUP: (label, options) => `<optgroup label="${label}">${options}</optgroup>`,
-    USAGE_TEXT: (v, i, c) => `<span title="Video">V:${v}</span> <span style="color:var(--input-bg)">|</span> <span title="Image">I:${i}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">C:${c}</span>`,
+    USAGE_TEXT: (v, i, c) => `<span title="Ảnh">Ảnh: ${i}</span> <span style="color:var(--input-bg)">|</span> <span title="Video">Video: ${v}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">Voice: ${c}</span>`,
     DANGER_TEXT: (text) => `<span style="color:var(--danger)">${text}</span>`
 };

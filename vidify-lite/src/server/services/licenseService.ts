@@ -3,7 +3,8 @@ import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { SecurityConstants, SecurityMessages, FeatureType, LicenseStatus } from '../../constants/security.js';
+import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus } from '../../constants/security.js';
+import { jsonUtils } from '../../lib/json.js';
 import { appError } from '../../lib/logger.js';
 
 function getHardwareId(): string {
@@ -11,7 +12,7 @@ function getHardwareId(): string {
     
     if (fs.existsSync(deviceIdFile)) {
         try {
-            const data = JSON.parse(fs.readFileSync(deviceIdFile, 'utf8'));
+            const data = jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {});
             if (_.has(data, 'deviceId')) return _.get(data, 'deviceId');
         } catch (e) {
             appError(SecurityMessages.ERROR_READING_DEVICE_ID, e);
@@ -19,13 +20,14 @@ function getHardwareId(): string {
     }
     
     const newId = crypto.randomUUID();
-    fs.writeFileSync(deviceIdFile, JSON.stringify({ deviceId: newId }), 'utf8');
+    fs.writeFileSync(deviceIdFile, jsonUtils.safeStringify({ deviceId: newId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
     return newId;
 }
 
 export interface LicenseInfo {
     status: LicenseStatus;
     plan_type: string;
+    quota_type: string;
     expires_at: string | null;
     usage: {
         video: number;
@@ -40,6 +42,10 @@ export interface LicenseInfo {
         pro_image: number;
         pro_voice: number;
         pro_unlimited: boolean;
+        lifetime_video: number;
+        lifetime_image: number;
+        lifetime_voice: number;
+        lifetime_unlimited: boolean;
     };
 }
 
@@ -51,10 +57,10 @@ export class LicenseService {
         
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'verify_key',
+                method: SecurityConstants.HTTP_POST,
+                headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
+                body: jsonUtils.safeStringify({
+                    action: GasActions.VERIFY_KEY,
                     license_key: licenseKey,
                     device_id: deviceId
                 })
@@ -70,6 +76,7 @@ export class LicenseService {
             return {
                 status: _.get(data, 'status'),
                 plan_type: _.get(data, 'plan_type'),
+                quota_type: _.get(data, 'quota_type', 'DAILY'),
                 expires_at: _.get(data, 'expires_at', null),
                 usage: {
                     video: _.get(data, 'usage.video', 0),
@@ -84,6 +91,10 @@ export class LicenseService {
                     pro_image: _.get(data, 'quotas.pro_image', 0),
                     pro_voice: _.get(data, 'quotas.pro_voice', 0),
                     pro_unlimited: _.get(data, 'quotas.pro_unlimited', false),
+                    lifetime_video: _.get(data, 'quotas.lifetime_video', 0),
+                    lifetime_image: _.get(data, 'quotas.lifetime_image', 0),
+                    lifetime_voice: _.get(data, 'quotas.lifetime_voice', 0),
+                    lifetime_unlimited: _.get(data, 'quotas.lifetime_unlimited', false),
                 }
             };
         } catch (error) {
@@ -97,10 +108,10 @@ export class LicenseService {
 
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update_usage',
+                method: SecurityConstants.HTTP_POST,
+                headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
+                body: jsonUtils.safeStringify({
+                    action: GasActions.UPDATE_USAGE,
                     license_key: licenseKey,
                     feature: feature,
                     amount: amount

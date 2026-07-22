@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { LicenseService } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
-import { SecurityConstants, SecurityMessages, FeatureType, PlanType, LicenseStatus } from '../../constants/security.js';
+import { SecurityConstants, SecurityMessages, LocalizationConstants, FeatureType, PlanType, LicenseStatus } from '../../constants/security.js';
 import { requestContext } from '../utils/requestContext.js';
 
 export const requireLicense = (featureType?: FeatureType) => {
@@ -38,22 +38,41 @@ export const requireLicense = (featureType?: FeatureType) => {
                 return next();
             }
 
-            const proPlans = [PlanType.PRO, PlanType.PRO_LIFETIME, PlanType.PRO_MONTHLY, PlanType.PRO_WEEKLY];
+            const proPlans = [PlanType.PRO, PlanType.PRO_MONTHLY, PlanType.PRO_WEEKLY];
             const isPro = _.some(proPlans, plan => _.includes(license.plan_type, plan));
+            const isLifetime = _.includes(license.plan_type, PlanType.PRO_LIFETIME);
 
             if (isPro && _.get(license, SecurityConstants.QUOTAS_PRO_UNLIMITED, false)) {
                 return next();
             }
+            if (isLifetime && _.get(license, SecurityConstants.QUOTAS_LIFETIME_UNLIMITED, false)) {
+                return next();
+            }
 
             const currentUsage = _.get(license, `${SecurityConstants.USAGE_PREFIX}${featureType}`, 0);
-            const maxLimit = isPro
-                ? _.get(license, `${SecurityConstants.QUOTAS_PRO_PREFIX}${featureType}`, 0)
-                : _.get(license, `${SecurityConstants.QUOTAS_FREE_PREFIX}${featureType}`, 0);
+            
+            let maxLimit = 0;
+            if (isLifetime) {
+                maxLimit = _.get(license, `${SecurityConstants.QUOTAS_LIFETIME_PREFIX}${featureType}`, 0);
+            } else if (isPro) {
+                maxLimit = _.get(license, `${SecurityConstants.QUOTAS_PRO_PREFIX}${featureType}`, 0);
+            } else {
+                maxLimit = _.get(license, `${SecurityConstants.QUOTAS_FREE_PREFIX}${featureType}`, 0);
+            }
 
             if (currentUsage >= maxLimit) {
-                const planName = isPro ? SecurityMessages.PRO_PLAN : SecurityMessages.FREE_PLAN;
+                const featureName = _.isEqual(featureType, FeatureType.VIDEO) ? LocalizationConstants.FEATURE_VIDEO : (_.isEqual(featureType, FeatureType.IMAGE) ? LocalizationConstants.FEATURE_IMAGE : LocalizationConstants.FEATURE_VOICE);
+                const planName = isLifetime ? LocalizationConstants.PLAN_LIFETIME : (isPro ? LocalizationConstants.PLAN_PRO : LocalizationConstants.PLAN_FREE);
+                
+                let errorMsg = '';
+                if (_.isEqual(_.get(license, 'quota_type'), SecurityConstants.QUOTA_TYPE_TOTAL)) {
+                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_TOTAL_EXCEEDED, '{0}', featureName), '{1}', planName);
+                } else {
+                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, '{0}', featureName), '{1}', planName);
+                }
+                
                 return res.status(403).json({
-                    error: SecurityMessages.QUOTA_EXCEEDED_TEMPLATE.replace('{0}', featureType).replace('{1}', planName),
+                    error: errorMsg,
                     code: SecurityConstants.QUOTA_EXCEEDED_CODE
                 });
             }
