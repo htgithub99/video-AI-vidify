@@ -820,6 +820,9 @@ function deleteAccountAdmin(params) {
 function setupSeedData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const now = getCurrentISO();
+  const freeId = generateUUID();
+  const proId = generateUUID();
+  const lifetimeId = generateUUID();
 
   let adminSheet = ss.getSheetByName(Config.SHEET_ADMINS);
   if (!adminSheet) {
