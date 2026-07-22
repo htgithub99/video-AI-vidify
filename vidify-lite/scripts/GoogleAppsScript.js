@@ -1,3 +1,30 @@
+const _ = {
+  get: function (obj, path, def) {
+    if (!obj) return def;
+    const paths = String(path).split('.');
+    let current = obj;
+    for (let i = 0; i < paths.length; i++) {
+      if (current === null || current === undefined) return def;
+      current = current[paths[i]];
+    }
+    return current === undefined ? def : current;
+  },
+  isNil: function (val) { return val === null || val === undefined; },
+  startsWith: function (str, pre) { return String(str).indexOf(pre) === 0; },
+  findIndex: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return i; } return -1; },
+  includes: function (arr, val) { return arr.indexOf(val) !== -1; },
+  toInteger: function (val) { return parseInt(val, 10); },
+  isArray: function (val) { return Array.isArray(val); },
+  forEach: function (arr, fn) { for (let i = 0; i < arr.length; i++) fn(arr[i], i); },
+  map: function (arr, fn) { const res = []; for (let i = 0; i < arr.length; i++) res.push(fn(arr[i], i)); return res; },
+  filter: function (arr, fn) { const res = []; for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) res.push(arr[i]); } return res; },
+  find: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return arr[i]; } return undefined; },
+  toUpper: function (str) { return String(str).toUpperCase(); },
+  split: function (str, sep) { return String(str).split(sep); },
+  some: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return true; } return false; },
+  cloneDeep: function (obj) { return JSON.parse(JSON.stringify(obj)); }
+};
+
 const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_TYPE: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8 };
 const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, LAST_RESET: 7 };
 const ConfigCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, KEY: 3, VALUE: 4 };
@@ -127,10 +154,10 @@ const Constants = {
 };
 
 const AppLogger = {
-  info: function(message) {
+  info: function (message) {
     Logger.log(message);
   },
-  error: function(message, err) {
+  error: function (message, err) {
     if (err) {
       Logger.log(`ERROR: ${message} - ${err.toString()}`);
     } else {
@@ -237,7 +264,7 @@ function verifyKey(params) {
 
     let currentStatus = row[UserCols.STATUS];
     const expiresAt = row[UserCols.EXPIRES_AT];
-    
+
     if (expiresAt) {
       const expiryDate = new Date(expiresAt);
       if (new Date() > expiryDate) {
@@ -394,7 +421,7 @@ function adminDeleteKey(params) {
 
   const usersData = usersSheet.getDataRange().getValues();
   const rowIndex = _.findIndex(usersData, (row, idx) => idx > 0 && row[UserCols.ID] === id);
-  
+
   if (rowIndex > 0) {
     const licenseKey = usersData[rowIndex][UserCols.LICENSE_KEY];
     usersSheet.deleteRow(rowIndex + 1);
@@ -422,15 +449,15 @@ function adminUpdateKey(params) {
   if (rowIndex > 0) {
     if (newPlan) usersSheet.getRange(rowIndex + 1, UserCols.PLAN_TYPE + 1).setValue(newPlan);
     usersSheet.getRange(rowIndex + 1, UserCols.EXPIRES_AT + 1).setValue(newExpires || Constants.EMPTY_STRING);
-    
+
     if (newStatus) {
       usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(newStatus);
     } else if (data[rowIndex][UserCols.STATUS] === StatusEnum.EXPIRED) {
       usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.ACTIVE);
     }
-    
+
     usersSheet.getRange(rowIndex + 1, UserCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    
+
     return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
   }
 
@@ -565,7 +592,7 @@ function getApiKeys(params) {
     if (i === 0) return;
     const assigned = row[KeysCols.ASSIGNED_TO] || Constants.ALL;
     const prio = getPriority(assigned);
-    
+
     if (prio !== -1) {
       if (row[KeysCols.GEMINI_KEY] && prio >= geminiPriority) {
         geminiKey = row[KeysCols.GEMINI_KEY];
@@ -594,7 +621,7 @@ function adminGetApiKeys() {
     createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
     updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING
   }));
-  
+
   return jsonResponse({ keys });
 }
 
@@ -619,7 +646,7 @@ function updateApiKeys(params) {
       return jsonResponse({ status: Messages.RES_SUCCESS });
     }
   }
-  
+
   sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING]);
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
@@ -649,7 +676,7 @@ function getAccounts(params) {
 
   const data = sheet.getDataRange().getValues();
   const accounts = [];
-  
+
   _.forEach(data, (row, i) => {
     if (i === 0) return;
     const assigned = row[AccountsCols.ASSIGNED_TO] || Constants.ALL;
@@ -664,7 +691,7 @@ function getAccounts(params) {
       });
     }
   });
-  
+
   return jsonResponse({ accounts });
 }
 
@@ -683,7 +710,7 @@ function adminGetAccounts() {
     createdAt: row[AccountsCols.CREATED_AT] || Constants.EMPTY_STRING,
     updatedAt: row[AccountsCols.UPDATED_AT] || Constants.EMPTY_STRING
   }));
-  
+
   return jsonResponse({ accounts });
 }
 
@@ -714,7 +741,7 @@ function updateAccountStatus(params) {
 
   const rowIndex = _.get(params, 'rowIndex');
   const status = _.get(params, 'status');
-  
+
   if (_.isNil(rowIndex) || _.isNil(status)) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
 
   sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(status);
@@ -730,7 +757,7 @@ function updateAccountAdmin(params) {
 
   const data = sheet.getDataRange().getValues();
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AccountsCols.ID] === _.get(acc, 'id'));
-  
+
   if (rowIndex > 0) {
     sheet.getRange(rowIndex + 1, AccountsCols.EMAIL + 1).setValue(_.get(acc, 'email'));
     sheet.getRange(rowIndex + 1, AccountsCols.PASSWORD + 1).setValue(_.get(acc, 'password', Constants.EMPTY_STRING));
@@ -755,7 +782,7 @@ function deleteAccountAdmin(params) {
   if (rowIndex > 0) {
     sheet.deleteRow(rowIndex + 1);
   }
-  
+
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
 
