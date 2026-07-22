@@ -51,11 +51,12 @@
                     <div class="dropdown-menu" id="config-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 0.5rem; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; width: 850px; box-shadow: 0 10px 40px rgba(0,0,0,0.7); z-index: 100;">
                         <div class="list-header" style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <h3 style="margin: 0;" title="Giới Hạn Tài Khoản">Giới Hạn</h3>
-                            <button id="save-config-btn" class="btn-primary" title="Lưu cấu hình hệ thống" style="padding: 0.4rem 1rem;">Lưu</button>
+                            <div>
+                                <button id="add-plan-btn" class="btn-secondary" title="Thêm gói mới" style="padding: 0.4rem 1rem; margin-right: 0.5rem;">+ Thêm Gói</button>
+                                <button id="save-config-btn" class="btn-primary" title="Lưu cấu hình hệ thống" style="padding: 0.4rem 1rem;">Lưu</button>
+                            </div>
                         </div>
-                        <div class="quota-grid" id="plans-container">
-                            <!-- Plans will be rendered here dynamically -->
-                        </div>
+                        <div class="quota-grid" id="plans-container"></div>
                     </div>
                 </div>
                 <button id="logout-btn" class="btn-outline" title="Đăng xuất">Đăng Xuất</button>

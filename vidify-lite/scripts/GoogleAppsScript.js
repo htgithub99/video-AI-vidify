@@ -47,7 +47,8 @@ const Config = {
     USAGE: ["ID", "CREATED_AT", "UPDATED_AT", "LICENSE_KEY", "VIDEO_COUNT", "IMAGE_COUNT", "VOICE_CHARS", "LAST_RESET"],
     KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY"],
     ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"]
-  }
+  },
+  MAX_DEVICES: 1
 };
 
 const StatusEnum = {
@@ -112,6 +113,9 @@ const AppActions = {
   ADMIN_RESET_DEVICE: "admin_reset_device",
   ADMIN_GET_PLANS: "admin_get_plans",
   ADMIN_UPDATE_PLAN: "admin_update_plan",
+  ADMIN_CREATE_PLAN: "admin_create_plan",
+  ADMIN_DELETE_PLAN: "admin_delete_plan",
+  ADMIN_SYNC_EXPIRED: "admin_sync_expired",
   ADMIN_GET_API_KEYS: "admin_get_api_keys",
   ADMIN_GET_ACCOUNTS: "admin_get_accounts",
   ADMIN_UPDATE_API_KEYS: "admin_update_api_keys",
@@ -140,6 +144,7 @@ const Constants = {
   ACTIVE_LOWER: "Active",
   COLOR_ADMIN: "#d9ead3",
   COLOR_CONFIG: "#c9daf8",
+  NEW_PLAN_NAME: "NEW_PLAN",
   COLOR_USERS: "#fff2cc",
   COLOR_USAGE: "#fce5cd",
   DATE_SPLIT_CHAR: "T",
@@ -187,6 +192,9 @@ function doPost(e) {
       if (action === AppActions.ADMIN_RESET_DEVICE) return adminResetDevice(params);
       if (action === AppActions.ADMIN_GET_PLANS) return adminGetPlans();
       if (action === AppActions.ADMIN_UPDATE_PLAN) return adminUpdatePlan(params);
+      if (action === AppActions.ADMIN_CREATE_PLAN) return adminCreatePlan(params);
+      if (action === AppActions.ADMIN_DELETE_PLAN) return adminDeletePlan(params);
+      if (action === AppActions.ADMIN_SYNC_EXPIRED) return adminSyncExpired();
       if (action === AppActions.ADMIN_GET_API_KEYS) return adminGetApiKeys();
       if (action === AppActions.ADMIN_GET_ACCOUNTS) return adminGetAccounts();
       if (action === AppActions.ADMIN_UPDATE_API_KEYS) return updateApiKeys(params);
@@ -230,7 +238,7 @@ function verifyKey(params) {
 
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
   const data = usersSheet.getDataRange().getValues();
-  const maxDevices = 1;
+  const maxDevices = Config.MAX_DEVICES;
 
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.LICENSE_KEY] === key);
 
@@ -541,6 +549,61 @@ function adminUpdatePlan(params) {
   }
 
   return jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
+}
+
+function adminCreatePlan(params) {
+  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+  if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+  const now = getCurrentISO();
+  const newId = generateUUID();
+  const name = _.get(params, 'name', Constants.NEW_PLAN_NAME);
+  const video = _.toInteger(_.get(params, 'quota_video')) || 0;
+  const image = _.toInteger(_.get(params, 'quota_image')) || 0;
+  const voice = _.toInteger(_.get(params, 'quota_voice')) || 0;
+  const unlimited = _.get(params, 'is_unlimited', false);
+
+  plansSheet.appendRow([newId, now, now, name, video, image, voice, unlimited]);
+  return jsonResponse({ status: Messages.RES_SUCCESS, plan_id: newId });
+}
+
+function adminDeletePlan(params) {
+  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+  if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+  const planId = _.get(params, 'id');
+  if (!planId) return jsonResponse({ error: Messages.MISSING_ID });
+
+  const data = plansSheet.getDataRange().getValues();
+  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[PlanCols.ID] === planId);
+
+  if (rowIndex > 0) {
+    plansSheet.deleteRow(rowIndex + 1);
+    return jsonResponse({ status: Messages.RES_SUCCESS });
+  }
+
+  return jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
+}
+
+function adminSyncExpired() {
+  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+  if (!usersSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+  const data = usersSheet.getDataRange().getValues();
+  const now = new Date();
+  
+  let synced = 0;
+  _.forEach(data, (row, idx) => {
+    if (idx > 0 && row[UserCols.EXPIRES_AT]) {
+      const expiry = new Date(row[UserCols.EXPIRES_AT]);
+      if (now > expiry && row[UserCols.STATUS] === StatusEnum.ACTIVE) {
+        usersSheet.getRange(idx + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
+        synced++;
+      }
+    }
+  });
+  
+  return jsonResponse({ status: Messages.RES_SUCCESS, message: `Đã đồng bộ ${synced} tài khoản hết hạn` });
 }
 
 function getPlans() {

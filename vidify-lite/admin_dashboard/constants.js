@@ -57,7 +57,13 @@ const AdminConstants = {
     PLUGIN_DROPDOWN: 'dropdown_input',
     SELECTED: 'selected',
     UNKNOWN_STR: 'unknown',
-    SPLIT_DASH: '-'
+    SPLIT_DASH: '-',
+    GLOBAL_PLANS: 'adminPlans',
+    GLOBAL_USERS: 'adminUsersData',
+    PLAN_VIP: 'VIP',
+    PLAN_LIFETIME: 'LIFETIME',
+    PLAN_NAME_PATH: 'plan.name',
+    TARGET_VALUE_PATH: 'target.value'
 };
 
 const DataAttributes = {
@@ -180,6 +186,7 @@ const DOMIds = {
     ACCS_TBODY: '#accounts-table tbody',
     LOADING_MSG: 'loading-msg',
     SAVE_CONFIG_BTN: 'save-config-btn',
+    ADD_PLAN_BTN: 'add-plan-btn',
     FREE_QUOTA_VIDEO: 'free-quota-video',
     FREE_QUOTA_IMAGE: 'free-quota-image',
     FREE_QUOTA_VOICE: 'free-quota-voice',
@@ -198,6 +205,7 @@ const DOMIds = {
     FILTER_STATUS: 'filter-status',
     PAGE_SIZE: 'page-size-select',
     PAGINATION_CONTROLS: 'pagination-controls',
+    PAGINATION_CONTAINER: 'pagination-container',
     CONFIG_TOGGLE_BTN: 'config-toggle-btn',
     CONFIG_DROPDOWN_MENU: 'config-dropdown-menu',
     RESOURCE_TOGGLE_BTN: 'resource-toggle-btn',
@@ -322,7 +330,15 @@ const AdminMessages = {
     LOG_COPY_FAILED: "Lỗi sao chép",
     ARRAY_EMPTY_JSON: "[]",
     QUOTA_DAILY_LABEL: "Theo ngày",
-    QUOTA_TOTAL_LABEL: "Theo hạn"
+    QUOTA_TOTAL_LABEL: "Theo hạn",
+    EMPTY_USERS: "Không có dữ liệu người dùng nào.",
+    EMPTY_PLANS: "Hiện chưa có Gói (Plan) nào. Bấm <b>+ Thêm Gói</b> để bắt đầu.",
+    CREATE_PLAN_SUCCESS: "Tạo gói mới thành công",
+    CREATE_PLAN_ERROR: "Lỗi khi tạo gói: ",
+    DELETE_PLAN_SUCCESS: "Xóa gói thành công",
+    DELETE_PLAN_ERROR: "Lỗi khi xóa gói: ",
+    DELETE_PLAN_CONFIRM: "Xóa gói này? Không thể hoàn tác!",
+    NEW_PLAN_NAME: "NEW_PLAN"
 };
 
 const AdminActions = {
@@ -330,6 +346,8 @@ const AdminActions = {
     GET_USERS: 'admin_get_users',
     GET_PLANS: 'admin_get_plans',
     UPDATE_PLAN: 'admin_update_plan',
+    CREATE_PLAN: 'admin_create_plan',
+    DELETE_PLAN: 'admin_delete_plan',
     CREATE_KEY: 'admin_create_key',
     UPDATE_KEY: 'admin_update_key',
     REVOKE_KEY: 'admin_revoke_key',
@@ -373,8 +391,25 @@ const AdminIcons = {
 
 const AdminTemplates = {
     LOADING_BTN: (text) => `<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">${AdminIcons.SPINNER} <span>${text}</span></div>`,
-    TABLE_LOADING: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="padding: 3rem; color: var(--text-muted); font-style: italic;">${msg}</td></tr>`,
-    TABLE_ERROR: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="padding: 3rem; color: var(--error);">${msg}</td></tr>`,
+    TABLE_LOADING: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--text-muted); font-style: italic;">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem;">
+            <svg class="spinner" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+            ${msg}
+        </div>
+    </td></tr>`,
+    TABLE_ERROR: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--danger);">${msg}</td></tr>`,
+    TABLE_EMPTY: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--text-muted); opacity: 0.7;">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <p>${msg}</p>
+        </div>
+    </td></tr>`,
+    PLAN_EMPTY: (msg) => `
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); opacity: 0.7; padding: 2rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <p>${msg}</p>
+        </div>
+    `,
     TOAST: (icon, title, message) => `
         ${icon}
         <div class="toast-content">

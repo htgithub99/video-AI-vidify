@@ -158,7 +158,7 @@ async function loadUsers() {
     
     try {
         const res = await fetchAPI(AdminActions.GET_USERS);
-        window.adminUsersData = _.get(res, ApiFields.USERS, []);
+        window[AdminConstants.GLOBAL_USERS] = _.get(res, ApiFields.USERS, []);
         
         populateAssignSelects();
         applyFilters();
@@ -174,7 +174,7 @@ function applyFilters() {
     const planFilter = _.get(el(DOMIds.FILTER_PLAN), 'value', AdminConstants.FILTER_ALL);
     const statusFilter = _.get(el(DOMIds.FILTER_STATUS), 'value', AdminConstants.FILTER_ALL);
     
-    filteredUsers = _.filter(_.get(window, 'adminUsersData', []), u => {
+    filteredUsers = _.filter(_.get(window, AdminConstants.GLOBAL_USERS, []), u => {
         let matchSearch = true;
         if (!_.isEmpty(searchStr)) {
             const uname = (_.get(u, ApiFields.USERNAME) || AdminConstants.EMPTY_STR).toLowerCase();
@@ -193,6 +193,12 @@ function renderTable() {
     const tbody = elq(DOMIds.TBODY);
     tbody.innerHTML = AdminConstants.EMPTY_STR;
     
+    if (_.isEmpty(filteredUsers)) {
+        tbody.innerHTML = AdminTemplates.TABLE_EMPTY(AdminConstants.COLSPAN_USERS, AdminMessages.EMPTY_USERS);
+        el(DOMIds.PAGINATION_CONTAINER).style.display = AdminClasses.DISPLAY_NONE;
+        return;
+    }
+    
     const totalItems = _.size(filteredUsers);
     const totalPages = Math.ceil(totalItems / pageSize) || AdminConstants.MIN_PAGE;
     
@@ -204,8 +210,8 @@ function renderTable() {
     
     const getPlanBadgeClass = (planName) => {
         const upper = _.toUpper(planName);
-        if (_.includes(upper, 'FREE')) return AdminClasses.BADGE_FREE;
-        if (_.includes(upper, 'PRO') || _.includes(upper, 'VIP') || _.includes(upper, 'LIFETIME')) return AdminClasses.BADGE_PRO;
+        if (_.includes(upper, AdminConstants.PLAN_FREE)) return AdminClasses.BADGE_FREE;
+        if (_.includes(upper, AdminConstants.PLAN_PRO) || _.includes(upper, AdminConstants.PLAN_VIP) || _.includes(upper, AdminConstants.PLAN_LIFETIME)) return AdminClasses.BADGE_PRO;
         return AdminClasses.BADGE_FREE;
     };
 
@@ -223,7 +229,7 @@ function renderTable() {
     };
     
     const htmlRows = _.map(paginatedUsers, user => {
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => p.id === _.get(user, ApiFields.PLAN_ID));
         
         let tv = '0', ti = '0', tc = '0';
@@ -238,7 +244,7 @@ function renderTable() {
             _.get(user, ApiFields.USAGE_IMAGE, 0), ti,
             _.get(user, ApiFields.USAGE_VOICE, 0), tc
         );
-        const planName = _.get(user, 'plan.name', AdminConstants.UNKNOWN_STR);
+        const planName = _.get(user, AdminConstants.PLAN_NAME_PATH, AdminConstants.UNKNOWN_STR);
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
         const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
@@ -315,7 +321,7 @@ async function loadPlans() {
     try {
         const res = await fetchAPI(AdminActions.GET_PLANS);
         const plans = _.get(res, ApiFields.PLANS, []);
-        window.adminPlans = plans;
+        window[AdminConstants.GLOBAL_PLANS] = plans;
         renderPlansConfig();
         populatePlanSelects();
     } catch (error) {
@@ -328,20 +334,29 @@ function renderPlansConfig() {
     if (!container) return;
     
     container.innerHTML = AdminConstants.EMPTY_STR;
-    const plans = _.get(window, 'adminPlans', []);
+    container.style.minHeight = '150px';
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+    
+    if (_.isEmpty(plans)) {
+        container.innerHTML = AdminTemplates.PLAN_EMPTY(AdminMessages.EMPTY_PLANS);
+        return;
+    }
     
     _.forEach(plans, plan => {
         const planId = plan.id;
         const planName = plan.name;
         const isUnlimited = plan.is_unlimited;
         
-        const badgeClass = (_.includes(_.toUpper(planName), 'FREE')) ? 'free' : 'pro';
+        const badgeClass = (_.includes(_.toUpper(planName), AdminConstants.PLAN_FREE)) ? AdminConstants.PLAN_FREE : AdminConstants.PLAN_PRO;
         
         const colHtml = `
             <div class="quota-col quota-${planId}">
-                <div class="quota-col-header">
-                    <span class="badge ${badgeClass}">${escapeHTML(planName)}</span>
-                    <h4>${escapeHTML(planName)}</h4>
+                <div class="quota-col-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span class="badge ${badgeClass}">${escapeHTML(planName)}</span>
+                        <h4>${escapeHTML(planName)}</h4>
+                    </div>
+                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="Xóa gói này" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">✕</button>
                 </div>
                 <div class="quota-col-body">
                     <div class="input-group">
@@ -383,7 +398,46 @@ function renderPlansConfig() {
             container.querySelector(`.plan-voice-input[data-plan-id="${pId}"]`).disabled = disabled;
         });
     });
+    
+    const deletePlanBtns = container.querySelectorAll('.delete-plan-btn');
+    _.forEach(deletePlanBtns, btn => {
+        btn.addEventListener(EventTypes.CLICK, async (e) => {
+            if (!confirm(AdminMessages.DELETE_PLAN_CONFIRM)) return;
+            const pId = e.target.getAttribute('data-plan-id');
+            try {
+                setButtonLoading(e.target, true, AdminConstants.EMPTY_STR);
+                await fetchAPI(AdminActions.DELETE_PLAN, { id: pId });
+                showToast(AdminMessages.DELETE_PLAN_SUCCESS, ToastType.SUCCESS);
+                loadPlans();
+            } catch (err) {
+                showToast(AdminMessages.DELETE_PLAN_ERROR + _.get(err, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
+            } finally {
+                setButtonLoading(e.target, false);
+            }
+        });
+    });
+    
     preventNonNumericInput();
+}
+
+async function handleAddPlan() {
+    const addPlanBtn = el(DOMIds.ADD_PLAN_BTN);
+    setButtonLoading(addPlanBtn, true, AdminConstants.EMPTY_STR);
+    try {
+        await fetchAPI(AdminActions.CREATE_PLAN, {
+            name: AdminMessages.NEW_PLAN_NAME,
+            quota_video: 0,
+            quota_image: 0,
+            quota_voice: 0,
+            is_unlimited: false
+        });
+        showToast(AdminMessages.CREATE_PLAN_SUCCESS, ToastType.SUCCESS);
+        loadPlans();
+    } catch (err) {
+        showToast(AdminMessages.CREATE_PLAN_ERROR + _.get(err, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
+    } finally {
+        setButtonLoading(addPlanBtn, false);
+    }
 }
 
 async function handleSaveConfig() {
@@ -392,7 +446,7 @@ async function handleSaveConfig() {
     
     try {
         const container = el('plans-container');
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         
         for (const plan of plans) {
             const pId = plan.id;
@@ -422,7 +476,7 @@ async function handleSaveConfig() {
 }
 
 function populatePlanSelects() {
-    const plans = _.get(window, 'adminPlans', []);
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     
     const filterPlanSelect = el(DOMIds.FILTER_PLAN);
     if (filterPlanSelect) {
@@ -471,7 +525,7 @@ function handleOpenCreateModal() {
     el(DOMIds.MODAL_USERNAME).value = AdminConstants.EMPTY_STR;
     el(DOMIds.MODAL_USERNAME).disabled = false;
     
-    const plans = _.get(window, 'adminPlans', []);
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     if (plans.length > 0) el(DOMIds.MODAL_PLAN_TYPE).value = plans[0].id;
     
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
@@ -484,7 +538,7 @@ function handleOpenCreateModal() {
 }
 
 function openEditModal(id) {
-    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
     
     editingUserId = id;
@@ -508,7 +562,7 @@ function openEditModal(id) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     
     const planId = _.get(user, ApiFields.PLAN_ID);
-    const plans = _.get(window, 'adminPlans', []);
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     const plan = _.find(plans, p => p.id === planId);
     
     if (plan && plan.is_unlimited) {
@@ -522,9 +576,9 @@ function openEditModal(id) {
 
 function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
-    const selectedPlanId = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
+    const selectedPlanId = _.get(e, AdminConstants.TARGET_VALUE_PATH) || el(DOMIds.MODAL_PLAN_TYPE).value;
     
-    const plans = _.get(window, 'adminPlans', []);
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     const plan = _.find(plans, p => p.id === selectedPlanId);
     
     if (plan && plan.is_unlimited && _.isNil(editingUserId)) {
@@ -614,7 +668,7 @@ async function handleHardDelete() {
 async function handleResetDevice() {
     if (!resettingUserId) return;
     
-    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === resettingUserId);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === resettingUserId);
     const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
     
     const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', keyStr);
@@ -646,7 +700,7 @@ function copyToClipboard(text) {
 }
 
 function openDeviceModal(id) {
-    const user = _.find(_.get(window, 'adminUsersData', []), u => _.get(u, ApiFields.ID) === id);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === id);
     if (!user) return;
     
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
@@ -753,13 +807,14 @@ function initEventListeners() {
         closeModal(DOMIds.CONFIRM_MODAL);
     });
 
+    el(DOMIds.ADD_PLAN_BTN)?.addEventListener(EventTypes.CLICK, handleAddPlan);
     el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, handleSaveConfig);
     
     el(DOMIds.SEARCH_INPUT)?.addEventListener(EventTypes.INPUT, applyFilters);
     el(DOMIds.FILTER_PLAN)?.addEventListener(EventTypes.CHANGE, applyFilters);
     el(DOMIds.FILTER_STATUS)?.addEventListener(EventTypes.CHANGE, applyFilters);
     el(DOMIds.PAGE_SIZE)?.addEventListener(EventTypes.CHANGE, (e) => {
-        pageSize = _.toInteger(_.get(e, 'target.value', AdminConstants.DEFAULT_PAGE_SIZE));
+        pageSize = _.toInteger(_.get(e, AdminConstants.TARGET_VALUE_PATH, AdminConstants.DEFAULT_PAGE_SIZE));
         currentPage = AdminConstants.DEFAULT_PAGE;
         renderTable();
     });
@@ -920,14 +975,14 @@ let tsKeysInstance = null;
 let tsAccInstance = null;
 
 function populateAssignSelects() {
-    const plans = _.get(window, 'adminPlans', []);
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     
     let optionsHtml = AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
     _.forEach(plans, p => {
         optionsHtml += AdminTemplates.SELECT_OPTION(p.id, p.name);
     });
     
-    const users = _.get(window, 'adminUsersData', []);
+    const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
     if (users.length > 0) {
         let userOptions = AdminConstants.EMPTY_STR;
         _.forEach(users, u => {
@@ -1044,17 +1099,17 @@ async function loadApiKeysAdmin() {
     
     const getAssignBadge = (assignee) => {
         if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => p.id === assignee);
         if (plan) {
-            return (_.includes(_.toUpper(plan.name), 'FREE')) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            return (_.includes(_.toUpper(plan.name), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
         }
         return AdminClasses.BADGE_PRO; 
     };
     
     const getAssignName = (assignee) => {
         if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => p.id === assignee);
         if (plan) return plan.name;
         return assignee;
@@ -1099,17 +1154,17 @@ async function loadAccountsAdmin() {
     
     const getAssignBadge = (assignee) => {
         if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => p.id === assignee);
         if (plan) {
-            return (_.includes(_.toUpper(plan.name), 'FREE')) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            return (_.includes(_.toUpper(plan.name), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
         }
         return AdminClasses.BADGE_PRO;
     };
     
     const getAssignName = (assignee) => {
         if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
-        const plans = _.get(window, 'adminPlans', []);
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => p.id === assignee);
         if (plan) return plan.name;
         return assignee;
