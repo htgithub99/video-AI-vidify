@@ -848,6 +848,7 @@ function populateAssignSelects() {
             create: true,
             maxItems: AdminConstants.MAX_ITEMS_SELECT,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
+            dropdownParent: 'body',
             plugins: [AdminConstants.PLUGIN_DROPDOWN]
         });
     }
@@ -857,6 +858,7 @@ function populateAssignSelects() {
             create: true,
             maxItems: AdminConstants.MAX_ITEMS_SELECT,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
+            dropdownParent: 'body',
             plugins: [AdminConstants.PLUGIN_DROPDOWN]
         });
     }
