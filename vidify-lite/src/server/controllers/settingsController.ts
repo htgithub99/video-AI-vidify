@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import fetch from "node-fetch";
+
 import _ from "lodash";
 import { appError } from "../../lib/logger.js";
 import { SecurityConstants, SecurityMessages, GasActions } from "../../constants/security.js";

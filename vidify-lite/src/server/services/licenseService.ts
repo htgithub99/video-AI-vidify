@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';

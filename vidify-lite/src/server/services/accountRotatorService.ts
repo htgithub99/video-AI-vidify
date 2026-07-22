@@ -1,7 +1,7 @@
 import { appLog, appError } from "../../lib/logger.js";
 import { autoLoginGoogle } from "./autoLoginGoogle.js";
 import { Page } from "playwright";
-import fetch from "node-fetch";
+
 import _ from "lodash";
 import { SecurityConstants, SecurityMessages, GasActions, AccountStatus } from "../../constants/security.js";
 import { requestContext } from "../utils/requestContext.js";
