@@ -189,7 +189,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 <div className="relative flex items-center bg-slate-950/60 border border-slate-800/80 rounded-xl focus-within:border-rose-500/80 focus-within:ring-1 focus-within:ring-rose-500/20 px-3 py-2.5 transition-all shadow-sm">
                   <Sliders className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
                   <select
-                    value={project.config.splitStrategy || SplitStrategy.LONG_SENTENCE}
+                    value={project.config.splitStrategy || SplitStrategy.MIXED_SENTENCES}
                     onChange={(e) =>
                       setProject((prev) => ({
                         ...prev,

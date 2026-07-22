@@ -26,6 +26,7 @@ export const PipelineConstants = {
     factCheck: true,
     audience: "Đại chúng",
     writingStyle: "Tự nhiên",
+    splitStrategy: "mixed_sentences",
   },
   DEFAULT_HOOK_CONFIG: {
     type: "Auto",
