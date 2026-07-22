@@ -18,6 +18,7 @@ import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { AlertCircle, Download, Pause, Terminal, Workflow } from "lucide-react";
+import { PipelineConstants } from "../constants/pipelineConstants";
 
 const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Volume2, Play, User, Layers, Check, Sparkles, Search, X, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
 
@@ -179,6 +180,30 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className="text-[10px] font-medium text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full select-none">{t.Pro}</span>
             <span className="text-xs font-medium text-slate-300 truncate max-w-[150px] sm:max-w-none">{project.name}</span>
           </div>
+        </div>
+
+        {/* Center Step Indicator */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:flex items-center gap-2">
+          {(() => {
+            let idx = _.indexOf(PipelineConstants.FLOW_STEPS, currentStep);
+            if (idx === -1) idx = 0;
+            const stepName = _.get(t, `stepShortLabels[${currentStep}]`, `${PipelineConstants.UI_TEXTS.STEP_FALLBACK} ${idx + 1}`);
+
+            return (
+              <div className="bg-slate-950/50 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2.5 shadow-inner">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse" />
+                  <span className="text-[10px] font-mono text-slate-400 font-bold tracking-widest uppercase">
+                    {PipelineConstants.UI_TEXTS.STEP_PREFIX} {idx + 1}/{_.size(PipelineConstants.FLOW_STEPS)}
+                  </span>
+                </div>
+                <div className="w-[1px] h-3 bg-slate-700/50" />
+                <span className="text-xs font-black text-rose-400 uppercase tracking-wide">
+                  {stepName}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex items-center gap-2 relative">
@@ -731,6 +756,24 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Horizontal Progress Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-800 z-50">
+          {(() => {
+            let idx = _.indexOf(PipelineConstants.FLOW_STEPS, currentStep);
+            if (idx === -1) idx = 0; // fallback if IndependentGenerator etc
+            const progressPercent = ((idx + 1) / _.size(PipelineConstants.FLOW_STEPS)) * 100;
+            return (
+              <div
+                className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(244,63,94,0.8)] relative"
+                style={{ width: `${progressPercent}%` }}
+              >
+                {/* Glowing Dot (Progress Head) */}
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)] translate-x-1/2" />
+              </div>
+            );
+          })()}
+        </div>
       </div>
       <div className="flex-grow w-full flex overflow-hidden min-h-0 relative select-none bg-slate-955">
         <div className={cn(`transition-all duration-300 flex flex-col bg-slate-900 border-r border-slate-800 shrink-0 h-full overflow-hidden ${leftSidebarOpen ? "w-60" : "w-0 border-r-0"}`)}>
@@ -739,9 +782,9 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             <span className="text-[8px] font-mono text-slate-500 bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded-md font-bold">{t.NODES}</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-3.5 custom-scrollbar bg-slate-950/10">
-            {[0, 1, 2, 4].map((stepIdx, arrayIdx) => {
-              const shortLabel = t.stepShortLabels?.[stepIdx] || "";
-              const tooltip = t.stepTooltips?.[stepIdx] || "";
+            {_.map(PipelineConstants.FLOW_STEPS, (stepIdx, arrayIdx) => {
+              const shortLabel = _.get(t, `stepShortLabels[${stepIdx}]`, "");
+              const tooltip = _.get(t, `stepTooltips[${stepIdx}]`, "");
               const isCompleted = stepIdx < currentStep;
               const isCurrent = stepIdx === currentStep;
               return (

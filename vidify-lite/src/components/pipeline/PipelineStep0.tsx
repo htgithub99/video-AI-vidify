@@ -31,7 +31,16 @@ export default function PipelineStep0(props: PipelineWizardState) {
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">{t.sourceType}</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Button
+                {(() => {
+                  const currentInputType = project.input?.type || ProjectInputType.Script;
+                  const getCardClass = (isActive: boolean) => 
+                    isActive
+                      ? "bg-rose-500/10 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]"
+                      : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-800 hover:scale-[1.01] hover:shadow-md hover:text-slate-200";
+                  
+                  return (
+                    <>
+                      <Button
                   type="button"
                   variant="ghost"
                   onClick={() =>
@@ -43,12 +52,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={cn(`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-900 ${
-                    project.input?.type === ProjectInputType.Script ? "bg-slate-900 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
-                  }`)}
+                  className={cn("p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none", getCardClass(currentInputType === ProjectInputType.Script))}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.originalScript}</span>
-                  <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.originalScriptDesc}</span>
+                  <span className={cn("text-[11px] font-medium leading-relaxed block", currentInputType === ProjectInputType.Script ? "text-rose-400/80" : "text-slate-400")}>{t.originalScriptDesc}</span>
                 </Button>
 
                 <Button
@@ -63,13 +70,14 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       },
                     }))
                   }
-                  className={cn(`p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none hover:bg-slate-850 ${
-                    project.input?.type === ProjectInputType.Idea ? "bg-rose-950 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(37,99,235,0.12)] scale-[1.01]" : "bg-slate-900 border-slate-800 text-slate-350 hover:border-slate-700 hover:bg-slate-950 hover:scale-[1.01] hover:shadow-md"
-                  }`)}
+                  className={cn("p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none", getCardClass(currentInputType === ProjectInputType.Idea))}
                 >
                   <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.storyIdea}</span>
-                  <span className="text-[11px] font-medium leading-relaxed block text-slate-300">{t.storyIdeaDesc}</span>
+                  <span className={cn("text-[11px] font-medium leading-relaxed block", currentInputType === ProjectInputType.Idea ? "text-rose-400/80" : "text-slate-400")}>{t.storyIdeaDesc}</span>
                 </Button>
+                    </>
+                  );
+                })()}
               </div>
             </div>{" "}
             <div className="space-y-1.5 flex-1 flex flex-col h-full min-h-[350px]">

@@ -59,6 +59,11 @@ export const PipelineConstants = {
     API_SANDBOX_CONFIG: "pipeline_api_sandbox_config",
     FAVORITE_STYLES: "pipeline_favorite_styles",
     FAVORITE_VOICES: "pipeline_favorite_voices",
+  },
+  FLOW_STEPS: [0, 1, 2, 4],
+  UI_TEXTS: {
+    STEP_PREFIX: "STEP",
+    STEP_FALLBACK: "Bước"
   }
 };
 
