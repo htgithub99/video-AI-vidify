@@ -98,6 +98,31 @@ export const HTTP_HEADERS = {
   XI_API_KEY: "xi-api-key",
 };
 
+export const QUOTA_TEXTS = {
+  VN: {
+    VIDEO_TOOLTIP: "Số lượng Video đã tạo / Tổng hạn mức cho phép",
+    IMAGE_TOOLTIP: "Số lượng Ảnh tĩnh đã tạo / Tổng hạn mức cho phép",
+    VOICE_TOOLTIP: "Số ký tự Giọng nói đã tạo / Tổng hạn mức cho phép",
+    MEDIA_QUOTA: "Hạn mức Media",
+    VOICE_QUOTA: "Hạn mức Giọng nói",
+    SYNC_MSG: "Dữ liệu được đồng bộ trực tiếp từ máy chủ quản lý",
+    CHARS: "Ký tự",
+    VIDEO: "Video",
+    IMAGE: "Image",
+  },
+  EN: {
+    VIDEO_TOOLTIP: "Generated Videos / Total Limit",
+    IMAGE_TOOLTIP: "Generated Images / Total Limit",
+    VOICE_TOOLTIP: "Generated Voice Chars / Total Limit",
+    MEDIA_QUOTA: "Media Quota",
+    VOICE_QUOTA: "Voice Quota",
+    SYNC_MSG: "Data synced in real-time from server",
+    CHARS: "Chars",
+    VIDEO: "Video",
+    IMAGE: "Image",
+  }
+};
+
 export const TRANSFER_ENCODINGS = {
   CHUNKED: "chunked",
 };

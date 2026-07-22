@@ -3,7 +3,6 @@ import { LicenseService } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
 import { SecurityConstants, SecurityMessages, FeatureType, PlanType, LicenseStatus } from '../../constants/security.js';
-import { HTTP_METHODS, API_ROUTES } from '../../constants/index.js';
 import { requestContext } from '../utils/requestContext.js';
 
 export const requireLicense = (featureType?: FeatureType) => {
@@ -22,17 +21,14 @@ export const requireLicense = (featureType?: FeatureType) => {
             }
 
             if (!_.isEqual(license.status, LicenseStatus.ACTIVE)) {
-                const isViewingProjects = _.isEqual(req.method, HTTP_METHODS.GET) && _.includes(req.originalUrl, API_ROUTES.PROJECTS);
-                if (!isViewingProjects) {
-                    return res.status(403).json({ 
-                        error: SecurityMessages.INACTIVE_ACCOUNT_VIEW_ONLY, 
-                        code: SecurityConstants.LICENSE_INACTIVE_CODE 
-                    });
-                }
+                return res.status(403).json({
+                    error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
+                    code: SecurityConstants.LICENSE_INACTIVE_CODE
+                });
             }
 
             _.set(req, SecurityConstants.LICENSE_INFO_KEY, license);
-            
+
             const store = requestContext.getStore();
             if (store) {
                 store.planType = license.plan_type;
@@ -50,8 +46,8 @@ export const requireLicense = (featureType?: FeatureType) => {
             }
 
             const currentUsage = _.get(license, `${SecurityConstants.USAGE_PREFIX}${featureType}`, 0);
-            const maxLimit = isPro 
-                ? _.get(license, `${SecurityConstants.QUOTAS_PRO_PREFIX}${featureType}`, 0) 
+            const maxLimit = isPro
+                ? _.get(license, `${SecurityConstants.QUOTAS_PRO_PREFIX}${featureType}`, 0)
                 : _.get(license, `${SecurityConstants.QUOTAS_FREE_PREFIX}${featureType}`, 0);
 
             if (currentUsage >= maxLimit) {

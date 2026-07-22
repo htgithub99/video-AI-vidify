@@ -1,8 +1,12 @@
 import { cn } from "../lib/utils";
 import { Lang, translations } from "../lib/lang.js";
-import { Video, Coins, TrendingUp, Sun, Moon } from "lucide-react";
+import { Video, Image as ImageIcon, Mic, Sun, Moon } from "lucide-react";
 import { Button } from "./ui/Button";
 import { AppTheme, AppLanguage } from "../constants/enums";
+import { useLicense } from "../contexts/LicenseContext";
+import { PlanType } from "../constants/security";
+import { QUOTA_TEXTS } from "../constants/texts";
+import _ from "lodash";
 
 const LANG_BTN_BASE = "px-3 py-1.5 text-[10px] rounded-lg font-extrabold transition-all duration-200 outline-none flex items-center justify-center relative z-10 focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-1 active:scale-95";
 const LANG_BTN_ACTIVE = "bg-white dark:bg-slate-800 text-rose-600 shadow-md border border-slate-200 dark:border-slate-700";
@@ -26,6 +30,20 @@ export default function Header({
   toggleTheme,
 }: HeaderProps) {
   const t = translations[currentLang as Lang];
+  const langKey = _.isEqual(currentLang, 'vi') ? 'VN' : 'EN';
+  const quotaText = QUOTA_TEXTS[langKey];
+  const { licenseInfo } = useLicense();
+
+  const isPro = !_.isNil(licenseInfo) && _.includes(licenseInfo.plan_type, PlanType.PRO);
+  
+  const limitVideo = isPro ? _.get(licenseInfo, 'quotas.pro_video', 0) : _.get(licenseInfo, 'quotas.free_video', 0);
+  const limitImage = isPro ? _.get(licenseInfo, 'quotas.pro_image', 0) : _.get(licenseInfo, 'quotas.free_image', 0);
+  const limitVoice = isPro ? _.get(licenseInfo, 'quotas.pro_voice', 0) : _.get(licenseInfo, 'quotas.free_voice', 0);
+  const isUnlimited = isPro && _.get(licenseInfo, 'quotas.pro_unlimited', false);
+
+  const usageVideo = _.get(licenseInfo, 'usage.video', 0);
+  const usageImage = _.get(licenseInfo, 'usage.image', 0);
+  const usageVoice = _.get(licenseInfo, 'usage.voice', 0);
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
@@ -50,17 +68,24 @@ export default function Header({
             <span className="text-[9px] uppercase font-bold text-slate-400 font-mono tracking-wider">{t.Live_Sync}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-slate-800/40 border border-slate-700/50 rounded-xl px-2.5 py-1.5 text-xs">
-            <Coins className="w-3.5 h-3.5 text-rose-400" />
-            <span className="font-mono font-bold text-rose-400">
-              {credits.toLocaleString()} {t.pts}
+          <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.VIDEO_TOOLTIP}>
+            <Video className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-blue-400 font-black">{usageVideo}</span> / {isUnlimited ? '∞' : limitVideo}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-slate-800/40 border border-slate-700/50 rounded-xl px-2.5 py-1.5 text-xs">
-            <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-            <span className="font-mono font-bold text-green-400">
-              ${costTracker.toFixed(4)} {t.USD}
+          <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.IMAGE_TOOLTIP}>
+            <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-emerald-400 font-black">{usageImage}</span> / {isUnlimited ? '∞' : limitImage}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.VOICE_TOOLTIP}>
+            <Mic className="w-3.5 h-3.5 text-amber-400" />
+            <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-amber-400 font-black">{usageVoice.toLocaleString()}</span> / {isUnlimited ? '∞' : limitVoice.toLocaleString()}
             </span>
           </div>
 

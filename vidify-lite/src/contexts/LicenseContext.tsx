@@ -12,6 +12,15 @@ export interface LicenseInfo {
         image: number;
         voice: number;
     };
+    quotas: {
+        free_video: number;
+        free_image: number;
+        free_voice: number;
+        pro_video: number;
+        pro_image: number;
+        pro_voice: number;
+        pro_unlimited: boolean;
+    };
 }
 
 interface LicenseContextType {
@@ -39,12 +48,12 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             const data = await res.json();
             
             const status = _.get(data, 'data.status');
-            if (_.get(data, 'success') && [LicenseStatus.ACTIVE, LicenseStatus.REVOKED, 'EXPIRED'].includes(status)) {
+            if (_.get(data, 'success') && _.isEqual(status, LicenseStatus.ACTIVE)) {
                 setLicenseInfo(_.get(data, 'data'));
                 setIsLoading(false);
                 return true;
             }
-            
+
             setLicenseInfo(null);
             setLicenseKey(null);
             localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
