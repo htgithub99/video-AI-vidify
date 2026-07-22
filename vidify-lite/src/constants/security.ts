@@ -54,6 +54,7 @@ export const SecurityConstants = {
   CONTENT_TYPE_JSON: 'application/json',
   UTF8_ENCODING: 'utf8',
   QUOTA_TYPE_TOTAL: 'TOTAL',
+  UNKNOWN_PLAN_NAME: 'UNKNOWN',
 };
 
 export const LocalizationConstants = {

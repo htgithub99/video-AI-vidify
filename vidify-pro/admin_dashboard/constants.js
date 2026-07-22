@@ -41,6 +41,11 @@ const AdminConstants = {
     PARSE_TRUE: 'true',
     MIN_PAGE: 1,
     DATE_ISO_INDEX: 0,
+    PLAN_ALL_LABEL: 'Tất cả gói',
+    PLAN_FREE_LABEL: 'Gói FREE',
+    PLAN_PRO_LABEL: 'Gói PRO',
+    PLAN_LIFETIME_LABEL: 'Gói Vĩnh Viễn',
+    INFINITY_SIGN: '∞',
     HTML_ENTITIES: {
         '&': '&amp;',
         '<': '&lt;',
@@ -75,7 +80,7 @@ const ApiFields = {
     PASSWORD: 'password',
     USERS: 'users',
     LICENSE_KEY: 'license_key',
-    PLAN_TYPE: 'plan_type',
+    PLAN_ID: 'plan_id',
     EXPIRES_AT: 'expires_at',
     CREATED_AT: 'created_at',
     USAGE_VIDEO: 'usage.video',
@@ -91,19 +96,10 @@ const ApiFields = {
     PRO_VOICE: 'pro_voice',
     PRO_UNLIMITED: 'pro_unlimited',
     MAX_DEVICES: 'max_devices',
-    FREE_QUOTA_VIDEO: 'free_quota_video',
-    FREE_QUOTA_IMAGE: 'free_quota_image',
-    FREE_QUOTA_VOICE: 'free_quota_voice',
-    PRO_QUOTA_VIDEO: 'pro_quota_video',
-    PRO_QUOTA_IMAGE: 'pro_quota_image',
-    PRO_QUOTA_VOICE: 'pro_quota_voice',
-    LIFETIME_QUOTA_VIDEO: 'lifetime_quota_video',
-    LIFETIME_QUOTA_IMAGE: 'lifetime_quota_image',
-    LIFETIME_QUOTA_VOICE: 'lifetime_quota_voice',
-    LIFETIME_UNLIMITED: 'lifetime_unlimited',
     QUOTA_TYPE: 'quota_type',
     COUNT: 'count',
     KEYS: 'keys',
+    PLANS: 'plans',
     ACCOUNTS: 'accounts',
     KEY: 'key',
     VALUE: 'value',
@@ -326,14 +322,14 @@ const AdminMessages = {
     LOG_COPY_FAILED: "Lỗi sao chép",
     ARRAY_EMPTY_JSON: "[]",
     QUOTA_DAILY_LABEL: "Theo ngày",
-    QUOTA_TOTAL_LABEL: "Tổng"
+    QUOTA_TOTAL_LABEL: "Theo hạn"
 };
 
 const AdminActions = {
     LOGIN: 'admin_login',
     GET_USERS: 'admin_get_users',
-    GET_CONFIG: 'admin_get_config',
-    UPDATE_CONFIG: 'admin_update_config',
+    GET_PLANS: 'admin_get_plans',
+    UPDATE_PLAN: 'admin_update_plan',
     CREATE_KEY: 'admin_create_key',
     UPDATE_KEY: 'admin_update_key',
     REVOKE_KEY: 'admin_revoke_key',
@@ -408,6 +404,6 @@ const AdminTemplates = {
     BTN_WITH_ICON: (icon, text) => `${icon} ${text}`,
     SELECT_OPTION: (val, label, selected = false) => `<option value="${val}" ${selected ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${label}</option>`,
     OPTGROUP: (label, options) => `<optgroup label="${label}">${options}</optgroup>`,
-    USAGE_TEXT: (v, i, c) => `<span title="Ảnh">Ảnh: ${i}</span> <span style="color:var(--input-bg)">|</span> <span title="Video">Video: ${v}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">Voice: ${c}</span>`,
+    USAGE_TEXT: (uv, tv, ui, ti, uc, tc) => `<span title="Ảnh">Ảnh: ${ui}/${ti}</span> <span style="color:var(--input-bg)">|</span> <span title="Video">Video: ${uv}/${tv}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">Voice: ${uc}/${tc}</span>`,
     DANGER_TEXT: (text) => `<span style="color:var(--danger)">${text}</span>`
 };

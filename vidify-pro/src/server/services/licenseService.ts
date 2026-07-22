@@ -25,7 +25,7 @@ function getHardwareId(): string {
 
 export interface LicenseInfo {
     status: LicenseStatus;
-    plan_type: string;
+    plan_id: string;
     quota_type: string;
     expires_at: string | null;
     usage: {
@@ -33,18 +33,11 @@ export interface LicenseInfo {
         image: number;
         voice: number;
     };
-    quotas: {
-        free_video: number;
-        free_image: number;
-        free_voice: number;
-        pro_video: number;
-        pro_image: number;
-        pro_voice: number;
-        pro_unlimited: boolean;
-        lifetime_video: number;
-        lifetime_image: number;
-        lifetime_voice: number;
-        lifetime_unlimited: boolean;
+    limits: {
+        video: number;
+        image: number;
+        voice: number;
+        unlimited: boolean;
     };
 }
 
@@ -73,27 +66,20 @@ export class LicenseService {
             }
             
             return {
-                status: _.get(data, 'status'),
-                plan_type: _.get(data, 'plan_type'),
-                quota_type: _.get(data, 'quota_type', 'DAILY'),
-                expires_at: _.get(data, 'expires_at', null),
+                status: _.get(data, 'user.status'),
+                plan_id: _.get(data, 'user.plan_id'),
+                quota_type: _.get(data, 'user.quota_type', 'DAILY'),
+                expires_at: _.get(data, 'user.expires_at', null),
                 usage: {
                     video: _.get(data, 'usage.video', 0),
                     image: _.get(data, 'usage.image', 0),
                     voice: _.get(data, 'usage.voice', 0),
                 },
-                quotas: {
-                    free_video: _.get(data, 'quotas.free_video', 0),
-                    free_image: _.get(data, 'quotas.free_image', 0),
-                    free_voice: _.get(data, 'quotas.free_voice', 0),
-                    pro_video: _.get(data, 'quotas.pro_video', 0),
-                    pro_image: _.get(data, 'quotas.pro_image', 0),
-                    pro_voice: _.get(data, 'quotas.pro_voice', 0),
-                    pro_unlimited: _.get(data, 'quotas.pro_unlimited', false),
-                    lifetime_video: _.get(data, 'quotas.lifetime_video', 0),
-                    lifetime_image: _.get(data, 'quotas.lifetime_image', 0),
-                    lifetime_voice: _.get(data, 'quotas.lifetime_voice', 0),
-                    lifetime_unlimited: _.get(data, 'quotas.lifetime_unlimited', false),
+                limits: {
+                    video: _.get(data, 'limits.video', 0),
+                    image: _.get(data, 'limits.image', 0),
+                    voice: _.get(data, 'limits.voice', 0),
+                    unlimited: _.get(data, 'limits.unlimited', false),
                 }
             };
         } catch (error) {

@@ -93,7 +93,7 @@ function showDashboard() {
     el(DOMIds.LOGIN_SCREEN).classList.remove(AdminClasses.ACTIVE);
     el(DOMIds.DASHBOARD_SCREEN).classList.add(AdminClasses.ACTIVE);
     loadUsers();
-    loadConfig();
+    loadPlans();
 }
 
 async function handleLogin() {
@@ -181,7 +181,7 @@ function applyFilters() {
             const ukey = (_.get(u, ApiFields.LICENSE_KEY) || AdminConstants.EMPTY_STR).toLowerCase();
             matchSearch = _.some([uname, ukey], str => _.includes(str, searchStr));
         }
-        let matchPlan = (planFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.PLAN_TYPE) === planFilter;
+        let matchPlan = (planFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.PLAN_ID) === planFilter;
         let matchStatus = (statusFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.STATUS) === statusFilter;
         return _.every([matchSearch, matchPlan, matchStatus], Boolean);
     });
@@ -202,11 +202,11 @@ function renderTable() {
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedUsers = _.slice(filteredUsers, startIndex, startIndex + pageSize);
     
-    const localizePlan = (plan) => {
-        if (plan === AdminConstants.PLAN_FREE) return AdminMessages.PLAN_FREE_LABEL;
-        if (plan === AdminConstants.PLAN_PRO) return AdminMessages.PLAN_PRO_LABEL;
-        if (plan === AdminConstants.PLAN_PRO_LIFETIME) return AdminMessages.PLAN_LIFETIME_LABEL;
-        return plan;
+    const getPlanBadgeClass = (planName) => {
+        const upper = _.toUpper(planName);
+        if (_.includes(upper, 'FREE')) return AdminClasses.BADGE_FREE;
+        if (_.includes(upper, 'PRO') || _.includes(upper, 'VIP') || _.includes(upper, 'LIFETIME')) return AdminClasses.BADGE_PRO;
+        return AdminClasses.BADGE_FREE;
     };
 
     const localizeStatus = (status) => {
@@ -223,8 +223,22 @@ function renderTable() {
     };
     
     const htmlRows = _.map(paginatedUsers, user => {
-        const usageText = AdminTemplates.USAGE_TEXT(_.get(user, ApiFields.USAGE_VIDEO), _.get(user, ApiFields.USAGE_IMAGE), _.get(user, ApiFields.USAGE_VOICE));
-        const isPro = _.includes([AdminConstants.PLAN_PRO, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE));
+        const plans = _.get(window, 'adminPlans', []);
+        const plan = _.find(plans, p => p.id === _.get(user, ApiFields.PLAN_ID));
+        
+        let tv = '0', ti = '0', tc = '0';
+        if (plan) {
+            tv = plan.is_unlimited ? AdminConstants.INFINITY_SIGN : plan.quota_video;
+            ti = plan.is_unlimited ? AdminConstants.INFINITY_SIGN : plan.quota_image;
+            tc = plan.is_unlimited ? AdminConstants.INFINITY_SIGN : plan.quota_voice;
+        }
+
+        const usageText = AdminTemplates.USAGE_TEXT(
+            _.get(user, ApiFields.USAGE_VIDEO, 0), tv,
+            _.get(user, ApiFields.USAGE_IMAGE, 0), ti,
+            _.get(user, ApiFields.USAGE_VOICE, 0), tc
+        );
+        const planName = _.get(user, 'plan.name', AdminConstants.UNKNOWN_STR);
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
         const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
@@ -243,7 +257,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td class="text-center">
-                    <span class="badge ${isPro ? AdminClasses.BADGE_PRO : AdminClasses.BADGE_FREE}">${escapeHTML(localizePlan(_.get(user, ApiFields.PLAN_TYPE)))}</span>
+                    <span class="badge ${getPlanBadgeClass(planName)}">${escapeHTML(planName)}</span>
                 </td>
                 <td class="text-center">
                     <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
@@ -297,41 +311,79 @@ function renderPagination(totalPages) {
     controls.appendChild(btnNext);
 }
 
-async function loadConfig() {
+async function loadPlans() {
     try {
-        const res = await fetchAPI(AdminActions.GET_CONFIG);
-        const q = _.get(res, ApiFields.CONFIG, {});
-        
-        el(DOMIds.FREE_QUOTA_VIDEO).value = _.get(q, ApiFields.FREE_VIDEO, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.FREE_QUOTA_IMAGE).value = _.get(q, ApiFields.FREE_IMAGE, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.FREE_QUOTA_VOICE).value = _.get(q, ApiFields.FREE_VOICE, AdminConstants.DEFAULT_QUOTA);
-        
-        el(DOMIds.PRO_QUOTA_VIDEO).value = _.get(q, ApiFields.PRO_VIDEO, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.PRO_QUOTA_IMAGE).value = _.get(q, ApiFields.PRO_IMAGE, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.PRO_QUOTA_VOICE).value = _.get(q, ApiFields.PRO_VOICE, AdminConstants.DEFAULT_QUOTA);
-        
-        const isUnlimited = String(_.get(q, ApiFields.PRO_UNLIMITED, AdminConstants.PARSE_TRUE)) === AdminConstants.PARSE_TRUE;
-        el(DOMIds.PRO_UNLIMITED).checked = isUnlimited;
-        el(DOMIds.PRO_QUOTA_VIDEO).disabled = isUnlimited;
-        el(DOMIds.PRO_QUOTA_IMAGE).disabled = isUnlimited;
-        el(DOMIds.PRO_QUOTA_VOICE).disabled = isUnlimited;
-
-        el(DOMIds.LIFETIME_QUOTA_VIDEO).value = _.get(q, ApiFields.LIFETIME_QUOTA_VIDEO, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.LIFETIME_QUOTA_IMAGE).value = _.get(q, ApiFields.LIFETIME_QUOTA_IMAGE, AdminConstants.DEFAULT_QUOTA);
-        el(DOMIds.LIFETIME_QUOTA_VOICE).value = _.get(q, ApiFields.LIFETIME_QUOTA_VOICE, AdminConstants.DEFAULT_QUOTA);
-        
-        const isLifetimeUnlimited = String(_.get(q, ApiFields.LIFETIME_UNLIMITED, AdminConstants.PARSE_TRUE)) === AdminConstants.PARSE_TRUE;
-        el(DOMIds.LIFETIME_UNLIMITED).checked = isLifetimeUnlimited;
-        el(DOMIds.LIFETIME_QUOTA_VIDEO).disabled = isLifetimeUnlimited;
-        el(DOMIds.LIFETIME_QUOTA_IMAGE).disabled = isLifetimeUnlimited;
-        el(DOMIds.LIFETIME_QUOTA_VOICE).disabled = isLifetimeUnlimited;
-        
-        if (el(DOMIds.CONFIG_MAX_DEVICES)) {
-            el(DOMIds.CONFIG_MAX_DEVICES).value = _.get(q, ApiFields.MAX_DEVICES, AdminConstants.DEFAULT_MAX_DEVICES);
-        }
+        const res = await fetchAPI(AdminActions.GET_PLANS);
+        const plans = _.get(res, ApiFields.PLANS, []);
+        window.adminPlans = plans;
+        renderPlansConfig();
+        populatePlanSelects();
     } catch (error) {
         Logger.error(error);
     }
+}
+
+function renderPlansConfig() {
+    const container = el('plans-container');
+    if (!container) return;
+    
+    container.innerHTML = AdminConstants.EMPTY_STR;
+    const plans = _.get(window, 'adminPlans', []);
+    
+    _.forEach(plans, plan => {
+        const planId = plan.id;
+        const planName = plan.name;
+        const isUnlimited = plan.is_unlimited;
+        
+        const badgeClass = (_.includes(_.toUpper(planName), 'FREE')) ? 'free' : 'pro';
+        
+        const colHtml = `
+            <div class="quota-col quota-${planId}">
+                <div class="quota-col-header">
+                    <span class="badge ${badgeClass}">${escapeHTML(planName)}</span>
+                    <h4>${escapeHTML(planName)}</h4>
+                </div>
+                <div class="quota-col-body">
+                    <div class="input-group">
+                        <label title="Tên gói">Tên Gói</label>
+                        <input type="text" class="plan-name-input" data-plan-id="${planId}" value="${escapeHTML(planName)}">
+                    </div>
+                    <label class="unlimited-toggle">
+                        <span title="Dùng Không Giới Hạn (Unlimited)">Không Giới Hạn</span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" class="plan-unlimited-input" data-plan-id="${planId}" ${isUnlimited ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </div>
+                    </label>
+                    <div class="input-group">
+                        <label title="Số lượng Video">Số Video</label>
+                        <input type="text" inputmode="numeric" class="numeric-input plan-video-input" data-plan-id="${planId}" value="${plan.quota_video}" ${isUnlimited ? 'disabled' : ''}>
+                    </div>
+                    <div class="input-group">
+                        <label title="Số lượng Ảnh">Số Ảnh</label>
+                        <input type="text" inputmode="numeric" class="numeric-input plan-image-input" data-plan-id="${planId}" value="${plan.quota_image}" ${isUnlimited ? 'disabled' : ''}>
+                    </div>
+                    <div class="input-group">
+                        <label title="Số lượng Ký tự">Số Ký tự</label>
+                        <input type="text" inputmode="numeric" class="numeric-input plan-voice-input" data-plan-id="${planId}" value="${plan.quota_voice}" ${isUnlimited ? 'disabled' : ''}>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += colHtml;
+    });
+
+    const unlimitedCheckboxes = container.querySelectorAll('.plan-unlimited-input');
+    _.forEach(unlimitedCheckboxes, chk => {
+        chk.addEventListener(EventTypes.CHANGE, (e) => {
+            const pId = e.target.getAttribute('data-plan-id');
+            const disabled = e.target.checked;
+            container.querySelector(`.plan-video-input[data-plan-id="${pId}"]`).disabled = disabled;
+            container.querySelector(`.plan-image-input[data-plan-id="${pId}"]`).disabled = disabled;
+            container.querySelector(`.plan-voice-input[data-plan-id="${pId}"]`).disabled = disabled;
+        });
+    });
+    preventNonNumericInput();
 }
 
 async function handleSaveConfig() {
@@ -339,25 +391,53 @@ async function handleSaveConfig() {
     setButtonLoading(saveConfigBtn, true, AdminMessages.SAVE_PROGRESS);
     
     try {
-        await fetchAPI(AdminActions.UPDATE_CONFIG, {
-            [ApiFields.FREE_QUOTA_VIDEO]: _.toInteger(el(DOMIds.FREE_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.FREE_QUOTA_IMAGE]: _.toInteger(el(DOMIds.FREE_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.FREE_QUOTA_VOICE]: _.toInteger(el(DOMIds.FREE_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.PRO_QUOTA_VIDEO]: _.toInteger(el(DOMIds.PRO_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.PRO_QUOTA_IMAGE]: _.toInteger(el(DOMIds.PRO_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.PRO_QUOTA_VOICE]: _.toInteger(el(DOMIds.PRO_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.PRO_UNLIMITED]: el(DOMIds.PRO_UNLIMITED).checked,
-            [ApiFields.LIFETIME_QUOTA_VIDEO]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VIDEO).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.LIFETIME_QUOTA_IMAGE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_IMAGE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.LIFETIME_QUOTA_VOICE]: _.toInteger(el(DOMIds.LIFETIME_QUOTA_VOICE).value) || AdminConstants.DEFAULT_QUOTA,
-            [ApiFields.LIFETIME_UNLIMITED]: el(DOMIds.LIFETIME_UNLIMITED).checked,
-            [ApiFields.MAX_DEVICES]: el(DOMIds.CONFIG_MAX_DEVICES) ? (_.toInteger(el(DOMIds.CONFIG_MAX_DEVICES).value) || AdminConstants.DEFAULT_MAX_DEVICES) : AdminConstants.DEFAULT_MAX_DEVICES
-        });
+        const container = el('plans-container');
+        const plans = _.get(window, 'adminPlans', []);
+        
+        for (const plan of plans) {
+            const pId = plan.id;
+            const pName = container.querySelector(`.plan-name-input[data-plan-id="${pId}"]`).value;
+            const pVideo = container.querySelector(`.plan-video-input[data-plan-id="${pId}"]`).value;
+            const pImage = container.querySelector(`.plan-image-input[data-plan-id="${pId}"]`).value;
+            const pVoice = container.querySelector(`.plan-voice-input[data-plan-id="${pId}"]`).value;
+            const pUnlimited = container.querySelector(`.plan-unlimited-input[data-plan-id="${pId}"]`).checked;
+            
+            await fetchAPI(AdminActions.UPDATE_PLAN, {
+                [ApiFields.ID]: pId,
+                name: pName,
+                quota_video: _.toInteger(pVideo) || 0,
+                quota_image: _.toInteger(pImage) || 0,
+                quota_voice: _.toInteger(pVoice) || 0,
+                is_unlimited: pUnlimited
+            });
+        }
+        
         showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
+        loadPlans();
     } catch (error) {
         showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
     } finally {
         setButtonLoading(saveConfigBtn, false);
+    }
+}
+
+function populatePlanSelects() {
+    const plans = _.get(window, 'adminPlans', []);
+    
+    const filterPlanSelect = el(DOMIds.FILTER_PLAN);
+    if (filterPlanSelect) {
+        filterPlanSelect.innerHTML = AdminTemplates.SELECT_OPTION(AdminConstants.FILTER_ALL, AdminConstants.PLAN_ALL_LABEL, true);
+        _.forEach(plans, p => {
+            filterPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, p.name);
+        });
+    }
+
+    const modalPlanSelect = el(DOMIds.MODAL_PLAN_TYPE);
+    if (modalPlanSelect) {
+        modalPlanSelect.innerHTML = AdminConstants.EMPTY_STR;
+        _.forEach(plans, p => {
+            modalPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, p.name);
+        });
     }
 }
 
@@ -390,7 +470,10 @@ function handleOpenCreateModal() {
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_CREATE_TITLE;
     el(DOMIds.MODAL_USERNAME).value = AdminConstants.EMPTY_STR;
     el(DOMIds.MODAL_USERNAME).disabled = false;
-    el(DOMIds.MODAL_PLAN_TYPE).value = AdminConstants.PLAN_FREE;
+    
+    const plans = _.get(window, 'adminPlans', []);
+    if (plans.length > 0) el(DOMIds.MODAL_PLAN_TYPE).value = plans[0].id;
+    
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
     el(DOMIds.MODAL_QUOTA_TYPE).value = QuotaType.DAILY;
@@ -410,14 +493,7 @@ function openEditModal(id) {
     el(DOMIds.MODAL_USERNAME).disabled = true;
     
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
-    let hasOption = _.some(_.toArray(planSelect.options), opt => _.get(opt, ApiFields.VALUE) === _.get(user, ApiFields.PLAN_TYPE));
-    if (!hasOption) {
-        const newOption = document.createElement(TagNames.OPTION);
-        newOption.value = _.get(user, ApiFields.PLAN_TYPE);
-        newOption.textContent = _.get(user, ApiFields.PLAN_TYPE);
-        planSelect.appendChild(newOption);
-    }
-    planSelect.value = _.get(user, ApiFields.PLAN_TYPE);
+    planSelect.value = _.get(user, ApiFields.PLAN_ID);
     
     el(DOMIds.MODAL_STATUS).value = _.get(user, ApiFields.STATUS);
     el(DOMIds.MODAL_STATUS).disabled = false;
@@ -430,10 +506,15 @@ function openEditModal(id) {
     }
     
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
-    if (!_.includes([AdminConstants.PLAN_FREE, AdminConstants.PLAN_PRO_LIFETIME], _.get(user, ApiFields.PLAN_TYPE))) {
-        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
-    } else {
+    
+    const planId = _.get(user, ApiFields.PLAN_ID);
+    const plans = _.get(window, 'adminPlans', []);
+    const plan = _.find(plans, p => p.id === planId);
+    
+    if (plan && plan.is_unlimited) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
+    } else {
+        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     }
     
     el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
@@ -441,12 +522,15 @@ function openEditModal(id) {
 
 function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
-    const selectedPlan = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
+    const selectedPlanId = _.get(e, 'target.value') || el(DOMIds.MODAL_PLAN_TYPE).value;
     
-    if (!_.isNil(editingUserId) || selectedPlan !== AdminConstants.PLAN_PRO_LIFETIME) {
-        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
-    } else {
+    const plans = _.get(window, 'adminPlans', []);
+    const plan = _.find(plans, p => p.id === selectedPlanId);
+    
+    if (plan && plan.is_unlimited && _.isNil(editingUserId)) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
+    } else {
+        wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     }
 }
 
@@ -471,10 +555,10 @@ async function handleSaveUser() {
     
     try {
         if (!_.isNil(editingUserId)) {
-            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_TYPE]: planType, [ApiFields.STATUS]: status, [ApiFields.QUOTA_TYPE]: quotaType, [ApiFields.EXPIRES_AT]: expiresAt });
+            await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_ID]: planType, [ApiFields.STATUS]: status, [ApiFields.QUOTA_TYPE]: quotaType, [ApiFields.EXPIRES_AT]: expiresAt });
             showToast(AdminMessages.MODAL_UPDATE_SUCCESS, ToastType.SUCCESS);
         } else {
-            const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_TYPE]: planType, [ApiFields.QUOTA_TYPE]: quotaType });
+            const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_ID]: planType, [ApiFields.QUOTA_TYPE]: quotaType });
             showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, ApiFields.LICENSE_KEY), ToastType.SUCCESS);
         }
         
@@ -668,13 +752,6 @@ function initEventListeners() {
         if (_.isFunction(window.currentConfirmCallback)) window.currentConfirmCallback();
         closeModal(DOMIds.CONFIRM_MODAL);
     });
-    
-    el(DOMIds.PRO_UNLIMITED)?.addEventListener(EventTypes.CHANGE, (e) => {
-        const disabled = _.get(e, 'target.checked', false);
-        el(DOMIds.PRO_QUOTA_VIDEO).disabled = disabled;
-        el(DOMIds.PRO_QUOTA_IMAGE).disabled = disabled;
-        el(DOMIds.PRO_QUOTA_VOICE).disabled = disabled;
-    });
 
     el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, handleSaveConfig);
     
@@ -843,19 +920,23 @@ let tsKeysInstance = null;
 let tsAccInstance = null;
 
 function populateAssignSelects() {
+    const plans = _.get(window, 'adminPlans', []);
+    
+    let optionsHtml = AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
+    _.forEach(plans, p => {
+        optionsHtml += AdminTemplates.SELECT_OPTION(p.id, p.name);
+    });
+    
     const users = _.get(window, 'adminUsersData', []);
-    
-    let optionsHtml = AdminConstants.EMPTY_STR;
-    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
-    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.PLAN_FREE, AdminMessages.ASSIGN_FREE_LABEL);
-    optionsHtml += AdminTemplates.SELECT_OPTION(AdminConstants.PLAN_PRO, AdminMessages.ASSIGN_PRO_LABEL);
-    
-    const userOptions = _.map(users, u => AdminTemplates.SELECT_OPTION(
-        escapeHTML(_.get(u, ApiFields.LICENSE_KEY)), 
-        `${escapeHTML(_.get(u, ApiFields.USERNAME) || _.get(u, ApiFields.EMAIL) || _.get(u, ApiFields.LICENSE_KEY))} - ${escapeHTML(_.get(u, ApiFields.LICENSE_KEY).substring(0, AdminConstants.KEY_PREVIEW_LENGTH))}...`
-    )).join(AdminConstants.EMPTY_STR);
-    
-    optionsHtml += AdminTemplates.OPTGROUP(AdminMessages.ASSIGN_SPECIFIC_LABEL, userOptions);
+    if (users.length > 0) {
+        let userOptions = AdminConstants.EMPTY_STR;
+        _.forEach(users, u => {
+            const keyStr = _.get(u, ApiFields.LICENSE_KEY);
+            const uname = _.get(u, ApiFields.USERNAME);
+            userOptions += AdminTemplates.SELECT_OPTION(keyStr, `${uname} (${keyStr})`);
+        });
+        optionsHtml += AdminTemplates.OPTGROUP(AdminMessages.ASSIGN_SPECIFIC_LABEL, userOptions);
+    }
     
     const keysSelect = el(DOMIds.KEYS_ASSIGNEE_INPUT);
     const accSelect = el(DOMIds.ACC_ASSIGNEE_INPUT);
@@ -960,23 +1041,43 @@ function deleteAccountAdmin(id) {
 async function loadApiKeysAdmin() {
     const tbody = elq(DOMIds.KEYS_TBODY);
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_KEYS, AdminMessages.DATA_LOADING);
+    
+    const getAssignBadge = (assignee) => {
+        if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
+        const plans = _.get(window, 'adminPlans', []);
+        const plan = _.find(plans, p => p.id === assignee);
+        if (plan) {
+            return (_.includes(_.toUpper(plan.name), 'FREE')) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+        }
+        return AdminClasses.BADGE_PRO; 
+    };
+    
+    const getAssignName = (assignee) => {
+        if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
+        const plans = _.get(window, 'adminPlans', []);
+        const plan = _.find(plans, p => p.id === assignee);
+        if (plan) return plan.name;
+        return assignee;
+    };
+
     try {
         const res = await fetchAPI(AdminActions.GET_API_KEYS);
         const keys = _.get(res, ApiFields.KEYS, []);
         window.adminApiKeysData = keys;
         
         tbody.innerHTML = _.map(keys, k => {
-            const assignee = _.get(k, ApiFields.ASSIGNED_TO);
+            const assignee = _.get(k, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
+            const badgeClass = getAssignBadge(assignee);
+            const assigneeLabel = getAssignName(assignee);
             const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
             const ai33Value = _.get(k, ApiFields.AI33_KEY);
             const keyId = _.get(k, ApiFields.ID);
             
-            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], assignee) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
             const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
             
             return `
             <tr>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assignee)}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span></td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -995,19 +1096,40 @@ async function loadApiKeysAdmin() {
 async function loadAccountsAdmin() {
     const tbody = elq(DOMIds.ACCS_TBODY);
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_ACCOUNTS, AdminMessages.DATA_LOADING);
+    
+    const getAssignBadge = (assignee) => {
+        if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
+        const plans = _.get(window, 'adminPlans', []);
+        const plan = _.find(plans, p => p.id === assignee);
+        if (plan) {
+            return (_.includes(_.toUpper(plan.name), 'FREE')) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+        }
+        return AdminClasses.BADGE_PRO;
+    };
+    
+    const getAssignName = (assignee) => {
+        if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
+        const plans = _.get(window, 'adminPlans', []);
+        const plan = _.find(plans, p => p.id === assignee);
+        if (plan) return plan.name;
+        return assignee;
+    };
+
     try {
         const res = await fetchAPI(AdminActions.GET_ACCOUNTS);
         const accs = _.get(res, ApiFields.ACCOUNTS, []);
         window.adminAccountsData = accs;
         
         tbody.innerHTML = _.map(accs, a => {
-            const badgeClass = _.includes([AdminConstants.ASSIGN_ALL, AdminConstants.PLAN_FREE], _.get(a, ApiFields.ASSIGNED_TO)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+            const assignee = _.get(a, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
+            const badgeClass = getAssignBadge(assignee);
+            const assigneeLabel = getAssignName(assignee);
+            
             const options = `
                 <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ACTIVE ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
                 <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ERROR ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
             `;
             return `
-            <tr>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">

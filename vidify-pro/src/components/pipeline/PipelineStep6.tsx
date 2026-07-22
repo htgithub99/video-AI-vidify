@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { safeSystemFetch } from "../../lib/shared-utils";
-import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, LOG_KEYWORDS, PIPELINE_STEP6_UI_TEXTS, INPUT_MODES, FOLDER_TYPES, MOTION_OPTIONS, TRANSITION_OPTIONS, TEMPLATE_CONFIG, PIPELINE_MODAL_TYPES, COMMON_OPTIONS } from "../../constants";
+import { API_ROUTES, UltraStreamLogType, ErrorMessage, STORAGE_KEYS, LogLevel, LOG_LEVEL_SYMBOLS, DEFAULT_AUDIO_ORDER_LIST, HTTP_HEADERS, CONTENT_TYPES, getBackendMsg, HTTP_METHODS, LOG_KEYWORDS, PIPELINE_STEP6_UI_TEXTS, INPUT_MODES, FOLDER_TYPES, MOTION_OPTIONS, TRANSITION_OPTIONS, PIPELINE_MODAL_TYPES, COMMON_OPTIONS } from "../../constants";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { Tooltip } from "../ui/Tooltip";
@@ -11,7 +11,7 @@ import _ from "lodash";
 import { jsonUtils } from "../../lib/json";
 import { appLog } from "../../lib/logger";
 
-const { Play, Sparkles, Terminal, FileJson, FolderOpen, CheckSquare, Square, Upload, Settings, Wand2, Wrench } = LucideIcons as any;
+const { Play, Sparkles, Terminal, FileJson, FolderOpen, CheckSquare, Square, Settings, Wand2, Wrench } = LucideIcons as any;
 
 type ModalType = typeof PIPELINE_MODAL_TYPES[keyof typeof PIPELINE_MODAL_TYPES];
 

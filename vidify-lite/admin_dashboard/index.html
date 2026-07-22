@@ -53,85 +53,8 @@
                             <h3 style="margin: 0;" title="Giới Hạn Tài Khoản">Giới Hạn</h3>
                             <button id="save-config-btn" class="btn-primary" title="Lưu cấu hình hệ thống" style="padding: 0.4rem 1rem;">Lưu</button>
                         </div>
-                        <div class="quota-grid">
-                            <div class="quota-col quota-free">
-                                <div class="quota-col-header">
-                                    <span class="badge free">FREE</span>
-                                    <h4>Gói Miễn Phí</h4>
-                                </div>
-                                <div class="quota-col-body">
-                                    <div class="input-group">
-                                        <label title="Số lượng Video cho phép mỗi ngày">Số Video</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-video">
-                                    </div>
-                                    <div class="input-group">
-                                        <label title="Số lượng Ảnh cho phép mỗi ngày">Số Ảnh</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-image">
-                                    </div>
-                                    <div class="input-group">
-                                        <label title="Số lượng Ký tự cho phép mỗi ngày">Số Ký tự</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="free-quota-voice">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="quota-col quota-pro">
-                                <div class="quota-col-header">
-                                    <span class="badge pro">PRO</span>
-                                    <h4>Gói Trả Phí</h4>
-                                </div>
-                                <div class="quota-col-body">
-                                    <label class="unlimited-toggle" for="pro-unlimited">
-                                        <span title="Dùng Không Giới Hạn (Unlimited)">Không Giới Hạn</span>
-                                        <div class="toggle-switch">
-                                            <input type="checkbox" id="pro-unlimited">
-                                            <span class="slider"></span>
-                                        </div>
-                                    </label>
-                                    
-                                    <div class="input-group" id="pro-video-wrapper">
-                                        <label title="Số lượng Video cho phép mỗi ngày">Số Video</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-video">
-                                    </div>
-                                    <div class="input-group" id="pro-image-wrapper">
-                                        <label title="Số lượng Ảnh cho phép mỗi ngày">Số Ảnh</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-image">
-                                    </div>
-                                    <div class="input-group" id="pro-voice-wrapper">
-                                        <label title="Số lượng Ký tự cho phép mỗi ngày">Số Ký tự</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="pro-quota-voice">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="quota-col quota-lifetime">
-                                <div class="quota-col-header">
-                                    <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2);">VIP</span>
-                                    <h4>Gói Vĩnh Viễn</h4>
-                                </div>
-                                <div class="quota-col-body">
-                                    <label class="unlimited-toggle" for="lifetime-unlimited">
-                                        <span title="Dùng Không Giới Hạn (Unlimited)">Không Giới Hạn</span>
-                                        <div class="toggle-switch">
-                                            <input type="checkbox" id="lifetime-unlimited">
-                                            <span class="slider"></span>
-                                        </div>
-                                    </label>
-                                    
-                                    <div class="input-group" id="lifetime-video-wrapper">
-                                        <label title="Số lượng Video giới hạn">Số Video</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-video">
-                                    </div>
-                                    <div class="input-group" id="lifetime-image-wrapper">
-                                        <label title="Số lượng Ảnh giới hạn">Số Ảnh</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-image">
-                                    </div>
-                                    <div class="input-group" id="lifetime-voice-wrapper">
-                                        <label title="Số lượng Ký tự giới hạn">Số Ký tự</label>
-                                        <input type="text" inputmode="numeric" class="numeric-input" id="lifetime-quota-voice">
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="quota-grid" id="plans-container">
+                            <!-- Plans will be rendered here dynamically -->
                         </div>
                     </div>
                 </div>
