@@ -857,3 +857,7 @@ function setupSeedData() {
 
   AppLogger.info(Messages.SEED_SUCCESS);
 }
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
