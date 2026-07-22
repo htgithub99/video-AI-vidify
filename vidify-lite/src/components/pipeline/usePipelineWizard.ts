@@ -15,7 +15,7 @@ import { EXTERNAL_URLS, API_ROUTES, API_HEADERS } from "../../constants/apiRoute
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
@@ -1342,6 +1342,7 @@ export function usePipelineWizard(props: any) {
       if (!data.cached) {
         trackOperationCost(10, 0.0005);
       }
+      return data;
     } catch (e: any) {
       setErrorMsg(t.scriptPipelineError.replace("{error}", e.message));
     } finally {
@@ -1350,7 +1351,7 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerStoryboardSplit = async (force = false, btnPosition = "top", isFromAutoGenerateAll = false) => {
+  const handleTriggerStoryboardSplit = async (force = false, btnPosition = "top", isFromAutoGenerateAll = false, customScript?: string) => {
     logAction("handleTriggerStoryboardSplit");
 
     const isForce = force === true;
@@ -1359,7 +1360,8 @@ export function usePipelineWizard(props: any) {
       return project.storyboard;
     }
 
-    if (!project.scriptRewritten) {
+    const scriptToSplit = customScript || project.scriptRewritten;
+    if (!scriptToSplit) {
       setErrorMsg(t.Missing_detailed_script_f);
       return;
     }
@@ -1377,7 +1379,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       const payload = {
-        rewrittenScript: project.scriptRewritten,
+        rewrittenScript: scriptToSplit,
         chapters: project.chapters,
         config: {
           ...project.config,
@@ -2571,13 +2573,13 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.cancellingBatchGen);
   };
 
-  const handleBatchGenerateAllImages = async () => {
+  const handleBatchGenerateAllImages = async (isFromAutoGenerateAll = false, providedScenes?: any[]) => {
     logAction("handleBatchGenerateAllImages");
     if (isBatchGenerating) return;
 
     cancelBatchImageRef.current = false;
 
-    const scenes = project.storyboard || [];
+    const scenes = providedScenes || project.storyboard || [];
     if (_.isEmpty(scenes)) {
       setErrorMsg(t.No_storyboard_scenes_foun);
       return;
@@ -3440,6 +3442,56 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const handleAutoGenerateVideo = async () => {
+    logAction("handleAutoGenerateVideo");
+    
+    if (_.isEmpty(_.trim(project.input?.content))) {
+      setErrorMsg(t.Please_enter_script_conte || AUTO_GENERATE_TEXTS.EMPTY_SCRIPT_ERR);
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, autoGenerateAll: true }));
+    try {
+      const IS_FORCE = true;
+      let currentScript = project.scriptRewritten;
+
+      if (_.isEmpty(currentScript)) {
+        setCurrentStep(WizardStep.SourceInput);
+        setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Dr || AUTO_GENERATE_TEXTS.DRAFTING_SCRIPT);
+        const scriptData = await handleProcessInputAndConfig(IS_FORCE);
+        if (scriptData && !_.isEmpty(scriptData.rewrittenScript)) {
+          currentScript = scriptData.rewrittenScript;
+        } else {
+          throw new Error(AUTO_GENERATE_TEXTS.SCRIPT_ERR);
+        }
+      }
+
+      setCurrentStep(WizardStep.Storyboard);
+      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An || AUTO_GENERATE_TEXTS.STORYBOARDING);
+      const newStoryboard = await handleTriggerStoryboardSplit(IS_FORCE, AUTO_GENERATE_TEXTS.POSITION_TOP, IS_FORCE, currentScript);
+      
+      const hasValidScenes = _.isArray(newStoryboard) && _.some(newStoryboard, scene => !_.isEmpty(scene.id));
+      if (!hasValidScenes) {
+        throw new Error(AUTO_GENERATE_TEXTS.STORYBOARD_ERR);
+      }
+
+      setCurrentStep(WizardStep.AssetManager);
+      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ge_3 || AUTO_GENERATE_TEXTS.VOICEOVER);
+      await handleTriggerAllSceneVoices(newStoryboard, IS_FORCE);
+
+      setInfoMsg(t.initializingBatchGen || AUTO_GENERATE_TEXTS.IMAGES);
+      await handleBatchGenerateAllImages(IS_FORCE, newStoryboard);
+
+      setInfoMsg(AUTO_GENERATE_TEXTS.SUCCESS);
+      logger.info(`[Hệ thống] ✅ ${AUTO_GENERATE_TEXTS.SUCCESS}`);
+    } catch (err: any) {
+      logger.error(AUTO_GENERATE_TEXTS.ERR_CODE, err);
+      setErrorMsg(err.message || AUTO_GENERATE_TEXTS.GENERIC_ERR);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, autoGenerateAll: false }));
+    }
+  };
+
   const handleProcessExternalAudio = async (audioName: string, audioUrl: string, audioBase64: string) => {
     logAction(EXTERNAL_AUDIO_TEXTS.LOG_ACTION);
     try {
@@ -4034,6 +4086,7 @@ export function usePipelineWizard(props: any) {
     handleTriggerVoiceGenerate,
     handleTriggerAllSceneVoices,
     handleTriggerStoryboardAndVoices,
+    handleAutoGenerateVideo,
     handleProcessExternalAudio,
     handleTriggerSEOBoost,
     onSaveProject,

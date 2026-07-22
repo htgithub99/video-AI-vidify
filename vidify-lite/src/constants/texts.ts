@@ -754,3 +754,19 @@ export const PIPELINE_STEP3_TEXTS = {
   TAGS: "TỪ KHÓA",
 } as const;
 
+export const AUTO_GENERATE_TEXTS = {
+  EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.",
+  DRAFTING_SCRIPT: "Đang soạn kịch bản...",
+  SCRIPT_ERR: "Không thể tạo kịch bản.",
+  STORYBOARDING: "Đang phân tích và tách cảnh...",
+  STORYBOARD_ERR: "Không thể phân tách cảnh.",
+  VOICEOVER: "Đang tạo giọng đọc...",
+  IMAGES: "Đang khởi tạo tạo ảnh hàng loạt...",
+  SUCCESS: "Đã hoàn thành tạo video tự động.",
+  GENERIC_ERR: "Lỗi tự động tạo video.",
+  BTN_AUTO: "Tự động",
+  BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
+  ERR_CODE: "AUTO_GENERATE_ERROR",
+  POSITION_TOP: "top",
+} as const;
+

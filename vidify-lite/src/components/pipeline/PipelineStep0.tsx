@@ -7,11 +7,12 @@ import { Tooltip } from "../ui/Tooltip";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
+import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
 
 const { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders } = LucideIcons as any;
 
 export default function PipelineStep0(props: PipelineWizardState) {
-  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition } = props;
+  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition, handleAutoGenerateVideo } = props;
   return (
     <>
       <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 rounded-xl p-6 space-y-6 shadow-2xl relative overflow-visible">
@@ -395,7 +396,21 @@ export default function PipelineStep0(props: PipelineWizardState) {
             </div>
           </div>
         </div>
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-end relative z-20">
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-end relative z-20 gap-3">
+          <Tooltip content={AUTO_GENERATE_TEXTS.BTN_AUTO_TOOLTIP} position="top" align="end">
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              onClick={() => handleAutoGenerateVideo()}
+              disabled={_.isEmpty(_.trim(project.input?.content)) || !!loadingStates["autoGenerateAll"]}
+              isLoading={!!loadingStates["autoGenerateAll"]}
+              className="px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300"
+            >
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>{AUTO_GENERATE_TEXTS.BTN_AUTO}</span>
+            </Button>
+          </Tooltip>
           <Tooltip content="Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI." position="top" align="end">
             <Button
               type="button"
