@@ -268,8 +268,8 @@ function verifyKey(params) {
 
     const quotaType = row[UserCols.QUOTA_TYPE] || QuotaType.DAILY;
     let usage = getUsageData(key);
-    
-    
+
+
     if (quotaType === QuotaType.DAILY) {
       const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
       const lastResetDate = String(usage.last_reset || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
@@ -316,7 +316,7 @@ function updateUsage(params) {
     const quotaType = userRow ? (userRow[UserCols.QUOTA_TYPE] || QuotaType.DAILY) : QuotaType.DAILY;
     const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
     const lastResetDate = String(row[UsageCols.LAST_RESET] || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
-    
+
     let currentVideo = _.toInteger(row[UsageCols.VIDEO] || 0);
     let currentImage = _.toInteger(row[UsageCols.IMAGE] || 0);
     let currentVoice = _.toInteger(row[UsageCols.VOICE] || 0);
@@ -331,12 +331,15 @@ function updateUsage(params) {
     if (feature === FeatureEnum.VIDEO) currentVideo += amount;
     if (feature === FeatureEnum.IMAGE) currentImage += amount;
     if (feature === FeatureEnum.VOICE) currentVoice += amount;
-    
-    
+
+
     usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1, 1, 3).setValues([[currentVideo, currentImage, currentVoice]]);
     usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(getCurrentISO());
   } else {
     const now = getCurrentISO();
+    const freeId = generateUUID();
+    const proId = generateUUID();
+    const lifetimeId = generateUUID();
     const newRow = [generateUUID(), now, now, key, 0, 0, 0, now];
     if (feature === FeatureEnum.VIDEO) newRow[UsageCols.VIDEO] = amount;
     if (feature === FeatureEnum.IMAGE) newRow[UsageCols.IMAGE] = amount;
@@ -532,7 +535,7 @@ function adminUpdatePlan(params) {
     if (!_.isNil(params.quota_image)) plansSheet.getRange(rowIndex + 1, PlanCols.IMAGE + 1).setValue(params.quota_image);
     if (!_.isNil(params.quota_voice)) plansSheet.getRange(rowIndex + 1, PlanCols.VOICE + 1).setValue(params.quota_voice);
     if (!_.isNil(params.is_unlimited)) plansSheet.getRange(rowIndex + 1, PlanCols.UNLIMITED + 1).setValue(params.is_unlimited);
-    
+
     plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(now);
     return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
   }
@@ -543,7 +546,7 @@ function adminUpdatePlan(params) {
 function getPlans() {
   const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
   if (!plansSheet) return [];
-  
+
   const data = plansSheet.getDataRange().getValues();
   return _.map(_.filter(data, (row, idx) => idx > 0), row => ({
     id: row[PlanCols.ID],
@@ -830,14 +833,14 @@ function setupSeedData() {
   if (!plansSheet) {
     plansSheet = ss.insertSheet(Config.SHEET_PLANS);
     plansSheet.appendRow(Config.HEADERS.PLANS);
-    const freeId = "plan-free-uuid";
-    const proId = "plan-pro-uuid";
-    const lifetimeId = "plan-lifetime-uuid";
-    
+
+
+
+
     plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false]);
     plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false]);
     plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true]);
-    
+
     plansSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_CONFIG);
   }
 
@@ -848,9 +851,9 @@ function setupSeedData() {
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
 
-    usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", "plan-free-uuid", StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", "plan-pro-uuid", StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", "plan-lifetime-uuid", StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", freeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", proId, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", lifetimeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
 
     usersSheet.getRange("A1:J1").setFontWeight("bold").setBackground(Constants.COLOR_USERS);
   }
