@@ -965,8 +965,7 @@ function deleteAccountAdmin(params) {
   const id = _.get(params, ApiFields.ID);
   const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
-
-  const data = sheet.getDataRange().getValues();
+    const data = sheet.getDataRange().getValues();
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AccountsCols.ID] === id);
   if (rowIndex > 0) {
     if (deleteType === 'soft') {
@@ -987,79 +986,49 @@ function setupSeedData() {
   const proId = generateUUID();
   const lifetimeId = generateUUID();
 
-  let adminSheet = ss.getSheetByName(Config.SHEET_ADMINS);
-  if (!adminSheet) {
-    adminSheet = ss.insertSheet(Config.SHEET_ADMINS);
-    adminSheet.appendRow(Config.HEADERS.ADMINS);
-    adminSheet.appendRow([generateUUID(), now, now, "admin", "admin", Constants.EMPTY_STRING]);
-    adminSheet.getRange("A1:F1").setFontWeight("bold").setBackground(Constants.COLOR_ADMIN);
-  }
+  const initSheet = (name, headers, color, columnWidths = []) => {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) {
+      sheet = ss.insertSheet(name);
+    } else {
+      sheet.clear();
+    }
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground(color);
+    columnWidths.forEach((width, idx) => {
+      if (width) sheet.setColumnWidth(idx + 1, width);
+    });
+    return sheet;
+  };
 
-  let plansSheet = ss.getSheetByName(Config.SHEET_PLANS);
-  if (!plansSheet) {
-    plansSheet = ss.insertSheet(Config.SHEET_PLANS);
-    plansSheet.appendRow(Config.HEADERS.PLANS);
+  const adminSheet = initSheet(Config.SHEET_ADMINS, Config.HEADERS.ADMINS, Constants.COLOR_ADMIN);
+  adminSheet.appendRow([generateUUID(), now, now, "admin", "admin", Constants.EMPTY_STRING]);
 
+  const plansSheet = initSheet(Config.SHEET_PLANS, Config.HEADERS.PLANS, Constants.COLOR_CONFIG);
+  plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false, StatusEnum.ACTIVE]);
+  plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false, StatusEnum.ACTIVE]);
+  plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true, StatusEnum.ACTIVE]);
 
+  const usersSheet = initSheet(Config.SHEET_USERS, Config.HEADERS.USERS, Constants.COLOR_USERS);
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", freeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+  usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", proId, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+  usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", lifetimeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
 
+  const usageSheet = initSheet(Config.SHEET_USAGE, Config.HEADERS.USAGE, Constants.COLOR_USAGE);
+  usageSheet.appendRow([generateUUID(), now, now, "FREE-12345", 0, 0, 0, now]);
+  usageSheet.appendRow([generateUUID(), now, now, "PRO-99999", 5, 20, 1000, now]);
+  usageSheet.appendRow([generateUUID(), now, now, "PRO-LIFE", 10, 50, 5000, now]);
 
-    plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false, StatusEnum.ACTIVE]);
-    plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false, StatusEnum.ACTIVE]);
-    plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true, StatusEnum.ACTIVE]);
+  const keysSheet = initSheet(Config.SHEET_KEYS, Config.HEADERS.KEYS, Constants.COLOR_ADMIN);
+  keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE]);
 
-    plansSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_CONFIG);
-  }
+  const accountsSheet = initSheet(Config.SHEET_ACCOUNTS, Config.HEADERS.ACCOUNTS, Constants.COLOR_CONFIG);
+  accountsSheet.appendRow([generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);
 
-  let usersSheet = ss.getSheetByName(Config.SHEET_USERS);
-  if (!usersSheet) {
-    usersSheet = ss.insertSheet(Config.SHEET_USERS);
-    usersSheet.appendRow(Config.HEADERS.USERS);
-    const nextYear = new Date();
-    nextYear.setFullYear(nextYear.getFullYear() + 1);
-
-    usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", freeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", proId, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-    usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", lifetimeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
-
-    usersSheet.getRange("A1:J1").setFontWeight("bold").setBackground(Constants.COLOR_USERS);
-  }
-
-  let usageSheet = ss.getSheetByName(Config.SHEET_USAGE);
-  if (!usageSheet) {
-    usageSheet = ss.insertSheet(Config.SHEET_USAGE);
-    usageSheet.appendRow(Config.HEADERS.USAGE);
-    usageSheet.appendRow([generateUUID(), now, now, "FREE-12345", 0, 0, 0, now]);
-    usageSheet.appendRow([generateUUID(), now, now, "PRO-99999", 5, 20, 1000, now]);
-    usageSheet.appendRow([generateUUID(), now, now, "PRO-LIFE", 10, 50, 5000, now]);
-    usageSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_USAGE);
-  }
-
-  let keysSheet = ss.getSheetByName(Config.SHEET_KEYS);
-  if (!keysSheet) {
-    keysSheet = ss.insertSheet(Config.SHEET_KEYS);
-    keysSheet.appendRow(Config.HEADERS.KEYS);
-    keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE]);
-    keysSheet.getRange("A1:G1").setFontWeight("bold").setBackground(Constants.COLOR_ADMIN);
-  }
-
-  let accountsSheet = ss.getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!accountsSheet) {
-    accountsSheet = ss.insertSheet(Config.SHEET_ACCOUNTS);
-    accountsSheet.appendRow(Config.HEADERS.ACCOUNTS);
-    accountsSheet.appendRow([generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);
-    accountsSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_CONFIG);
-  }
-
-  let settingsSheet = ss.getSheetByName(Config.SHEET_SETTINGS);
-  if (!settingsSheet) {
-    settingsSheet = ss.insertSheet(Config.SHEET_SETTINGS);
-    settingsSheet.appendRow(Config.HEADERS.SETTINGS);
-    settingsSheet.appendRow([generateUUID(), now, now, "ADMIN_APP_KEY", "VIDIFY_MASTER_KEY_XYZ_123", "Khóa bảo mật Admin (Xác thực API & Băm Key)"]);
-    settingsSheet.getRange("A1:F1").setFontWeight("bold").setBackground("#f3f4f6");
-    settingsSheet.setColumnWidth(4, 200);
-    settingsSheet.setColumnWidth(5, 300);
-    settingsSheet.setColumnWidth(6, 350);
-  }
+  const settingsSheet = initSheet(Config.SHEET_SETTINGS, Config.HEADERS.SETTINGS, "#f3f4f6", [null, null, null, 200, 300, 350]);
+  settingsSheet.appendRow([generateUUID(), now, now, "ADMIN_APP_KEY", "VIDIFY_MASTER_KEY_XYZ_123", "Khóa bảo mật Admin (Xác thực API & Băm Key)"]);
 
   AppLogger.info(Messages.SEED_SUCCESS);
 }
