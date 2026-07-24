@@ -52,9 +52,9 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                             setIsActivating(true);
                             setErrorMsg('');
                             setSuccessMsg('');
-                            const success = await activateLicense(inputKey.trim());
-                            if (!success) {
-                                setErrorMsg(SecurityMessages.ACTIVATION_ERROR_MSG);
+                            const result = await activateLicense(inputKey.trim());
+                            if (result !== true) {
+                                setErrorMsg(typeof result === 'string' ? result : SecurityMessages.ACTIVATION_ERROR_MSG);
                             } else {
                                 setSuccessMsg(SecurityMessages.ACTIVATION_SUCCESS_MSG);
                                 setTimeout(() => setSuccessMsg(''), SecurityConstants.TOAST_DURATION);
@@ -76,6 +76,7 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
 
                         <button
                             type="submit"
+                            title={SecurityMessages.ACTIVATE_BUTTON}
                             disabled={_.some([isActivating, _.isEmpty(inputKey.trim())])}
                             className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-md text-sm font-medium text-white bg-rose-600 hover:bg-rose-500 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -149,7 +150,7 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                     <div className="pointer-events-auto px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center gap-2 shadow-sm">
                         <AlertCircle className="w-3.5 h-3.5" />
                         <span className="text-xs font-bold tracking-wide">
-                            {licenseInfo.status === 'REVOKED' ? 'Tài khoản bị khóa (Chỉ xem)' : 'Tài khoản hết hạn (Chỉ xem)'}
+                            {_.isEqual(licenseInfo.status, LicenseStatus.REVOKED) ? SecurityMessages.REVOKED_STATUS : SecurityMessages.EXPIRED_STATUS}
                         </span>
                     </div>
                 )}
@@ -163,6 +164,7 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
                     </span>
                     <button 
                         onClick={logoutLicense}
+                        title={SecurityMessages.CHANGE_KEY}
                         className="text-xs font-medium px-2 py-1 bg-slate-955 rounded hover:bg-slate-900 transition-colors"
                     >
                         {SecurityMessages.CHANGE_KEY}

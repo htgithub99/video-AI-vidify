@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { API_ROUTES } from '../constants/apiRoutes';
-import { SecurityConstants, LicenseStatus } from '../constants/security';
+import { SecurityConstants, LicenseStatus, SecurityMessages } from '../constants/security';
 import { appError } from '../lib/logger';
 import _ from 'lodash';
 
@@ -12,14 +12,11 @@ export interface LicenseInfo {
         image: number;
         voice: number;
     };
-    quotas: {
-        free_video: number;
-        free_image: number;
-        free_voice: number;
-        pro_video: number;
-        pro_image: number;
-        pro_voice: number;
-        pro_unlimited: boolean;
+    limits: {
+        video: number;
+        image: number;
+        voice: number;
+        unlimited: boolean;
     };
 }
 
@@ -27,7 +24,7 @@ interface LicenseContextType {
     licenseKey: string | null;
     licenseInfo: LicenseInfo | null;
     isLoading: boolean;
-    activateLicense: (key: string) => Promise<boolean>;
+    activateLicense: (key: string) => Promise<boolean | string>;
     logoutLicense: () => void;
 }
 
@@ -38,7 +35,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    const checkLicense = async (key: string) => {
+    const checkLicense = async (key: string): Promise<boolean | string> => {
         try {
             const res = await fetch(`${API_ROUTES.BASE_API}/license/validate`, {
                 method: 'POST',
@@ -47,20 +44,28 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             });
             const data = await res.json();
             
+            if (!data.success) {
+                setLicenseInfo(null);
+                setLicenseKey(null);
+                localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+                setIsLoading(false);
+                return data.error || false;
+            }
+
             const status = _.get(data, 'data.status');
-            if (_.get(data, 'success') && _.isEqual(status, LicenseStatus.ACTIVE)) {
+            if (_.includes([LicenseStatus.ACTIVE, LicenseStatus.REVOKED, LicenseStatus.EXPIRED], status)) {
                 setLicenseInfo(_.get(data, 'data'));
                 setIsLoading(false);
                 return true;
             }
-
+            
             setLicenseInfo(null);
             setLicenseKey(null);
             localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
             setIsLoading(false);
             return false;
         } catch (error) {
-            appError("Lỗi kiểm tra license:", error);
+            appError(SecurityMessages.LICENSE_CHECK_ERROR, error);
             setIsLoading(false);
             return false;
         }
@@ -74,15 +79,15 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     }, [licenseKey]);
 
-    const activateLicense = async (key: string) => {
+    const activateLicense = async (key: string): Promise<boolean | string> => {
         setIsLoading(true);
-        const isValid = await checkLicense(key);
-        if (isValid) {
+        const result = await checkLicense(key);
+        if (result === true) {
             setLicenseKey(key);
             localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
             return true;
         }
-        return false;
+        return result;
     };
 
     const logoutLicense = () => {
@@ -101,7 +106,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 export const useLicense = () => {
     const context = useContext(LicenseContext);
     if (_.isNil(context)) {
-        throw new Error("useLicense must be used within a LicenseProvider");
+        throw new Error(SecurityMessages.LICENSE_CONTEXT_ERROR);
     }
     return context;
 };

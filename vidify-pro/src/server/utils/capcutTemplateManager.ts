@@ -6,7 +6,7 @@ import _ from "lodash";
 import { logger } from "../../lib/logger.js";
 import { TEMPLATE_CONFIG } from "../../constants/index.js";
 import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
-import { jsonUtils } from "@/src/lib/json.js";
+import { jsonUtils } from "../../lib/json.js";
 
 export interface CapcutTemplate {
   id: string;

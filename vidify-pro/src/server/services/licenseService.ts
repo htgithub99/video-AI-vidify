@@ -2,7 +2,7 @@ import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus } from '../../constants/security.js';
+import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus, PlanType } from '../../constants/security.js';
 import { jsonUtils } from '../../lib/json.js';
 import { appError } from '../../lib/logger.js';
 
@@ -26,6 +26,7 @@ function getHardwareId(): string {
 export interface LicenseInfo {
     status: LicenseStatus;
     plan_id: string;
+    plan_type: string;
     quota_type: string;
     expires_at: string | null;
     usage: {
@@ -53,6 +54,7 @@ export class LicenseService {
                 headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
                 body: jsonUtils.safeStringify({
                     action: GasActions.VERIFY_KEY,
+                    admin_key: SecurityConstants.ADMIN_APP_KEY,
                     license_key: licenseKey,
                     device_id: deviceId
                 })
@@ -61,30 +63,32 @@ export class LicenseService {
             const data: any = await response.json();
             
             if (_.has(data, 'error')) {
-                appError(SecurityMessages.LICENSE_VALIDATION_ERROR, _.get(data, 'error'));
-                return null;
+                const errorMsg = _.get(data, 'error');
+                appError(SecurityMessages.LICENSE_VALIDATION_ERROR, errorMsg);
+                throw new Error(errorMsg);
             }
             
             return {
-                status: _.get(data, 'user.status'),
-                plan_id: _.get(data, 'user.plan_id'),
-                quota_type: _.get(data, 'user.quota_type', 'DAILY'),
-                expires_at: _.get(data, 'user.expires_at', null),
+                status: _.get(data, 'status'),
+                plan_id: _.get(data, 'plan.id'),
+                plan_type: _.get(data, 'plan.name', PlanType.FREE),
+                quota_type: _.get(data, 'quota_type', SecurityConstants.QUOTA_TYPE_DAILY),
+                expires_at: _.get(data, 'expires_at', null),
                 usage: {
                     video: _.get(data, 'usage.video', 0),
                     image: _.get(data, 'usage.image', 0),
                     voice: _.get(data, 'usage.voice', 0),
                 },
                 limits: {
-                    video: _.get(data, 'limits.video', 0),
-                    image: _.get(data, 'limits.image', 0),
-                    voice: _.get(data, 'limits.voice', 0),
-                    unlimited: _.get(data, 'limits.unlimited', false),
+                    video: _.get(data, 'plan.quota_video', 0),
+                    image: _.get(data, 'plan.quota_image', 0),
+                    voice: _.get(data, 'plan.quota_voice', 0),
+                    unlimited: _.get(data, 'plan.is_unlimited', false),
                 }
             };
-        } catch (error) {
+        } catch (error: any) {
             appError(SecurityMessages.FAILED_TO_CONNECT, error);
-            return null;
+            throw new Error(error.message || SecurityMessages.FAILED_TO_CONNECT);
         }
     }
 
@@ -97,6 +101,7 @@ export class LicenseService {
                 headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
                 body: jsonUtils.safeStringify({
                     action: GasActions.UPDATE_USAGE,
+                    admin_key: SecurityConstants.ADMIN_APP_KEY,
                     license_key: licenseKey,
                     feature: feature,
                     amount: amount

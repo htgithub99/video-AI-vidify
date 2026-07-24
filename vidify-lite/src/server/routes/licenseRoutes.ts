@@ -1,25 +1,22 @@
 import { Router, Request, Response } from 'express';
 import { LicenseService } from '../services/licenseService.js';
+import { SecurityConstants, SecurityMessages } from '../../constants/security.js';
+import _ from 'lodash';
 
 const router = Router();
 
-router.post('/validate', async (req: Request, res: Response) => {
+router.post('/validate', async (req: Request, res: Response): Promise<any> => {
     try {
         const { license_key } = req.body;
         
-        if (!license_key) {
-            return res.status(400).json({ error: 'Missing license_key' });
+        if (_.isEmpty(license_key)) {
+            return res.status(SecurityConstants.HTTP_BAD_REQUEST).json({ error: SecurityMessages.MISSING_REQUEST_INFO });
         }
 
         const licenseInfo = await LicenseService.validateKey(license_key);
-        
-        if (!licenseInfo) {
-            return res.status(404).json({ error: 'License key not found or revoked' });
-        }
-
         res.json({ success: true, data: licenseInfo });
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
+    } catch (error: any) {
+        res.status(SecurityConstants.HTTP_BAD_REQUEST).json({ success: false, error: error.message });
     }
 });
 

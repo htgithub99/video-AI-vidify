@@ -117,3 +117,5 @@ const shutdownGracefully = async () => {
 
 process.on(SERVER_CONFIG.SIGINT, shutdownGracefully);
 process.on(SERVER_CONFIG.SIGTERM, shutdownGracefully);
+
+// trigger restart

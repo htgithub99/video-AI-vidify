@@ -34,8 +34,9 @@ export enum FeatureType {
 }
 
 export const SecurityConstants = {
+  ADMIN_APP_KEY: 'VIDIFY_MASTER_KEY_XYZ_123',
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
-  GAS_API_URL: 'https://script.google.com/macros/s/AKfycbwqFf0j3-y7dO_mLL1D95K1dsNvP_B1jTRsVKydQsjNePDWoZIXx-1KwSnYomUWeY4Q/exec',
+  GAS_API_URL: 'https://script.google.com/macros/s/AKfycbwkPGwfkR3ibz362h-QBxQKnHyMwvRv9gnmL7TJ-NFb2atmovnsBbev-dyrd-qKazOY/exec',
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
@@ -54,7 +55,9 @@ export const SecurityConstants = {
   CONTENT_TYPE_JSON: 'application/json',
   UTF8_ENCODING: 'utf8',
   QUOTA_TYPE_TOTAL: 'TOTAL',
+  QUOTA_TYPE_DAILY: 'DAILY',
   UNKNOWN_PLAN_NAME: 'UNKNOWN',
+  HTTP_BAD_REQUEST: 400,
 };
 
 export const LocalizationConstants = {
@@ -89,7 +92,7 @@ export const SecurityMessages = {
   ACTIVATION_ERROR_MSG: 'Mã kích hoạt không hợp lệ, hoặc thiết bị bị từ chối.',
   ACTIVATION_SUCCESS_MSG: 'Kích hoạt thành công!',
   ACTIVATING_BUTTON: 'Đang kích hoạt...',
-  ACTIVATE_BUTTON: 'Kích Hoạt Ngay',
+  ACTIVATE_BUTTON: 'Kích Hoạt',
   PRO_VERSION: '✨ PRO Version',
   FREE_VERSION: '✨ FREE Version',
   CHANGE_KEY: 'Đổi Key',
@@ -107,6 +110,10 @@ export const SecurityMessages = {
   TRY_ROTATING_ACCOUNT: 'Đang thử xoay vòng sang tài khoản: ',
   MARK_ACCOUNT_ERROR: 'Đăng nhập thất bại, đánh dấu tài khoản bị lỗi: ',
   ROTATION_ERROR: 'Lỗi trong quá trình xoay vòng tài khoản',
+  REVOKED_STATUS: 'Tài khoản bị khóa (Chỉ xem)',
+  EXPIRED_STATUS: 'Tài khoản hết hạn (Chỉ xem)',
+  LICENSE_CHECK_ERROR: 'Lỗi kiểm tra bản quyền:',
+  LICENSE_CONTEXT_ERROR: 'useLicense must be used within a LicenseProvider'
 };
 
 export const AutoLoginConstants = {
@@ -145,4 +152,15 @@ export const ImageGenMessages = {
   INJECT_HELPERS_ERR: 'Failed to inject helpers on current page context:',
   IMAGE_RENDER_ERR: '[Image Render] Attempt {0} failed: {1}',
   IMAGE_RENDER_GLOBAL_ERR: '[Image Render] Error in generateImageWithPlaywright: ',
+};
+
+export const AppLogger = {
+  info: (...args: any[]) => console.log('[INFO]', ...args),
+  error: (...args: any[]) => console.error('[ERROR]', ...args),
+};
+
+export const UIConstants = {
+  INFINITY: '∞',
+  LANG_VI: 'VI',
+  LANG_EN: 'EN'
 };

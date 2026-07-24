@@ -1,6 +1,27 @@
 const el = (id) => document.getElementById(id);
 const elq = (selector) => document.querySelector(selector);
 
+const AppStrings = {
+    REVOKED_BADGE: 'ĐÃ KHÓA',
+    TOOLTIP_DELETE_PLAN: 'Xóa gói này',
+    TOOLTIP_PLAN_NAME: 'Tên gói',
+    LABEL_PLAN_NAME: 'Tên Gói',
+    TOOLTIP_UNLIMITED: 'Dùng Không Giới Hạn (Unlimited)',
+    LABEL_UNLIMITED: 'Không Giới Hạn',
+    TOOLTIP_VIDEO: 'Số lượng Video',
+    LABEL_VIDEO: 'Số Video',
+    TOOLTIP_IMAGE: 'Số lượng Ảnh',
+    LABEL_IMAGE: 'Số Ảnh',
+    TOOLTIP_VOICE: 'Số lượng Ký tự',
+    LABEL_VOICE: 'Số Ký tự',
+    LOADING_PROCESS: 'Đang xử lý...',
+    SOFT_DELETE_SUCCESS: 'Khóa mềm thành công',
+    ERROR_PREFIX: 'Lỗi: ',
+    LOADING_DELETE: 'Đang xóa...',
+    HARD_DELETE_SUCCESS: 'Xóa cứng thành công',
+    STATUS_REVOKED: 'BỊ KHÓA'
+};
+
 let adminToken = localStorage.getItem(AdminConstants.TOKEN_KEY) || AdminConstants.EMPTY_STR;
 let apiUrl = API_BASE_URL;
 let currentPage = AdminConstants.DEFAULT_PAGE;
@@ -89,11 +110,11 @@ async function fetchAPI(action, data = {}) {
     }
 }
 
-function showDashboard() {
+async function showDashboard() {
     el(DOMIds.LOGIN_SCREEN).classList.remove(AdminClasses.ACTIVE);
     el(DOMIds.DASHBOARD_SCREEN).classList.add(AdminClasses.ACTIVE);
-    loadUsers();
-    loadPlans();
+    await loadPlans();
+    await loadUsers();
 }
 
 async function handleLogin() {
@@ -244,7 +265,7 @@ function renderTable() {
             _.get(user, ApiFields.USAGE_IMAGE, 0), ti,
             _.get(user, ApiFields.USAGE_VOICE, 0), tc
         );
-        const planName = _.get(user, AdminConstants.PLAN_NAME_PATH, AdminConstants.UNKNOWN_STR);
+        const planName = plan ? plan.name : AdminConstants.UNKNOWN_STR;
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
         const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
@@ -346,40 +367,43 @@ function renderPlansConfig() {
         const planId = plan.id;
         const planName = plan.name;
         const isUnlimited = plan.is_unlimited;
+        const isRevoked = plan.status === 'REVOKED';
         
         const badgeClass = (_.includes(_.toUpper(planName), AdminConstants.PLAN_FREE)) ? AdminConstants.PLAN_FREE : AdminConstants.PLAN_PRO;
+        const opacityStyle = isRevoked ? 'opacity: 0.6; filter: grayscale(100%);' : '';
+        const revokedBadge = isRevoked ? `<span class="badge badge-error" style="font-size: 0.7rem; margin-left: 0.5rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
         
         const colHtml = `
-            <div class="quota-col quota-${planId}">
+            <div class="quota-col quota-${planId}" style="${opacityStyle}">
                 <div class="quota-col-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <span class="badge ${badgeClass}">${escapeHTML(planName)}</span>
+                    <div style="display: flex; align-items: center;">
                         <h4>${escapeHTML(planName)}</h4>
+                        ${revokedBadge}
                     </div>
-                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="Xóa gói này" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">✕</button>
+                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="${AppStrings.TOOLTIP_DELETE_PLAN}" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">✕</button>
                 </div>
                 <div class="quota-col-body">
                     <div class="input-group">
-                        <label title="Tên gói">Tên Gói</label>
+                        <label title="${AppStrings.TOOLTIP_PLAN_NAME}">${AppStrings.LABEL_PLAN_NAME}</label>
                         <input type="text" class="plan-name-input" data-plan-id="${planId}" value="${escapeHTML(planName)}">
                     </div>
                     <label class="unlimited-toggle">
-                        <span title="Dùng Không Giới Hạn (Unlimited)">Không Giới Hạn</span>
+                        <span title="${AppStrings.TOOLTIP_UNLIMITED}">${AppStrings.LABEL_UNLIMITED}</span>
                         <div class="toggle-switch">
                             <input type="checkbox" class="plan-unlimited-input" data-plan-id="${planId}" ${isUnlimited ? 'checked' : ''}>
                             <span class="slider"></span>
                         </div>
                     </label>
                     <div class="input-group">
-                        <label title="Số lượng Video">Số Video</label>
+                        <label title="${AppStrings.TOOLTIP_VIDEO}">${AppStrings.LABEL_VIDEO}</label>
                         <input type="text" inputmode="numeric" class="numeric-input plan-video-input" data-plan-id="${planId}" value="${plan.quota_video}" ${isUnlimited ? 'disabled' : ''}>
                     </div>
                     <div class="input-group">
-                        <label title="Số lượng Ảnh">Số Ảnh</label>
+                        <label title="${AppStrings.TOOLTIP_IMAGE}">${AppStrings.LABEL_IMAGE}</label>
                         <input type="text" inputmode="numeric" class="numeric-input plan-image-input" data-plan-id="${planId}" value="${plan.quota_image}" ${isUnlimited ? 'disabled' : ''}>
                     </div>
                     <div class="input-group">
-                        <label title="Số lượng Ký tự">Số Ký tự</label>
+                        <label title="${AppStrings.TOOLTIP_VOICE}">${AppStrings.LABEL_VOICE}</label>
                         <input type="text" inputmode="numeric" class="numeric-input plan-voice-input" data-plan-id="${planId}" value="${plan.quota_voice}" ${isUnlimited ? 'disabled' : ''}>
                     </div>
                 </div>
@@ -402,18 +426,10 @@ function renderPlansConfig() {
     const deletePlanBtns = container.querySelectorAll('.delete-plan-btn');
     _.forEach(deletePlanBtns, btn => {
         btn.addEventListener(EventTypes.CLICK, async (e) => {
-            if (!confirm(AdminMessages.DELETE_PLAN_CONFIRM)) return;
             const pId = e.target.getAttribute('data-plan-id');
-            try {
-                setButtonLoading(e.target, true, AdminConstants.EMPTY_STR);
-                await fetchAPI(AdminActions.DELETE_PLAN, { id: pId });
-                showToast(AdminMessages.DELETE_PLAN_SUCCESS, ToastType.SUCCESS);
-                loadPlans();
-            } catch (err) {
-                showToast(AdminMessages.DELETE_PLAN_ERROR + _.get(err, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
-            } finally {
-                setButtonLoading(e.target, false);
-            }
+            deletingResourceId = pId;
+            deletingResourceType = 'plan';
+            el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
         });
     });
     
@@ -824,6 +840,8 @@ function initEventListeners() {
     el(DOMIds.SAVE_USER_BTN)?.addEventListener(EventTypes.CLICK, handleSaveUser);
     el(DOMIds.BTN_SOFT_DELETE)?.addEventListener(EventTypes.CLICK, handleSoftDelete);
     el(DOMIds.BTN_HARD_DELETE)?.addEventListener(EventTypes.CLICK, handleHardDelete);
+    el('btn-resource-soft-delete')?.addEventListener(EventTypes.CLICK, handleResourceSoftDelete);
+    el('btn-resource-hard-delete')?.addEventListener(EventTypes.CLICK, handleResourceHardDelete);
     el(DOMIds.MODAL_RESET_DEVICE_BTN)?.addEventListener(EventTypes.CLICK, handleResetDevice);
 
     const configToggleBtn = el(DOMIds.CONFIG_TOGGLE_BTN);
@@ -1047,20 +1065,13 @@ function openConfirmModal(message, callback) {
     el(DOMIds.CONFIRM_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
+let deletingResourceId = null;
+let deletingResourceType = null;
+
 function deleteApiKeysAdmin(keyId) {
-    const keys = _.get(window, 'adminApiKeysData', []);
-    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
-    const assignedTo = keyRecord ? _.get(keyRecord, ApiFields.ASSIGNED_TO) : 'ALL';
-    
-    openConfirmModal(AdminMessages.DELETE_KEYS_CONFIRM.replace('{0}', assignedTo), async () => {
-        try {
-            await fetchAPI(AdminActions.DELETE_API_KEYS, { [ApiFields.ID]: keyId });
-            showToast(AdminMessages.DELETE_KEYS_SUCCESS, ToastType.SUCCESS);
-            loadApiKeysAdmin();
-        } catch (e) {
-            showToast(AdminMessages.DELETE_KEYS_ERROR + e.message, ToastType.ERROR);
-        }
-    });
+    deletingResourceId = keyId;
+    deletingResourceType = 'api_key';
+    el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
 }
 
 function editAccountAdmin(id) {
@@ -1082,15 +1093,47 @@ function editAccountAdmin(id) {
 }
 
 function deleteAccountAdmin(id) {
-    openConfirmModal(AdminMessages.DELETE_ACCOUNT_CONFIRM, async () => {
-        try {
-            await fetchAPI(AdminActions.DELETE_ACCOUNT, { [ApiFields.ID]: id });
-            showToast(AdminMessages.DELETE_ACCOUNT_SUCCESS, ToastType.SUCCESS);
-            loadAccountsAdmin();
-        } catch (e) {
-            showToast(AdminMessages.DELETE_ACCOUNT_ERROR + e.message, ToastType.ERROR);
-        }
-    });
+    deletingResourceId = id;
+    deletingResourceType = 'account';
+    el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
+}
+
+async function handleResourceSoftDelete() {
+    const btn = el('btn-resource-soft-delete');
+    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE || AppStrings.LOADING_PROCESS);
+    try {
+        const action = deletingResourceType === 'api_key' ? AdminActions.DELETE_API_KEYS : 
+                       (deletingResourceType === 'plan' ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: 'soft' });
+        showToast(AppStrings.SOFT_DELETE_SUCCESS, ToastType.SUCCESS);
+        closeModal('resource-delete-modal');
+        if (deletingResourceType === 'api_key') loadApiKeysAdmin();
+        else if (deletingResourceType === 'plan') loadPlans();
+        else loadAccountsAdmin();
+    } catch (e) {
+        showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
+    } finally {
+        setButtonLoading(btn, false);
+    }
+}
+
+async function handleResourceHardDelete() {
+    const btn = el('btn-resource-hard-delete');
+    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE || AppStrings.LOADING_DELETE);
+    try {
+        const action = deletingResourceType === 'api_key' ? AdminActions.DELETE_API_KEYS : 
+                       (deletingResourceType === 'plan' ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: 'hard' });
+        showToast(AppStrings.HARD_DELETE_SUCCESS, ToastType.SUCCESS);
+        closeModal('resource-delete-modal');
+        if (deletingResourceType === 'api_key') loadApiKeysAdmin();
+        else if (deletingResourceType === 'plan') loadPlans();
+        else loadAccountsAdmin();
+    } catch (e) {
+        showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
+    } finally {
+        setButtonLoading(btn, false);
+    }
 }
 
 async function loadApiKeysAdmin() {
@@ -1129,10 +1172,13 @@ async function loadApiKeysAdmin() {
             const keyId = _.get(k, ApiFields.ID);
             
             const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
+            const isRevoked = _.get(k, 'status') === 'REVOKED';
+            const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
+            const statusBadge = isRevoked ? `<span class="badge badge-error" style="margin-left: 0.5rem; font-size: 0.65rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
             
             return `
-            <tr>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span></td>
+            <tr style="${rowStyle}">
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
@@ -1183,8 +1229,13 @@ async function loadAccountsAdmin() {
             const options = `
                 <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ACTIVE ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
                 <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ERROR ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
+                <option value="REVOKED" ${_.get(a, ApiFields.STATUS) === 'REVOKED' ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AppStrings.STATUS_REVOKED}</option>
             `;
+            const isRevoked = _.get(a, ApiFields.STATUS) === 'REVOKED';
+            const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
+
             return `
+            <tr style="${rowStyle}">
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">

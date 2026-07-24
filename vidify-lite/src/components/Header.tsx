@@ -4,7 +4,8 @@ import { Video, Image as ImageIcon, Mic, Sun, Moon } from "lucide-react";
 import { Button } from "./ui/Button";
 import { AppTheme, AppLanguage } from "../constants/enums";
 import { useLicense } from "../contexts/LicenseContext";
-import { PlanType } from "../constants/security";
+import { UIConstants } from "../constants/security";
+
 import { QUOTA_TEXTS } from "../constants/texts";
 import _ from "lodash";
 
@@ -30,16 +31,14 @@ export default function Header({
   toggleTheme,
 }: HeaderProps) {
   const t = translations[currentLang as Lang];
-  const langKey = _.isEqual(currentLang, 'vi') ? 'VN' : 'EN';
+  const langKey = _.isEqual(currentLang, AppLanguage.VI) ? 'VN' : 'EN';
   const quotaText = QUOTA_TEXTS[langKey];
   const { licenseInfo } = useLicense();
 
-  const isPro = !_.isNil(licenseInfo) && _.includes(licenseInfo.plan_type, PlanType.PRO);
-  
-  const limitVideo = isPro ? _.get(licenseInfo, 'quotas.pro_video', 0) : _.get(licenseInfo, 'quotas.free_video', 0);
-  const limitImage = isPro ? _.get(licenseInfo, 'quotas.pro_image', 0) : _.get(licenseInfo, 'quotas.free_image', 0);
-  const limitVoice = isPro ? _.get(licenseInfo, 'quotas.pro_voice', 0) : _.get(licenseInfo, 'quotas.free_voice', 0);
-  const isUnlimited = isPro && _.get(licenseInfo, 'quotas.pro_unlimited', false);
+  const limitVideo = _.get(licenseInfo, 'limits.video', 0);
+  const limitImage = _.get(licenseInfo, 'limits.image', 0);
+  const limitVoice = _.get(licenseInfo, 'limits.voice', 0);
+  const isUnlimited = _.get(licenseInfo, 'limits.unlimited', false);
 
   const usageVideo = _.get(licenseInfo, 'usage.video', 0);
   const usageImage = _.get(licenseInfo, 'usage.image', 0);
@@ -71,21 +70,21 @@ export default function Header({
           <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.VIDEO_TOOLTIP}>
             <Video className="w-3.5 h-3.5 text-blue-400" />
             <span className="text-[10px] font-bold text-slate-400">
-              <span className="text-blue-400 font-black">{usageVideo}</span> / {isUnlimited ? '∞' : limitVideo}
+              <span className="text-blue-400 font-black">{usageVideo}</span> / {isUnlimited ? UIConstants.INFINITY : limitVideo}
             </span>
           </div>
 
           <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.IMAGE_TOOLTIP}>
             <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
             <span className="text-[10px] font-bold text-slate-400">
-              <span className="text-emerald-400 font-black">{usageImage}</span> / {isUnlimited ? '∞' : limitImage}
+              <span className="text-emerald-400 font-black">{usageImage}</span> / {isUnlimited ? UIConstants.INFINITY : limitImage}
             </span>
           </div>
 
           <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={quotaText.VOICE_TOOLTIP}>
             <Mic className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-[10px] font-bold text-slate-400">
-              <span className="text-amber-400 font-black">{usageVoice.toLocaleString()}</span> / {isUnlimited ? '∞' : limitVoice.toLocaleString()}
+              <span className="text-amber-400 font-black">{usageVoice.toLocaleString()}</span> / {isUnlimited ? UIConstants.INFINITY : limitVoice.toLocaleString()}
             </span>
           </div>
 

@@ -27,11 +27,12 @@ const _ = {
 
 const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_ID: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8, QUOTA_TYPE: 9 };
 const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, LAST_RESET: 7 };
-const PlanCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, NAME: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, UNLIMITED: 7 };
+const PlanCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, NAME: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, UNLIMITED: 7, STATUS: 8 };
 const AdminCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, PASSWORD: 4, TOKEN: 5 };
 const HttpCode = { OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, INTERNAL_ERROR: 500 };
-const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5 };
+const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5, STATUS: 6 };
 const AccountsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, EMAIL: 3, PASSWORD: 4, RECOVERY_EMAIL: 5, STATUS: 6, ASSIGNED_TO: 7 };
+const SettingsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, KEY: 3, VALUE: 4, DESCRIPTION: 5 };
 
 const Config = {
   SHEET_USERS: "users",
@@ -40,13 +41,15 @@ const Config = {
   SHEET_ADMINS: "admins",
   SHEET_KEYS: "keys",
   SHEET_ACCOUNTS: "accounts",
+  SHEET_SETTINGS: "settings",
   HEADERS: {
     ADMINS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "PASSWORD", "TOKEN"],
-    PLANS: ["ID", "CREATED_AT", "UPDATED_AT", "NAME", "QUOTA_VIDEO", "QUOTA_IMAGE", "QUOTA_VOICE", "IS_UNLIMITED"],
+    PLANS: ["ID", "CREATED_AT", "UPDATED_AT", "NAME", "QUOTA_VIDEO", "QUOTA_IMAGE", "QUOTA_VOICE", "IS_UNLIMITED", "STATUS"],
     USERS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "LICENSE_KEY", "PLAN_ID", "STATUS", "EXPIRES_AT", "DEVICE_ID", "QUOTA_TYPE"],
     USAGE: ["ID", "CREATED_AT", "UPDATED_AT", "LICENSE_KEY", "VIDEO_COUNT", "IMAGE_COUNT", "VOICE_CHARS", "LAST_RESET"],
-    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY"],
-    ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"]
+    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY", "STATUS"],
+    ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"],
+    SETTINGS: ["ID", "CREATED_AT", "UPDATED_AT", "KEY", "VALUE", "DESCRIPTION"]
   },
   MAX_DEVICES: 1
 };
@@ -100,7 +103,39 @@ const Messages = {
   GET_RUNNING: "API is running. Please use POST method.",
   SEED_SUCCESS: "Tạo Seed Data thành công! Bạn có thể xem các Sheet ở bên dưới.",
   RES_SUCCESS: "success",
-  PLAN_NOT_FOUND: "Không tìm thấy gói"
+  PLAN_NOT_FOUND: "Không tìm thấy gói",
+  INVALID_ADMIN_KEY: "Xác thực Admin thất bại"
+};
+
+
+const ApiFields = {
+  ACTION: "action",
+  ADMIN_TOKEN: "admin_token",
+  USERNAME: "username",
+  PASSWORD: "password",
+  ADMIN_KEY: "admin_key",
+  LICENSE_KEY: "license_key",
+  DEVICE_ID: "device_id",
+  FEATURE: "feature",
+  AMOUNT: "amount",
+  ID: "id",
+  PLAN_ID: "plan_id",
+  EXPIRES_AT: "expires_at",
+  STATUS: "status",
+  QUOTA_TYPE: "quota_type",
+  NAME: "name",
+  QUOTA_VIDEO: "quota_video",
+  QUOTA_IMAGE: "quota_image",
+  QUOTA_VOICE: "quota_voice",
+  IS_UNLIMITED: "is_unlimited",
+  DELETE_TYPE: "delete_type",
+  GEMINI_KEY: "geminiKey",
+  AI33_KEY: "ai33Key",
+  ASSIGNED_TO: "assignedTo",
+  ACCOUNT: "account",
+  EMAIL: "email",
+  RECOVERY_EMAIL: "recovery_email",
+  ROW_INDEX: "row_index"
 };
 
 const AppActions = {
@@ -176,12 +211,12 @@ function getCurrentISO() {
 function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
-    const action = _.get(params, 'action');
+    const action = _.get(params, ApiFields.ACTION);
 
     if (action === AppActions.ADMIN_LOGIN) return adminLogin(params);
 
     if (!_.isNil(action) && _.startsWith(action, AppActions.ADMIN_PREFIX)) {
-      if (!validateAdminToken(_.get(params, 'admin_token'))) {
+      if (!validateAdminToken(_.get(params, ApiFields.ADMIN_TOKEN))) {
         return jsonResponse({ error: Messages.INVALID_TOKEN, code: HttpCode.UNAUTHORIZED });
       }
       if (action === AppActions.ADMIN_GET_USERS) return adminGetUsers();
@@ -230,8 +265,11 @@ function doGet(e) {
 }
 
 function verifyKey(params) {
-  const key = _.get(params, 'license_key');
-  const device = _.get(params, 'device_id');
+  const adminKey = _.get(params, ApiFields.ADMIN_KEY);
+  if (adminKey !== getAppSecretKey()) return jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
+
+  const key = _.get(params, ApiFields.LICENSE_KEY);
+  const device = _.get(params, ApiFields.DEVICE_ID);
 
   if (_.isNil(key)) return jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
   if (_.isNil(device)) return jsonResponse({ error: Messages.MISSING_DEVICE, code: HttpCode.BAD_REQUEST });
@@ -302,9 +340,12 @@ function verifyKey(params) {
 }
 
 function updateUsage(params) {
-  const key = _.get(params, 'license_key');
-  const feature = _.get(params, 'feature');
-  const amount = _.toInteger(_.get(params, 'amount')) || 1;
+  const adminKey = _.get(params, ApiFields.ADMIN_KEY);
+  if (adminKey !== getAppSecretKey()) return jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
+
+  const key = _.get(params, ApiFields.LICENSE_KEY);
+  const feature = _.get(params, ApiFields.FEATURE);
+  const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || 1;
 
   if (_.isNil(key)) return jsonResponse({ error: Messages.MISSING_KEY });
 
@@ -359,8 +400,8 @@ function updateUsage(params) {
 }
 
 function adminLogin(params) {
-  const username = _.get(params, 'username');
-  const password = _.get(params, 'password');
+  const username = _.get(params, ApiFields.USERNAME);
+  const password = _.get(params, ApiFields.PASSWORD);
 
   if (_.isNil(username) || _.isNil(password)) return jsonResponse({ error: Messages.MISSING_CREDENTIALS });
 
@@ -423,12 +464,49 @@ function adminGetUsers() {
   return jsonResponse({ users: users });
 }
 
+function getAppSecretKey() {
+  try {
+    const settingsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_SETTINGS);
+    if (settingsSheet) {
+      const data = settingsSheet.getDataRange().getValues();
+      const row = _.find(data, (r, idx) => idx > 0 && r[SettingsCols.KEY] === 'ADMIN_APP_KEY' && r[SettingsCols.VALUE]);
+      if (row) return String(row[SettingsCols.VALUE]).trim();
+    }
+  } catch (e) {
+    AppLogger.error('Error in getAppSecretKey', e);
+  }
+  return 'VIDIFY_MASTER_KEY_XYZ_123';
+}
+
 function adminCreateKey(params) {
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const username = _.get(params, 'username', Constants.UNKNOWN);
-  const planId = _.get(params, 'plan_id');
-  const quotaType = _.get(params, 'quota_type', QuotaType.DAILY);
-  const newKey = _.toUpper(_.split(generateUUID(), Constants.UUID_SPLIT_CHAR)[0]);
+  const username = _.get(params, ApiFields.USERNAME, Constants.UNKNOWN);
+  const planId = _.get(params, ApiFields.PLAN_ID);
+  const quotaType = _.get(params, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
+  
+  const generateSecureKey = () => {
+    
+    const uuid = Utilities.getUuid().replace(/-/g, '');
+    const payload = uuid.substring(0, 20).toUpperCase();
+    
+    
+    const secretKey = getAppSecretKey();
+    const signatureBytes = Utilities.computeHmacSha256Signature(payload, secretKey);
+    
+    
+    const signatureHex = signatureBytes.map(byte => {
+      const v = (byte < 0 ? byte + 256 : byte).toString(16);
+      return v.length === 1 ? '0' + v : v;
+    }).join('').toUpperCase();
+    
+    
+    const checksum = signatureHex.substring(0, 5);
+    
+    
+    const finalKey = payload + checksum;
+    return finalKey.match(/.{1,5}/g).join('-');
+  };
+  const newKey = generateSecureKey();
 
   const now = getCurrentISO();
   usersSheet.appendRow([generateUUID(), now, now, username, newKey, planId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, quotaType]);
@@ -437,7 +515,7 @@ function adminCreateKey(params) {
 }
 
 function adminRevokeKey(params) {
-  const id = _.get(params, 'id');
+  const id = _.get(params, ApiFields.ID);
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
 
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
@@ -453,7 +531,7 @@ function adminRevokeKey(params) {
 }
 
 function adminDeleteKey(params) {
-  const id = _.get(params, 'id');
+  const id = _.get(params, ApiFields.ID);
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
 
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
@@ -475,11 +553,11 @@ function adminDeleteKey(params) {
 }
 
 function adminUpdateKey(params) {
-  const id = _.get(params, 'id');
-  const newPlanId = _.get(params, 'plan_id');
-  const newExpires = _.get(params, 'expires_at');
-  const newStatus = _.get(params, 'status');
-  const newQuotaType = _.get(params, 'quota_type');
+  const id = _.get(params, ApiFields.ID);
+  const newPlanId = _.get(params, ApiFields.PLAN_ID);
+  const newExpires = _.get(params, ApiFields.EXPIRES_AT);
+  const newStatus = _.get(params, ApiFields.STATUS);
+  const newQuotaType = _.get(params, ApiFields.QUOTA_TYPE);
 
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
 
@@ -507,7 +585,7 @@ function adminUpdateKey(params) {
 }
 
 function adminResetDevice(params) {
-  const id = _.get(params, 'id');
+  const id = _.get(params, ApiFields.ID);
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
 
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
@@ -530,7 +608,7 @@ function adminUpdatePlan(params) {
   const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
   if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const planId = _.get(params, 'id');
+  const planId = _.get(params, ApiFields.ID);
   if (_.isNil(planId)) return jsonResponse({ error: Messages.MISSING_ID });
 
   const data = plansSheet.getDataRange().getValues();
@@ -538,11 +616,11 @@ function adminUpdatePlan(params) {
 
   if (rowIndex > 0) {
     const now = getCurrentISO();
-    if (!_.isNil(params.name)) plansSheet.getRange(rowIndex + 1, PlanCols.NAME + 1).setValue(params.name);
-    if (!_.isNil(params.quota_video)) plansSheet.getRange(rowIndex + 1, PlanCols.VIDEO + 1).setValue(params.quota_video);
-    if (!_.isNil(params.quota_image)) plansSheet.getRange(rowIndex + 1, PlanCols.IMAGE + 1).setValue(params.quota_image);
-    if (!_.isNil(params.quota_voice)) plansSheet.getRange(rowIndex + 1, PlanCols.VOICE + 1).setValue(params.quota_voice);
-    if (!_.isNil(params.is_unlimited)) plansSheet.getRange(rowIndex + 1, PlanCols.UNLIMITED + 1).setValue(params.is_unlimited);
+    if (!_.isNil(params[ApiFields.NAME])) plansSheet.getRange(rowIndex + 1, PlanCols.NAME + 1).setValue(params[ApiFields.NAME]);
+    if (!_.isNil(params[ApiFields.QUOTA_VIDEO])) plansSheet.getRange(rowIndex + 1, PlanCols.VIDEO + 1).setValue(params[ApiFields.QUOTA_VIDEO]);
+    if (!_.isNil(params[ApiFields.QUOTA_IMAGE])) plansSheet.getRange(rowIndex + 1, PlanCols.IMAGE + 1).setValue(params[ApiFields.QUOTA_IMAGE]);
+    if (!_.isNil(params[ApiFields.QUOTA_VOICE])) plansSheet.getRange(rowIndex + 1, PlanCols.VOICE + 1).setValue(params[ApiFields.QUOTA_VOICE]);
+    if (!_.isNil(params[ApiFields.IS_UNLIMITED])) plansSheet.getRange(rowIndex + 1, PlanCols.UNLIMITED + 1).setValue(params[ApiFields.IS_UNLIMITED]);
 
     plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(now);
     return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
@@ -557,13 +635,13 @@ function adminCreatePlan(params) {
 
   const now = getCurrentISO();
   const newId = generateUUID();
-  const name = _.get(params, 'name', Constants.NEW_PLAN_NAME);
-  const video = _.toInteger(_.get(params, 'quota_video')) || 0;
-  const image = _.toInteger(_.get(params, 'quota_image')) || 0;
-  const voice = _.toInteger(_.get(params, 'quota_voice')) || 0;
-  const unlimited = _.get(params, 'is_unlimited', false);
+  const name = _.get(params, ApiFields.NAME, Constants.NEW_PLAN_NAME);
+  const video = _.toInteger(_.get(params, ApiFields.QUOTA_VIDEO)) || 0;
+  const image = _.toInteger(_.get(params, ApiFields.QUOTA_IMAGE)) || 0;
+  const voice = _.toInteger(_.get(params, ApiFields.QUOTA_VOICE)) || 0;
+  const unlimited = _.get(params, ApiFields.IS_UNLIMITED, false);
 
-  plansSheet.appendRow([newId, now, now, name, video, image, voice, unlimited]);
+  plansSheet.appendRow([newId, now, now, name, video, image, voice, unlimited, Constants.ACTIVE_LOWER]);
   return jsonResponse({ status: Messages.RES_SUCCESS, plan_id: newId });
 }
 
@@ -571,14 +649,20 @@ function adminDeletePlan(params) {
   const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
   if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const planId = _.get(params, 'id');
+  const planId = _.get(params, ApiFields.ID);
+  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
   if (!planId) return jsonResponse({ error: Messages.MISSING_ID });
 
   const data = plansSheet.getDataRange().getValues();
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[PlanCols.ID] === planId);
 
   if (rowIndex > 0) {
-    plansSheet.deleteRow(rowIndex + 1);
+    if (deleteType === 'soft') {
+      plansSheet.getRange(rowIndex + 1, PlanCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+      plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(getCurrentISO());
+    } else {
+      plansSheet.deleteRow(rowIndex + 1);
+    }
     return jsonResponse({ status: Messages.RES_SUCCESS });
   }
 
@@ -618,6 +702,7 @@ function getPlans() {
     quota_image: _.toInteger(row[PlanCols.IMAGE]) || 0,
     quota_voice: _.toInteger(row[PlanCols.VOICE]) || 0,
     is_unlimited: (String(row[PlanCols.UNLIMITED]) === Constants.STRING_TRUE),
+    status: row[PlanCols.STATUS] || Constants.ACTIVE_LOWER,
     created_at: row[PlanCols.CREATED_AT],
     updated_at: row[PlanCols.UPDATED_AT]
   }));
@@ -666,8 +751,8 @@ function getApiKeys(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const licenseKey = _.get(params, 'license_key', Constants.EMPTY_STRING);
-  const planId = _.get(params, 'plan_id', Constants.EMPTY_STRING);
+  const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
+  const planId = _.get(params, ApiFields.PLAN_ID, Constants.EMPTY_STRING);
 
   const data = sheet.getDataRange().getValues();
   let geminiKey = Constants.EMPTY_STRING;
@@ -712,6 +797,7 @@ function adminGetApiKeys() {
     assignedTo: row[KeysCols.ASSIGNED_TO] || Constants.ALL,
     geminiKey: row[KeysCols.GEMINI_KEY] || Constants.EMPTY_STRING,
     ai33Key: row[KeysCols.AI33_KEY] || Constants.EMPTY_STRING,
+    status: row[KeysCols.STATUS] || Constants.ACTIVE_LOWER,
     createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
     updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING
   }));
@@ -723,10 +809,10 @@ function updateApiKeys(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const id = _.get(params, 'id');
-  const geminiKey = _.get(params, 'geminiKey');
-  const ai33Key = _.get(params, 'ai33Key');
-  const assignedTo = _.get(params, 'assignedTo', Constants.ALL);
+  const id = _.get(params, ApiFields.ID);
+  const geminiKey = _.get(params, ApiFields.GEMINI_KEY);
+  const ai33Key = _.get(params, ApiFields.AI33_KEY);
+  const assignedTo = _.get(params, ApiFields.ASSIGNED_TO, Constants.ALL);
   const data = sheet.getDataRange().getValues();
   const now = getCurrentISO();
 
@@ -741,7 +827,7 @@ function updateApiKeys(params) {
     }
   }
 
-  sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING]);
+  sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER]);
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
 
@@ -749,13 +835,19 @@ function deleteApiKeysAdmin(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const id = _.get(params, 'id');
+  const id = _.get(params, ApiFields.ID);
+  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
   if (!id) return jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
 
   const data = sheet.getDataRange().getValues();
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[KeysCols.ID] === id);
   if (rowIndex > 0) {
-    sheet.deleteRow(rowIndex + 1);
+    if (deleteType === 'soft') {
+      sheet.getRange(rowIndex + 1, KeysCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+      sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(getCurrentISO());
+    } else {
+      sheet.deleteRow(rowIndex + 1);
+    }
   }
 
   return jsonResponse({ status: Messages.RES_SUCCESS });
@@ -765,8 +857,8 @@ function getAccounts(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const licenseKey = _.get(params, 'license_key', Constants.EMPTY_STRING);
-  const planId = _.get(params, 'plan_id', Constants.EMPTY_STRING);
+  const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
+  const planId = _.get(params, ApiFields.PLAN_ID, Constants.EMPTY_STRING);
 
   const data = sheet.getDataRange().getValues();
   const accounts = [];
@@ -812,7 +904,7 @@ function addAccount(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const acc = _.get(params, 'account');
+  const acc = _.get(params, ApiFields.ACCOUNT);
   if (_.isNil(acc) || _.isNil(_.get(acc, 'email'))) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
 
   const now = getCurrentISO();
@@ -829,12 +921,14 @@ function addAccount(params) {
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
 
+
+
 function updateAccountStatus(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
   const rowIndex = _.get(params, 'rowIndex');
-  const status = _.get(params, 'status');
+  const status = _.get(params, ApiFields.STATUS);
 
   if (_.isNil(rowIndex) || _.isNil(status)) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
 
@@ -846,7 +940,7 @@ function updateAccountAdmin(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const acc = _.get(params, 'account');
+  const acc = _.get(params, ApiFields.ACCOUNT);
   if (_.isNil(acc) || _.isNil(_.get(acc, 'id')) || _.isNil(_.get(acc, 'email'))) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
 
   const data = sheet.getDataRange().getValues();
@@ -868,13 +962,19 @@ function deleteAccountAdmin(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-  const id = _.get(params, 'id');
+  const id = _.get(params, ApiFields.ID);
+  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
   if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
 
   const data = sheet.getDataRange().getValues();
   const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AccountsCols.ID] === id);
   if (rowIndex > 0) {
-    sheet.deleteRow(rowIndex + 1);
+    if (deleteType === 'soft') {
+      sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+      sheet.getRange(rowIndex + 1, AccountsCols.UPDATED_AT + 1).setValue(getCurrentISO());
+    } else {
+      sheet.deleteRow(rowIndex + 1);
+    }
   }
 
   return jsonResponse({ status: Messages.RES_SUCCESS });
@@ -903,9 +1003,9 @@ function setupSeedData() {
 
 
 
-    plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false]);
-    plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false]);
-    plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true]);
+    plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false, StatusEnum.ACTIVE]);
+    plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false, StatusEnum.ACTIVE]);
+    plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true, StatusEnum.ACTIVE]);
 
     plansSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_CONFIG);
   }
@@ -938,15 +1038,27 @@ function setupSeedData() {
   if (!keysSheet) {
     keysSheet = ss.insertSheet(Config.SHEET_KEYS);
     keysSheet.appendRow(Config.HEADERS.KEYS);
-    keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING]);
-    keysSheet.getRange("A1:F1").setFontWeight("bold").setBackground(Constants.COLOR_ADMIN);
+    keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE]);
+    keysSheet.getRange("A1:G1").setFontWeight("bold").setBackground(Constants.COLOR_ADMIN);
   }
 
   let accountsSheet = ss.getSheetByName(Config.SHEET_ACCOUNTS);
   if (!accountsSheet) {
     accountsSheet = ss.insertSheet(Config.SHEET_ACCOUNTS);
     accountsSheet.appendRow(Config.HEADERS.ACCOUNTS);
+    accountsSheet.appendRow([generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);
     accountsSheet.getRange("A1:H1").setFontWeight("bold").setBackground(Constants.COLOR_CONFIG);
+  }
+
+  let settingsSheet = ss.getSheetByName(Config.SHEET_SETTINGS);
+  if (!settingsSheet) {
+    settingsSheet = ss.insertSheet(Config.SHEET_SETTINGS);
+    settingsSheet.appendRow(Config.HEADERS.SETTINGS);
+    settingsSheet.appendRow([generateUUID(), now, now, "ADMIN_APP_KEY", "VIDIFY_MASTER_KEY_XYZ_123", "Khóa bảo mật Admin (Xác thực API & Băm Key)"]);
+    settingsSheet.getRange("A1:F1").setFontWeight("bold").setBackground("#f3f4f6");
+    settingsSheet.setColumnWidth(4, 200);
+    settingsSheet.setColumnWidth(5, 300);
+    settingsSheet.setColumnWidth(6, 350);
   }
 
   AppLogger.info(Messages.SEED_SUCCESS);

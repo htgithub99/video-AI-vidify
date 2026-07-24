@@ -98,6 +98,31 @@ export const HTTP_HEADERS = {
   XI_API_KEY: "xi-api-key",
 };
 
+export const QUOTA_TEXTS = {
+  VN: {
+    VIDEO_TOOLTIP: "Số lượng Video đã tạo / Tổng hạn mức cho phép",
+    IMAGE_TOOLTIP: "Số lượng Ảnh tĩnh đã tạo / Tổng hạn mức cho phép",
+    VOICE_TOOLTIP: "Số ký tự Giọng nói đã tạo / Tổng hạn mức cho phép",
+    MEDIA_QUOTA: "Hạn mức Media",
+    VOICE_QUOTA: "Hạn mức Giọng nói",
+    SYNC_MSG: "Dữ liệu được đồng bộ trực tiếp từ máy chủ quản lý",
+    CHARS: "Ký tự",
+    VIDEO: "Video",
+    IMAGE: "Image",
+  },
+  EN: {
+    VIDEO_TOOLTIP: "Generated Videos / Total Limit",
+    IMAGE_TOOLTIP: "Generated Images / Total Limit",
+    VOICE_TOOLTIP: "Generated Voice Chars / Total Limit",
+    MEDIA_QUOTA: "Media Quota",
+    VOICE_QUOTA: "Voice Quota",
+    SYNC_MSG: "Data synced in real-time from server",
+    CHARS: "Chars",
+    VIDEO: "Video",
+    IMAGE: "Image",
+  }
+};
+
 export const TRANSFER_ENCODINGS = {
   CHUNKED: "chunked",
 };
@@ -419,6 +444,58 @@ export const SETTINGS_TEXTS = {
   }
 } as const;
 
+export const SETTINGS_VIEW_TEXTS = {
+  vi: {
+    SYSTEM_TITLE: "Tài Nguyên Cá Nhân",
+    SYSTEM_DESC: "Dữ liệu nhập ở đây được ưu tiên sử dụng thay cho dữ liệu hệ thống. Mọi thứ được lưu trữ cục bộ trên trình duyệt.",
+    API_KEYS_TITLE: "Khóa API Cá Nhân",
+    SAVE_BTN: "Lưu",
+    SAVE_BTN_TOOLTIP: "Lưu khóa API vào trình duyệt",
+    ACCOUNTS_TITLE: "Tài khoản Google",
+    ACCOUNTS_DESC: "Tài khoản Cá Nhân",
+    EMAIL_PLACEHOLDER: "Email...",
+    PWD_PLACEHOLDER: "Mật khẩu...",
+    RECOVERY_PLACEHOLDER: "Email Khôi phục (Tuỳ chọn)",
+    GEMINI_PLACEHOLDER: "Nhập khóa Gemini...",
+    AI33_PLACEHOLDER: "Nhập khóa AI33...",
+    ADD_BTN_TOOLTIP: "Thêm tài khoản vào danh sách",
+    NO_ACCOUNTS: "Chưa có tài khoản",
+    HIDDEN_PWD: "••••••••",
+  },
+  en: {
+    SYSTEM_TITLE: "Personal Resources",
+    SYSTEM_DESC: "Data entered here is prioritized over system data. Everything is stored locally in your browser.",
+    API_KEYS_TITLE: "Personal API Keys",
+    SAVE_BTN: "Save",
+    SAVE_BTN_TOOLTIP: "Save API keys to browser",
+    ACCOUNTS_TITLE: "Google Accounts",
+    ACCOUNTS_DESC: "Personal Accounts",
+    EMAIL_PLACEHOLDER: "Email...",
+    PWD_PLACEHOLDER: "Password...",
+    RECOVERY_PLACEHOLDER: "Recovery Email (Optional)",
+    GEMINI_PLACEHOLDER: "Enter Gemini key...",
+    AI33_PLACEHOLDER: "Enter AI33 key...",
+    ADD_BTN_TOOLTIP: "Add account to list",
+    NO_ACCOUNTS: "No accounts",
+    HIDDEN_PWD: "••••••••",
+  }
+} as const;
+
+export const PIPELINE_STEP2_TEXTS = {
+  vi: {
+    THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
+    THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.",
+    BATCH_COUNT_LABEL: "Ảnh & Tiêu đề",
+    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
+  },
+  en: {
+    THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.",
+    THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
+    BATCH_COUNT_LABEL: "Images & Titles",
+    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
+  }
+} as const;
+
 export const CURL_KEYWORDS = {
   STREAM_AGENT: "flowCreationAgent:streamChat",
   STREAM: "streamChat",
@@ -644,3 +721,77 @@ export const URL_CONSTANTS = {
   IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"],
   ID_PARAMS: ["id", "docid", "name"],
 } as const;
+
+export const PIPELINE_STEP4_TEXTS = {
+  LBL_QUALITY: "Chất lượng Video:",
+  LBL_QUALITY_DESC: "Độ nét của video xuất ra.",
+  QUALITY_480P: "Thấp (480p) - Render siêu tốc",
+  QUALITY_720P: "Chuẩn (720p HD) - Cân bằng",
+  QUALITY_1080P: "Cao (1080p FHD) - Sắc nét",
+  QUALITY_4K: "Tuyệt đỉnh (4K) - Điện ảnh",
+  BTN_RENDER_FFMPEG: "Tạo Video Ngay (FFmpeg)",
+  BTN_DOWNLOAD: "Tải Video Xuống",
+  RENDERING: "Đang xuất video (FFmpeg)...",
+  RENDER_SUCCESS: "Kết xuất video FFmpeg thành công!",
+  RENDER_ERROR: "Kết xuất video thất bại.",
+  NO_SCENES_ERROR: "Không có phân cảnh nào để xuất video.",
+  SELECT_QUALITY: "Chọn chất lượng",
+  FOLDER_SELECT_ERR: "Lỗi chọn thư mục: ",
+  ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi render.",
+  ERR_REQUIRE_IMAGES: "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.",
+  ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.",
+  RENDERING_WAIT: "Đang render video FFmpeg, vui lòng chờ...",
+  RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!",
+  RENDER_FFMPEG_ERR: "Lỗi render: ",
+  NO_FFMPEG_VIDEO: "Chưa có video FFmpeg.",
+  USE_CREATE_BTN_HINT: "Vui lòng sử dụng tính năng \"Tạo Video Ngay\" ở khung bên phải.",
+  EXPORTING_FFMPEG: "Đang xuất video FFmpeg...",
+  BTN_DOWNLOAD_HINT: "Tải video về máy",
+  PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...",
+  ZIP_DIR_PLACEHOLDER: "Nhập đường dẫn thư mục chứa file dự án ZIP...",
+  IMG_DIR_PLACEHOLDER: "Thư mục Hình ảnh...",
+  AUDIO_DIR_PLACEHOLDER: "Thư mục Âm thanh...",
+  AUTO_GATHER_MEDIA_HINT: "Tự động thu thập ảnh và âm thanh từ dự án hiện tại",
+} as const;
+
+export const PIPELINE_STEP3_TEXTS = {
+  SEO_RESULT: "Kết quả Tối ưu SEO",
+  NO_SEO_DATA: "Không có dữ liệu SEO.",
+  CLICK_OPTIMIZE_HINT: "Bấm tối ưu SEO để tạo.",
+  COPIED_TITLE: "Đã copy tiêu đề",
+  COPY_TITLE: "Copy tiêu đề",
+  COPIED_DESC: "Đã copy mô tả",
+  COPY_DESC: "Copy mô tả",
+  DESCRIPTIONS_EMPTY: "Chưa có mô tả",
+  COPIED_HASHTAGS: "Đã copy hashtags",
+  COPY_HASHTAGS: "Copy hashtags",
+  NO_HASHTAGS: "Chưa có hashtags",
+  COPIED_TAGS: "Đã copy từ khóa",
+  COPY_TAGS: "Copy từ khóa",
+  NO_TAGS: "Chưa có từ khóa",
+  SEARCH_TITLE: "Tìm kiếm",
+  CTR_TITLE: "CTR",
+  COMPETITION_TITLE: "Cạnh tranh",
+  SEO_SCORE_TITLE: "Điểm SEO",
+  TITLES_OPTIONS: "Tiêu đề gợi ý",
+  DESC_OPTIONS: "Mô tả gợi ý",
+  HASHTAGS: "HASHTAGS",
+  TAGS: "TỪ KHÓA",
+} as const;
+
+export const AUTO_GENERATE_TEXTS = {
+  EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.",
+  DRAFTING_SCRIPT: "Đang soạn kịch bản...",
+  SCRIPT_ERR: "Không thể tạo kịch bản.",
+  STORYBOARDING: "Đang phân tích và tách cảnh...",
+  STORYBOARD_ERR: "Không thể phân tách cảnh.",
+  VOICEOVER: "Đang tạo giọng đọc...",
+  IMAGES: "Đang khởi tạo tạo ảnh hàng loạt...",
+  SUCCESS: "Đã hoàn thành tạo video tự động.",
+  GENERIC_ERR: "Lỗi tự động tạo video.",
+  BTN_AUTO: "Tự động",
+  BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
+  ERR_CODE: "AUTO_GENERATE_ERROR",
+  POSITION_TOP: "top",
+} as const;
+
