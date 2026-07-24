@@ -22,7 +22,7 @@ const AppStrings = {
     STATUS_REVOKED: 'BỊ KHÓA'
 };
 
-let adminToken = localStorage.getItem(AdminConstants.TOKEN_KEY) || AdminConstants.EMPTY_STR;
+let adminToken = AdminStorage.get(AdminConstants.TOKEN_KEY) || AdminConstants.EMPTY_STR;
 let apiUrl = API_BASE_URL;
 let currentPage = AdminConstants.DEFAULT_PAGE;
 let pageSize = AdminConstants.DEFAULT_PAGE_SIZE;
@@ -32,12 +32,29 @@ let deletingUserId = null;
 let deletingUserKey = null;
 let resettingUserId = null;
 window.editingAccountId = null;
+let deletingResourceId = null;
+let deletingResourceType = null;
+let tsKeysInstance = null;
+let tsAccInstance = null;
 
 function escapeHTML(str) {
     if (_.isNil(str)) return AdminConstants.EMPTY_STR;
     return _.replace(_.toString(str), AdminRegex.ESCAPE_HTML, 
         tag => _.get(AdminConstants.HTML_ENTITIES, tag, tag)
     );
+}
+
+function formatPlanDisplayName(nameOrId) {
+    if (_.isNil(nameOrId) || _.isEqual(nameOrId, AdminConstants.UNKNOWN_STR)) {
+        return AdminConstants.PLAN_UNASSIGNED;
+    }
+    const str = _.trim(_.toString(nameOrId));
+    const upper = _.toUpper(str);
+    if (_.includes([AdminConstants.PLAN_FREE], upper)) return AdminConstants.PLAN_NAME_FREE;
+    if (_.includes([AdminConstants.PLAN_PRO], upper)) return AdminConstants.PLAN_NAME_PRO;
+    if (_.some([AdminConstants.PLAN_PRO_LIFETIME, AdminConstants.PLAN_LIFETIME], val => _.isEqual(val, upper))) return AdminConstants.PLAN_NAME_LIFETIME;
+    if (_.isEqual(upper, AdminMessages.NEW_PLAN_NAME)) return AdminConstants.PLAN_NAME_NEW;
+    return str;
 }
 
 function setButtonLoading(btn, isLoading, loadingText = AdminConstants.EMPTY_STR) {
@@ -115,7 +132,38 @@ async function showDashboard() {
     el(DOMIds.DASHBOARD_SCREEN).classList.add(AdminClasses.ACTIVE);
     await loadPlans();
     await loadUsers();
+    await loadApiKeysAdmin();
+    await loadAccountsAdmin();
 }
+
+window.switchAdminPage = function(pageId) {
+    document.querySelectorAll('.admin-page-content').forEach(p => p.classList.remove(AdminClasses.ACTIVE));
+    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove(AdminClasses.ACTIVE));
+    
+    const targetPage = el(`page-${pageId}`);
+    const targetBtn = el(`nav-tab-${pageId}`);
+    if (targetPage) targetPage.classList.add(AdminClasses.ACTIVE);
+    if (targetBtn) targetBtn.classList.add(AdminClasses.ACTIVE);
+
+    if (_.isEqual(pageId, 'resources')) {
+        loadApiKeysAdmin();
+        loadAccountsAdmin();
+    } else if (_.isEqual(pageId, 'config')) {
+        loadPlans();
+    } else if (_.isEqual(pageId, 'users')) {
+        loadUsers();
+    }
+};
+
+window.switchResourceSubTab = function(subTabId) {
+    document.querySelectorAll('.sub-tab-content').forEach(c => c.style.display = AdminClasses.DISPLAY_NONE);
+    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove(AdminClasses.ACTIVE));
+    
+    const targetContent = el(`tab-content-${subTabId}`);
+    const targetBtn = el(`tab-btn-${subTabId}`);
+    if (targetContent) targetContent.style.display = AdminClasses.DISPLAY_BLOCK;
+    if (targetBtn) targetBtn.classList.add(AdminClasses.ACTIVE);
+};
 
 async function handleLogin() {
     const user = el(DOMIds.USERNAME_INPUT).value.trim();
@@ -145,7 +193,7 @@ async function handleLogin() {
         });
 
         const data = await response.json();
-        if (_.get(data, ApiFields.STATUS) === ToastType.SUCCESS && _.has(data, ApiFields.TOKEN)) {
+        if (_.isEqual(_.get(data, ApiFields.STATUS), ToastType.SUCCESS) && _.has(data, ApiFields.TOKEN)) {
             adminToken = _.get(data, ApiFields.TOKEN);
             apiUrl = API_BASE_URL;
             localStorage.setItem(AdminConstants.TOKEN_KEY, adminToken);
@@ -191,19 +239,19 @@ async function loadUsers() {
 }
 
 function applyFilters() {
-    const searchStr = (_.get(el(DOMIds.SEARCH_INPUT), 'value', AdminConstants.EMPTY_STR)).toLowerCase();
+    const searchStr = _.toLower(_.get(el(DOMIds.SEARCH_INPUT), 'value', AdminConstants.EMPTY_STR));
     const planFilter = _.get(el(DOMIds.FILTER_PLAN), 'value', AdminConstants.FILTER_ALL);
     const statusFilter = _.get(el(DOMIds.FILTER_STATUS), 'value', AdminConstants.FILTER_ALL);
     
     filteredUsers = _.filter(_.get(window, AdminConstants.GLOBAL_USERS, []), u => {
         let matchSearch = true;
         if (!_.isEmpty(searchStr)) {
-            const uname = (_.get(u, ApiFields.USERNAME) || AdminConstants.EMPTY_STR).toLowerCase();
-            const ukey = (_.get(u, ApiFields.LICENSE_KEY) || AdminConstants.EMPTY_STR).toLowerCase();
+            const uname = _.toLower(_.get(u, ApiFields.USERNAME, AdminConstants.EMPTY_STR));
+            const ukey = _.toLower(_.get(u, ApiFields.LICENSE_KEY, AdminConstants.EMPTY_STR));
             matchSearch = _.some([uname, ukey], str => _.includes(str, searchStr));
         }
-        let matchPlan = (planFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.PLAN_ID) === planFilter;
-        let matchStatus = (statusFilter === AdminConstants.FILTER_ALL) ? true : _.get(u, ApiFields.STATUS) === statusFilter;
+        let matchPlan = _.isEqual(planFilter, AdminConstants.FILTER_ALL) ? true : _.isEqual(_.get(u, ApiFields.PLAN_ID), planFilter);
+        let matchStatus = _.isEqual(statusFilter, AdminConstants.FILTER_ALL) ? true : _.isEqual(_.get(u, ApiFields.STATUS), statusFilter);
         return _.every([matchSearch, matchPlan, matchStatus], Boolean);
     });
     currentPage = AdminConstants.DEFAULT_PAGE;
@@ -232,26 +280,26 @@ function renderTable() {
     const getPlanBadgeClass = (planName) => {
         const upper = _.toUpper(planName);
         if (_.includes(upper, AdminConstants.PLAN_FREE)) return AdminClasses.BADGE_FREE;
-        if (_.includes(upper, AdminConstants.PLAN_PRO) || _.includes(upper, AdminConstants.PLAN_VIP) || _.includes(upper, AdminConstants.PLAN_LIFETIME)) return AdminClasses.BADGE_PRO;
+        if (_.some([AdminConstants.PLAN_PRO, AdminConstants.PLAN_VIP, AdminConstants.PLAN_LIFETIME], key => _.includes(upper, key))) return AdminClasses.BADGE_PRO;
         return AdminClasses.BADGE_FREE;
     };
 
     const localizeStatus = (status) => {
-        if (status === AdminConstants.STATUS_ACTIVE) return AdminMessages.STATUS_ACTIVE_LABEL;
-        if (status === AdminConstants.STATUS_REVOKED) return AdminMessages.STATUS_REVOKED_LABEL;
-        if (status === AdminConstants.STATUS_EXPIRED) return AdminMessages.STATUS_EXPIRED_LABEL;
+        if (_.isEqual(status, AdminConstants.STATUS_ACTIVE)) return AdminMessages.STATUS_ACTIVE_LABEL;
+        if (_.isEqual(status, AdminConstants.STATUS_REVOKED)) return AdminMessages.STATUS_REVOKED_LABEL;
+        if (_.isEqual(status, AdminConstants.STATUS_EXPIRED)) return AdminMessages.STATUS_EXPIRED_LABEL;
         return status;
     };
 
     const getStatusClass = (status) => {
-        if (status === AdminConstants.STATUS_ACTIVE) return AdminClasses.ACTIVE;
-        if (status === AdminConstants.STATUS_REVOKED) return AdminClasses.BADGE_REVOKED;
+        if (_.isEqual(status, AdminConstants.STATUS_ACTIVE)) return AdminClasses.ACTIVE;
+        if (_.isEqual(status, AdminConstants.STATUS_REVOKED)) return AdminClasses.BADGE_REVOKED;
         return AdminClasses.BADGE_EXPIRED;
     };
     
     const htmlRows = _.map(paginatedUsers, user => {
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => p.id === _.get(user, ApiFields.PLAN_ID));
+        const plan = _.find(plans, p => _.isEqual(p.id, _.get(user, ApiFields.PLAN_ID)));
         
         let tv = '0', ti = '0', tc = '0';
         if (plan) {
@@ -284,7 +332,7 @@ function renderTable() {
                     </div>
                 </td>
                 <td class="text-center">
-                    <span class="badge ${getPlanBadgeClass(planName)}">${escapeHTML(planName)}</span>
+                    <span class="badge ${getPlanBadgeClass(planName)}">${escapeHTML(formatPlanDisplayName(planName))}</span>
                 </td>
                 <td class="text-center">
                     <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
@@ -355,62 +403,72 @@ function renderPlansConfig() {
     if (!container) return;
     
     container.innerHTML = AdminConstants.EMPTY_STR;
-    container.style.minHeight = '150px';
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     
     if (_.isEmpty(plans)) {
         container.innerHTML = AdminTemplates.PLAN_EMPTY(AdminMessages.EMPTY_PLANS);
         return;
     }
-    
+
+    let rowsHtml = '';
     _.forEach(plans, plan => {
         const planId = plan.id;
         const planName = plan.name;
         const isUnlimited = plan.is_unlimited;
-        const isRevoked = plan.status === 'REVOKED';
-        
-        const badgeClass = (_.includes(_.toUpper(planName), AdminConstants.PLAN_FREE)) ? AdminConstants.PLAN_FREE : AdminConstants.PLAN_PRO;
-        const opacityStyle = isRevoked ? 'opacity: 0.6; filter: grayscale(100%);' : '';
-        const revokedBadge = isRevoked ? `<span class="badge badge-error" style="font-size: 0.7rem; margin-left: 0.5rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
-        
-        const colHtml = `
-            <div class="quota-col quota-${planId}" style="${opacityStyle}">
-                <div class="quota-col-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center;">
-                        <h4>${escapeHTML(planName)}</h4>
+        const isRevoked = _.isEqual(plan.status, AdminConstants.STATUS_REVOKED);
+
+        const revokedBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
+
+        rowsHtml += `
+            <tr class="quota-${planId}" style="${isRevoked ? 'opacity: 0.6;' : ''}">
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="text" class="plan-name-input" data-plan-id="${planId}" value="${escapeHTML(planName)}" style="padding: 0 0.6rem; height: 34px !important; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: white; outline: none; font-weight: 700; font-size: 0.85rem; width: 140px;">
                         ${revokedBadge}
                     </div>
-                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="${AppStrings.TOOLTIP_DELETE_PLAN}" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">✕</button>
-                </div>
-                <div class="quota-col-body">
-                    <div class="input-group">
-                        <label title="${AppStrings.TOOLTIP_PLAN_NAME}">${AppStrings.LABEL_PLAN_NAME}</label>
-                        <input type="text" class="plan-name-input" data-plan-id="${planId}" value="${escapeHTML(planName)}">
-                    </div>
-                    <label class="unlimited-toggle">
-                        <span title="${AppStrings.TOOLTIP_UNLIMITED}">${AppStrings.LABEL_UNLIMITED}</span>
-                        <div class="toggle-switch">
-                            <input type="checkbox" class="plan-unlimited-input" data-plan-id="${planId}" ${isUnlimited ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </div>
+                </td>
+                <td class="text-center">
+                    <label class="toggle-switch-wrapper" title="${AppStrings.TOOLTIP_UNLIMITED}">
+                        <input type="checkbox" class="plan-unlimited-input" data-plan-id="${planId}" ${isUnlimited ? 'checked' : ''}>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text" data-plan-id="${planId}">${isUnlimited ? AdminConstants.TOGGLE_UNLIMITED_ON : AdminConstants.TOGGLE_UNLIMITED_OFF}</span>
                     </label>
-                    <div class="input-group">
-                        <label title="${AppStrings.TOOLTIP_VIDEO}">${AppStrings.LABEL_VIDEO}</label>
-                        <input type="text" inputmode="numeric" class="numeric-input plan-video-input" data-plan-id="${planId}" value="${plan.quota_video}" ${isUnlimited ? 'disabled' : ''}>
-                    </div>
-                    <div class="input-group">
-                        <label title="${AppStrings.TOOLTIP_IMAGE}">${AppStrings.LABEL_IMAGE}</label>
-                        <input type="text" inputmode="numeric" class="numeric-input plan-image-input" data-plan-id="${planId}" value="${plan.quota_image}" ${isUnlimited ? 'disabled' : ''}>
-                    </div>
-                    <div class="input-group">
-                        <label title="${AppStrings.TOOLTIP_VOICE}">${AppStrings.LABEL_VOICE}</label>
-                        <input type="text" inputmode="numeric" class="numeric-input plan-voice-input" data-plan-id="${planId}" value="${plan.quota_voice}" ${isUnlimited ? 'disabled' : ''}>
-                    </div>
-                </div>
-            </div>
+                </td>
+                <td class="text-center">
+                    <input type="text" inputmode="numeric" class="numeric-input plan-video-input quota-row-input" data-plan-id="${planId}" value="${plan.quota_video}" ${isUnlimited ? 'disabled' : ''}>
+                </td>
+                <td class="text-center">
+                    <input type="text" inputmode="numeric" class="numeric-input plan-image-input quota-row-input" data-plan-id="${planId}" value="${plan.quota_image}" ${isUnlimited ? 'disabled' : ''}>
+                </td>
+                <td class="text-center">
+                    <input type="text" inputmode="numeric" class="numeric-input plan-voice-input quota-row-input" data-plan-id="${planId}" value="${plan.quota_voice}" ${isUnlimited ? 'disabled' : ''}>
+                </td>
+                <td class="text-center">
+                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="${AppStrings.TOOLTIP_DELETE_PLAN}" style="height: 32px !important; padding: 0 0.6rem !important; font-size: 0.75rem !important;">
+                        🗑️ Xóa Gói
+                    </button>
+                </td>
+            </tr>
         `;
-        container.innerHTML += colHtml;
     });
+    
+    container.innerHTML = `
+        <table id="plans-table">
+            <thead>
+                <tr>
+                    <th>Gói Dịch Vụ</th>
+                    <th class="text-center">Chế Độ Giới Hạn</th>
+                    <th class="text-center">Số Video Quota</th>
+                    <th class="text-center">Số Ảnh Quota</th>
+                    <th class="text-center">Số Ký Tự Voice</th>
+                    <th class="text-center">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
 
     const unlimitedCheckboxes = container.querySelectorAll('.plan-unlimited-input');
     _.forEach(unlimitedCheckboxes, chk => {
@@ -420,6 +478,10 @@ function renderPlansConfig() {
             container.querySelector(`.plan-video-input[data-plan-id="${pId}"]`).disabled = disabled;
             container.querySelector(`.plan-image-input[data-plan-id="${pId}"]`).disabled = disabled;
             container.querySelector(`.plan-voice-input[data-plan-id="${pId}"]`).disabled = disabled;
+            const toggleTextEl = container.querySelector(`.toggle-text[data-plan-id="${pId}"]`);
+            if (toggleTextEl) {
+                toggleTextEl.textContent = disabled ? AdminConstants.TOGGLE_UNLIMITED_ON : AdminConstants.TOGGLE_UNLIMITED_OFF;
+            }
         });
     });
     
@@ -428,8 +490,8 @@ function renderPlansConfig() {
         btn.addEventListener(EventTypes.CLICK, async (e) => {
             const pId = e.target.getAttribute('data-plan-id');
             deletingResourceId = pId;
-            deletingResourceType = 'plan';
-            el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
+            deletingResourceType = AdminConstants.TYPE_PLAN;
+            el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
         });
     });
     
@@ -498,7 +560,7 @@ function populatePlanSelects() {
     if (filterPlanSelect) {
         filterPlanSelect.innerHTML = AdminTemplates.SELECT_OPTION(AdminConstants.FILTER_ALL, AdminConstants.PLAN_ALL_LABEL, true);
         _.forEach(plans, p => {
-            filterPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, p.name);
+            filterPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, formatPlanDisplayName(p.name));
         });
     }
 
@@ -506,7 +568,7 @@ function populatePlanSelects() {
     if (modalPlanSelect) {
         modalPlanSelect.innerHTML = AdminConstants.EMPTY_STR;
         _.forEach(plans, p => {
-            modalPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, p.name);
+            modalPlanSelect.innerHTML += AdminTemplates.SELECT_OPTION(p.id, formatPlanDisplayName(p.name));
         });
     }
 }
@@ -530,7 +592,7 @@ function resetResourceForms() {
 
 function closeModal(id) {
     el(id)?.classList.remove(AdminClasses.ACTIVE);
-    if (id === DOMIds.RESOURCE_MODAL) {
+    if (_.isEqual(id, DOMIds.RESOURCE_MODAL)) {
         resetResourceForms();
     }
 }
@@ -542,7 +604,7 @@ function handleOpenCreateModal() {
     el(DOMIds.MODAL_USERNAME).disabled = false;
     
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    if (plans.length > 0) el(DOMIds.MODAL_PLAN_TYPE).value = plans[0].id;
+    if (!_.isEmpty(plans)) el(DOMIds.MODAL_PLAN_TYPE).value = plans[0].id;
     
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
@@ -554,7 +616,7 @@ function handleOpenCreateModal() {
 }
 
 function openEditModal(id) {
-    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === id);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), id));
     if (!user) return;
     
     editingUserId = id;
@@ -579,7 +641,7 @@ function openEditModal(id) {
     
     const planId = _.get(user, ApiFields.PLAN_ID);
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    const plan = _.find(plans, p => p.id === planId);
+    const plan = _.find(plans, p => _.isEqual(p.id, planId));
     
     if (plan && plan.is_unlimited) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
@@ -595,7 +657,7 @@ function handlePlanTypeChange(e) {
     const selectedPlanId = _.get(e, AdminConstants.TARGET_VALUE_PATH) || el(DOMIds.MODAL_PLAN_TYPE).value;
     
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    const plan = _.find(plans, p => p.id === selectedPlanId);
+    const plan = _.find(plans, p => _.isEqual(p.id, selectedPlanId));
     
     if (plan && plan.is_unlimited && _.isNil(editingUserId)) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
@@ -684,7 +746,7 @@ async function handleHardDelete() {
 async function handleResetDevice() {
     if (!resettingUserId) return;
     
-    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === resettingUserId);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), resettingUserId));
     const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
     
     const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', keyStr);
@@ -716,7 +778,7 @@ function copyToClipboard(text) {
 }
 
 function openDeviceModal(id) {
-    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.get(u, ApiFields.ID) === id);
+    const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), id));
     if (!user) return;
     
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
@@ -791,21 +853,21 @@ function delegateTableActions() {
     document.addEventListener(EventTypes.CLICK, function(e) {
         const target = e.target.closest(AdminSelectors.ACTION_BTNS);
         if (!target) return;
-            const action = target.getAttribute(DataAttributes.ACTION);
+        const action = target.getAttribute(DataAttributes.ACTION);
         const key = target.getAttribute(DataAttributes.KEY);
         const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID);
         const uid = target.getAttribute(DataAttributes.ID);
         
-        if (action === AdminConstants.ACTION_EDIT && uid) openEditModal(uid);
-        if (action === AdminConstants.ACTION_DEVICE && uid) openDeviceModal(uid);
-        if (action === AdminConstants.ACTION_DELETE && uid) openDeleteModal(uid, key);
-        if (action === AdminConstants.ACTION_COPY && key) copyToClipboard(key);
-        if (action === AdminConstants.ACTION_EDIT_ACC && accountId) editAccountAdmin(accountId);
-        if (action === AdminConstants.ACTION_DELETE_ACC && accountId) deleteAccountAdmin(accountId);
+        if (_.isEqual(action, AdminConstants.ACTION_EDIT) && uid) openEditModal(uid);
+        if (_.isEqual(action, AdminConstants.ACTION_DEVICE) && uid) openDeviceModal(uid);
+        if (_.isEqual(action, AdminConstants.ACTION_DELETE) && uid) openDeleteModal(uid, key);
+        if (_.isEqual(action, AdminConstants.ACTION_COPY) && key) copyToClipboard(key);
+        if (_.isEqual(action, AdminConstants.ACTION_EDIT_ACC) && accountId) editAccountAdmin(accountId);
+        if (_.isEqual(action, AdminConstants.ACTION_DELETE_ACC) && accountId) deleteAccountAdmin(accountId);
         
         const keyId = target.getAttribute(DataAttributes.ID);
-        if (action === AdminConstants.ACTION_DELETE_KEYS && keyId) deleteApiKeysAdmin(keyId);
-        if (action === AdminConstants.ACTION_EDIT_KEYS && keyId) editApiKeysAdmin(keyId);
+        if (_.isEqual(action, AdminConstants.ACTION_DELETE_KEYS) && keyId) deleteApiKeysAdmin(keyId);
+        if (_.isEqual(action, AdminConstants.ACTION_EDIT_KEYS) && keyId) editApiKeysAdmin(keyId);
     });
 }
 
@@ -850,7 +912,7 @@ function initEventListeners() {
     if (configToggleBtn && configDropdownMenu) {
         configToggleBtn.addEventListener(EventTypes.CLICK, (e) => {
             e.stopPropagation();
-            configDropdownMenu.style.display = configDropdownMenu.style.display === AdminClasses.DISPLAY_NONE ? AdminClasses.DISPLAY_BLOCK : AdminClasses.DISPLAY_NONE;
+            configDropdownMenu.style.display = _.isEqual(configDropdownMenu.style.display, AdminClasses.DISPLAY_NONE) ? AdminClasses.DISPLAY_BLOCK : AdminClasses.DISPLAY_NONE;
         });
 
         document.addEventListener(EventTypes.CLICK, (e) => {
@@ -989,19 +1051,16 @@ async function handleSaveAccount() {
     }
 }
 
-let tsKeysInstance = null;
-let tsAccInstance = null;
-
 function populateAssignSelects() {
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     
     let optionsHtml = AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
     _.forEach(plans, p => {
-        optionsHtml += AdminTemplates.SELECT_OPTION(p.id, p.name);
+        optionsHtml += AdminTemplates.SELECT_OPTION(p.id, formatPlanDisplayName(p.name));
     });
     
     const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
-    if (users.length > 0) {
+    if (!_.isEmpty(users)) {
         let userOptions = AdminConstants.EMPTY_STR;
         _.forEach(users, u => {
             const keyStr = _.get(u, ApiFields.LICENSE_KEY);
@@ -1041,7 +1100,7 @@ function populateAssignSelects() {
 
 function editApiKeysAdmin(keyId) {
     const keys = _.get(window, 'adminApiKeysData', []);
-    const keyRecord = _.find(keys, k => _.get(k, ApiFields.ID) === keyId);
+    const keyRecord = _.find(keys, k => _.isEqual(_.get(k, ApiFields.ID), keyId));
     if (!keyRecord) return;
     
     const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO);
@@ -1059,24 +1118,15 @@ function editApiKeysAdmin(keyId) {
     el(DOMIds.KEYS_GEMINI_INPUT).focus();
 }
 
-function openConfirmModal(message, callback) {
-    el(DOMIds.CONFIRM_MESSAGE_DISPLAY).innerHTML = message;
-    window.currentConfirmCallback = callback;
-    el(DOMIds.CONFIRM_MODAL).classList.add(AdminClasses.ACTIVE);
-}
-
-let deletingResourceId = null;
-let deletingResourceType = null;
-
 function deleteApiKeysAdmin(keyId) {
     deletingResourceId = keyId;
-    deletingResourceType = 'api_key';
-    el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
+    deletingResourceType = AdminConstants.TYPE_API_KEY;
+    el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
 }
 
 function editAccountAdmin(id) {
     const accs = _.get(window, 'adminAccountsData', []);
-    const acc = _.find(accs, a => _.get(a, ApiFields.ID) === id);
+    const acc = _.find(accs, a => _.isEqual(_.get(a, ApiFields.ID), id));
     if (!acc) return;
     
     el(DOMIds.ACC_EMAIL_INPUT).value = _.get(acc, ApiFields.EMAIL);
@@ -1094,21 +1144,22 @@ function editAccountAdmin(id) {
 
 function deleteAccountAdmin(id) {
     deletingResourceId = id;
-    deletingResourceType = 'account';
-    el('resource-delete-modal').classList.add(AdminClasses.ACTIVE);
+    deletingResourceType = AdminConstants.TYPE_ACCOUNT;
+    el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
 }
 
 async function handleResourceSoftDelete() {
     const btn = el('btn-resource-soft-delete');
-    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE || AppStrings.LOADING_PROCESS);
+    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE);
     try {
-        const action = deletingResourceType === 'api_key' ? AdminActions.DELETE_API_KEYS : 
-                       (deletingResourceType === 'plan' ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
-        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: 'soft' });
+        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
+                       (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: AdminConstants.DELETE_TYPE_SOFT });
         showToast(AppStrings.SOFT_DELETE_SUCCESS, ToastType.SUCCESS);
-        closeModal('resource-delete-modal');
-        if (deletingResourceType === 'api_key') loadApiKeysAdmin();
-        else if (deletingResourceType === 'plan') loadPlans();
+        closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
+        
+        if (_.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY)) loadApiKeysAdmin();
+        else if (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN)) loadPlans();
         else loadAccountsAdmin();
     } catch (e) {
         showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
@@ -1119,15 +1170,16 @@ async function handleResourceSoftDelete() {
 
 async function handleResourceHardDelete() {
     const btn = el('btn-resource-hard-delete');
-    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE || AppStrings.LOADING_DELETE);
+    setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE);
     try {
-        const action = deletingResourceType === 'api_key' ? AdminActions.DELETE_API_KEYS : 
-                       (deletingResourceType === 'plan' ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
-        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: 'hard' });
+        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
+                       (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: AdminConstants.DELETE_TYPE_HARD });
         showToast(AppStrings.HARD_DELETE_SUCCESS, ToastType.SUCCESS);
-        closeModal('resource-delete-modal');
-        if (deletingResourceType === 'api_key') loadApiKeysAdmin();
-        else if (deletingResourceType === 'plan') loadPlans();
+        closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
+        
+        if (_.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY)) loadApiKeysAdmin();
+        else if (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN)) loadPlans();
         else loadAccountsAdmin();
     } catch (e) {
         showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
@@ -1141,9 +1193,9 @@ async function loadApiKeysAdmin() {
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_KEYS, AdminMessages.DATA_LOADING);
     
     const getAssignBadge = (assignee) => {
-        if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
+        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminClasses.BADGE_FREE;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => p.id === assignee);
+        const plan = _.find(plans, p => _.isEqual(p.id, assignee));
         if (plan) {
             return (_.includes(_.toUpper(plan.name), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
         }
@@ -1151,11 +1203,11 @@ async function loadApiKeysAdmin() {
     };
     
     const getAssignName = (assignee) => {
-        if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
+        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => p.id === assignee);
-        if (plan) return plan.name;
-        return assignee;
+        const plan = _.find(plans, p => _.isEqual(p.id, assignee));
+        if (plan) return formatPlanDisplayName(plan.name);
+        return formatPlanDisplayName(assignee);
     };
 
     try {
@@ -1172,7 +1224,7 @@ async function loadApiKeysAdmin() {
             const keyId = _.get(k, ApiFields.ID);
             
             const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
-            const isRevoked = _.get(k, 'status') === 'REVOKED';
+            const isRevoked = _.isEqual(_.get(k, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
             const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
             const statusBadge = isRevoked ? `<span class="badge badge-error" style="margin-left: 0.5rem; font-size: 0.65rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
             
@@ -1199,9 +1251,9 @@ async function loadAccountsAdmin() {
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_ACCOUNTS, AdminMessages.DATA_LOADING);
     
     const getAssignBadge = (assignee) => {
-        if (assignee === AdminConstants.ASSIGN_ALL) return AdminClasses.BADGE_FREE;
+        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminClasses.BADGE_FREE;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => p.id === assignee);
+        const plan = _.find(plans, p => _.isEqual(p.id, assignee));
         if (plan) {
             return (_.includes(_.toUpper(plan.name), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
         }
@@ -1209,11 +1261,11 @@ async function loadAccountsAdmin() {
     };
     
     const getAssignName = (assignee) => {
-        if (assignee === AdminConstants.ASSIGN_ALL) return AdminMessages.ASSIGN_ALL_LABEL;
+        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => p.id === assignee);
-        if (plan) return plan.name;
-        return assignee;
+        const plan = _.find(plans, p => _.isEqual(p.id, assignee));
+        if (plan) return formatPlanDisplayName(plan.name);
+        return formatPlanDisplayName(assignee);
     };
 
     try {
@@ -1224,14 +1276,13 @@ async function loadAccountsAdmin() {
         tbody.innerHTML = _.map(accs, a => {
             const assignee = _.get(a, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
             const badgeClass = getAssignBadge(assignee);
-            const assigneeLabel = getAssignName(assignee);
             
             const options = `
-                <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ACTIVE ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
-                <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.get(a, ApiFields.STATUS) === AdminConstants.ACCOUNT_STATUS_ERROR ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
-                <option value="REVOKED" ${_.get(a, ApiFields.STATUS) === 'REVOKED' ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AppStrings.STATUS_REVOKED}</option>
+                <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.ACCOUNT_STATUS_ACTIVE) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
+                <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.ACCOUNT_STATUS_ERROR) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
+                <option value="${AdminConstants.STATUS_REVOKED}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.STATUS_REVOKED) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AppStrings.STATUS_REVOKED}</option>
             `;
-            const isRevoked = _.get(a, ApiFields.STATUS) === 'REVOKED';
+            const isRevoked = _.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
             const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
 
             return `
@@ -1239,11 +1290,11 @@ async function loadAccountsAdmin() {
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">
-                    <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; transition: 0.2s; cursor: pointer;">
+                    <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; cursor: pointer;">
                         ${options}
                     </select>
                 </td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(_.get(a, ApiFields.ASSIGNED_TO))}</span></td>
+                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}</span></td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
                 <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
                     <div class="actions-cell" style="justify-content: center;">

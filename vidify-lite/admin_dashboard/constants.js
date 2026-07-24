@@ -45,6 +45,19 @@ const AdminConstants = {
     PLAN_FREE_LABEL: 'Gói FREE',
     PLAN_PRO_LABEL: 'Gói PRO',
     PLAN_LIFETIME_LABEL: 'Gói Vĩnh Viễn',
+    PLAN_NAME_FREE: 'Gói FREE',
+    PLAN_NAME_PRO: 'Gói PRO',
+    PLAN_NAME_LIFETIME: 'Gói Vĩnh Viễn',
+    PLAN_NAME_NEW: 'Gói Mới',
+    PLAN_UNASSIGNED: 'Chưa gán gói',
+    TOGGLE_UNLIMITED_ON: 'Không Giới Hạn',
+    TOGGLE_UNLIMITED_OFF: 'Giới Hạn Quota',
+    TYPE_API_KEY: 'api_key',
+    TYPE_PLAN: 'plan',
+    TYPE_ACCOUNT: 'account',
+    DELETE_TYPE_SOFT: 'soft',
+    DELETE_TYPE_HARD: 'hard',
+    RESOURCE_DELETE_MODAL_ID: 'resource-delete-modal',
     INFINITY_SIGN: '∞',
     HTML_ENTITIES: {
         '&': '&amp;',
@@ -64,6 +77,18 @@ const AdminConstants = {
     PLAN_LIFETIME: 'LIFETIME',
     PLAN_NAME_PATH: 'plan.name',
     TARGET_VALUE_PATH: 'target.value'
+};
+
+const AdminStorage = {
+    get: (key) => {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    },
+    set: (key, val) => {
+        try { localStorage.setItem(key, val); } catch (e) {}
+    },
+    remove: (key) => {
+        try { localStorage.removeItem(key); } catch (e) {}
+    }
 };
 
 const DataAttributes = {
@@ -391,17 +416,17 @@ const AdminIcons = {
 
 const AdminTemplates = {
     LOADING_BTN: (text) => `<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">${AdminIcons.SPINNER} <span>${text}</span></div>`,
-    TABLE_LOADING: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--text-muted); font-style: italic;">
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem;">
-            <svg class="spinner" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
-            ${msg}
+    TABLE_LOADING: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="padding: 5rem 1rem; vertical-align: middle; color: var(--text-muted);">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.75rem; width:100%; height:100%;">
+            <svg class="spinning" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+            <span style="font-weight: 700; font-family: var(--font-mono); font-size: 0.85rem; color: #9ca3af;">${msg}</span>
         </div>
     </td></tr>`,
-    TABLE_ERROR: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--danger);">${msg}</td></tr>`,
-    TABLE_EMPTY: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="height: 200px; vertical-align: middle; color: var(--text-muted); opacity: 0.7;">
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-            <p>${msg}</p>
+    TABLE_ERROR: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="padding: 5rem 1rem; vertical-align: middle; color: var(--danger);">${msg}</td></tr>`,
+    TABLE_EMPTY: (colspan, msg) => `<tr><td colspan="${colspan}" class="text-center" style="padding: 5rem 1rem; vertical-align: middle; color: var(--text-muted); opacity: 0.7;">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.75rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <p style="font-family: var(--font-mono); font-size: 0.85rem;">${msg}</p>
         </div>
     </td></tr>`,
     PLAN_EMPTY: (msg) => `

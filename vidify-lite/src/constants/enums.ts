@@ -213,3 +213,11 @@ export enum FolderSelectionType {
   IMAGES = "IMAGES",
   VOICES = "VOICES",
 }
+
+export enum AppTab {
+  STUDIO = "studio",
+  PROJECTS = "projects",
+  AUTO_GENERATOR = "auto-generator",
+  SETTINGS = "settings",
+  DASHBOARD = "dashboard",
+}
