@@ -801,14 +801,14 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
   vi: {
     bannerTitle: "Tạo Video Tự Động",
     bannerTitleTooltip: "Tạo Video Tự Động (One-Click Auto Creator)",
-    bannerBadge: "Unified Config",
+    bannerBadge: "Cấu hình hợp nhất",
     bannerSubtitle: "Tối ưu toàn bộ cấu hình vào một khối duy nhất giúp quản lý và tạo video dễ dàng nhất",
-    presetLabel: "Preset mẫu:",
+    presetLabel: "Mẫu cấu hình:",
     presetDefaultOption: "-- Mặc định (Tùy chỉnh) --",
-    presetNamePlaceholder: "Tên Preset...",
-    savePresetBtn: "Lưu Preset",
-    savePresetTooltip: "Lưu cấu hình hiện tại thành Preset mẫu",
-    deletePresetTooltip: "Xóa Preset đang chọn",
+    presetNamePlaceholder: "Tên mẫu...",
+    savePresetBtn: "Lưu cấu hình",
+    savePresetTooltip: "Lưu cấu hình hiện tại thành mẫu dùng lại",
+    deletePresetTooltip: "Xóa mẫu cấu hình đang chọn",
     panelTitle: "Bảng Cấu Hình",
     panelTitleTooltip: "Bảng Cấu Hình Dự Án (Pipeline Studio)",
     panelBadge: "KHỐI THỐNG NHẤT",
@@ -901,8 +901,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logThumbStyleManualExtracted: "Đã trích xuất phong cách ảnh bìa từ ảnh mẫu!",
     logStyleUploaded: (count: number) => `Đã tải lên ${count} ảnh mẫu phong cách nghệ thuật.`,
     logThumbUploaded: (count: number) => `Đã tải lên ${count} ảnh mẫu phong cách ảnh bìa.`,
-    logSavedPreset: (name: string) => `Đã lưu Preset mẫu: "${name}"`,
-    logAppliedPreset: (name: string) => `Đã áp dụng Preset: "${name}"`,
+    logSavedPreset: (name: string) => `Đã lưu mẫu cấu hình: "${name}"`,
+    logAppliedPreset: (name: string) => `Đã áp dụng mẫu cấu hình: "${name}"`,
   },
   en: {
     bannerTitle: "Auto Creator",
@@ -1079,5 +1079,21 @@ export const PIPELINE_STEP4_SHORT_TEXTS = {
     PREVIEW_TOOLTIP: "Preview currently active video scene",
   }
 } as const;
+
+export const PRESET_CONSTANTS = {
+  ID_PREFIX: "preset_",
+  DEFAULT_VOICE_NAME: "Preset Voice VI",
+  DEFAULT_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting",
+  EXTRACTED_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors",
+  DEFAULT_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Vibrant Colors",
+  EXTRACTED_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography",
+  CHARACTER_NAME: "Nhân vật chính",
+  CHARACTER_BIO: "Một nhân vật hoạt hình thiết kế sắc nét...",
+  PROJECT_NAME_PREFIX: "Video_Auto_",
+  SAMPLE_VIDEO_URL: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  DEFAULT_CAMERA_MOTION: "default",
+  DEFAULT_TRANSITION: "default",
+} as const;
+
 
 

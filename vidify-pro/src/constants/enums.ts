@@ -214,3 +214,20 @@ export enum VOICE_GENDER {
 export const OFFLINE_RENDER_ID = "offline_webm";
 export const VOICE_FILTER_ALL = "all";
 
+export enum AppTab {
+  STUDIO = "studio",
+  PROJECTS = "projects",
+  AUTO_GENERATOR = "auto-generator",
+  SETTINGS = "settings",
+  DASHBOARD = "dashboard",
+}
+
+export enum HttpStatus {
+  OK = 200,
+  CREATED = 201,
+  BAD_REQUEST = 400,
+  NOT_FOUND = 404,
+  INTERNAL_SERVER_ERROR = 500,
+}
+
+

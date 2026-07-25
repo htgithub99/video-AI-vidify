@@ -3,6 +3,7 @@ export const API_ROUTES = {
   PIPELINE: "/api/pipeline",
   VOICES: "/api/voices",
   PROJECTS: "/api/projects",
+  PRESETS: "/api/presets",
   PIPELINE_EXTRACT_STYLE: "/api/pipeline/extract-style",
   PIPELINE_REWRITE_PROMPTS: "/api/pipeline/rewrite-prompts",
   PIPELINE_ANALYZE_CHARACTER: "/api/pipeline/analyze-character",

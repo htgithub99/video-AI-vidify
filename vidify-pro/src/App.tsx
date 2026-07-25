@@ -10,16 +10,36 @@ import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioTyp
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
+import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
 
+const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
+
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
   const [activeTab, setActiveTab] = useState<string>(() => {
-    const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return cached && cached !== "undefined" && cached !== "null" ? "studio" : "projects";
+    const savedTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
+    const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
+    if (isValidTab) {
+      if (_.isEqual(savedTab, AppTab.STUDIO)) {
+        const cachedProj = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+        const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+        return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
+      }
+      return savedTab!;
+    }
+    const cachedProj = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+    return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
   });
+
+  useEffect(() => {
+    if (!_.isEmpty(activeTab) && !_.includes(INVALID_CACHE_VALUES, activeTab)) {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, activeTab);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     setLogLanguage(currentLang);
@@ -34,9 +54,9 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      Object.entries(pendingSavesRef.current).forEach(([id, timeout]) => {
+      _.forEach(Object.entries(pendingSavesRef.current), ([id, timeout]) => {
         clearTimeout(timeout);
-        const proj = projectsRef.current.find((p) => p.id === id);
+        const proj = _.find(projectsRef.current, { id });
         if (proj) {
           fetch(`${API_ROUTES.PROJECTS}/${id}`, {
             method: HTTP_METHODS.PUT,
@@ -50,11 +70,11 @@ export default function App() {
   }, []);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return !cached || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cached) ? null : cached;
+    return !cached || _.includes(INVALID_CACHE_VALUES, cached) ? null : cached;
   });
 
   useEffect(() => {
-    if (selectedProjectId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(selectedProjectId)) {
+    if (selectedProjectId && !_.includes(INVALID_CACHE_VALUES, selectedProjectId)) {
       localStorage.setItem(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
       localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
@@ -67,7 +87,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.APP_THEME, theme);
-    if (theme === THEME_VALUES.LIGHT) {
+    if (_.isEqual(theme, THEME_VALUES.LIGHT)) {
       document.documentElement.classList.add(THEME_VALUES.LIGHT);
       document.documentElement.classList.remove(THEME_VALUES.DARK);
     } else {
@@ -77,10 +97,10 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === THEME_VALUES.DARK ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
+    setTheme((prev) => (_.isEqual(prev, THEME_VALUES.DARK) ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
   };
 
-  const [credits, setCredits] = useState<number>(10000);
+  const [credits] = useState<number>(10000);
   const [costTracker, setCostTracker] = useState<number>(0.0);
 
   useEffect(() => {
@@ -91,18 +111,19 @@ export default function App() {
     const fetchProjects = fetch(API_ROUTES.PROJECTS).then(async (res) => {
       try {
         const text = await res.text();
-        if (!text?.trim() || ([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(text?.trim())) {
+        const trimmedText = _.trim(text);
+        if (_.isEmpty(trimmedText) || _.includes(INVALID_CACHE_VALUES, trimmedText)) {
           return [];
         }
         const list = jsonUtils.safeParse<any[]>(text, []);
-        if (cachedId && !([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL] as string[]).includes(cachedId)) {
-          const hasProj = list.some((p: any) => p.id === cachedId);
+        if (cachedId && !_.includes(INVALID_CACHE_VALUES, cachedId)) {
+          const hasProj = _.some(list, (p: any) => _.isEqual(p.id, cachedId));
           if (hasProj) {
             try {
               const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
               if (detailRes.ok) {
                 const detailData = await detailRes.json();
-                return list.map((p: any) => (p.id === cachedId ? detailData : p));
+                return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
               }
             } catch (e) {
               appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
@@ -122,7 +143,7 @@ export default function App() {
 
     Promise.all([fetchProjects, waitForFonts])
       .then(([projectsData]) => {
-        if (active && Array.isArray(projectsData)) {
+        if (active && _.isArray(projectsData)) {
           setProjects(projectsData);
         }
       })
@@ -148,24 +169,24 @@ export default function App() {
   const handleSelectProject = useCallback(async (id: string | null) => {
     if (!id) {
       setSelectedProjectId(null);
-      setActiveTab("projects");
+      setActiveTab(AppTab.PROJECTS);
       return;
     }
-    const project = projectsRef.current.find((p) => p.id === id);
+    const project = _.find(projectsRef.current, { id });
     if (project && !project.input) {
       try {
         const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`);
         if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
         const detailData = await res.json();
-        setProjects((prev) => prev.map((p) => (p.id === id ? detailData : p)));
+        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
         setSelectedProjectId(id);
-        setActiveTab("studio");
+        setActiveTab(AppTab.STUDIO);
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
       }
     } else {
       setSelectedProjectId(id);
-      setActiveTab("studio");
+      setActiveTab(AppTab.STUDIO);
     }
   }, []);
 
@@ -242,7 +263,7 @@ export default function App() {
   };
 
   const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
-    setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p)));
 
     if (pendingSavesRef.current[updated.id]) {
       clearTimeout(pendingSavesRef.current[updated.id]);
@@ -277,8 +298,8 @@ export default function App() {
     try {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, { method: HTTP_METHODS.DELETE });
       if (res.ok) {
-        setProjects((prev) => prev.filter((p) => p.id !== id));
-        if (selectedProjectId === id) {
+        setProjects((prev) => _.filter(prev, (p) => !_.isEqual(p.id, id)));
+        if (_.isEqual(selectedProjectId, id)) {
           handleSelectProject(null);
         }
       }
@@ -287,7 +308,7 @@ export default function App() {
     }
   };
 
-  const activeProject = projects.find((p) => p.id === selectedProjectId);
+  const activeProject = _.find(projects, { id: selectedProjectId });
 
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = _.find(projects, { id });
@@ -298,7 +319,7 @@ export default function App() {
       description,
       updatedAt: new Date().toISOString(),
     };
-    setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? updated : p)));
+    setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
     try {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
         method: HTTP_METHODS.PUT,
@@ -307,13 +328,13 @@ export default function App() {
       });
       if (res.ok) {
         const savedProject = await res.json();
-        setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? savedProject : p)));
+        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
       } else {
-        setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? projToUpdate : p)));
+        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
         appError(`${ERROR_MESSAGES.UPDATING_PROJECT}: STATUS ${res.status}`);
       }
     } catch (e) {
-      setProjects((prev) => _.map(prev, (p) => (_.eq(p.id, id) ? projToUpdate : p)));
+      setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
       appError(ERROR_MESSAGES.UPDATING_PROJECT, e);
     }
   };
@@ -334,7 +355,7 @@ export default function App() {
           currentLang={currentLang}
           activeTab={activeTab}
           setActiveTab={(tab) => {
-            if (tab === "studio" && !selectedProjectId) return;
+            if (_.isEqual(tab, AppTab.STUDIO) && !selectedProjectId) return;
             setActiveTab(tab);
           }}
           selectedProjectId={selectedProjectId}
@@ -344,7 +365,7 @@ export default function App() {
         />
 
         <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
-          {activeTab === "studio" && selectedProjectId && activeProject ? (
+          {_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
             <PipelineWizard
               key={selectedProjectId}
               theme={theme}
@@ -356,18 +377,18 @@ export default function App() {
               costTracker={costTracker}
               setCostTracker={setCostTracker}
               credits={credits}
-              setCredits={setCredits}
+              setCredits={() => {}}
             />
-          ) : activeTab === "settings" ? (
+          ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
             <SettingsView currentLang={currentLang} />
-          ) : activeTab === "dashboard" ? (
+          ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
             <DashboardView
               currentLang={currentLang}
               credits={credits}
               costTracker={costTracker}
               projects={projects}
               onSelectProject={handleSelectProject}
-              onNavigateToProjects={() => setActiveTab("projects")}
+              onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
             />
           ) : (
             <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">

@@ -23,10 +23,24 @@ const SQL_STATEMENTS = {
       data TEXT NOT NULL
     );
   `,
+  CREATE_PRESETS_TABLE: `
+    CREATE TABLE IF NOT EXISTS presets (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      config TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `,
   SELECT_PROJECTS_LIST: `
     SELECT id, name, description, created_at as createdAt, updated_at as updatedAt, 
            current_step as currentStep, credits_used as creditsUsed, data 
     FROM projects 
+    ORDER BY updated_at DESC
+  `,
+  SELECT_PRESETS_LIST: `
+    SELECT id, name, config, created_at as createdAt, updated_at as updatedAt
+    FROM presets
     ORDER BY updated_at DESC
   `,
   SELECT_PROJECT_DETAIL: "SELECT data FROM projects WHERE id = ?",
@@ -34,7 +48,12 @@ const SQL_STATEMENTS = {
     INSERT OR REPLACE INTO projects (id, name, description, created_at, updated_at, current_step, credits_used, data)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
+  INSERT_PRESET: `
+    INSERT OR REPLACE INTO presets (id, name, config, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+  `,
   DELETE_PROJECT: "DELETE FROM projects WHERE id = ?",
+  DELETE_PRESET: "DELETE FROM presets WHERE id = ?",
   BEGIN_TRANSACTION: "BEGIN TRANSACTION;",
   COMMIT: "COMMIT;",
   ROLLBACK: "ROLLBACK;",
@@ -84,6 +103,7 @@ export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.State
 
     await dbInstance.exec(SQL_STATEMENTS.PRAGMA_WAL);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PROJECTS_TABLE);
+    await dbInstance.exec(SQL_STATEMENTS.CREATE_PRESETS_TABLE);
 
     return dbInstance;
   } catch (error) {
@@ -91,6 +111,59 @@ export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.State
     throw error;
   }
 }
+
+export async function getPresetsFromDb(): Promise<any[]> {
+  try {
+    const db = await initDb();
+    const rows = await db.all(SQL_STATEMENTS.SELECT_PRESETS_LIST);
+    return _.map(rows, (row) => ({
+      id: row.id,
+      name: row.name,
+      config: jsonUtils.safeParse<any>(row.config, {}),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    }));
+  } catch (error) {
+    appError(getBackendMsg("SQLITE_PRESETS_LIST_ERR"), error);
+    return [];
+  }
+}
+
+export async function savePresetToDb(preset: { id: string; name: string; config: any }): Promise<any> {
+  try {
+    const db = await initDb();
+    const now = new Date().toISOString();
+    await db.run(SQL_STATEMENTS.INSERT_PRESET, [
+      preset.id,
+      preset.name,
+      jsonUtils.safeStringify(preset.config),
+      now,
+      now,
+    ]);
+    return {
+      id: preset.id,
+      name: preset.name,
+      config: preset.config,
+      createdAt: now,
+      updatedAt: now,
+    };
+  } catch (error) {
+    appError(`${getBackendMsg("SQLITE_PRESET_WRITE_ERR")} ${preset.id}`, error);
+    throw error;
+  }
+}
+
+export async function deletePresetFromDb(id: string): Promise<boolean> {
+  try {
+    const db = await initDb();
+    const result = await db.run(SQL_STATEMENTS.DELETE_PRESET, [id]);
+    return !_.isNil(result.changes) && _.gt(result.changes, 0);
+  } catch (error) {
+    appError(`${getBackendMsg("SQLITE_PRESET_DELETE_ERR")} ${id}`, error);
+    return false;
+  }
+}
+
 
 export async function getProjectsListFromDb(): Promise<any[]> {
   try {

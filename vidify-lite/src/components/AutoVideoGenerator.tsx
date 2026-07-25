@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import _ from "lodash";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod } from "../types";
 import { VideoQuality } from "../constants/enums";
 import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels } from "../constants";
-import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
+import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { VoiceSelectionDialog } from "./VoiceSelectionDialog";
 import { cn } from "../lib/utils";
-import { storageUtils } from "../lib/storage";
 import { jsonUtils } from "../lib/json";
+import { logger } from "../utils/logger";
 import {
   Zap,
   Sparkles,
@@ -50,68 +50,64 @@ interface PresetItem {
   config: any;
 }
 
-const STORAGE_KEY_PRESETS = "vidify_auto_presets";
-
 export default function AutoVideoGenerator({
   currentLang,
   onSelectProject,
   onUpdateProject,
 }: AutoVideoGeneratorProps) {
-  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
   const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
   const [scriptContent, setScriptContent] = useState<string>("");
   const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
-  const [language, setLanguage] = useState<ProjectLanguage>(currentLang as unknown as ProjectLanguage);
+  const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
   const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
-  const [splitStrategy, setSplitStrategy] = useState<string>("mixed_sentences");
+  const [rewriteLevel] = useState<number>(3);
+  const [similarityReduction] = useState<number>(3);
+  const [creativityLevel] = useState<number>(3);
+  const [factCheck] = useState<boolean>(true);
   const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
   const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [rewriteLevel] = useState<number>(50);
-  const [similarityReduction] = useState<number>(5);
-  const [creativityLevel] = useState<number>(6);
-  const [factCheck] = useState<boolean>(true);
+  const [splitStrategy, setSplitStrategy] = useState<string>("mixed_sentences");
 
   const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
   const [hookDuration] = useState<number>(10);
   const [hookPosition] = useState<string>("start");
 
   const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
-  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(T.defaultVoiceName);
   const [voiceSpeed] = useState<number>(1.0);
   const [voicePitch] = useState<number>(1.0);
   const [voiceVolume] = useState<number>(1.0);
+  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
+  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
   const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
-  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
   const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.SixteenNine);
+  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>("8s");
   const [chromeHeadless] = useState<boolean>(true);
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
-  
-  const [stylePreset, setStylePreset] = useState<string>("Realistic Cinematic, 3D Render, Dramatic Lighting");
+
+  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [isExtractingStyle, setIsExtractingStyle] = useState<boolean>(false);
 
-  const characterName = "Nhân vật chính";
-  const characterBio = "Một nhân vật hoạt hình thiết kế sắc nét...";
   const [characterImages] = useState<string[]>([]);
 
   const [thumbnailCount, setThumbnailCount] = useState<number>(2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>("Bold Clickbait 3D Style, High Contrast, Vibrant Colors");
+  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
   const [isExtractingThumbnailStyle, setIsExtractingThumbnailStyle] = useState<boolean>(false);
 
-  const [projectName, setProjectName] = useState<string>(`Video_Auto_${new Date().toISOString().slice(0, 10)}`);
+  const [projectName, setProjectName] = useState<string>(() => `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(0, 10)}`);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
-  const [cameraMotion] = useState<string>("default");
-  const [transitionEffect] = useState<string>("default");
+  const [cameraMotion] = useState<string>(PRESET_CONSTANTS.DEFAULT_CAMERA_MOTION);
+  const [transitionEffect] = useState<string>(PRESET_CONSTANTS.DEFAULT_TRANSITION);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
@@ -120,23 +116,35 @@ export default function AutoVideoGenerator({
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>("");
   const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
 
-  const [presets, setPresets] = useState<PresetItem[]>(() => {
-    const saved = storageUtils.get(STORAGE_KEY_PRESETS);
-    return jsonUtils.safeParse<PresetItem[]>(saved, []);
-  });
+  const [presets, setPresets] = useState<PresetItem[]>([]);
   const [presetNameInput, setPresetNameInput] = useState<string>("");
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+
+  useEffect(() => {
+    const fetchPresets = async () => {
+      try {
+        const res = await fetch(API_ROUTES.PRESETS);
+        const data = await res.json();
+        if (_.isArray(data)) {
+          setPresets(data);
+        }
+      } catch (err) {
+        logger.error("FAILED_FETCH_PRESETS", err);
+      }
+    };
+    fetchPresets();
+  }, []);
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs((prev) => [...prev, `[${timestamp}] ${msg}`]);
   };
 
-  const handleSavePreset = () => {
+  const handleSavePreset = async () => {
     const trimmedName = _.trim(presetNameInput);
     if (_.isEmpty(trimmedName)) return;
-    const newPreset: PresetItem = {
-      id: "preset_" + Date.now(),
+    const newPresetData = {
+      id: `${PRESET_CONSTANTS.ID_PREFIX}${Date.now()}`,
       name: trimmedName,
       config: {
         inputType,
@@ -156,11 +164,21 @@ export default function AutoVideoGenerator({
         thumbnailStylePreset,
       },
     };
-    const updated = [...presets, newPreset];
-    setPresets(updated);
-    storageUtils.set(STORAGE_KEY_PRESETS, jsonUtils.safeStringify(updated));
-    setPresetNameInput("");
-    addLog(T.logSavedPreset(newPreset.name));
+    try {
+      const res = await fetch(API_ROUTES.PRESETS, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: jsonUtils.safeStringify(newPresetData),
+      });
+      const saved = await res.json();
+      if (saved && saved.id) {
+        setPresets((prev) => [...prev, saved]);
+        setPresetNameInput("");
+        addLog(T.logSavedPreset(saved.name));
+      }
+    } catch (err) {
+      logger.error("FAILED_SAVE_PRESET", err);
+    }
   };
 
   const handleApplyPreset = (presetId: string) => {
@@ -182,11 +200,19 @@ export default function AutoVideoGenerator({
     addLog(T.logAppliedPreset(preset.name));
   };
 
-  const handleDeletePreset = (id: string) => {
-    const updated = _.filter(presets, (p) => !_.isEqual(p.id, id));
-    setPresets(updated);
-    storageUtils.set(STORAGE_KEY_PRESETS, jsonUtils.safeStringify(updated));
-    if (_.isEqual(selectedPresetId, id)) setSelectedPresetId("");
+  const handleDeletePreset = async (id: string) => {
+    try {
+      const res = await fetch(`${API_ROUTES.PRESETS}/${id}`, {
+        method: HTTP_METHODS.DELETE,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPresets((prev) => _.filter(prev, (p) => !_.isEqual(p.id, id)));
+        if (_.isEqual(selectedPresetId, id)) setSelectedPresetId("");
+      }
+    } catch (err) {
+      logger.error("FAILED_DELETE_PRESET", err);
+    }
   };
 
   const handleStyleFilesUpload = (files: FileList) => {
@@ -203,7 +229,7 @@ export default function AutoVideoGenerator({
     setIsExtractingStyle(true);
     setTimeout(() => {
       setIsExtractingStyle(false);
-      setStylePreset("Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors");
+      setStylePreset(PRESET_CONSTANTS.EXTRACTED_STYLE_PRESET);
       addLog(T.logStyleExtracted);
     }, 1000);
   };
@@ -222,7 +248,7 @@ export default function AutoVideoGenerator({
     setIsExtractingThumbnailStyle(true);
     setTimeout(() => {
       setIsExtractingThumbnailStyle(false);
-      setThumbnailStylePreset("Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography");
+      setThumbnailStylePreset(PRESET_CONSTANTS.EXTRACTED_THUMB_STYLE_PRESET);
       addLog(T.logThumbStyleExtracted);
     }, 1000);
   };
@@ -243,10 +269,10 @@ export default function AutoVideoGenerator({
 
     try {
       addLog(T.logInitProj);
-      const newProjectId = "proj_" + Math.random().toString(36).substring(2, 11);
+      const newProjectId = `proj_${Math.random().toString(36).substring(2, 11)}`;
       const newProj: VideoProject = {
         id: newProjectId,
-        name: _.trim(projectName) || `Auto_Video_${Date.now()}`,
+        name: _.trim(projectName) || `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${Date.now()}`,
         description: `Tạo tự động lúc ${new Date().toLocaleString()}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -310,8 +336,8 @@ export default function AutoVideoGenerator({
           characters: [
             {
               id: "char_1",
-              name: characterName,
-              description: characterBio,
+              name: PRESET_CONSTANTS.CHARACTER_NAME,
+              description: PRESET_CONSTANTS.CHARACTER_BIO,
               images: characterImages,
             },
           ],
@@ -425,11 +451,11 @@ export default function AutoVideoGenerator({
           setRenderedVideoUrl(data.url);
           addLog(T.logRenderSuccess);
         } else {
-          setRenderedVideoUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4");
+          setRenderedVideoUrl(PRESET_CONSTANTS.SAMPLE_VIDEO_URL);
           addLog(T.logRenderPreview);
         }
       } catch {
-        setRenderedVideoUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4");
+        setRenderedVideoUrl(PRESET_CONSTANTS.SAMPLE_VIDEO_URL);
         addLog(T.logRenderPreviewMode);
       }
 
@@ -757,7 +783,7 @@ export default function AutoVideoGenerator({
                     <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                       {_.map(Object.values(AspectRatio), (r) => (
                         <option key={r} value={r} className="bg-slate-955 text-slate-300">
-                          {r} {_.isEqual(r, "9:16") ? "(TikTok)" : _.isEqual(r, "16:9") ? "(YouTube)" : ""}
+                          {r} {_.isEqual(r, AspectRatio.NineSixteen) ? "(TikTok)" : _.isEqual(r, AspectRatio.SixteenNine) ? "(YouTube)" : ""}
                         </option>
                       ))}
                     </select>
@@ -824,7 +850,7 @@ export default function AutoVideoGenerator({
                           <img src={imgBase64} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
                           <button
                             type="button"
-                            onClick={() => setReferenceImages((prev) => _.filter(prev, (_, i) => i !== idx))}
+                            onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
                             className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
                             title={T.deleteStyleImgTooltip}
                           >
@@ -953,7 +979,7 @@ export default function AutoVideoGenerator({
                           <img src={imgBase64} alt={`Thumb Ref ${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
                           <button
                             type="button"
-                            onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_, i) => i !== idx))}
+                            onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
                             className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
                             title={T.deleteThumbImgTooltip}
                           >
@@ -1024,7 +1050,7 @@ export default function AutoVideoGenerator({
               <span>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
             </Button>
 
-            {isProcessing || stepProgress > 0 ? (
+            {isProcessing || _.gt(stepProgress, 0) ? (
               <div className="space-y-2 pt-2 text-left">
                 <div className="flex justify-between items-center text-[10px] font-mono font-bold">
                   <span className="text-rose-400">Tiến trình Node [{currentStepIndex}/4]</span>
@@ -1067,7 +1093,7 @@ export default function AutoVideoGenerator({
             </h3>
 
             <div className="flex-1 min-h-[260px] bg-black rounded-2xl border border-slate-800/80 overflow-hidden relative flex flex-col items-center justify-center p-6 shadow-inner">
-              {renderedVideoUrl ? (
+              {!_.isEmpty(renderedVideoUrl) ? (
                 <video src={renderedVideoUrl} controls className="w-full h-full object-cover rounded-xl" autoPlay />
               ) : (
                 <div className="text-center p-6 text-slate-400 font-mono text-xs my-auto flex flex-col items-center justify-center gap-3">
@@ -1079,7 +1105,7 @@ export default function AutoVideoGenerator({
               )}
             </div>
 
-            {renderedVideoUrl && (
+            {!_.isEmpty(renderedVideoUrl) && (
               <div className="flex gap-2 pt-1">
                 <Button
                   variant="primary"

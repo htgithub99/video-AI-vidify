@@ -18,12 +18,31 @@ import { delayAsync } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
 import { storageUtils } from "./lib/storage";
 
+const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
+
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
   const [activeTab, setActiveTab] = useState<string>(() => {
-    const cached = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return cached && !_.includes(["undefined", "null"], cached) ? AppTab.STUDIO : AppTab.PROJECTS;
+    const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);
+    const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
+    if (isValidTab) {
+      if (_.isEqual(savedTab, AppTab.STUDIO)) {
+        const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
+        const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+        return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
+      }
+      return savedTab!;
+    }
+    const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+    return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
   });
+
+  useEffect(() => {
+    if (!_.isEmpty(activeTab) && !_.includes(INVALID_CACHE_VALUES, activeTab)) {
+      storageUtils.set(STORAGE_KEYS.ACTIVE_TAB, activeTab);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     setLogLanguage(currentLang);
@@ -55,11 +74,11 @@ export default function App() {
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
     const cached = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return !cached || _.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL], cached) ? null : cached;
+    return !cached || _.includes(INVALID_CACHE_VALUES, cached) ? null : cached;
   });
 
   useEffect(() => {
-    if (selectedProjectId && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL], selectedProjectId)) {
+    if (selectedProjectId && !_.includes(INVALID_CACHE_VALUES, selectedProjectId)) {
       storageUtils.set(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
       storageUtils.remove(STORAGE_KEYS.SELECTED_PROJECT_ID);
@@ -85,7 +104,7 @@ export default function App() {
     setTheme((prev) => (_.isEqual(prev, THEME_VALUES.DARK) ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
   };
 
-  const [credits, setCredits] = useState<number>(10000);
+  const [credits] = useState<number>(10000);
   const [costTracker, setCostTracker] = useState<number>(0.0);
 
   useEffect(() => {
@@ -97,11 +116,11 @@ export default function App() {
       try {
         const text = await res.text();
         const trimmedText = _.trim(text);
-        if (_.isEmpty(trimmedText) || _.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL], trimmedText)) {
+        if (_.isEmpty(trimmedText) || _.includes(INVALID_CACHE_VALUES, trimmedText)) {
           return [];
         }
         const list = jsonUtils.safeParse<any[]>(text, []);
-        if (cachedId && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL], cachedId)) {
+        if (cachedId && !_.includes(INVALID_CACHE_VALUES, cachedId)) {
           const hasProj = _.some(list, (p: any) => _.isEqual(p.id, cachedId));
           if (hasProj) {
             try {
@@ -374,7 +393,7 @@ export default function App() {
               costTracker={costTracker}
               setCostTracker={setCostTracker}
               credits={credits}
-              setCredits={setCredits}
+              setCredits={() => {}}
             />
           ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
             <AutoVideoGenerator
