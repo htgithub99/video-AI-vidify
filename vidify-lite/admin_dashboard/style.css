@@ -462,6 +462,7 @@ th {
     font-family: var(--font-mono);
     padding: 0.95rem 1.1rem;
     border-bottom: 1px solid var(--card-border);
+    text-align: left;
 }
 td {
     padding: 0.95rem 1.1rem;

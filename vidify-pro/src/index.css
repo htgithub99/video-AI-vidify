@@ -484,6 +484,20 @@ select {
   border: none !important;
 }
 
+select option {
+  background-color: #090d16 !important;
+  color: #e2e8f0 !important;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus,
+select option:active,
+select option:checked {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
 /* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */
 *, ::before, ::after {
   --tw-ring-shadow: 0 0 #0000 !important;

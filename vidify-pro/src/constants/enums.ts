@@ -194,3 +194,23 @@ export enum SortOrder {
   ASC = "asc",
   DESC = "desc",
 }
+
+export enum PIPELINE_STEPS {
+  STEP_0 = 0,
+  STEP_1 = 1,
+  STEP_2 = 2,
+  STEP_3 = 3,
+  STEP_4 = 4,
+  STEP_5 = 5,
+  STEP_6 = 6,
+}
+
+export enum VOICE_GENDER {
+  ALL = "all",
+  MALE = "male",
+  FEMALE = "female",
+}
+
+export const OFFLINE_RENDER_ID = "offline_webm";
+export const VOICE_FILTER_ALL = "all";
+

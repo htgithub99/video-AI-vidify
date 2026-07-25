@@ -7,8 +7,9 @@ import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
 import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS } from "../../constants";
+import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
-import { appError } from "../../lib/logger";
+import { logger } from "../../utils/logger";
 import { safeSystemFetch } from "../../lib/shared-utils";
 import _ from "lodash";
 
@@ -16,6 +17,9 @@ const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIco
 
 export default function PipelineStep4(props: PipelineWizardState) {
   const { t, setCurrentStep, isPlayingSim, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
+  const currentLang = (props as any).currentLang === "en" ? "en" : "vi";
+  const shortTexts = PIPELINE_STEP4_SHORT_TEXTS[currentLang];
+
 
   const playerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -136,7 +140,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       playerRef.current?.requestFullscreen().catch((err) => {
-        appError(t.fullscreenError.replace("{error}", err.message));
+        logger.error(t.fullscreenError.replace("{error}", err.message));
       });
     } else {
       document.exitFullscreen();
@@ -145,9 +149,9 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const exportButtons: any[] = [
     {
       id: EXPORT_TYPES.ZIP,
-      label: t.downloadZip,
+      label: shortTexts.ZIP_BTN,
       loadingLabel: t.packagingZip,
-      desc: t.Download_complete_CapCut_,
+      desc: shortTexts.ZIP_TOOLTIP,
       handler: handleDownloadJSONProject,
       icon: Download,
       isLoading: loadingExportType === EXPORT_TYPES.ZIP,
@@ -162,8 +166,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-30">
           <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-20">
-            <Tooltip content="Xem trước bố cục hình ảnh và âm thanh với chất lượng thấp (Low Res) trước khi quyết định tạo video hoàn chỉnh." position="bottom" align="start">
-              <span className="flex items-center gap-2 cursor-help"><Eye className="w-5 h-5 text-rose-500" /> Trình Phát Thử</span>
+            <Tooltip content={shortTexts.RENDER_TITLE_TOOLTIP} position="bottom" align="start">
+              <span className="flex items-center gap-2 cursor-help"><Eye className="w-5 h-5 text-rose-500" /> {shortTexts.RENDER_TITLE}</span>
             </Tooltip>
           </h3>
 
@@ -375,16 +379,19 @@ export default function PipelineStep4(props: PipelineWizardState) {
                       <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.Monitor className="w-3.5 h-3.5 text-rose-500" /> Chất Lượng Video</span>
                     </Tooltip>
                   </label>
-                  <select
-                    value={ffmpegQuality}
-                    onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)}
-                    className="w-full bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none cursor-pointer"
-                  >
-                    <option value={VideoQuality.LOW}>{PIPELINE_STEP4_TEXTS.QUALITY_480P}</option>
-                    <option value={VideoQuality.HIGH}>{PIPELINE_STEP4_TEXTS.QUALITY_720P}</option>
-                    <option value={VideoQuality.HIGHEST}>{PIPELINE_STEP4_TEXTS.QUALITY_1080P}</option>
-                    <option value={VideoQuality.ULTRA_4K}>{PIPELINE_STEP4_TEXTS.QUALITY_4K}</option>
-                  </select>
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-inner">
+                    <select
+                      value={ffmpegQuality}
+                      onChange={(e) => setFfmpegQuality(e.target.value as VideoQuality)}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
+                    >
+                      <option value={VideoQuality.LOW} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_480P}</option>
+                      <option value={VideoQuality.HIGH} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_720P}</option>
+                      <option value={VideoQuality.HIGHEST} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_1080P}</option>
+                      <option value={VideoQuality.ULTRA_4K} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_4K}</option>
+                    </select>
+                    <LucideIcons.ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                  </div>
                 </div>
                 
                 <div className="w-full [&>div]:w-full">

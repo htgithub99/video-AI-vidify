@@ -1,11 +1,12 @@
 import { StoryboardSourceMode } from "../../constants";
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { PipelineConstants } from "../../constants/pipelineConstants";
-import { logger } from "../../lib/logger";
+import { logger } from "../../utils/logger";
 import { jsonUtils } from "../../lib/json";
 import { storageUtils } from '../../lib/storage';
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
+
 
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
@@ -15,10 +16,10 @@ import { EXTERNAL_URLS, API_ROUTES, API_HEADERS } from "../../constants/apiRoute
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
-import { getSceneTimeRanges, compileVideoToBlob } from "../../lib/videoRenderer";
+import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
@@ -640,13 +641,7 @@ export function usePipelineWizard(props: any) {
         if (["[vite] server connection lost", "server connection lost. polling for restart"].some(k => msgLower.includes(k))) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
         } else if (msgLower.includes("[hmr] failed to reload")) {
-          const fileMatch = msg.match(/Failed to reload (\S+)/i);
-          const filePath = fileMatch ? fileMatch[1] : "";
-          if (filePath) {
-            processedMsg = logTexts.FAILED_RELOAD_WITH_FILE.replace("{filePath}", filePath);
-          } else {
-            processedMsg = logTexts.FAILED_RELOAD_GENERIC;
-          }
+          processedMsg = logTexts.FAILED_RELOAD_GENERIC;
         } else if (msgLower.includes("[vite] connected")) {
           processedMsg = logTexts.CONNECTED;
         } else if (["[vite] hot updated", "[vite] hmr update"].some(k => msgLower.includes(k))) {
@@ -1065,7 +1060,7 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     const loadVoices = async () => {
       try {
-        const response = await fetch("/api/voices?provider=edge", {
+        const response = await fetch(`${API_ROUTES.VOICES}?provider=edge`, {
           headers: {
             "x-ai33-api-key": getStoredApiKey("AI33_API_KEY"),
           },
@@ -1322,7 +1317,7 @@ export function usePipelineWizard(props: any) {
         bypassCache: force === true,
       };
 
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/script", payload);
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, payload);
 
       if (!success || data?.error || data?.warning) {
         throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
@@ -1342,6 +1337,7 @@ export function usePipelineWizard(props: any) {
       if (!data.cached) {
         trackOperationCost(10, 0.0005);
       }
+      return data;
     } catch (e: any) {
       setErrorMsg(t.scriptPipelineError.replace("{error}", e.message));
     } finally {
@@ -1350,7 +1346,7 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerStoryboardSplit = async (force = false, btnPosition = "top", isFromAutoGenerateAll = false) => {
+  const handleTriggerStoryboardSplit = async (force = false, btnPosition = "top", isFromAutoGenerateAll = false, customScript?: string) => {
     logAction("handleTriggerStoryboardSplit");
 
     const isForce = force === true;
@@ -1359,7 +1355,8 @@ export function usePipelineWizard(props: any) {
       return project.storyboard;
     }
 
-    if (!project.scriptRewritten) {
+    const scriptToSplit = customScript || project.scriptRewritten;
+    if (!scriptToSplit) {
       setErrorMsg(t.Missing_detailed_script_f);
       return;
     }
@@ -1377,7 +1374,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       const payload = {
-        rewrittenScript: project.scriptRewritten,
+        rewrittenScript: scriptToSplit,
         chapters: project.chapters,
         config: {
           ...project.config,
@@ -1407,7 +1404,7 @@ export function usePipelineWizard(props: any) {
         bypassCache: isForce,
       };
 
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/storyboard", payload);
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, payload);
 
       if (!success || data?.error || data?.warning) {
         throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
@@ -1663,7 +1660,7 @@ export function usePipelineWizard(props: any) {
         bypassCache: force === true,
       };
 
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/hooks", payload);
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_HOOKS, payload);
 
       if (!success || data?.error || data?.warning) {
         throw new Error(error || data?.error || data?.warning || "Failed to generate hooks.");
@@ -1766,7 +1763,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       const extractPayload = { images };
-      const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch("/api/pipeline/extract-style", extractPayload);
+      const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, extractPayload);
 
       if (!extractSuccess || extractData?.error) {
         throw new Error(extractError || extractData?.error || "Style extraction failed");
@@ -1819,7 +1816,7 @@ export function usePipelineWizard(props: any) {
         newStyle: currentStyle,
         aspectRatio: project.visualConfig.aspectRatio,
       };
-      const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch("/api/pipeline/rewrite-prompts", rewritePayload);
+      const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, rewritePayload);
 
       if (rewriteSuccess && rewriteData?.storyboard) {
         setProject((prev) => ({
@@ -1899,7 +1896,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.charAnalyzing);
 
     try {
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/analyze-character", { script });
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script });
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character analysis failed");
       }
@@ -2005,7 +2002,7 @@ export function usePipelineWizard(props: any) {
         images,
         characterDescription: char.description,
       };
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/extract-character", payload);
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, payload);
 
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character extraction failed");
@@ -2079,7 +2076,7 @@ export function usePipelineWizard(props: any) {
         })),
         aspectRatio: project.visualConfig.aspectRatio,
       };
-      const { success, data } = await safeSystemFetch("/api/pipeline/rewrite-prompts-character", payload);
+      const { success, data } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, payload);
       if (success && data?.storyboard) {
         setProject((prev) => ({
           ...prev,
@@ -2571,13 +2568,13 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.cancellingBatchGen);
   };
 
-  const handleBatchGenerateAllImages = async () => {
+  const handleBatchGenerateAllImages = async (isFromAutoGenerateAll = false, providedScenes?: any[]) => {
     logAction("handleBatchGenerateAllImages");
     if (isBatchGenerating) return;
 
     cancelBatchImageRef.current = false;
 
-    const scenes = project.storyboard || [];
+    const scenes = providedScenes || project.storyboard || [];
     if (_.isEmpty(scenes)) {
       setErrorMsg(t.No_storyboard_scenes_foun);
       return;
@@ -2909,7 +2906,7 @@ export function usePipelineWizard(props: any) {
         bypassCache: isForce,
       };
 
-      const { success, data, error } = await safeSystemFetch("/api/pipeline/thumbnails", payload);
+      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, payload);
 
       if (!success || data?.error || data?.warning) {
         throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
@@ -3440,6 +3437,56 @@ export function usePipelineWizard(props: any) {
     }
   };
 
+  const handleAutoGenerateVideo = async () => {
+    logAction("handleAutoGenerateVideo");
+    
+    if (_.isEmpty(_.trim(project.input?.content))) {
+      setErrorMsg(t.Please_enter_script_conte || AUTO_GENERATE_TEXTS.EMPTY_SCRIPT_ERR);
+      return;
+    }
+
+    setLoadingStates((prev) => ({ ...prev, autoGenerateAll: true }));
+    try {
+      const IS_FORCE = true;
+      let currentScript = project.scriptRewritten;
+
+      if (_.isEmpty(currentScript)) {
+        setCurrentStep(WizardStep.SourceInput);
+        setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Dr || AUTO_GENERATE_TEXTS.DRAFTING_SCRIPT);
+        const scriptData = await handleProcessInputAndConfig(IS_FORCE);
+        if (scriptData && !_.isEmpty(scriptData.rewrittenScript)) {
+          currentScript = scriptData.rewrittenScript;
+        } else {
+          throw new Error(AUTO_GENERATE_TEXTS.SCRIPT_ERR);
+        }
+      }
+
+      setCurrentStep(WizardStep.Storyboard);
+      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An || AUTO_GENERATE_TEXTS.STORYBOARDING);
+      const newStoryboard = await handleTriggerStoryboardSplit(IS_FORCE, AUTO_GENERATE_TEXTS.POSITION_TOP, IS_FORCE, currentScript);
+      
+      const hasValidScenes = _.isArray(newStoryboard) && _.some(newStoryboard, scene => !_.isEmpty(scene.id));
+      if (!hasValidScenes) {
+        throw new Error(AUTO_GENERATE_TEXTS.STORYBOARD_ERR);
+      }
+
+      setCurrentStep(WizardStep.AssetManager);
+      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ge_3 || AUTO_GENERATE_TEXTS.VOICEOVER);
+      await handleTriggerAllSceneVoices(newStoryboard, IS_FORCE);
+
+      setInfoMsg(t.initializingBatchGen || AUTO_GENERATE_TEXTS.IMAGES);
+      await handleBatchGenerateAllImages(IS_FORCE, newStoryboard);
+
+      setInfoMsg(AUTO_GENERATE_TEXTS.SUCCESS);
+      logger.info(`[Hệ thống] ✅ ${AUTO_GENERATE_TEXTS.SUCCESS}`);
+    } catch (err: any) {
+      logger.error(AUTO_GENERATE_TEXTS.ERR_CODE, err);
+      setErrorMsg(err.message || AUTO_GENERATE_TEXTS.GENERIC_ERR);
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, autoGenerateAll: false }));
+    }
+  };
+
   const handleProcessExternalAudio = async (audioName: string, audioUrl: string, audioBase64: string) => {
     logAction(EXTERNAL_AUDIO_TEXTS.LOG_ACTION);
     try {
@@ -3540,45 +3587,6 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleOfflineRenderWebM = async () => {
-    logAction("handleOfflineRenderWebM");
-    stopPlaybackSim();
-    setIsOfflineRendering(true);
-    setOfflineRenderProgress(0);
-    setInfoMsg(t.waitExportProcess);
-
-    try {
-      const blob = await compileVideoToBlob(project.storyboard || [], getSceneImageUrl, project.voiceConfig, ttsAudioUrl, (prog) => {
-        setOfflineRenderProgress(prog);
-      });
-
-      setRenderedVideoBlob(blob);
-
-      const isMp4 = blob.type.includes("mp4");
-      const ext = isMp4 ? "mp4" : "webm";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `${project.name.replace(/\s+/g, "_")}_rendered_video.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 150);
-
-      setOfflineRenderProgress(100);
-      const successMsg = t.Cinematic_simulated_video || "Đã xuất video thành công.";
-      setInfoMsg(successMsg);
-      logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
-    } catch (err) {
-      logger.warn("OFFLINE_RENDERING_ERROR", err);
-      setErrorMsg(t.Failed_to_compile_video_C);
-    } finally {
-      setIsOfflineRendering(false);
-    }
-  };
 
   const startPlaybackSim = () => {
     if (!project.storyboard || _.isEmpty(project.storyboard)) return;
@@ -3873,121 +3881,8 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleDownloadSRT = async () => {
-    logAction("handleDownloadSRT");
-    setLoadingExportType(EXPORT_TYPES.SRT);
-    await delayAsync(800);
-    try {
-      let srt = "";
-      if (project.storyboard && project.storyboard.length > 0) {
-        project.storyboard.forEach((scene, index) => {
-          const formatToSRTTime = (timeStr: string) => {
-            if (!timeStr) return "00:00:00,000";
-            const parts = timeStr.split(":");
-            const m = parseInt(parts[0], 10) || 0;
-            const s = parseInt(parts[1], 10) || 0;
-            return `00:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")},000`;
-          };
-          const start = formatToSRTTime(scene.startTime);
-          const end = formatToSRTTime(scene.endTime);
-          const text = scene.subtitle || scene.script || "";
-          srt += `${index + 1}\n${start} --> ${end}\n${text}\n\n`;
-        });
-      } else {
-        srt = "1\n00:00:00,000 --> 00:00:10,000\nNo subtitle built yet.";
-      }
 
-      const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(srt);
-      const dlAnchorElem = document.createElement("a");
-      dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_subtitles.srt`);
-      dlAnchorElem.click();
-      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file phụ đề .SRT.`);
-    } finally {
-      setLoadingExportType(null);
-    }
-  };
 
-  const handleDownloadCapcutLink = async () => {
-    logAction("handleDownloadCapcutLink");
-    setLoadingExportType(EXPORT_TYPES.CAPCUT);
-    await delayAsync(800);
-    try {
-      const sceneRanges = getSceneTimeRanges(project.storyboard || []);
-      const capcutSchema = {
-        platform: "CapCut Desktop PRO",
-        version: "4.8.1",
-        timeline: sceneRanges.map((sc) => ({
-          trackId: sc.id,
-          duration_ms: sc.duration * 1000,
-          start_ms: sc.start * 1000,
-          end_ms: sc.end * 1000,
-          text_caption: sc.subtitle,
-          audio_narration: project.voiceConfig?.provider || "edge",
-          visual_preset: {
-            asset_path: sc.assetName || "Image_Placeholder.jpg",
-            motion_effect: sc.cameraMotion,
-            transition_effect: sc.transition,
-          },
-        })),
-      };
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonUtils.safeStringify(capcutSchema, null, 2));
-      const dlAnchorElem = document.createElement("a");
-      dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_CapCut_Desktop.json`);
-      dlAnchorElem.click();
-      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file liên kết CapCut Desktop.`);
-    } finally {
-      setLoadingExportType(null);
-    }
-  };
-
-  const handleDownloadPremiereXML = async () => {
-    logAction("handleDownloadPremiereXML");
-    setLoadingExportType(EXPORT_TYPES.PREMIERE);
-    await delayAsync(800);
-    try {
-      const sceneRanges = getSceneTimeRanges(project.storyboard || []);
-      const totalSecs = sceneRanges.length > 0 ? sceneRanges[sceneRanges.length - 1].end : 0;
-      const xml = `<?xml version="1.0"encoding="UTF-8"?>
-<!DOCTYPE xmeml>
-<xmeml version="4">
- <sequence id="sequence-1">
- <name>${project.name} - AI Video Factory</name>
- <duration>${Math.round(totalSecs * 24)}</duration>
- <rate><timebase>24</timebase></rate>
- <media>
- <video>
- <track>
- ${sceneRanges
-          .map(
-            (sc) => `
- <clipitem id="clip-${sc.id}">
- <name>${sc.assetName || "Image_" + sc.id}</name>
- <duration>${Math.round(sc.duration * 24)}</duration>
- <start>${Math.round(sc.start * 24)}</start>
- <end>${Math.round(sc.end * 24)}</end>
- <effect>
- <name>${sc.cameraMotion}</name>
- </effect>
- </clipitem>`,
-          )
-          .join("")}
- </track>
- </video>
- </media>
- </sequence>
-</xmeml>`;
-      const dataStr = "data:text/xml;charset=utf-8," + encodeURIComponent(xml);
-      const dlAnchorElem = document.createElement("a");
-      dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", `${project.name.replace(/\s+/g, "_")}_Premiere_Pro.xml`);
-      dlAnchorElem.click();
-      logger.info(`[Hệ thống] ✅ Thành công: Đã tải xuống file Premiere Pro XML.`);
-    } finally {
-      setLoadingExportType(null);
-    }
-  };
   return {
     t,
     project,
@@ -4186,20 +4081,17 @@ export function usePipelineWizard(props: any) {
     handleTriggerVoiceGenerate,
     handleTriggerAllSceneVoices,
     handleTriggerStoryboardAndVoices,
+    handleAutoGenerateVideo,
     handleProcessExternalAudio,
     handleTriggerSEOBoost,
     onSaveProject,
     handleOpenExportCenter,
-    handleOfflineRenderWebM,
     startPlaybackSim,
     startTimerBasedSim,
     stopPlaybackSim,
     renderFallbackSceneImage,
     getSceneImageUrl,
     handleDownloadJSONProject,
-    handleDownloadSRT,
-    handleDownloadCapcutLink,
-    handleDownloadPremiereXML,
     handleAnalyzeCharacter,
     handleCharacterImagesUpload,
     handleExtractCharacter,

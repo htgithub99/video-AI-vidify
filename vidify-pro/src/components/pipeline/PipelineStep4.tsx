@@ -3,18 +3,21 @@ import { formatCleanTime } from "../../lib/timeUtils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
+import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
 import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
-import { appError } from "../../lib/logger";
+import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
+import { OFFLINE_RENDER_ID } from "../../constants/enums";
+import { logger } from "../../utils/logger";
 import _ from "lodash";
 
 const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
-const OFFLINE_RENDER_ID = "offline_render";
-
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props;
+  const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props as any;
+  const currentLang = (props as any).currentLang === "en" ? "en" : "vi";
+  const shortTexts = PIPELINE_STEP4_SHORT_TEXTS[currentLang];
 
   const playerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -56,7 +59,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       playerRef.current?.requestFullscreen().catch((err) => {
-        appError(t.fullscreenError.replace("{error}", err.message));
+        logger.error(t.fullscreenError.replace("{error}", err.message));
       });
     } else {
       document.exitFullscreen();
@@ -100,9 +103,9 @@ export default function PipelineStep4(props: PipelineWizardState) {
     },
     {
       id: OFFLINE_RENDER_ID,
-      label: t.renderingWebM,
+      label: shortTexts.WEBM_BTN,
       loadingLabel: t.exportingVideo,
-      desc: t.Render_and_compile_full_p,
+      desc: shortTexts.WEBM_TOOLTIP,
       handler: handleOfflineRenderWebM,
       icon: Video,
       isLoading: isOfflineRendering,
@@ -110,18 +113,18 @@ export default function PipelineStep4(props: PipelineWizardState) {
     },
     {
       id: EXPORT_TYPES.ZIP,
-      label: t.downloadZip,
+      label: shortTexts.ZIP_BTN,
       loadingLabel: t.packagingZip,
-      desc: t.Download_complete_CapCut_,
+      desc: shortTexts.ZIP_TOOLTIP,
       handler: handleDownloadJSONProject,
       icon: Download,
       isLoading: loadingExportType === EXPORT_TYPES.ZIP,
     },
     {
       id: EXPORT_TYPES.SRT,
-      label: t.Download_SRT,
+      label: shortTexts.SRT_BTN,
       loadingLabel: t.exportingSRT,
-      desc: t.Extract_synced_subtitle_t,
+      desc: shortTexts.SRT_TOOLTIP,
       handler: handleDownloadSRT,
       icon: Download,
       isLoading: loadingExportType === EXPORT_TYPES.SRT,
@@ -134,8 +137,12 @@ export default function PipelineStep4(props: PipelineWizardState) {
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-hidden">
           <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-10">
-            <Eye className="w-5 h-5 text-rose-500" />
-            {t.renderTitle}
+            <Tooltip content={shortTexts.RENDER_TITLE_TOOLTIP} position="bottom" align="start">
+              <span className="flex items-center gap-2 cursor-help">
+                <Eye className="w-5 h-5 text-rose-500" />
+                {shortTexts.RENDER_TITLE}
+              </span>
+            </Tooltip>
           </h3>
 
           <div 

@@ -362,18 +362,18 @@ export const LLM_CONFIG = {
 
 export const VITE_HMR_LOGS = {
   vi: {
-    SERVER_CONNECTION_LOST: "[Vite] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
-    FAILED_RELOAD_WITH_FILE: "[Hệ thống] Không thể tự động cập nhật giao diện thành phần ({filePath}) do có lỗi cú pháp hoặc thiếu tệp tin. Vui lòng tải lại trang (F5) hoặc kiểm tra lại code.",
-    FAILED_RELOAD_GENERIC: "[Hệ thống] Cập nhật giao diện thất bại do lỗi cú pháp hoặc thiếu tệp tin. Vui lòng tải lại trang (F5) hoặc kiểm tra lại code.",
-    CONNECTED: "[Vite] Đã kết nối lại thành công với máy chủ dịch vụ.",
-    HOT_UPDATED: "[Vite] Giao diện đã tự động cập nhật thay đổi mới thành công.",
+    SERVER_CONNECTION_LOST: "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
+    FAILED_RELOAD_WITH_FILE: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
+    FAILED_RELOAD_GENERIC: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
+    CONNECTED: "[Hệ thống] Đã kết nối lại thành công với máy chủ dịch vụ.",
+    HOT_UPDATED: "[Hệ thống] Giao diện đã tự động cập nhật thay đổi mới.",
   },
   en: {
-    SERVER_CONNECTION_LOST: "[Vite] Server connection lost. Reconnecting...",
-    FAILED_RELOAD_WITH_FILE: "[System] Failed to auto-reload component ({filePath}) due to syntax errors or missing files. Please reload page (F5) or check your code.",
-    FAILED_RELOAD_GENERIC: "[System] Interface update failed due to syntax errors or missing files. Please reload page (F5) or check your code.",
-    CONNECTED: "Successfully reconnected to development server.",
-    HOT_UPDATED: "Interface hot updated successfully.",
+    SERVER_CONNECTION_LOST: "[System] Connection lost. Reconnecting...",
+    FAILED_RELOAD_WITH_FILE: "[System] Interface update failed. Please reload page (F5).",
+    FAILED_RELOAD_GENERIC: "[System] Interface update failed. Please reload page (F5).",
+    CONNECTED: "[System] Reconnected to server successfully.",
+    HOT_UPDATED: "[System] Interface updated successfully.",
   },
 } as const;
 
@@ -506,7 +506,7 @@ export const SIDEBAR_TEXTS = {
   vi: {
     DASHBOARD: "Tổng quan",
     CONTENT: "Nội dung",
-    AI_STUDIO: "Phòng sáng tạo AI",
+    AI_STUDIO: "Trình Biên Tập Video",
     SETTINGS: "Cài đặt",
     AI_CREATOR: "Nhà Sáng Tạo AI",
     ACTIVE_PROJECT: "Dự án đang mở",
@@ -794,4 +794,73 @@ export const AUTO_GENERATE_TEXTS = {
   ERR_CODE: "AUTO_GENERATE_ERROR",
   POSITION_TOP: "top",
 } as const;
+
+export const VOICE_DIALOG_TEXTS = {
+  vi: {
+    TITLE: "Chọn giọng đọc",
+    TITLE_TOOLTIP: "Lựa chọn giọng đọc AI phù hợp cho video",
+    CONFIRM_BTN: "Xác nhận",
+    CONFIRM_TOOLTIP: "Xác nhận giọng đọc đã chọn",
+    CLOSE_BTN: "Đóng",
+    CLOSE_TOOLTIP: "Đóng cửa sổ chọn giọng đọc",
+    LISTEN_BTN: "Nghe thử",
+    LISTEN_TOOLTIP: "Phát âm thanh nghe thử giọng đọc AI",
+    STOP_BTN: "Dừng phát",
+    STOP_TOOLTIP: "Dừng phát thử giọng đọc",
+    SEARCH_PLACEHOLDER: "Tìm kiếm giọng đọc...",
+    ALL_GENDERS: "Tất cả giới tính",
+    MALE: "Nam",
+    FEMALE: "Nữ",
+    ALL_LANGUAGES: "Tất cả ngôn ngữ",
+    SELECTED_VOICE: "Giọng đọc đã chọn:",
+    NO_VOICES_FOUND: "Không tìm thấy giọng đọc phù hợp.",
+  },
+  en: {
+    TITLE: "Select Voice",
+    TITLE_TOOLTIP: "Select appropriate AI voice for video",
+    CONFIRM_BTN: "Confirm",
+    CONFIRM_TOOLTIP: "Confirm selected voice",
+    CLOSE_BTN: "Close",
+    CLOSE_TOOLTIP: "Close voice selection window",
+    LISTEN_BTN: "Listen",
+    LISTEN_TOOLTIP: "Play audio sample of selected AI voice",
+    STOP_BTN: "Stop",
+    STOP_TOOLTIP: "Stop playing voice sample",
+    SEARCH_PLACEHOLDER: "Search voice...",
+    ALL_GENDERS: "All Genders",
+    MALE: "Male",
+    FEMALE: "Female",
+    ALL_LANGUAGES: "All Languages",
+    SELECTED_VOICE: "Selected Voice:",
+    NO_VOICES_FOUND: "No matching voice found.",
+  }
+} as const;
+
+export const PIPELINE_STEP4_SHORT_TEXTS = {
+  vi: {
+    RENDER_TITLE: "Kết xuất video",
+    RENDER_TITLE_TOOLTIP: "Xem trước và xuất bản dự án video",
+    WEBM_BTN: "Kết xuất WebM",
+    WEBM_TOOLTIP: "Kết xuất và biên dịch video WebM đầy đủ",
+    ZIP_BTN: "Tải ZIP",
+    ZIP_TOOLTIP: "Tải xuống toàn bộ dự án CapCut dạng ZIP",
+    SRT_BTN: "Tải SRT",
+    SRT_TOOLTIP: "Tải xuống tệp phụ đề SRT đã đồng bộ",
+    PREVIEW_BTN: "Xem trước",
+    PREVIEW_TOOLTIP: "Xem trước phân cảnh video đang chọn",
+  },
+  en: {
+    RENDER_TITLE: "Render Video",
+    RENDER_TITLE_TOOLTIP: "Preview and render full video project",
+    WEBM_BTN: "Render WebM",
+    WEBM_TOOLTIP: "Render and compile full WebM video",
+    ZIP_BTN: "Download ZIP",
+    ZIP_TOOLTIP: "Download complete CapCut project as ZIP",
+    SRT_BTN: "Download SRT",
+    SRT_TOOLTIP: "Download synchronized SRT subtitle file",
+    PREVIEW_BTN: "Preview",
+    PREVIEW_TOOLTIP: "Preview currently active video scene",
+  }
+} as const;
+
 

@@ -1,11 +1,12 @@
 import { StoryboardSourceMode } from "../../constants";
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { PipelineConstants } from "../../constants/pipelineConstants";
-import { logger } from "../../lib/logger";
+import { logger } from "../../utils/logger";
 import { jsonUtils } from "../../lib/json";
 import { storageUtils } from '../../lib/storage';
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
+
 
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
@@ -640,13 +641,7 @@ export function usePipelineWizard(props: any) {
         if (["[vite] server connection lost", "server connection lost. polling for restart"].some(k => msgLower.includes(k))) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
         } else if (msgLower.includes("[hmr] failed to reload")) {
-          const fileMatch = msg.match(/Failed to reload (\S+)/i);
-          const filePath = fileMatch ? fileMatch[1] : "";
-          if (filePath) {
-            processedMsg = logTexts.FAILED_RELOAD_WITH_FILE.replace("{filePath}", filePath);
-          } else {
-            processedMsg = logTexts.FAILED_RELOAD_GENERIC;
-          }
+          processedMsg = logTexts.FAILED_RELOAD_GENERIC;
         } else if (msgLower.includes("[vite] connected")) {
           processedMsg = logTexts.CONNECTED;
         } else if (["[vite] hot updated", "[vite] hmr update"].some(k => msgLower.includes(k))) {

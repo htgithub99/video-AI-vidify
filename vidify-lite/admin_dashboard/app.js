@@ -444,8 +444,8 @@ function renderPlansConfig() {
                     <input type="text" inputmode="numeric" class="numeric-input plan-voice-input quota-row-input" data-plan-id="${planId}" value="${plan.quota_voice}" ${isUnlimited ? 'disabled' : ''}>
                 </td>
                 <td class="text-center">
-                    <button class="btn-danger delete-plan-btn" data-plan-id="${planId}" title="${AppStrings.TOOLTIP_DELETE_PLAN}" style="height: 32px !important; padding: 0 0.6rem !important; font-size: 0.75rem !important;">
-                        🗑️ Xóa Gói
+                    <button class="action-btn action-danger delete-plan-btn" data-plan-id="${planId}" title="${AdminMessages.ACTION_MODAL_DELETE}">
+                        ${AdminIcons.BTN_DELETE}
                     </button>
                 </td>
             </tr>
@@ -1230,10 +1230,10 @@ async function loadApiKeysAdmin() {
             
             return `
             <tr style="${rowStyle}">
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
+                <td style="color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
+                <td style="color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
+                <td class="text-center">
                     <div style="display: flex; gap: 0.5rem; justify-content: center;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
@@ -1287,16 +1287,16 @@ async function loadAccountsAdmin() {
 
             return `
             <tr style="${rowStyle}">
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center">
+                <td style="font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
+                <td style="color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
+                <td class="text-center">
                     <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; cursor: pointer;">
                         ${options}
                     </select>
                 </td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);" class="text-center"><span class="badge ${badgeClass}">${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}</span></td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
-                <td style="padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}</span></td>
+                <td style="color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
+                <td>
                     <div class="actions-cell" style="justify-content: center;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
