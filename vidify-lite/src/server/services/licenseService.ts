@@ -5,22 +5,40 @@ import crypto from 'crypto';
 import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus, PlanType } from '../../constants/security.js';
 import { jsonUtils } from '../../lib/json.js';
 import { appError } from '../../lib/logger.js';
+import { machineIdSync } from 'node-machine-id';
 
 function getHardwareId(): string {
-    const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
-    
-    if (fs.existsSync(deviceIdFile)) {
-        try {
-            const data = jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {});
-            if (_.has(data, 'deviceId')) return _.get(data, 'deviceId');
-        } catch (e) {
-            appError(SecurityMessages.ERROR_READING_DEVICE_ID, e);
+    let rawId = '';
+    try {
+        rawId = machineIdSync(true);
+    } catch (e) {
+        appError(SecurityMessages.ERROR_READING_DEVICE_ID, e);
+    }
+
+    if (_.isEmpty(rawId)) {
+        const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
+        if (fs.existsSync(deviceIdFile)) {
+            try {
+                const data = jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {});
+                if (_.has(data, SecurityConstants.DEVICE_ID_KEY)) {
+                    rawId = _.get(data, SecurityConstants.DEVICE_ID_KEY);
+                }
+            } catch (e) {}
         }
     }
-    
-    const newId = crypto.randomUUID();
-    fs.writeFileSync(deviceIdFile, jsonUtils.safeStringify({ deviceId: newId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
-    return newId;
+
+    if (_.isEmpty(rawId)) {
+        rawId = crypto.randomUUID();
+        try {
+            const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
+            fs.writeFileSync(deviceIdFile, jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
+        } catch (e) {}
+    }
+
+    return crypto.createHash(SecurityConstants.ALGORITHM_SHA256)
+        .update(_.join([process.platform, process.arch, rawId], SecurityConstants.HYPHEN))
+        .digest(SecurityConstants.ENCODING_HEX as crypto.BinaryToTextEncoding)
+        .substring(SecurityConstants.ZERO, SecurityConstants.SUBSTRING_LEN_32);
 }
 
 export interface LicenseInfo {
@@ -51,7 +69,7 @@ export class LicenseService {
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: SecurityConstants.HTTP_POST,
-                headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
+                headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
                 body: jsonUtils.safeStringify({
                     action: GasActions.VERIFY_KEY,
                     admin_key: SecurityConstants.ADMIN_APP_KEY,
@@ -62,28 +80,28 @@ export class LicenseService {
             
             const data: any = await response.json();
             
-            if (_.has(data, 'error')) {
-                const errorMsg = _.get(data, 'error');
+            if (_.has(data, SecurityConstants.ERROR_KEY)) {
+                const errorMsg = _.get(data, SecurityConstants.ERROR_KEY);
                 appError(SecurityMessages.LICENSE_VALIDATION_ERROR, errorMsg);
                 throw new Error(errorMsg);
             }
             
             return {
-                status: _.get(data, 'status'),
-                plan_id: _.get(data, 'plan.id'),
-                plan_type: _.get(data, 'plan.name', PlanType.FREE),
-                quota_type: _.get(data, 'quota_type', SecurityConstants.QUOTA_TYPE_DAILY),
-                expires_at: _.get(data, 'expires_at', null),
+                status: _.get(data, SecurityConstants.STATUS_KEY),
+                plan_id: _.get(data, SecurityConstants.PLAN_ID_KEY),
+                plan_type: _.get(data, SecurityConstants.PLAN_NAME_KEY, PlanType.FREE),
+                quota_type: _.get(data, SecurityConstants.QUOTA_TYPE_KEY, SecurityConstants.QUOTA_TYPE_DAILY),
+                expires_at: _.get(data, SecurityConstants.EXPIRES_AT_KEY, null),
                 usage: {
-                    video: _.get(data, 'usage.video', 0),
-                    image: _.get(data, 'usage.image', 0),
-                    voice: _.get(data, 'usage.voice', 0),
+                    video: _.get(data, SecurityConstants.USAGE_VIDEO_KEY, SecurityConstants.ZERO),
+                    image: _.get(data, SecurityConstants.USAGE_IMAGE_KEY, SecurityConstants.ZERO),
+                    voice: _.get(data, SecurityConstants.USAGE_VOICE_KEY, SecurityConstants.ZERO),
                 },
                 limits: {
-                    video: _.get(data, 'plan.quota_video', 0),
-                    image: _.get(data, 'plan.quota_image', 0),
-                    voice: _.get(data, 'plan.quota_voice', 0),
-                    unlimited: _.get(data, 'plan.is_unlimited', false),
+                    video: _.get(data, SecurityConstants.PLAN_QUOTA_VIDEO, SecurityConstants.ZERO),
+                    image: _.get(data, SecurityConstants.PLAN_QUOTA_IMAGE, SecurityConstants.ZERO),
+                    voice: _.get(data, SecurityConstants.PLAN_QUOTA_VOICE, SecurityConstants.ZERO),
+                    unlimited: _.get(data, SecurityConstants.PLAN_IS_UNLIMITED, false),
                 }
             };
         } catch (error: any) {
@@ -92,13 +110,13 @@ export class LicenseService {
         }
     }
 
-    static async incrementUsage(licenseKey: string, feature: FeatureType, amount: number = 1): Promise<boolean> {
+    static async incrementUsage(licenseKey: string, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT): Promise<boolean> {
         if (_.isEmpty(licenseKey)) return false;
 
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: SecurityConstants.HTTP_POST,
-                headers: { 'Content-Type': SecurityConstants.CONTENT_TYPE_JSON },
+                headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
                 body: jsonUtils.safeStringify({
                     action: GasActions.UPDATE_USAGE,
                     admin_key: SecurityConstants.ADMIN_APP_KEY,
@@ -109,8 +127,8 @@ export class LicenseService {
             });
             
             const data: any = await response.json();
-            if (_.has(data, 'error')) {
-                appError(SecurityMessages.USAGE_UPDATE_ERROR, _.get(data, 'error'));
+            if (_.has(data, SecurityConstants.ERROR_KEY)) {
+                appError(SecurityMessages.USAGE_UPDATE_ERROR, _.get(data, SecurityConstants.ERROR_KEY));
                 return false;
             }
             return true;

@@ -3,7 +3,12 @@ const path = require("path");
 const fs = require("fs");
 const _ = require("lodash");
 const { exec } = require("child_process");
+const crypto = require("crypto");
+const bytenode = require("bytenode");
 const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES } = require("./config.cjs");
+
+// Sinh Internal Security Token cho local server
+process.env.INTERNAL_API_TOKEN = crypto.randomUUID();
 
 const userDataPath = app.getPath(APP_CONFIG.USER_DATA);
 process.env[APP_CONFIG.ENV_APP_DATA_DIR] = userDataPath;
@@ -82,7 +87,20 @@ function startBackendServer() {
   try {
     setupInitialDatabase();
     appLog(MESSAGES.LOG_STARTING);
-    require(APP_CONFIG.SERVER_FILE);
+    
+    const serverJscPath = path.join(__dirname, "../dist/server.jsc");
+    const serverCjsPath = path.join(__dirname, "../dist/server.cjs");
+
+    if (fs.existsSync(serverJscPath)) {
+      appLog("Loading Express server from V8 Bytecode (dist/server.jsc)...");
+      require(serverJscPath);
+    } else if (fs.existsSync(serverCjsPath)) {
+      appLog("Loading Express server from dist/server.cjs...");
+      require(serverCjsPath);
+    } else {
+      appLog("No server.jsc or server.cjs found. Assuming server is running independently in development.");
+    }
+    
     serverStarted = true;
   } catch (error) {
     appLogError(MESSAGES.START_SERVER_ERR, error);
@@ -114,7 +132,8 @@ function startChromeBrowser() {
 function handleLoadError(err) {
   appLog(MESSAGES.RETRY_MSG, err.message);
   setTimeout(() => {
-    mainWindow.loadURL(APP_CONFIG.HOST_URL).catch(() => {
+    const hostUrlWithToken = `${APP_CONFIG.HOST_URL}?token=${process.env.INTERNAL_API_TOKEN}`;
+    mainWindow.loadURL(hostUrlWithToken).catch(() => {
       dialog.showErrorBox(MESSAGES.CONNECT_FAIL_TITLE, MESSAGES.CONNECT_FAIL_MSG);
     });
   }, APP_CONFIG.TIMEOUT_RETRY);
@@ -134,8 +153,20 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
 
+  if (app.isPackaged || process.env.NODE_ENV === 'production') {
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools();
+    });
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.key === 'F12' || (input.control && input.shift && (input.key === 'I' || input.key === 'i' || input.key === 'J' || input.key === 'j' || input.key === 'C' || input.key === 'c'))) {
+        event.preventDefault();
+      }
+    });
+  }
+
   setTimeout(() => {
-    mainWindow.loadURL(APP_CONFIG.HOST_URL).catch(handleLoadError);
+    const hostUrlWithToken = `${APP_CONFIG.HOST_URL}?token=${process.env.INTERNAL_API_TOKEN}`;
+    mainWindow.loadURL(hostUrlWithToken).catch(handleLoadError);
   }, APP_CONFIG.TIMEOUT_BOOT);
 
   mainWindow.on(APP_CONFIG.CLOSED, () => {

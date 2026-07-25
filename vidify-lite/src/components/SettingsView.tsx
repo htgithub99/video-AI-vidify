@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { STORAGE_KEYS, SETTINGS_VIEW_TEXTS } from "../constants";
-import { Key, Users, ShieldCheck, Save, Plus, X } from "lucide-react";
+import { Key, Users, Save, Plus, X, LogOut, KeyRound } from "lucide-react";
 import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { storageUtils } from "../lib/storage";
+import { useLicense } from "../contexts/LicenseContext";
+import { SecurityConstants } from "../constants/security";
+import { AppLanguage } from "../constants/enums";
 import _ from "lodash";
 
 interface SettingsViewProps {
@@ -14,6 +17,7 @@ interface SettingsViewProps {
 export default function SettingsView({ currentLang }: SettingsViewProps) {
   const t = translations[currentLang];
   const texts = SETTINGS_VIEW_TEXTS[currentLang] || SETTINGS_VIEW_TEXTS.en;
+  const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
   const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey("GEMINI_API_KEY"));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey("AI33_API_KEY"));
@@ -64,18 +68,35 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left">
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm flex items-start gap-4">
-        <div className="p-3 bg-emerald-500/10 rounded-full shrink-0">
-          <ShieldCheck className="w-8 h-8 text-emerald-500" />
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-rose-500/10 rounded-full shrink-0">
+            <KeyRound className="w-8 h-8 text-rose-500" />
+          </div>
+          <div>
+            <h2 
+              className="text-base font-black tracking-tight text-slate-100 uppercase font-mono cursor-help"
+              title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TOOLTIP_VI : SecurityConstants.LICENSE_MGMT_TOOLTIP_EN}
+            >
+              {_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TITLE_VI : SecurityConstants.LICENSE_MGMT_TITLE_EN}
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed font-mono">
+              {_.get(licenseInfo, 'plan_type') 
+                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, 'plan_type')}` 
+                : (_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.ACTIVATED_LABEL_VI : SecurityConstants.ACTIVATED_LABEL_EN)
+              } | Key: <span className="text-slate-200">{licenseKey ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}` : SecurityConstants.NOT_AVAILABLE}</span>
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-base font-black tracking-tight text-slate-100 uppercase font-mono">
-            {texts.SYSTEM_TITLE}
-          </h2>
-          <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-            {texts.SYSTEM_DESC}
-          </p>
-        </div>
+        <Button
+          variant="secondary"
+          onClick={logoutLicense}
+          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_TOOLTIP_VI : SecurityConstants.LOGOUT_TOOLTIP_EN}
+          className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_LABEL_VI : SecurityConstants.LOGOUT_LABEL_EN}</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">

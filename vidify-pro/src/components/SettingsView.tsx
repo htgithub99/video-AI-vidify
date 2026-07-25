@@ -4,12 +4,15 @@ import { Lang, translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS } from "../constants";
 import { appError } from "../lib/logger.js";
-import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle } from "lucide-react";
+import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle, LogOut, KeyRound } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import _ from "lodash";
 import { storageUtils } from "../lib/storage";
 import { jsonUtils } from "../lib/json";
+import { useLicense } from "../contexts/LicenseContext";
+import { SecurityConstants } from "../constants/security";
+import { AppLanguage } from "../constants/enums";
 
 const CLEAR_TYPES = {
   API: "API",
@@ -31,6 +34,7 @@ interface SettingsViewProps {
 export default function SettingsView({ currentLang }: SettingsViewProps) {
   const t = translations[currentLang];
   const pageTexts = SETTINGS_TEXTS[currentLang as "vi" | "en"] || SETTINGS_TEXTS.en;
+  const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
   const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey("GEMINI_API_KEY"));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey("AI33_API_KEY"));
@@ -199,14 +203,35 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left">
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm">
-        <h2 className="text-base font-black tracking-tight text-slate-100 flex items-center gap-2 uppercase font-mono">
-          <Key className="w-5 h-5 text-rose-500" />
-          {pageTexts.TITLE}
-        </h2>
-        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-          {pageTexts.DESC}
-        </p>
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-rose-500/10 rounded-full shrink-0">
+            <KeyRound className="w-8 h-8 text-rose-500" />
+          </div>
+          <div>
+            <h2 
+              className="text-base font-black tracking-tight text-slate-100 uppercase font-mono cursor-help"
+              title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TOOLTIP_VI : SecurityConstants.LICENSE_MGMT_TOOLTIP_EN}
+            >
+              {_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TITLE_VI : SecurityConstants.LICENSE_MGMT_TITLE_EN}
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed font-mono">
+              {_.get(licenseInfo, 'plan_type') 
+                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, 'plan_type')}` 
+                : (_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.ACTIVATED_LABEL_VI : SecurityConstants.ACTIVATED_LABEL_EN)
+              } | Key: <span className="text-slate-200">{licenseKey ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}` : SecurityConstants.NOT_AVAILABLE}</span>
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={logoutLicense}
+          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_TOOLTIP_VI : SecurityConstants.LOGOUT_TOOLTIP_EN}
+          className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_LABEL_VI : SecurityConstants.LOGOUT_LABEL_EN}</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">

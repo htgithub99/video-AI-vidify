@@ -202,6 +202,19 @@ function getCurrentISO() {
   return new Date().toISOString();
 }
 
+function validateClientLicense(licenseKey) {
+  if (!licenseKey) return false;
+  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+  if (!usersSheet) return false;
+  const data = usersSheet.getDataRange().getValues();
+  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.LICENSE_KEY] === licenseKey);
+  if (rowIndex > 0) {
+    const status = data[rowIndex][UserCols.STATUS];
+    return status === StatusEnum.ACTIVE;
+  }
+  return false;
+}
+
 function doPost(e) {
   try {
     const contents = _.get(e, 'postData.contents');
@@ -241,12 +254,24 @@ function doPost(e) {
     }
 
     if (action === AppActions.VERIFY_KEY) return verifyKey(params);
-    if (action === AppActions.UPDATE_USAGE) return updateUsage(params);
+
+    // Xác thực License Key của Client cho mọi hành động nhạy cảm còn lại
+    const licenseKey = _.get(params, ApiFields.LICENSE_KEY);
+    if (!validateClientLicense(licenseKey)) {
+      return jsonResponse({ error: "License Key không hợp lệ hoặc đã bị khóa.", code: HttpCode.FORBIDDEN });
+    }
+
+    if (action === AppActions.UPDATE_USAGE) {
+      // Xác thực số lượng sử dụng phải lớn hơn 0
+      const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || 1;
+      if (amount <= 0) {
+        return jsonResponse({ error: "Số lượng sử dụng không hợp lệ.", code: HttpCode.BAD_REQUEST });
+      }
+      return updateUsage(params);
+    }
 
     if (action === AppActions.GET_API_KEYS) return getApiKeys(params);
-    if (action === AppActions.UPDATE_API_KEYS) return updateApiKeys(params);
     if (action === AppActions.GET_ACCOUNTS) return getAccounts(params);
-    if (action === AppActions.ADD_ACCOUNT) return addAccount(params);
     if (action === AppActions.UPDATE_ACCOUNT_STATUS) return updateAccountStatus(params);
 
     return jsonResponse({ error: Messages.INVALID_ACTION, code: HttpCode.BAD_REQUEST });

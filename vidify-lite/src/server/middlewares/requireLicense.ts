@@ -11,52 +11,72 @@ export const requireLicense = (featureType?: FeatureType) => {
             const licenseKey = _.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string;
 
             if (_.isEmpty(licenseKey)) {
-                return res.status(401).json({ error: SecurityMessages.MISSING_LICENSE_KEY, code: SecurityConstants.LICENSE_MISSING_CODE });
+                return res.status(SecurityConstants.HTTP_UNAUTHORIZED).json({
+                    error: SecurityMessages.MISSING_LICENSE_KEY,
+                    code: SecurityConstants.LICENSE_MISSING_CODE
+                });
             }
 
             const license = await LicenseService.validateKey(licenseKey);
 
             if (_.isNil(license)) {
-                return res.status(403).json({ error: SecurityMessages.INVALID_OR_REVOKED_LICENSE, code: SecurityConstants.LICENSE_INVALID_CODE });
+                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                    error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
+                    code: SecurityConstants.LICENSE_INVALID_CODE
+                });
             }
 
             if (!_.isEqual(license.status, LicenseStatus.ACTIVE)) {
-                return res.status(403).json({
+                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
                     code: SecurityConstants.LICENSE_INACTIVE_CODE
                 });
+            }
+
+            if (!_.isNil(license.expires_at)) {
+                const expiresTime = new Date(license.expires_at).getTime();
+                if (!isNaN(expiresTime) && _.lt(expiresTime, Date.now())) {
+                    return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                        error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
+                        code: SecurityConstants.LICENSE_INACTIVE_CODE
+                    });
+                }
             }
 
             _.set(req, SecurityConstants.LICENSE_INFO_KEY, license);
 
             const store = requestContext.getStore();
             if (store) {
-                store.planType = license.plan_id;
+                _.set(store, SecurityConstants.STORE_PLAN_TYPE_KEY, license.plan_id);
             }
 
             if (_.isNil(featureType)) {
                 return next();
             }
 
-            if (_.get(license, 'limits.unlimited', false)) {
+            if (_.get(license, SecurityConstants.LIMITS_UNLIMITED, false)) {
                 return next();
             }
 
-            const currentUsage = _.get(license, `${SecurityConstants.USAGE_PREFIX}${featureType}`, 0);
-            const maxLimit = _.get(license, `limits.${featureType}`, 0);
+            const currentUsage = _.get(license, _.join([SecurityConstants.USAGE_PREFIX, featureType], ''), SecurityConstants.ZERO);
+            const maxLimit = _.get(license, _.join([SecurityConstants.LIMITS_PREFIX_LOWER, featureType], SecurityConstants.DOT), SecurityConstants.ZERO);
 
             if (currentUsage >= maxLimit) {
-                const featureName = _.isEqual(featureType, FeatureType.VIDEO) ? LocalizationConstants.FEATURE_VIDEO : (_.isEqual(featureType, FeatureType.IMAGE) ? LocalizationConstants.FEATURE_IMAGE : LocalizationConstants.FEATURE_VOICE);
+                const featureName = _.isEqual(featureType, FeatureType.VIDEO)
+                    ? LocalizationConstants.FEATURE_VIDEO
+                    : (_.isEqual(featureType, FeatureType.IMAGE)
+                        ? LocalizationConstants.FEATURE_IMAGE
+                        : LocalizationConstants.FEATURE_VOICE);
                 const planName = _.get(license, 'plan_id', SecurityConstants.UNKNOWN_PLAN_NAME);
                 
                 let errorMsg = '';
-                if (_.isEqual(_.get(license, 'quota_type'), SecurityConstants.QUOTA_TYPE_TOTAL)) {
+                if (_.isEqual(license.quota_type, SecurityConstants.QUOTA_TYPE_TOTAL)) {
                     errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_TOTAL_EXCEEDED, '{0}', featureName), '{1}', planName);
                 } else {
                     errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, '{0}', featureName), '{1}', planName);
                 }
                 
-                return res.status(403).json({
+                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: errorMsg,
                     code: SecurityConstants.QUOTA_EXCEEDED_CODE
                 });
@@ -64,8 +84,8 @@ export const requireLicense = (featureType?: FeatureType) => {
 
             next();
         } catch (error) {
-            appError("RequireLicense Middleware Error", error);
-            res.status(500).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
+            appError(SecurityConstants.REQUIRE_LICENSE_ERROR_LOG, error);
+            res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
         }
     };
 };

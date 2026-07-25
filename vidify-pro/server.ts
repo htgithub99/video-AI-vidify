@@ -58,6 +58,20 @@ app.use(
 app.use(express.json({ limit: SERVER_CONFIG.LIMIT_500MB }));
 app.use(express.urlencoded({ limit: SERVER_CONFIG.LIMIT_500MB, extended: true }));
 
+// Middleware kiểm tra Security Token bảo vệ API khỏi trình duyệt ngoài
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    const serverToken = process.env.INTERNAL_API_TOKEN;
+    if (serverToken) {
+      const clientToken = req.headers["x-internal-token"];
+      if (clientToken !== serverToken) {
+        return res.status(403).json({ error: "Access denied. Invalid internal token." });
+      }
+    }
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || "";
   const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || "";

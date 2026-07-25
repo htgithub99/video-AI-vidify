@@ -97,7 +97,7 @@ import {
   FFMPEG_CONFIG,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog, createAppError } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
@@ -121,7 +121,23 @@ if (fs.existsSync(ffmpegBinary)) {
   ffmpeg.setFfmpegPath(ffmpegBinary);
 }
 
+import { LicenseService } from "../services/licenseService.js";
+import { requireLicense } from "../middlewares/requireLicense.js";
+import { FeatureType, SecurityConstants } from "../../constants/security.js";
+import { requestContext } from "../utils/requestContext.js";
+
 const router = express.Router();
+
+async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
+  const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
+  if (!_.isEmpty(licenseKey)) {
+    try {
+      await LicenseService.incrementUsage(licenseKey, feature, amount);
+    } catch (e) {
+      appError(SecurityMessages.USAGE_UPDATE_ERROR, e);
+    }
+  }
+}
 
 function parseBase64Image(imgBase64: string): { data: string; mimeType: string } {
   let base64Data = imgBase64;
@@ -1439,7 +1455,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/voice", async (req: Request, res: Response) => {
+router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, res: Response) => {
   try {
     let { text, speed, voice_id, voiceURI } = req.body;
     let finalVoiceId = voice_id || voiceURI;
@@ -1543,6 +1559,8 @@ router.post("/voice", async (req: Request, res: Response) => {
     const audioBase64 = buffer.toString(FileEncoding.BASE64 as any);
     const mimeType = audioRes.headers.get("content-type") || MimeType.MPEG;
 
+    await incrementFeatureUsage(req, FeatureType.VOICE, 1);
+
     res.json({
       success: true,
       audioBase64,
@@ -1559,7 +1577,7 @@ router.post("/voice", async (req: Request, res: Response) => {
     });
   }
 });
-router.post("/generate-image", async (req: Request, res: Response) => {
+router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
   try {
     const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
@@ -1574,6 +1592,10 @@ router.post("/generate-image", async (req: Request, res: Response) => {
       visualConfig,
       sandboxConfig,
     });
+
+    if (result && result.success) {
+      await incrementFeatureUsage(req, FeatureType.IMAGE, 1);
+    }
 
     return res.json(result);
   } catch (error: any) {
@@ -2449,7 +2471,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   }
 });
 
-router.post("/ffmpeg-render", express.json({ limit: "500mb" }), async (req: Request, res: Response) => {
+router.post("/ffmpeg-render", express.json({ limit: "500mb" }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
     const { scenes, globalAudioUrl, quality } = req.body;
     const outputUrl = await renderFFmpegVideo({
@@ -2457,6 +2479,7 @@ router.post("/ffmpeg-render", express.json({ limit: "500mb" }), async (req: Requ
       globalAudioUrl,
       quality: quality as VideoQuality
     });
+    await incrementFeatureUsage(req, FeatureType.VIDEO, 1);
     res.json({ success: true, url: outputUrl });
   } catch (error: any) {
     const isVi = req.headers["accept-language"]?.includes("vi");
