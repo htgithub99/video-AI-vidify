@@ -61,7 +61,6 @@ import {
   getThumbnailLayoutPrompt,
   getDummyThumbs,
   VOICE_PRESET_MAP,
-  DEFAULT_AI33_API_KEY,
   GENRE_VISUAL_GUIDELINES,
   VideoGenre,
   SplitStrategy,
@@ -98,10 +97,11 @@ import {
   FFMPEG_CONFIG,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog, createAppError } from "../../lib/logger.js";
+import { SecurityMessages } from "../../constants/security.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
-import { requestContext } from "../utils/requestContext.js";
+import { resolveApiKeys } from "../services/apiKeyResolver.js";
 
 import { AspectRatio, ProjectLanguage } from "../../types.js";
 
@@ -1454,8 +1454,12 @@ router.post("/voice", async (req: Request, res: Response) => {
       finalVoiceId = VOICE_PRESET_MAP["preset-vi-bac-female"] || "edge_vi-VN-HoaiMyNeural";
     }
 
-    const store = requestContext.getStore();
-    const apiKey = store?.ai33Key || process.env.AI33_API_KEY || DEFAULT_AI33_API_KEY;
+    const keys = await resolveApiKeys();
+    const apiKey = _.get(keys, 'ai33Key', '');
+
+    if (_.isEmpty(apiKey)) {
+      throw createAppError(SecurityMessages.MISSING_AI33_KEY);
+    }
 
     const formData = new FormData();
     formData.append("text", text);

@@ -1,17 +1,22 @@
 import { Request, Response } from "express";
-import { EXTERNAL_URLS, DEFAULT_AI33_API_KEY, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES } from "../../constants";
-import { requestContext } from "../utils/requestContext.js";
+import { EXTERNAL_URLS, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES } from "../../constants";
+import { SecurityMessages } from "../../constants/security.js";
 import { appWarn, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
-
+import { resolveApiKeys } from "../services/apiKeyResolver.js";
 
 export const getVoices = async (req: Request, res: Response) => {
   const isVi = !_.eq(req.query.lang, COMMON_STRINGS.EN);
   try {
     const queryParams = new URLSearchParams(req.query as any).toString();
     const targetUrl = `${EXTERNAL_URLS.AI33_VOICES}?${queryParams}`;
-    const store = requestContext.getStore();
-    const apiKey = store?.ai33Key || process.env.AI33_API_KEY || DEFAULT_AI33_API_KEY;
+    
+    const keys = await resolveApiKeys();
+    const apiKey = _.get(keys, 'ai33Key', '');
+
+    if (_.isEmpty(apiKey)) {
+      throw createAppError(SecurityMessages.MISSING_AI33_KEY);
+    }
 
     const response = await fetch(targetUrl, {
       method: "GET",
@@ -40,7 +45,7 @@ export const getVoices = async (req: Request, res: Response) => {
     const reqPageSize = parseInt((req.query.page_size as string) || "30", 10);
 
     if (!_.isEmpty(reqLang)) {
-      filtered = _.filter(filtered, (v: any) => _.eq(_.toLower(v.language), _.toLower(reqLang)) || _.startsWith(_.toLower(v.locale), _.toLower(reqLang)));
+      filtered = _.filter(filtered, (v: any) => _.some([v.language, v.locale], (l) => _.includes(_.toLower(l), _.toLower(reqLang))));
     }
     if (!_.isEmpty(reqGender)) {
       filtered = _.filter(filtered, (v: any) => _.eq(_.toLower(v.gender), _.toLower(reqGender)));

@@ -464,6 +464,12 @@ const AdminTemplates = {
     BTN_WITH_ICON: (icon, text) => `${icon} ${text}`,
     SELECT_OPTION: (val, label, selected = false) => `<option value="${val}" ${selected ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${label}</option>`,
     OPTGROUP: (label, options) => `<optgroup label="${label}">${options}</optgroup>`,
-    USAGE_TEXT: (uv, tv, ui, ti, uc, tc) => `<span title="Ảnh">Ảnh: ${ui}/${ti}</span> <span style="color:var(--input-bg)">|</span> <span title="Video">Video: ${uv}/${tv}</span> <span style="color:var(--input-bg)">|</span> <span title="Voice">Voice: ${uc}/${tc}</span>`,
+    USAGE_TEXT: (uv, tv, ui, ti, uc, tc) => `
+        <div style="display: flex; items-center; justify-content: center; gap: 0.35rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.725rem;">
+            <span style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: #34d399; padding: 0.15rem 0.5rem; border-radius: 6px;" title="Số lượng Ảnh">🖼️ ${ui}/${ti}</span>
+            <span style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); color: #fbbf24; padding: 0.15rem 0.5rem; border-radius: 6px;" title="Số lượng Video">🎬 ${uv}/${tv}</span>
+            <span style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); color: #a5b4fc; padding: 0.15rem 0.5rem; border-radius: 6px;" title="Số lượng Voice">🎙️ ${uc}/${tc}</span>
+        </div>
+    `,
     DANGER_TEXT: (text) => `<span style="color:var(--danger)">${text}</span>`
 };

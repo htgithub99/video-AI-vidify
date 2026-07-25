@@ -317,7 +317,7 @@ function renderTable() {
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
         const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
-        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.1rem 0.3rem; border-radius:3px; background:rgba(255,255,255,0.1); margin-left:0.3rem;" title="${quotaType}">${quotaTypeLabel}</span>`;
+        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(217, 119, 6, 0.15); border:1px solid rgba(245, 158, 11, 0.3); color:#fbbf24; font-family:var(--font-mono); font-weight:700;" title="${quotaType}">${quotaTypeLabel}</span>`;
         
         const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
         const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
@@ -337,14 +337,14 @@ function renderTable() {
                 <td class="text-center">
                     <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
                 </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
+                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.25rem;">
                     <div>${usageText}</div>
                     ${quotaTypeBadge}
                 </td>
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${new Date(_.get(user, ApiFields.CREATED_AT)).toLocaleDateString()}</td>
                 <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${expiresAtStr}</td>
                 <td class="text-center">
-                    <div style="display: flex; justify-content: center; gap: 0.25rem;">
+                    <div style="display: flex; justify-content: center; gap: 0.35rem;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         ${btnDeviceModal}
                         <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE}" data-id="${_.get(user, ApiFields.ID)}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>

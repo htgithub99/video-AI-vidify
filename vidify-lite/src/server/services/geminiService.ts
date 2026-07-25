@@ -1,16 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
-import dotenv from "dotenv";
-dotenv.config();
-import { requestContext } from "../utils/requestContext.js";
 import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, AVAILABLE_MODELS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from "../../constants";
+import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
 import { delayAsync } from "../../lib/shared-utils.js";
+import { resolveApiKeys } from "./apiKeyResolver.js";
 
-
-export const isGeminiApiKeyAvailable = (): boolean => {
-  const store = requestContext.getStore();
-  return !!(store?.geminiKey || process.env.GEMINI_API_KEY);
+export const isGeminiApiKeyAvailable = async (): Promise<boolean> => {
+  const keys = await resolveApiKeys();
+  return !_.isEmpty(_.get(keys, 'geminiKey'));
 };
 
 let currentModelIndex = 0;
@@ -23,19 +21,21 @@ export const generateContentWithRetry = async (
   retries = 3,
   delayMs = 1200,
 ): Promise<any> => {
-  const store = requestContext.getStore();
-  const activeApiKey = store?.geminiKey || process.env.GEMINI_API_KEY || "";
+  const keys = await resolveApiKeys();
+  const activeApiKey = _.get(keys, 'geminiKey', '');
 
-  const clientAi = activeApiKey
-    ? new GoogleGenAI({
-      apiKey: activeApiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
+  if (_.isEmpty(activeApiKey)) {
+    throw createAppError(SecurityMessages.MISSING_GEMINI_KEY);
+  }
+
+  const clientAi = new GoogleGenAI({
+    apiKey: activeApiKey,
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
       },
-    })
-    : null;
+    },
+  });
 
   let lastError: any = null;
   const startIndex = currentModelIndex;
@@ -52,16 +52,12 @@ export const generateContentWithRetry = async (
     const modelIndex = (startIndex + i) % AVAILABLE_MODELS.length;
     const model = AVAILABLE_MODELS[modelIndex];
 
-    appLog("----------------------------------------------------");
+    appLog(SecurityConstants.DIVIDER_LINE);
     logStep("GEMINI_CALLING_MODEL", i + 1, AVAILABLE_MODELS.length, model, modelIndex);
 
     let attempt = 0;
     while (_.lte(attempt, retries)) {
       try {
-        if (_.isNil(clientAi)) {
-          throw createAppError("GEMINI_SDK_NOT_INIT");
-        }
-
         const response = await clientAi.models.generateContent({
           model: model,
           contents: params.contents,
@@ -105,7 +101,7 @@ export const generateContentWithRetry = async (
         const retryMatch = errorMessage.match(GEMINI_RETRY_REGEX) || errorStr.match(GEMINI_RETRY_REGEX);
         if (!_.isNil(retryMatch)) {
           waitTime = _.ceil((parseFloat(retryMatch[1]) + 1.5) * 1000);
-        } else if (_.includes(GEMINI_QUOTA_STATUSES, error?.status) || _.some([errorMessage, errorStr], (str) => _.includes(_.toLower(str), "quota"))) {
+        } else if (_.includes(GEMINI_QUOTA_STATUSES, error?.status) || _.some([errorMessage, errorStr], (str) => _.includes(_.toLower(str), SecurityConstants.QUOTA_KEYWORD))) {
           waitTime = 8000;
         }
 

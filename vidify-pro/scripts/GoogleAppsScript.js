@@ -22,7 +22,19 @@ const _ = {
   toUpper: function (str) { return String(str).toUpperCase(); },
   split: function (str, sep) { return String(str).split(sep); },
   some: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return true; } return false; },
-  cloneDeep: function (obj) { return JSON.parse(JSON.stringify(obj)); }
+  cloneDeep: function (obj) { return JSON.parse(JSON.stringify(obj)); },
+  isEqual: function (a, b) { return a === b; },
+  isEmpty: function (val) { return !val || val.length === 0; },
+  eq: function (a, b) { return a === b; },
+  orderBy: function (arr, keys, orders) {
+    return arr.sort((a, b) => {
+      const key = keys[0];
+      const isDesc = orders[0] === 'desc';
+      if (a[key] < b[key]) return isDesc ? 1 : -1;
+      if (a[key] > b[key]) return isDesc ? -1 : 1;
+      return 0;
+    });
+  }
 };
 
 const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_ID: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8, QUOTA_TYPE: 9 };
@@ -51,24 +63,18 @@ const Config = {
     ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"],
     SETTINGS: ["ID", "CREATED_AT", "UPDATED_AT", "KEY", "VALUE", "DESCRIPTION"]
   },
-  MAX_DEVICES: 1
+  MAX_DEVICES: 2
 };
 
 const StatusEnum = {
-  ACTIVE: "ACTIVE",
-  REVOKED: "REVOKED",
-  EXPIRED: "EXPIRED"
+  ACTIVE: "Active",
+  REVOKED: "Revoked",
+  EXPIRED: "Expired"
 };
 
 const QuotaType = {
   DAILY: "DAILY",
   TOTAL: "TOTAL"
-};
-
-const PlanType = {
-  FREE: "FREE",
-  PRO: "PRO",
-  PRO_LIFETIME: "PRO_LIFETIME"
 };
 
 const FeatureEnum = {
@@ -77,36 +83,47 @@ const FeatureEnum = {
   VOICE: "voice"
 };
 
-const Messages = {
-  INVALID_ACTION: "Hành động không hợp lệ",
-  SERVER_ERROR: "Lỗi hệ thống máy chủ",
-  INVALID_TOKEN: "Phiên đăng nhập không hợp lệ hoặc đã hết hạn",
-  MISSING_CREDENTIALS: "Vui lòng nhập tài khoản và mật khẩu",
-  INVALID_CREDENTIALS: "Sai tài khoản hoặc mật khẩu",
-  MISSING_KEY: "Thiếu thông tin Mã Bản Quyền (License Key)",
-  MISSING_DEVICE: "Thiếu thông tin Thiết Bị (Device ID)",
-  MISSING_ID: "Thiếu ID",
-  MISSING_ACCOUNT_INFO: "Thiếu thông tin tài khoản",
-  ACCOUNT_NOT_FOUND: "Không tìm thấy tài khoản",
-  KEY_NOT_FOUND: "Không tìm thấy Mã Bản Quyền này",
-  USER_NOT_FOUND: "Không tìm thấy người dùng",
-  KEY_REVOKED: "Tài khoản của bạn đã bị khóa hoặc hết hạn",
-  KEY_EXPIRED: "Tài khoản của bạn đã hết hạn sử dụng",
-  DEVICE_LIMIT: "Mã kích hoạt đã đạt giới hạn số thiết bị cho phép",
-  SHEET_NOT_FOUND: "Lỗi kết nối cơ sở dữ liệu (Không tìm thấy Sheet)",
-  SUCCESS_CREATED: "Tạo tài khoản thành công",
-  SUCCESS_REVOKED: "Khóa tài khoản thành công",
-  SUCCESS_DELETED: "Xóa vĩnh viễn tài khoản thành công",
-  SUCCESS_UPDATED: "Cập nhật thành công",
-  SUCCESS_RESET: "Gỡ thiết bị thành công",
-  OPTIONS_OK: "ok",
-  GET_RUNNING: "API is running. Please use POST method.",
-  SEED_SUCCESS: "Tạo Seed Data thành công! Bạn có thể xem các Sheet ở bên dưới.",
-  RES_SUCCESS: "success",
-  PLAN_NOT_FOUND: "Không tìm thấy gói",
-  INVALID_ADMIN_KEY: "Xác thực Admin thất bại"
+const Constants = {
+  EMPTY_STRING: "",
+  EMPTY_ARRAY: "[]",
+  STRING_TRUE: "true",
+  ACTIVE_LOWER: "Active",
+  ALL: "ALL",
+  UNKNOWN: "Unknown",
+  DATE_SPLIT_CHAR: "T",
+  COLOR_ADMIN: "#dbeafe",
+  COLOR_CONFIG: "#e0e7ff",
+  COLOR_USERS: "#dcfce7",
+  COLOR_USAGE: "#fef3c7",
+  NEW_PLAN_NAME: "New Plan"
 };
 
+const Messages = {
+  MISSING_KEY: "Thiếu License Key",
+  MISSING_DEVICE: "Thiếu Device ID",
+  KEY_NOT_FOUND: "License Key không tồn tại",
+  KEY_REVOKED: "License Key đã bị khóa hoặc không hoạt động",
+  DEVICE_LIMIT: "Đã vượt quá số lượng thiết bị cho phép",
+  INVALID_ACTION: "Hành động không hợp lệ",
+  SERVER_ERROR: "Lỗi hệ thống",
+  RES_SUCCESS: "success",
+  OPTIONS_OK: "OK",
+  GET_RUNNING: "Google Apps Script Server đang chạy bình thường",
+  MISSING_ID: "Thiếu ID",
+  MISSING_CREDENTIALS: "Thiếu tên đăng nhập hoặc mật khẩu",
+  INVALID_CREDENTIALS: "Tên đăng nhập hoặc mật khẩu không đúng",
+  SHEET_NOT_FOUND: "Không tìm thấy Sheet",
+  PLAN_NOT_FOUND: "Không tìm thấy Gói cước",
+  SUCCESS_CREATED: "Tạo mới thành công",
+  SUCCESS_UPDATED: "Cập nhật thành công",
+  SUCCESS_DELETED: "Xóa thành công",
+  SUCCESS_REVOKED: "Khóa thành công",
+  SUCCESS_RESET: "Reset thiết bị thành công",
+  SEED_SUCCESS: "Đã tạo bảng tính và dữ liệu mẫu thành công!",
+  MISSING_ACCOUNT_INFO: "Thiếu thông tin tài khoản",
+  ACCOUNT_NOT_FOUND: "Không tìm thấy tài khoản",
+  INVALID_ADMIN_KEY: "Xác thực Admin thất bại"
+};
 
 const ApiFields = {
   ACTION: "action",
@@ -147,13 +164,13 @@ const AppActions = {
   ADMIN_UPDATE_KEY: "admin_update_key",
   ADMIN_RESET_DEVICE: "admin_reset_device",
   ADMIN_GET_PLANS: "admin_get_plans",
-  ADMIN_UPDATE_PLAN: "admin_update_plan",
   ADMIN_CREATE_PLAN: "admin_create_plan",
+  ADMIN_UPDATE_PLAN: "admin_update_plan",
   ADMIN_DELETE_PLAN: "admin_delete_plan",
   ADMIN_SYNC_EXPIRED: "admin_sync_expired",
   ADMIN_GET_API_KEYS: "admin_get_api_keys",
-  ADMIN_GET_ACCOUNTS: "admin_get_accounts",
   ADMIN_UPDATE_API_KEYS: "admin_update_api_keys",
+  ADMIN_GET_ACCOUNTS: "admin_get_accounts",
   ADMIN_ADD_ACCOUNT: "admin_add_account",
   ADMIN_UPDATE_ACCOUNT: "admin_update_account",
   ADMIN_DELETE_ACCOUNT: "admin_delete_account",
@@ -165,38 +182,15 @@ const AppActions = {
   UPDATE_API_KEYS: "update_api_keys",
   GET_ACCOUNTS: "get_accounts",
   ADD_ACCOUNT: "add_account",
-  UPDATE_ACCOUNT_STATUS: "update_account_status",
-  ADMIN_PREFIX: "admin_"
-};
-
-const Constants = {
-  UNKNOWN: "Unknown",
-  EMPTY_ARRAY: "[]",
-  EMPTY_STRING: "",
-  ALL: "ALL",
-  GEMINI_API_KEY: "GEMINI_API_KEY",
-  AI33_API_KEY: "AI33_API_KEY",
-  ACTIVE_LOWER: "Active",
-  COLOR_ADMIN: "#d9ead3",
-  COLOR_CONFIG: "#c9daf8",
-  NEW_PLAN_NAME: "NEW_PLAN",
-  COLOR_USERS: "#fff2cc",
-  COLOR_USAGE: "#fce5cd",
-  DATE_SPLIT_CHAR: "T",
-  UUID_SPLIT_CHAR: "-",
-  STRING_TRUE: "true"
+  UPDATE_ACCOUNT_STATUS: "update_account_status"
 };
 
 const AppLogger = {
-  info: function (message) {
-    Logger.log(message);
+  info: function (msg) {
+    Logger.log("[INFO] " + msg);
   },
-  error: function (message, err) {
-    if (err) {
-      Logger.log(`ERROR: ${message} - ${err.toString()}`);
-    } else {
-      Logger.log(`ERROR: ${message}`);
-    }
+  error: function (msg, err) {
+    Logger.log("[ERROR] " + msg + (err ? ": " + err.toString() : ""));
   }
 };
 
@@ -210,15 +204,20 @@ function getCurrentISO() {
 
 function doPost(e) {
   try {
-    const params = JSON.parse(e.postData.contents);
+    const contents = _.get(e, 'postData.contents');
+    if (_.isNil(contents)) return jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
+
+    const params = JSON.parse(contents);
     const action = _.get(params, ApiFields.ACTION);
 
-    if (action === AppActions.ADMIN_LOGIN) return adminLogin(params);
+    const adminToken = _.get(params, ApiFields.ADMIN_TOKEN);
+    const isAdminAction = _.startsWith(action, 'admin_');
 
-    if (!_.isNil(action) && _.startsWith(action, AppActions.ADMIN_PREFIX)) {
-      if (!validateAdminToken(_.get(params, ApiFields.ADMIN_TOKEN))) {
-        return jsonResponse({ error: Messages.INVALID_TOKEN, code: HttpCode.UNAUTHORIZED });
+    if (isAdminAction && action !== AppActions.ADMIN_LOGIN) {
+      if (!validateAdminToken(adminToken)) {
+        return jsonResponse({ error: Messages.INVALID_CREDENTIALS, code: HttpCode.UNAUTHORIZED });
       }
+
       if (action === AppActions.ADMIN_GET_USERS) return adminGetUsers();
       if (action === AppActions.ADMIN_CREATE_KEY) return adminCreateKey(params);
       if (action === AppActions.ADMIN_REVOKE_KEY) return adminRevokeKey(params);
@@ -226,13 +225,14 @@ function doPost(e) {
       if (action === AppActions.ADMIN_UPDATE_KEY) return adminUpdateKey(params);
       if (action === AppActions.ADMIN_RESET_DEVICE) return adminResetDevice(params);
       if (action === AppActions.ADMIN_GET_PLANS) return adminGetPlans();
-      if (action === AppActions.ADMIN_UPDATE_PLAN) return adminUpdatePlan(params);
       if (action === AppActions.ADMIN_CREATE_PLAN) return adminCreatePlan(params);
+      if (action === AppActions.ADMIN_UPDATE_PLAN) return adminUpdatePlan(params);
       if (action === AppActions.ADMIN_DELETE_PLAN) return adminDeletePlan(params);
       if (action === AppActions.ADMIN_SYNC_EXPIRED) return adminSyncExpired();
+
       if (action === AppActions.ADMIN_GET_API_KEYS) return adminGetApiKeys();
-      if (action === AppActions.ADMIN_GET_ACCOUNTS) return adminGetAccounts();
       if (action === AppActions.ADMIN_UPDATE_API_KEYS) return updateApiKeys(params);
+      if (action === AppActions.ADMIN_GET_ACCOUNTS) return adminGetAccounts();
       if (action === AppActions.ADMIN_ADD_ACCOUNT) return addAccount(params);
       if (action === AppActions.ADMIN_UPDATE_ACCOUNT) return updateAccountAdmin(params);
       if (action === AppActions.ADMIN_DELETE_ACCOUNT) return deleteAccountAdmin(params);
@@ -315,7 +315,6 @@ function verifyKey(params) {
     const quotaType = row[UserCols.QUOTA_TYPE] || QuotaType.DAILY;
     let usage = getUsageData(key);
 
-
     if (quotaType === QuotaType.DAILY) {
       const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
       const lastResetDate = String(usage.last_reset || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
@@ -381,14 +380,10 @@ function updateUsage(params) {
     if (feature === FeatureEnum.IMAGE) currentImage += amount;
     if (feature === FeatureEnum.VOICE) currentVoice += amount;
 
-
     usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1, 1, 3).setValues([[currentVideo, currentImage, currentVoice]]);
     usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(getCurrentISO());
   } else {
     const now = getCurrentISO();
-    const freeId = generateUUID();
-    const proId = generateUUID();
-    const lifetimeId = generateUUID();
     const newRow = [generateUUID(), now, now, key, 0, 0, 0, now];
     if (feature === FeatureEnum.VIDEO) newRow[UsageCols.VIDEO] = amount;
     if (feature === FeatureEnum.IMAGE) newRow[UsageCols.IMAGE] = amount;
@@ -485,24 +480,15 @@ function adminCreateKey(params) {
   const quotaType = _.get(params, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
   
   const generateSecureKey = () => {
-    
     const uuid = Utilities.getUuid().replace(/-/g, '');
     const payload = uuid.substring(0, 20).toUpperCase();
-    
-    
     const secretKey = getAppSecretKey();
     const signatureBytes = Utilities.computeHmacSha256Signature(payload, secretKey);
-    
-    
     const signatureHex = signatureBytes.map(byte => {
       const v = (byte < 0 ? byte + 256 : byte).toString(16);
       return v.length === 1 ? '0' + v : v;
     }).join('').toUpperCase();
-    
-    
     const checksum = signatureHex.substring(0, 5);
-    
-    
     const finalKey = payload + checksum;
     return finalKey.match(/.{1,5}/g).join('-');
   };
@@ -861,23 +847,33 @@ function getAccounts(params) {
   const planId = _.get(params, ApiFields.PLAN_ID, Constants.EMPTY_STRING);
 
   const data = sheet.getDataRange().getValues();
-  const accounts = [];
+  let accounts = [];
+
+  const getAccountPriority = (assigned) => {
+    if (!_.isEmpty(licenseKey) && _.isEqual(assigned, licenseKey)) return 2;
+    if (!_.isEmpty(planId) && _.isEqual(assigned, planId)) return 1;
+    if (_.isEqual(assigned, Constants.ALL)) return 0;
+    return -1;
+  };
 
   _.forEach(data, (row, i) => {
-    if (i === 0) return;
+    if (_.eq(i, 0)) return;
     const assigned = row[AccountsCols.ASSIGNED_TO] || Constants.ALL;
-    if (matchAssignedTo(assigned, licenseKey, planId)) {
+    const prio = getAccountPriority(assigned);
+    if (!_.eq(prio, -1)) {
       accounts.push({
         id: i,
         email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
         password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
         recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
         status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
-        assignedTo: assigned
+        assignedTo: assigned,
+        priority: prio
       });
     }
   });
 
+  accounts = _.orderBy(accounts, ['priority'], ['desc']);
   return jsonResponse({ accounts });
 }
 
@@ -920,8 +916,6 @@ function addAccount(params) {
   ]);
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
-
-
 
 function updateAccountStatus(params) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);

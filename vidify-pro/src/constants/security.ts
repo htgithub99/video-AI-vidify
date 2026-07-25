@@ -58,6 +58,10 @@ export const SecurityConstants = {
   QUOTA_TYPE_DAILY: 'DAILY',
   UNKNOWN_PLAN_NAME: 'UNKNOWN',
   HTTP_BAD_REQUEST: 400,
+  ACCEPT_ALL_JSON: 'application/json, text/plain, */*',
+  FETCH_VOICES_FALLBACK_WARN: 'External voice registry load failed. Falling back to high-quality local voices database.',
+  DIVIDER_LINE: '----------------------------------------------------',
+  QUOTA_KEYWORD: 'quota',
 };
 
 export const LocalizationConstants = {
@@ -113,7 +117,12 @@ export const SecurityMessages = {
   REVOKED_STATUS: 'Tài khoản bị khóa (Chỉ xem)',
   EXPIRED_STATUS: 'Tài khoản hết hạn (Chỉ xem)',
   LICENSE_CHECK_ERROR: 'Lỗi kiểm tra bản quyền:',
-  LICENSE_CONTEXT_ERROR: 'useLicense must be used within a LicenseProvider'
+  LICENSE_CONTEXT_ERROR: 'useLicense must be used within a LicenseProvider',
+  MISSING_GEMINI_KEY: 'Chưa có Gemini API Key! Vui lòng nhập Key cá nhân hoặc cấu hình Key Admin trên Google Sheets.',
+  MISSING_AI33_KEY: 'Chưa có AI33 API Key! Vui lòng nhập Key cá nhân hoặc cấu hình Key Admin trên Google Sheets.',
+  LOG_USING_ADMIN_GEMINI_KEY: '[APIKEY_RESOLVER] Using Admin Gemini Key from Google Sheets',
+  LOG_USING_ADMIN_AI33_KEY: '[APIKEY_RESOLVER] Using Admin AI33 Key from Google Sheets',
+  LOG_RESOLVER_ERROR: '[APIKEY_RESOLVER] Failed to fetch Admin API Keys from Google Sheets'
 };
 
 export const AutoLoginConstants = {
