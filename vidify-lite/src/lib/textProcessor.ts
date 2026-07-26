@@ -24,6 +24,7 @@ import {
   SINGLE_WHITESPACE_REGEX,
   MULTIPLE_NEWLINES_REGEX,
   WHITESPACE_REGEX,
+  RENDER_LOGIC_CONSTANTS,
 } from "../constants/index.js";
 import _ from "lodash";
 
@@ -251,6 +252,32 @@ export function generateMockStoryboard(
   const styleStr = style || DEFAULT_STYLE;
   const defaultChapters = !_.isEmpty(chapters) ? chapters : [{ id: DEFAULT_CHAPTER.id, title: isVi ? DEFAULT_CHAPTER.titleVi : DEFAULT_CHAPTER.titleEn }];
   const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
+  const generateRandomSequence = (options: readonly string[], length: number): string[] => {
+    const seq: string[] = [];
+    const filteredOptions = _.filter(options, (opt) =>
+      !_.includes([
+        RENDER_LOGIC_CONSTANTS.MOTION_STATIC,
+        RENDER_LOGIC_CONSTANTS.TRANSITION_CUT,
+        RENDER_LOGIC_CONSTANTS.NONE,
+        RENDER_LOGIC_CONSTANTS.DEFAULT
+      ], opt)
+    );
+    const finalOptions = _.isEmpty(filteredOptions) ? options : filteredOptions;
+
+    for (let k = 0; k < length; k++) {
+      if (k === 0) {
+        seq.push(_.sample(finalOptions) || options[0]);
+      } else {
+        const prev = seq[k - 1];
+        const remaining = _.filter(finalOptions, (opt) => opt !== prev);
+        seq.push(_.sample(remaining) || _.sample(finalOptions) || options[0]);
+      }
+    }
+    return seq;
+  };
+
+  const randomMotions = generateRandomSequence(SCENE_SPLIT_MOTIONS, scenesCount);
+  const randomTransitions = generateRandomSequence(SCENE_SPLIT_TRANSITIONS, scenesCount);
 
   for (let i = 0; _.lt(i, scenesCount); i++) {
     const chapter = defaultChapters[i % defaultChapters.length];
@@ -284,12 +311,12 @@ export function generateMockStoryboard(
     const endTimeSeconds = _.add(currentTime, duration);
     currentTime = endTimeSeconds;
 
-    const motion = SCENE_SPLIT_MOTIONS[i % SCENE_SPLIT_MOTIONS.length];
+    const motion = randomMotions[i];
     const effects = promptConfig.EFFECTS(styleStr);
-    const transition = SCENE_SPLIT_TRANSITIONS[i % SCENE_SPLIT_TRANSITIONS.length];
+    const transition = randomTransitions[i];
 
     scenes.push({
-      id: `sc_${_.add(i, 1)}`,
+      id: `${RENDER_LOGIC_CONSTANTS.SCENE_ID_PREFIX}${_.add(i, 1)}`,
       chapterId: chapter.id,
       startTime: formatTime(startTimeSeconds),
       endTime: formatTime(endTimeSeconds),

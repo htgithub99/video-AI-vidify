@@ -77,6 +77,12 @@ export const motionLabels = {
   "Zoom Out": "Thu nhỏ",
   "Pan Left": "Góc trái",
   "Pan Right": "Góc phải",
+  "Pan Up": "Góc trên",
+  "Pan Down": "Góc dưới",
+  "Drift": "Trôi nhẹ",
+  "Cinematic Arc": "Hình cung",
+  "Push In": "Đẩy vào",
+  "Slow Reveal": "Hé lộ",
   Static: "Tĩnh",
 } as const;
 
@@ -158,17 +164,29 @@ export const ABBREVIATIONS = ["tp", "ts", "ths", "gs", "pgs", "ks", "nxb", "sđt
 
 export const CONJUNCTIONS = ["và", "nhưng", "hoặc", "vì", "nên", "để", "khi", "mà", "thì", "nếu", "tuy", "bởi", "sau", "trong", "cho", "and", "but", "or", "because", "so", "then", "to", "when", "while", "if", "although", "that", "which", "who", "for", "with"] as const;
 
-export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Static"] as const;
+export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Pan Up", "Pan Down", "Drift", "Cinematic Arc", "Push In", "Slow Reveal", "Static"] as const;
+
+// Easing helpers cho camera motion
+const easeCubicInOut = (t: number): number => t < 0.5 ? 4.0 * t * t * t : 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
+const easeQuartOut = (t: number): number => 1.0 - Math.pow(1.0 - t, 4);
+const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
+const easeExpoOut = (t: number): number => t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);
 
 export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale: number; dx: number; dy: number }> = {
-  "Zoom In": (progress) => ({ scale: 1.0 + 0.12 * progress, dx: 0, dy: 0 }),
-  "Zoom Out": (progress) => ({ scale: 1.12 - 0.12 * progress, dx: 0, dy: 0 }),
-  "Pan Left": (progress) => ({ scale: 1.0, dx: -60 * progress, dy: 0 }),
-  "Pan Right": (progress) => ({ scale: 1.0, dx: 60 * progress, dy: 0 }),
+  "Zoom In": (p) => { const t = easeCubicInOut(p); return { scale: 1.0 + 0.20 * t, dx: 0, dy: 0 }; },
+  "Zoom Out": (p) => { const t = easeQuartOut(p); return { scale: 1.20 - 0.20 * t, dx: 0, dy: 0 }; },
+  "Pan Left": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: -80 * t, dy: 0 }; },
+  "Pan Right": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: 80 * t, dy: 0 }; },
+  "Pan Up": (p) => { const t = easeCubicInOut(p); return { scale: 1.08, dx: 0, dy: -60 * t }; },
+  "Pan Down": (p) => { const t = easeCubicInOut(p); return { scale: 1.08, dx: 0, dy: 60 * t }; },
+  "Drift": (p) => { const t = easeSineInOut(p); return { scale: 1.06 + 0.04 * Math.sin(t * Math.PI), dx: 30 * Math.sin(t * Math.PI * 1.5), dy: 20 * Math.cos(t * Math.PI * 1.2) }; },
+  "Cinematic Arc": (p) => { const t = easeCubicInOut(p); return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * Math.sin(t * Math.PI) }; },
+  "Push In": (p) => { const t = easeExpoOut(p); return { scale: 1.0 + 0.28 * t, dx: 20 * t, dy: -15 * t }; },
+  "Slow Reveal": (p) => { const t = easeCubicInOut(p); return { scale: 1.18 - 0.14 * t, dx: -30 * t, dy: 40 * t }; },
   Static: () => ({ scale: 1.0, dx: 0, dy: 0 }),
 };
 
-export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Fade out to black", "Cut", "Wipe", "Zoom transition"] as const;
+export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Blur Dissolve", "Brightness Fade", "Fade out to black", "Slide", "Zoom transition", "Cut"] as const;
 
 export const AVAILABLE_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"] as const;
 

@@ -1,15 +1,98 @@
-import { ErrorMessage, supportedTypes } from "../constants/index.js";
+import { ErrorMessage, supportedTypes, RENDER_LOGIC_CONSTANTS } from "../constants/index.js";
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
 import _ from 'lodash';
 
+const easeCubicInOut = (t: number): number => {
+  if (t < 0.5) return 4.0 * t * t * t;
+  return 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
+};
+
+const easeQuartOut = (t: number): number => 1.0 - Math.pow(1.0 - t, 4);
+
+const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
+
+const easeExpoOut = (t: number): number =>
+  t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);
+
+type MotionResult = { scale: number; dx: number; dy: number };
+
+const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
+  [RENDER_LOGIC_CONSTANTS.ZOOM_IN]: (p) => {
+    const t = easeCubicInOut(p);
+    return { scale: 1.0 + 0.20 * t, dx: 0, dy: 0 };
+  },
+  [RENDER_LOGIC_CONSTANTS.ZOOM_OUT]: (p) => {
+    const t = easeQuartOut(p);
+    return { scale: 1.20 - 0.20 * t, dx: 0, dy: 0 };
+  },
+  [RENDER_LOGIC_CONSTANTS.PAN_LEFT]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.08, dx: -80 * t, dy: 0 };
+  },
+  [RENDER_LOGIC_CONSTANTS.PAN_RIGHT]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.08, dx: 80 * t, dy: 0 };
+  },
+  [RENDER_LOGIC_CONSTANTS.PAN_UP]: (p) => {
+    const t = easeCubicInOut(p);
+    return { scale: 1.08, dx: 0, dy: -60 * t };
+  },
+  [RENDER_LOGIC_CONSTANTS.PAN_DOWN]: (p) => {
+    const t = easeCubicInOut(p);
+    return { scale: 1.08, dx: 0, dy: 60 * t };
+  },
+  [RENDER_LOGIC_CONSTANTS.DRIFT]: (p) => {
+    const t = easeSineInOut(p);
+    const driftX = 30 * Math.sin(t * Math.PI * 1.5);
+    const driftY = 20 * Math.cos(t * Math.PI * 1.2);
+    const scalePulse = 1.06 + 0.04 * Math.sin(t * Math.PI);
+    return { scale: scalePulse, dx: driftX, dy: driftY };
+  },
+  [RENDER_LOGIC_CONSTANTS.CINEMATIC_ARC]: (p) => {
+    const t = easeCubicInOut(p);
+    const arcPhase = Math.sin(t * Math.PI);
+    return {
+      scale: 1.0 + 0.15 * t,
+      dx: 60 * t,
+      dy: -30 * arcPhase,
+    };
+  },
+  [RENDER_LOGIC_CONSTANTS.PUSH_IN]: (p) => {
+    const t = easeExpoOut(p);
+    return {
+      scale: 1.0 + 0.28 * t,
+      dx: 20 * t,
+      dy: -15 * t,
+    };
+  },
+  [RENDER_LOGIC_CONSTANTS.SLOW_REVEAL]: (p) => {
+    const t = easeCubicInOut(p);
+    return {
+      scale: 1.18 - 0.14 * t,
+      dx: -30 * t,
+      dy: 40 * t,
+    };
+  },
+  [RENDER_LOGIC_CONSTANTS.MOTION_STATIC]: () => ({ scale: 1.0, dx: 0, dy: 0 }),
+};
+
+const getMotionForScene = (cameraMotion: string, progress: number): MotionResult => {
+  const motionFn = MOTION_STYLES[cameraMotion];
+  if (motionFn) return motionFn(progress);
+  return MOTION_STYLES[RENDER_LOGIC_CONSTANTS.MOTION_STATIC](progress);
+};
+
+// ═══════════════════════════════════════════════════════
+// SCENE TIME RANGES
+// ═══════════════════════════════════════════════════════
 
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
   return _.map(storyboard, (sc) => {
-    const startSec = parseTimeToSeconds(sc.startTime || "");
-    const endSec = parseTimeToSeconds(sc.endTime || "");
+    const startSec = parseTimeToSeconds(sc.startTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
+    const endSec = parseTimeToSeconds(sc.endTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
 
     const start =
       sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0) ? startSec : elapsed;
@@ -34,12 +117,16 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   });
 };
 
+const TRANSITION_DURATION = 0.4;
+
 export const drawSceneFrameToContext = (
   ctx: CanvasRenderingContext2D,
   sc: any,
   imgElement: HTMLImageElement | undefined,
   elapsedTimeInScene: number,
   totalSceneDuration: number,
+  nextImgElement?: HTMLImageElement | undefined,
+  transitionProgress?: number,
 ) => {
   const w = 1280;
   const h = 720;
@@ -49,20 +136,10 @@ export const drawSceneFrameToContext = (
   const progress =
     _.min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
 
-  ctx.save();
+  const motion = getMotionForScene(sc.cameraMotion || RENDER_LOGIC_CONSTANTS.MOTION_STATIC, progress);
+  const { scale, dx, dy } = motion;
 
-  let scale = 1.0;
-  let dx = 0;
-  let dy = 0;
-  if (_.eq(sc.cameraMotion, "Zoom In")) {
-    scale = 1.0 + 0.12 * progress;
-  } else if (_.eq(sc.cameraMotion, "Zoom Out")) {
-    scale = 1.12 - 0.12 * progress;
-  } else if (_.eq(sc.cameraMotion, "Pan Left")) {
-    dx = -60 * progress;
-  } else if (_.eq(sc.cameraMotion, "Pan Right")) {
-    dx = 60 * progress;
-  }
+  ctx.save();
 
   if (!_.isNil(imgElement)) {
     ctx.translate(w / 2 + dx, h / 2 + dy);
@@ -70,13 +147,13 @@ export const drawSceneFrameToContext = (
     ctx.drawImage(imgElement, -w / 2, -h / 2, w, h);
   } else {
     const grad = ctx.createLinearGradient(0, 0, w, h);
-    const isAlt = _.eq((sc.id || "").charCodeAt((sc.id || "").length - 1) % 2, 0);
-    grad.addColorStop(0, isAlt ? "#0f172a" : "#1e1b4b");
-    grad.addColorStop(1, isAlt ? "#e11d48" : "#311042");
+    const isAlt = _.eq((sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).charCodeAt((sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).length - 1) % 2, 0);
+    grad.addColorStop(0, isAlt ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_START : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_START);
+    grad.addColorStop(1, isAlt ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_END : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_END);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.strokeStyle = RENDER_LOGIC_CONSTANTS.COLOR_GRID;
     ctx.lineWidth = 1.5;
     for (let x = 0; _.lt(x, w); x += 40) {
       ctx.beginPath();
@@ -91,36 +168,36 @@ export const drawSceneFrameToContext = (
       ctx.stroke();
     }
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+    ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_GLOW;
     ctx.beginPath();
     ctx.arc(w / 2 + dx, h / 2 + dy, 280 * scale, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 36px monospace";
-    ctx.fillText(`SCENE PROMPT REPRESENTATION`, 80, 120);
+    ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_WHITE;
+    ctx.font = RENDER_LOGIC_CONSTANTS.FONT_HEADER;
+    ctx.fillText(RENDER_LOGIC_CONSTANTS.TEXT_REPRESENTATION, 80, 120);
 
-    ctx.fillStyle = "#f43f5e";
-    ctx.font = "bold 18px monospace";
+    ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_ROSE;
+    ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBHEADER;
     ctx.fillText(
-      `SCENE ID: ${sc.id} | DURATION: ${formatCleanDuration(sc.duration || 5)}s`,
+      RENDER_LOGIC_CONSTANTS.PROMPT_LABEL.replace("{0}", sc.id).replace("{1}", formatCleanDuration(sc.duration || 5)),
       80,
       160,
     );
 
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "italic 16px sans-serif";
-    const promptText = sc.prompt || "";
+    ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_SLATE;
+    ctx.font = RENDER_LOGIC_CONSTANTS.FONT_BODY;
+    const promptText = sc.prompt || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
     let startY = 220;
-    const words = promptText.split(" ");
-    let currentLine = "";
+    const words = promptText.split(RENDER_LOGIC_CONSTANTS.SPACE_CHAR);
+    let currentLine: string = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
     _.forEach(words, (word: string) => {
       if (_.gt((currentLine + word).length, 80)) {
         ctx.fillText(currentLine, 80, startY);
-        currentLine = word + " ";
+        currentLine = `${word}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
         startY += 30;
       } else {
-        currentLine += word + " ";
+        currentLine += `${word}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
       }
     });
     ctx.fillText(currentLine, 80, startY);
@@ -128,24 +205,36 @@ export const drawSceneFrameToContext = (
 
   ctx.restore();
 
-  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  if (
+    !_.isNil(transitionProgress) &&
+    transitionProgress > 0 &&
+    !_.isNil(nextImgElement)
+  ) {
+    const fadeAlpha = easeCubicInOut(transitionProgress);
+    ctx.save();
+    ctx.globalAlpha = fadeAlpha;
+    ctx.drawImage(nextImgElement, 0, 0, w, h);
+    ctx.restore();
+  }
+
+  ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_SUB_BG;
   ctx.fillRect(80, h - 130, w - 160, 80);
 
-  ctx.fillStyle = "#fef08a";
-  ctx.font = "bold 22px sans-serif";
+  ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_YELLOW;
+  ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBTITLE;
   ctx.textAlign = "center";
-  const subText = sc.subtitle || sc.script || "";
+  const subText = sc.subtitle || sc.script || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
 
-  let currentSubLine = "";
+  let currentSubLine: string = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
   let subLines: string[] = [];
   const maxLineLength = 90;
 
-  _.forEach(subText.split(" "), (w: string) => {
+  _.forEach(subText.split(RENDER_LOGIC_CONSTANTS.SPACE_CHAR), (w: string) => {
     if (_.gt((currentSubLine + w).length, maxLineLength)) {
       subLines.push(currentSubLine);
-      currentSubLine = w + " ";
+      currentSubLine = `${w}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
     } else {
-      currentSubLine += w + " ";
+      currentSubLine += `${w}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
     }
   });
   subLines.push(currentSubLine);
@@ -156,7 +245,6 @@ export const drawSceneFrameToContext = (
     sY += 30;
   });
 };
-
 export const compileVideoToBlob = async (
   scenes: StoryboardScene[],
   getSceneImageUrl: (sc: StoryboardScene) => string,
@@ -176,7 +264,7 @@ export const compileVideoToBlob = async (
     _.map(scenes, (sc) => {
       return new Promise<void>((resolve) => {
         const img = new Image();
-        img.crossOrigin = "anonymous";
+        img.crossOrigin = RENDER_LOGIC_CONSTANTS.ANONYMOUS;
         img.onload = () => {
           loadedImages[sc.id] = img;
           loadedCount++;
@@ -200,7 +288,7 @@ export const compileVideoToBlob = async (
   const canvas = document.createElement("canvas");
   canvas.width = 1280;
   canvas.height = 720;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext(RENDER_LOGIC_CONSTANTS.CONTEXT_2D);
   if (_.isNil(ctx)) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
 
   let mixedStream = new MediaStream();
@@ -216,7 +304,7 @@ export const compileVideoToBlob = async (
   const hasSceneVoices = _.some(scenes, (sc) => !!sc.audioUrl);
   const voiceUrl = voiceConfig?.audioUrl || ttsAudioUrl;
   const hasGlobalAudio =
-    voiceUrl && !_.eq(voiceUrl, "simulated") && !_.eq(voiceUrl, "simulated_speech");
+    voiceUrl && !_.includes([RENDER_LOGIC_CONSTANTS.SIMULATED, RENDER_LOGIC_CONSTANTS.SIMULATED_SPEECH], voiceUrl);
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
   if (hasAudioRecording) {
@@ -227,7 +315,7 @@ export const compileVideoToBlob = async (
       destNode = audioCtx.createMediaStreamDestination();
 
       audioEl = new Audio();
-      audioEl.crossOrigin = "anonymous";
+      audioEl.crossOrigin = RENDER_LOGIC_CONSTANTS.ANONYMOUS;
       const sourceNode = audioCtx.createMediaElementSource(audioEl);
       sourceNode.connect(destNode);
 
@@ -239,7 +327,7 @@ export const compileVideoToBlob = async (
     }
   }
 
-  let selectedType = "";
+  let selectedType: string = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
   _.forEach(supportedTypes, (t) => {
     if (MediaRecorder.isTypeSupported(t)) {
       selectedType = t;
@@ -265,7 +353,7 @@ export const compileVideoToBlob = async (
   return new Promise<Blob>((resolve, reject) => {
     recorder.onstop = () => {
       const finalBlob = new Blob(chunks, {
-        type: selectedType || "video/webm",
+        type: selectedType || RENDER_LOGIC_CONSTANTS.MIME_WEBM,
       });
       resolve(finalBlob);
     };
@@ -282,7 +370,7 @@ export const compileVideoToBlob = async (
       : 1;
 
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
-      audioEl.src = voiceUrl || "";
+      audioEl.src = voiceUrl || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
       audioEl.currentTime = 0;
       audioEl.playbackRate = _.lte(speedFactor, 4.0) ? speedFactor : 4.0;
       audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
@@ -317,7 +405,7 @@ export const compileVideoToBlob = async (
           audioEl.playbackRate = _.lte(speedFactor, 4.0) ? speedFactor : 4.0;
           audioEl.play().catch((err) => appWarn("AUDIO_PLAYBACK_FAILED", err));
         } else {
-          audioEl.src = "";
+          audioEl.src = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
         }
       }
 
@@ -325,12 +413,31 @@ export const compileVideoToBlob = async (
       const sceneDuration = matchingRange.duration;
 
       const imgEl = loadedImages[activeScene.id];
+
+      let transitionProgress = 0;
+      let nextImgEl: HTMLImageElement | undefined;
+
+      const matchingIdx = _.findIndex(ranges, (r) => _.eq(r.id, matchingRange.id));
+      if (matchingIdx >= 0 && matchingIdx < ranges.length - 1) {
+        const timeRemaining = sceneDuration - timeInScene;
+        if (timeRemaining <= TRANSITION_DURATION && timeRemaining >= 0) {
+          transitionProgress = 1.0 - timeRemaining / TRANSITION_DURATION;
+          const nextRange = ranges[matchingIdx + 1];
+          const nextScene = _.find(scenes, (sc) => _.eq(sc.id, nextRange.id));
+          if (nextScene) {
+            nextImgEl = loadedImages[nextScene.id];
+          }
+        }
+      }
+
       drawSceneFrameToContext(
         ctx,
         activeScene,
         imgEl,
         timeInScene,
         sceneDuration,
+        nextImgEl,
+        transitionProgress,
       );
 
       const prog = _.add(20, _.round(_.multiply(_.divide(elapsed, totalDuration), 80)));
