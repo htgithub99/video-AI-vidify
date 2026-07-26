@@ -8,12 +8,66 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <style>
-        .ts-control { background: var(--input-bg) !important; border: 1px solid var(--input-border) !important; border-radius: 10px !important; color: white !important; padding: 0.6rem 0.75rem !important; box-shadow: none !important; transition: 0.2s; }
+        .ts-wrapper, .ts-control {
+            height: auto !important;
+            min-height: 38px !important;
+            max-height: none !important;
+        }
+        .ts-control { 
+            background: var(--input-bg) !important; 
+            border: 1px solid var(--input-border) !important; 
+            border-radius: 8px !important; 
+            color: white !important; 
+            padding: 4px 8px !important; 
+            box-shadow: none !important; 
+            transition: 0.2s; 
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+        }
         .ts-wrapper.focus .ts-control { border-color: var(--primary) !important; box-shadow: 0 0 0 3px var(--primary-glow) !important; }
         .ts-dropdown { background: var(--card-bg) !important; border: 1px solid var(--card-border) !important; color: white !important; z-index: 1050 !important; border-radius: 12px !important; overflow: hidden; }
         .ts-dropdown .option { padding: 0.5rem 0.75rem; }
         .ts-dropdown .option:hover, .ts-dropdown .active { background: rgba(244, 63, 94, 0.15) !important; color: white !important; }
-        .ts-control input { color: white !important; }
+        
+        .ts-control input { 
+            color: white !important; 
+            height: 26px !important; 
+            min-height: 26px !important; 
+            max-height: 26px !important; 
+            line-height: 26px !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+            background: transparent !important; 
+            border: none !important; 
+            box-shadow: none !important;
+        }
+        
+        .ts-control .item {
+            background: var(--primary) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-radius: 4px !important;
+            padding: 2px 6px !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            height: 26px !important;
+            box-sizing: border-box !important;
+        }
+        .ts-control .item .remove {
+            border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+            margin-left: 6px !important;
+            padding-left: 4px !important;
+            color: rgba(255, 255, 255, 0.8) !important;
+            text-decoration: none !important;
+        }
+        .ts-control .item .remove:hover {
+            color: white !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
     </style>
 </head>
 <body>
@@ -141,7 +195,7 @@
 
                     <div id="tab-content-keys" class="sub-tab-content active">
                         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; flex-shrink: 0;">
-                            <h4 style="font-size: 0.85rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-main); margin-bottom: 0.75rem;">Thêm / Cập Nhật API Key</h4>
+                            <h4 style="font-size: 0.85rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-main); margin-bottom: 0.75rem;" title="Thêm hoặc cập nhật API Key vào hệ thống">Cấu Hình API Key</h4>
                             <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr auto; gap: 1rem; align-items: end;">
                                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                                     <label style="font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700;">Gán Cho Gói</label>
@@ -160,7 +214,7 @@
                                     <input type="text" id="keys-ai33-input" placeholder="AI33 Key..." style="width: 100%; padding: 0.55rem 0.75rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: white; outline: none;">
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
-                                    <label style="font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700;">Loại trừ các gói/key</label>
+                                    <label style="font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700;" title="Loại trừ đối với các gói hoặc key cụ thể">Loại Trừ Gói</label>
                                     <select id="keys-excluded-input" multiple style="width: 100%; padding: 0.55rem 0.75rem; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: white; outline: none; cursor: pointer;">
                                         <option value="ALL">ALL (Tất cả gói)</option>
                                         <option value="FREE">Gói FREE</option>
@@ -193,7 +247,7 @@
 
                     <div id="tab-content-accounts" class="sub-tab-content" style="display: none;">
                         <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; flex-shrink: 0;">
-                            <h4 style="font-size: 0.85rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-main); margin-bottom: 0.75rem;">Thêm / Cập Nhật Tài Khoản Pool</h4>
+                            <h4 style="font-size: 0.85rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-main); margin-bottom: 0.75rem;" title="Thêm hoặc cập nhật tài khoản Google vào Pool">Cấu Hình Tài Khoản</h4>
                             <div style="display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr auto; gap: 1rem; align-items: end;">
                                 <div style="display: flex; flex-direction: column; gap: 0.4rem;">
                                     <label style="font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700;">Google Email</label>
@@ -245,7 +299,7 @@
             <div id="page-config" class="admin-page-content">
                 <section class="admin-card">
                     <div class="card-header-row">
-                        <h3 title="Bảng cấu hình hạn mức Quota cho các gói dịch vụ">⚙️ Bảng Cấu Hình Gói</h3>
+                        <h3 title="Bảng cấu hình hạn mức Quota cho các gói dịch vụ">⚙️ Cấu Hình Gói</h3>
                         <div style="display: flex; gap: 0.5rem;">
                             <button id="add-plan-btn" class="btn-secondary" title="Tạo gói dịch vụ mới">➕ Thêm Gói</button>
                             <button id="save-config-btn" class="btn-primary" title="Lưu cấu hình giới hạn Quota">💾 Lưu Cấu Hình</button>
@@ -334,7 +388,7 @@
     <div id="resource-delete-modal" class="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <h3 title="Xác nhận thao tác xóa tài nguyên">Xác Nhận Xóa Tài Nguyên</h3>
+                <h3 title="Xác nhận thao tác xóa tài nguyên">Xác Nhận Xóa</h3>
                 <button class="modal-close modal-close-btn" data-modal="resource-delete-modal" title="Hủy thao tác">✕</button>
             </div>
             <div class="modal-body">

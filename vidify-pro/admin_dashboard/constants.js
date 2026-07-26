@@ -159,7 +159,12 @@ const ApiFields = {
     CREATED_AT_CAMEL: 'createdAt',
     UPDATED_AT_CAMEL: 'updatedAt',
     EXCLUDED_TO: 'excludedTo',
-    DELETE_TYPE: 'delete_type'
+    DELETE_TYPE: 'delete_type',
+    IS_UNLIMITED: 'is_unlimited',
+    QUOTA_VIDEO: 'quota_video',
+    QUOTA_IMAGE: 'quota_image',
+    QUOTA_VOICE: 'quota_voice',
+    NAME: 'name'
 };
 
 const EventTypes = {
@@ -202,7 +207,15 @@ const AdminSelectors = {
     SUB_TAB_CONTENT: '.sub-tab-content',
     SUB_TAB_BTN: '.sub-tab-btn',
     PLAN_UNLIMITED_INPUT: '.plan-unlimited-input',
-    DELETE_PLAN_BTN: '.delete-plan-btn'
+    DELETE_PLAN_BTN: '.delete-plan-btn',
+    PLAN_VIDEO_INPUT_BY_ID: (pId) => `.plan-video-input[data-plan-id="${pId}"]`,
+    PLAN_IMAGE_INPUT_BY_ID: (pId) => `.plan-image-input[data-plan-id="${pId}"]`,
+    PLAN_VOICE_INPUT_BY_ID: (pId) => `.plan-voice-input[data-plan-id="${pId}"]`,
+    PLAN_NAME_INPUT_BY_ID: (pId) => `.plan-name-input[data-plan-id="${pId}"]`,
+    PLAN_UNLIMITED_INPUT_BY_ID: (pId) => `.plan-unlimited-input[data-plan-id="${pId}"]`,
+    TOGGLE_TEXT_BY_ID: (pId) => `.toggle-text[data-plan-id="${pId}"]`,
+    QUOTA_ROW_INPUT: '.quota-row-input',
+    PLAN_ROW_BY_ID: (planId) => `.quota-${planId}`
 };
 
 const AdminRegex = {
@@ -381,13 +394,13 @@ const AdminMessages = {
     ARRAY_EMPTY_JSON: "[]",
     QUOTA_DAILY_LABEL: "Theo ngày",
     QUOTA_TOTAL_LABEL: "Theo hạn",
-    EMPTY_USERS: "Không có dữ liệu người dùng nào.",
-    EMPTY_PLANS: "Hiện chưa có Gói (Plan) nào. Bấm <b>+ Thêm Gói</b> để bắt đầu.",
-    CREATE_PLAN_SUCCESS: "Tạo gói mới thành công",
-    CREATE_PLAN_ERROR: "Lỗi khi tạo gói: ",
+    EMPTY_USERS: "Chưa có người dùng",
+    EMPTY_PLANS: "Chưa cấu hình Gói",
+    CREATE_PLAN_SUCCESS: "Tạo gói thành công",
+    CREATE_PLAN_ERROR: "Lỗi tạo gói: ",
     DELETE_PLAN_SUCCESS: "Xóa gói thành công",
-    DELETE_PLAN_ERROR: "Lỗi khi xóa gói: ",
-    DELETE_PLAN_CONFIRM: "Xóa gói này? Không thể hoàn tác!",
+    DELETE_PLAN_ERROR: "Lỗi xóa gói: ",
+    DELETE_PLAN_CONFIRM: "Xác nhận xóa gói",
     NEW_PLAN_NAME: "NEW_PLAN"
 };
 

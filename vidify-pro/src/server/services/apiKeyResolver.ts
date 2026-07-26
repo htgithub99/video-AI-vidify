@@ -26,22 +26,29 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
   const isGeminiUserKey = !_.isEmpty(userGeminiKey);
   const isAi33UserKey = !_.isEmpty(userAi33Key);
 
-  const isMissingAnyKey = _.some([isGeminiUserKey, isAi33UserKey], (hasKey) => _.isEqual(hasKey, false));
+  const isMissingAnyKey = _.includes([isGeminiUserKey, isAi33UserKey], false);
+
+  appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ licenseKey, planType, userGeminiKey, userAi33Key, isMissingAnyKey }));
 
   if (isMissingAnyKey) {
     try {
+      const payload = {
+        [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS,
+        [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey,
+        [SecurityConstants.PROP_PLAN_ID_GAS]: planType,
+        [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType
+      };
+      appLog(SecurityMessages.LOG_RESOLVER_FETCH, jsonUtils.safeStringify(payload));
+
       const response = await fetch(SecurityConstants.GAS_API_URL, {
         method: SecurityConstants.HTTP_POST,
         headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: jsonUtils.safeStringify({
-          action: GasActions.GET_API_KEYS,
-          license_key: licenseKey,
-          plan_id: planType,
-          plan_type: planType
-        })
+        body: jsonUtils.safeStringify(payload)
       });
 
       const data: any = await response.json();
+      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify(data));
+      
       const adminKeys = _.get(data, SecurityConstants.API_KEYS_KEY, {});
 
       if (!isGeminiUserKey && !_.isEmpty(_.get(adminKeys, SecurityConstants.REQ_BODY_GEMINI_KEY))) {
