@@ -5,7 +5,8 @@ import crypto from 'crypto';
 import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus, PlanType } from '../../constants/security.js';
 import { jsonUtils } from '../../lib/json.js';
 import { appError } from '../../lib/logger.js';
-import { machineIdSync } from 'node-machine-id';
+import nodeMachineId from 'node-machine-id';
+const { machineIdSync } = nodeMachineId;
 
 function getHardwareId(): string {
     let rawId = SecurityConstants.EMPTY_STRING;

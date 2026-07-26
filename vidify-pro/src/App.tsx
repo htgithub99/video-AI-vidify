@@ -6,6 +6,7 @@ import ProjectList from "./components/ProjectList.tsx";
 import PipelineWizard from "./components/PipelineWizard.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
+import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
@@ -378,6 +379,15 @@ export default function App() {
               setCostTracker={setCostTracker}
               credits={credits}
               setCredits={() => {}}
+            />
+          ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
+            <AutoVideoGenerator
+              currentLang={currentLang}
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onCreateProject={handleCreateProject}
+              onUpdateProject={handleUpdateProject}
+              theme={theme as any}
             />
           ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
             <SettingsView currentLang={currentLang} />

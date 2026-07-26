@@ -2,7 +2,8 @@ import { cn } from "../lib/utils";
 import { useState } from "react";
 import { Lang } from "../lib/lang.js";
 import { SIDEBAR_TEXTS } from "../constants/texts";
-import { Video, LayoutDashboard, FolderKanban, Sliders, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Video, LayoutDashboard, FolderKanban, Sliders, Settings, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { AppTab } from "../constants/enums.js";
 import { Button } from "./ui/Button";
 
 interface SidebarProps {
@@ -28,25 +29,31 @@ export default function Sidebar({
 
   const menuItems = [
     {
-      id: "dashboard",
+      id: AppTab.DASHBOARD,
       label: SIDEBAR_TEXTS[currentLang].DASHBOARD,
       icon: LayoutDashboard,
       requiresProject: false,
     },
     {
-      id: "projects",
+      id: AppTab.PROJECTS,
       label: SIDEBAR_TEXTS[currentLang].CONTENT,
       icon: FolderKanban,
       requiresProject: false,
     },
     {
-      id: "studio",
+      id: AppTab.AUTO_GENERATOR,
+      label: SIDEBAR_TEXTS[currentLang].AUTO_CREATOR,
+      icon: Zap,
+      requiresProject: false,
+    },
+    {
+      id: AppTab.STUDIO,
       label: SIDEBAR_TEXTS[currentLang].AI_STUDIO,
       icon: Sliders,
       requiresProject: true,
     },
     {
-      id: "settings",
+      id: AppTab.SETTINGS,
       label: SIDEBAR_TEXTS[currentLang].SETTINGS,
       icon: Settings,
       requiresProject: false,

@@ -214,6 +214,13 @@ export enum VOICE_GENDER {
 export const OFFLINE_RENDER_ID = "offline_webm";
 export const VOICE_FILTER_ALL = "all";
 
+export enum VideoQuality {
+  LOW = "low",
+  HIGH = "high",
+  HIGHEST = "highest",
+  ULTRA_4K = "4k",
+}
+
 export enum AppTab {
   STUDIO = "studio",
   PROJECTS = "projects",

@@ -124,6 +124,10 @@ import { requireLicense } from "../middlewares/requireLicense.js";
 import { FeatureType, SecurityConstants } from "../../constants/security.js";
 import { requestContext } from "../utils/requestContext.js";
 
+import { renderFFmpegVideo } from "../utils/ffmpegRender.js";
+import { VideoQuality } from "../../constants/enums.js";
+import { FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
+
 const router = express.Router();
 
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
@@ -584,7 +588,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       return res.json({ success: true, storyboard });
     }
 
-    const chunkSize = 25;
+    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER;
     const chunks = _.chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
@@ -1154,7 +1158,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
       logStoryboardStep(getBilingualMessage("STORYBOARD_GENERATING_DETAILS_BATCH", splitScenes.length));
 
-      const batchSize = 8;
+      const batchSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
       const chunks = _.chunk(splitScenes, batchSize);
       const detailedScenesMap = new Map<string, any>();
 
@@ -2466,6 +2470,27 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
+  }
+});
+
+router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
+  try {
+    const scenes = _.get(req.body, "scenes");
+    const globalAudioUrl = _.get(req.body, "globalAudioUrl");
+    const quality = _.get(req.body, "quality");
+    const aspectRatio = _.get(req.body, "aspectRatio");
+
+    const outputUrl = await renderFFmpegVideo({
+      scenes,
+      globalAudioUrl,
+      quality: quality as VideoQuality,
+      aspectRatio: aspectRatio as string
+    });
+    await incrementFeatureUsage(req, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
+    res.json({ success: true, url: outputUrl });
+  } catch (error: any) {
+    logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER_ROUTE, error);
+    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ success: false, error: _.get(error, "message") });
   }
 });
 

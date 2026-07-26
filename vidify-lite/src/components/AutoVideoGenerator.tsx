@@ -10,6 +10,7 @@ import { VoiceSelectionDialog } from "./VoiceSelectionDialog";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { logger } from "../utils/logger";
+import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import {
   Zap,
   Sparkles,
@@ -106,8 +107,6 @@ export default function AutoVideoGenerator({
 
   const [projectName, setProjectName] = useState<string>(() => `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(0, 10)}`);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
-  const [cameraMotion] = useState<string>(PRESET_CONSTANTS.DEFAULT_CAMERA_MOTION);
-  const [transitionEffect] = useState<string>(PRESET_CONSTANTS.DEFAULT_TRANSITION);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
@@ -268,12 +267,12 @@ export default function AutoVideoGenerator({
     addLog(T.logPipelineStart);
 
     try {
-      addLog(T.logInitProj);
-      const newProjectId = `proj_${Math.random().toString(36).substring(2, 11)}`;
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
+      const newProjectId = `${AUTO_GENERATOR_CONSTANTS.PROJECT_ID_PREFIX}${Math.random().toString(36).substring(2, 11)}`;
       const newProj: VideoProject = {
         id: newProjectId,
         name: _.trim(projectName) || `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${Date.now()}`,
-        description: `Tạo tự động lúc ${new Date().toLocaleString()}`,
+        description: `${AUTO_GENERATOR_CONSTANTS.AUTO_DESCRIPTION_PREFIX}${new Date().toLocaleString()}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         input: {
@@ -301,10 +300,10 @@ export default function AutoVideoGenerator({
         },
         voiceConfig: {
           provider: voiceProvider,
-          audioType: "tts" as any,
+          audioType: AUTO_GENERATOR_CONSTANTS.AUDIO_TYPE_TTS as any,
           gender: Gender.Male,
           age: AgeGroup.Adult,
-          emotion: "Normal",
+          emotion: AUTO_GENERATOR_CONSTANTS.EMOTION_NORMAL,
           speed: voiceSpeed,
           pitch: voicePitch,
           volume: voiceVolume,
@@ -312,9 +311,9 @@ export default function AutoVideoGenerator({
           voiceName,
         },
         visualConfig: {
-          source: "AI Auto",
+          source: AUTO_GENERATOR_CONSTANTS.VISUAL_SOURCE_AUTO,
           style: stylePreset,
-          quality: "Standard",
+          quality: AUTO_GENERATOR_CONSTANTS.VISUAL_QUALITY_STANDARD,
           density: 5,
           characterConsistency: true,
           assetsMode: "mixed" as any,
@@ -335,7 +334,7 @@ export default function AutoVideoGenerator({
           referencePrompt: stylePreset,
           characters: [
             {
-              id: "char_1",
+              id: AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_DEFAULT,
               name: PRESET_CONSTANTS.CHARACTER_NAME,
               description: PRESET_CONSTANTS.CHARACTER_BIO,
               images: characterImages,
@@ -353,115 +352,147 @@ export default function AutoVideoGenerator({
 
       setActiveCreatedProject(newProj);
       await onUpdateProject(newProj, true);
-      addLog(T.logInitProjSuccess(newProj.name));
-      setStepProgress(25);
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace("{0}", _.get(newProj, "name")));
+      setStepProgress(15);
 
-      addLog(T.logScriptGen);
-      await new Promise((res) => setTimeout(res, 1500));
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_GEN);
+      const scriptRes = await fetch(API_ROUTES.PIPELINE_SCRIPT, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: jsonUtils.safeStringify({
+          content: scriptContent,
+          genre,
+          language,
+          duration,
+          splitStrategy
+        })
+      });
 
-      const sampleStoryboard = [
-        {
-          id: "sc_1",
-          chapterId: "ch_1",
-          startTime: "00:00.000",
-          endTime: "00:05.000",
-          duration: 5,
-          script: scriptContent.slice(0, 80) || "Phân cảnh mở đầu đầy lôi cuốn.",
-          subtitle: scriptContent.slice(0, 80) || "Phân cảnh mở đầu đầy lôi cuốn.",
-          prompt: `Cinematic shot, ${stylePreset}, ${scriptContent.slice(0, 50)} --ar ${aspectRatio}`,
-          cameraMotion,
-          transition: transitionEffect,
-        },
-        {
-          id: "sc_2",
-          chapterId: "ch_1",
-          startTime: "00:05.000",
-          endTime: "00:10.000",
-          duration: 5,
-          script: scriptContent.slice(80, 160) || "Phát triển câu chuyện hấp dẫn tiếp theo.",
-          subtitle: scriptContent.slice(80, 160) || "Phát triển câu chuyện hấp dẫn tiếp theo.",
-          prompt: `High detailed, ${stylePreset}, dramatic lighting --ar ${aspectRatio}`,
-          cameraMotion,
-          transition: transitionEffect,
-        },
-      ];
+      let realScript = scriptContent;
+      let realScenes: any[] = [];
 
-      const projWithStoryboard = {
-        ...newProj,
-        scriptRewritten: scriptContent,
-        storyboard: sampleStoryboard,
-      };
-      setActiveCreatedProject(projWithStoryboard);
-      await onUpdateProject(projWithStoryboard, true);
-      addLog(T.logScriptSuccess);
-      setStepProgress(45);
+      if (scriptRes.ok) {
+        const scriptData = await scriptRes.json();
+        if (_.get(scriptData, "rewrittenContent")) realScript = _.get(scriptData, "rewrittenContent");
+        if (_.get(scriptData, "storyboard") && _.get(scriptData, "storyboard").length > 0) {
+          realScenes = _.get(scriptData, "storyboard");
+        }
+      }
+
+      if (_.isEmpty(realScenes)) {
+        const sentences = realScript.match(/[^.!?]+[.!?]+/g) || [realScript];
+        realScenes = _.map(sentences, (sen, idx) => ({
+          id: `sc_${idx + 1}`,
+          script: _.trim(sen),
+          subtitle: _.trim(sen),
+          duration: AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
+          prompt: AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_PROMPT.replace("{0}", sen.slice(0, 40)),
+          cameraMotion: PRESET_CONSTANTS.DEFAULT_CAMERA_MOTION,
+          transition: PRESET_CONSTANTS.DEFAULT_TRANSITION
+        }));
+      }
+
+      addLog(AUTO_GENERATOR_CONSTANTS.API_SCRIPT_SUCCESS.replace("{0}", String(realScenes.length)));
+      setStepProgress(35);
       setCurrentStepIndex(2);
 
-      addLog(T.logVoiceGen(voiceName));
-      await new Promise((res) => setTimeout(res, 1200));
-      addLog(T.logVoiceSuccess);
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN.replace("{0}", voiceName || "Việt Nam"));
+      for (let i = 0; i < realScenes.length; i++) {
+        const sc = _.get(realScenes, i);
+        try {
+          const ttsRes = await fetch(API_ROUTES.PIPELINE_VOICE, {
+            method: HTTP_METHODS.POST,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            body: jsonUtils.safeStringify({
+              text: _.get(sc, "script"),
+              voiceURI,
+              provider: voiceProvider,
+              speed: voiceSpeed,
+              pitch: voicePitch
+            })
+          });
+          if (ttsRes.ok) {
+            const ttsData = await ttsRes.json();
+            if (_.get(ttsData, "audioBase64")) sc.audioBase64 = _.get(ttsData, "audioBase64");
+          }
+        } catch (e) {}
+      }
+      addLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
+      setStepProgress(55);
 
-      addLog(T.logImageGen(imageGeneratorEngine, stylePreset, aspectRatio));
-      setStepProgress(65);
-      await new Promise((res) => setTimeout(res, 2000));
-      addLog(T.logImageSuccess);
+      const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace("{0}", modeName));
 
+      for (let i = 0; i < realScenes.length; i++) {
+        const sc = _.get(realScenes, i);
+        addLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace("{0}", String(i + 1)).replace("{1}", String(realScenes.length)));
+        try {
+          const imgRes = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+            method: HTTP_METHODS.POST,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            body: jsonUtils.safeStringify({
+              prompt: _.get(sc, "prompt") || _.get(sc, "script"),
+              style: stylePreset,
+              visualConfig: {
+                generationMode,
+                imageGeneratorEngine,
+                aspectRatio,
+                generateType,
+                chromeHeadless
+              }
+            })
+          });
+          if (imgRes.ok) {
+            const imgData = await imgRes.json();
+            if (_.get(imgData, "base64")) {
+              sc.imageBase64 = _.get(imgData, "base64");
+            } else if (_.get(imgData, "fallbackUrl")) {
+              sc.imageUrl = _.get(imgData, "fallbackUrl");
+            }
+          }
+        } catch (e) {
+          addLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace("{0}", String(i + 1)));
+        }
+      }
+      addLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
+      setStepProgress(80);
       setCurrentStepIndex(3);
-      addLog(T.logSeoGen);
-      const updatedSeoProj = {
-        ...projWithStoryboard,
-        seo: {
-          titles: _.map(Array.from({ length: 3 }), (_, i) => ({
-            text: `[Gợi Ý ${i + 1}] ${projectName}: ${scriptContent.slice(0, 30)}...`,
-            searchScore: 90 + i,
-            ctrScore: 88 + i,
-            compScore: 40,
-            seoScore: 89,
-          })),
-          descriptions: [{ text: `Video được sản xuất tự động từ kịch bản: ${scriptContent.slice(0, 100)}...`, searchScore: 90, ctrScore: 90, compScore: 30, seoScore: 90 }],
-          hashtags: ["VideoAI", "Vidify", "AutoGenerator", "Creator", "Shorts"],
-          tags: ["video ai", "tự động hoá", "content creator", "ai studio"],
-        },
-      };
-      setActiveCreatedProject(updatedSeoProj);
-      await onUpdateProject(updatedSeoProj, true);
-      addLog(T.logSeoSuccess);
-      setStepProgress(85);
+
+      addLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
       setCurrentStepIndex(4);
 
-      addLog(T.logRenderGen(ffmpegQuality));
-      try {
-        const payload = {
-          scenes: _.map(sampleStoryboard, (sc) => ({
-            id: sc.id,
-            duration: sc.duration,
-            imageBase64: "",
-            audioBase64: "",
-          })),
-          quality: ffmpegQuality,
-        };
-        const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(payload),
-        });
-        const text = await response.text();
-        const data = jsonUtils.safeParse<{ success: boolean; url?: string }>(text, { success: false });
-        if (data.success && data.url) {
-          setRenderedVideoUrl(data.url);
-          addLog(T.logRenderSuccess);
-        } else {
-          setRenderedVideoUrl(PRESET_CONSTANTS.SAMPLE_VIDEO_URL);
-          addLog(T.logRenderPreview);
-        }
-      } catch {
-        setRenderedVideoUrl(PRESET_CONSTANTS.SAMPLE_VIDEO_URL);
-        addLog(T.logRenderPreviewMode);
+      const renderPayload = {
+        scenes: _.map(realScenes, (sc) => ({
+          id: _.get(sc, "id"),
+          duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
+          imageBase64: _.get(sc, "imageBase64"),
+          imageUrl: _.get(sc, "imageUrl"),
+          audioBase64: _.get(sc, "audioBase64"),
+          text: _.get(sc, "script")
+        })),
+        quality: ffmpegQuality,
+        aspectRatio: _.isEqual(aspectRatio, AspectRatio.NineSixteen) ? FFMPEG_RENDER_CONSTANTS.ASPECT_RATIO_9_16 : "16:9"
+      };
+
+      const renderRes = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
+        method: HTTP_METHODS.POST,
+        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        body: jsonUtils.safeStringify(renderPayload)
+      });
+
+      const renderText = await renderRes.text();
+      const renderData = jsonUtils.safeParse<{ success: boolean; url?: string; error?: string }>(renderText, { success: false });
+
+      if (_.get(renderData, "success") && _.get(renderData, "url")) {
+        setRenderedVideoUrl(_.get(renderData, "url")!);
+        addLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace("{0}", _.get(renderData, "url")!));
+      } else {
+        throw new Error(_.get(renderData, "error") || AUTO_GENERATOR_CONSTANTS.ERR_RENDER_NO_URL);
       }
 
       setStepProgress(100);
     } catch (err: any) {
-      addLog(`❌ Lỗi trong quá trình tạo video: ${err?.message || err}`);
+      addLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace("{0}", _.get(err, "message") || String(err)));
     } finally {
       setIsProcessing(false);
     }
@@ -1053,7 +1084,7 @@ export default function AutoVideoGenerator({
             {isProcessing || _.gt(stepProgress, 0) ? (
               <div className="space-y-2 pt-2 text-left">
                 <div className="flex justify-between items-center text-[10px] font-mono font-bold">
-                  <span className="text-rose-400">Tiến trình Node [{currentStepIndex}/4]</span>
+                  <span className="text-rose-400">{T.progressNodeLabel} [{currentStepIndex}/4]</span>
                   <span className="text-slate-200">{stepProgress}%</span>
                 </div>
                 <div className="w-full bg-slate-955 h-2 rounded-full overflow-hidden border border-slate-800">

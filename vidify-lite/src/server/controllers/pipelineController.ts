@@ -587,7 +587,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
       return res.json({ success: true, storyboard });
     }
 
-    const chunkSize = 25;
+    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER;
     const chunks = _.chunk(scenesToRewrite, chunkSize);
 
     const rewrittenMap = new Map<string, string>();
@@ -1157,7 +1157,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
       logStoryboardStep(getBilingualMessage("STORYBOARD_GENERATING_DETAILS_BATCH", splitScenes.length));
 
-      const batchSize = 8;
+      const batchSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
       const chunks = _.chunk(splitScenes, batchSize);
       const detailedScenesMap = new Map<string, any>();
 
@@ -2474,11 +2474,12 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const { scenes, globalAudioUrl, quality } = req.body;
+    const { scenes, globalAudioUrl, quality, aspectRatio } = req.body;
     const outputUrl = await renderFFmpegVideo({
       scenes,
       globalAudioUrl,
-      quality: quality as VideoQuality
+      quality: quality as VideoQuality,
+      aspectRatio: aspectRatio as string
     });
     await incrementFeatureUsage(req, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
     res.json({ success: true, url: outputUrl });
