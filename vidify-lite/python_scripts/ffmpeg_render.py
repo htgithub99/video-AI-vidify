@@ -6,7 +6,7 @@ import subprocess
 import traceback
 import math
 import random
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
 class FFMPEG_CONSTANTS:
     RGB24 = "rgb24"
@@ -50,7 +50,26 @@ class FFMPEG_CONSTANTS:
     TRANS_SLIDE = "slide_left"
     TRANS_SLIDE_UP = "slide_up"
     TRANS_FADE_BLACK = "fade_black"
+    TRANS_FADE_WHITE = "fade_white"
     TRANS_CUT = "cut"
+
+    EFFECT_SAD_KEYS = ["sad", "gloomy", "dark", "melancholic", "vignette", "shadow"]
+    EFFECT_VINTAGE_KEYS = ["vintage", "sepia", "old photo", "grain", "retro", "classic"]
+    EFFECT_DREAMY_KEYS = ["dreamy", "glow", "bloom", "ethereal", "mystery", "magical", "soft light"]
+    EFFECT_GLITCH_KEYS = ["glitch", "action", "cyberpunk", "energy", "intense", "shaking", "vibrant"]
+    EFFECT_WARM_KEYS = ["warm", "golden hour", "sunny", "bright", "romantic"]
+    EFFECT_COLD_KEYS = ["cold", "winter", "snow", "frosty", "blue mood", "lạnh", "băng"]
+    EFFECT_NOIR_KEYS = ["noir", "bw", "black and white", "monochrome", "trắng đen"]
+    EFFECT_HORROR_KEYS = ["horror", "scary", "ghostly", "foggy", "misty", "kinh dị", "sương mù"]
+    EFFECT_VHS_KEYS = ["vhs", "analog", "tv distortion", "scanline", "nhiễu"]
+    EFFECT_NEON_KEYS = ["neon", "glow neon", "cyberpunk color", "sặc sỡ"]
+
+    COLOR_BLACK_RGB = (0, 0, 0)
+    COLOR_WHITE_RGB = (255, 255, 255)
+    COLOR_FOG_RGB = (200, 200, 200)
+    COLOR_COLD_TINT_RGB = (100, 140, 240)
+    COLOR_WARM_TINT_RGB = (255, 200, 150)
+    COLOR_GLOW_TINT_RGB = (255, 140, 0)
 
 def ease_hermite(t):
     return t * t * (3.0 - 2.0 * t)
@@ -92,6 +111,125 @@ EASING_FUNCTIONS = [
     ease_sine_in_out,
     ease_linear,
 ]
+
+def apply_visual_effects(frame, effects_str, frame_index, total_frames):
+    if not effects_str:
+        return frame
+    
+    eff = str(effects_str).lower().strip()
+    w, h = frame.size
+    
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_SAD_KEYS):
+        frame = ImageEnhance.Color(frame).enhance(0.7)
+        frame = ImageEnhance.Brightness(frame).enhance(0.85)
+        try:
+            vignette = Image.new("L", (w, h), 255)
+            draw = ImageDraw.Draw(vignette)
+            max_d = max(w, h)
+            for r in range(int(max_d * 0.7), int(max_d * 0.45), -10):
+                opacity = int((1.0 - (r - max_d*0.45)/(max_d*0.25)) * 120)
+                opacity = max(0, min(opacity, 120))
+                draw.ellipse([w/2 - r, h/2 - r, w/2 + r, h/2 + r], fill=255 - opacity)
+            dark = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
+            frame = Image.composite(dark, frame, vignette)
+        except:
+            pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_VINTAGE_KEYS):
+        sepia_matrix = (
+            0.393, 0.769, 0.189, 0,
+            0.349, 0.686, 0.168, 0,
+            0.272, 0.534, 0.131, 0
+        )
+        frame = frame.convert("RGB", sepia_matrix)
+        try:
+            noise = Image.effect_noise((w, h), 8)
+            noise = noise.convert("RGB")
+            frame = Image.blend(frame, noise, 0.08)
+        except:
+            pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_DREAMY_KEYS):
+        try:
+            blurred = frame.filter(ImageFilter.GaussianBlur(12))
+            frame = Image.blend(frame, blurred, 0.28)
+            glow_overlay = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
+            draw = ImageDraw.Draw(glow_overlay)
+            glow_r = int(max(w, h) * 0.4)
+            oscillation = math.sin(frame_index / max(total_frames, 1) * math.pi)
+            glow_r = int(glow_r * (0.9 + 0.2 * oscillation))
+            for r in range(glow_r, 0, -20):
+                draw.ellipse([-r, -r, r, r], fill=FFMPEG_CONSTANTS.COLOR_GLOW_TINT_RGB)
+            frame = Image.blend(frame, glow_overlay, 0.15)
+        except:
+            pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_GLITCH_KEYS):
+        try:
+            r, g, b = frame.split()
+            r_shifted = Image.new("L", (w, h))
+            r_shifted.paste(r, (-4, 0))
+            b_shifted = Image.new("L", (w, h))
+            b_shifted.paste(b, (4, 0))
+            frame = Image.merge("RGB", (r_shifted, g, b_shifted))
+        except:
+            pass
+            
+        if random.random() < 0.15:
+            try:
+                band_h = int(h * 0.08)
+                band_y = random.randint(0, h - band_h)
+                shift_x = random.randint(-15, 15)
+                band = frame.crop((0, band_y, w, band_y + band_h))
+                frame.paste(band, (shift_x, band_y))
+            except:
+                pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_WARM_KEYS):
+        frame = ImageEnhance.Color(frame).enhance(1.25)
+        warm_tint = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_WARM_TINT_RGB)
+        frame = Image.blend(frame, warm_tint, 0.08)
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_COLD_KEYS):
+        frame = ImageEnhance.Color(frame).enhance(0.85)
+        cold_tint = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_COLD_TINT_RGB)
+        frame = Image.blend(frame, cold_tint, 0.12)
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_NOIR_KEYS):
+        frame = frame.convert("L").convert("RGB")
+        frame = ImageEnhance.Contrast(frame).enhance(1.4)
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_HORROR_KEYS):
+        try:
+            fog = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_FOG_RGB)
+            frame = Image.blend(frame, fog, 0.15)
+            frame = ImageEnhance.Color(frame).enhance(0.65)
+            frame = ImageEnhance.Brightness(frame).enhance(0.75)
+        except:
+            pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_VHS_KEYS):
+        try:
+            r, g, b = frame.split()
+            r_shifted = Image.new("L", (w, h))
+            r_shifted.paste(r, (-3, 1))
+            b_shifted = Image.new("L", (w, h))
+            b_shifted.paste(b, (3, -1))
+            frame = Image.merge("RGB", (r_shifted, g, b_shifted))
+            
+            scanlines = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
+            draw = ImageDraw.Draw(scanlines)
+            for y in range(0, h, 4):
+                draw.line([(0, y), (w, y)], fill=FFMPEG_CONSTANTS.COLOR_BLACK_RGB, width=1)
+            frame = Image.blend(frame, scanlines, 0.08)
+        except:
+            pass
+
+    if any(k in eff for k in FFMPEG_CONSTANTS.EFFECT_NEON_KEYS):
+        frame = ImageEnhance.Color(frame).enhance(1.4)
+        frame = ImageEnhance.Contrast(frame).enhance(1.2)
+
+    return frame
 
 def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
     z = 1.0
@@ -198,7 +336,7 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
     y1 = y0 + h_crop
     return x0, y0, x1, y1
 
-def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, style_index, proc):
+def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, style_index, effects_str, proc):
     try:
         img = Image.open(image_path)
     except Exception:
@@ -217,16 +355,17 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
     
     if style == 12:
         x0, y0, x1, y1 = get_crop_coordinates(style, 1.0, w_new, h_new, width, height)
-        final_frame = img_resized.transform(
+        base_frame = img_resized.transform(
             (width, height),
             Image.Transform.EXTENT,
             (x0, y0, x1, y1),
             resample=Image.Resampling.BICUBIC
         )
-        frame_bytes = final_frame.tobytes()
         try:
-            for _ in range(total_frames):
-                proc.stdin.write(frame_bytes)
+            for j in range(total_frames):
+                final_frame = base_frame.copy()
+                final_frame = apply_visual_effects(final_frame, effects_str, j, total_frames)
+                proc.stdin.write(final_frame.tobytes())
         except BrokenPipeError:
             pass
         return
@@ -244,6 +383,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
                 (x0, y0, x1, y1),
                 resample=Image.Resampling.BICUBIC
             )
+            final_frame = apply_visual_effects(final_frame, effects_str, j, total_frames)
             proc.stdin.write(final_frame.tobytes())
     except BrokenPipeError:
         pass
@@ -288,7 +428,7 @@ def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition
                     frame = frame.resize((width, height), Image.Resampling.BICUBIC)
                     alpha = (t_smooth - 0.3) * 5.0 if t_smooth > 0.3 else 0
                     alpha = min(alpha, 1.0)
-                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), (255, 255, 255))
+                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
                     frame = Image.blend(frame, white, alpha)
                 else:
                     zoom = 1.0 + (1.0 - t_smooth) * 2.0
@@ -300,7 +440,7 @@ def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition
                     frame = frame.resize((width, height), Image.Resampling.BICUBIC)
                     alpha = (0.7 - t_smooth) * 5.0 if t_smooth < 0.7 else 0
                     alpha = max(min(alpha, 1.0), 0)
-                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), (255, 255, 255))
+                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
                     frame = Image.blend(white, frame, 1.0 - alpha)
                     
             elif transition_type == FFMPEG_CONSTANTS.TRANS_SLIDE:
@@ -315,6 +455,26 @@ def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition
                 frame.paste(img_a, (0, -offset))
                 frame.paste(img_b, (0, height - offset))
                 
+            elif transition_type == FFMPEG_CONSTANTS.TRANS_FADE_BLACK:
+                if t_smooth < 0.5:
+                    alpha = t_smooth * 2.0
+                    black = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
+                    frame = Image.blend(img_a, black, alpha)
+                else:
+                    alpha = (t_smooth - 0.5) * 2.0
+                    black = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
+                    frame = Image.blend(black, img_b, alpha)
+                    
+            elif transition_type == FFMPEG_CONSTANTS.TRANS_FADE_WHITE:
+                if t_smooth < 0.5:
+                    alpha = t_smooth * 2.0
+                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
+                    frame = Image.blend(img_a, white, alpha)
+                else:
+                    alpha = (t_smooth - 0.5) * 2.0
+                    white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
+                    frame = Image.blend(white, img_b, alpha)
+                    
             else:
                 frame = Image.blend(img_a, img_b, t_smooth)
             
@@ -360,18 +520,24 @@ def get_transition_type(scene_index, scene_transition=None, prev_transition_type
         transition_lower = scene_transition.lower().strip()
         if "none" in transition_lower or "cut" in transition_lower:
             return FFMPEG_CONSTANTS.TRANS_CUT
+        elif "fade" in transition_lower and "white" in transition_lower:
+            return FFMPEG_CONSTANTS.TRANS_FADE_WHITE
+        elif "fade" in transition_lower and "black" in transition_lower:
+            return FFMPEG_CONSTANTS.TRANS_FADE_BLACK
         elif "dissolve" in transition_lower or "cross" in transition_lower:
             return FFMPEG_CONSTANTS.TRANS_CROSS
         elif "blur" in transition_lower:
             return FFMPEG_CONSTANTS.TRANS_BLUR
-        elif "bright" in transition_lower or "white" in transition_lower:
+        elif "bright" in transition_lower:
             return FFMPEG_CONSTANTS.TRANS_BRIGHT
+        elif "white" in transition_lower:
+            return FFMPEG_CONSTANTS.TRANS_FADE_WHITE
         elif "zoom" in transition_lower:
             return FFMPEG_CONSTANTS.TRANS_ZOOM
         elif "slide" in transition_lower or "wipe" in transition_lower:
+            if "up" in transition_lower:
+                return FFMPEG_CONSTANTS.TRANS_SLIDE_UP
             return FFMPEG_CONSTANTS.TRANS_SLIDE
-        elif "fade" in transition_lower and "black" in transition_lower:
-            return FFMPEG_CONSTANTS.TRANS_FADE_BLACK
     
     random.seed()
     options = [
@@ -379,13 +545,16 @@ def get_transition_type(scene_index, scene_transition=None, prev_transition_type
         FFMPEG_CONSTANTS.TRANS_BLUR,
         FFMPEG_CONSTANTS.TRANS_BRIGHT,
         FFMPEG_CONSTANTS.TRANS_ZOOM,
-        FFMPEG_CONSTANTS.TRANS_SLIDE
+        FFMPEG_CONSTANTS.TRANS_SLIDE,
+        FFMPEG_CONSTANTS.TRANS_SLIDE_UP,
+        FFMPEG_CONSTANTS.TRANS_FADE_BLACK,
+        FFMPEG_CONSTANTS.TRANS_FADE_WHITE
     ]
     if prev_transition_type in options:
         options = [opt for opt in options if opt != prev_transition_type]
     return random.choice(options)
 
-def get_last_frame_from_scene(image_path, width, height, duration, fps, style_index):
+def get_last_frame_from_scene(image_path, width, height, duration, fps, style_index, effects_str):
     try:
         img = Image.open(image_path)
     except Exception:
@@ -405,9 +574,12 @@ def get_last_frame_from_scene(image_path, width, height, duration, fps, style_in
     
     x0, y0, x1, y1 = get_crop_coordinates(style, t_smooth, w_new, h_new, width, height)
     final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
+    
+    total_frames = int(duration * fps)
+    final = apply_visual_effects(final, effects_str, total_frames - 1, total_frames)
     return final
 
-def get_first_frame_from_scene(image_path, width, height, style_index):
+def get_first_frame_from_scene(image_path, width, height, style_index, effects_str):
     try:
         img = Image.open(image_path)
     except Exception:
@@ -426,6 +598,8 @@ def get_first_frame_from_scene(image_path, width, height, style_index):
     
     x0, y0, x1, y1 = get_crop_coordinates(style, t_smooth, w_new, h_new, width, height)
     final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
+    
+    final = apply_visual_effects(final, effects_str, 0, 100)
     return final
 
 def main():
@@ -563,14 +737,14 @@ def main():
             
             proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             
-            write_ken_burns_frames_to_pipe(imgPath, width, height, duration, fps, chosen_styles[i], proc)
+            write_ken_burns_frames_to_pipe(imgPath, width, height, duration, fps, chosen_styles[i], scenes[i].get("effects", ""), proc)
             
             if transition_dur > 0 and i < len(scenes) - 1:
                 transition_type = chosen_transitions[i]
                 
                 if transition_type != FFMPEG_CONSTANTS.TRANS_CUT:
-                    img_prev = get_last_frame_from_scene(imgPath, width, height, duration, fps, chosen_styles[i])
-                    img_next = get_first_frame_from_scene(scene_img_paths[i + 1], width, height, chosen_styles[i + 1])
+                    img_prev = get_last_frame_from_scene(imgPath, width, height, duration, fps, chosen_styles[i], scenes[i].get("effects", ""))
+                    img_next = get_first_frame_from_scene(scene_img_paths[i + 1], width, height, chosen_styles[i + 1], scenes[i + 1].get("effects", ""))
                     
                     generate_crossfade_frames(
                         img_prev, img_next,

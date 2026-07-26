@@ -518,10 +518,30 @@ The generated "prompt" field for each scene MUST strictly follow this exact stru
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
 
 [DYNAMIC MOTION, EFFECTS & TRANSITIONS]
-For each scene, specify:
+For each scene, analyze its context, emotional tone, and narrative pacing to specify:
 - cameraMotion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static).
-- effects: Lighting details matching style and mood.
-- transition: Options like Fade out to black, Dissolve, Wipe, Cross zoom, or None.
+- effects: Visual image filter/effect matching the scene's emotional tone. Select the most appropriate one from:
+  - "sad": For sad, gloomy, dark, melancholic scenes.
+  - "vintage": For historical, retro, old photo, sepia, memories.
+  - "dreamy": For magical, ethereal, glow, bloom, mystery, fantasy scenes.
+  - "glitch": For cyberpunk, intense action, high energy, shaking, digital distortion.
+  - "warm": For golden hour, sunny, bright, romantic, happy scenes.
+  - "cold": For winter, cold, snow, frosty, blue mood, calm scenes.
+  - "noir": For high contrast black and white, dramatic mystery, crime scenes.
+  - "horror": For spooky, scary, ghostly, foggy, misty horror scenes.
+  - "vhs": For vintage tv, analog noise, home video feel with scanline distortion.
+  - "neon": For neon lights, vibrant colors, cyberpunk, energetic glow.
+  - "none": If no special visual effect enhancement is needed.
+- transition: The transition to be applied at the end of this scene. Select from:
+  - "fade_black": Fade out to black. Good for transition to next segment, dramatic pause, ending.
+  - "fade_white": Fade out to white (bright flash). Good for dream sequence, flashback, explosion, shock.
+  - "cross_dissolve": Smooth fade dissolve. Good for slow-paced transitions.
+  - "blur_dissolve": Blurry smooth dissolve. Good for fantasy, memory transitions.
+  - "brightness_fade": High brightness transition. Good for daytime scenes.
+  - "zoom_transition": Dynamic zoom in/out transition. Good for fast-paced action.
+  - "slide_left": Horizontal wipe. Good for shifting locations.
+  - "slide_up": Vertical wipe.
+  - "cut": Direct instant cut. Good for fast pacing.
 
 Output must comply EXACTLY with this JSON schema (return only raw JSON, no markdown enclosing code blocks):
 {
@@ -530,8 +550,8 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "id": "scene_id_matching_input",
       "prompt": "Highly detailed image prompt in English (35-50 words) ending with --ar ${aspectRatio}.",
       "cameraMotion": "Zoom In",
-      "effects": "Lighting details matching style and mood",
-      "transition": "Fade out to black"
+      "effects": "dreamy",
+      "transition": "cross_dissolve"
     }
   ]
 }
