@@ -33,14 +33,20 @@ export enum FeatureType {
   VOICE = 'voice',
 }
 
-const _xor = (encodedHex: string): string => {
+const _decode = (encodedHex: string): string => {
   const key = 'vidify_secret_key_2026';
   try {
     let result = '';
     for (let i = 0; i < encodedHex.length; i += 2) {
       const byte = parseInt(encodedHex.substring(i, i + 2), 16);
       const keyChar = key.charCodeAt((i / 2) % key.length);
-      result += String.fromCharCode(byte ^ keyChar);
+      
+      let decryptedByte = byte ^ keyChar;
+      decryptedByte = (decryptedByte - (i / 2)) & 0xFF;
+      if (decryptedByte < 0) decryptedByte += 256;
+      decryptedByte = decryptedByte ^ 0x5A;
+      
+      result += String.fromCharCode(decryptedByte);
     }
     return result;
   } catch (e) {}
@@ -48,9 +54,9 @@ const _xor = (encodedHex: string): string => {
 };
 
 export const SecurityConstants = {
-  get ADMIN_APP_KEY() { return _xor('202c20202020003e243026202600202020006a696869475b57'); },
+  get ADMIN_APP_KEY() { return _decode('7a49447f4671546d46716a4f604d744b6a492626262cf716e5'); },
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
-  get GAS_API_URL() { return _xor('1e1d10191543705c1600000c042b45021630555c5718150609460b183c010a105d165b1e2003003c504a7975302e0d1d271a0b2a323b442e331c3b5736137e6a64591b5b20241f302a215c3920532d1226394c3c7f62500335515c2532113b233c342b5c171659522c26645e1d530e0c07'); },
+  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52666c5c482f0746fd1a374f080b445200fe1a0b350d439a7b7c003008ce2e1606c51b3bc6a10f00ebf518ce40b05bf3ffe3ef07f21935baefc3bf0bf529fde308fdaad099b9dbc1'); },
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
@@ -130,9 +136,51 @@ export const SecurityConstants = {
   SUBSTRING_LEN_32: 32,
   DOT: '.',
   LIMITS_PREFIX_LOWER: 'limits',
+  EMPTY_STRING: '',
+  API_VALIDATE_PATH: '/license/validate',
+  SUCCESS_KEY: 'success',
+  DATA_KEY: 'data',
+  DATA_STATUS_PATH: 'data.status',
+  PLACEHOLDER_0: '{0}',
+  PLACEHOLDER_1: '{1}',
+  PROP_PLAN_ID: 'plan_id',
+  PROP_STATUS: 'status',
+  PROP_EXPIRES_AT: 'expires_at',
+  PROP_QUOTA_TYPE: 'quota_type',
+  HASH_MARK: '#',
   STORE_PLAN_TYPE_KEY: 'planType',
   KEY_PREVIEW_LEN: 10,
   ELLIPSIS: '...',
+  ENV_INTERNAL_API_TOKEN: 'INTERNAL_API_TOKEN',
+  HEADER_INTERNAL_TOKEN: 'x-internal-token',
+  API_PREFIX: '/api',
+  ACCESS_DENIED_MESSAGE: 'Truy cập không hợp lệ.',
+  QUERY_TOKEN_KEY: 'token',
+  SESSION_TOKEN_KEY: 'internal_token',
+  QUERY_MARK: '?',
+  HTML_ROOT_ID: 'root',
+  API_LICENSE_ROUTE: '/api/license',
+  WILDCARD_ROUTE: '*',
+  LOG_SERVER_RUNNING: 'SERVER_RUNNING',
+  LOG_SERVER_START_ERROR: 'SERVER_START_ERROR',
+  LOG_PLAYWRIGHT_CLEANING: 'PLAYWRIGHT_CLEANING',
+  DOM_ID_APP_LOADING: 'app-loading',
+  CLASS_FADE_OUT: 'fade-out',
+  DELAY_FADE_OUT: 400,
+  INPUT_TYPE_TEXT: 'text' as const,
+  BUTTON_TYPE_SUBMIT: 'submit' as const,
+  BUTTON_TYPE_BUTTON: 'button' as const,
+  PROP_PLAN_TYPE: 'plan_type',
+  PROP_EMAIL: 'email',
+  BTN_VARIANT_SECONDARY: 'secondary' as const,
+  BTN_VARIANT_PRIMARY: 'primary' as const,
+  INPUT_TYPE_PASSWORD: 'password' as const,
+  LOG_ERROR_PARSING_SANDBOX_SETTINGS: 'ERROR_PARSING_SANDBOX_SETTINGS',
+  LOG_GENERAL_ERROR: 'GENERAL_ERROR',
+  BTN_VARIANT_GHOST: 'ghost' as const,
+  MODAL_WIDTH_MD: 'max-w-md',
+  HEADER_ACCEPT_LANGUAGE: 'accept-language',
+  LIMIT_500MB: '500mb',
 };
 
 export const LocalizationConstants = {
@@ -145,25 +193,29 @@ export const LocalizationConstants = {
 };
 
 export const SecurityMessages = {
-  MISSING_LICENSE_KEY: 'Không tìm thấy Mã Bản Quyền (License Key). Vui lòng kích hoạt lại.',
-  INVALID_OR_REVOKED_LICENSE: 'Tài khoản của bạn không hợp lệ hoặc đã bị khóa/hết hạn.',
-  QUOTA_EXCEEDED_TEMPLATE: 'Bạn đã đạt giới hạn tạo {0} cho {1} hôm nay.',
-  QUOTA_TOTAL_EXCEEDED: 'Tài khoản của bạn đã sử dụng hết giới hạn tạo {0} của gói {1}. Vui lòng nâng cấp hoặc mua thêm để tiếp tục!',
-  QUOTA_DAILY_EXCEEDED: 'Bạn đã sử dụng hết lượt tạo {0} hôm nay (Gói {1}). Vui lòng quay lại vào ngày mai hoặc nâng cấp tài khoản!',
-  INACTIVE_ACCOUNT_VIEW_ONLY: 'Tài khoản của bạn đã bị khóa hoặc hết hạn. Bạn chỉ có thể xem các dự án cũ.',
+  MISSING_LICENSE_KEY: 'Vui lòng kích hoạt mã bản quyền để sử dụng ứng dụng.',
+  INVALID_OR_REVOKED_LICENSE: 'Mã bản quyền của bạn không hợp lệ, đã bị khóa hoặc hết hạn.',
+  QUOTA_EXCEEDED_TEMPLATE: 'Bạn đã dùng hết lượt tạo {0} của gói {1} hôm nay.',
+  QUOTA_TOTAL_EXCEEDED: 'Bạn đã dùng hết tổng số lượt tạo {0} của gói {1}. Vui lòng nâng cấp gói để tiếp tục!',
+  QUOTA_DAILY_EXCEEDED: 'Bạn đã dùng hết lượt tạo {0} hôm nay của gói {1}. Vui lòng quay lại vào ngày mai hoặc nâng cấp tài khoản!',
+  INACTIVE_ACCOUNT_VIEW_ONLY: 'Phiên bản bản quyền đã hết hạn hoặc bị tạm khóa. Bạn chỉ có thể xem các dự án cũ.',
   PRO_PLAN: 'Gói Trả Phí (PRO)',
   FREE_PLAN: 'Gói Miễn Phí (FREE)',
-  INTERNAL_SERVER_ERROR: 'Lỗi hệ thống máy chủ, vui lòng thử lại sau.',
-  INVALID_TOKEN: 'Mã xác thực không hợp lệ',
-  LICENSE_VALIDATION_ERROR: 'Lỗi xác thực bản quyền:',
-  FAILED_TO_CONNECT: 'Không thể kết nối đến Máy chủ Bản quyền:',
-  USAGE_UPDATE_ERROR: 'Lỗi cập nhật số lượt sử dụng:',
-  FAILED_TO_UPDATE_USAGE: 'Không thể cập nhật số lượt sử dụng:',
-  ERROR_READING_DEVICE_ID: 'Lỗi khi đọc file device_id.json',
+  INTERNAL_SERVER_ERROR: 'Đã xảy ra sự cố trên hệ thống. Vui lòng quay lại sau.',
+  INVALID_TOKEN: 'Xác thực không hợp lệ',
+  LICENSE_VALIDATION_ERROR: 'Không thể xác thực bản quyền:',
+  FAILED_TO_CONNECT: 'Kết nối thất bại:',
+  USAGE_UPDATE_ERROR: 'Không thể lưu lượt sử dụng:',
+  FAILED_TO_UPDATE_USAGE: 'Không thể lưu lượt sử dụng:',
+  ERROR_READING_DEVICE_ID: 'Không thể nhận diện thiết bị.',
   ACTIVATING_MESSAGE: 'Đang kiểm tra bản quyền...',
   ACTIVATION_TITLE: 'Kích Hoạt Bản Quyền',
   ACTIVATION_SUBTITLE: 'Vui lòng nhập License Key để sử dụng Vidify',
+  ACTIVATION_SUBTITLE_SHORT: 'Nhập mã License',
+  ACTIVATION_SUBTITLE_TOOLTIP: 'Vui lòng nhập License Key để sử dụng Vidify',
   INPUT_PLACEHOLDER: 'Nhập License Key (VD: PRO-123...)',
+  INPUT_PLACEHOLDER_SHORT: 'Nhập License Key...',
+  INPUT_PLACEHOLDER_TOOLTIP: 'Nhập License Key (VD: PRO-123...)',
   ACTIVATION_ERROR_MSG: 'Mã kích hoạt không hợp lệ, hoặc thiết bị bị từ chối.',
   ACTIVATION_SUCCESS_MSG: 'Kích hoạt thành công!',
   ACTIVATING_BUTTON: 'Đang kích hoạt...',
@@ -186,14 +238,26 @@ export const SecurityMessages = {
   MARK_ACCOUNT_ERROR: 'Đăng nhập thất bại, đánh dấu tài khoản bị lỗi: ',
   ROTATION_ERROR: 'Lỗi trong quá trình xoay vòng tài khoản',
   REVOKED_STATUS: 'Tài khoản bị khóa (Chỉ xem)',
+  REVOKED_STATUS_SHORT: 'Bản quyền bị khóa',
   EXPIRED_STATUS: 'Tài khoản hết hạn (Chỉ xem)',
+  EXPIRED_STATUS_SHORT: 'Bản quyền hết hạn',
   LICENSE_CHECK_ERROR: 'Lỗi kiểm tra bản quyền:',
   LICENSE_CONTEXT_ERROR: 'useLicense must be used within a LicenseProvider',
   MISSING_GEMINI_KEY: 'Chưa có Gemini API Key! Vui lòng nhập Key cá nhân hoặc cấu hình Key Admin trên Google Sheets.',
   MISSING_AI33_KEY: 'Chưa có AI33 API Key! Vui lòng nhập Key cá nhân hoặc cấu hình Key Admin trên Google Sheets.',
   LOG_USING_ADMIN_GEMINI_KEY: '[APIKEY_RESOLVER] Using Admin Gemini Key from Google Sheets',
   LOG_USING_ADMIN_AI33_KEY: '[APIKEY_RESOLVER] Using Admin AI33 Key from Google Sheets',
-  LOG_RESOLVER_ERROR: '[APIKEY_RESOLVER] Failed to fetch Admin API Keys from Google Sheets'
+  LOG_RESOLVER_ERROR: '[APIKEY_RESOLVER] Failed to fetch Admin API Keys from Google Sheets',
+  LOGOUT_LABEL_SHORT: 'Đổi mã Key',
+  LOGOUT_LABEL_TOOLTIP: 'Đăng xuất để nhập License Key mới',
+  PLACEHOLDER_ZIP_SHORT: 'Đường dẫn ZIP...',
+  PLACEHOLDER_ZIP_TOOLTIP: 'Đường dẫn thư mục hoặc File ZIP...',
+  AUTO_GET_MEDIA_SHORT: 'Tự động lấy Media',
+  AUTO_GET_MEDIA_TOOLTIP: 'Tự động lấy ảnh và giọng nói từ dự án hiện tại.',
+  LABEL_EXPORT_VIDEO_SHORT: 'Tự động xuất video',
+  LABEL_EXPORT_VIDEO_TOOLTIP: 'Tự động xuất video sau khi tạo xong',
+  PLACEHOLDER_VIDEO_OUTPUT_DIR_SHORT: 'Đường dẫn lưu video...',
+  PLACEHOLDER_VIDEO_OUTPUT_DIR_TOOLTIP: 'Đường dẫn thư mục lưu video...',
 };
 
 export const AutoLoginConstants = {

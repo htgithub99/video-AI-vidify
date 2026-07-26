@@ -95,34 +95,38 @@ const Constants = {
   COLOR_CONFIG: "#e0e7ff",
   COLOR_USERS: "#dcfce7",
   COLOR_USAGE: "#fef3c7",
-  NEW_PLAN_NAME: "New Plan"
+  NEW_PLAN_NAME: "New Plan",
+  ZERO: 0,
+  DEFAULT_AMOUNT: 1
 };
 
 const Messages = {
-  MISSING_KEY: "Thiếu License Key",
-  MISSING_DEVICE: "Thiếu Device ID",
-  KEY_NOT_FOUND: "License Key không tồn tại",
-  KEY_REVOKED: "License Key đã bị khóa hoặc không hoạt động",
-  DEVICE_LIMIT: "Đã vượt quá số lượng thiết bị cho phép",
-  INVALID_ACTION: "Hành động không hợp lệ",
-  SERVER_ERROR: "Lỗi hệ thống",
+  MISSING_KEY: "Vui lòng cung cấp mã kích hoạt.",
+  MISSING_DEVICE: "Không tìm thấy thông tin nhận diện thiết bị.",
+  KEY_NOT_FOUND: "Mã kích hoạt không hợp lệ.",
+  KEY_REVOKED: "Mã kích hoạt đã bị khóa hoặc hết hạn.",
+  DEVICE_LIMIT: "Mã kích hoạt đã đạt giới hạn thiết bị tối đa.",
+  INVALID_ACTION: "Yêu cầu không được hỗ trợ.",
+  SERVER_ERROR: "Đã xảy ra sự cố trên hệ thống. Vui lòng quay lại sau.",
   RES_SUCCESS: "success",
   OPTIONS_OK: "OK",
-  GET_RUNNING: "Google Apps Script Server đang chạy bình thường",
-  MISSING_ID: "Thiếu ID",
-  MISSING_CREDENTIALS: "Thiếu tên đăng nhập hoặc mật khẩu",
-  INVALID_CREDENTIALS: "Tên đăng nhập hoặc mật khẩu không đúng",
-  SHEET_NOT_FOUND: "Không tìm thấy Sheet",
-  PLAN_NOT_FOUND: "Không tìm thấy Gói cước",
-  SUCCESS_CREATED: "Tạo mới thành công",
-  SUCCESS_UPDATED: "Cập nhật thành công",
-  SUCCESS_DELETED: "Xóa thành công",
-  SUCCESS_REVOKED: "Khóa thành công",
-  SUCCESS_RESET: "Reset thiết bị thành công",
-  SEED_SUCCESS: "Đã tạo bảng tính và dữ liệu mẫu thành công!",
-  MISSING_ACCOUNT_INFO: "Thiếu thông tin tài khoản",
-  ACCOUNT_NOT_FOUND: "Không tìm thấy tài khoản",
-  INVALID_ADMIN_KEY: "Xác thực Admin thất bại"
+  GET_RUNNING: "Hệ thống máy chủ hoạt động ổn định.",
+  MISSING_ID: "Không tìm thấy thông tin định danh.",
+  MISSING_CREDENTIALS: "Vui lòng nhập tài khoản và mật khẩu.",
+  INVALID_CREDENTIALS: "Tài khoản hoặc mật khẩu không chính xác.",
+  SHEET_NOT_FOUND: "Không thể kết nối đến cơ sở lưu trữ.",
+  PLAN_NOT_FOUND: "Gói tài khoản không tồn tại.",
+  SUCCESS_CREATED: "Khởi tạo thành công.",
+  SUCCESS_UPDATED: "Lưu thay đổi thành công.",
+  SUCCESS_DELETED: "Đã gỡ bỏ dữ liệu.",
+  SUCCESS_REVOKED: "Đã khóa bản quyền thành công.",
+  SUCCESS_RESET: "Đã đặt lại danh sách thiết bị thành công.",
+  SEED_SUCCESS: "Khởi tạo dữ liệu hệ thống thành công.",
+  MISSING_ACCOUNT_INFO: "Thông tin tài khoản không đầy đủ.",
+  ACCOUNT_NOT_FOUND: "Tài khoản không tồn tại trên hệ thống.",
+  INVALID_ADMIN_KEY: "Xác thực tài khoản thất bại.",
+  INVALID_LICENSE_ERR: "Mã bản quyền không chính xác hoặc đã bị tạm khóa.",
+  INVALID_AMOUNT_ERR: "Lượt yêu cầu sử dụng không hợp lệ."
 };
 
 const ApiFields = {
@@ -203,14 +207,14 @@ function getCurrentISO() {
 }
 
 function validateClientLicense(licenseKey) {
-  if (!licenseKey) return false;
+  if (_.isEmpty(licenseKey)) return false;
   const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
   if (!usersSheet) return false;
   const data = usersSheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.LICENSE_KEY] === licenseKey);
+  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && _.isEqual(row[UserCols.LICENSE_KEY], licenseKey));
   if (rowIndex > 0) {
     const status = data[rowIndex][UserCols.STATUS];
-    return status === StatusEnum.ACTIVE;
+    return _.isEqual(status, StatusEnum.ACTIVE);
   }
   return false;
 }
@@ -255,17 +259,15 @@ function doPost(e) {
 
     if (action === AppActions.VERIFY_KEY) return verifyKey(params);
 
-    // Xác thực License Key của Client cho mọi hành động nhạy cảm còn lại
     const licenseKey = _.get(params, ApiFields.LICENSE_KEY);
     if (!validateClientLicense(licenseKey)) {
-      return jsonResponse({ error: "License Key không hợp lệ hoặc đã bị khóa.", code: HttpCode.FORBIDDEN });
+      return jsonResponse({ error: Messages.INVALID_LICENSE_ERR, code: HttpCode.FORBIDDEN });
     }
 
     if (action === AppActions.UPDATE_USAGE) {
-      // Xác thực số lượng sử dụng phải lớn hơn 0
-      const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || 1;
-      if (amount <= 0) {
-        return jsonResponse({ error: "Số lượng sử dụng không hợp lệ.", code: HttpCode.BAD_REQUEST });
+      const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || Constants.DEFAULT_AMOUNT;
+      if (amount <= Constants.ZERO) {
+        return jsonResponse({ error: Messages.INVALID_AMOUNT_ERR, code: HttpCode.BAD_REQUEST });
       }
       return updateUsage(params);
     }

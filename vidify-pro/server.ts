@@ -14,6 +14,7 @@ import { requireLicense } from "./src/server/middlewares/requireLicense.js";
 import { API_ROUTES } from "./src/constants/apiRoutes.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
+import { SecurityConstants } from "./src/constants/security.js";
 
 const SERVER_CONFIG = {
   PORT: 3002,
@@ -35,7 +36,8 @@ const SERVER_CONFIG = {
     "x-api-key",
     "x-gemini-api-key",
     "x-ai33-api-key",
-    "x-license-key"
+    SecurityConstants.HEADER_LICENSE_KEY,
+    SecurityConstants.HEADER_INTERNAL_TOKEN
   ],
   LIMIT_500MB: "500mb",
   HEADER_GEMINI_KEY: "x-gemini-api-key",
@@ -58,14 +60,13 @@ app.use(
 app.use(express.json({ limit: SERVER_CONFIG.LIMIT_500MB }));
 app.use(express.urlencoded({ limit: SERVER_CONFIG.LIMIT_500MB, extended: true }));
 
-// Middleware kiểm tra Security Token bảo vệ API khỏi trình duyệt ngoài
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    const serverToken = process.env.INTERNAL_API_TOKEN;
+  if (_.startsWith(req.path, SecurityConstants.API_PREFIX)) {
+    const serverToken = process.env[SecurityConstants.ENV_INTERNAL_API_TOKEN];
     if (serverToken) {
-      const clientToken = req.headers["x-internal-token"];
-      if (clientToken !== serverToken) {
-        return res.status(403).json({ error: "Access denied. Invalid internal token." });
+      const clientToken = _.get(req.headers, SecurityConstants.HEADER_INTERNAL_TOKEN);
+      if (!_.isEqual(clientToken, serverToken)) {
+        return res.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: SecurityConstants.ACCESS_DENIED_MESSAGE });
       }
     }
   }
@@ -73,15 +74,14 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || "";
-  const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || "";
+  const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || SecurityConstants.EMPTY_STRING;
+  const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || SecurityConstants.EMPTY_STRING;
   requestContext.run({ geminiKey, ai33Key }, next);
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
-app.use('/api/license', licenseRouter); // Bỏ qua license check cho route /api/license
+app.use(SecurityConstants.API_LICENSE_ROUTE, licenseRouter);
 
-// Bảo vệ toàn bộ API còn lại
 app.use(API_ROUTES.BASE_API, requireLicense(), mainRouter);
 app.use(API_ROUTES.PIPELINE, requireLicense(), pipelineRouter);
 
@@ -98,22 +98,22 @@ const startServer = async () => {
   } else {
     const distPath = __dirname;
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get(SecurityConstants.WILDCARD_ROUTE, (req, res) => {
       res.sendFile(path.join(distPath, SERVER_CONFIG.INDEX_FILE));
     });
   }
 
   app.listen(SERVER_CONFIG.PORT, SERVER_CONFIG.HOST, () => {
-    logger.log("SERVER_RUNNING", SERVER_CONFIG.PORT);
+    logger.log(SecurityConstants.LOG_SERVER_RUNNING, SERVER_CONFIG.PORT);
   });
 };
 
 startServer().catch((error) => {
-  logger.error("SERVER_START_ERROR", error);
+  logger.error(SecurityConstants.LOG_SERVER_START_ERROR, error);
 });
 
 const shutdownGracefully = async () => {
-  logger.log("PLAYWRIGHT_CLEANING");
+  logger.log(SecurityConstants.LOG_PLAYWRIGHT_CLEANING);
   setTimeout(() => process.exit(0), SERVER_CONFIG.TIMEOUT_SHUTDOWN);
   try {
     await closePlaywright();

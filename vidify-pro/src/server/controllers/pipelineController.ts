@@ -1555,9 +1555,9 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const audioBase64 = buffer.toString(FileEncoding.BASE64 as any);
-    const mimeType = audioRes.headers.get("content-type") || MimeType.MPEG;
+    const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
-    await incrementFeatureUsage(req, FeatureType.VOICE, 1);
+    await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
 
     res.json({
       success: true,
@@ -1592,7 +1592,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
     });
 
     if (result && result.success) {
-      await incrementFeatureUsage(req, FeatureType.IMAGE, 1);
+      await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
     }
 
     return res.json(result);

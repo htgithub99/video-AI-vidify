@@ -4,39 +4,40 @@ import App from "./App.tsx";
 import "./index.css";
 import { LicenseProvider } from "./contexts/LicenseContext.tsx";
 import { LicenseActivation } from "./components/LicenseActivation.tsx";
+import { SecurityConstants } from "./constants/security";
+import _ from "lodash";
 
-// Đọc và lưu trữ Security Token từ URL, sau đó làm sạch thanh địa chỉ
 const urlParams = new URLSearchParams(window.location.search);
-const tokenFromUrl = urlParams.get("token");
+const tokenFromUrl = urlParams.get(SecurityConstants.QUERY_TOKEN_KEY);
 if (tokenFromUrl) {
-  sessionStorage.setItem("internal_token", tokenFromUrl);
-  urlParams.delete("token");
+  sessionStorage.setItem(SecurityConstants.SESSION_TOKEN_KEY, tokenFromUrl);
+  urlParams.delete(SecurityConstants.QUERY_TOKEN_KEY);
   const newSearch = urlParams.toString();
-  const newPath = window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+  const queryPart = newSearch ? _.join([SecurityConstants.QUERY_MARK, newSearch], SecurityConstants.EMPTY_STRING) : SecurityConstants.EMPTY_STRING;
+  const newPath = _.join([window.location.pathname, queryPart, window.location.hash], SecurityConstants.EMPTY_STRING);
   window.history.replaceState({}, document.title, newPath);
 }
 
-// Ghi đè fetch toàn cục để luôn gửi x-license-key và x-internal-token
 const originalFetch = window.fetch;
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const licenseKey = localStorage.getItem('vidify_license_key');
-  const internalToken = sessionStorage.getItem('internal_token');
+  const licenseKey = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+  const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
   
-  init = init || {};
-  const headers = { ...(init.headers || {}) } as Record<string, string>;
+  const requestInit = init || {};
+  const headers = { ...(requestInit.headers || {}) } as Record<string, string>;
 
   if (licenseKey) {
-    headers['x-license-key'] = licenseKey;
+    _.set(headers, SecurityConstants.HEADER_LICENSE_KEY, licenseKey);
   }
   if (internalToken) {
-    headers['x-internal-token'] = internalToken;
+    _.set(headers, SecurityConstants.HEADER_INTERNAL_TOKEN, internalToken);
   }
 
-  init.headers = headers;
-  return originalFetch(input, init);
+  requestInit.headers = headers;
+  return originalFetch(input, requestInit);
 };
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById(SecurityConstants.HTML_ROOT_ID) as HTMLElement).render(
   <React.StrictMode>
     <LicenseProvider>
       <LicenseActivation>

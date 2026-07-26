@@ -27,6 +27,15 @@ const APP_CONFIG = {
   UNHANDLED_REJECTION: "unhandledRejection",
   SPACE: " ",
   NEWLINE: "\n",
+  ENV_INTERNAL_API_TOKEN: "INTERNAL_API_TOKEN",
+  SERVER_JSC_FILE: "../dist/server.jsc",
+  QUERY_TOKEN_PREFIX: "?token=",
+  DEVTOOLS_OPENED_EVENT: "devtools-opened",
+  BEFORE_INPUT_EVENT: "before-input-event",
+  ZERO: 0,
+  PARENT_DIR: "..",
+  PATH_ENV: "PATH",
+  BOOLEAN_FALSE: false,
 };
 
 const MESSAGES = {
@@ -45,6 +54,9 @@ const MESSAGES = {
   UNCAUGHT_ERR: "Uncaught Exception:",
   UNHANDLED_REJECT: "Unhandled Rejection at:",
   REASON: "reason:",
+  LOG_SERVER_JSC: "Loading Express server from V8 Bytecode (dist/server.jsc)...",
+  LOG_SERVER_CJS: "Loading Express server from dist/server.cjs...",
+  LOG_SERVER_DEV: "No server.jsc or server.cjs found. Assuming server is running independently in development.",
 };
 
 const PLATFORMS = {
@@ -61,10 +73,21 @@ const ENV_VALUES = {
   TRUE: "true",
 };
 
+const KEYS = {
+  F12: "F12",
+  I_UPPER: "I",
+  I_LOWER: "i",
+  J_UPPER: "J",
+  J_LOWER: "j",
+  C_UPPER: "C",
+  C_LOWER: "c",
+};
+
 module.exports = {
   APP_CONFIG,
   MESSAGES,
   PLATFORMS,
   COMMANDS,
   ENV_VALUES,
+  KEYS,
 };

@@ -95,6 +95,7 @@ import {
   MimeType,
   TEMPLATE_TMP_CONTENT,
   FFMPEG_CONFIG,
+  COMMON_STRINGS,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog, createAppError, appError } from "../../lib/logger.js";
@@ -1557,9 +1558,9 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const audioBase64 = buffer.toString(FileEncoding.BASE64 as any);
-    const mimeType = audioRes.headers.get("content-type") || MimeType.MPEG;
+    const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
-    await incrementFeatureUsage(req, FeatureType.VOICE, 1);
+    await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
 
     res.json({
       success: true,
@@ -1594,7 +1595,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
     });
 
     if (result && result.success) {
-      await incrementFeatureUsage(req, FeatureType.IMAGE, 1);
+      await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
     }
 
     return res.json(result);
@@ -2471,7 +2472,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   }
 });
 
-router.post("/ffmpeg-render", express.json({ limit: "500mb" }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
+router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
     const { scenes, globalAudioUrl, quality } = req.body;
     const outputUrl = await renderFFmpegVideo({
@@ -2479,10 +2480,10 @@ router.post("/ffmpeg-render", express.json({ limit: "500mb" }), requireLicense(F
       globalAudioUrl,
       quality: quality as VideoQuality
     });
-    await incrementFeatureUsage(req, FeatureType.VIDEO, 1);
+    await incrementFeatureUsage(req, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
     res.json({ success: true, url: outputUrl });
   } catch (error: any) {
-    const isVi = req.headers["accept-language"]?.includes("vi");
+    const isVi = req.headers[SecurityConstants.HEADER_ACCEPT_LANGUAGE]?.includes(COMMON_STRINGS.VI);
     logger.error(getBackendMsg("FFMPEG_RENDER_ERROR", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }

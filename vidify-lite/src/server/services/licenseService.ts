@@ -8,7 +8,7 @@ import { appError } from '../../lib/logger.js';
 import { machineIdSync } from 'node-machine-id';
 
 function getHardwareId(): string {
-    let rawId = '';
+    let rawId = SecurityConstants.EMPTY_STRING;
     try {
         rawId = machineIdSync(true);
     } catch (e) {

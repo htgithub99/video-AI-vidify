@@ -3,7 +3,11 @@ const path = require("path");
 const fs = require("fs");
 const _ = require("lodash");
 const { exec } = require("child_process");
-const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES } = require("./config.cjs");
+const crypto = require("crypto");
+const bytenode = require("bytenode");
+const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES, KEYS } = require("./config.cjs");
+
+process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN] = crypto.randomUUID();
 
 const userDataPath = app.getPath(APP_CONFIG.USER_DATA);
 process.env[APP_CONFIG.ENV_APP_DATA_DIR] = userDataPath;
@@ -11,7 +15,7 @@ process.env[APP_CONFIG.ENV_ELECTRON_RUNNING] = ENV_VALUES.TRUE;
 process.env[APP_CONFIG.ENV_NODE_ENV] = APP_CONFIG.PRODUCTION;
 
 if (app.isPackaged) {
-  process.env.PATH = `${process.resourcesPath}${path.delimiter}${process.env.PATH}`;
+  process.env[APP_CONFIG.PATH_ENV] = `${process.resourcesPath}${path.delimiter}${process.env[APP_CONFIG.PATH_ENV]}`;
 }
 
 let mainWindow = null;
@@ -57,8 +61,8 @@ function setupInitialDatabase() {
   const dataDir = path.join(userDataPath, APP_CONFIG.DATA_DIR);
   const destDbPath = path.join(dataDir, APP_CONFIG.DB_NAME);
   
-  const isDev = _.isEqual(app.isPackaged, false);
-  const rootPath = isDev ? path.join(__dirname, "..") : process.resourcesPath;
+  const isDev = _.isEqual(app.isPackaged, APP_CONFIG.BOOLEAN_FALSE);
+  const rootPath = isDev ? path.join(__dirname, APP_CONFIG.PARENT_DIR) : process.resourcesPath;
   const srcDbPath = path.join(rootPath, APP_CONFIG.DB_NAME);
 
   if (_.every([destDbPath], isFileMissing)) {
@@ -82,7 +86,20 @@ function startBackendServer() {
   try {
     setupInitialDatabase();
     appLog(MESSAGES.LOG_STARTING);
-    require(APP_CONFIG.SERVER_FILE);
+    
+    const serverJscPath = path.join(__dirname, APP_CONFIG.SERVER_JSC_FILE);
+    const serverCjsPath = path.join(__dirname, APP_CONFIG.SERVER_FILE);
+
+    if (fs.existsSync(serverJscPath)) {
+      appLog(MESSAGES.LOG_SERVER_JSC);
+      require(serverJscPath);
+    } else if (fs.existsSync(serverCjsPath)) {
+      appLog(MESSAGES.LOG_SERVER_CJS);
+      require(serverCjsPath);
+    } else {
+      appLog(MESSAGES.LOG_SERVER_DEV);
+    }
+    
     serverStarted = true;
   } catch (error) {
     appLogError(MESSAGES.START_SERVER_ERR, error);
@@ -114,7 +131,8 @@ function startChromeBrowser() {
 function handleLoadError(err) {
   appLog(MESSAGES.RETRY_MSG, err.message);
   setTimeout(() => {
-    mainWindow.loadURL(APP_CONFIG.HOST_URL).catch(() => {
+    const hostUrlWithToken = _.join([APP_CONFIG.HOST_URL, APP_CONFIG.QUERY_TOKEN_PREFIX, process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN]], '');
+    mainWindow.loadURL(hostUrlWithToken).catch(() => {
       dialog.showErrorBox(MESSAGES.CONNECT_FAIL_TITLE, MESSAGES.CONNECT_FAIL_MSG);
     });
   }, APP_CONFIG.TIMEOUT_RETRY);
@@ -134,8 +152,28 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
 
+  if (_.some([app.isPackaged, _.isEqual(process.env[APP_CONFIG.ENV_NODE_ENV], APP_CONFIG.PRODUCTION)], Boolean)) {
+    mainWindow.webContents.on(APP_CONFIG.DEVTOOLS_OPENED_EVENT, () => {
+      mainWindow.webContents.closeDevTools();
+    });
+    mainWindow.webContents.on(APP_CONFIG.BEFORE_INPUT_EVENT, (event, input) => {
+      const isShortCutKey = _.includes([
+        KEYS.I_UPPER,
+        KEYS.I_LOWER,
+        KEYS.J_UPPER,
+        KEYS.J_LOWER,
+        KEYS.C_UPPER,
+        KEYS.C_LOWER
+      ], input.key);
+      if (_.isEqual(input.key, KEYS.F12) || _.every([input.control, input.shift, isShortCutKey], Boolean)) {
+        event.preventDefault();
+      }
+    });
+  }
+
   setTimeout(() => {
-    mainWindow.loadURL(APP_CONFIG.HOST_URL).catch(handleLoadError);
+    const hostUrlWithToken = _.join([APP_CONFIG.HOST_URL, APP_CONFIG.QUERY_TOKEN_PREFIX, process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN]], '');
+    mainWindow.loadURL(hostUrlWithToken).catch(handleLoadError);
   }, APP_CONFIG.TIMEOUT_BOOT);
 
   mainWindow.on(APP_CONFIG.CLOSED, () => {
@@ -154,7 +192,7 @@ function handleSecondInstance() {
 
 function handleActivate() {
   const allWindows = BrowserWindow.getAllWindows();
-  if (_.isEqual(allWindows.length, 0)) {
+  if (_.isEqual(allWindows.length, APP_CONFIG.ZERO)) {
     createWindow();
   }
 }
@@ -178,7 +216,7 @@ function handleWindowAllClosed() {
 const lockData = { myKey: APP_CONFIG.SINGLE_INSTANCE_KEY };
 const hasLock = app.requestSingleInstanceLock(lockData);
 
-if (_.isEqual(hasLock, false)) {
+if (_.isEqual(hasLock, APP_CONFIG.BOOLEAN_FALSE)) {
   app.quit();
 } else {
   app.on(APP_CONFIG.SECOND_INSTANCE, handleSecondInstance);

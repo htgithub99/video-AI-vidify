@@ -5,10 +5,9 @@ const _ = require("lodash");
 const { exec } = require("child_process");
 const crypto = require("crypto");
 const bytenode = require("bytenode");
-const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES } = require("./config.cjs");
+const { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES, KEYS } = require("./config.cjs");
 
-// Sinh Internal Security Token cho local server
-process.env.INTERNAL_API_TOKEN = crypto.randomUUID();
+process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN] = crypto.randomUUID();
 
 const userDataPath = app.getPath(APP_CONFIG.USER_DATA);
 process.env[APP_CONFIG.ENV_APP_DATA_DIR] = userDataPath;
@@ -16,7 +15,7 @@ process.env[APP_CONFIG.ENV_ELECTRON_RUNNING] = ENV_VALUES.TRUE;
 process.env[APP_CONFIG.ENV_NODE_ENV] = APP_CONFIG.PRODUCTION;
 
 if (app.isPackaged) {
-  process.env.PATH = `${process.resourcesPath}${path.delimiter}${process.env.PATH}`;
+  process.env[APP_CONFIG.PATH_ENV] = `${process.resourcesPath}${path.delimiter}${process.env[APP_CONFIG.PATH_ENV]}`;
 }
 
 let mainWindow = null;
@@ -62,8 +61,8 @@ function setupInitialDatabase() {
   const dataDir = path.join(userDataPath, APP_CONFIG.DATA_DIR);
   const destDbPath = path.join(dataDir, APP_CONFIG.DB_NAME);
   
-  const isDev = _.isEqual(app.isPackaged, false);
-  const rootPath = isDev ? path.join(__dirname, "..") : process.resourcesPath;
+  const isDev = _.isEqual(app.isPackaged, APP_CONFIG.BOOLEAN_FALSE);
+  const rootPath = isDev ? path.join(__dirname, APP_CONFIG.PARENT_DIR) : process.resourcesPath;
   const srcDbPath = path.join(rootPath, APP_CONFIG.DB_NAME);
 
   if (_.every([destDbPath], isFileMissing)) {
@@ -88,17 +87,17 @@ function startBackendServer() {
     setupInitialDatabase();
     appLog(MESSAGES.LOG_STARTING);
     
-    const serverJscPath = path.join(__dirname, "../dist/server.jsc");
-    const serverCjsPath = path.join(__dirname, "../dist/server.cjs");
+    const serverJscPath = path.join(__dirname, APP_CONFIG.SERVER_JSC_FILE);
+    const serverCjsPath = path.join(__dirname, APP_CONFIG.SERVER_FILE);
 
     if (fs.existsSync(serverJscPath)) {
-      appLog("Loading Express server from V8 Bytecode (dist/server.jsc)...");
+      appLog(MESSAGES.LOG_SERVER_JSC);
       require(serverJscPath);
     } else if (fs.existsSync(serverCjsPath)) {
-      appLog("Loading Express server from dist/server.cjs...");
+      appLog(MESSAGES.LOG_SERVER_CJS);
       require(serverCjsPath);
     } else {
-      appLog("No server.jsc or server.cjs found. Assuming server is running independently in development.");
+      appLog(MESSAGES.LOG_SERVER_DEV);
     }
     
     serverStarted = true;
@@ -132,7 +131,7 @@ function startChromeBrowser() {
 function handleLoadError(err) {
   appLog(MESSAGES.RETRY_MSG, err.message);
   setTimeout(() => {
-    const hostUrlWithToken = `${APP_CONFIG.HOST_URL}?token=${process.env.INTERNAL_API_TOKEN}`;
+    const hostUrlWithToken = _.join([APP_CONFIG.HOST_URL, APP_CONFIG.QUERY_TOKEN_PREFIX, process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN]], '');
     mainWindow.loadURL(hostUrlWithToken).catch(() => {
       dialog.showErrorBox(MESSAGES.CONNECT_FAIL_TITLE, MESSAGES.CONNECT_FAIL_MSG);
     });
@@ -153,19 +152,27 @@ function createWindow() {
 
   mainWindow.setMenuBarVisibility(false);
 
-  if (app.isPackaged || process.env.NODE_ENV === 'production') {
-    mainWindow.webContents.on('devtools-opened', () => {
+  if (_.some([app.isPackaged, _.isEqual(process.env[APP_CONFIG.ENV_NODE_ENV], APP_CONFIG.PRODUCTION)], Boolean)) {
+    mainWindow.webContents.on(APP_CONFIG.DEVTOOLS_OPENED_EVENT, () => {
       mainWindow.webContents.closeDevTools();
     });
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-      if (input.key === 'F12' || (input.control && input.shift && (input.key === 'I' || input.key === 'i' || input.key === 'J' || input.key === 'j' || input.key === 'C' || input.key === 'c'))) {
+    mainWindow.webContents.on(APP_CONFIG.BEFORE_INPUT_EVENT, (event, input) => {
+      const isShortCutKey = _.includes([
+        KEYS.I_UPPER,
+        KEYS.I_LOWER,
+        KEYS.J_UPPER,
+        KEYS.J_LOWER,
+        KEYS.C_UPPER,
+        KEYS.C_LOWER
+      ], input.key);
+      if (_.isEqual(input.key, KEYS.F12) || _.every([input.control, input.shift, isShortCutKey], Boolean)) {
         event.preventDefault();
       }
     });
   }
 
   setTimeout(() => {
-    const hostUrlWithToken = `${APP_CONFIG.HOST_URL}?token=${process.env.INTERNAL_API_TOKEN}`;
+    const hostUrlWithToken = _.join([APP_CONFIG.HOST_URL, APP_CONFIG.QUERY_TOKEN_PREFIX, process.env[APP_CONFIG.ENV_INTERNAL_API_TOKEN]], '');
     mainWindow.loadURL(hostUrlWithToken).catch(handleLoadError);
   }, APP_CONFIG.TIMEOUT_BOOT);
 
@@ -185,7 +192,7 @@ function handleSecondInstance() {
 
 function handleActivate() {
   const allWindows = BrowserWindow.getAllWindows();
-  if (_.isEqual(allWindows.length, 0)) {
+  if (_.isEqual(allWindows.length, APP_CONFIG.ZERO)) {
     createWindow();
   }
 }
@@ -209,7 +216,7 @@ function handleWindowAllClosed() {
 const lockData = { myKey: APP_CONFIG.SINGLE_INSTANCE_KEY };
 const hasLock = app.requestSingleInstanceLock(lockData);
 
-if (_.isEqual(hasLock, false)) {
+if (_.isEqual(hasLock, APP_CONFIG.BOOLEAN_FALSE)) {
   app.quit();
 } else {
   app.on(APP_CONFIG.SECOND_INSTANCE, handleSecondInstance);

@@ -58,7 +58,7 @@ export const requireLicense = (featureType?: FeatureType) => {
                 return next();
             }
 
-            const currentUsage = _.get(license, _.join([SecurityConstants.USAGE_PREFIX, featureType], ''), SecurityConstants.ZERO);
+            const currentUsage = _.get(license, _.join([SecurityConstants.USAGE_PREFIX, featureType], SecurityConstants.EMPTY_STRING), SecurityConstants.ZERO);
             const maxLimit = _.get(license, _.join([SecurityConstants.LIMITS_PREFIX_LOWER, featureType], SecurityConstants.DOT), SecurityConstants.ZERO);
 
             if (currentUsage >= maxLimit) {
@@ -67,13 +67,13 @@ export const requireLicense = (featureType?: FeatureType) => {
                     : (_.isEqual(featureType, FeatureType.IMAGE)
                         ? LocalizationConstants.FEATURE_IMAGE
                         : LocalizationConstants.FEATURE_VOICE);
-                const planName = _.get(license, 'plan_id', SecurityConstants.UNKNOWN_PLAN_NAME);
+                const planName = _.get(license, SecurityConstants.PROP_PLAN_ID, SecurityConstants.UNKNOWN_PLAN_NAME);
                 
-                let errorMsg = '';
+                let errorMsg = SecurityConstants.EMPTY_STRING;
                 if (_.isEqual(license.quota_type, SecurityConstants.QUOTA_TYPE_TOTAL)) {
-                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_TOTAL_EXCEEDED, '{0}', featureName), '{1}', planName);
+                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_TOTAL_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
                 } else {
-                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, '{0}', featureName), '{1}', planName);
+                    errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
                 }
                 
                 return res.status(SecurityConstants.HTTP_FORBIDDEN).json({

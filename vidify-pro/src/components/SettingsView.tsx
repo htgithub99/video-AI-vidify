@@ -11,7 +11,7 @@ import _ from "lodash";
 import { storageUtils } from "../lib/storage";
 import { jsonUtils } from "../lib/json";
 import { useLicense } from "../contexts/LicenseContext";
-import { SecurityConstants } from "../constants/security";
+import { SecurityConstants, SecurityMessages } from "../constants/security";
 import { AppLanguage } from "../constants/enums";
 
 const CLEAR_TYPES = {
@@ -36,12 +36,12 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const pageTexts = SETTINGS_TEXTS[currentLang as "vi" | "en"] || SETTINGS_TEXTS.en;
   const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
-  const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey("GEMINI_API_KEY"));
-  const [ai33Key, setAi33Key] = useState(() => getStoredApiKey("AI33_API_KEY"));
+  const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
+  const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
 
-  const [curlInput, setCurlInput] = useState("");
+  const [curlInput, setCurlInput] = useState(SecurityConstants.EMPTY_STRING);
   const [curlFeedback, setCurlFeedback] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -51,30 +51,30 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [config, setConfig] = useState(() => {
     try {
       const saved = storageUtils.get(STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, ""], _.trim(saved))) {
+      if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, SecurityConstants.EMPTY_STRING], _.trim(saved))) {
         const parsed = jsonUtils.safeParse<any>(saved, null);
         if (parsed && typeof parsed === "object") {
           return {
-            projectId: parsed.projectId || "",
-            authToken: parsed.authToken || "",
-            recaptchaToken: parsed.recaptchaToken || "",
-            sessionId: parsed.sessionId || "",
+            projectId: parsed.projectId || SecurityConstants.EMPTY_STRING,
+            authToken: parsed.authToken || SecurityConstants.EMPTY_STRING,
+            recaptchaToken: parsed.recaptchaToken || SecurityConstants.EMPTY_STRING,
+            sessionId: parsed.sessionId || SecurityConstants.EMPTY_STRING,
             imageModelName: parsed.imageModelName || CURL_KEYWORDS.NARWHAL,
-            agentSessionId: parsed.agentSessionId || "",
+            agentSessionId: parsed.agentSessionId || SecurityConstants.EMPTY_STRING,
             isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
           };
         }
       }
     } catch (e) {
-      appError("ERROR_PARSING_SANDBOX_SETTINGS", e);
+      appError(SecurityConstants.LOG_ERROR_PARSING_SANDBOX_SETTINGS, e);
     }
     return {
-      projectId: "",
-      authToken: "",
-      recaptchaToken: "",
-      sessionId: "",
+      projectId: SecurityConstants.EMPTY_STRING,
+      authToken: SecurityConstants.EMPTY_STRING,
+      recaptchaToken: SecurityConstants.EMPTY_STRING,
+      sessionId: SecurityConstants.EMPTY_STRING,
       imageModelName: CURL_KEYWORDS.NARWHAL,
-      agentSessionId: "",
+      agentSessionId: SecurityConstants.EMPTY_STRING,
       isStreamChat: false,
     };
   });
@@ -106,22 +106,22 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   const handleConfirmClear = () => {
     if (confirmClearType === CLEAR_TYPES.API) {
-      setGeminiKey("");
-      setAi33Key("");
+      setGeminiKey(SecurityConstants.EMPTY_STRING);
+      setAi33Key(SecurityConstants.EMPTY_STRING);
       storageUtils.remove(STORAGE_KEYS.GEMINI_API_KEY);
       storageUtils.remove(STORAGE_KEYS.AI33_API_KEY);
     } else if (confirmClearType === CLEAR_TYPES.SANDBOX) {
       const defaultConfig = {
-        projectId: "",
-        authToken: "",
-        recaptchaToken: "",
-        sessionId: "",
+        projectId: SecurityConstants.EMPTY_STRING,
+        authToken: SecurityConstants.EMPTY_STRING,
+        recaptchaToken: SecurityConstants.EMPTY_STRING,
+        sessionId: SecurityConstants.EMPTY_STRING,
         imageModelName: CURL_KEYWORDS.NARWHAL,
-        agentSessionId: "",
+        agentSessionId: SecurityConstants.EMPTY_STRING,
         isStreamChat: false,
       };
       setConfig(defaultConfig);
-      setCurlInput("");
+      setCurlInput(SecurityConstants.EMPTY_STRING);
       storageUtils.remove(STORAGE_KEYS.API_SANDBOX_CONFIG);
     }
     setConfirmClearType(null);
@@ -138,44 +138,44 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
     try {
       const authMatch = trimmedVal.match(CURL_AUTHORIZATION_BEARER_REGEX);
-      let parsedAuthToken = "";
+      let parsedAuthToken = SecurityConstants.EMPTY_STRING;
       if (authMatch) {
-        parsedAuthToken = _.trim(authMatch[1]);
+        parsedAuthToken = _.trim(_.get(authMatch, 1));
       } else {
         const rawMatch = trimmedVal.match(CURL_AUTHORIZATION_JSON_REGEX);
-        if (rawMatch) parsedAuthToken = _.trim(rawMatch[1]);
+        if (rawMatch) parsedAuthToken = _.trim(_.get(rawMatch, 1));
       }
 
       if (!parsedAuthToken) {
         const bearerMatch = trimmedVal.match(CURL_BEARER_TOKEN_REGEX);
-        if (bearerMatch) parsedAuthToken = _.trim(bearerMatch[1]);
+        if (bearerMatch) parsedAuthToken = _.trim(_.get(bearerMatch, 1));
       }
 
-      let parsedProjectId = "";
+      let parsedProjectId = SecurityConstants.EMPTY_STRING;
       const projMatchBody = val.match(CURL_PROJECT_ID_BODY_REGEX);
       if (projMatchBody) {
-        parsedProjectId = projMatchBody[2];
+        parsedProjectId = _.get(projMatchBody, 2);
       } else {
         const urlProjMatch = val.match(CURL_PROJECT_ID_URL_REGEX);
-        if (urlProjMatch) parsedProjectId = urlProjMatch[1];
+        if (urlProjMatch) parsedProjectId = _.get(urlProjMatch, 1);
       }
 
-      let parsedSessionId = "";
+      let parsedSessionId = SecurityConstants.EMPTY_STRING;
       const sessMatch = val.match(CURL_CLIENT_SESSION_ID_REGEX);
       if (sessMatch) {
-        parsedSessionId = sessMatch[1];
+        parsedSessionId = _.get(sessMatch, 1);
       } else {
         const sessMatch2 = val.match(CURL_SESSION_ID_REGEX);
-        if (sessMatch2) parsedSessionId = sessMatch2[1];
+        if (sessMatch2) parsedSessionId = _.get(sessMatch2, 1);
       }
 
-      let parsedRecaptcha = "";
+      let parsedRecaptcha = SecurityConstants.EMPTY_STRING;
       const recaptchaMatch = val.match(CURL_RECAPTCHA_TOKEN_REGEX);
-      if (recaptchaMatch) parsedRecaptcha = recaptchaMatch[1];
+      if (recaptchaMatch) parsedRecaptcha = _.get(recaptchaMatch, 1);
 
-      let parsedAgentSessionId = "";
+      let parsedAgentSessionId = SecurityConstants.EMPTY_STRING;
       const agentSessMatch = trimmedVal.match(CURL_AGENT_SESSION_ID_REGEX);
-      if (agentSessMatch) parsedAgentSessionId = agentSessMatch[1];
+      if (agentSessMatch) parsedAgentSessionId = _.get(agentSessMatch, 1);
 
       const isStreamChat = _.some([CURL_KEYWORDS.STREAM_AGENT, CURL_KEYWORDS.STREAM], k => _.includes(trimmedVal, k));
 
@@ -190,10 +190,10 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       };
 
       setConfig(updated);
-      setCurlFeedback(`${t.ext_success_extract} ${parsedAuthToken ? t.ext_bearer : ""}${parsedRecaptcha ? t.ext_recaptcha : ""}${isStreamChat ? t.ext_streamchat : t.ext_batch}`);
+      setCurlFeedback(`${t.ext_success_extract} ${parsedAuthToken ? t.ext_bearer : SecurityConstants.EMPTY_STRING}${parsedRecaptcha ? t.ext_recaptcha : SecurityConstants.EMPTY_STRING}${isStreamChat ? t.ext_streamchat : t.ext_batch}`);
       setTimeout(() => setCurlFeedback(null), SETTINGS_CONSTS.FEEDBACK_TIMEOUT);
     } catch (e) {
-      appError("GENERAL_ERROR", e);
+      appError(SecurityConstants.LOG_GENERAL_ERROR, e);
       setCurlFeedback(t.Failed_to_parse_cURL_comm);
     }
   };
@@ -216,21 +216,21 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               {_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TITLE_VI : SecurityConstants.LICENSE_MGMT_TITLE_EN}
             </h2>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed font-mono">
-              {_.get(licenseInfo, 'plan_type') 
-                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, 'plan_type')}` 
+              {_.get(licenseInfo, SecurityConstants.PROP_PLAN_TYPE) 
+                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, SecurityConstants.PROP_PLAN_TYPE)}` 
                 : (_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.ACTIVATED_LABEL_VI : SecurityConstants.ACTIVATED_LABEL_EN)
               } | Key: <span className="text-slate-200">{licenseKey ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}` : SecurityConstants.NOT_AVAILABLE}</span>
             </p>
           </div>
         </div>
         <Button
-          variant="secondary"
+          variant={SecurityConstants.BTN_VARIANT_SECONDARY}
           onClick={logoutLicense}
-          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_TOOLTIP_VI : SecurityConstants.LOGOUT_TOOLTIP_EN}
+          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityMessages.LOGOUT_LABEL_TOOLTIP : SecurityConstants.LOGOUT_TOOLTIP_EN}
           className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0"
         >
           <LogOut className="w-4 h-4" />
-          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_LABEL_VI : SecurityConstants.LOGOUT_LABEL_EN}</span>
+          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityMessages.LOGOUT_LABEL_SHORT : SecurityConstants.LOGOUT_LABEL_EN}</span>
         </Button>
       </div>
 
@@ -259,29 +259,29 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             <div className="space-y-1.5">
               <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">GEMINI_API_KEY</label>
               <input
-                type="password"
+                type={SecurityConstants.INPUT_TYPE_PASSWORD}
                 value={geminiKey}
                 onChange={(e) => setGeminiKey(e.target.value)}
                 placeholder={t.enterGeminiKey}
-                className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
+                className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">AI33_API_KEY</label>
               <input
-                type="password"
+                type={SecurityConstants.INPUT_TYPE_PASSWORD}
                 value={ai33Key}
                 onChange={(e) => setAi33Key(e.target.value)}
                 placeholder={t.enterAi33Key}
-                className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
+                className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
               />
             </div>
           </div>
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={() => setConfirmClearType(CLEAR_TYPES.API)}
               disabled={isSavingKeys || isApiEmpty}
               className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -290,7 +290,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               <span>{pageTexts.CLEAR_BTN}</span>
             </Button>
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleSaveKeys}
               disabled={isSavingKeys}
               className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5"
@@ -381,7 +381,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={() => setConfirmClearType(CLEAR_TYPES.SANDBOX)}
               disabled={isSavingConfig || isSandboxEmpty}
               className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -390,7 +390,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               <span>{pageTexts.CLEAR_BTN}</span>
             </Button>
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleSaveConfig}
               disabled={isSavingConfig}
               className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all"
@@ -415,7 +415,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
         isOpen={!!confirmClearType}
         onClose={() => setConfirmClearType(null)}
         title={pageTexts.MODAL_TITLE_CLEAR}
-        maxWidth="max-w-md"
+        maxWidth={SecurityConstants.MODAL_WIDTH_MD}
       >
         <div className="p-6 pt-4 text-sm text-slate-300">
           <div className="flex items-start gap-4 mb-5">
@@ -436,14 +436,14 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           </div>
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/50">
             <Button
-              variant="ghost"
+              variant={SecurityConstants.BTN_VARIANT_GHOST}
               onClick={() => setConfirmClearType(null)}
               className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-xl"
             >
               {pageTexts.CANCEL}
             </Button>
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleConfirmClear}
               className="bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-xs px-5 py-2 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-500/20"
             >

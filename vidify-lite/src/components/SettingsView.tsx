@@ -6,7 +6,7 @@ import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { storageUtils } from "../lib/storage";
 import { useLicense } from "../contexts/LicenseContext";
-import { SecurityConstants } from "../constants/security";
+import { SecurityConstants, SecurityMessages } from "../constants/security";
 import { AppLanguage } from "../constants/enums";
 import _ from "lodash";
 
@@ -19,21 +19,21 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const texts = SETTINGS_VIEW_TEXTS[currentLang] || SETTINGS_VIEW_TEXTS.en;
   const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
-  const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey("GEMINI_API_KEY"));
-  const [ai33Key, setAi33Key] = useState(() => getStoredApiKey("AI33_API_KEY"));
+  const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
+  const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [isSavingKeys, setIsSavingKeys] = useState(false);
   
   const [accounts, setAccounts] = useState<any[]>(() => {
     try {
-      const saved = storageUtils.get(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string || 'LOCAL_GOOGLE_ACCOUNTS');
+      const saved = storageUtils.get(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
     }
   });
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [newRecovery, setNewRecovery] = useState("");
+  const [newEmail, setNewEmail] = useState(SecurityConstants.EMPTY_STRING);
+  const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
+  const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
 
   const handleSaveKeys = () => {
     setIsSavingKeys(true);
@@ -54,16 +54,16 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     };
     const updated = [...accounts, newAcc];
     setAccounts(updated);
-    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string || 'LOCAL_GOOGLE_ACCOUNTS', JSON.stringify(updated));
-    setNewEmail("");
-    setNewPassword("");
-    setNewRecovery("");
+    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
+    setNewEmail(SecurityConstants.EMPTY_STRING);
+    setNewPassword(SecurityConstants.EMPTY_STRING);
+    setNewRecovery(SecurityConstants.EMPTY_STRING);
   };
 
   const handleRemoveAccount = (id: number) => {
     const updated = _.filter(accounts, a => a.id !== id);
     setAccounts(updated);
-    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string || 'LOCAL_GOOGLE_ACCOUNTS', JSON.stringify(updated));
+    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
   };
 
   return (
@@ -81,21 +81,21 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               {_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LICENSE_MGMT_TITLE_VI : SecurityConstants.LICENSE_MGMT_TITLE_EN}
             </h2>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed font-mono">
-              {_.get(licenseInfo, 'plan_type') 
-                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, 'plan_type')}` 
+              {_.get(licenseInfo, SecurityConstants.PROP_PLAN_TYPE) 
+                ? `${_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN}: ${_.get(licenseInfo, SecurityConstants.PROP_PLAN_TYPE)}` 
                 : (_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.ACTIVATED_LABEL_VI : SecurityConstants.ACTIVATED_LABEL_EN)
               } | Key: <span className="text-slate-200">{licenseKey ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}` : SecurityConstants.NOT_AVAILABLE}</span>
             </p>
           </div>
         </div>
         <Button
-          variant="secondary"
+          variant={SecurityConstants.BTN_VARIANT_SECONDARY}
           onClick={logoutLicense}
-          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_TOOLTIP_VI : SecurityConstants.LOGOUT_TOOLTIP_EN}
+          title={_.isEqual(currentLang, AppLanguage.VI) ? SecurityMessages.LOGOUT_LABEL_TOOLTIP : SecurityConstants.LOGOUT_TOOLTIP_EN}
           className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0"
         >
           <LogOut className="w-4 h-4" />
-          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityConstants.LOGOUT_LABEL_VI : SecurityConstants.LOGOUT_LABEL_EN}</span>
+          <span>{_.isEqual(currentLang, AppLanguage.VI) ? SecurityMessages.LOGOUT_LABEL_SHORT : SecurityConstants.LOGOUT_LABEL_EN}</span>
         </Button>
       </div>
 
@@ -119,7 +119,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 GEMINI_API_KEY
               </label>
               <input
-                type="text"
+                type={SecurityConstants.INPUT_TYPE_TEXT}
                 value={geminiKey}
                 onChange={(e) => setGeminiKey(e.target.value)}
                 placeholder={texts.GEMINI_PLACEHOLDER}
@@ -131,18 +131,18 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 AI33_API_KEY
               </label>
               <input
-                type="text"
+                type={SecurityConstants.INPUT_TYPE_TEXT}
                 value={ai33Key}
                 onChange={(e) => setAi33Key(e.target.value)}
                 placeholder={texts.AI33_PLACEHOLDER}
-                className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
+                className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
               />
             </div>
           </div>
 
           <div className="pt-4 mt-4 border-t border-slate-800 flex justify-end">
             <Button
-              variant="primary"
+              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleSaveKeys}
               disabled={isSavingKeys || (_.isEmpty(_.trim(geminiKey)) && _.isEmpty(_.trim(ai33Key)))}
               title={texts.SAVE_BTN_TOOLTIP}
@@ -170,14 +170,14 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           <div className="space-y-3 flex-1 flex flex-col">
             <div className="grid grid-cols-2 gap-2">
               <input
-                type="text"
+                type={SecurityConstants.INPUT_TYPE_TEXT}
                 placeholder={texts.EMAIL_PLACEHOLDER}
                 value={newEmail}
                 onChange={e => setNewEmail(e.target.value)}
                 className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50"
               />
               <input
-                type="text"
+                type={SecurityConstants.INPUT_TYPE_PASSWORD}
                 placeholder={texts.PWD_PLACEHOLDER}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
@@ -186,14 +186,14 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             </div>
             <div className="flex gap-2">
               <input
-                type="text"
+                type={SecurityConstants.INPUT_TYPE_TEXT}
                 placeholder={texts.RECOVERY_PLACEHOLDER}
                 value={newRecovery}
                 onChange={e => setNewRecovery(e.target.value)}
                 className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1"
               />
               <Button 
-                variant="primary" 
+                variant={SecurityConstants.BTN_VARIANT_PRIMARY} 
                 onClick={handleAddAccount} 
                 disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))}
                 title={texts.ADD_BTN_TOOLTIP}
@@ -210,7 +210,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 _.map(accounts, acc => (
                   <div key={acc.id} className="flex justify-between items-center bg-slate-800/50 border border-slate-700/50 p-2 rounded">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-200">{acc.email}</span>
+                      <span className="text-xs font-bold text-slate-200">{_.get(acc, SecurityConstants.PROP_EMAIL)}</span>
                       <span className="text-[10px] text-slate-500 font-mono">{texts.HIDDEN_PWD}</span>
                     </div>
                     <button onClick={() => handleRemoveAccount(acc.id)} className="text-slate-500 hover:text-rose-500 transition-colors p-1">
