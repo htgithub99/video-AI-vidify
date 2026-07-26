@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzKCFGitAcTYWX6KGCP2OLLZVom2DyIuR9ZR6YMMX5cMRb5C88LThdPYWY9cI27UyVn/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzdtIX8Ti99dpCqed5_C7zG06-EpEBe28QhoMl4RazThlTvPvB35eJR4qmBmFxt1NPS/exec';
 
 const AdminConstants = {
     TOKEN_KEY: 'adminToken',
