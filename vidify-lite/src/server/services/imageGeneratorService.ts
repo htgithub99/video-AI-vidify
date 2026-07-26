@@ -630,6 +630,25 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     while (roomAttempts < maxRoomAttempts && !success) {
       roomAttempts++;
 
+      let detectedRatio = visualConfig?.aspectRatio;
+      if (!detectedRatio && finalPrompt) {
+        if (finalPrompt.includes("16:9") || finalPrompt.toLowerCase().includes("horizontal")) {
+          detectedRatio = "16:9";
+        } else if (finalPrompt.includes("9:16") || finalPrompt.toLowerCase().includes("vertical")) {
+          detectedRatio = "9:16";
+        }
+      }
+      if (!detectedRatio) {
+        detectedRatio = "9:16";
+      }
+
+      const currentConfigState = jsonUtils.safeStringify({
+        generateType: visualConfig?.generateType || GenerateType.Image,
+        imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+        aspectRatio: detectedRatio,
+      });
+      const isConfigChanged = currentConfigState !== lastGeminiConfigState;
+
       let needNewRoom = false;
       if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
         needNewRoom = true;
@@ -640,6 +659,9 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         } else if (consecutiveGeminiErrors >= 2) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
+        } else if (isConfigChanged) {
+          needNewRoom = true;
+          appLog("Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.");
         }
       }
 
@@ -690,11 +712,6 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
           await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
-          const currentConfigState = jsonUtils.safeStringify({
-            generateType: visualConfig?.generateType || GenerateType.Image,
-            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-          });
-          const isConfigChanged = currentConfigState !== lastGeminiConfigState;
           const forceSetting = needNewRoom || isConfigChanged;
 
           await configureGeminiModel(globalPlaywrightPage, visualConfig, forceSetting);

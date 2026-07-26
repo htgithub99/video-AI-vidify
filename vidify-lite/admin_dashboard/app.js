@@ -36,6 +36,7 @@ let deletingResourceId = null;
 let deletingResourceType = null;
 let tsKeysInstance = null;
 let tsAccInstance = null;
+let tsExcludedInstance = null;
 
 function escapeHTML(str) {
     if (_.isNil(str)) return AdminConstants.EMPTY_STR;
@@ -137,30 +138,30 @@ async function showDashboard() {
 }
 
 window.switchAdminPage = function(pageId) {
-    document.querySelectorAll('.admin-page-content').forEach(p => p.classList.remove(AdminClasses.ACTIVE));
-    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove(AdminClasses.ACTIVE));
+    document.querySelectorAll(AdminSelectors.ADMIN_PAGE_CONTENT).forEach(p => p.classList.remove(AdminClasses.ACTIVE));
+    document.querySelectorAll(AdminSelectors.NAV_TAB_BTN).forEach(b => b.classList.remove(AdminClasses.ACTIVE));
     
-    const targetPage = el(`page-${pageId}`);
-    const targetBtn = el(`nav-tab-${pageId}`);
+    const targetPage = el(`${AdminConstants.PAGE_PREFIX}${pageId}`);
+    const targetBtn = el(`${AdminConstants.NAV_TAB_PREFIX}${pageId}`);
     if (targetPage) targetPage.classList.add(AdminClasses.ACTIVE);
     if (targetBtn) targetBtn.classList.add(AdminClasses.ACTIVE);
 
-    if (_.isEqual(pageId, 'resources')) {
+    if (_.isEqual(pageId, AdminConstants.PAGE_RESOURCES)) {
         loadApiKeysAdmin();
         loadAccountsAdmin();
-    } else if (_.isEqual(pageId, 'config')) {
+    } else if (_.isEqual(pageId, AdminConstants.PAGE_CONFIG)) {
         loadPlans();
-    } else if (_.isEqual(pageId, 'users')) {
+    } else if (_.isEqual(pageId, AdminConstants.PAGE_USERS)) {
         loadUsers();
     }
 };
 
 window.switchResourceSubTab = function(subTabId) {
-    document.querySelectorAll('.sub-tab-content').forEach(c => c.style.display = AdminClasses.DISPLAY_NONE);
-    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove(AdminClasses.ACTIVE));
+    document.querySelectorAll(AdminSelectors.SUB_TAB_CONTENT).forEach(c => c.style.display = AdminClasses.DISPLAY_NONE);
+    document.querySelectorAll(AdminSelectors.SUB_TAB_BTN).forEach(b => b.classList.remove(AdminClasses.ACTIVE));
     
-    const targetContent = el(`tab-content-${subTabId}`);
-    const targetBtn = el(`tab-btn-${subTabId}`);
+    const targetContent = el(`${AdminConstants.TAB_CONTENT_PREFIX}${subTabId}`);
+    const targetBtn = el(`${AdminConstants.TAB_BTN_PREFIX}${subTabId}`);
     if (targetContent) targetContent.style.display = AdminClasses.DISPLAY_BLOCK;
     if (targetBtn) targetBtn.classList.add(AdminClasses.ACTIVE);
 };
@@ -399,7 +400,7 @@ async function loadPlans() {
 }
 
 function renderPlansConfig() {
-    const container = el('plans-container');
+    const container = el(DOMIds.PLANS_CONTAINER);
     if (!container) return;
     
     container.innerHTML = AdminConstants.EMPTY_STR;
@@ -470,10 +471,10 @@ function renderPlansConfig() {
         </table>
     `;
 
-    const unlimitedCheckboxes = container.querySelectorAll('.plan-unlimited-input');
+    const unlimitedCheckboxes = container.querySelectorAll(AdminSelectors.PLAN_UNLIMITED_INPUT);
     _.forEach(unlimitedCheckboxes, chk => {
         chk.addEventListener(EventTypes.CHANGE, (e) => {
-            const pId = e.target.getAttribute('data-plan-id');
+            const pId = e.target.getAttribute(DataAttributes.PLAN_ID);
             const disabled = e.target.checked;
             container.querySelector(`.plan-video-input[data-plan-id="${pId}"]`).disabled = disabled;
             container.querySelector(`.plan-image-input[data-plan-id="${pId}"]`).disabled = disabled;
@@ -485,10 +486,10 @@ function renderPlansConfig() {
         });
     });
     
-    const deletePlanBtns = container.querySelectorAll('.delete-plan-btn');
+    const deletePlanBtns = container.querySelectorAll(AdminSelectors.DELETE_PLAN_BTN);
     _.forEach(deletePlanBtns, btn => {
         btn.addEventListener(EventTypes.CLICK, async (e) => {
-            const pId = e.target.getAttribute('data-plan-id');
+            const pId = e.target.getAttribute(DataAttributes.PLAN_ID);
             deletingResourceId = pId;
             deletingResourceType = AdminConstants.TYPE_PLAN;
             el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
@@ -523,7 +524,7 @@ async function handleSaveConfig() {
     setButtonLoading(saveConfigBtn, true, AdminMessages.SAVE_PROGRESS);
     
     try {
-        const container = el('plans-container');
+        const container = el(DOMIds.PLANS_CONTAINER);
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         
         for (const plan of plans) {
@@ -577,7 +578,9 @@ function resetResourceForms() {
     window.editingKeyId = null;
     el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
-    if (tsKeysInstance) tsKeysInstance.setValue(AdminConstants.ASSIGN_ALL);
+    if (tsExcludedInstance) tsExcludedInstance.setValue([]);
+    else el(DOMIds.KEYS_EXCLUDED_INPUT).value = AdminConstants.EMPTY_STR;
+    if (tsKeysInstance) tsKeysInstance.setValue([AdminConstants.ASSIGN_ALL]);
     else el(DOMIds.KEYS_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
     el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.MODAL_SAVE_DEFAULT);
 
@@ -902,8 +905,8 @@ function initEventListeners() {
     el(DOMIds.SAVE_USER_BTN)?.addEventListener(EventTypes.CLICK, handleSaveUser);
     el(DOMIds.BTN_SOFT_DELETE)?.addEventListener(EventTypes.CLICK, handleSoftDelete);
     el(DOMIds.BTN_HARD_DELETE)?.addEventListener(EventTypes.CLICK, handleHardDelete);
-    el('btn-resource-soft-delete')?.addEventListener(EventTypes.CLICK, handleResourceSoftDelete);
-    el('btn-resource-hard-delete')?.addEventListener(EventTypes.CLICK, handleResourceHardDelete);
+    el(DOMIds.BTN_RESOURCE_SOFT_DELETE)?.addEventListener(EventTypes.CLICK, handleResourceSoftDelete);
+    el(DOMIds.BTN_RESOURCE_HARD_DELETE)?.addEventListener(EventTypes.CLICK, handleResourceHardDelete);
     el(DOMIds.MODAL_RESET_DEVICE_BTN)?.addEventListener(EventTypes.CLICK, handleResetDevice);
 
     const configToggleBtn = el(DOMIds.CONFIG_TOGGLE_BTN);
@@ -979,9 +982,15 @@ function initEventListeners() {
 
 async function handleSaveKeys() {
     const btn = el(DOMIds.SAVE_KEYS_BTN);
-    const assignee = el(DOMIds.KEYS_ASSIGNEE_INPUT).value.trim() || AdminConstants.ASSIGN_ALL;
+    const getSelectValue = (tsInstance, defaultElId) => {
+        if (!tsInstance) return el(defaultElId).value.trim();
+        const val = tsInstance.getValue();
+        return _.isArray(val) ? val.join(AdminConstants.COMMA_SPLIT) : String(val).trim();
+    };
+    const assignee = getSelectValue(tsKeysInstance, DOMIds.KEYS_ASSIGNEE_INPUT) || AdminConstants.ASSIGN_ALL;
     const gemini = el(DOMIds.KEYS_GEMINI_INPUT).value.trim();
     const ai33 = el(DOMIds.KEYS_AI33_INPUT).value.trim();
+    const excluded = getSelectValue(tsExcludedInstance, DOMIds.KEYS_EXCLUDED_INPUT);
     
     if (!gemini && !ai33) {
         showToast(AdminMessages.VALIDATION_NEED_KEY, ToastType.ERROR);
@@ -993,7 +1002,8 @@ async function handleSaveKeys() {
         const payload = {
             [ApiFields.GEMINI_KEY]: gemini,
             [ApiFields.AI33_KEY]: ai33,
-            [ApiFields.ASSIGNED_TO]: assignee
+            [ApiFields.ASSIGNED_TO]: assignee,
+            [ApiFields.EXCLUDED_TO]: excluded
         };
         if (window.editingKeyId) {
             payload[ApiFields.ID] = window.editingKeyId;
@@ -1072,18 +1082,29 @@ function populateAssignSelects() {
     
     const keysSelect = el(DOMIds.KEYS_ASSIGNEE_INPUT);
     const accSelect = el(DOMIds.ACC_ASSIGNEE_INPUT);
+    const excludedSelect = el(DOMIds.KEYS_EXCLUDED_INPUT);
     
-    if (tsKeysInstance) tsKeysInstance.destroy();
-    if (tsAccInstance) tsAccInstance.destroy();
+    if (tsKeysInstance) {
+        try { tsKeysInstance.destroy(); } catch(e){}
+        tsKeysInstance = null;
+    }
+    if (tsAccInstance) {
+        try { tsAccInstance.destroy(); } catch(e){}
+        tsAccInstance = null;
+    }
+    if (tsExcludedInstance) {
+        try { tsExcludedInstance.destroy(); } catch(e){}
+        tsExcludedInstance = null;
+    }
     
     if (keysSelect) {
         keysSelect.innerHTML = optionsHtml;
         tsKeysInstance = new TomSelect(keysSelect, {
             create: true,
-            maxItems: AdminConstants.MAX_ITEMS_SELECT,
+            maxItems: null,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
-            dropdownParent: 'body',
-            plugins: [AdminConstants.PLUGIN_DROPDOWN]
+            dropdownParent: AdminConstants.BODY_TAG,
+            plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON]
         });
     }
     if (accSelect) {
@@ -1092,26 +1113,45 @@ function populateAssignSelects() {
             create: true,
             maxItems: AdminConstants.MAX_ITEMS_SELECT,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
-            dropdownParent: 'body',
+            dropdownParent: AdminConstants.BODY_TAG,
             plugins: [AdminConstants.PLUGIN_DROPDOWN]
+        });
+    }
+    if (excludedSelect) {
+        excludedSelect.innerHTML = optionsHtml;
+        tsExcludedInstance = new TomSelect(excludedSelect, {
+            create: true,
+            maxItems: null,
+            placeholder: AdminMessages.SEARCH_PLACEHOLDER,
+            dropdownParent: AdminConstants.BODY_TAG,
+            plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON]
         });
     }
 }
 
 function editApiKeysAdmin(keyId) {
-    const keys = _.get(window, 'adminApiKeysData', []);
+    const keys = _.get(window, AdminConstants.GLOBAL_API_KEYS, []);
     const keyRecord = _.find(keys, k => _.isEqual(_.get(k, ApiFields.ID), keyId));
     if (!keyRecord) return;
     
-    const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO);
+    const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO) || AdminConstants.EMPTY_STR;
+    const assignedArray = assignedTo ? _.map(assignedTo.split(AdminConstants.COMMA_SPLIT), s => s.trim()) : [];
     if (tsKeysInstance) {
-        tsKeysInstance.setValue(assignedTo);
+        tsKeysInstance.setValue(assignedArray);
     } else {
         el(DOMIds.KEYS_ASSIGNEE_INPUT).value = assignedTo;
     }
     
     el(DOMIds.KEYS_GEMINI_INPUT).value = _.get(keyRecord, ApiFields.GEMINI_KEY) || AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = _.get(keyRecord, ApiFields.AI33_KEY) || AdminConstants.EMPTY_STR;
+    
+    const excludedTo = _.get(keyRecord, ApiFields.EXCLUDED_TO) || AdminConstants.EMPTY_STR;
+    const excludedArray = excludedTo ? _.map(excludedTo.split(AdminConstants.COMMA_SPLIT), s => s.trim()) : [];
+    if (tsExcludedInstance) {
+        tsExcludedInstance.setValue(excludedArray);
+    } else {
+        el(DOMIds.KEYS_EXCLUDED_INPUT).value = excludedTo;
+    }
     
     window.editingKeyId = keyId;
     el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
@@ -1125,7 +1165,7 @@ function deleteApiKeysAdmin(keyId) {
 }
 
 function editAccountAdmin(id) {
-    const accs = _.get(window, 'adminAccountsData', []);
+    const accs = _.get(window, AdminConstants.GLOBAL_ACCOUNTS, []);
     const acc = _.find(accs, a => _.isEqual(_.get(a, ApiFields.ID), id));
     if (!acc) return;
     
@@ -1149,12 +1189,12 @@ function deleteAccountAdmin(id) {
 }
 
 async function handleResourceSoftDelete() {
-    const btn = el('btn-resource-soft-delete');
+    const btn = el(DOMIds.BTN_RESOURCE_SOFT_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE);
     try {
         const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
                        (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
-        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: AdminConstants.DELETE_TYPE_SOFT });
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, [ApiFields.DELETE_TYPE]: AdminConstants.DELETE_TYPE_SOFT });
         showToast(AppStrings.SOFT_DELETE_SUCCESS, ToastType.SUCCESS);
         closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
         
@@ -1169,12 +1209,12 @@ async function handleResourceSoftDelete() {
 }
 
 async function handleResourceHardDelete() {
-    const btn = el('btn-resource-hard-delete');
+    const btn = el(DOMIds.BTN_RESOURCE_HARD_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE);
     try {
         const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
                        (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
-        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, delete_type: AdminConstants.DELETE_TYPE_HARD });
+        await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, [ApiFields.DELETE_TYPE]: AdminConstants.DELETE_TYPE_HARD });
         showToast(AppStrings.HARD_DELETE_SUCCESS, ToastType.SUCCESS);
         closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
         
@@ -1203,17 +1243,47 @@ async function loadApiKeysAdmin() {
     };
     
     const getAssignName = (assignee) => {
-        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
-        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => _.isEqual(p.id, assignee));
-        if (plan) return formatPlanDisplayName(plan.name);
-        return formatPlanDisplayName(assignee);
+        if (!assignee) return AdminMessages.ASSIGN_ALL_LABEL;
+        const items = String(assignee).split(AdminConstants.COMMA_SPLIT);
+        const mapped = _.map(items, item => {
+            const trimmed = item.trim();
+            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
+            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+            const plan = _.find(plans, p => _.isEqual(p.id, trimmed) || _.isEqual(p.name, trimmed));
+            if (plan) return formatPlanDisplayName(plan.name);
+
+            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
+            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
+            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, 5)}...)`;
+
+            return formatPlanDisplayName(trimmed);
+        });
+        return mapped.join(', ');
+    };
+
+    const formatExcludedDisplay = (excludedTo) => {
+        if (!excludedTo) return AdminMessages.NO_DATA;
+        const items = excludedTo.split(AdminConstants.COMMA_SPLIT);
+        const mapped = _.map(items, item => {
+            const trimmed = item.trim();
+            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
+            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+            const plan = _.find(plans, p => _.isEqual(p.id, trimmed));
+            if (plan) return formatPlanDisplayName(plan.name);
+            
+            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
+            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
+            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, 5)}...)`;
+            
+            return trimmed;
+        });
+        return mapped.join(', ');
     };
 
     try {
         const res = await fetchAPI(AdminActions.GET_API_KEYS);
         const keys = _.get(res, ApiFields.KEYS, []);
-        window.adminApiKeysData = keys;
+        window[AdminConstants.GLOBAL_API_KEYS] = keys;
         
         tbody.innerHTML = _.map(keys, k => {
             const assignee = _.get(k, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
@@ -1221,6 +1291,7 @@ async function loadApiKeysAdmin() {
             const assigneeLabel = getAssignName(assignee);
             const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
             const ai33Value = _.get(k, ApiFields.AI33_KEY);
+            const excludedValue = formatExcludedDisplay(_.get(k, ApiFields.EXCLUDED_TO));
             const keyId = _.get(k, ApiFields.ID);
             
             const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
@@ -1233,6 +1304,7 @@ async function loadApiKeysAdmin() {
                 <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
                 <td style="color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
                 <td style="color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
+                <td style="color: #9ca3af; font-family: monospace; font-size: 0.85rem;" class="text-center">${escapeHTML(excludedValue)}</td>
                 <td class="text-center">
                     <div style="display: flex; gap: 0.5rem; justify-content: center;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
@@ -1271,7 +1343,7 @@ async function loadAccountsAdmin() {
     try {
         const res = await fetchAPI(AdminActions.GET_ACCOUNTS);
         const accs = _.get(res, ApiFields.ACCOUNTS, []);
-        window.adminAccountsData = accs;
+        window[AdminConstants.GLOBAL_ACCOUNTS] = accs;
         
         tbody.innerHTML = _.map(accs, a => {
             const assignee = _.get(a, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);

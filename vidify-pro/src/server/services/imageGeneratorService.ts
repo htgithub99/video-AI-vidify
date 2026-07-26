@@ -1,4 +1,6 @@
 import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
+import { switchGoogleAccount } from "./accountRotatorService.js";
+import { ImageGenMessages } from "../../constants/security.js";
 import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
@@ -239,7 +241,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         { getImgIdStr: browserGetImgIdSafeStr }
       );
     } catch (err) {
-      appError("Failed to inject helpers on current page context:", err);
+      appError(ImageGenMessages.INJECT_HELPERS_ERR, err);
     }
 
     while (attempts < maxAttempts && !success) {
@@ -274,7 +276,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         if (!isAlreadyOnFlowPage) {
           if (!currentProjectId) {
-            appLog(`[Google Labs] Không có projectId, đang truy cập để tạo dự án mới...`);
+            appLog(ImageGenMessages.LABS_NO_PROJECT);
             await globalPlaywrightPage.goto("https://labs.google/fx/vi/tools/flow", {
               waitUntil: "commit",
               timeout: 60000,
@@ -289,9 +291,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             const match = newUrl.match(/\/project\/([a-zA-Z0-9-]+)/);
             if (match && match[1]) {
               currentProjectId = match[1];
-              appLog(`[Google Labs] Đã tạo dự án mới thành công: ${currentProjectId}`);
+              appLog(`${ImageGenMessages.LABS_CREATED_PROJECT}${currentProjectId}`);
             } else {
-              throw createAppError("Không thể lấy ID dự án sau khi tạo mới.");
+              throw createAppError(ImageGenMessages.LABS_CREATE_ERR);
             }
           } else {
             const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`;
@@ -533,7 +535,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         responseText = jsonUtils.safeStringify({ directBase64: finalBase64 });
         success = true;
       } catch (err: any) {
-        appError(`[Image Render] Attempt ${attempts} failed: ${err.message}`);
+        appError(ImageGenMessages.IMAGE_RENDER_ERR.replace('{0}', attempts.toString()).replace('{1}', err.message));
 
         const closedKeywords = ["closed", "close", "context"];
         const isClosedError = _.some(closedKeywords, (kw) => _.includes(err.message?.toLowerCase(), kw));
@@ -562,25 +564,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         }
       }
     }
-  } catch (axiosErr: any) {
-    const status = axiosErr.response?.status || 500;
-    const errText = axiosErr.response?.data || axiosErr.message;
-    appError(`[Labs Sandbox Error] returned status ${status}: ${errText}`);
-
-    let warnReason = `${BACKEND_MESSAGES.PLAYWRIGHT_SANDBOX_ERR} (HTTP ${status}). ${BACKEND_MESSAGES.PLAYWRIGHT_RECAPTCHA}`;
-    try {
-      const errorJson = typeof errText === "string" ? jsonUtils.safeParse<any>(errText, {}) : errText;
-      if (errorJson?.error?.details?.[0]?.reason) {
-        warnReason += ` ${BACKEND_MESSAGES.PLAYWRIGHT_REASON}${errorJson.error.details[0].reason}`;
+  } catch (err: any) {
+    appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${err.message}`);
+    // Nếu có lỗi, thử xoay tài khoản
+    appLog(ImageGenMessages.IMG_GEN_ERROR);
+    if (globalPlaywrightPage) {
+      const switched = await switchGoogleAccount(globalPlaywrightPage);
+      if (switched) {
+        release(); // Release current mutex before recursive call
+        return generateImageWithPlaywright(options);
       }
-    } catch (e) { }
-
-    return {
-      success: false,
-      base64: null,
-      fallbackUrl,
-      warning: warnReason,
-    };
+    }
   } finally {
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.PLAYWRIGHT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -636,6 +630,25 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     while (roomAttempts < maxRoomAttempts && !success) {
       roomAttempts++;
 
+      let detectedRatio = visualConfig?.aspectRatio;
+      if (!detectedRatio && finalPrompt) {
+        if (finalPrompt.includes("16:9") || finalPrompt.toLowerCase().includes("horizontal")) {
+          detectedRatio = "16:9";
+        } else if (finalPrompt.includes("9:16") || finalPrompt.toLowerCase().includes("vertical")) {
+          detectedRatio = "9:16";
+        }
+      }
+      if (!detectedRatio) {
+        detectedRatio = "9:16";
+      }
+
+      const currentConfigState = jsonUtils.safeStringify({
+        generateType: visualConfig?.generateType || GenerateType.Image,
+        imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+        aspectRatio: detectedRatio,
+      });
+      const isConfigChanged = currentConfigState !== lastGeminiConfigState;
+
       let needNewRoom = false;
       if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
         needNewRoom = true;
@@ -646,6 +659,9 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         } else if (consecutiveGeminiErrors >= 2) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
+        } else if (isConfigChanged) {
+          needNewRoom = true;
+          appLog("Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.");
         }
       }
 
@@ -696,11 +712,6 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
           await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
-          const currentConfigState = jsonUtils.safeStringify({
-            generateType: visualConfig?.generateType || GenerateType.Image,
-            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-          });
-          const isConfigChanged = currentConfigState !== lastGeminiConfigState;
           const forceSetting = needNewRoom || isConfigChanged;
 
           await configureGeminiModel(globalPlaywrightPage, visualConfig, forceSetting);
@@ -746,6 +757,15 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     }
   } catch (err: any) {
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", err.message));
+    // Nếu có lỗi, thử xoay tài khoản
+    appLog(ImageGenMessages.GEMINI_CHAT_ERROR);
+    if (globalPlaywrightPage) {
+      const switched = await switchGoogleAccount(globalPlaywrightPage);
+      if (switched) {
+        release();
+        return generateImageWithGeminiChat(options);
+      }
+    }
   } finally {
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));

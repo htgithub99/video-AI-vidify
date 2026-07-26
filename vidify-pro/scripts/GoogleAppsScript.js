@@ -42,7 +42,7 @@ const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 
 const PlanCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, NAME: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, UNLIMITED: 7, STATUS: 8 };
 const AdminCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, PASSWORD: 4, TOKEN: 5 };
 const HttpCode = { OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, INTERNAL_ERROR: 500 };
-const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5, STATUS: 6 };
+const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5, STATUS: 6, EXCLUDED_TO: 7 };
 const AccountsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, EMAIL: 3, PASSWORD: 4, RECOVERY_EMAIL: 5, STATUS: 6, ASSIGNED_TO: 7 };
 const SettingsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, KEY: 3, VALUE: 4, DESCRIPTION: 5 };
 
@@ -59,7 +59,7 @@ const Config = {
     PLANS: ["ID", "CREATED_AT", "UPDATED_AT", "NAME", "QUOTA_VIDEO", "QUOTA_IMAGE", "QUOTA_VOICE", "IS_UNLIMITED", "STATUS"],
     USERS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "LICENSE_KEY", "PLAN_ID", "STATUS", "EXPIRES_AT", "DEVICE_ID", "QUOTA_TYPE"],
     USAGE: ["ID", "CREATED_AT", "UPDATED_AT", "LICENSE_KEY", "VIDEO_COUNT", "IMAGE_COUNT", "VOICE_CHARS", "LAST_RESET"],
-    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY", "STATUS"],
+    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY", "STATUS", "EXCLUDED_TO"],
     ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"],
     SETTINGS: ["ID", "CREATED_AT", "UPDATED_AT", "KEY", "VALUE", "DESCRIPTION"]
   },
@@ -765,7 +765,7 @@ function getApiKeys(params) {
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
   const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-  const planId = _.get(params, ApiFields.PLAN_ID, Constants.EMPTY_STRING);
+  const planId = _.get(params, ApiFields.PLAN_ID, _.get(params, "plan_type", Constants.EMPTY_STRING));
 
   const data = sheet.getDataRange().getValues();
   let geminiKey = Constants.EMPTY_STRING;
@@ -774,14 +774,44 @@ function getApiKeys(params) {
   let ai33Priority = -1;
 
   const getPriority = (assigned) => {
-    if (assigned === Constants.ALL) return 0;
-    if (assigned === planId) return 1;
-    if (assigned === licenseKey) return 2;
+    if (!assigned) return -1;
+    const items = _.map(String(assigned).split(','), item => item.trim());
+
+    if (!_.isEmpty(licenseKey) && _.includes(items, licenseKey)) return 2;
+
+    const hasPlanMatch = _.some(items, (item) => {
+      if (!item) return false;
+      if (item === planId) return true;
+      const plan = getPlanById(item);
+      return plan && plan.name === planId;
+    });
+    if (hasPlanMatch) return 1;
+
+    if (_.includes(items, Constants.ALL)) return 0;
+
     return -1;
   };
 
   _.forEach(data, (row, i) => {
     if (i === 0) return;
+
+    // Check exclusion
+    const excluded = row[KeysCols.EXCLUDED_TO] || "";
+    if (excluded) {
+      const isExcluded = _.some(String(excluded).split(','), (item) => {
+        const trimmed = String(item).trim();
+        if (!trimmed) return false;
+        if (trimmed === licenseKey || trimmed === planId) return true;
+        
+        // Nếu item là UUID của plan, check plan name
+        const plan = getPlanById(trimmed);
+        if (plan && plan.name === planId) return true;
+        
+        return false;
+      });
+      if (isExcluded) return; // Skip blocked keys
+    }
+
     const assigned = row[KeysCols.ASSIGNED_TO] || Constants.ALL;
     const prio = getPriority(assigned);
 
@@ -812,7 +842,8 @@ function adminGetApiKeys() {
     ai33Key: row[KeysCols.AI33_KEY] || Constants.EMPTY_STRING,
     status: row[KeysCols.STATUS] || Constants.ACTIVE_LOWER,
     createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
-    updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING
+    updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING,
+    excludedTo: row[KeysCols.EXCLUDED_TO] || Constants.EMPTY_STRING
   }));
 
   return jsonResponse({ keys });
@@ -826,6 +857,7 @@ function updateApiKeys(params) {
   const geminiKey = _.get(params, ApiFields.GEMINI_KEY);
   const ai33Key = _.get(params, ApiFields.AI33_KEY);
   const assignedTo = _.get(params, ApiFields.ASSIGNED_TO, Constants.ALL);
+  const excludedTo = _.get(params, "excludedTo", Constants.EMPTY_STRING);
   const data = sheet.getDataRange().getValues();
   const now = getCurrentISO();
 
@@ -836,11 +868,12 @@ function updateApiKeys(params) {
       sheet.getRange(rowIndex + 1, KeysCols.GEMINI_KEY + 1).setValue(geminiKey || Constants.EMPTY_STRING);
       sheet.getRange(rowIndex + 1, KeysCols.AI33_KEY + 1).setValue(ai33Key || Constants.EMPTY_STRING);
       sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(now);
+      sheet.getRange(rowIndex + 1, KeysCols.EXCLUDED_TO + 1).setValue(excludedTo || Constants.EMPTY_STRING);
       return jsonResponse({ status: Messages.RES_SUCCESS });
     }
   }
 
-  sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER]);
+  sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER, excludedTo || Constants.EMPTY_STRING]);
   return jsonResponse({ status: Messages.RES_SUCCESS });
 }
 
@@ -871,15 +904,17 @@ function getAccounts(params) {
   if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
   const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-  const planId = _.get(params, ApiFields.PLAN_ID, Constants.EMPTY_STRING);
+  const planId = _.get(params, ApiFields.PLAN_ID, _.get(params, "plan_type", Constants.EMPTY_STRING));
 
   const data = sheet.getDataRange().getValues();
   let accounts = [];
 
   const getAccountPriority = (assigned) => {
-    if (!_.isEmpty(licenseKey) && _.isEqual(assigned, licenseKey)) return 2;
-    if (!_.isEmpty(planId) && _.isEqual(assigned, planId)) return 1;
-    if (_.isEqual(assigned, Constants.ALL)) return 0;
+    if (!assigned) return -1;
+    const items = _.map(String(assigned).split(','), item => item.trim());
+    if (!_.isEmpty(licenseKey) && _.includes(items, licenseKey)) return 2;
+    if (!_.isEmpty(planId) && (_.includes(items, planId) || _.some(items, item => getPlanById(item).name === planId))) return 1;
+    if (_.includes(items, Constants.ALL)) return 0;
     return -1;
   };
 
@@ -1043,7 +1078,7 @@ function setupSeedData() {
   usageSheet.appendRow([generateUUID(), now, now, "PRO-LIFE", 10, 50, 5000, now]);
 
   const keysSheet = initSheet(Config.SHEET_KEYS, Config.HEADERS.KEYS, Constants.COLOR_ADMIN);
-  keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE]);
+  keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.EMPTY_STRING]);
 
   const accountsSheet = initSheet(Config.SHEET_ACCOUNTS, Config.HEADERS.ACCOUNTS, Constants.COLOR_CONFIG);
   accountsSheet.appendRow([generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);

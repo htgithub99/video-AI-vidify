@@ -21,7 +21,7 @@ const AdminConstants = {
     ASSIGN_ALL: 'ALL',
     KEY_PREVIEW_LENGTH: 8,
     COLSPAN_USERS: 8,
-    COLSPAN_KEYS: 4,
+    COLSPAN_KEYS: 5,
     COLSPAN_ACCOUNTS: 6,
     MAX_ITEMS_SELECT: 1,
     DEFAULT_MAX_DEVICES: 1,
@@ -68,15 +68,27 @@ const AdminConstants = {
     },
     HTTP_POST: 'POST',
     PLUGIN_DROPDOWN: 'dropdown_input',
+    PLUGIN_REMOVE_BUTTON: 'remove_button',
+    BODY_TAG: 'body',
     SELECTED: 'selected',
     UNKNOWN_STR: 'unknown',
     SPLIT_DASH: '-',
     GLOBAL_PLANS: 'adminPlans',
     GLOBAL_USERS: 'adminUsersData',
+    GLOBAL_API_KEYS: 'adminApiKeysData',
+    GLOBAL_ACCOUNTS: 'adminAccountsData',
     PLAN_VIP: 'VIP',
     PLAN_LIFETIME: 'LIFETIME',
     PLAN_NAME_PATH: 'plan.name',
-    TARGET_VALUE_PATH: 'target.value'
+    TARGET_VALUE_PATH: 'target.value',
+    PAGE_PREFIX: 'page-',
+    NAV_TAB_PREFIX: 'nav-tab-',
+    TAB_CONTENT_PREFIX: 'tab-content-',
+    TAB_BTN_PREFIX: 'tab-btn-',
+    PAGE_RESOURCES: 'resources',
+    PAGE_CONFIG: 'config',
+    PAGE_USERS: 'users',
+    COMMA_SPLIT: ','
 };
 
 const AdminStorage = {
@@ -97,7 +109,8 @@ const DataAttributes = {
     KEY: 'data-key',
     ACCOUNT_ID: 'data-account-id',
     ASSIGNEE: 'data-assignee',
-    ID: 'data-id'
+    ID: 'data-id',
+    PLAN_ID: 'data-plan-id'
 };
 
 const ApiFields = {
@@ -144,7 +157,9 @@ const ApiFields = {
     AI33_KEY: 'ai33Key',
     MESSAGE: 'message',
     CREATED_AT_CAMEL: 'createdAt',
-    UPDATED_AT_CAMEL: 'updatedAt'
+    UPDATED_AT_CAMEL: 'updatedAt',
+    EXCLUDED_TO: 'excludedTo',
+    DELETE_TYPE: 'delete_type'
 };
 
 const EventTypes = {
@@ -181,7 +196,13 @@ const AdminSelectors = {
     MODAL_CLOSE_BTN: '.modal-close-btn',
     ACTION_BTNS: '.action-btn, .copy-btn',
     ACC_STATUS_SELECT: '.acc-status-select',
-    TOAST_CLOSE: '.toast-close'
+    TOAST_CLOSE: '.toast-close',
+    ADMIN_PAGE_CONTENT: '.admin-page-content',
+    NAV_TAB_BTN: '.nav-tab-btn',
+    SUB_TAB_CONTENT: '.sub-tab-content',
+    SUB_TAB_BTN: '.sub-tab-btn',
+    PLAN_UNLIMITED_INPUT: '.plan-unlimited-input',
+    DELETE_PLAN_BTN: '.delete-plan-btn'
 };
 
 const AdminRegex = {
@@ -249,6 +270,8 @@ const DOMIds = {
     DELETE_MODAL: 'delete-modal',
     BTN_SOFT_DELETE: 'btn-soft-delete',
     BTN_HARD_DELETE: 'btn-hard-delete',
+    BTN_RESOURCE_SOFT_DELETE: 'btn-resource-soft-delete',
+    BTN_RESOURCE_HARD_DELETE: 'btn-resource-hard-delete',
     DEVICE_MODAL: 'device-modal',
     DEVICE_LIST_CONTAINER: 'device-list-container',
     MODAL_RESET_DEVICE_BTN: 'modal-reset-device-btn',
@@ -260,6 +283,7 @@ const DOMIds = {
     KEYS_GEMINI_INPUT: 'keys-gemini-input',
     KEYS_AI33_INPUT: 'keys-ai33-input',
     KEYS_ASSIGNEE_INPUT: 'keys-assignee-input',
+    KEYS_EXCLUDED_INPUT: 'keys-excluded-input',
     ADD_ACC_BTN: 'add-acc-btn',
     ACC_EMAIL_INPUT: 'acc-email-input',
     ACC_PASSWORD_INPUT: 'acc-pwd-input',
@@ -268,7 +292,8 @@ const DOMIds = {
     SYNC_BTN: 'sync-expired-btn',
     CONFIRM_MODAL: 'confirm-modal',
     CONFIRM_MESSAGE_DISPLAY: 'confirm-message-display',
-    BTN_CONFIRM_ACTION: 'btn-confirm-action'
+    BTN_CONFIRM_ACTION: 'btn-confirm-action',
+    PLANS_CONTAINER: 'plans-container'
 };
 
 const AdminMessages = {

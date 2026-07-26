@@ -74,20 +74,23 @@ def ease_back_out(t):
     c3 = c1 + 1.0
     return 1.0 + c3 * pow(t - 1.0, 3) + c1 * pow(t - 1.0, 2)
 
+def ease_linear(t):
+    return t
+
 EASING_FUNCTIONS = [
-    ease_cubic_in_out,
-    ease_quart_out,
     ease_sine_in_out,
     ease_sine_in_out,
-    ease_cubic_in_out,
-    ease_cubic_in_out,
-    ease_expo_out,
-    ease_back_out,
-    ease_quart_out,
+    ease_linear,
+    ease_linear,
+    ease_linear,
+    ease_linear,
+    ease_linear,
+    ease_linear,
     ease_sine_in_out,
-    ease_expo_out,
-    ease_cubic_in_out,
     ease_sine_in_out,
+    ease_sine_in_out,
+    ease_sine_in_out,
+    ease_linear,
 ]
 
 def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
@@ -98,47 +101,47 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
     y0 = (h_new - h_crop) / 2.0
 
     if style == 0:
-        z = 1.0 + 0.22 * t_smooth
+        z = 1.0 + 0.06 * t_smooth
         w_crop = width / z
         h_crop = height / z
         x0 = (w_new - w_crop) / 2.0
         y0 = (h_new - h_crop) / 2.0
     elif style == 1:
-        z = 1.22 - 0.22 * t_smooth
+        z = 1.06 - 0.06 * t_smooth
         w_crop = width / z
         h_crop = height / z
         x0 = (w_new - w_crop) / 2.0
         y0 = (h_new - h_crop) / 2.0
     elif style == 2:
-        z = 1.12
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         y0 = (h_new - h_crop) / 2.0
         x_max = w_new - w_crop
         x0 = x_max * t_smooth
     elif style == 3:
-        z = 1.12
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         y0 = (h_new - h_crop) / 2.0
         x_max = w_new - w_crop
         x0 = x_max * (1.0 - t_smooth)
     elif style == 4:
-        z = 1.12
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         x0 = (w_new - w_crop) / 2.0
         y_max = h_new - h_crop
         y0 = y_max * (1.0 - t_smooth)
     elif style == 5:
-        z = 1.12
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         x0 = (w_new - w_crop) / 2.0
         y_max = h_new - h_crop
         y0 = y_max * t_smooth
     elif style == 6:
-        z = 1.15
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
@@ -146,7 +149,7 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
         x0 = x_max * t_smooth
         y0 = y_max * t_smooth
     elif style == 7:
-        z = 1.15
+        z = 1.06
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
@@ -154,26 +157,26 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
         x0 = x_max * t_smooth
         y0 = y_max * (1.0 - t_smooth)
     elif style == 8:
-        z = 1.0 + 0.18 * t_smooth
+        z = 1.0 + 0.06 * t_smooth
         arc_phase = math.sin(t_smooth * math.pi)
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
         y_max = h_new - h_crop
         x0 = x_max * (0.2 + 0.6 * t_smooth)
-        y0 = y_max * (0.5 - 0.3 * arc_phase)
+        y0 = y_max * (0.5 - 0.2 * arc_phase)
     elif style == 9:
-        z = 1.08 + 0.06 * math.sin(t_smooth * math.pi)
+        z = 1.03 + 0.03 * math.sin(t_smooth * math.pi)
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
         y_max = h_new - h_crop
-        drift_x = 0.5 + 0.3 * math.sin(t_smooth * math.pi * 1.5)
-        drift_y = 0.5 + 0.2 * math.cos(t_smooth * math.pi * 1.2)
+        drift_x = 0.5 + 0.1 * math.sin(t_smooth * math.pi * 1.5)
+        drift_y = 0.5 + 0.1 * math.cos(t_smooth * math.pi * 1.2)
         x0 = x_max * drift_x
         y0 = y_max * drift_y
     elif style == 10:
-        z = 1.0 + 0.30 * t_smooth
+        z = 1.0 + 0.06 * t_smooth
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
@@ -181,7 +184,7 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
         x0 = x_max * (0.5 + 0.15 * t_smooth)
         y0 = y_max * (0.5 - 0.1 * t_smooth)
     elif style == 11:
-        z = 1.20 - 0.15 * t_smooth
+        z = 1.06 - 0.06 * t_smooth
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
@@ -204,7 +207,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
     
-    scale_factor = max(width / w_orig, height / h_orig) * 1.25
+    scale_factor = max(width / w_orig, height / h_orig) * 1.08
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     
@@ -391,7 +394,7 @@ def get_last_frame_from_scene(image_path, width, height, duration, fps, style_in
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
     
-    scale_factor = max(width / w_orig, height / h_orig) * 1.25
+    scale_factor = max(width / w_orig, height / h_orig) * 1.08
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.LANCZOS)
@@ -404,7 +407,7 @@ def get_last_frame_from_scene(image_path, width, height, duration, fps, style_in
     final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
     return final
 
-def get_first_frame_from_scene(image_path, width, height):
+def get_first_frame_from_scene(image_path, width, height, style_index):
     try:
         img = Image.open(image_path)
     except Exception:
@@ -412,14 +415,18 @@ def get_first_frame_from_scene(image_path, width, height):
     
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
-    scale_factor = max(width / w_orig, height / h_orig) * 1.25
-    w_new = int(w_orig * scale_factor)
-    h_new = int(h_orig * scale_factor)
-    img_resized = img.resize((w_new, h_new), Image.Resampling.LANCZOS)
+    scale_factor = max(width / w_orig, height / h_orig) * 1.08
+    w_new = float(w_orig * scale_factor)
+    h_new = float(h_orig * scale_factor)
+    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.LANCZOS)
     
-    left = (w_new - width) // 2
-    top = (h_new - height) // 2
-    return img_resized.crop((left, top, left + width, top + height))
+    style = style_index % 13
+    easing_fn = EASING_FUNCTIONS[style]
+    t_smooth = easing_fn(0.0)
+    
+    x0, y0, x1, y1 = get_crop_coordinates(style, t_smooth, w_new, h_new, width, height)
+    final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
+    return final
 
 def main():
     try:
@@ -512,7 +519,10 @@ def main():
             fade_dur = max(fade_dur, 0.15)
             
             transition_dur = min(0.5, duration / 4.0) if i < len(scenes) - 1 else 0
-            total_scene_dur = duration + transition_dur
+            
+            total_frames = int(duration * fps)
+            transition_frames = max(int(transition_dur * fps), 2) if (transition_dur > 0 and i < len(scenes) - 1 and chosen_transitions[i] != FFMPEG_CONSTANTS.TRANS_CUT) else 0
+            actual_duration = (total_frames + transition_frames) / fps
             
             cmd = [
                 ffmpegCmd, "-y",
@@ -547,7 +557,7 @@ def main():
                 "-c:a", FFMPEG_CONSTANTS.AAC, "-b:a", "128k",
                 "-vf", vf_effect,
                 "-af", af_effect,
-                "-t", str(total_scene_dur),
+                "-t", str(actual_duration),
                 "-shortest", outPath
             ])
             
@@ -560,7 +570,7 @@ def main():
                 
                 if transition_type != FFMPEG_CONSTANTS.TRANS_CUT:
                     img_prev = get_last_frame_from_scene(imgPath, width, height, duration, fps, chosen_styles[i])
-                    img_next = get_first_frame_from_scene(scene_img_paths[i + 1], width, height)
+                    img_next = get_first_frame_from_scene(scene_img_paths[i + 1], width, height, chosen_styles[i + 1])
                     
                     generate_crossfade_frames(
                         img_prev, img_next,

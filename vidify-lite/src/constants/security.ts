@@ -181,6 +181,21 @@ export const SecurityConstants = {
   MODAL_WIDTH_MD: 'max-w-md',
   HEADER_ACCEPT_LANGUAGE: 'accept-language',
   LIMIT_500MB: '500mb',
+  API_KEYS_KEY: 'apiKeys',
+  ACCOUNTS_KEY: 'accounts',
+  REQ_BODY_GEMINI_KEY: 'geminiKey',
+  REQ_BODY_AI33_KEY: 'ai33Key',
+  REQ_BODY_ACCOUNT: 'account',
+  REQ_BODY_ROW_INDEX: 'rowIndex',
+  REQ_BODY_STATUS: 'status',
+  REQ_BODY_MESSAGE: 'message',
+  LOG_GET_SETTINGS_ERROR: 'GET_SETTINGS_ERROR',
+  LOG_SAVE_API_KEYS_ERROR: 'SAVE_API_KEYS_ERROR',
+  LOG_ADD_ACCOUNT_ERROR: 'ADD_ACCOUNT_ERROR',
+  LOG_UPDATE_ACCOUNT_ERROR: 'UPDATE_ACCOUNT_ERROR',
+  ACCOUNT_ID_PROP: 'id',
+  PASSWORD_PROP: 'password',
+  RECOVERY_EMAIL_PROP: 'recoveryEmail',
 };
 
 export const LocalizationConstants = {
