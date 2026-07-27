@@ -34,6 +34,893 @@ const _ = {
       if (a[key] > b[key]) return isDesc ? -1 : 1;
       return 0;
     });
+  },
+
+  generateUUID: function () {
+    return Utilities.getUuid();
+  },
+
+  getCurrentISO: function () {
+    return new Date().toISOString();
+  },
+
+  validateClientLicense: function (licenseKey) {
+    if (this.isEmpty(licenseKey)) return false;
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    if (!usersSheet) return false;
+    const data = usersSheet.getDataRange().getValues();
+    const cleanLicenseKey = String(licenseKey).trim();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(String(row[UserCols.LICENSE_KEY]).trim(), cleanLicenseKey));
+    if (rowIndex > 0) {
+      const status = String(data[rowIndex][UserCols.STATUS]).toLowerCase().trim();
+      return this.isEqual(status, StatusEnum.ACTIVE.toLowerCase().trim());
+    }
+    return false;
+  },
+
+  doPost: function (e) {
+    try {
+      const contents = this.get(e, 'postData.contents');
+      if (this.isNil(contents)) return this.jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
+
+      const params = JSON.parse(contents);
+      const action = this.get(params, ApiFields.ACTION);
+
+      const adminToken = this.get(params, ApiFields.ADMIN_TOKEN);
+      const isAdminAction = this.startsWith(action, Constants.ADMIN_PREFIX);
+
+      if (isAdminAction && !this.isEqual(action, AppActions.ADMIN_LOGIN)) {
+        if (!this.validateAdminToken(adminToken)) {
+          return this.jsonResponse({ error: Messages.INVALID_CREDENTIALS, code: HttpCode.UNAUTHORIZED });
+        }
+
+        if (this.isEqual(action, AppActions.ADMIN_GET_USERS)) return this.adminGetUsers();
+        if (this.isEqual(action, AppActions.ADMIN_CREATE_KEY)) return this.adminCreateKey(params);
+        if (this.isEqual(action, AppActions.ADMIN_REVOKE_KEY)) return this.adminRevokeKey(params);
+        if (this.isEqual(action, AppActions.ADMIN_DELETE_KEY)) return this.adminDeleteKey(params);
+        if (this.isEqual(action, AppActions.ADMIN_UPDATE_KEY)) return this.adminUpdateKey(params);
+        if (this.isEqual(action, AppActions.ADMIN_RESET_DEVICE)) return this.adminResetDevice(params);
+        if (this.isEqual(action, AppActions.ADMIN_GET_PLANS)) return this.adminGetPlans();
+        if (this.isEqual(action, AppActions.ADMIN_CREATE_PLAN)) return this.adminCreatePlan(params);
+        if (this.isEqual(action, AppActions.ADMIN_UPDATE_PLAN)) return this.adminUpdatePlan(params);
+        if (this.isEqual(action, AppActions.ADMIN_DELETE_PLAN)) return this.adminDeletePlan(params);
+        if (this.isEqual(action, AppActions.ADMIN_SYNC_EXPIRED)) return this.adminSyncExpired();
+
+        if (this.isEqual(action, AppActions.ADMIN_GET_API_KEYS)) return this.adminGetApiKeys();
+        if (this.isEqual(action, AppActions.ADMIN_UPDATE_API_KEYS)) return this.updateApiKeys(params);
+        if (this.isEqual(action, AppActions.ADMIN_GET_ACCOUNTS)) return this.adminGetAccounts();
+        if (this.isEqual(action, AppActions.ADMIN_ADD_ACCOUNT)) return this.addAccount(params);
+        if (this.isEqual(action, AppActions.ADMIN_UPDATE_ACCOUNT)) return this.updateAccountAdmin(params);
+        if (this.isEqual(action, AppActions.ADMIN_DELETE_ACCOUNT)) return this.deleteAccountAdmin(params);
+        if (this.isEqual(action, AppActions.ADMIN_DELETE_API_KEYS)) return this.deleteApiKeysAdmin(params);
+        if (this.isEqual(action, AppActions.ADMIN_UPDATE_ACCOUNT_STATUS)) return this.updateAccountStatus(params);
+      }
+
+      if (this.isEqual(action, AppActions.VERIFY_KEY)) return this.verifyKey(params);
+
+      const licenseKey = this.get(params, ApiFields.LICENSE_KEY);
+      if (!this.validateClientLicense(licenseKey)) {
+        return this.jsonResponse({ error: Messages.INVALID_LICENSE_ERR, code: HttpCode.FORBIDDEN });
+      }
+
+      if (this.isEqual(action, AppActions.UPDATE_USAGE)) {
+        const amount = this.toInteger(this.get(params, ApiFields.AMOUNT)) || Constants.DEFAULT_AMOUNT;
+        if (amount <= Constants.ZERO) {
+          return this.jsonResponse({ error: Messages.INVALID_AMOUNT_ERR, code: HttpCode.BAD_REQUEST });
+        }
+        return this.updateUsage(params);
+      }
+
+      if (this.isEqual(action, AppActions.GET_API_KEYS)) return this.getApiKeys(params);
+      if (this.isEqual(action, AppActions.GET_ACCOUNTS)) return this.getAccounts(params);
+      if (this.isEqual(action, AppActions.UPDATE_ACCOUNT_STATUS)) return this.updateAccountStatus(params);
+
+      return this.jsonResponse({ error: Messages.INVALID_ACTION, code: HttpCode.BAD_REQUEST });
+    } catch (error) {
+      AppLogger.error(Messages.SERVER_ERROR, error);
+      return this.jsonResponse({ error: error.toString(), code: HttpCode.INTERNAL_ERROR });
+    }
+  },
+
+  doOptions: function (e) {
+    return this.jsonResponse({ status: Messages.OPTIONS_OK });
+  },
+
+  doGet: function (e) {
+    return this.jsonResponse({ status: Messages.GET_RUNNING });
+  },
+
+  verifyKey: function (params) {
+    const adminKey = this.get(params, ApiFields.ADMIN_KEY);
+    if (!this.isEqual(adminKey, this.getAppSecretKey())) return this.jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
+
+    const key = this.get(params, ApiFields.LICENSE_KEY);
+    const device = this.get(params, ApiFields.DEVICE_ID);
+
+    if (this.isNil(key)) return this.jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
+    if (this.isNil(device)) return this.jsonResponse({ error: Messages.MISSING_DEVICE, code: HttpCode.BAD_REQUEST });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const data = usersSheet.getDataRange().getValues();
+    const maxDevices = Config.MAX_DEVICES;
+
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UserCols.LICENSE_KEY], key));
+
+    if (rowIndex > 0) {
+      const row = data[rowIndex];
+      const savedDeviceStr = row[UserCols.DEVICE_ID] || Constants.EMPTY_ARRAY;
+      let savedDevices = [];
+
+      try {
+        savedDevices = JSON.parse(savedDeviceStr);
+        if (!this.isArray(savedDevices)) savedDevices = [];
+      } catch (e) {
+        savedDevices = savedDeviceStr ? [savedDeviceStr] : [];
+      }
+
+      if (!this.includes(savedDevices, device)) {
+        if (savedDevices.length < maxDevices) {
+          savedDevices.push(device);
+          usersSheet.getRange(rowIndex + 1, UserCols.DEVICE_ID + 1).setValue(JSON.stringify(savedDevices));
+        } else {
+          return this.jsonResponse({ error: `${Messages.DEVICE_LIMIT} (${maxDevices})`, code: HttpCode.FORBIDDEN });
+        }
+      }
+
+      let currentStatus = row[UserCols.STATUS];
+      const expiresAt = row[UserCols.EXPIRES_AT];
+
+      if (expiresAt) {
+        const expiryDate = new Date(expiresAt);
+        if (new Date() > expiryDate) {
+          usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
+          currentStatus = StatusEnum.EXPIRED;
+        }
+      }
+
+      const quotaType = row[UserCols.QUOTA_TYPE] || QuotaType.DAILY;
+      let usage = this.getUsageData(key);
+
+      if (this.isEqual(quotaType, QuotaType.DAILY)) {
+        const today = this.getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
+        const lastResetDate = String(usage.last_reset || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
+        if (!this.isEqual(lastResetDate, today)) {
+          usage = { video: 0, image: 0, voice: 0, last_reset: this.getCurrentISO() };
+        }
+      }
+
+      const planId = row[UserCols.PLAN_ID];
+      const plan = this.getPlanById(planId);
+
+      return this.jsonResponse({
+        status: currentStatus,
+        plan: plan,
+        quota_type: quotaType,
+        expires_at: expiresAt || null,
+        usage: usage
+      });
+    }
+
+    return this.jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  updateUsage: function (params) {
+    const adminKey = this.get(params, ApiFields.ADMIN_KEY);
+    if (!this.isEqual(adminKey, this.getAppSecretKey())) return this.jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
+
+    const key = this.get(params, ApiFields.LICENSE_KEY);
+    const feature = this.get(params, ApiFields.FEATURE);
+    const amount = this.toInteger(this.get(params, ApiFields.AMOUNT)) || 1;
+
+    if (this.isNil(key)) return this.jsonResponse({ error: Messages.MISSING_KEY });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const usersData = usersSheet.getDataRange().getValues();
+
+    const isValid = this.some(usersData, (row, idx) => idx > 0 && this.isEqual(row[UserCols.LICENSE_KEY], key) && this.isEqual(row[UserCols.STATUS], StatusEnum.ACTIVE));
+    if (!isValid) return this.jsonResponse({ error: Messages.KEY_REVOKED, code: HttpCode.FORBIDDEN });
+
+    const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
+    const data = usageSheet.getDataRange().getValues();
+    const usageIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UsageCols.LICENSE_KEY], key));
+
+    if (usageIndex > 0) {
+      const row = data[usageIndex];
+      const userRow = this.find(usersData, (r, idx) => idx > 0 && this.isEqual(r[UserCols.LICENSE_KEY], key));
+      const quotaType = userRow ? (userRow[UserCols.QUOTA_TYPE] || QuotaType.DAILY) : QuotaType.DAILY;
+      const today = this.getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
+      const lastResetDate = String(row[UsageCols.LAST_RESET] || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
+
+      let currentVideo = this.toInteger(row[UsageCols.VIDEO] || 0);
+      let currentImage = this.toInteger(row[UsageCols.IMAGE] || 0);
+      let currentVoice = this.toInteger(row[UsageCols.VOICE] || 0);
+
+      if (this.isEqual(quotaType, QuotaType.DAILY) && !this.isEqual(lastResetDate, today)) {
+        currentVideo = 0;
+        currentImage = 0;
+        currentVoice = 0;
+        usageSheet.getRange(usageIndex + 1, UsageCols.LAST_RESET + 1).setValue(this.getCurrentISO());
+      }
+
+      if (this.isEqual(feature, FeatureEnum.VIDEO)) currentVideo += amount;
+      if (this.isEqual(feature, FeatureEnum.IMAGE)) currentImage += amount;
+      if (this.isEqual(feature, FeatureEnum.VOICE)) currentVoice += amount;
+
+      usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1, 1, 3).setValues([[currentVideo, currentImage, currentVoice]]);
+      usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+    } else {
+      const now = this.getCurrentISO();
+      const newRow = [this.generateUUID(), now, now, key, 0, 0, 0, now];
+      if (this.isEqual(feature, FeatureEnum.VIDEO)) newRow[UsageCols.VIDEO] = amount;
+      if (this.isEqual(feature, FeatureEnum.IMAGE)) newRow[UsageCols.IMAGE] = amount;
+      if (this.isEqual(feature, FeatureEnum.VOICE)) newRow[UsageCols.VOICE] = amount;
+      usageSheet.appendRow(newRow);
+    }
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  adminLogin: function (params) {
+    const username = this.get(params, ApiFields.USERNAME);
+    const password = this.get(params, ApiFields.PASSWORD);
+
+    if (this.isNil(username) || this.isNil(password)) return this.jsonResponse({ error: Messages.MISSING_CREDENTIALS });
+
+    const adminsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ADMINS);
+    if (!adminsSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const data = adminsSheet.getDataRange().getValues();
+    const adminIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[AdminCols.USERNAME], username) && this.isEqual(row[AdminCols.PASSWORD], password));
+
+    if (adminIndex > 0) {
+      const newToken = this.generateUUID();
+      adminsSheet.getRange(adminIndex + 1, AdminCols.TOKEN + 1).setValue(newToken);
+      adminsSheet.getRange(adminIndex + 1, AdminCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+      return this.jsonResponse({ status: Messages.RES_SUCCESS, token: newToken });
+    }
+
+    return this.jsonResponse({ error: Messages.INVALID_CREDENTIALS, code: HttpCode.UNAUTHORIZED });
+  },
+
+  validateAdminToken: function (token) {
+    if (this.isNil(token)) return false;
+    const adminsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ADMINS);
+    if (!adminsSheet) return false;
+
+    const data = adminsSheet.getDataRange().getValues();
+    return this.some(data, (row, idx) => idx > 0 && this.isEqual(row[AdminCols.TOKEN], token));
+  },
+
+  adminGetUsers: function () {
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
+
+    const usersData = usersSheet.getDataRange().getValues();
+    const usageData = usageSheet.getDataRange().getValues();
+
+    const users = this.map(this.filter(usersData, (row, idx) => idx > 0), row => {
+      const key = row[UserCols.LICENSE_KEY];
+      const uRow = this.find(usageData, (u, i) => i > 0 && this.isEqual(u[UsageCols.LICENSE_KEY], key));
+
+      return {
+        id: row[UserCols.ID],
+        username: row[UserCols.USERNAME],
+        license_key: key,
+        plan_id: row[UserCols.PLAN_ID],
+        status: row[UserCols.STATUS],
+        created_at: row[UserCols.CREATED_AT],
+        updated_at: row[UserCols.UPDATED_AT],
+        expires_at: row[UserCols.EXPIRES_AT],
+        device_id: row[UserCols.DEVICE_ID],
+        quota_type: row[UserCols.QUOTA_TYPE] || QuotaType.DAILY,
+        usage: uRow ? {
+          video: uRow[UsageCols.VIDEO] || 0,
+          image: uRow[UsageCols.IMAGE] || 0,
+          voice: uRow[UsageCols.VOICE] || 0,
+          last_reset: uRow[UsageCols.LAST_RESET]
+        } : { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING }
+      };
+    });
+
+    return this.jsonResponse({ users: users });
+  },
+
+  getAppSecretKey: function () {
+    try {
+      const settingsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_SETTINGS);
+      if (settingsSheet) {
+        const data = settingsSheet.getDataRange().getValues();
+        const row = this.find(data, (r, idx) => idx > 0 && this.isEqual(r[SettingsCols.KEY], Constants.KEY_ADMIN_APP_KEY) && r[SettingsCols.VALUE]);
+        if (row) return String(row[SettingsCols.VALUE]).trim();
+      }
+    } catch (e) {
+      AppLogger.error('Error in getAppSecretKey', e);
+    }
+    return Constants.MASTER_KEY_FALLBACK;
+  },
+
+  adminCreateKey: function (params) {
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const username = this.get(params, ApiFields.USERNAME, Constants.UNKNOWN);
+    const planId = this.get(params, ApiFields.PLAN_ID);
+    const quotaType = this.get(params, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
+
+    const generateSecureKey = () => {
+      const uuid = Utilities.getUuid().replace(/-/g, '');
+      const payload = uuid.substring(0, 20).toUpperCase();
+      const secretKey = this.getAppSecretKey();
+      const signatureBytes = Utilities.computeHmacSha256Signature(payload, secretKey);
+      const signatureHex = signatureBytes.map(byte => {
+        const v = (byte < 0 ? byte + 256 : byte).toString(16);
+        return v.length === 1 ? '0' + v : v;
+      }).join('').toUpperCase();
+      const checksum = signatureHex.substring(0, 5);
+      const finalKey = payload + checksum;
+      return finalKey.match(/.{1,5}/g).join('-');
+    };
+    const newKey = generateSecureKey();
+
+    const now = this.getCurrentISO();
+    usersSheet.appendRow([this.generateUUID(), now, now, username, newKey, planId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, quotaType]);
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_CREATED, license_key: newKey });
+  },
+
+  adminRevokeKey: function (params) {
+    const id = this.get(params, ApiFields.ID);
+    if (this.isNil(id)) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const data = usersSheet.getDataRange().getValues();
+
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UserCols.ID], id));
+    if (rowIndex > 0) {
+      usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+      return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_REVOKED });
+    }
+
+    return this.jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  adminDeleteKey: function (params) {
+    const id = this.get(params, ApiFields.ID);
+    if (this.isNil(id)) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
+
+    const usersData = usersSheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(usersData, (row, idx) => idx > 0 && this.isEqual(row[UserCols.ID], id));
+
+    if (rowIndex > 0) {
+      const licenseKey = usersData[rowIndex][UserCols.LICENSE_KEY];
+      usersSheet.deleteRow(rowIndex + 1);
+
+      const usageData = usageSheet.getDataRange().getValues();
+      const usageIndex = this.findIndex(usageData, (row, idx) => idx > 0 && this.isEqual(row[UsageCols.LICENSE_KEY], licenseKey));
+      if (usageIndex > 0) usageSheet.deleteRow(usageIndex + 1);
+    }
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_DELETED });
+  },
+
+  adminUpdateKey: function (params) {
+    const id = this.get(params, ApiFields.ID);
+    const newPlanId = this.get(params, ApiFields.PLAN_ID);
+    const newExpires = this.get(params, ApiFields.EXPIRES_AT);
+    const newStatus = this.get(params, ApiFields.STATUS);
+    const newQuotaType = this.get(params, ApiFields.QUOTA_TYPE);
+
+    if (this.isNil(id)) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const data = usersSheet.getDataRange().getValues();
+
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UserCols.ID], id));
+    if (rowIndex > 0) {
+      if (newPlanId) usersSheet.getRange(rowIndex + 1, UserCols.PLAN_ID + 1).setValue(newPlanId);
+      if (newQuotaType) usersSheet.getRange(rowIndex + 1, UserCols.QUOTA_TYPE + 1).setValue(newQuotaType);
+      usersSheet.getRange(rowIndex + 1, UserCols.EXPIRES_AT + 1).setValue(newExpires || Constants.EMPTY_STRING);
+
+      if (newStatus) {
+        usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(newStatus);
+      } else if (this.isEqual(data[rowIndex][UserCols.STATUS], StatusEnum.EXPIRED)) {
+        usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.ACTIVE);
+      }
+
+      usersSheet.getRange(rowIndex + 1, UserCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+
+      return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
+    }
+
+    return this.jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  adminResetDevice: function (params) {
+    const id = this.get(params, ApiFields.ID);
+    if (this.isNil(id)) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    const data = usersSheet.getDataRange().getValues();
+
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UserCols.ID], id));
+    if (rowIndex > 0) {
+      usersSheet.getRange(rowIndex + 1, UserCols.DEVICE_ID + 1).setValue(Constants.EMPTY_ARRAY);
+      return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_RESET });
+    }
+
+    return this.jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  adminGetPlans: function () {
+    return this.jsonResponse({ plans: this.getPlans() });
+  },
+
+  adminUpdatePlan: function (params) {
+    const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+    if (!plansSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const planId = this.get(params, ApiFields.ID);
+    if (this.isNil(planId)) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const data = plansSheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[PlanCols.ID], planId));
+
+    if (rowIndex > 0) {
+      const now = this.getCurrentISO();
+      if (!this.isNil(params[ApiFields.NAME])) plansSheet.getRange(rowIndex + 1, PlanCols.NAME + 1).setValue(params[ApiFields.NAME]);
+      if (!this.isNil(params[ApiFields.QUOTA_VIDEO])) plansSheet.getRange(rowIndex + 1, PlanCols.VIDEO + 1).setValue(params[ApiFields.QUOTA_VIDEO]);
+      if (!this.isNil(params[ApiFields.QUOTA_IMAGE])) plansSheet.getRange(rowIndex + 1, PlanCols.IMAGE + 1).setValue(params[ApiFields.QUOTA_IMAGE]);
+      if (!this.isNil(params[ApiFields.QUOTA_VOICE])) plansSheet.getRange(rowIndex + 1, PlanCols.VOICE + 1).setValue(params[ApiFields.QUOTA_VOICE]);
+      if (!this.isNil(params[ApiFields.IS_UNLIMITED])) plansSheet.getRange(rowIndex + 1, PlanCols.UNLIMITED + 1).setValue(params[ApiFields.IS_UNLIMITED]);
+
+      plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(now);
+      return this.jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
+    }
+
+    return this.jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  adminCreatePlan: function (params) {
+    const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+    if (!plansSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const now = this.getCurrentISO();
+    const newId = this.generateUUID();
+    const name = this.get(params, ApiFields.NAME, Constants.NEW_PLAN_NAME);
+    const video = this.toInteger(this.get(params, ApiFields.QUOTA_VIDEO)) || 0;
+    const image = this.toInteger(this.get(params, ApiFields.QUOTA_IMAGE)) || 0;
+    const voice = this.toInteger(this.get(params, ApiFields.QUOTA_VOICE)) || 0;
+    const unlimited = this.get(params, ApiFields.IS_UNLIMITED, false);
+
+    plansSheet.appendRow([newId, now, now, name, video, image, voice, unlimited, Constants.ACTIVE_LOWER]);
+    return this.jsonResponse({ status: Messages.RES_SUCCESS, plan_id: newId });
+  },
+
+  adminDeletePlan: function (params) {
+    const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+    if (!plansSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const planId = this.get(params, ApiFields.ID);
+    const deleteType = this.get(params, ApiFields.DELETE_TYPE, Constants.DELETE_HARD);
+    if (!planId) return this.jsonResponse({ error: Messages.MISSING_ID });
+
+    const data = plansSheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[PlanCols.ID], planId));
+
+    if (rowIndex > 0) {
+      if (this.isEqual(deleteType, Constants.DELETE_SOFT)) {
+        plansSheet.getRange(rowIndex + 1, PlanCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+        plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+      } else {
+        plansSheet.deleteRow(rowIndex + 1);
+      }
+      return this.jsonResponse({ status: Messages.RES_SUCCESS });
+    }
+
+    return this.jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  adminSyncExpired: function () {
+    const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
+    if (!usersSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const data = usersSheet.getDataRange().getValues();
+    const now = new Date();
+
+    let synced = 0;
+    this.forEach(data, (row, idx) => {
+      if (idx > 0 && row[UserCols.EXPIRES_AT]) {
+        const expiry = new Date(row[UserCols.EXPIRES_AT]);
+        if (now > expiry && this.isEqual(row[UserCols.STATUS], StatusEnum.ACTIVE)) {
+          usersSheet.getRange(idx + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
+          synced++;
+        }
+      }
+    });
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS, message: `Đã đồng bộ ${synced} tài khoản hết hạn` });
+  },
+
+  getPlans: function () {
+    const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
+    if (!plansSheet) return [];
+
+    const data = plansSheet.getDataRange().getValues();
+    return this.map(this.filter(data, (row, idx) => idx > 0), row => ({
+      id: row[PlanCols.ID],
+      name: row[PlanCols.NAME],
+      quota_video: this.toInteger(row[PlanCols.VIDEO]) || 0,
+      quota_image: this.toInteger(row[PlanCols.IMAGE]) || 0,
+      quota_voice: this.toInteger(row[PlanCols.VOICE]) || 0,
+      is_unlimited: this.isEqual(String(row[PlanCols.UNLIMITED]), Constants.STRING_TRUE),
+      status: row[PlanCols.STATUS] || Constants.ACTIVE_LOWER,
+      created_at: row[PlanCols.CREATED_AT],
+      updated_at: row[PlanCols.UPDATED_AT]
+    }));
+  },
+
+  getPlanById: function (planId) {
+    const plans = this.getPlans();
+    return this.find(plans, p => this.isEqual(p.id, planId)) || {
+      id: planId, name: Constants.UNKNOWN, quota_video: 0, quota_image: 0, quota_voice: 0, is_unlimited: false
+    };
+  },
+
+  getUsageData: function (key) {
+    const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
+    if (!usageSheet) return { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING };
+
+    const data = usageSheet.getDataRange().getValues();
+    const usageRow = this.find(data, (row, idx) => idx > 0 && this.isEqual(row[UsageCols.LICENSE_KEY], key));
+
+    if (usageRow) {
+      return {
+        video: usageRow[UsageCols.VIDEO] || 0,
+        image: usageRow[UsageCols.IMAGE] || 0,
+        voice: usageRow[UsageCols.VOICE] || 0,
+        last_reset: usageRow[UsageCols.LAST_RESET]
+      };
+    }
+    return { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING };
+  },
+
+  jsonResponse: function (data) {
+    const output = ContentService.createTextOutput(JSON.stringify(data));
+    output.setMimeType(ContentService.MimeType.JSON);
+    return output;
+  },
+
+  matchAssignedTo: function (rowAssignedTo, licenseKey, planId) {
+    if (!rowAssignedTo) return false;
+    if (this.isEqual(rowAssignedTo, Constants.ALL)) return true;
+    if (planId && this.isEqual(rowAssignedTo, planId)) return true;
+    if (licenseKey && this.isEqual(rowAssignedTo, licenseKey)) return true;
+    return false;
+  },
+
+  getApiKeys: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const licenseKey = this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
+    const planId = this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING));
+
+    const data = sheet.getDataRange().getValues();
+    let geminiKey = Constants.EMPTY_STRING;
+    let ai33Key = Constants.EMPTY_STRING;
+    let geminiPriority = -1;
+    let ai33Priority = -1;
+
+    const getPriority = (assigned) => {
+      if (!assigned) return -1;
+      const items = this.map(String(assigned).split(','), item => item.trim());
+
+      if (!this.isEmpty(licenseKey) && this.includes(items, licenseKey)) return 2;
+
+      const hasPlanMatch = this.some(items, (item) => {
+        if (!item) return false;
+        return this.isEqual(item, planId);
+      });
+      if (hasPlanMatch) return 1;
+
+      const isAll = this.some(items, item => this.isEqual(item.toUpperCase(), Constants.ALL.toUpperCase()));
+      if (isAll) return 0;
+
+      return -1;
+    };
+
+    this.forEach(data, (row, i) => {
+      if (this.isEqual(i, 0)) return;
+
+      const excluded = row[KeysCols.EXCLUDED_TO] || "";
+      if (excluded) {
+        const isExcluded = this.some(String(excluded).split(','), (item) => {
+          const trimmed = String(item).trim();
+          if (!trimmed) return false;
+          if (this.isEqual(trimmed, licenseKey) || this.isEqual(trimmed, planId)) return true;
+
+          return false;
+        });
+        if (isExcluded) return;
+      }
+
+      const assigned = row[KeysCols.ASSIGNED_TO] || Constants.ALL;
+      const prio = getPriority(assigned);
+
+      if (prio !== -1) {
+        if (row[KeysCols.GEMINI_KEY] && prio >= geminiPriority) {
+          geminiKey = row[KeysCols.GEMINI_KEY];
+          geminiPriority = prio;
+        }
+        if (row[KeysCols.AI33_KEY] && prio >= ai33Priority) {
+          ai33Key = row[KeysCols.AI33_KEY];
+          ai33Priority = prio;
+        }
+      }
+    });
+
+    return this.jsonResponse({ apiKeys: { geminiKey, ai33Key } });
+  },
+
+  adminGetApiKeys: function () {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const data = sheet.getDataRange().getValues();
+    const keys = this.map(this.filter(data, (row, idx) => idx > 0), row => ({
+      id: row[KeysCols.ID] || Constants.EMPTY_STRING,
+      assignedTo: row[KeysCols.ASSIGNED_TO] || Constants.ALL,
+      geminiKey: row[KeysCols.GEMINI_KEY] || Constants.EMPTY_STRING,
+      ai33Key: row[KeysCols.AI33_KEY] || Constants.EMPTY_STRING,
+      status: row[KeysCols.STATUS] || Constants.ACTIVE_LOWER,
+      createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
+      updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING,
+      excludedTo: row[KeysCols.EXCLUDED_TO] || Constants.EMPTY_STRING
+    }));
+
+    return this.jsonResponse({ keys });
+  },
+
+  updateApiKeys: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const id = this.get(params, ApiFields.ID);
+    const geminiKey = this.get(params, ApiFields.GEMINI_KEY);
+    const ai33Key = this.get(params, ApiFields.AI33_KEY);
+    const assignedTo = this.get(params, ApiFields.ASSIGNED_TO, Constants.ALL);
+    const excludedTo = this.get(params, ApiFields.EXCLUDED_TO, Constants.EMPTY_STRING);
+    const data = sheet.getDataRange().getValues();
+    const now = this.getCurrentISO();
+
+    if (id) {
+      const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[KeysCols.ID], id));
+      if (rowIndex > 0) {
+        sheet.getRange(rowIndex + 1, KeysCols.ASSIGNED_TO + 1).setValue(assignedTo);
+        sheet.getRange(rowIndex + 1, KeysCols.GEMINI_KEY + 1).setValue(geminiKey || Constants.EMPTY_STRING);
+        sheet.getRange(rowIndex + 1, KeysCols.AI33_KEY + 1).setValue(ai33Key || Constants.EMPTY_STRING);
+        sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(now);
+        sheet.getRange(rowIndex + 1, KeysCols.EXCLUDED_TO + 1).setValue(excludedTo || Constants.EMPTY_STRING);
+        return this.jsonResponse({ status: Messages.RES_SUCCESS });
+      }
+    }
+
+    sheet.appendRow([this.generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER, excludedTo || Constants.EMPTY_STRING]);
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  deleteApiKeysAdmin: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const id = this.get(params, ApiFields.ID);
+    const deleteType = this.get(params, ApiFields.DELETE_TYPE, Constants.DELETE_HARD);
+    if (!id) return this.jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
+
+    const data = sheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[KeysCols.ID], id));
+    if (rowIndex > 0) {
+      if (this.isEqual(deleteType, Constants.DELETE_SOFT)) {
+        sheet.getRange(rowIndex + 1, KeysCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+        sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+      } else {
+        sheet.deleteRow(rowIndex + 1);
+      }
+    }
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  getAccounts: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const licenseKey = this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
+    const planId = this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING));
+
+    const data = sheet.getDataRange().getValues();
+    let accounts = [];
+
+    const getAccountPriority = (assigned) => {
+      if (!assigned) return -1;
+      const items = this.map(String(assigned).split(','), item => item.trim());
+      if (!this.isEmpty(licenseKey) && this.includes(items, licenseKey)) return 2;
+      if (!this.isEmpty(planId) && (this.includes(items, planId) || this.some(items, item => this.isEqual(this.getPlanById(item).name, planId)))) return 1;
+      if (this.includes(items, Constants.ALL)) return 0;
+      return -1;
+    };
+
+    this.forEach(data, (row, i) => {
+      if (this.isEqual(i, 0)) return;
+      const assigned = row[AccountsCols.ASSIGNED_TO] || Constants.ALL;
+      const prio = getAccountPriority(assigned);
+      if (!this.isEqual(prio, -1)) {
+        accounts.push({
+          id: i,
+          email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
+          password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
+          recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
+          status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
+          assignedTo: assigned,
+          priority: prio
+        });
+      }
+    });
+
+    accounts = this.orderBy(accounts, ['priority'], ['desc']);
+    return this.jsonResponse({ accounts });
+  },
+
+  adminGetAccounts: function () {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const data = sheet.getDataRange().getValues();
+    const accounts = this.map(this.filter(data, (row, idx) => idx > 0), row => ({
+      id: row[AccountsCols.ID] || Constants.EMPTY_STRING,
+      email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
+      password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
+      recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
+      status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
+      assignedTo: row[AccountsCols.ASSIGNED_TO] || Constants.ALL,
+      createdAt: row[AccountsCols.CREATED_AT] || Constants.EMPTY_STRING,
+      updatedAt: row[AccountsCols.UPDATED_AT] || Constants.EMPTY_STRING
+    }));
+
+    return this.jsonResponse({ accounts });
+  },
+
+  addAccount: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const acc = this.get(params, ApiFields.ACCOUNT);
+    if (this.isNil(acc) || this.isNil(this.get(acc, ApiFields.EMAIL))) return this.jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
+
+    const now = this.getCurrentISO();
+    sheet.appendRow([
+      this.generateUUID(),
+      now,
+      now,
+      this.get(acc, ApiFields.EMAIL),
+      this.get(acc, ApiFields.PASSWORD, Constants.EMPTY_STRING),
+      this.get(acc, ApiFields.RECOVERY_EMAIL, Constants.EMPTY_STRING),
+      this.get(acc, ApiFields.STATUS, Constants.ACTIVE_LOWER),
+      this.get(acc, ApiFields.ASSIGNED_TO, Constants.ALL)
+    ]);
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  updateAccountStatus: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const rowIndex = this.get(params, ApiFields.ROW_INDEX_CAMEL);
+    const status = this.get(params, ApiFields.STATUS);
+
+    if (this.isNil(rowIndex) || this.isNil(status)) return this.jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
+
+    sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(status);
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  updateAccountAdmin: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const acc = this.get(params, ApiFields.ACCOUNT);
+    if (this.isNil(acc) || this.isNil(this.get(acc, ApiFields.ID)) || this.isNil(this.get(acc, ApiFields.EMAIL))) return this.jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
+
+    const data = sheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[AccountsCols.ID], this.get(acc, ApiFields.ID)));
+
+    if (rowIndex > 0) {
+      sheet.getRange(rowIndex + 1, AccountsCols.EMAIL + 1).setValue(this.get(acc, ApiFields.EMAIL));
+      sheet.getRange(rowIndex + 1, AccountsCols.PASSWORD + 1).setValue(this.get(acc, ApiFields.PASSWORD, Constants.EMPTY_STRING));
+      sheet.getRange(rowIndex + 1, AccountsCols.RECOVERY_EMAIL + 1).setValue(this.get(acc, ApiFields.RECOVERY_EMAIL, Constants.EMPTY_STRING));
+      sheet.getRange(rowIndex + 1, AccountsCols.ASSIGNED_TO + 1).setValue(this.get(acc, ApiFields.ASSIGNED_TO, Constants.ALL));
+      sheet.getRange(rowIndex + 1, AccountsCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+      return this.jsonResponse({ status: Messages.RES_SUCCESS });
+    }
+
+    return this.jsonResponse({ error: Messages.ACCOUNT_NOT_FOUND, code: HttpCode.NOT_FOUND });
+  },
+
+  deleteAccountAdmin: function (params) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
+    if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+
+    const id = this.get(params, ApiFields.ID);
+    const deleteType = this.get(params, ApiFields.DELETE_TYPE, Constants.DELETE_HARD);
+    if (this.isNil(id)) return this.jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
+
+    const data = sheet.getDataRange().getValues();
+    const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[AccountsCols.ID], id));
+    if (rowIndex > 0) {
+      if (this.isEqual(deleteType, Constants.DELETE_SOFT)) {
+        sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(StatusEnum.REVOKED);
+        sheet.getRange(rowIndex + 1, AccountsCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
+      } else {
+        sheet.deleteRow(rowIndex + 1);
+      }
+    }
+
+    return this.jsonResponse({ status: Messages.RES_SUCCESS });
+  },
+
+  setupSeedData: function () {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const now = this.getCurrentISO();
+    const freeId = this.generateUUID();
+    const proId = this.generateUUID();
+    const lifetimeId = this.generateUUID();
+
+    const initSheet = (name, headers, color, columnWidths = []) => {
+      let sheet = ss.getSheetByName(name);
+      if (!sheet) {
+        sheet = ss.insertSheet(name);
+      } else {
+        sheet.clear();
+      }
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground(color);
+      columnWidths.forEach((width, idx) => {
+        if (width) sheet.setColumnWidth(idx + 1, width);
+      });
+      return sheet;
+    };
+
+    const adminSheet = initSheet(Config.SHEET_ADMINS, Config.HEADERS.ADMINS, Constants.COLOR_ADMIN);
+    adminSheet.appendRow([this.generateUUID(), now, now, "admin", "admin", Constants.EMPTY_STRING]);
+
+    const plansSheet = initSheet(Config.SHEET_PLANS, Config.HEADERS.PLANS, Constants.COLOR_CONFIG);
+    plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false, StatusEnum.ACTIVE]);
+    plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false, StatusEnum.ACTIVE]);
+    plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true, StatusEnum.ACTIVE]);
+
+    const usersSheet = initSheet(Config.SHEET_USERS, Config.HEADERS.USERS, Constants.COLOR_USERS);
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    usersSheet.appendRow([this.generateUUID(), now, now, "Khách FREE", "FREE-12345", freeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([this.generateUUID(), now, now, "Khách PRO", "PRO-99999", proId, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
+    usersSheet.appendRow([this.generateUUID(), now, now, "Khách VIP", "PRO-LIFE", lifetimeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
+
+    const usageSheet = initSheet(Config.SHEET_USAGE, Config.HEADERS.USAGE, Constants.COLOR_USAGE);
+    usageSheet.appendRow([this.generateUUID(), now, now, "FREE-12345", 0, 0, 0, now]);
+    usageSheet.appendRow([this.generateUUID(), now, now, "PRO-99999", 5, 20, 1000, now]);
+    usageSheet.appendRow([this.generateUUID(), now, now, "PRO-LIFE", 10, 50, 5000, now]);
+
+    const keysSheet = initSheet(Config.SHEET_KEYS, Config.HEADERS.KEYS, Constants.COLOR_ADMIN);
+    keysSheet.appendRow([this.generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.EMPTY_STRING]);
+
+    const accountsSheet = initSheet(Config.SHEET_ACCOUNTS, Config.HEADERS.ACCOUNTS, Constants.COLOR_CONFIG);
+    accountsSheet.appendRow([this.generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);
+
+    const settingsSheet = initSheet(Config.SHEET_SETTINGS, Config.HEADERS.SETTINGS, Constants.COLOR_SEED_SETTINGS, [null, null, null, 200, 300, 350]);
+    settingsSheet.appendRow([this.generateUUID(), now, now, "ADMIN_APP_KEY", "VIDIFY_MASTER_KEY_XYZ_123", "Khóa bảo mật Admin (Xác thực API & Băm Key)"]);
+
+    AppLogger.info(Messages.SEED_SUCCESS);
   }
 };
 
@@ -97,7 +984,13 @@ const Constants = {
   COLOR_USAGE: "#fef3c7",
   NEW_PLAN_NAME: "New Plan",
   ZERO: 0,
-  DEFAULT_AMOUNT: 1
+  DEFAULT_AMOUNT: 1,
+  ADMIN_PREFIX: "admin_",
+  DELETE_HARD: "hard",
+  DELETE_SOFT: "soft",
+  KEY_ADMIN_APP_KEY: "ADMIN_APP_KEY",
+  MASTER_KEY_FALLBACK: "VIDIFY_MASTER_KEY_XYZ_123",
+  COLOR_SEED_SETTINGS: "#f3f4f6"
 };
 
 const Messages = {
@@ -155,8 +1048,11 @@ const ApiFields = {
   ASSIGNED_TO: "assignedTo",
   ACCOUNT: "account",
   EMAIL: "email",
-  RECOVERY_EMAIL: "recovery_email",
-  ROW_INDEX: "row_index"
+  RECOVERY_EMAIL: "recoveryEmail",
+  ROW_INDEX: "row_index",
+  ROW_INDEX_CAMEL: "rowIndex",
+  EXCLUDED_TO: "excludedTo",
+  PLAN_TYPE_GAS: "plan_type"
 };
 
 const AppActions = {
@@ -198,893 +1094,19 @@ const AppLogger = {
   }
 };
 
-function generateUUID() {
-  return Utilities.getUuid();
-}
-
-function getCurrentISO() {
-  return new Date().toISOString();
-}
-
-function validateClientLicense(licenseKey) {
-  if (_.isEmpty(licenseKey)) return false;
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  if (!usersSheet) return false;
-  const data = usersSheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && _.isEqual(row[UserCols.LICENSE_KEY], licenseKey));
-  if (rowIndex > 0) {
-    const status = data[rowIndex][UserCols.STATUS];
-    return _.isEqual(status, StatusEnum.ACTIVE);
-  }
-  return false;
-}
-
+// Global routing functions for Google Apps Script execution engine
 function doPost(e) {
-  try {
-    const contents = _.get(e, 'postData.contents');
-    if (_.isNil(contents)) return jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
-
-    const params = JSON.parse(contents);
-    const action = _.get(params, ApiFields.ACTION);
-
-    const adminToken = _.get(params, ApiFields.ADMIN_TOKEN);
-    const isAdminAction = _.startsWith(action, 'admin_');
-
-    if (isAdminAction && action !== AppActions.ADMIN_LOGIN) {
-      if (!validateAdminToken(adminToken)) {
-        return jsonResponse({ error: Messages.INVALID_CREDENTIALS, code: HttpCode.UNAUTHORIZED });
-      }
-
-      if (action === AppActions.ADMIN_GET_USERS) return adminGetUsers();
-      if (action === AppActions.ADMIN_CREATE_KEY) return adminCreateKey(params);
-      if (action === AppActions.ADMIN_REVOKE_KEY) return adminRevokeKey(params);
-      if (action === AppActions.ADMIN_DELETE_KEY) return adminDeleteKey(params);
-      if (action === AppActions.ADMIN_UPDATE_KEY) return adminUpdateKey(params);
-      if (action === AppActions.ADMIN_RESET_DEVICE) return adminResetDevice(params);
-      if (action === AppActions.ADMIN_GET_PLANS) return adminGetPlans();
-      if (action === AppActions.ADMIN_CREATE_PLAN) return adminCreatePlan(params);
-      if (action === AppActions.ADMIN_UPDATE_PLAN) return adminUpdatePlan(params);
-      if (action === AppActions.ADMIN_DELETE_PLAN) return adminDeletePlan(params);
-      if (action === AppActions.ADMIN_SYNC_EXPIRED) return adminSyncExpired();
-
-      if (action === AppActions.ADMIN_GET_API_KEYS) return adminGetApiKeys();
-      if (action === AppActions.ADMIN_UPDATE_API_KEYS) return updateApiKeys(params);
-      if (action === AppActions.ADMIN_GET_ACCOUNTS) return adminGetAccounts();
-      if (action === AppActions.ADMIN_ADD_ACCOUNT) return addAccount(params);
-      if (action === AppActions.ADMIN_UPDATE_ACCOUNT) return updateAccountAdmin(params);
-      if (action === AppActions.ADMIN_DELETE_ACCOUNT) return deleteAccountAdmin(params);
-      if (action === AppActions.ADMIN_DELETE_API_KEYS) return deleteApiKeysAdmin(params);
-      if (action === AppActions.ADMIN_UPDATE_ACCOUNT_STATUS) return updateAccountStatus(params);
-    }
-
-    if (action === AppActions.VERIFY_KEY) return verifyKey(params);
-
-    const licenseKey = _.get(params, ApiFields.LICENSE_KEY);
-    if (!validateClientLicense(licenseKey)) {
-      return jsonResponse({ error: Messages.INVALID_LICENSE_ERR, code: HttpCode.FORBIDDEN });
-    }
-
-    if (action === AppActions.UPDATE_USAGE) {
-      const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || Constants.DEFAULT_AMOUNT;
-      if (amount <= Constants.ZERO) {
-        return jsonResponse({ error: Messages.INVALID_AMOUNT_ERR, code: HttpCode.BAD_REQUEST });
-      }
-      return updateUsage(params);
-    }
-
-    if (action === AppActions.GET_API_KEYS) return getApiKeys(params);
-    if (action === AppActions.GET_ACCOUNTS) return getAccounts(params);
-    if (action === AppActions.UPDATE_ACCOUNT_STATUS) return updateAccountStatus(params);
-
-    return jsonResponse({ error: Messages.INVALID_ACTION, code: HttpCode.BAD_REQUEST });
-  } catch (error) {
-    AppLogger.error(Messages.SERVER_ERROR, error);
-    return jsonResponse({ error: error.toString(), code: HttpCode.INTERNAL_ERROR });
-  }
-}
-
-function doOptions(e) {
-  return jsonResponse({ status: Messages.OPTIONS_OK });
+  return _.doPost(e);
 }
 
 function doGet(e) {
-  return jsonResponse({ status: Messages.GET_RUNNING });
+  return _.doGet(e);
 }
 
-function verifyKey(params) {
-  const adminKey = _.get(params, ApiFields.ADMIN_KEY);
-  if (adminKey !== getAppSecretKey()) return jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
-
-  const key = _.get(params, ApiFields.LICENSE_KEY);
-  const device = _.get(params, ApiFields.DEVICE_ID);
-
-  if (_.isNil(key)) return jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
-  if (_.isNil(device)) return jsonResponse({ error: Messages.MISSING_DEVICE, code: HttpCode.BAD_REQUEST });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const data = usersSheet.getDataRange().getValues();
-  const maxDevices = Config.MAX_DEVICES;
-
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.LICENSE_KEY] === key);
-
-  if (rowIndex > 0) {
-    const row = data[rowIndex];
-    const savedDeviceStr = row[UserCols.DEVICE_ID] || Constants.EMPTY_ARRAY;
-    let savedDevices = [];
-
-    try {
-      savedDevices = JSON.parse(savedDeviceStr);
-      if (!_.isArray(savedDevices)) savedDevices = [];
-    } catch (e) {
-      savedDevices = savedDeviceStr ? [savedDeviceStr] : [];
-    }
-
-    if (!_.includes(savedDevices, device)) {
-      if (savedDevices.length < maxDevices) {
-        savedDevices.push(device);
-        usersSheet.getRange(rowIndex + 1, UserCols.DEVICE_ID + 1).setValue(JSON.stringify(savedDevices));
-      } else {
-        return jsonResponse({ error: `${Messages.DEVICE_LIMIT} (${maxDevices})`, code: HttpCode.FORBIDDEN });
-      }
-    }
-
-    let currentStatus = row[UserCols.STATUS];
-    const expiresAt = row[UserCols.EXPIRES_AT];
-
-    if (expiresAt) {
-      const expiryDate = new Date(expiresAt);
-      if (new Date() > expiryDate) {
-        usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
-        currentStatus = StatusEnum.EXPIRED;
-      }
-    }
-
-    const quotaType = row[UserCols.QUOTA_TYPE] || QuotaType.DAILY;
-    let usage = getUsageData(key);
-
-    if (quotaType === QuotaType.DAILY) {
-      const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
-      const lastResetDate = String(usage.last_reset || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
-      if (lastResetDate !== today) {
-        usage = { video: 0, image: 0, voice: 0, last_reset: getCurrentISO() };
-      }
-    }
-
-    const planId = row[UserCols.PLAN_ID];
-    const plan = getPlanById(planId);
-
-    return jsonResponse({
-      status: currentStatus,
-      plan: plan,
-      quota_type: quotaType,
-      expires_at: expiresAt || null,
-      usage: usage
-    });
-  }
-
-  return jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function updateUsage(params) {
-  const adminKey = _.get(params, ApiFields.ADMIN_KEY);
-  if (adminKey !== getAppSecretKey()) return jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
-
-  const key = _.get(params, ApiFields.LICENSE_KEY);
-  const feature = _.get(params, ApiFields.FEATURE);
-  const amount = _.toInteger(_.get(params, ApiFields.AMOUNT)) || 1;
-
-  if (_.isNil(key)) return jsonResponse({ error: Messages.MISSING_KEY });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const usersData = usersSheet.getDataRange().getValues();
-
-  const isValid = _.some(usersData, (row, idx) => idx > 0 && row[UserCols.LICENSE_KEY] === key && row[UserCols.STATUS] === StatusEnum.ACTIVE);
-  if (!isValid) return jsonResponse({ error: Messages.KEY_REVOKED, code: HttpCode.FORBIDDEN });
-
-  const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
-  const data = usageSheet.getDataRange().getValues();
-  const usageIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UsageCols.LICENSE_KEY] === key);
-
-  if (usageIndex > 0) {
-    const row = data[usageIndex];
-    const userRow = _.find(usersData, (r, idx) => idx > 0 && r[UserCols.LICENSE_KEY] === key);
-    const quotaType = userRow ? (userRow[UserCols.QUOTA_TYPE] || QuotaType.DAILY) : QuotaType.DAILY;
-    const today = getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
-    const lastResetDate = String(row[UsageCols.LAST_RESET] || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
-
-    let currentVideo = _.toInteger(row[UsageCols.VIDEO] || 0);
-    let currentImage = _.toInteger(row[UsageCols.IMAGE] || 0);
-    let currentVoice = _.toInteger(row[UsageCols.VOICE] || 0);
-
-    if (quotaType === QuotaType.DAILY && lastResetDate !== today) {
-      currentVideo = 0;
-      currentImage = 0;
-      currentVoice = 0;
-      usageSheet.getRange(usageIndex + 1, UsageCols.LAST_RESET + 1).setValue(getCurrentISO());
-    }
-
-    if (feature === FeatureEnum.VIDEO) currentVideo += amount;
-    if (feature === FeatureEnum.IMAGE) currentImage += amount;
-    if (feature === FeatureEnum.VOICE) currentVoice += amount;
-
-    usageSheet.getRange(usageIndex + 1, UsageCols.VIDEO + 1, 1, 3).setValues([[currentVideo, currentImage, currentVoice]]);
-    usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(getCurrentISO());
-  } else {
-    const now = getCurrentISO();
-    const newRow = [generateUUID(), now, now, key, 0, 0, 0, now];
-    if (feature === FeatureEnum.VIDEO) newRow[UsageCols.VIDEO] = amount;
-    if (feature === FeatureEnum.IMAGE) newRow[UsageCols.IMAGE] = amount;
-    if (feature === FeatureEnum.VOICE) newRow[UsageCols.VOICE] = amount;
-    usageSheet.appendRow(newRow);
-  }
-
-  return jsonResponse({ status: Messages.RES_SUCCESS });
-}
-
-function adminLogin(params) {
-  const username = _.get(params, ApiFields.USERNAME);
-  const password = _.get(params, ApiFields.PASSWORD);
-
-  if (_.isNil(username) || _.isNil(password)) return jsonResponse({ error: Messages.MISSING_CREDENTIALS });
-
-  const adminsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ADMINS);
-  if (!adminsSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const data = adminsSheet.getDataRange().getValues();
-  const adminIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AdminCols.USERNAME] == username && row[AdminCols.PASSWORD] == password);
-
-  if (adminIndex > 0) {
-    const newToken = generateUUID();
-    adminsSheet.getRange(adminIndex + 1, AdminCols.TOKEN + 1).setValue(newToken);
-    adminsSheet.getRange(adminIndex + 1, AdminCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    return jsonResponse({ status: Messages.RES_SUCCESS, token: newToken });
-  }
-
-  return jsonResponse({ error: Messages.INVALID_CREDENTIALS, code: HttpCode.UNAUTHORIZED });
-}
-
-function validateAdminToken(token) {
-  if (_.isNil(token)) return false;
-  const adminsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ADMINS);
-  if (!adminsSheet) return false;
-
-  const data = adminsSheet.getDataRange().getValues();
-  return _.some(data, (row, idx) => idx > 0 && row[AdminCols.TOKEN] === token);
-}
-
-function adminGetUsers() {
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
-
-  const usersData = usersSheet.getDataRange().getValues();
-  const usageData = usageSheet.getDataRange().getValues();
-
-  const users = _.map(_.filter(usersData, (row, idx) => idx > 0), row => {
-    const key = row[UserCols.LICENSE_KEY];
-    const uRow = _.find(usageData, (u, i) => i > 0 && u[UsageCols.LICENSE_KEY] === key);
-
-    return {
-      id: row[UserCols.ID],
-      username: row[UserCols.USERNAME],
-      license_key: key,
-      plan_id: row[UserCols.PLAN_ID],
-      status: row[UserCols.STATUS],
-      created_at: row[UserCols.CREATED_AT],
-      updated_at: row[UserCols.UPDATED_AT],
-      expires_at: row[UserCols.EXPIRES_AT],
-      device_id: row[UserCols.DEVICE_ID],
-      quota_type: row[UserCols.QUOTA_TYPE] || QuotaType.DAILY,
-      usage: uRow ? {
-        video: uRow[UsageCols.VIDEO] || 0,
-        image: uRow[UsageCols.IMAGE] || 0,
-        voice: uRow[UsageCols.VOICE] || 0,
-        last_reset: uRow[UsageCols.LAST_RESET]
-      } : { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING }
-    };
-  });
-
-  return jsonResponse({ users: users });
-}
-
-function getAppSecretKey() {
-  try {
-    const settingsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_SETTINGS);
-    if (settingsSheet) {
-      const data = settingsSheet.getDataRange().getValues();
-      const row = _.find(data, (r, idx) => idx > 0 && r[SettingsCols.KEY] === 'ADMIN_APP_KEY' && r[SettingsCols.VALUE]);
-      if (row) return String(row[SettingsCols.VALUE]).trim();
-    }
-  } catch (e) {
-    AppLogger.error('Error in getAppSecretKey', e);
-  }
-  return 'VIDIFY_MASTER_KEY_XYZ_123';
-}
-
-function adminCreateKey(params) {
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const username = _.get(params, ApiFields.USERNAME, Constants.UNKNOWN);
-  const planId = _.get(params, ApiFields.PLAN_ID);
-  const quotaType = _.get(params, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
-  
-  const generateSecureKey = () => {
-    const uuid = Utilities.getUuid().replace(/-/g, '');
-    const payload = uuid.substring(0, 20).toUpperCase();
-    const secretKey = getAppSecretKey();
-    const signatureBytes = Utilities.computeHmacSha256Signature(payload, secretKey);
-    const signatureHex = signatureBytes.map(byte => {
-      const v = (byte < 0 ? byte + 256 : byte).toString(16);
-      return v.length === 1 ? '0' + v : v;
-    }).join('').toUpperCase();
-    const checksum = signatureHex.substring(0, 5);
-    const finalKey = payload + checksum;
-    return finalKey.match(/.{1,5}/g).join('-');
-  };
-  const newKey = generateSecureKey();
-
-  const now = getCurrentISO();
-  usersSheet.appendRow([generateUUID(), now, now, username, newKey, planId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, quotaType]);
-
-  return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_CREATED, license_key: newKey });
-}
-
-function adminRevokeKey(params) {
-  const id = _.get(params, ApiFields.ID);
-  if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const data = usersSheet.getDataRange().getValues();
-
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.ID] === id);
-  if (rowIndex > 0) {
-    usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.REVOKED);
-    return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_REVOKED });
-  }
-
-  return jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function adminDeleteKey(params) {
-  const id = _.get(params, ApiFields.ID);
-  if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
-
-  const usersData = usersSheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(usersData, (row, idx) => idx > 0 && row[UserCols.ID] === id);
-
-  if (rowIndex > 0) {
-    const licenseKey = usersData[rowIndex][UserCols.LICENSE_KEY];
-    usersSheet.deleteRow(rowIndex + 1);
-
-    const usageData = usageSheet.getDataRange().getValues();
-    const usageIndex = _.findIndex(usageData, (row, idx) => idx > 0 && row[UsageCols.LICENSE_KEY] === licenseKey);
-    if (usageIndex > 0) usageSheet.deleteRow(usageIndex + 1);
-  }
-
-  return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_DELETED });
-}
-
-function adminUpdateKey(params) {
-  const id = _.get(params, ApiFields.ID);
-  const newPlanId = _.get(params, ApiFields.PLAN_ID);
-  const newExpires = _.get(params, ApiFields.EXPIRES_AT);
-  const newStatus = _.get(params, ApiFields.STATUS);
-  const newQuotaType = _.get(params, ApiFields.QUOTA_TYPE);
-
-  if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const data = usersSheet.getDataRange().getValues();
-
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.ID] === id);
-  if (rowIndex > 0) {
-    if (newPlanId) usersSheet.getRange(rowIndex + 1, UserCols.PLAN_ID + 1).setValue(newPlanId);
-    if (newQuotaType) usersSheet.getRange(rowIndex + 1, UserCols.QUOTA_TYPE + 1).setValue(newQuotaType);
-    usersSheet.getRange(rowIndex + 1, UserCols.EXPIRES_AT + 1).setValue(newExpires || Constants.EMPTY_STRING);
-
-    if (newStatus) {
-      usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(newStatus);
-    } else if (data[rowIndex][UserCols.STATUS] === StatusEnum.EXPIRED) {
-      usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.ACTIVE);
-    }
-
-    usersSheet.getRange(rowIndex + 1, UserCols.UPDATED_AT + 1).setValue(getCurrentISO());
-
-    return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
-  }
-
-  return jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function adminResetDevice(params) {
-  const id = _.get(params, ApiFields.ID);
-  if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  const data = usersSheet.getDataRange().getValues();
-
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[UserCols.ID] === id);
-  if (rowIndex > 0) {
-    usersSheet.getRange(rowIndex + 1, UserCols.DEVICE_ID + 1).setValue(Constants.EMPTY_ARRAY);
-    return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_RESET });
-  }
-
-  return jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function adminGetPlans() {
-  return jsonResponse({ plans: getPlans() });
-}
-
-function adminUpdatePlan(params) {
-  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
-  if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const planId = _.get(params, ApiFields.ID);
-  if (_.isNil(planId)) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const data = plansSheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[PlanCols.ID] === planId);
-
-  if (rowIndex > 0) {
-    const now = getCurrentISO();
-    if (!_.isNil(params[ApiFields.NAME])) plansSheet.getRange(rowIndex + 1, PlanCols.NAME + 1).setValue(params[ApiFields.NAME]);
-    if (!_.isNil(params[ApiFields.QUOTA_VIDEO])) plansSheet.getRange(rowIndex + 1, PlanCols.VIDEO + 1).setValue(params[ApiFields.QUOTA_VIDEO]);
-    if (!_.isNil(params[ApiFields.QUOTA_IMAGE])) plansSheet.getRange(rowIndex + 1, PlanCols.IMAGE + 1).setValue(params[ApiFields.QUOTA_IMAGE]);
-    if (!_.isNil(params[ApiFields.QUOTA_VOICE])) plansSheet.getRange(rowIndex + 1, PlanCols.VOICE + 1).setValue(params[ApiFields.QUOTA_VOICE]);
-    if (!_.isNil(params[ApiFields.IS_UNLIMITED])) plansSheet.getRange(rowIndex + 1, PlanCols.UNLIMITED + 1).setValue(params[ApiFields.IS_UNLIMITED]);
-
-    plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(now);
-    return jsonResponse({ status: Messages.RES_SUCCESS, message: Messages.SUCCESS_UPDATED });
-  }
-
-  return jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function adminCreatePlan(params) {
-  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
-  if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const now = getCurrentISO();
-  const newId = generateUUID();
-  const name = _.get(params, ApiFields.NAME, Constants.NEW_PLAN_NAME);
-  const video = _.toInteger(_.get(params, ApiFields.QUOTA_VIDEO)) || 0;
-  const image = _.toInteger(_.get(params, ApiFields.QUOTA_IMAGE)) || 0;
-  const voice = _.toInteger(_.get(params, ApiFields.QUOTA_VOICE)) || 0;
-  const unlimited = _.get(params, ApiFields.IS_UNLIMITED, false);
-
-  plansSheet.appendRow([newId, now, now, name, video, image, voice, unlimited, Constants.ACTIVE_LOWER]);
-  return jsonResponse({ status: Messages.RES_SUCCESS, plan_id: newId });
-}
-
-function adminDeletePlan(params) {
-  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
-  if (!plansSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const planId = _.get(params, ApiFields.ID);
-  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
-  if (!planId) return jsonResponse({ error: Messages.MISSING_ID });
-
-  const data = plansSheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[PlanCols.ID] === planId);
-
-  if (rowIndex > 0) {
-    if (deleteType === 'soft') {
-      plansSheet.getRange(rowIndex + 1, PlanCols.STATUS + 1).setValue(StatusEnum.REVOKED);
-      plansSheet.getRange(rowIndex + 1, PlanCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    } else {
-      plansSheet.deleteRow(rowIndex + 1);
-    }
-    return jsonResponse({ status: Messages.RES_SUCCESS });
-  }
-
-  return jsonResponse({ error: Messages.PLAN_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function adminSyncExpired() {
-  const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
-  if (!usersSheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const data = usersSheet.getDataRange().getValues();
-  const now = new Date();
-  
-  let synced = 0;
-  _.forEach(data, (row, idx) => {
-    if (idx > 0 && row[UserCols.EXPIRES_AT]) {
-      const expiry = new Date(row[UserCols.EXPIRES_AT]);
-      if (now > expiry && row[UserCols.STATUS] === StatusEnum.ACTIVE) {
-        usersSheet.getRange(idx + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
-        synced++;
-      }
-    }
-  });
-  
-  return jsonResponse({ status: Messages.RES_SUCCESS, message: `Đã đồng bộ ${synced} tài khoản hết hạn` });
-}
-
-function getPlans() {
-  const plansSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_PLANS);
-  if (!plansSheet) return [];
-
-  const data = plansSheet.getDataRange().getValues();
-  return _.map(_.filter(data, (row, idx) => idx > 0), row => ({
-    id: row[PlanCols.ID],
-    name: row[PlanCols.NAME],
-    quota_video: _.toInteger(row[PlanCols.VIDEO]) || 0,
-    quota_image: _.toInteger(row[PlanCols.IMAGE]) || 0,
-    quota_voice: _.toInteger(row[PlanCols.VOICE]) || 0,
-    is_unlimited: (String(row[PlanCols.UNLIMITED]) === Constants.STRING_TRUE),
-    status: row[PlanCols.STATUS] || Constants.ACTIVE_LOWER,
-    created_at: row[PlanCols.CREATED_AT],
-    updated_at: row[PlanCols.UPDATED_AT]
-  }));
-}
-
-function getPlanById(planId) {
-  const plans = getPlans();
-  return _.find(plans, p => p.id === planId) || {
-    id: planId, name: Constants.UNKNOWN, quota_video: 0, quota_image: 0, quota_voice: 0, is_unlimited: false
-  };
-}
-
-function getUsageData(key) {
-  const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
-  if (!usageSheet) return { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING };
-
-  const data = usageSheet.getDataRange().getValues();
-  const usageRow = _.find(data, (row, idx) => idx > 0 && row[UsageCols.LICENSE_KEY] === key);
-
-  if (usageRow) {
-    return {
-      video: usageRow[UsageCols.VIDEO] || 0,
-      image: usageRow[UsageCols.IMAGE] || 0,
-      voice: usageRow[UsageCols.VOICE] || 0,
-      last_reset: usageRow[UsageCols.LAST_RESET]
-    };
-  }
-  return { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING };
-}
-
-function jsonResponse(data) {
-  const output = ContentService.createTextOutput(JSON.stringify(data));
-  output.setMimeType(ContentService.MimeType.JSON);
-  return output;
-}
-
-function matchAssignedTo(rowAssignedTo, licenseKey, planId) {
-  if (!rowAssignedTo) return false;
-  if (rowAssignedTo === Constants.ALL) return true;
-  if (planId && rowAssignedTo === planId) return true;
-  if (licenseKey && rowAssignedTo === licenseKey) return true;
-  return false;
-}
-
-function getApiKeys(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-  const planId = _.get(params, ApiFields.PLAN_ID, _.get(params, "plan_type", Constants.EMPTY_STRING));
-
-  const data = sheet.getDataRange().getValues();
-  let geminiKey = Constants.EMPTY_STRING;
-  let ai33Key = Constants.EMPTY_STRING;
-  let geminiPriority = -1;
-  let ai33Priority = -1;
-
-  const getPriority = (assigned) => {
-    if (!assigned) return -1;
-    const items = _.map(String(assigned).split(','), item => item.trim());
-
-    if (!_.isEmpty(licenseKey) && _.includes(items, licenseKey)) return 2;
-
-    const hasPlanMatch = _.some(items, (item) => {
-      if (!item) return false;
-      if (item === planId) return true;
-      const plan = getPlanById(item);
-      return plan && plan.name === planId;
-    });
-    if (hasPlanMatch) return 1;
-
-    if (_.includes(items, Constants.ALL)) return 0;
-
-    return -1;
-  };
-
-  _.forEach(data, (row, i) => {
-    if (i === 0) return;
-
-    // Check exclusion
-    const excluded = row[KeysCols.EXCLUDED_TO] || "";
-    if (excluded) {
-      const isExcluded = _.some(String(excluded).split(','), (item) => {
-        const trimmed = String(item).trim();
-        if (!trimmed) return false;
-        if (trimmed === licenseKey || trimmed === planId) return true;
-        
-        // Nếu item là UUID của plan, check plan name
-        const plan = getPlanById(trimmed);
-        if (plan && plan.name === planId) return true;
-        
-        return false;
-      });
-      if (isExcluded) return; // Skip blocked keys
-    }
-
-    const assigned = row[KeysCols.ASSIGNED_TO] || Constants.ALL;
-    const prio = getPriority(assigned);
-
-    if (prio !== -1) {
-      if (row[KeysCols.GEMINI_KEY] && prio >= geminiPriority) {
-        geminiKey = row[KeysCols.GEMINI_KEY];
-        geminiPriority = prio;
-      }
-      if (row[KeysCols.AI33_KEY] && prio >= ai33Priority) {
-        ai33Key = row[KeysCols.AI33_KEY];
-        ai33Priority = prio;
-      }
-    }
-  });
-
-  return jsonResponse({ apiKeys: { geminiKey, ai33Key } });
-}
-
-function adminGetApiKeys() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const data = sheet.getDataRange().getValues();
-  const keys = _.map(_.filter(data, (row, idx) => idx > 0), row => ({
-    id: row[KeysCols.ID] || Constants.EMPTY_STRING,
-    assignedTo: row[KeysCols.ASSIGNED_TO] || Constants.ALL,
-    geminiKey: row[KeysCols.GEMINI_KEY] || Constants.EMPTY_STRING,
-    ai33Key: row[KeysCols.AI33_KEY] || Constants.EMPTY_STRING,
-    status: row[KeysCols.STATUS] || Constants.ACTIVE_LOWER,
-    createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
-    updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING,
-    excludedTo: row[KeysCols.EXCLUDED_TO] || Constants.EMPTY_STRING
-  }));
-
-  return jsonResponse({ keys });
-}
-
-function updateApiKeys(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const id = _.get(params, ApiFields.ID);
-  const geminiKey = _.get(params, ApiFields.GEMINI_KEY);
-  const ai33Key = _.get(params, ApiFields.AI33_KEY);
-  const assignedTo = _.get(params, ApiFields.ASSIGNED_TO, Constants.ALL);
-  const excludedTo = _.get(params, "excludedTo", Constants.EMPTY_STRING);
-  const data = sheet.getDataRange().getValues();
-  const now = getCurrentISO();
-
-  if (id) {
-    const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[KeysCols.ID] === id);
-    if (rowIndex > 0) {
-      sheet.getRange(rowIndex + 1, KeysCols.ASSIGNED_TO + 1).setValue(assignedTo);
-      sheet.getRange(rowIndex + 1, KeysCols.GEMINI_KEY + 1).setValue(geminiKey || Constants.EMPTY_STRING);
-      sheet.getRange(rowIndex + 1, KeysCols.AI33_KEY + 1).setValue(ai33Key || Constants.EMPTY_STRING);
-      sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(now);
-      sheet.getRange(rowIndex + 1, KeysCols.EXCLUDED_TO + 1).setValue(excludedTo || Constants.EMPTY_STRING);
-      return jsonResponse({ status: Messages.RES_SUCCESS });
-    }
-  }
-
-  sheet.appendRow([generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER, excludedTo || Constants.EMPTY_STRING]);
-  return jsonResponse({ status: Messages.RES_SUCCESS });
-}
-
-function deleteApiKeysAdmin(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const id = _.get(params, ApiFields.ID);
-  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
-  if (!id) return jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
-
-  const data = sheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[KeysCols.ID] === id);
-  if (rowIndex > 0) {
-    if (deleteType === 'soft') {
-      sheet.getRange(rowIndex + 1, KeysCols.STATUS + 1).setValue(StatusEnum.REVOKED);
-      sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    } else {
-      sheet.deleteRow(rowIndex + 1);
-    }
-  }
-
-  return jsonResponse({ status: Messages.RES_SUCCESS });
-}
-
-function getAccounts(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const licenseKey = _.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-  const planId = _.get(params, ApiFields.PLAN_ID, _.get(params, "plan_type", Constants.EMPTY_STRING));
-
-  const data = sheet.getDataRange().getValues();
-  let accounts = [];
-
-  const getAccountPriority = (assigned) => {
-    if (!assigned) return -1;
-    const items = _.map(String(assigned).split(','), item => item.trim());
-    if (!_.isEmpty(licenseKey) && _.includes(items, licenseKey)) return 2;
-    if (!_.isEmpty(planId) && (_.includes(items, planId) || _.some(items, item => getPlanById(item).name === planId))) return 1;
-    if (_.includes(items, Constants.ALL)) return 0;
-    return -1;
-  };
-
-  _.forEach(data, (row, i) => {
-    if (_.eq(i, 0)) return;
-    const assigned = row[AccountsCols.ASSIGNED_TO] || Constants.ALL;
-    const prio = getAccountPriority(assigned);
-    if (!_.eq(prio, -1)) {
-      accounts.push({
-        id: i,
-        email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
-        password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
-        recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
-        status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
-        assignedTo: assigned,
-        priority: prio
-      });
-    }
-  });
-
-  accounts = _.orderBy(accounts, ['priority'], ['desc']);
-  return jsonResponse({ accounts });
-}
-
-function adminGetAccounts() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const data = sheet.getDataRange().getValues();
-  const accounts = _.map(_.filter(data, (row, idx) => idx > 0), row => ({
-    id: row[AccountsCols.ID] || Constants.EMPTY_STRING,
-    email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
-    password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
-    recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
-    status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
-    assignedTo: row[AccountsCols.ASSIGNED_TO] || Constants.ALL,
-    createdAt: row[AccountsCols.CREATED_AT] || Constants.EMPTY_STRING,
-    updatedAt: row[AccountsCols.UPDATED_AT] || Constants.EMPTY_STRING
-  }));
-
-  return jsonResponse({ accounts });
-}
-
-function addAccount(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const acc = _.get(params, ApiFields.ACCOUNT);
-  if (_.isNil(acc) || _.isNil(_.get(acc, 'email'))) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
-
-  const now = getCurrentISO();
-  sheet.appendRow([
-    generateUUID(),
-    now,
-    now,
-    _.get(acc, 'email'),
-    _.get(acc, 'password', Constants.EMPTY_STRING),
-    _.get(acc, 'recoveryEmail', Constants.EMPTY_STRING),
-    _.get(acc, 'status', Constants.ACTIVE_LOWER),
-    _.get(acc, 'assignedTo', Constants.ALL)
-  ]);
-  return jsonResponse({ status: Messages.RES_SUCCESS });
-}
-
-function updateAccountStatus(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const rowIndex = _.get(params, 'rowIndex');
-  const status = _.get(params, ApiFields.STATUS);
-
-  if (_.isNil(rowIndex) || _.isNil(status)) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
-
-  sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(status);
-  return jsonResponse({ status: Messages.RES_SUCCESS });
-}
-
-function updateAccountAdmin(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const acc = _.get(params, ApiFields.ACCOUNT);
-  if (_.isNil(acc) || _.isNil(_.get(acc, 'id')) || _.isNil(_.get(acc, 'email'))) return jsonResponse({ error: Messages.MISSING_ACCOUNT_INFO, code: HttpCode.BAD_REQUEST });
-
-  const data = sheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AccountsCols.ID] === _.get(acc, 'id'));
-
-  if (rowIndex > 0) {
-    sheet.getRange(rowIndex + 1, AccountsCols.EMAIL + 1).setValue(_.get(acc, 'email'));
-    sheet.getRange(rowIndex + 1, AccountsCols.PASSWORD + 1).setValue(_.get(acc, 'password', Constants.EMPTY_STRING));
-    sheet.getRange(rowIndex + 1, AccountsCols.RECOVERY_EMAIL + 1).setValue(_.get(acc, 'recoveryEmail', Constants.EMPTY_STRING));
-    sheet.getRange(rowIndex + 1, AccountsCols.ASSIGNED_TO + 1).setValue(_.get(acc, 'assignedTo', Constants.ALL));
-    sheet.getRange(rowIndex + 1, AccountsCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    return jsonResponse({ status: Messages.RES_SUCCESS });
-  }
-
-  return jsonResponse({ error: Messages.ACCOUNT_NOT_FOUND, code: HttpCode.NOT_FOUND });
-}
-
-function deleteAccountAdmin(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
-  if (!sheet) return jsonResponse({ error: Messages.SHEET_NOT_FOUND });
-
-  const id = _.get(params, ApiFields.ID);
-  const deleteType = _.get(params, ApiFields.DELETE_TYPE, 'hard');
-  if (_.isNil(id)) return jsonResponse({ error: Messages.MISSING_ID, code: HttpCode.BAD_REQUEST });
-    const data = sheet.getDataRange().getValues();
-  const rowIndex = _.findIndex(data, (row, idx) => idx > 0 && row[AccountsCols.ID] === id);
-  if (rowIndex > 0) {
-    if (deleteType === 'soft') {
-      sheet.getRange(rowIndex + 1, AccountsCols.STATUS + 1).setValue(StatusEnum.REVOKED);
-      sheet.getRange(rowIndex + 1, AccountsCols.UPDATED_AT + 1).setValue(getCurrentISO());
-    } else {
-      sheet.deleteRow(rowIndex + 1);
-    }
-  }
-
-  return jsonResponse({ status: Messages.RES_SUCCESS });
+function doOptions(e) {
+  return _.doOptions(e);
 }
 
 function setupSeedData() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const now = getCurrentISO();
-  const freeId = generateUUID();
-  const proId = generateUUID();
-  const lifetimeId = generateUUID();
-
-  const initSheet = (name, headers, color, columnWidths = []) => {
-    let sheet = ss.getSheetByName(name);
-    if (!sheet) {
-      sheet = ss.insertSheet(name);
-    } else {
-      sheet.clear();
-    }
-    sheet.appendRow(headers);
-    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground(color);
-    columnWidths.forEach((width, idx) => {
-      if (width) sheet.setColumnWidth(idx + 1, width);
-    });
-    return sheet;
-  };
-
-  const adminSheet = initSheet(Config.SHEET_ADMINS, Config.HEADERS.ADMINS, Constants.COLOR_ADMIN);
-  adminSheet.appendRow([generateUUID(), now, now, "admin", "admin", Constants.EMPTY_STRING]);
-
-  const plansSheet = initSheet(Config.SHEET_PLANS, Config.HEADERS.PLANS, Constants.COLOR_CONFIG);
-  plansSheet.appendRow([freeId, now, now, "FREE", 3, 10, 5000, false, StatusEnum.ACTIVE]);
-  plansSheet.appendRow([proId, now, now, "PRO", 50, 500, 100000, false, StatusEnum.ACTIVE]);
-  plansSheet.appendRow([lifetimeId, now, now, "PRO_LIFETIME", 50, 500, 100000, true, StatusEnum.ACTIVE]);
-
-  const usersSheet = initSheet(Config.SHEET_USERS, Config.HEADERS.USERS, Constants.COLOR_USERS);
-  const nextYear = new Date();
-  nextYear.setFullYear(nextYear.getFullYear() + 1);
-  usersSheet.appendRow([generateUUID(), now, now, "Khách FREE", "FREE-12345", freeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-  usersSheet.appendRow([generateUUID(), now, now, "Khách PRO", "PRO-99999", proId, StatusEnum.ACTIVE, nextYear.toISOString(), Constants.EMPTY_ARRAY, QuotaType.DAILY]);
-  usersSheet.appendRow([generateUUID(), now, now, "Khách VIP", "PRO-LIFE", lifetimeId, StatusEnum.ACTIVE, Constants.EMPTY_STRING, Constants.EMPTY_ARRAY, QuotaType.TOTAL]);
-
-  const usageSheet = initSheet(Config.SHEET_USAGE, Config.HEADERS.USAGE, Constants.COLOR_USAGE);
-  usageSheet.appendRow([generateUUID(), now, now, "FREE-12345", 0, 0, 0, now]);
-  usageSheet.appendRow([generateUUID(), now, now, "PRO-99999", 5, 20, 1000, now]);
-  usageSheet.appendRow([generateUUID(), now, now, "PRO-LIFE", 10, 50, 5000, now]);
-
-  const keysSheet = initSheet(Config.SHEET_KEYS, Config.HEADERS.KEYS, Constants.COLOR_ADMIN);
-  keysSheet.appendRow([generateUUID(), now, now, Constants.ALL, Constants.EMPTY_STRING, Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.EMPTY_STRING]);
-
-  const accountsSheet = initSheet(Config.SHEET_ACCOUNTS, Config.HEADERS.ACCOUNTS, Constants.COLOR_CONFIG);
-  accountsSheet.appendRow([generateUUID(), now, now, "sample@gmail.com", "password123", Constants.EMPTY_STRING, StatusEnum.ACTIVE, Constants.ALL]);
-
-  const settingsSheet = initSheet(Config.SHEET_SETTINGS, Config.HEADERS.SETTINGS, "#f3f4f6", [null, null, null, 200, 300, 350]);
-  settingsSheet.appendRow([generateUUID(), now, now, "ADMIN_APP_KEY", "VIDIFY_MASTER_KEY_XYZ_123", "Khóa bảo mật Admin (Xác thực API & Băm Key)"]);
-
-  AppLogger.info(Messages.SEED_SUCCESS);
+  return _.setupSeedData();
 }

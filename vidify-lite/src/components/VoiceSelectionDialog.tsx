@@ -9,10 +9,10 @@ import { translations } from "../lib/lang.js";
 import { getStoredApiKey } from "../lib/shared-utils.js";
 import { logger } from "../utils/logger";
 import { VOICE_DIALOG_TEXTS } from "../constants/texts";
-import { 
-  VOICE_PROVIDER_OPTIONS, 
-  VOICE_LANGUAGE_OPTIONS, 
-  VOICE_AGE_OPTIONS, 
+import {
+  VOICE_PROVIDER_OPTIONS,
+  VOICE_LANGUAGE_OPTIONS,
+  VOICE_AGE_OPTIONS,
   ErrorMessage,
   VOICE_OWNERSHIP_KEY,
   VOICE_OWNERSHIP_COMMUNITY,
@@ -142,6 +142,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
       const res = await fetch(`${API_ROUTES.VOICES}?${params.toString()}`, {
         headers: {
           [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
+          [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
         },
       });
 
@@ -353,10 +354,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       type="button"
                       onClick={() => setGender(g)}
                       className={cn(
-                        `flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${
-                          isActive
-                            ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10"
-                            : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+                        `flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive
+                          ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10"
+                          : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"
                         }`
                       )}
                     >
@@ -414,10 +414,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 <div
                   key={voice.voice_id}
                   className={cn(
-                    `flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-rose-500/5 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/20"
-                        : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-850 shadow-sm"
+                    `flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer ${isSelected
+                      ? "bg-rose-500/5 border-rose-500/40 shadow-[0_0_20px_rgba(244,63,94,0.08)] ring-1 ring-rose-500/20"
+                      : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-850 shadow-sm"
                     }`
                   )}
                   onClick={() => onSelectVoice(voice)}
@@ -430,8 +429,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       handlePlay(voice);
                     }}
                     className={cn(
-                      `shrink-0 w-12 h-12 rounded-full p-0 flex items-center justify-center ${
-                        isPlaying ? "bg-rose-500 text-white" : "bg-slate-800 text-slate-300"
+                      `shrink-0 w-12 h-12 rounded-full p-0 flex items-center justify-center ${isPlaying ? "bg-rose-500 text-white" : "bg-slate-800 text-slate-300"
                       }`
                     )}
                   >
@@ -455,10 +453,9 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                         >
                           <Heart
                             className={cn(
-                              `w-4 h-4 transition-all duration-200 ${
-                                _.some(favoriteVoices, (v) => _.isEqual(v.voiceURI, voice.voice_id))
-                                  ? "text-rose-500 fill-rose-500 scale-110"
-                                  : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"
+                              `w-4 h-4 transition-all duration-200 ${_.some(favoriteVoices, (v) => _.isEqual(v.voiceURI, voice.voice_id))
+                                ? "text-rose-500 fill-rose-500 scale-110"
+                                : "text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:scale-110"
                               }`
                             )}
                           />

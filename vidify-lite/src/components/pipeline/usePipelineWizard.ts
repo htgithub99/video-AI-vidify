@@ -12,7 +12,7 @@ import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { EXTERNAL_URLS, API_ROUTES, API_HEADERS } from "../../constants/apiRoutes";
+import { EXTERNAL_URLS, API_ROUTES, API_HEADERS, STORAGE_KEYS } from "../../constants";
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
@@ -59,9 +59,9 @@ const fetchSystemApi = async (url: string, payload?: object | null, customHeader
   const finalHeaders = _.assign(
     {
       [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
-      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey("GEMINI_API_KEY"),
-      [API_HEADERS.AI33_API_KEY]: getStoredApiKey("AI33_API_KEY"),
-      'x-license-key': localStorage.getItem('vidify_license_key') || '',
+      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY),
+      [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
+      [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
     },
     customHeaders || {}
   );

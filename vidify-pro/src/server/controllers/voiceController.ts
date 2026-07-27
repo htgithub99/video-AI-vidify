@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { EXTERNAL_URLS, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES } from "../../constants";
-import { SecurityMessages } from "../../constants/security.js";
+import { EXTERNAL_URLS, getBackendMsg, COMMON_STRINGS, FALLBACK_VOICES, HTTP_HEADERS, HTTP_METHODS } from "../../constants";
+import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { appWarn, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
 import { resolveApiKeys } from "../services/apiKeyResolver.js";
@@ -12,17 +12,17 @@ export const getVoices = async (req: Request, res: Response) => {
     const targetUrl = `${EXTERNAL_URLS.AI33_VOICES}?${queryParams}`;
     
     const keys = await resolveApiKeys();
-    const apiKey = _.get(keys, 'ai33Key', '');
+    const apiKey = _.get(keys, SecurityConstants.REQ_BODY_AI33_KEY, SecurityConstants.EMPTY_STRING);
 
     if (_.isEmpty(apiKey)) {
       throw createAppError(SecurityMessages.MISSING_AI33_KEY);
     }
 
     const response = await fetch(targetUrl, {
-      method: "GET",
+      method: HTTP_METHODS.GET,
       headers: {
-        accept: "application/json, text/plain, */*",
-        "xi-api-key": apiKey,
+        accept: SecurityConstants.ACCEPT_ALL_JSON,
+        [HTTP_HEADERS.XI_API_KEY]: apiKey,
       },
     });
 
@@ -33,7 +33,7 @@ export const getVoices = async (req: Request, res: Response) => {
     const data = await response.json();
     res.json(data);
   } catch (error: any) {
-    appWarn("FETCH_VOICES_ERR", "External voice registry load failed. Falling back to high-quality local voices database.", error);
+    appWarn("FETCH_VOICES_ERR", SecurityConstants.FETCH_VOICES_FALLBACK_WARN, error);
 
     let filtered = _.concat([], FALLBACK_VOICES);
 
@@ -41,8 +41,8 @@ export const getVoices = async (req: Request, res: Response) => {
     const reqGender = req.query.gender as string;
     const reqAge = req.query.age as string;
     const reqSearch = req.query.search as string;
-    const reqPage = parseInt((req.query.page as string) || "1", 10);
-    const reqPageSize = parseInt((req.query.page_size as string) || "30", 10);
+    const reqPage = parseInt((req.query.page as string) || SecurityConstants.DEFAULT_PAGE_STR, SecurityConstants.RADIX_10);
+    const reqPageSize = parseInt((req.query.page_size as string) || SecurityConstants.DEFAULT_PAGE_SIZE_STR, SecurityConstants.RADIX_10);
 
     if (!_.isEmpty(reqLang)) {
       filtered = _.filter(filtered, (v: any) => _.some([v.language, v.locale], (l) => _.includes(_.toLower(l), _.toLower(reqLang))));
@@ -55,7 +55,7 @@ export const getVoices = async (req: Request, res: Response) => {
     }
     if (!_.isEmpty(reqSearch)) {
       const q = _.toLower(reqSearch);
-      filtered = _.filter(filtered, (v: any) => _.some([v.name, v.description || "", v.voice_id || v.voiceId], (field) => _.includes(_.toLower(field), q)) || _.some(v.tags || [], (t: string) => _.includes(_.toLower(t), q)));
+      filtered = _.filter(filtered, (v: any) => _.some([v.name, v.description || SecurityConstants.EMPTY_STRING, v.voice_id || v.voiceId], (field) => _.includes(_.toLower(field), q)) || _.some(v.tags || [], (t: string) => _.includes(_.toLower(t), q)));
     }
 
     const startIndex = _.multiply(_.subtract(reqPage, 1), reqPageSize);
