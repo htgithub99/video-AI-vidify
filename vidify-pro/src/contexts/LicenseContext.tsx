@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_ROUTES } from '../constants/apiRoutes';
-import { SecurityConstants, LicenseStatus, SecurityMessages } from '../constants/security';
-import { appError } from '../lib/logger';
+import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS } from '../constants';
 import _ from 'lodash';
 
 export interface LicenseInfo {
@@ -26,78 +26,111 @@ interface LicenseContextType {
     isLoading: boolean;
     activateLicense: (key: string) => Promise<boolean | string>;
     logoutLicense: () => void;
+    refetchLicense: () => void;
 }
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
-export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [licenseKey, setLicenseKey] = useState<string | null>(localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY));
-    const [licenseInfo, setLicenseInfo] = useState<LicenseInfo | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+const QUERY_KEY = REFACTOR_CONSTANTS.LICENSE_QUERY_KEY;
+const METHOD_POST = REFACTOR_CONSTANTS.LICENSE_METHOD_POST;
+const HEADER_CONTENT_TYPE = REFACTOR_CONSTANTS.LICENSE_HEADER_CONTENT_TYPE;
+const VALUE_APPLICATION_JSON = REFACTOR_CONSTANTS.LICENSE_VALUE_APPLICATION_JSON;
+const KEY_LICENSE_KEY = REFACTOR_CONSTANTS.LICENSE_KEY_LICENSE_KEY;
+const ERR_INVALID_LICENSE = REFACTOR_CONSTANTS.LICENSE_ERR_INVALID_LICENSE;
+const ERR_INVALID_LICENSE_STATUS = REFACTOR_CONSTANTS.LICENSE_ERR_INVALID_LICENSE_STATUS;
+const CACHE_LICENSE_INFO_KEY = REFACTOR_CONSTANTS.LICENSE_CACHE_KEY;
+const STALE_TIME = 5 * 60 * 1000;
 
-    const checkLicense = async (key: string): Promise<boolean | string> => {
-        try {
-            const res = await fetch(`${API_ROUTES.BASE_API}/license/validate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ license_key: key })
+export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const queryClient = useQueryClient();
+    const [licenseKey, setLicenseKeyState] = useState<string | null>(
+        localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY)
+    );
+
+    const { data: licenseInfo, isLoading: isQueryLoading, refetch } = useQuery<LicenseInfo | null>({
+        queryKey: [QUERY_KEY, licenseKey],
+        queryFn: async () => {
+            if (_.isEmpty(licenseKey)) return null;
+            const res = await fetch(`${API_ROUTES.BASE_API}${SecurityConstants.API_VALIDATE_PATH}`, {
+                method: METHOD_POST,
+                headers: { [HEADER_CONTENT_TYPE]: VALUE_APPLICATION_JSON },
+                body: JSON.stringify({ [KEY_LICENSE_KEY]: licenseKey })
             });
             const data = await res.json();
             
             if (!data.success) {
-                setLicenseInfo(null);
-                setLicenseKey(null);
                 localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-                setIsLoading(false);
+                setLicenseKeyState(null);
+                throw new Error(data.error || ERR_INVALID_LICENSE);
+            }
+
+            const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
+            if (_.includes([LicenseStatus.ACTIVE, LicenseStatus.REVOKED, LicenseStatus.EXPIRED], status)) {
+                return _.get(data, SecurityConstants.DATA_KEY);
+            }
+            
+            localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+            setLicenseKeyState(null);
+            throw new Error(ERR_INVALID_LICENSE_STATUS);
+        },
+        initialData: () => {
+            const cached = localStorage.getItem(CACHE_LICENSE_INFO_KEY);
+            return cached ? JSON.parse(cached) : null;
+        },
+        enabled: !_.isEmpty(licenseKey),
+        staleTime: STALE_TIME,
+    });
+
+    React.useEffect(() => {
+        if (licenseInfo) {
+            localStorage.setItem(CACHE_LICENSE_INFO_KEY, JSON.stringify(licenseInfo));
+        }
+    }, [licenseInfo]);
+
+    const activateLicense = async (key: string): Promise<boolean | string> => {
+        try {
+            const res = await fetch(`${API_ROUTES.BASE_API}${SecurityConstants.API_VALIDATE_PATH}`, {
+                method: METHOD_POST,
+                headers: { [HEADER_CONTENT_TYPE]: VALUE_APPLICATION_JSON },
+                body: JSON.stringify({ [KEY_LICENSE_KEY]: key })
+            });
+            const data = await res.json();
+            
+            if (!data.success) {
                 return data.error || false;
             }
 
-            const status = _.get(data, 'data.status');
+            const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
             if (_.includes([LicenseStatus.ACTIVE, LicenseStatus.REVOKED, LicenseStatus.EXPIRED], status)) {
-                setLicenseInfo(_.get(data, 'data'));
-                setIsLoading(false);
+                localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
+                setLicenseKeyState(key);
+                queryClient.setQueryData([QUERY_KEY, key], _.get(data, SecurityConstants.DATA_KEY));
                 return true;
             }
-            
-            setLicenseInfo(null);
-            setLicenseKey(null);
-            localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-            setIsLoading(false);
             return false;
-        } catch (error) {
-            appError(SecurityMessages.LICENSE_CHECK_ERROR, error);
-            setIsLoading(false);
-            return false;
+        } catch (e: any) {
+            return e.message || false;
         }
-    };
-
-    useEffect(() => {
-        if (!_.isEmpty(licenseKey)) {
-            checkLicense(licenseKey as string);
-        } else {
-            setIsLoading(false);
-        }
-    }, [licenseKey]);
-
-    const activateLicense = async (key: string): Promise<boolean | string> => {
-        setIsLoading(true);
-        const result = await checkLicense(key);
-        if (result === true) {
-            setLicenseKey(key);
-            localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
-            return true;
-        }
-        return result;
     };
 
     const logoutLicense = () => {
-        setLicenseKey(null);
-        setLicenseInfo(null);
         localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+        localStorage.removeItem(CACHE_LICENSE_INFO_KEY);
+        setLicenseKeyState(null);
+        queryClient.setQueryData([QUERY_KEY, licenseKey], null);
     };
 
+    const isLoading = !_.isEmpty(licenseKey) && isQueryLoading && !licenseInfo;
+
     return (
-        <LicenseContext.Provider value={{ licenseKey, licenseInfo, isLoading, activateLicense, logoutLicense }}>
+        <LicenseContext.Provider value={{
+            licenseKey,
+            licenseInfo: licenseInfo || null,
+            isLoading,
+            activateLicense,
+            logoutLicense,
+            refetchLicense: refetch
+        }}>
             {children}
         </LicenseContext.Provider>
     );

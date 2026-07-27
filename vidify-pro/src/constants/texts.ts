@@ -815,7 +815,7 @@ export const VOICE_DIALOG_TEXTS = {
     FEMALE: "Nữ",
     ALL_LANGUAGES: "Tất cả ngôn ngữ",
     SELECTED_VOICE: "Giọng đọc đã chọn:",
-    NO_VOICES_FOUND: "Không tìm thấy giọng đọc phù hợp.",
+    NO_VOICES_FOUND: "Không thấy giọng.",
   },
   en: {
     TITLE: "Select Voice",

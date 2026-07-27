@@ -37,12 +37,25 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   return originalFetch(input, requestInit);
 };
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  },
+});
+
 ReactDOM.createRoot(document.getElementById(SecurityConstants.HTML_ROOT_ID) as HTMLElement).render(
   <React.StrictMode>
-    <LicenseProvider>
-      <LicenseActivation>
-        <App />
-      </LicenseActivation>
-    </LicenseProvider>
+    <QueryClientProvider client={queryClient}>
+      <LicenseProvider>
+        <LicenseActivation>
+          <App />
+        </LicenseActivation>
+      </LicenseProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 );

@@ -6,26 +6,22 @@ import _ from "lodash";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { translations } from "../lib/lang.js";
-import { getStoredApiKey } from "../lib/shared-utils.js";
+import { useVoices } from "../hooks/useVoices";
 import { logger } from "../utils/logger";
 import { VOICE_DIALOG_TEXTS } from "../constants/texts";
 import {
   VOICE_PROVIDER_OPTIONS,
   VOICE_LANGUAGE_OPTIONS,
   VOICE_AGE_OPTIONS,
-  ErrorMessage,
-  VOICE_OWNERSHIP_KEY,
-  VOICE_OWNERSHIP_COMMUNITY,
-  VBEE_PROVIDER_ID,
   VOICE_PAGE_SIZE,
   GENDER_OPTIONS,
   AUDIO_PLAYBACK_FAILED_ERR,
   APP_LOCALES,
   DEFAULT_PROVIDER,
-  API_HEADERS,
-  API_QUERY_PARAMS,
-  API_ROUTES,
-  STORAGE_KEYS
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+  COMMON_STRINGS,
+  VOICE_GENDER
 } from "../constants";
 
 export interface Voice {
@@ -55,22 +51,22 @@ interface VoiceSelectionDialogProps {
 }
 
 const normalizeText = (text: string): string => {
-  if (_.isEmpty(text)) return "";
-  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (_.isEmpty(text)) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  return text.normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).toLowerCase().trim();
 };
 
 const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean = false) => {
-  if (_.isEmpty(code)) return "";
+  if (_.isEmpty(code)) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
   try {
-    const localeToUse = _.isEqual(lang, APP_LOCALES.VI_SHORT) ? APP_LOCALES.VI : APP_LOCALES.EN;
-    if (isLocale && _.includes(code, "-")) {
-      const regionCode = _.split(code, "-")[1];
+    const localeToUse = _.isEqual(lang, COMMON_STRINGS.VI) ? APP_LOCALES.VI : APP_LOCALES.EN;
+    if (isLocale && _.includes(code, REFACTOR_CONSTANTS.VD_HYPHEN)) {
+      const regionCode = _.split(code, REFACTOR_CONSTANTS.VD_HYPHEN)[1];
       if (regionCode) {
-        const regionNames = new Intl.DisplayNames([localeToUse], { type: "region" });
+        const regionNames = new Intl.DisplayNames([localeToUse], { type: REFACTOR_CONSTANTS.VD_REGION_TYPE as any });
         return regionNames.of(regionCode) || code;
       }
     }
-    const displayNames = new Intl.DisplayNames([localeToUse], { type: "language" });
+    const displayNames = new Intl.DisplayNames([localeToUse], { type: REFACTOR_CONSTANTS.VD_LANG_TYPE as any });
     return displayNames.of(code) || code;
   } catch (e) {
     return code;
@@ -89,21 +85,19 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
 }) => {
   const t = translations[currentLang];
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [language, setLanguage] = useState("");
-  const [gender, setGender] = useState("");
-  const [age, setAge] = useState("");
+  const [search, setSearch] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [language, setLanguage] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [gender, setGender] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [age, setAge] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [provider, setProvider] = useState(DEFAULT_PROVIDER);
 
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
-  const requestVersionRef = useRef(0);
 
   const debouncedSetSearch = useCallback(
     _.debounce((val: string) => {
@@ -118,79 +112,44 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
     debouncedSetSearch(val);
   };
 
-  const fetchVoices = async (pageNumber: number, overrideVoices = false) => {
-    const currentReqId = ++requestVersionRef.current;
-    if (overrideVoices) {
-      setVoices([]);
-    }
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        [API_QUERY_PARAMS.PROVIDER]: provider,
-        [API_QUERY_PARAMS.PAGE]: String(pageNumber),
-        [API_QUERY_PARAMS.PAGE_SIZE]: VOICE_PAGE_SIZE,
-      });
-      if (_.isEqual(provider, VBEE_PROVIDER_ID)) {
-        params.append(VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY);
-      }
+  const { data: queryData, isLoading, isFetching } = useVoices({
+    provider,
+    page,
+    pageSize: parseInt(VOICE_PAGE_SIZE, SecurityConstants.RADIX_10),
+    language,
+    gender,
+    age,
+    search: debouncedSearch
+  }, isOpen);
 
-      if (!_.isEmpty(language)) params.append(API_QUERY_PARAMS.LANGUAGE, language);
-      if (!_.isEmpty(gender)) params.append(API_QUERY_PARAMS.GENDER, gender);
-      if (!_.isEmpty(age)) params.append(API_QUERY_PARAMS.AGE, age);
-      if (!_.isEmpty(debouncedSearch)) params.append(API_QUERY_PARAMS.SEARCH, debouncedSearch);
-
-      const res = await fetch(`${API_ROUTES.VOICES}?${params.toString()}`, {
-        headers: {
-          [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
-          [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
-        },
-      });
-
-      if (currentReqId !== requestVersionRef.current) return;
-      if (!res.ok) throw new Error(ErrorMessage.FAILED_TO_FETCH);
-
-      const json = await res.json();
-      if (currentReqId !== requestVersionRef.current) return;
-
-      if (json.success && json.data) {
-        if (overrideVoices) {
-          setVoices(json.data);
-        } else {
-          setVoices((prev) => _.unionBy(prev, json.data, "voice_id"));
-        }
-        setHasMore(json.pagination?.has_more ?? false);
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      if (currentReqId === requestVersionRef.current) {
-        logger.error("FAILED_FETCH_VOICES_REGISTRY", error);
-        setHasMore(false);
-      }
-    } finally {
-      if (currentReqId === requestVersionRef.current) {
-        setLoading(false);
-      }
-    }
-  };
+  const loading = isLoading || isFetching;
 
   useEffect(() => {
-    if (isOpen) {
+    if (queryData?.success && queryData?.data) {
+      if (page === 1) {
+        setVoices(queryData.data);
+      } else {
+        setVoices((prev) => _.unionBy(prev, queryData.data, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
+      }
+      setHasMore(_.get(queryData, REFACTOR_CONSTANTS.VD_PAGINATION_HAS_MORE, false));
+    } else if (queryData?.success === false) {
+      setHasMore(false);
+    }
+  }, [queryData, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [language, gender, age, debouncedSearch, provider]);
+
+  useEffect(() => {
+    if (!isOpen) {
       setPage(1);
-      fetchVoices(1, true);
-    } else {
       if (audioRef.current) {
         audioRef.current.pause();
         setPlayingId(null);
       }
     }
-  }, [isOpen, language, gender, age, debouncedSearch, provider]);
-
-  useEffect(() => {
-    if (page > 1) {
-      fetchVoices(page, false);
-    }
-  }, [page]);
+  }, [isOpen]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -231,7 +190,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
         const cleanQuery = normalizeText(debouncedSearch);
         const cleanName = normalizeText(v.name);
         const cleanDesc = normalizeText(v.description);
-        const cleanTags = normalizeText((v.tags || []).join(" "));
+        const cleanTags = normalizeText(_.join(v.tags || [], REFACTOR_CONSTANTS.VD_BLANK || " "));
         const cleanCategory = normalizeText(v.category);
 
         const match = _.some([cleanName, cleanDesc, cleanTags, cleanCategory], (field) => _.includes(field, cleanQuery));
@@ -269,7 +228,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={
-        <Tooltip content={dialogTexts.TITLE_TOOLTIP} position="bottom" align="start">
+        <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
           <div className="flex items-center gap-3 cursor-help">
             <Mic className="w-5 h-5 text-rose-500" />
             <span>{dialogTexts.TITLE}</span>
@@ -278,7 +237,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
       }
     >
       <div className="flex flex-col h-full min-h-[500px] bg-slate-900">
-        <div className="w-full bg-slate-950/40 border-b border-slate-800/80 p-5 shrink-0 z-10">
+        <div className="w-full bg-slate-955/40 border-b border-slate-800/80 p-5 shrink-0 z-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -287,7 +246,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                   value={search}
                   onChange={handleSearchChange}
                   placeholder={t.Name_description}
@@ -344,14 +303,14 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 <User className="w-3.5 h-3.5" />
                 {t.Gender}
               </label>
-              <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
+              <div className="flex gap-1 bg-slate-955 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
                 {_.map(GENDER_OPTIONS, (g) => {
                   const isActive = _.isEqual(gender, g);
                   return (
                     <Button
                       variant="unstyled"
                       key={g}
-                      type="button"
+                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                       onClick={() => setGender(g)}
                       className={cn(
                         `flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto flex items-center justify-center ${isActive
@@ -360,7 +319,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                         }`
                       )}
                     >
-                      {_.isEmpty(g) ? t.All : _.isEqual(g, "male") ? t.Male_5 : t.Female_6}
+                      {_.isEmpty(g) ? t.All : _.isEqual(g, VOICE_GENDER.MALE) ? t.Male_5 : t.Female_6}
                     </Button>
                   );
                 })}
@@ -422,8 +381,8 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                   onClick={() => onSelectVoice(voice)}
                 >
                   <Button
-                    variant={isPlaying ? "primary" : "secondary"}
-                    size="md"
+                    variant={isPlaying ? REFACTOR_CONSTANTS.VARIANT_PRIMARY : REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+                    size={REFACTOR_CONSTANTS.SIZE_MD}
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlay(voice);
@@ -441,12 +400,12 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       <h3 className="font-bold text-base text-slate-100 truncate">{voice.name}</h3>
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
-                          type="button"
-                          variant="ghost"
-                          size="xs"
+                          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                          variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                          size={REFACTOR_CONSTANTS.SIZE_XS}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onToggleFavoriteVoice(voice.voice_id, voice.name, voice.category || "Custom");
+                            onToggleFavoriteVoice(voice.voice_id, voice.name, voice.category || REFACTOR_CONSTANTS.VD_CATEGORY_CUSTOM);
                           }}
                           className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-slate-50 dark:bg-slate-850 hover:bg-rose-50 dark:hover:bg-rose-955/30 border border-slate-200/50 dark:border-slate-700/50 hover:border-rose-200/60 dark:hover:border-rose-900/30 shadow-none p-0"
                           title={t.favorite}
@@ -490,7 +449,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                           }),
                           (tag, idx) => (
                             <span
-                              key={`tag-${idx}`}
+                              key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
                               className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 capitalize whitespace-nowrap"
                             >
                               {tag}
@@ -500,7 +459,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       })()}
                       {_.map(_.take(voice.descriptives, 2), (desc, idx) => (
                         <span
-                          key={`desc-${idx}`}
+                          key={_.join([REFACTOR_CONSTANTS.VD_DESC_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
                           className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-850 border border-slate-700/50 text-slate-400 capitalize whitespace-nowrap"
                         >
                           {desc}
