@@ -12,7 +12,7 @@ import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { EXTERNAL_URLS, API_ROUTES, API_HEADERS, STORAGE_KEYS } from "../../constants";
+import { EXTERNAL_URLS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS } from "../../constants";
 import { LOADING_KEYS } from "../../constants/loading";
 import { EXPORT_TYPES } from "../../constants/enums";
 import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
@@ -1108,7 +1108,7 @@ export function usePipelineWizard(props: any) {
 
     const timer = setTimeout(() => {
       onSaveProject(project);
-    }, 0);
+    }, REFACTOR_CONSTANTS.SAVE_PROJECT_DELAY_MS);
     return () => clearTimeout(timer);
   }, [project, normalizedInitialProject, onSaveProject]);
 

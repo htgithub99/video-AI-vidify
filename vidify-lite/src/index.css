@@ -512,3 +512,12 @@ input:active, select:active, textarea:active {
   outline: none !important;
 }
 
+/* Hide scrollbar but keep functionality */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+

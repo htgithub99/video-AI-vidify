@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { VoiceSelectionDialog } from "./VoiceSelectionDialog";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
+import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import {
@@ -46,6 +47,28 @@ interface AutoVideoGeneratorProps {
   theme?: "dark" | "light";
 }
 
+const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
+  if (_.isEqual(genMode, ImageGenerationMode.GeminiChat)) {
+    return [
+      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
+      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
+      { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
+    ];
+  }
+  if (_.isEqual(genType, GenerateType.Video)) {
+    return [
+      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
+      { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
+      { value: ImageGeneratorEngine.Veo3Fast, label: REFACTOR_CONSTANTS.ENGINE_VEO3_FAST },
+      { value: ImageGeneratorEngine.Veo3Quality, label: REFACTOR_CONSTANTS.ENGINE_VEO3_QUALITY },
+    ];
+  }
+  return [
+    { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN_3_BATCH },
+    { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO_3_0_FLUID },
+    { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX_STILL },
+  ];
+};
 
 export default function AutoVideoGenerator({
   currentLang,
@@ -54,35 +77,40 @@ export default function AutoVideoGenerator({
 }: AutoVideoGeneratorProps) {
   const T = _.get(AUTO_GENERATOR_PANEL_TEXTS, currentLang) || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
-  const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
-  const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
-  const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
-  const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
+  const [savedConfig] = useState(() => {
+    const saved = storageUtils.get(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
+    return jsonUtils.safeParse(saved, null);
+  });
+
+  const [inputType, setInputType] = useState<ProjectInputType>(() => savedConfig?.inputType || ProjectInputType.Script);
+  const [scriptContent, setScriptContent] = useState<string>(() => savedConfig?.scriptContent || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [genre, setGenre] = useState<string>(() => savedConfig?.genre || DEFAULT_PROJECT_CONFIGS.GENRE);
+  const [language, setLanguage] = useState<ProjectLanguage>(() => savedConfig?.language || ProjectLanguage.VI);
+  const [duration, setDuration] = useState<string>(() => savedConfig?.duration || DEFAULT_PROJECT_CONFIGS.DURATION);
   const [rewriteLevel] = useState<number>(3);
   const [similarityReduction] = useState<number>(3);
   const [creativityLevel] = useState<number>(3);
   const [factCheck] = useState<boolean>(true);
   const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
   const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [splitStrategy, setSplitStrategy] = useState<string>(REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
+  const [splitStrategy, setSplitStrategy] = useState<string>(() => savedConfig?.splitStrategy || REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
 
   const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
   const [hookDuration] = useState<number>(10);
-  const [hookPosition] = useState<string>(AUTO_GENERATOR_CONSTANTS.HOOK_POSITION_START);
+  const [hookPosition] = useState<string>(REFACTOR_CONSTANTS.AVG_START_POS);
 
-  const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
+  const [voiceProvider, setVoiceProvider] = useState<string>(() => savedConfig?.voiceProvider || DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
   const [voiceSpeed] = useState<number>(1.0);
   const [voicePitch] = useState<number>(1.0);
   const [voiceVolume] = useState<number>(1.0);
-  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
+  const [voiceURI, setVoiceURI] = useState<string>(() => savedConfig?.voiceURI || DEFAULT_PROJECT_CONFIGS.VOICE_URI);
+  const [voiceName, setVoiceName] = useState<string>(() => savedConfig?.voiceName || PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
-  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
+  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(() => savedConfig?.generationMode || ImageGenerationMode.LabsFlow);
+  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(() => savedConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3);
+  const [generateType, setGenerateType] = useState<GenerateType>(() => savedConfig?.generateType || GenerateType.Image);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(() => savedConfig?.aspectRatio || AspectRatio.NineSixteen);
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
@@ -90,18 +118,46 @@ export default function AutoVideoGenerator({
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
-  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
+  const [stylePreset, setStylePreset] = useState<string>(() => savedConfig?.stylePreset || PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [isExtractingStyle, setIsExtractingStyle] = useState<boolean>(false);
 
   const [characterImages] = useState<string[]>([]);
 
-  const [thumbnailCount, setThumbnailCount] = useState<number>(2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
+  const [thumbnailCount, setThumbnailCount] = useState<number>(() => savedConfig?.thumbnailCount !== undefined ? savedConfig.thumbnailCount : 2);
+  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(() => savedConfig?.thumbnailStylePreset || PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
   const [isExtractingThumbnailStyle, setIsExtractingThumbnailStyle] = useState<boolean>(false);
 
-  const [projectName, setProjectName] = useState<string>(() => _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+  const [projectName, setProjectName] = useState<string>(() => savedConfig?.projectName || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+
+  useEffect(() => {
+    const config = {
+      inputType,
+      scriptContent,
+      genre,
+      language,
+      duration,
+      splitStrategy,
+      voiceProvider,
+      voiceURI,
+      voiceName,
+      generationMode,
+      imageGeneratorEngine,
+      generateType,
+      aspectRatio,
+      stylePreset,
+      thumbnailCount,
+      thumbnailStylePreset,
+      projectName,
+    };
+    storageUtils.set(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
+  }, [
+    inputType, scriptContent, genre, language, duration, splitStrategy,
+    voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
+    generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
+    projectName
+  ]);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -124,25 +180,25 @@ export default function AutoVideoGenerator({
   const handleSavePreset = async () => {
     const trimmedName = _.trim(presetNameInput);
     if (_.isEmpty(trimmedName)) return;
-    const newPresetData = {
+    const newPresetData: any = {
       id: _.join([PRESET_CONSTANTS.ID_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
       name: trimmedName,
       config: {
-        inputType,
-        genre,
-        language,
-        duration,
-        splitStrategy,
-        voiceProvider,
-        voiceURI,
-        voiceName,
-        generationMode,
-        generateType,
-        imageGeneratorEngine,
-        aspectRatio,
-        stylePreset,
-        thumbnailCount,
-        thumbnailStylePreset,
+        [REFACTOR_CONSTANTS.AVG_INPUT_TYPE_KEY]: inputType,
+        [REFACTOR_CONSTANTS.AVG_GENRE_KEY]: genre,
+        [REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY]: language,
+        [REFACTOR_CONSTANTS.AVG_DURATION_KEY]: duration,
+        [REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY]: splitStrategy,
+        [REFACTOR_CONSTANTS.AVG_VOICE_PROVIDER_KEY]: voiceProvider,
+        [REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY]: voiceURI,
+        [REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY]: voiceName,
+        [REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY]: generationMode,
+        [REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY]: generateType,
+        [REFACTOR_CONSTANTS.AVG_IMAGE_GENERATOR_ENGINE_KEY]: imageGeneratorEngine,
+        [REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY]: aspectRatio,
+        [REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY]: stylePreset,
+        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY]: thumbnailCount,
+        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY]: thumbnailStylePreset,
       },
     };
     try {
@@ -165,18 +221,29 @@ export default function AutoVideoGenerator({
   const handleApplyPreset = (presetId: string) => {
     const preset = _.find(presets, { id: presetId });
     if (!preset) return;
-    const c = _.get(preset, "config");
-    if (_.get(c, "genre")) setGenre(_.get(c, "genre"));
-    if (_.get(c, "language")) setLanguage(_.get(c, "language"));
-    if (_.get(c, "duration")) setDuration(_.get(c, "duration"));
-    if (_.get(c, "splitStrategy")) setSplitStrategy(_.get(c, "splitStrategy"));
-    if (_.get(c, "voiceURI")) setVoiceURI(_.get(c, "voiceURI"));
-    if (_.get(c, "voiceName")) setVoiceName(_.get(c, "voiceName"));
-    if (_.get(c, "aspectRatio")) setAspectRatio(_.get(c, "aspectRatio"));
-    if (_.get(c, "generationMode")) setGenerationMode(_.get(c, "generationMode"));
-    if (_.get(c, "stylePreset")) setStylePreset(_.get(c, "stylePreset"));
-    if (_.get(c, "thumbnailCount")) setThumbnailCount(_.get(c, "thumbnailCount"));
-    if (_.get(c, "thumbnailStylePreset")) setThumbnailStylePreset(_.get(c, "thumbnailStylePreset"));
+    const c = _.get(preset, "config", {});
+    const genreVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENRE_KEY);
+    if (genreVal) setGenre(genreVal);
+    const langVal = _.get(c, REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY);
+    if (langVal) setLanguage(langVal);
+    const durationVal = _.get(c, REFACTOR_CONSTANTS.AVG_DURATION_KEY);
+    if (durationVal) setDuration(durationVal);
+    const splitStrategyVal = _.get(c, REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY);
+    if (splitStrategyVal) setSplitStrategy(splitStrategyVal);
+    const voiceURIVal = _.get(c, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY);
+    if (voiceURIVal) setVoiceURI(voiceURIVal);
+    const voiceNameVal = _.get(c, REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY);
+    if (voiceNameVal) setVoiceName(voiceNameVal);
+    const aspectRatioVal = _.get(c, REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY);
+    if (aspectRatioVal) setAspectRatio(aspectRatioVal);
+    const genModeVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY);
+    if (genModeVal) setGenerationMode(genModeVal);
+    const stylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY);
+    if (stylePresetVal) setStylePreset(stylePresetVal);
+    const thumbCountVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY);
+    if (thumbCountVal) setThumbnailCount(thumbCountVal);
+    const thumbStylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY);
+    if (thumbStylePresetVal) setThumbnailStylePreset(thumbStylePresetVal);
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(_.get(preset, "name")));
   };
@@ -212,7 +279,7 @@ export default function AutoVideoGenerator({
       setIsExtractingStyle(false);
       setStylePreset(PRESET_CONSTANTS.EXTRACTED_STYLE_PRESET);
       addLog(T.logStyleExtracted);
-    }, 1000);
+    }, REFACTOR_CONSTANTS.DELAY_1000_MS);
   };
 
   const handleThumbnailStyleFilesUpload = (files: FileList) => {
@@ -231,7 +298,7 @@ export default function AutoVideoGenerator({
       setIsExtractingThumbnailStyle(false);
       setThumbnailStylePreset(PRESET_CONSTANTS.EXTRACTED_THUMB_STYLE_PRESET);
       addLog(T.logThumbStyleExtracted);
-    }, 1000);
+    }, REFACTOR_CONSTANTS.DELAY_1000_MS);
   };
 
   const handleStartAutoGenerate = async () => {
@@ -250,7 +317,7 @@ export default function AutoVideoGenerator({
 
     try {
       addLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
-      const newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(36).substring(2, 11)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      const newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       const newProj: VideoProject = {
         id: newProjectId,
         name: _.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
@@ -368,7 +435,7 @@ export default function AutoVideoGenerator({
           script: _.trim(sen),
           subtitle: _.trim(sen),
           duration: AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
-          prompt: AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_PROMPT.replace(SecurityConstants.PLACEHOLDER_0, sen.slice(0, 40)),
+          prompt: AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_PROMPT.replace(SecurityConstants.PLACEHOLDER_0, sen.slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.PREVIEW_SLICE_END)),
           cameraMotion: PRESET_CONSTANTS.DEFAULT_CAMERA_MOTION,
           transition: PRESET_CONSTANTS.DEFAULT_TRANSITION
         }));
@@ -506,29 +573,39 @@ export default function AutoVideoGenerator({
               onChange={(e) => handleApplyPreset(e.target.value)}
               className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none"
             >
-              <option value="" className="bg-slate-955 text-slate-300">{_.get(T, "presetDefaultOption")}</option>
-              {_.map(presets, (p) => (
-                <option key={_.get(p, "id")} value={_.get(p, "id")} className="bg-slate-955 text-slate-300">
-                  {_.get(p, "name")}
-                </option>
-              ))}
+              <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{_.get(T, "presetDefaultOption")}</option>
+              {_.map(presets, (p) => {
+                const name = _.get(p, "name");
+                const formattedName = (() => {
+                  const words = _.words(name);
+                  if (words.length > 4) {
+                    return _.join(_.take(words, 4), ' ') + '...';
+                  }
+                  return name;
+                })();
+                return (
+                  <option key={_.get(p, "id")} value={_.get(p, "id")} className="bg-slate-955 text-slate-300" title={name}>
+                    {formattedName}
+                  </option>
+                );
+              })}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
           </div>
 
           <div className="flex items-center gap-1">
             <input
-              type="text"
+              type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
               placeholder={_.get(T, "presetNamePlaceholder")}
               value={presetNameInput}
               onChange={(e) => setPresetNameInput(e.target.value)}
               className="bg-slate-955 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 w-28 focus:outline-none focus:border-rose-500"
             />
-            <Button variant="secondary" size="xs" onClick={handleSavePreset} title={_.get(T, "savePresetTooltip")}>
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={handleSavePreset} title={_.get(T, "savePresetTooltip")}>
               <Save className="w-3.5 h-3.5 text-rose-400" /> {_.get(T, "savePresetBtn")}
             </Button>
             {selectedPresetId && (
-              <Button variant="ghost" size="xs" onClick={() => handleDeletePreset(selectedPresetId)} title={_.get(T, "deletePresetTooltip")}>
+              <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={() => handleDeletePreset(selectedPresetId)} title={_.get(T, "deletePresetTooltip")}>
                 <Trash className="w-3.5 h-3.5 text-slate-500 hover:text-rose-500" />
               </Button>
             )}
@@ -537,7 +614,7 @@ export default function AutoVideoGenerator({
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
-        <div className="lg:col-span-7 h-full overflow-y-auto p-5 custom-scrollbar flex flex-col">
+        <div className="lg:col-span-7 h-full overflow-y-auto p-5 scrollbar-none flex flex-col">
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-6 p-6 relative min-h-full flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -683,13 +760,14 @@ export default function AutoVideoGenerator({
                     >
                       {_.map(SPLIT_STRATEGY_OPTIONS, (s: any) => {
                         const val = _.get(s, "value");
-                        const displayLabel =
-                          _.isEqual(val, "word") ? _.get(T, "splitWord")
-                          : _.isEqual(val, "short_sentence") ? _.get(T, "splitShort")
-                          : _.isEqual(val, "long_sentence") ? _.get(T, "splitLong")
-                          : _.isEqual(val, "mixed_sentences") ? _.get(T, "splitMixed")
-                          : _.isEqual(val, "paragraph") ? _.get(T, "splitParagraph")
-                          : val;
+                        const SPLIT_LABEL_MAP: Record<string, string> = {
+                          word: _.get(T, "splitWord"),
+                          short_sentence: _.get(T, "splitShort"),
+                          long_sentence: _.get(T, "splitLong"),
+                          mixed_sentences: _.get(T, "splitMixed"),
+                          paragraph: _.get(T, "splitParagraph"),
+                        };
+                        const displayLabel = _.get(SPLIT_LABEL_MAP, val, val);
                         return (
                           <option key={val} value={val} className="bg-slate-955 text-slate-300">
                             {displayLabel}
@@ -727,9 +805,16 @@ export default function AutoVideoGenerator({
                       <Mic className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors" title={voiceName || voiceURI}>
-                        {(voiceName || voiceURI).slice(0, 15)}...
-                      </span>
+                      {(() => {
+                        const rawName = voiceName || voiceURI;
+                        const words = _.words(rawName);
+                        const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), ' ') + '...' : rawName;
+                        return (
+                          <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors" title={rawName}>
+                            {displayVoiceName}
+                          </span>
+                        );
+                      })()}
                       <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>
                     </div>
                   </div>
@@ -770,9 +855,21 @@ export default function AutoVideoGenerator({
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblGenMode")}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select value={generationMode} onChange={(e) => setGenerationMode(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">Flow Veo 3</option>
-                      <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">Gemini Room</option>
+                    <select
+                      value={generationMode}
+                      onChange={(e) => {
+                        const mode = e.target.value as any;
+                        setGenerationMode(mode);
+                        if (mode === ImageGenerationMode.GeminiChat) {
+                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                        } else {
+                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                        }
+                      }}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
+                      <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_LABS_FLOW}</option>
+                      <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_GEMINI_ROOM}</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -782,10 +879,16 @@ export default function AutoVideoGenerator({
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblEngine")}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      <option value={ImageGeneratorEngine.Veo3} className="bg-slate-955 text-slate-300">VEO 3.0 Fluid</option>
-                      <option value={ImageGeneratorEngine.Imagen} className="bg-slate-955 text-slate-300">Imagen 3 Batch</option>
-                      <option value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-955 text-slate-300">Labs Sandbox</option>
+                    <select
+                      value={imageGeneratorEngine}
+                      onChange={(e) => setImageGeneratorEngine(e.target.value as any)}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
+                      {_.map(getEngineOptions(generationMode, generateType), (opt) => (
+                        <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">
+                          {opt.label}
+                        </option>
+                      ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -798,7 +901,7 @@ export default function AutoVideoGenerator({
                     <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                       {_.map(Object.values(AspectRatio), (r) => (
                         <option key={r} value={r} className="bg-slate-955 text-slate-300">
-                          {r} {_.isEqual(r, AspectRatio.NineSixteen) ? "(TikTok)" : _.isEqual(r, AspectRatio.SixteenNine) ? "(YouTube)" : ""}
+                          {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
                         </option>
                       ))}
                     </select>
@@ -810,7 +913,17 @@ export default function AutoVideoGenerator({
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblGenType")}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select value={generateType} onChange={(e) => setGenerateType(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                    <select
+                      value={generateType}
+                      onChange={(e) => {
+                        const type = e.target.value as any;
+                        setGenerateType(type);
+                        if (generationMode !== ImageGenerationMode.GeminiChat) {
+                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                        }
+                      }}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
                       <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{_.get(T, "optionImage")}</option>
                       <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{_.get(T, "optionVideo")}</option>
                     </select>
@@ -835,13 +948,13 @@ export default function AutoVideoGenerator({
                   }}
                 >
                   <input
-                    type="file"
-                    accept={AUTO_GENERATOR_CONSTANTS.IMAGE_ACCEPT}
+                    type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
+                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                     multiple
                     onChange={(e) => {
                       if (e.target.files) {
                         handleStyleFilesUpload(e.target.files);
-                        e.target.value = "";
+                        e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
                       }
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -862,7 +975,7 @@ export default function AutoVideoGenerator({
                     <div className="flex flex-wrap gap-1.5">
                       {_.map(referenceImages, (imgBase64, idx) => (
                         <div key={idx} className="relative w-10 h-10 rounded-lg group shadow-sm">
-                          <img src={imgBase64} alt="" className="w-full h-full object-cover rounded-lg border border-slate-800" />
+                          <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.STYLE_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
                           <button
                             type="button"
                             onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
@@ -882,21 +995,21 @@ export default function AutoVideoGenerator({
 
                   <div className="flex items-center gap-2">
                     <input
-                      type="text"
+                      type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                       value={stylePreset}
                       onChange={(e) => setStylePreset(e.target.value)}
                       placeholder={_.get(T, "stylePresetPlaceholder")}
                       className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
                     />
                     <Button
-                      type="button"
-                      variant="ghost"
+                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                      variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                       onClick={() => {
                         setIsExtractingStyle(true);
                         setTimeout(() => {
                           setIsExtractingStyle(false);
                           addLog(_.get(T, "logStyleManualExtracted"));
-                        }, 1000);
+                        }, REFACTOR_CONSTANTS.DELAY_1000_MS);
                       }}
                       disabled={isExtractingStyle}
                       className="px-2.5 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
@@ -966,13 +1079,13 @@ export default function AutoVideoGenerator({
                   }}
                 >
                   <input
-                    type="file"
-                    accept={AUTO_GENERATOR_CONSTANTS.IMAGE_ACCEPT}
+                    type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
+                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
                     multiple
                     onChange={(e) => {
                       if (e.target.files) {
                         handleThumbnailStyleFilesUpload(e.target.files);
-                        e.target.value = "";
+                        e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
                       }
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -993,7 +1106,7 @@ export default function AutoVideoGenerator({
                     <div className="flex flex-wrap gap-1.5">
                       {_.map(thumbnailReferenceImages, (imgBase64, idx) => (
                         <div key={idx} className="relative w-10 h-10 rounded-lg group shadow-sm">
-                          <img src={imgBase64} alt="" className="w-full h-full object-cover rounded-lg border border-slate-800" />
+                          <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.THUMB_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
                           <button
                             type="button"
                             onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
@@ -1013,21 +1126,21 @@ export default function AutoVideoGenerator({
 
                   <div className="flex items-center gap-2">
                     <input
-                      type="text"
+                      type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                       value={thumbnailStylePreset}
                       onChange={(e) => setThumbnailStylePreset(e.target.value)}
                       placeholder={_.get(T, "thumbPresetPlaceholder")}
                       className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
                     />
                     <Button
-                      type="button"
-                      variant="ghost"
+                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                      variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                       onClick={() => {
                         setIsExtractingThumbnailStyle(true);
                         setTimeout(() => {
                           setIsExtractingThumbnailStyle(false);
                           addLog(_.get(T, "logThumbStyleManualExtracted"));
-                        }, 1000);
+                        }, REFACTOR_CONSTANTS.DELAY_1000_MS);
                       }}
                       disabled={isExtractingThumbnailStyle}
                       className="px-2.5 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
@@ -1042,7 +1155,7 @@ export default function AutoVideoGenerator({
           </div>
         </div>
 
-        <div className="lg:col-span-5 h-full overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between custom-scrollbar">
+        <div className="lg:col-span-5 h-full overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
           <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -1055,8 +1168,8 @@ export default function AutoVideoGenerator({
             </div>
 
             <Button
-              variant="primary"
-              size="lg"
+              variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+              size={REFACTOR_CONSTANTS.SIZE_LG}
               onClick={handleStartAutoGenerate}
               disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
               isLoading={isProcessing}
@@ -1088,7 +1201,7 @@ export default function AutoVideoGenerator({
               <span className="text-[10px] text-slate-400 font-mono">{_.get(T, "logEventsCount")(logs.length)}</span>
             </div>
 
-            <div className="flex-1 bg-black/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed custom-scrollbar flex flex-col min-h-[140px]">
+            <div className="flex-1 bg-black/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
               {_.isEmpty(logs) ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 italic text-center text-xs p-6 w-full h-full my-auto gap-2">
                   <Terminal className="w-8 h-8 text-slate-700/80 mb-1" />
@@ -1096,7 +1209,7 @@ export default function AutoVideoGenerator({
                 </div>
               ) : (
                 _.map(logs, (log, idx) => (
-                  <div key={idx} className={cn("py-0.5", _.includes(log, "✅") ? "text-emerald-400" : _.includes(log, "📌") ? "text-rose-400" : _.includes(log, "🎉") ? "text-amber-300 font-bold" : "text-slate-300")}>
+                  <div key={idx} className={cn("py-0.5", _.includes(log, REFACTOR_CONSTANTS.SYMBOL_SUCCESS) ? "text-emerald-400" : _.includes(log, REFACTOR_CONSTANTS.SYMBOL_STEP) ? "text-rose-400" : _.includes(log, REFACTOR_CONSTANTS.SYMBOL_FINISH) ? "text-amber-300 font-bold" : "text-slate-300")}>
                     {log}
                   </div>
                 ))
@@ -1125,12 +1238,12 @@ export default function AutoVideoGenerator({
             {!_.isEmpty(renderedVideoUrl) && (
               <div className="flex gap-2 pt-1">
                 <Button
-                  variant="primary"
-                  size="sm"
+                  variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                  size={REFACTOR_CONSTANTS.SIZE_SM}
                   onClick={() => {
                     const a = document.createElement("a");
                     a.href = renderedVideoUrl;
-                    a.download = _.join([projectName, AUTO_GENERATOR_CONSTANTS.EXPORT_SUFFIX], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                    a.download = _.join([projectName, REFACTOR_CONSTANTS.AVG_MP4_SUFFIX], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
                     a.click();
                   }}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white font-bold text-xs"
@@ -1141,8 +1254,8 @@ export default function AutoVideoGenerator({
 
                 {activeCreatedProject && (
                   <Button
-                    variant="secondary"
-                    size="sm"
+                    variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+                    size={REFACTOR_CONSTANTS.SIZE_SM}
                     onClick={() => onSelectProject(activeCreatedProject.id)}
                     className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
                     title={_.get(T, "openStudioTooltip")}

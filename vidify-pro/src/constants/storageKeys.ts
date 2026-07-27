@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   CAPCUT_ULTRA_CONFIG: "capcut_ultra_config",
   LOCAL_GOOGLE_ACCOUNTS: "LOCAL_GOOGLE_ACCOUNTS",
   LICENSE_KEY: "vidify_license_key",
+  AUTO_GENERATOR_CONFIG: "auto_generator_config",
 } as const;
 
 export type StorageKeyType = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
