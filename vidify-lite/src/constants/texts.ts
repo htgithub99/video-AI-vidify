@@ -904,6 +904,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logThumbUploaded: (count: number) => `Đã tải lên ${count} ảnh mẫu phong cách ảnh bìa.`,
     logSavedPreset: (name: string) => `Đã lưu mẫu cấu hình: "${name}"`,
     logAppliedPreset: (name: string) => `Đã áp dụng mẫu cấu hình: "${name}"`,
+    errExtractStyle: "Lỗi phân tích phong cách.",
+    errExtractStyleFailed: "Lỗi phân tích.",
   },
   en: {
     bannerTitle: "Auto Creator",
@@ -1011,6 +1013,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logThumbUploaded: (count: number) => `Uploaded ${count} thumbnail style sample images.`,
     logSavedPreset: (name: string) => `Saved Preset template: "${name}"`,
     logAppliedPreset: (name: string) => `Applied Preset: "${name}"`,
+    errExtractStyle: "Style analysis error.",
+    errExtractStyleFailed: "Analysis failed.",
   },
 } as const;
 

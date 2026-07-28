@@ -86,6 +86,8 @@ export const REFACTOR_CONSTANTS = {
   AVG_MESSAGE_KEY: 'message',
   AVG_VIET_NAM_LANG: 'Việt Nam',
   AVG_START_POS: 'start',
+  AVG_EXTRACT_STYLE_ERROR: 'Extract Style Error',
+  AVG_EXTRACT_THUMB_STYLE_ERROR: 'Extract Thumb Style Error',
 
   // New refactored constants
   ENGINE_IMAGEN: "Gemini 3.5 Pro",
@@ -135,6 +137,7 @@ export const REFACTOR_CONSTANTS = {
   AVG_ASPECT_RATIO_KEY: 'aspectRatio',
   AVG_GENERATION_MODE_KEY: 'generationMode',
   AVG_STYLE_PRESET_KEY: 'stylePreset',
+  AVG_STYLE_KEY: 'style',
   AVG_THUMBNAIL_COUNT_KEY: 'thumbnailCount',
   AVG_THUMBNAIL_STYLE_PRESET_KEY: 'thumbnailStylePreset',
   AVG_INPUT_TYPE_KEY: 'inputType',

@@ -360,12 +360,6 @@ export default function AutoVideoGenerator({
       reader.readAsDataURL(file);
     });
     addLog(T.logStyleUploaded(files.length));
-    setIsExtractingStyle(true);
-    setTimeout(() => {
-      setIsExtractingStyle(false);
-      setStylePreset(PRESET_CONSTANTS.EXTRACTED_STYLE_PRESET);
-      addLog(T.logStyleExtracted);
-    }, REFACTOR_CONSTANTS.DELAY_1000_MS);
   };
 
   const handleThumbnailStyleFilesUpload = (files: FileList) => {
@@ -379,12 +373,6 @@ export default function AutoVideoGenerator({
       reader.readAsDataURL(file);
     });
     addLog(T.logThumbUploaded(files.length));
-    setIsExtractingThumbnailStyle(true);
-    setTimeout(() => {
-      setIsExtractingThumbnailStyle(false);
-      setThumbnailStylePreset(PRESET_CONSTANTS.EXTRACTED_THUMB_STYLE_PRESET);
-      addLog(T.logThumbStyleExtracted);
-    }, REFACTOR_CONSTANTS.DELAY_1000_MS);
   };
 
   const handleStartAutoGenerate = async () => {
@@ -1200,14 +1188,37 @@ export default function AutoVideoGenerator({
                     <Button
                       type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                       variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                      onClick={() => {
+                      onClick={async () => {
+                        if (_.isEmpty(referenceImages)) {
+                          alert(_.get(T, "styleUploadEmpty"));
+                          return;
+                        }
                         setIsExtractingStyle(true);
-                        setTimeout(() => {
+                        try {
+                          const res = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+                            method: HTTP_METHODS.POST,
+                            headers: { 
+                              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+                              [API_HEADERS.LICENSE_KEY]: await storageUtils.getAsync(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+                            },
+                            body: jsonUtils.safeStringify({ images: referenceImages })
+                          });
+                          const data = await res.json();
+                          if (_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY)) {
+                            setStylePreset(_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY));
+                            addLog(_.get(T, "logStyleManualExtracted"));
+                          } else {
+                            throw new Error(_.get(data, REFACTOR_CONSTANTS.AVG_ERROR_KEY) || _.get(T, "errExtractStyleFailed"));
+                          }
+                        } catch (err: any) {
+                          logger.error(REFACTOR_CONSTANTS.AVG_EXTRACT_STYLE_ERROR, err);
+                          addLog(_.get(T, "errExtractStyle"));
+                        } finally {
                           setIsExtractingStyle(false);
-                          addLog(T.logStyleManualExtracted);
-                        }, REFACTOR_CONSTANTS.DELAY_1000_MS);
+                        }
                       }}
                       disabled={isExtractingStyle}
+                      isLoading={isExtractingStyle}
                       className="px-2.5 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
                       title={T.extractStyleTooltip}
                     >
@@ -1329,14 +1340,37 @@ export default function AutoVideoGenerator({
                     <Button
                       type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                       variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                      onClick={() => {
+                      onClick={async () => {
+                        if (_.isEmpty(thumbnailReferenceImages)) {
+                          alert(_.get(T, "thumbUploadEmpty"));
+                          return;
+                        }
                         setIsExtractingThumbnailStyle(true);
-                        setTimeout(() => {
+                        try {
+                          const res = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+                            method: HTTP_METHODS.POST,
+                            headers: { 
+                              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+                              [API_HEADERS.LICENSE_KEY]: await storageUtils.getAsync(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+                            },
+                            body: jsonUtils.safeStringify({ images: thumbnailReferenceImages })
+                          });
+                          const data = await res.json();
+                          if (_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY)) {
+                            setThumbnailStylePreset(_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY));
+                            addLog(_.get(T, "logThumbStyleManualExtracted"));
+                          } else {
+                            throw new Error(_.get(data, REFACTOR_CONSTANTS.AVG_ERROR_KEY) || _.get(T, "errExtractStyleFailed"));
+                          }
+                        } catch (err: any) {
+                          logger.error(REFACTOR_CONSTANTS.AVG_EXTRACT_THUMB_STYLE_ERROR, err);
+                          addLog(_.get(T, "errExtractStyle"));
+                        } finally {
                           setIsExtractingThumbnailStyle(false);
-                          addLog(T.logThumbStyleManualExtracted);
-                        }, REFACTOR_CONSTANTS.DELAY_1000_MS);
+                        }
                       }}
                       disabled={isExtractingThumbnailStyle}
+                      isLoading={isExtractingThumbnailStyle}
                       className="px-2.5 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
                       title={T.extractThumbStyleTooltip}
                     >

@@ -5,9 +5,9 @@ import { Modal } from "./ui/Modal";
 import _ from "lodash";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
-import { VOICE_DIALOG_TEXTS } from "../constants/texts";
-import { logger } from "../utils/logger";
 import { useVoices } from "../hooks/useVoices";
+import { logger } from "../utils/logger";
+import { VOICE_DIALOG_TEXTS } from "../constants/texts";
 import {
   VOICE_PROVIDER_OPTIONS,
   VOICE_LANGUAGE_OPTIONS,
@@ -71,6 +71,7 @@ const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean 
     return code;
   }
 };
+
 
 export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   isOpen,
@@ -347,17 +348,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto relative p-5">
+          {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm text-slate-500">
+              <div className="w-10 h-10 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(244,63,94,0.3)]" />
+              <p className="text-sm font-bold animate-pulse text-rose-400">{dialogTexts.loading}</p>
+            </div>
+          )}
+
           {_.isEmpty(filteredVoices) && !loading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
               <Mic className="w-16 h-16 mb-4 opacity-20" />
               <p className="text-sm mt-1 opacity-70">{dialogTexts.noVoices}</p>
-            </div>
-          )}
-
-          {_.isEmpty(filteredVoices) && loading && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
-              <div className="w-10 h-10 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin mb-4" />
-              <p className="text-sm font-medium animate-pulse">{dialogTexts.loading}</p>
             </div>
           )}
 
