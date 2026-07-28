@@ -551,14 +551,25 @@ export default function AutoVideoGenerator({
       setStepProgress(35);
       setCurrentStepIndex(2);
 
+      const formatTimeHelper = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(2).padStart(5, REFACTOR_CONSTANTS.AVG_BLANK);
+        return `${String(mins).padStart(2, REFACTOR_CONSTANTS.AVG_BLANK)}:${secs}`;
+      };
+
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN.replace(SecurityConstants.PLACEHOLDER_0, voiceName || REFACTOR_CONSTANTS.AVG_VIET_NAM_LANG));
 
       const buildVoicePayload = (text: string) => ({
         text,
         voiceURI,
+        voice_id: voiceURI,
         provider: voiceProvider,
         speed: voiceSpeed,
-        pitch: voicePitch
+        pitch: voicePitch,
+        volume: voiceVolume,
+        gender: _.get(newProj, AUTO_GENERATOR_CONSTANTS.VOICE_GENDER_PATH),
+        age: _.get(newProj, AUTO_GENERATOR_CONSTANTS.VOICE_AGE_PATH),
+        emotion: _.get(newProj, AUTO_GENERATOR_CONSTANTS.VOICE_EMOTION_PATH),
       });
 
       const buildAlignPayload = (audioBase64: string) => ({
@@ -573,15 +584,15 @@ export default function AutoVideoGenerator({
         const align = _.find(alignments, (a) => _.isEqual(a.id, _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY)));
         if (!align) return;
         sc.duration = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_DURATION_KEY);
-        sc.startTime = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_START_KEY);
-        sc.endTime = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_END_KEY);
+        sc.startTime = formatTimeHelper(_.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_START_KEY));
+        sc.endTime = formatTimeHelper(_.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_END_KEY));
         sc._start = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_START_KEY);
         sc._end = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_END_KEY);
         delete sc.audioBase64;
         delete sc.audioUrl;
       };
 
-      const fullScript = _.map(realScenes, (sc) => _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)).join(REFACTOR_CONSTANTS.AVG_BLANK);
+      const fullScript = realScript || _.map(realScenes, (sc) => _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)).join(REFACTOR_CONSTANTS.AVG_BLANK);
       let globalAudioBase64 = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let globalAudioUrl = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 
@@ -596,8 +607,10 @@ export default function AutoVideoGenerator({
         });
         if (ttsRes.ok) {
           const ttsData = await ttsRes.json();
-          globalAudioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-          globalAudioUrl = _.get(ttsData, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+          if (ttsData.success && ttsData.audioBase64) {
+            globalAudioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            globalAudioUrl = _.get(ttsData, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+          }
         }
       } catch (e) {
         logger.error(AUTO_GENERATOR_CONSTANTS.ERR_VOICE_GEN_FAILED, e);
@@ -632,6 +645,8 @@ export default function AutoVideoGenerator({
         storyboard: realScenes,
         voiceConfig: {
           ...(scriptUpdatedProj.voiceConfig || {} as any),
+          audioType: AUTO_GENERATOR_CONSTANTS.AUDIO_TYPE_TTS as any,
+          provider: voiceProvider,
           audioBase64: globalAudioBase64,
           audioUrl: globalAudioUrl
         } as VoiceConfig
@@ -667,10 +682,15 @@ export default function AutoVideoGenerator({
           });
           if (imgRes.ok) {
             const imgData = await imgRes.json();
-            if (imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY)) {
-              sc.imageBase64 = imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
-            } else if (_.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY)) {
-              sc.imageUrl = _.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+            const base64Val = imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+            const fallbackUrl = _.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+            if (base64Val) {
+              const dataUrl = `data:image/jpeg;base64,${base64Val}`;
+              sc.assetUrl = dataUrl;
+              sc.assetUrls = [dataUrl];
+            } else if (fallbackUrl) {
+              sc.assetUrl = fallbackUrl;
+              sc.assetUrls = [fallbackUrl];
             }
           }
         } catch (e) {

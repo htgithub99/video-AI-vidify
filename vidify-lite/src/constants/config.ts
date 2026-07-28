@@ -106,6 +106,9 @@ export const AUTO_GENERATOR_CONSTANTS = {
   AVG_ALIGN_START_KEY: "start",
   AVG_ALIGN_END_KEY: "end",
   AVG_ALIGN_DURATION_KEY: "duration",
+  VOICE_GENDER_PATH: "voiceConfig.gender",
+  VOICE_AGE_PATH: "voiceConfig.age",
+  VOICE_EMOTION_PATH: "voiceConfig.emotion",
 } as const;
 
 export const RENDER_LOGIC_CONSTANTS = {
