@@ -776,9 +776,9 @@ export default function AutoVideoGenerator({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
-        <div className="lg:col-span-7 h-full overflow-y-auto p-5 scrollbar-none flex flex-col">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-6 p-6 relative min-h-full flex flex-col justify-between">
+      <div className="flex-1 min-h-0 h-[calc(100vh-56px)] lg:h-auto grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
+        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 scrollbar-none flex flex-col">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 p-6 relative h-fit flex flex-col justify-between overflow-visible">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="border-b border-slate-800/80 pb-4 flex items-center justify-between">
@@ -1320,7 +1320,7 @@ export default function AutoVideoGenerator({
           </div>
         </div>
 
-        <div className="lg:col-span-5 h-full overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
+        <div className="lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
           <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
 
