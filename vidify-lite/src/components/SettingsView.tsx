@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lang, translations } from "../lib/lang.js";
-import { STORAGE_KEYS, SETTINGS_VIEW_TEXTS } from "../constants";
+import { STORAGE_KEYS, SETTINGS_VIEW_TEXTS, REFACTOR_CONSTANTS } from "../constants";
 import { Key, Users, Save, Plus, X, LogOut, KeyRound } from "lucide-react";
 import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
@@ -8,6 +8,7 @@ import { storageUtils } from "../lib/storage";
 import { useLicense } from "../contexts/LicenseContext";
 import { SecurityConstants, SecurityMessages } from "../constants/security";
 import { AppLanguage } from "../constants/enums";
+import { Tooltip } from "./ui/Tooltip";
 import _ from "lodash";
 
 interface SettingsViewProps {
@@ -23,25 +24,27 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [isSavingKeys, setIsSavingKeys] = useState(false);
   
-  const [accounts, setAccounts] = useState<any[]>(() => {
-    try {
-      const saved = storageUtils.get(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [accounts, setAccounts] = useState<any[]>([]);
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const saved = await storageUtils.getAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
+        if (saved) setAccounts(JSON.parse(saved));
+      } catch {}
+    };
+    loadAccounts();
+  }, []);
   const [newEmail, setNewEmail] = useState(SecurityConstants.EMPTY_STRING);
   const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
   const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
 
   const handleSaveKeys = () => {
     setIsSavingKeys(true);
-    setTimeout(() => {
-      storageUtils.set(STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey));
-      storageUtils.set(STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key));
+    setTimeout(async () => {
+      await storageUtils.setAsync(STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey));
+      await storageUtils.setAsync(STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key));
       setIsSavingKeys(false);
-    }, 500);
+    }, REFACTOR_CONSTANTS.DELAY_SAVE_KEYS_MS);
   };
 
   const handleAddAccount = () => {
@@ -54,7 +57,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     };
     const updated = [...accounts, newAcc];
     setAccounts(updated);
-    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
     setNewEmail(SecurityConstants.EMPTY_STRING);
     setNewPassword(SecurityConstants.EMPTY_STRING);
     setNewRecovery(SecurityConstants.EMPTY_STRING);
@@ -63,7 +66,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const handleRemoveAccount = (id: number) => {
     const updated = _.filter(accounts, a => a.id !== id);
     setAccounts(updated);
-    storageUtils.set(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
   };
 
   return (
@@ -108,7 +111,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{t.apiKeysConfig}</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">{texts.API_KEYS_TITLE}</p>
+                <Tooltip content={_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_EN : REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_VI} position="bottom" align="start">
+                  <p className="text-[10px] text-slate-400 mt-0.5 cursor-help">
+                    {_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_EN : REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_VI}
+                  </p>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -123,7 +130,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 value={geminiKey}
                 onChange={(e) => setGeminiKey(e.target.value)}
                 placeholder={texts.GEMINI_PLACEHOLDER}
-                className="w-full bg-slate-950 border border-slate-800 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
+                className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
               />
             </div>
             <div className="space-y-1.5">
@@ -162,7 +169,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{texts.ACCOUNTS_TITLE}</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">{texts.ACCOUNTS_DESC} ({accounts.length})</p>
+                <Tooltip content={_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_VI} position="bottom" align="start">
+                  <p className="text-[10px] text-slate-400 mt-0.5 cursor-help">
+                    {_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_VI} ({accounts.length})
+                  </p>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -187,10 +198,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             <div className="flex gap-2">
               <input
                 type={SecurityConstants.INPUT_TYPE_TEXT}
-                placeholder={texts.RECOVERY_PLACEHOLDER}
+                placeholder={_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_EN : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_VI}
+                title={_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_EN : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_VI}
                 value={newRecovery}
                 onChange={e => setNewRecovery(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1"
+                className="bg-slate-955 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1"
               />
               <Button 
                 variant={SecurityConstants.BTN_VARIANT_PRIMARY} 

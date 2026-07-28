@@ -5,7 +5,7 @@ import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants";
+import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -94,6 +94,14 @@ function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFold
 }
 
 function processSceneAssets(scene: any, imageDir: string, audioDir: string, folderName: string): any {
+  const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+  if (imgBase64 && !_.get(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY)) {
+    _.set(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY, imgBase64);
+  }
+  if (imgBase64) {
+    delete scene[REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY];
+  }
+
   let { assetUrl, assetUrls, audioUrl, audioBase64 } = scene;
   let sceneUpdated = false;
   assetUrls = assetUrls || [];

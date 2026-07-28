@@ -294,6 +294,9 @@ export interface VideoProject {
   versionHistory?: ProjectVersion[];
   allowBulkDeleteImages?: boolean;
   isRecreatingStoryboard?: boolean;
+  status?: string;
+  generationLogs?: string[];
+  renderedVideoUrl?: string;
 }
 
 export interface PipelineWizardProps {

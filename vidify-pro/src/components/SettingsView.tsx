@@ -1,12 +1,12 @@
 import { cn } from "../lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lang, translations } from "../lib/lang.js";
-import { getStoredApiKey } from "../lib/shared-utils.js";
-import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS } from "../constants";
+import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS, REFACTOR_CONSTANTS } from "../constants";
 import { appError } from "../lib/logger.js";
 import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle, LogOut, KeyRound } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
+import { Tooltip } from "./ui/Tooltip";
 import _ from "lodash";
 import { storageUtils } from "../lib/storage";
 import { jsonUtils } from "../lib/json";
@@ -36,8 +36,8 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const pageTexts = SETTINGS_TEXTS[currentLang as "vi" | "en"] || SETTINGS_TEXTS.en;
   const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
-  const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
-  const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
+  const [geminiKey, setGeminiKey] = useState(SecurityConstants.EMPTY_STRING);
+  const [ai33Key, setAi33Key] = useState(SecurityConstants.EMPTY_STRING);
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
 
@@ -48,48 +48,62 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   const [confirmClearType, setConfirmClearType] = useState<ClearType | null>(null);
 
-  const [config, setConfig] = useState(() => {
-    try {
-      const saved = storageUtils.get(STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, SecurityConstants.EMPTY_STRING], _.trim(saved))) {
-        const parsed = jsonUtils.safeParse<any>(saved, null);
-        if (parsed && typeof parsed === "object") {
-          return {
-            projectId: parsed.projectId || SecurityConstants.EMPTY_STRING,
-            authToken: parsed.authToken || SecurityConstants.EMPTY_STRING,
-            recaptchaToken: parsed.recaptchaToken || SecurityConstants.EMPTY_STRING,
-            sessionId: parsed.sessionId || SecurityConstants.EMPTY_STRING,
-            imageModelName: parsed.imageModelName || CURL_KEYWORDS.NARWHAL,
-            agentSessionId: parsed.agentSessionId || SecurityConstants.EMPTY_STRING,
-            isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
-          };
-        }
-      }
-    } catch (e) {
-      appError(SecurityConstants.LOG_ERROR_PARSING_SANDBOX_SETTINGS, e);
-    }
-    return {
-      projectId: SecurityConstants.EMPTY_STRING,
-      authToken: SecurityConstants.EMPTY_STRING,
-      recaptchaToken: SecurityConstants.EMPTY_STRING,
-      sessionId: SecurityConstants.EMPTY_STRING,
-      imageModelName: CURL_KEYWORDS.NARWHAL,
-      agentSessionId: SecurityConstants.EMPTY_STRING,
-      isStreamChat: false,
-    };
+  const [config, setConfig] = useState({
+    projectId: SecurityConstants.EMPTY_STRING,
+    authToken: SecurityConstants.EMPTY_STRING,
+    recaptchaToken: SecurityConstants.EMPTY_STRING,
+    sessionId: SecurityConstants.EMPTY_STRING,
+    imageModelName: CURL_KEYWORDS.NARWHAL,
+    agentSessionId: SecurityConstants.EMPTY_STRING,
+    isStreamChat: false,
   });
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const gk = await storageUtils.getAsync(STORAGE_KEYS.GEMINI_API_KEY);
+        const ak = await storageUtils.getAsync(STORAGE_KEYS.AI33_API_KEY);
+        if (gk) setGeminiKey(gk);
+        if (ak) setAi33Key(ak);
+
+        const saved = await storageUtils.getAsync(STORAGE_KEYS.API_SANDBOX_CONFIG);
+        if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, SecurityConstants.EMPTY_STRING], _.trim(saved))) {
+          const parsed = jsonUtils.safeParse<any>(saved, null);
+          if (parsed && typeof parsed === "object") {
+            setConfig({
+              projectId: parsed.projectId || SecurityConstants.EMPTY_STRING,
+              authToken: parsed.authToken || SecurityConstants.EMPTY_STRING,
+              recaptchaToken: parsed.recaptchaToken || SecurityConstants.EMPTY_STRING,
+              sessionId: parsed.sessionId || SecurityConstants.EMPTY_STRING,
+              imageModelName: parsed.imageModelName || CURL_KEYWORDS.NARWHAL,
+              agentSessionId: parsed.agentSessionId || SecurityConstants.EMPTY_STRING,
+              isStreamChat: parsed.isStreamChat !== undefined ? parsed.isStreamChat : false,
+            });
+          }
+        }
+      } catch (e) {
+        appError(SecurityConstants.LOG_ERROR_PARSING_SANDBOX_SETTINGS, e);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const saveConfigHelper = (keysToSave: Record<string, string>, setSavingState: (saving: boolean) => void, setSuccessState: (success: boolean) => void) => {
     setSavingState(true);
-    setTimeout(() => {
-      Object.entries(keysToSave).forEach(([key, val]) => {
-        storageUtils.set(key, val);
-      });
-      setSavingState(false);
-      setSuccessState(true);
-      setTimeout(() => {
-        setSuccessState(false);
-      }, SETTINGS_CONSTS.SUCCESS_STATE_DURATION);
+    setTimeout(async () => {
+      try {
+        for (const [key, val] of Object.entries(keysToSave)) {
+          await storageUtils.setAsync(key, val);
+        }
+        setSavingState(false);
+        setSuccessState(true);
+        setTimeout(() => {
+          setSuccessState(false);
+        }, SETTINGS_CONSTS.SUCCESS_STATE_DURATION);
+      } catch (e) {
+        appError(SecurityConstants.LOG_GENERAL_ERROR, e);
+        setSavingState(false);
+      }
     }, SETTINGS_CONSTS.MOCK_SAVE_DELAY);
   };
 
@@ -104,25 +118,29 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     );
   };
 
-  const handleConfirmClear = () => {
-    if (confirmClearType === CLEAR_TYPES.API) {
-      setGeminiKey(SecurityConstants.EMPTY_STRING);
-      setAi33Key(SecurityConstants.EMPTY_STRING);
-      storageUtils.remove(STORAGE_KEYS.GEMINI_API_KEY);
-      storageUtils.remove(STORAGE_KEYS.AI33_API_KEY);
-    } else if (confirmClearType === CLEAR_TYPES.SANDBOX) {
-      const defaultConfig = {
-        projectId: SecurityConstants.EMPTY_STRING,
-        authToken: SecurityConstants.EMPTY_STRING,
-        recaptchaToken: SecurityConstants.EMPTY_STRING,
-        sessionId: SecurityConstants.EMPTY_STRING,
-        imageModelName: CURL_KEYWORDS.NARWHAL,
-        agentSessionId: SecurityConstants.EMPTY_STRING,
-        isStreamChat: false,
-      };
-      setConfig(defaultConfig);
-      setCurlInput(SecurityConstants.EMPTY_STRING);
-      storageUtils.remove(STORAGE_KEYS.API_SANDBOX_CONFIG);
+  const handleConfirmClear = async () => {
+    try {
+      if (confirmClearType === CLEAR_TYPES.API) {
+        setGeminiKey(SecurityConstants.EMPTY_STRING);
+        setAi33Key(SecurityConstants.EMPTY_STRING);
+        await storageUtils.removeAsync(STORAGE_KEYS.GEMINI_API_KEY);
+        await storageUtils.removeAsync(STORAGE_KEYS.AI33_API_KEY);
+      } else if (confirmClearType === CLEAR_TYPES.SANDBOX) {
+        const defaultConfig = {
+          projectId: SecurityConstants.EMPTY_STRING,
+          authToken: SecurityConstants.EMPTY_STRING,
+          recaptchaToken: SecurityConstants.EMPTY_STRING,
+          sessionId: SecurityConstants.EMPTY_STRING,
+          imageModelName: CURL_KEYWORDS.NARWHAL,
+          agentSessionId: SecurityConstants.EMPTY_STRING,
+          isStreamChat: false,
+        };
+        setConfig(defaultConfig);
+        setCurlInput(SecurityConstants.EMPTY_STRING);
+        await storageUtils.removeAsync(STORAGE_KEYS.API_SANDBOX_CONFIG);
+      }
+    } catch (e) {
+      appError(SecurityConstants.LOG_GENERAL_ERROR, e);
     }
     setConfirmClearType(null);
   };
@@ -335,7 +353,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">
-                {t.Paste_cURL_from_Chrome_F1}
+                <Tooltip content={_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.CURL_PASTE_LABEL_TOOLTIP_EN : REFACTOR_CONSTANTS.CURL_PASTE_LABEL_TOOLTIP_VI} position="top" align="start">
+                  <span className="cursor-help">
+                    {_.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.CURL_PASTE_LABEL_SHORT_EN : REFACTOR_CONSTANTS.CURL_PASTE_LABEL_SHORT_VI}
+                  </span>
+                </Tooltip>
               </label>
               <textarea
                 value={curlInput}

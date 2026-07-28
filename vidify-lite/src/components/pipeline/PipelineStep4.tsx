@@ -6,7 +6,7 @@ import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
-import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS } from "../../constants";
+import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
@@ -85,20 +85,47 @@ export default function PipelineStep4(props: PipelineWizardState) {
       };
       
       const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
+         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
          body: JSON.stringify(payload)
       });
       const data = await response.json();
-      if (data.success) {
-         setPreviewVideoUrl(data.url);
-         props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
+      if (data.success && data.jobId) {
+         const jobId = data.jobId;
+         const checkStatus = setInterval(async () => {
+           try {
+             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`);
+             const statusData = await statusRes.json();
+             if (statusData.success) {
+               if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
+                 clearInterval(checkStatus);
+                 setPreviewVideoUrl(statusData.url);
+                 props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
+                 setIsRenderLoading(false);
+               } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
+                 clearInterval(checkStatus);
+                 props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_UNKNOWN);
+                 setIsRenderLoading(false);
+               } else {
+                 props.setInfoMsg(`${REFACTOR_CONSTANTS.MSG_RENDERING_PREFIX}${statusData.progress || 0}${REFACTOR_CONSTANTS.MSG_PERCENT_SUFFIX}`);
+               }
+             } else {
+               clearInterval(checkStatus);
+               props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_STATUS_FAILED);
+               setIsRenderLoading(false);
+             }
+           } catch (err: any) {
+             clearInterval(checkStatus);
+             props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_UNKNOWN);
+             setIsRenderLoading(false);
+           }
+         }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
       } else {
-         props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + data.error);
+         props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_QUEUE);
+         setIsRenderLoading(false);
       }
     } catch (e: any) {
-      props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + e.message);
-    } finally {
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_UNKNOWN);
       setIsRenderLoading(false);
     }
   };

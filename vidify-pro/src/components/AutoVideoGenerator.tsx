@@ -7,11 +7,14 @@ import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATE
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
+import { Tooltip } from "./ui/Tooltip";
 import { VoiceSelectionDialog } from "./VoiceSelectionDialog";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
+
+
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import {
   Zap,
@@ -72,45 +75,43 @@ const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): 
 
 export default function AutoVideoGenerator({
   currentLang,
+  projects,
   onSelectProject,
   onUpdateProject,
 }: AutoVideoGeneratorProps) {
   const T = _.get(AUTO_GENERATOR_PANEL_TEXTS, currentLang) || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
-  const [savedConfig] = useState(() => {
-    const saved = storageUtils.get(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
-    return jsonUtils.safeParse(saved, null);
-  });
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
-  const [inputType, setInputType] = useState<ProjectInputType>(() => savedConfig?.inputType || ProjectInputType.Script);
-  const [scriptContent, setScriptContent] = useState<string>(() => savedConfig?.scriptContent || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [genre, setGenre] = useState<string>(() => savedConfig?.genre || DEFAULT_PROJECT_CONFIGS.GENRE);
-  const [language, setLanguage] = useState<ProjectLanguage>(() => savedConfig?.language || ProjectLanguage.VI);
-  const [duration, setDuration] = useState<string>(() => savedConfig?.duration || DEFAULT_PROJECT_CONFIGS.DURATION);
+  const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
+  const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
+  const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
+  const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
   const [rewriteLevel] = useState<number>(3);
   const [similarityReduction] = useState<number>(3);
   const [creativityLevel] = useState<number>(3);
   const [factCheck] = useState<boolean>(true);
   const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
   const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [splitStrategy, setSplitStrategy] = useState<string>(() => savedConfig?.splitStrategy || REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
+  const [splitStrategy, setSplitStrategy] = useState<string>(REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
 
   const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
   const [hookDuration] = useState<number>(10);
   const [hookPosition] = useState<string>(REFACTOR_CONSTANTS.AVG_START_POS);
 
-  const [voiceProvider, setVoiceProvider] = useState<string>(() => savedConfig?.voiceProvider || DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
+  const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
   const [voiceSpeed] = useState<number>(1.0);
   const [voicePitch] = useState<number>(1.0);
   const [voiceVolume] = useState<number>(1.0);
-  const [voiceURI, setVoiceURI] = useState<string>(() => savedConfig?.voiceURI || DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(() => savedConfig?.voiceName || PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
+  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
+  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(() => savedConfig?.generationMode || ImageGenerationMode.LabsFlow);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(() => savedConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3);
-  const [generateType, setGenerateType] = useState<GenerateType>(() => savedConfig?.generateType || GenerateType.Image);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(() => savedConfig?.aspectRatio || AspectRatio.NineSixteen);
+  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
+  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
+  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
@@ -118,20 +119,54 @@ export default function AutoVideoGenerator({
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
-  const [stylePreset, setStylePreset] = useState<string>(() => savedConfig?.stylePreset || PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
+  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [isExtractingStyle, setIsExtractingStyle] = useState<boolean>(false);
 
   const [characterImages] = useState<string[]>([]);
 
-  const [thumbnailCount, setThumbnailCount] = useState<number>(() => savedConfig?.thumbnailCount !== undefined ? savedConfig.thumbnailCount : 2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(() => savedConfig?.thumbnailStylePreset || PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
+  const [thumbnailCount, setThumbnailCount] = useState<number>(2);
+  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
   const [isExtractingThumbnailStyle, setIsExtractingThumbnailStyle] = useState<boolean>(false);
 
-  const [projectName, setProjectName] = useState<string>(() => savedConfig?.projectName || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+  const [projectName, setProjectName] = useState<string>(() => _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
   useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const saved = await storageUtils.getAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
+        const parsed = jsonUtils.safeParse<any>(saved, null);
+        if (parsed) {
+          if (parsed.inputType) setInputType(parsed.inputType);
+          if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
+          if (parsed.genre) setGenre(parsed.genre);
+          if (parsed.language) setLanguage(parsed.language);
+          if (parsed.duration) setDuration(parsed.duration);
+          if (parsed.splitStrategy) setSplitStrategy(parsed.splitStrategy);
+          if (parsed.voiceProvider) setVoiceProvider(parsed.voiceProvider);
+          if (parsed.voiceURI) setVoiceURI(parsed.voiceURI);
+          if (parsed.voiceName) setVoiceName(parsed.voiceName);
+          if (parsed.generationMode) setGenerationMode(parsed.generationMode);
+          if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
+          if (parsed.generateType) setGenerateType(parsed.generateType);
+          if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+          if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
+          if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
+          if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
+          if (parsed.projectName) setProjectName(parsed.projectName);
+        }
+      } catch (e) {
+        logger.error("Error loading auto config", e);
+      } finally {
+        setIsConfigLoaded(true);
+      }
+    };
+    loadConfig();
+  }, []);
+
+  useEffect(() => {
+    if (!isConfigLoaded) return;
     const config = {
       inputType,
       scriptContent,
@@ -151,13 +186,14 @@ export default function AutoVideoGenerator({
       thumbnailStylePreset,
       projectName,
     };
-    storageUtils.set(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
+    storageUtils.setAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
   }, [
-    inputType, scriptContent, genre, language, duration, splitStrategy,
+    isConfigLoaded, inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
     projectName
   ]);
+
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -166,6 +202,52 @@ export default function AutoVideoGenerator({
   const [logs, setLogs] = useState<string[]>([]);
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
+
+  useEffect(() => {
+    const restoreAutoProject = async () => {
+      try {
+        const savedId = await storageUtils.getAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT);
+        if (savedId && !activeCreatedProject) {
+          const foundProj = _.find(projects, { id: savedId });
+          if (foundProj) {
+            setActiveCreatedProject(foundProj);
+            if (foundProj.renderedVideoUrl) {
+              setRenderedVideoUrl(foundProj.renderedVideoUrl);
+            }
+            if (foundProj.generationLogs) {
+              setLogs(foundProj.generationLogs);
+            }
+            if (foundProj.input?.content) {
+              setScriptContent(foundProj.input.content);
+            }
+            if (foundProj.config) {
+              if (foundProj.config.genre) setGenre(foundProj.config.genre);
+              if (foundProj.config.language) setLanguage(foundProj.config.language);
+              if (foundProj.config.duration) setDuration(foundProj.config.duration);
+              if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
+            }
+            if (foundProj.voiceConfig) {
+              if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
+              if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
+              if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
+            }
+            if (foundProj.visualConfig) {
+              if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
+              if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
+              if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+              if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
+              if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
+              if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
+              if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+            }
+          }
+        }
+      } catch (e) {
+        logger.error(REFACTOR_CONSTANTS.ERR_RESTORE, e);
+      }
+    };
+    restoreAutoProject();
+  }, [projects, activeCreatedProject]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
@@ -313,10 +395,18 @@ export default function AutoVideoGenerator({
     setLogs([]);
     setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-    addLog(_.get(T, "logPipelineStart"));
+    let currentLogs: string[] = [];
+    const appendLog = (msg: string) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = `[${timestamp}] ${msg}`;
+      currentLogs.push(formatted);
+      setLogs([...currentLogs]);
+    };
+
+    appendLog(_.get(T, "logPipelineStart"));
 
     try {
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
       const newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       const newProj: VideoProject = {
         id: newProjectId,
@@ -324,6 +414,7 @@ export default function AutoVideoGenerator({
         description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        status: REFACTOR_CONSTANTS.STATUS_GENERATING,
         input: {
           type: inputType,
           content: scriptContent,
@@ -399,12 +490,24 @@ export default function AutoVideoGenerator({
         creditsUsed: 0,
       };
 
+      await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
       setActiveCreatedProject(newProj);
-      await onUpdateProject(newProj, true);
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
+
+      const syncProject = async (proj: VideoProject) => {
+        const finalProj = {
+          ...proj,
+          generationLogs: currentLogs,
+          updatedAt: new Date().toISOString()
+        };
+        setActiveCreatedProject(finalProj);
+        await onUpdateProject(finalProj, true);
+      };
+
+      await syncProject(newProj);
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
       setStepProgress(15);
 
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_GEN);
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_GEN);
       const scriptRes = await fetch(API_ROUTES.PIPELINE_SCRIPT, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
@@ -441,11 +544,19 @@ export default function AutoVideoGenerator({
         }));
       }
 
-      addLog(AUTO_GENERATOR_CONSTANTS.API_SCRIPT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
+      appendLog(AUTO_GENERATOR_CONSTANTS.API_SCRIPT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
+      
+      const scriptUpdatedProj = {
+        ...newProj,
+        scriptRewritten: realScript,
+        storyboard: realScenes
+      };
+      await syncProject(scriptUpdatedProj);
+      
       setStepProgress(35);
       setCurrentStepIndex(2);
 
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN.replace(SecurityConstants.PLACEHOLDER_0, voiceName || REFACTOR_CONSTANTS.AVG_VIET_NAM_LANG));
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN.replace(SecurityConstants.PLACEHOLDER_0, voiceName || REFACTOR_CONSTANTS.AVG_VIET_NAM_LANG));
       for (let i = 0; i < realScenes.length; i++) {
         const sc = _.get(realScenes, i);
         try {
@@ -466,15 +577,22 @@ export default function AutoVideoGenerator({
           }
         } catch (e) {}
       }
-      addLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
+      appendLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
+      
+      const voiceUpdatedProj = {
+        ...scriptUpdatedProj,
+        storyboard: realScenes
+      };
+      await syncProject(voiceUpdatedProj);
+      
       setStepProgress(55);
 
       const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
 
       for (let i = 0; i < realScenes.length; i++) {
         const sc = _.get(realScenes, i);
-        addLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(realScenes.length)));
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(realScenes.length)));
         try {
           const imgRes = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
             method: HTTP_METHODS.POST,
@@ -500,20 +618,27 @@ export default function AutoVideoGenerator({
             }
           }
         } catch (e) {
-          addLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
+          appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
         }
       }
-      addLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
+      appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
+      
+      const imageUpdatedProj = {
+        ...voiceUpdatedProj,
+        storyboard: realScenes
+      };
+      await syncProject(imageUpdatedProj);
+      
       setStepProgress(80);
       setCurrentStepIndex(3);
 
-      addLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
+      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
       setCurrentStepIndex(4);
 
       const renderPayload = {
         scenes: _.map(realScenes, (sc) => ({
           id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
-          duration: _.get(sc, "duration", AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION),
+          duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
           imageBase64: _.get(sc, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
           imageUrl: _.get(sc, REFACTOR_CONSTANTS.AVG_IMAGE_URL_KEY),
           audioBase64: _.get(sc, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY),
@@ -524,24 +649,62 @@ export default function AutoVideoGenerator({
       };
 
       const renderRes = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
-        method: HTTP_METHODS.POST,
+        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: jsonUtils.safeStringify(renderPayload)
       });
 
       const renderText = await renderRes.text();
-      const renderData = jsonUtils.safeParse<{ success: boolean; url?: string; error?: string }>(renderText, { success: false });
+      const renderData = jsonUtils.safeParse<{ success: boolean; jobId?: string; error?: string }>(renderText, { success: false });
 
-      if (_.get(renderData, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) && _.get(renderData, REFACTOR_CONSTANTS.AVG_URL_KEY)) {
-        setRenderedVideoUrl(_.get(renderData, REFACTOR_CONSTANTS.AVG_URL_KEY)!);
-        addLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(renderData, REFACTOR_CONSTANTS.AVG_URL_KEY)!));
+      if (renderData.success && renderData.jobId) {
+        const jobId = renderData.jobId;
+        await new Promise<void>((resolve, reject) => {
+          const checkStatus = setInterval(async () => {
+            try {
+              const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`);
+              const statusData = await statusRes.json();
+              if (statusData.success) {
+                if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
+                  clearInterval(checkStatus);
+                  setRenderedVideoUrl(statusData.url);
+                  appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, statusData.url));
+                  
+                  const renderCompletedProj = {
+                    ...imageUpdatedProj,
+                    renderedVideoUrl: statusData.url,
+                    status: REFACTOR_CONSTANTS.STATUS_COMPLETED
+                  };
+                  syncProject(renderCompletedProj).then(() => resolve()).catch(reject);
+                } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
+                  clearInterval(checkStatus);
+                  reject(new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
+                } else {
+                  appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${statusData.progress || 0}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
+                }
+              } else {
+                clearInterval(checkStatus);
+                reject(new Error(REFACTOR_CONSTANTS.ERR_STATUS_FAILED));
+              }
+            } catch (err: any) {
+              clearInterval(checkStatus);
+              reject(new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
+            }
+          }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+        });
       } else {
-        throw new Error(_.get(renderData, REFACTOR_CONSTANTS.AVG_ERROR_KEY) || AUTO_GENERATOR_CONSTANTS.ERR_RENDER_NO_URL);
+        throw new Error(REFACTOR_CONSTANTS.ERR_RENDER_QUEUE);
       }
 
       setStepProgress(100);
     } catch (err: any) {
-      addLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, _.get(err, REFACTOR_CONSTANTS.AVG_MESSAGE_KEY) || String(err)));
+      appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
+      const failedProj = {
+        ...(activeCreatedProject || {}),
+        id: activeCreatedProject ? activeCreatedProject.id : REFACTOR_CONSTANTS.STATUS_FAILED,
+        status: REFACTOR_CONSTANTS.STATUS_FAILED,
+      } as VideoProject;
+      await onUpdateProject(failedProj, true);
     } finally {
       setIsProcessing(false);
     }
@@ -810,9 +973,11 @@ export default function AutoVideoGenerator({
                         const words = _.words(rawName);
                         const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), ' ') + '...' : rawName;
                         return (
-                          <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors" title={rawName}>
-                            {displayVoiceName}
-                          </span>
+                          <Tooltip content={rawName} position="top">
+                            <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors">
+                              {displayVoiceName}
+                            </span>
+                          </Tooltip>
                         );
                       })()}
                       <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>

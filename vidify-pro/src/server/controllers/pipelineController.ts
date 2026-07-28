@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import _ from 'lodash';
+import crypto from "crypto";
+import { renderQueueService } from "../services/renderQueueService.js";
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
@@ -13,6 +15,7 @@ import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../
 import { PIPELINE_CONFIG } from "../../constants/config.js";
 
 import {
+  REFACTOR_CONSTANTS,
   EXTERNAL_URLS,
   ALIGN_CONFIG,
   EXPORT_ZIP_CONFIG,
@@ -97,7 +100,7 @@ import {
   FFMPEG_CONFIG,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, appLog, createAppError, appError } from "../../lib/logger.js";
+import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
@@ -124,11 +127,13 @@ import { requireLicense } from "../middlewares/requireLicense.js";
 import { FeatureType, SecurityConstants } from "../../constants/security.js";
 import { requestContext } from "../utils/requestContext.js";
 
-import { renderFFmpegVideo } from "../utils/ffmpegRender.js";
+
 import { VideoQuality } from "../../constants/enums.js";
 import { FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
 
 const router = express.Router();
+
+// Cache constants removed and imported from REFACTOR_CONSTANTS
 
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
   const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
@@ -1474,6 +1479,29 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       finalVoiceId = VOICE_PRESET_MAP["preset-vi-bac-female"] || "edge_vi-VN-HoaiMyNeural";
     }
 
+    const voicesCacheDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, REFACTOR_CONSTANTS.CACHE_DIR_VOICES);
+    if (!fs.existsSync(voicesCacheDir)) {
+      fs.mkdirSync(voicesCacheDir, { recursive: true });
+    }
+
+    const hashInput = `${text}_${finalVoiceId}_${speed || 1}`;
+    const md5Hash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(hashInput).digest(REFACTOR_CONSTANTS.ENCODING_HEX as crypto.BinaryToTextEncoding);
+    const cachedFileName = `${REFACTOR_CONSTANTS.CACHE_FILE_PREFIX_TTS}${md5Hash}${REFACTOR_CONSTANTS.CACHE_EXT_WAV}`;
+    const cachedFilePath = path.join(voicesCacheDir, cachedFileName);
+    const cachedFileUrl = `/${ASSETS_DIR_NAME}/${REFACTOR_CONSTANTS.CACHE_DIR_VOICES}/${cachedFileName}`;
+
+    if (fs.existsSync(cachedFilePath)) {
+      const buffer = fs.readFileSync(cachedFilePath);
+      const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+      return res.json({
+        success: true,
+        audioBase64,
+        mimeType: REFACTOR_CONSTANTS.CONTENT_TYPE_WAV,
+        audioUrl: cachedFileUrl,
+        provider: REFACTOR_CONSTANTS.PROVIDER_AI33_CACHE
+      });
+    }
+
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, 'ai33Key', '');
 
@@ -1482,12 +1510,11 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     }
 
     const formData = new FormData();
-    formData.append("text", text);
-    formData.append("voice_id", finalVoiceId);
-    formData.append("speed", (speed || 1).toString());
-    formData.append("with_transcript", "false");
+    formData.append(REFACTOR_CONSTANTS.FORM_KEY_TEXT, text);
+    formData.append(REFACTOR_CONSTANTS.FORM_KEY_VOICE_ID, finalVoiceId);
+    formData.append(REFACTOR_CONSTANTS.FORM_KEY_SPEED, (speed || 1).toString());
+    formData.append(REFACTOR_CONSTANTS.FORM_KEY_WITH_TRANSCRIPT, REFACTOR_CONSTANTS.VALUE_FALSE);
 
-    appLog(`${BACKEND_MESSAGES.TTS_START}${finalVoiceId}`);
     const ttsRes = await fetch(EXTERNAL_URLS.AI33_TTS, {
       method: HTTP_METHODS.POST,
       headers: {
@@ -1507,7 +1534,6 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     }
 
     const taskId = ttsData.task_id;
-    appLog(`${BACKEND_MESSAGES.TTS_TASK_ID}${taskId}${BACKEND_MESSAGES.TTS_POLLING}`);
 
     let audioUrl = null;
     let attempts = 0;
@@ -1552,13 +1578,19 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       throw new Error(getMessage("TTS_TASK_TIMED_OUT"));
     }
 
-    appLog(`${BACKEND_MESSAGES.TTS_COMPLETE}${audioUrl}`);
     const audioRes = await fetch(audioUrl);
     if (!audioRes.ok) throw new Error(getMessage("FAILED_DOWNLOAD_AUDIO"));
 
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const audioBase64 = buffer.toString(FileEncoding.BASE64 as any);
+
+    try {
+      fs.writeFileSync(cachedFilePath, buffer);
+    } catch (cacheErr) {
+      logger.warn(REFACTOR_CONSTANTS.LOG_WARN_WRITE_TTS_CACHE, cacheErr);
+    }
+
+    const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
     await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
@@ -1567,8 +1599,8 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       success: true,
       audioBase64,
       mimeType,
-      audioUrl,
-      provider: "AI33",
+      audioUrl: cachedFileUrl,
+      provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
     });
   } catch (error: any) {
     logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
@@ -1583,9 +1615,28 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
   try {
     const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
-    const cached = checkCache(API_ROUTES.PIPELINE_GENERATE_IMAGE, req.body, bypassCache);
-    if (cached) {
-      return res.json({ ...cached, cached: true });
+    const imagesCacheDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, REFACTOR_CONSTANTS.CACHE_DIR_IMAGES);
+    if (!fs.existsSync(imagesCacheDir)) {
+      fs.mkdirSync(imagesCacheDir, { recursive: true });
+    }
+
+    const engine = visualConfig?.imageGeneratorEngine || REFACTOR_CONSTANTS.DEFAULT_TTS_ENGINE;
+    const aspect = visualConfig?.aspectRatio || REFACTOR_CONSTANTS.DEFAULT_TTS_ASPECT;
+    const hashInput = `${prompt}_${style || ""}_${engine}_${aspect}`;
+    const md5Hash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(hashInput).digest(REFACTOR_CONSTANTS.ENCODING_HEX as crypto.BinaryToTextEncoding);
+    const cachedFileName = `${REFACTOR_CONSTANTS.CACHE_FILE_PREFIX_IMG}${md5Hash}${REFACTOR_CONSTANTS.CACHE_EXT_PNG}`;
+    const cachedFilePath = path.join(imagesCacheDir, cachedFileName);
+    const cachedFileUrl = `/${ASSETS_DIR_NAME}/${REFACTOR_CONSTANTS.CACHE_DIR_IMAGES}/${cachedFileName}`;
+
+    if (!bypassCache && fs.existsSync(cachedFilePath)) {
+      const buffer = fs.readFileSync(cachedFilePath);
+      const base64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+      return res.json({
+        success: true,
+        base64,
+        fallbackUrl: cachedFileUrl,
+        cached: true
+      });
     }
 
     const result = await generateImageWithPlaywright({
@@ -1597,6 +1648,15 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
 
     if (result && result.success) {
       await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
+      if (result.base64) {
+        try {
+          const buffer = Buffer.from(result.base64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+          fs.writeFileSync(cachedFilePath, buffer);
+          result.fallbackUrl = cachedFileUrl;
+        } catch (cacheErr) {
+          logger.warn(REFACTOR_CONSTANTS.LOG_WARN_WRITE_IMG_CACHE, cacheErr);
+        }
+      }
     }
 
     return res.json(result);
@@ -2479,19 +2539,38 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
     const globalAudioUrl = _.get(req.body, "globalAudioUrl");
     const quality = _.get(req.body, "quality");
     const aspectRatio = _.get(req.body, "aspectRatio");
+    const jobId = randomUUID();
 
-    const outputUrl = await renderFFmpegVideo({
+    renderQueueService.addJob(jobId, {
       scenes,
       globalAudioUrl,
       quality: quality as VideoQuality,
       aspectRatio: aspectRatio as string
     });
+
     await incrementFeatureUsage(req, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
-    res.json({ success: true, url: outputUrl });
+    res.json({ success: true, jobId });
   } catch (error: any) {
     logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER_ROUTE, error);
     res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ success: false, error: _.get(error, "message") });
   }
+});
+
+router.get("/ffmpeg-render/status/:jobId", (req: Request, res: Response) => {
+  const { jobId } = req.params;
+  const job = renderQueueService.getJob(jobId);
+
+  if (!job) {
+    return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
+  }
+
+  res.json({
+    success: true,
+    status: job.status,
+    progress: job.progress,
+    url: job.url,
+    error: job.error
+  });
 });
 
 export default router;

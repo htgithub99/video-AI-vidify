@@ -353,14 +353,14 @@ export function usePipelineWizard(props: any) {
       setFavoriteStyles(
         jsonUtils.safeParse<any[]>(stored, [
           {
-            id: "style_1",
-            name: "Cinematic Realistic",
-            prompt: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
+            id: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_ID,
+              name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_NAME,
+              prompt: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_PROMPT,
           },
         ])
       );
     } catch (e) {
-      logger.error("GENERAL_ERROR", e);
+      logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
     }
   }, []);
 
@@ -433,15 +433,15 @@ export function usePipelineWizard(props: any) {
       setFavoriteVoices(
         jsonUtils.safeParse<any[]>(stored, [
           {
-            id: "fav_1",
-            name: "Brian - Deep, Resonant and Comforting",
-            voiceURI: "nPczCjzI2devNBz1zQrb",
-            channelName: "Mystic Frontiers",
+            id: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_ID,
+              name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_NAME,
+              voiceURI: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_URI,
+              channelName: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_CHANNEL,
           },
         ])
       );
     } catch (e) {
-      logger.error("GENERAL_ERROR", e);
+      logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
     }
   }, []);
 
@@ -546,14 +546,14 @@ export function usePipelineWizard(props: any) {
         }
       }
     } catch (e) {
-      logger.error("ERROR_LOADING_SANDBOX", e);
+      logger.error(REFACTOR_CONSTANTS.LOG_ERROR_LOADING_SANDBOX, e);
     }
     return {
       projectId: "",
       authToken: "",
       recaptchaToken: "",
       sessionId: "",
-      imageModelName: "NARWHAL",
+      imageModelName: REFACTOR_CONSTANTS.DEFAULT_IMAGE_MODEL_NAME,
     };
   });
 
@@ -1925,7 +1925,7 @@ export function usePipelineWizard(props: any) {
       setInfoMsg(successMsg);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
-      logger.error("GENERAL_ERROR", e);
+      logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
       setErrorMsg(`${t.charAnalyzeFailed} ${e.message}`);
     } finally {
       setLoadingStates((prev) => ({ ...prev, analyzeCharacter: false }));
@@ -2038,7 +2038,7 @@ export function usePipelineWizard(props: any) {
       setInfoMsg(successMsg);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
-      logger.error("GENERAL_ERROR", e);
+      logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
       setErrorMsg(`${t.charExtractFailed} ${e.message}`);
     } finally {
       setLoadingStates((prev) => ({
