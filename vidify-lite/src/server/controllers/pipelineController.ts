@@ -4,6 +4,8 @@ import path from "path";
 import _ from 'lodash';
 import crypto from "crypto";
 import { renderQueueService } from "../services/renderQueueService.js";
+import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/profileManagerService.js";
+import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
@@ -2577,6 +2579,63 @@ router.get("/ffmpeg-render/status/:jobId", (req: Request, res: Response) => {
     url: job.url,
     error: job.error
   });
+});
+
+router.get("/profiles", (req: Request, res: Response) => {
+  try {
+    const list = getProfiles();
+    res.json({ success: true, profiles: list });
+  } catch (error: any) {
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.post(REFACTOR_CONSTANTS.ROUTE_PROFILES_LOGIN, async (req: Request, res: Response) => {
+  const { profileId } = req.body;
+  if (_.isEmpty(profileId)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
+  }
+  try {
+    await launchLoginBrowser(profileId);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.delete(REFACTOR_CONSTANTS.ROUTE_PROFILES_ID, (req: Request, res: Response) => {
+  const { profileId } = req.params;
+  if (_.isEmpty(profileId)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
+  }
+  try {
+    deleteProfile(profileId);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.get(REFACTOR_CONSTANTS.ROUTE_ACCOUNTS, (req: Request, res: Response) => {
+  try {
+    const list = getLocalAccounts();
+    res.json({ success: true, accounts: list });
+  } catch (error: any) {
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.post(REFACTOR_CONSTANTS.ROUTE_ACCOUNTS, (req: Request, res: Response) => {
+  const { accounts } = req.body;
+  if (!_.isArray(accounts)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_ACC_LIST_ARRAY });
+  }
+  try {
+    saveLocalAccounts(accounts);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
 });
 
 export default router;

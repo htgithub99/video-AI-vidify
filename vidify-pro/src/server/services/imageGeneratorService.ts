@@ -1,7 +1,13 @@
-import { globalPlaywrightPage, initPlaywright, closePlaywright } from "./audioService.js";
-import { switchGoogleAccount } from "./accountRotatorService.js";
+import { chromium } from "playwright-extra";
+import stealthPlugin from "puppeteer-extra-plugin-stealth";
+import { getNextAccount, markAccountError, GoogleAccount } from "./accountRotatorService.js";
+import { autoLoginGoogle } from "./autoLoginGoogle.js";
+import path from "path";
+import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages } from "../../constants/security.js";
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX } from "../../constants";
+
+chromium.use(stealthPlugin());
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -170,6 +176,82 @@ export const extractKeywords = (text: string): string => {
   return filtered.slice(0, 3).join(",");
 };
 
+import crypto from "crypto";
+
+let lastUsedEmail: string | undefined = undefined;
+
+export async function launchBrowserForAccount(): Promise<{ context: any; page: Page; account: GoogleAccount }> {
+  let attempts = 0;
+  const maxAttempts = 3;
+  let account: GoogleAccount | null = null;
+  let context: any = null;
+  let page: Page | null = null;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    account = await getNextAccount(lastUsedEmail);
+    if (!account) {
+      throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
+    }
+    lastUsedEmail = account.email;
+
+    const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
+    const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
+
+    try {
+      context = await chromium.launchPersistentContext(profilePath, {
+        headless: true,
+        args: [
+          REFACTOR_CONSTANTS.ARG_NO_SANDBOX,
+          REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX,
+          REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED,
+        ],
+      });
+
+      page = context.pages()[0] || (await context.newPage());
+
+      try {
+        await page.addInitScript(`
+          if (typeof window !== 'undefined') {
+            if (!window.__name) {
+              window.__name = (t, v) => {
+                try { Object.defineProperty(t, "name", { value: v, configurable: true }); } catch {}
+                return t;
+              };
+            }
+          }
+        `);
+      } catch (e) {}
+
+      await page.goto(REFACTOR_CONSTANTS.URL_MY_ACCOUNT, { waitUntil: "networkidle", timeout: 45000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+
+      const currentUrl = page.url();
+      const isLoggedIn = currentUrl.includes(REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT);
+
+      if (!isLoggedIn) {
+        appLog(REFACTOR_CONSTANTS.MSG_NOT_LOGGED_IN.replace("{0}", account.email));
+        const loginSuccess = await autoLoginGoogle(page, account);
+        if (!loginSuccess) {
+          throw new Error(REFACTOR_CONSTANTS.MSG_LOGIN_FAILED.replace("{0}", account.email));
+        }
+      } else {
+        appLog(REFACTOR_CONSTANTS.MSG_ALREADY_LOGGED_IN.replace("{0}", account.email));
+      }
+
+      return { context, page, account };
+    } catch (err: any) {
+      appError(REFACTOR_CONSTANTS.MSG_LAUNCH_LOGIN_ERR.replace("{0}", account!.email).replace("{1}", err.message));
+      if (context) {
+        await context.close().catch(() => {});
+      }
+      await markAccountError(account!.email);
+    }
+  }
+
+  throw new Error(REFACTOR_CONSTANTS.MSG_ALL_ACC_FAILED);
+}
+
 let lastPlaywrightConfigState: string | null = null;
 let consecutiveGeminiErrors = 0;
 let lastGeminiConfigState: string | null = null;
@@ -209,64 +291,57 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   const maxAttempts = 2;
   let currentProjectId = cleanProjectId;
 
+  let browserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
+  let activePage: Page | null = null;
+
   try {
-    if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
-      appLog(BACKEND_MESSAGES.PLAYWRIGHT_PAGE_CLOSED_REINIT);
-      await initPlaywright();
-    }
-    if (!globalPlaywrightPage) {
-      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-    }
-
-    try {
-      await globalPlaywrightPage.evaluate(
-        ({ getImgIdStr }) => {
-          if (typeof window !== "undefined") {
-            if (!(window as any).__name) {
-              (window as any).__name = (target: any, value: any) => {
-                try {
-                  Object.defineProperty(target, "name", {
-                    value,
-                    configurable: true,
-                  });
-                } catch (e) { }
-                return target;
-              };
-            }
-            if (!(window as any).__getImgId) {
-              (window as any).__getImgId = new Function("return " + getImgIdStr)();
-            }
-          }
-        },
-        { getImgIdStr: browserGetImgIdSafeStr }
-      );
-    } catch (err) {
-      appError(ImageGenMessages.INJECT_HELPERS_ERR, err);
-    }
-
     while (attempts < maxAttempts && !success) {
       attempts++;
       appLog(`${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`);
       try {
-        if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
-          appLog(BACKEND_MESSAGES.PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT);
-          await initPlaywright();
+        if (!browserInstance) {
+          browserInstance = await launchBrowserForAccount();
+          activePage = browserInstance.page;
+
+          try {
+            await activePage.evaluate(
+              ({ getImgIdStr }) => {
+                if (typeof window !== "undefined") {
+                  if (!(window as any).__name) {
+                    (window as any).__name = (target: any, value: any) => {
+                      try {
+                        Object.defineProperty(target, "name", {
+                          value,
+                          configurable: true,
+                        });
+                      } catch (e) { }
+                      return target;
+                    };
+                  }
+                  if (!(window as any).__getImgId) {
+                    (window as any).__getImgId = new Function("return " + getImgIdStr)();
+                  }
+                }
+              },
+              { getImgIdStr: browserGetImgIdSafeStr }
+            );
+          } catch (err) {
+            appError(ImageGenMessages.INJECT_HELPERS_ERR, err);
+          }
         }
-        if (!globalPlaywrightPage) {
-          throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-        }
+
         const SELECTOR_INPUT = '[contenteditable="true"]';
-        const submitBtnLocator = globalPlaywrightPage
+        const submitBtnLocator = activePage
           .locator("button")
           .filter({
-            has: globalPlaywrightPage.locator("i").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }),
+            has: activePage.locator("i").filter({ hasText: PLAYWRIGHT_SUBMIT_ICON_REGEX }),
           })
           .filter({ hasText: PLAYWRIGHT_SUBMIT_TEXT_REGEX })
           .last();
 
         let isAlreadyOnFlowPage = false;
         try {
-          const currentUrl = globalPlaywrightPage.url();
+          const currentUrl = activePage.url();
           if (currentProjectId && _.every([currentProjectId, "labs.google"], (kw) => _.includes(currentUrl, kw))) {
             isAlreadyOnFlowPage = true;
           }
@@ -277,17 +352,17 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         if (!isAlreadyOnFlowPage) {
           if (!currentProjectId) {
             appLog(ImageGenMessages.LABS_NO_PROJECT);
-            await globalPlaywrightPage.goto("https://labs.google/fx/vi/tools/flow", {
+            await activePage.goto("https://labs.google/fx/vi/tools/flow", {
               waitUntil: "commit",
               timeout: 60000,
             });
 
-            const newProjectBtn = globalPlaywrightPage.locator('button').filter({ hasText: /Dự án mới|New project/i }).first();
+            const newProjectBtn = activePage.locator('button').filter({ hasText: /Dự án mới|New project/i }).first();
             await newProjectBtn.waitFor({ state: "visible", timeout: 15000 });
             await newProjectBtn.click();
 
-            await globalPlaywrightPage.waitForURL(/\/project\/[a-zA-Z0-9-]+/, { timeout: 30000 });
-            const newUrl = globalPlaywrightPage.url();
+            await activePage.waitForURL(/\/project\/[a-zA-Z0-9-]+/, { timeout: 30000 });
+            const newUrl = activePage.url();
             const match = newUrl.match(/\/project\/([a-zA-Z0-9-]+)/);
             if (match && match[1]) {
               currentProjectId = match[1];
@@ -298,7 +373,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           } else {
             const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`;
             appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${currentProjectId} (Attempt ${attempts})...`);
-            await globalPlaywrightPage.goto(targetUrl, {
+            await activePage.goto(targetUrl, {
               waitUntil: "commit",
               timeout: 60000,
             });
@@ -307,7 +382,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
 
-        const inputEl = await globalPlaywrightPage.waitForSelector(SELECTOR_INPUT, {
+        const inputEl = await activePage.waitForSelector(SELECTOR_INPUT, {
           timeout: 30000,
         });
         if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
@@ -322,7 +397,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
-            const configBtnLoc = globalPlaywrightPage
+            const configBtnLoc = activePage
               .locator('button[aria-haspopup="menu"]')
               .filter({
                 hasText: /1x|x2|x3|x4|16:9|4:3|1:1|3:4|9:16|Nano|Veo|Imagen/i
@@ -331,9 +406,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
             if (await configBtnLoc.isVisible()) {
               await configBtnLoc.click();
-              await globalPlaywrightPage.waitForTimeout(1000);
+              await activePage.waitForTimeout(1000);
 
-              const dropdown = globalPlaywrightPage.locator('[role="menu"][data-state="open"]').first();
+              const dropdown = activePage.locator('[role="menu"][data-state="open"]').first();
 
               if (await dropdown.isVisible()) {
                 const isVideo = visualConfig?.generateType === GenerateType.Video;
@@ -379,7 +454,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   } else if (targetEngineKey === "veo3-quality") {
                     exactEngineRegex = /veo 3\.1 - quality/i;
                     fallbackEngineRegex = /quality/i;
-                  } else { // Omni Flash (veo3)
+                  } else {
                     exactEngineRegex = /omni flash/i;
                     fallbackEngineRegex = /omni/i;
                   }
@@ -401,19 +476,19 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   const currentEngineText = await engineDropdownBtn.textContent();
                   if (currentEngineText && !exactEngineRegex.test(currentEngineText)) {
                     await engineDropdownBtn.click({ force: true });
-                    await globalPlaywrightPage.waitForTimeout(500);
+                    await activePage.waitForTimeout(500);
 
-                    let optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: exactEngineRegex }).first();
+                    let optionBtn = activePage.locator('[role="menuitem"]' + ':visible').filter({ hasText: exactEngineRegex }).first();
                     if (!(await optionBtn.isVisible())) {
-                      optionBtn = globalPlaywrightPage.locator('[role="menuitem"]' + ':visible').filter({ hasText: fallbackEngineRegex }).first();
+                      optionBtn = activePage.locator('[role="menuitem"]' + ':visible').filter({ hasText: fallbackEngineRegex }).first();
                     }
                     if (await optionBtn.isVisible()) await optionBtn.click({ force: true });
                   }
                 }
               }
 
-              await globalPlaywrightPage.keyboard.press("Escape");
-              await globalPlaywrightPage.waitForTimeout(500);
+              await activePage.keyboard.press("Escape");
+              await activePage.waitForTimeout(500);
 
               lastPlaywrightConfigState = currentConfigState;
               appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SUCCESS);
@@ -428,32 +503,32 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
           appLog(inputMethod === PromptInputMethod.Type ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
 
-          const inputLoc = globalPlaywrightPage.locator(SELECTOR_INPUT);
+          const inputLoc = activePage.locator(SELECTOR_INPUT);
 
-          await smoothMouseMove(globalPlaywrightPage, inputLoc);
+          await smoothMouseMove(activePage, inputLoc);
           await inputLoc.click();
           await randomDelay(200, 400);
 
-          await globalPlaywrightPage.keyboard.press("Control+A");
+          await activePage.keyboard.press("Control+A");
           await randomDelay(150, 300);
-          await globalPlaywrightPage.keyboard.press("Backspace");
+          await activePage.keyboard.press("Backspace");
           await randomDelay(200, 400);
 
           if (inputMethod === PromptInputMethod.Type) {
-            await humanType(globalPlaywrightPage, targetPrompt);
+            await humanType(activePage, targetPrompt);
           } else {
-            await globalPlaywrightPage.keyboard.insertText(targetPrompt);
+            await activePage.keyboard.insertText(targetPrompt);
           }
           await randomDelay(400, 800);
 
-          await globalPlaywrightPage.keyboard.press("Space");
+          await activePage.keyboard.press("Space");
           await randomDelay(100, 200);
-          await globalPlaywrightPage.keyboard.press("Backspace");
+          await activePage.keyboard.press("Backspace");
 
           await randomDelay(1500, 3000);
         }
 
-        const oldIds = await globalPlaywrightPage.evaluate((getImgIdStr) => {
+        const oldIds = await activePage.evaluate((getImgIdStr) => {
           const getImgId = new Function("return " + getImgIdStr)();
           const imgs = Array.from(document.querySelectorAll("img"));
           return imgs
@@ -484,12 +559,12 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         await submitBtnLocator.waitFor({ state: "visible", timeout: 5000 });
         await submitBtnLocator.scrollIntoViewIfNeeded();
 
-        await smoothMouseMove(globalPlaywrightPage, submitBtnLocator);
+        await smoothMouseMove(activePage, submitBtnLocator);
         await randomDelay(400, 800);
         await submitBtnLocator.click();
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
-        const base64Data = await globalPlaywrightPage.waitForFunction(
+        const base64Data = await activePage.waitForFunction(
           ([oldIdsList, getImgIdStr, jpegMimeType]) => {
             const getImgIdSafe = new Function("return " + getImgIdStr)();
 
@@ -537,45 +612,23 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       } catch (err: any) {
         appError(ImageGenMessages.IMAGE_RENDER_ERR.replace('{0}', attempts.toString()).replace('{1}', err.message));
 
-        const closedKeywords = ["closed", "close", "context"];
-        const isClosedError = _.some(closedKeywords, (kw) => _.includes(err.message?.toLowerCase(), kw));
-        if (isClosedError) {
-          appLog(BACKEND_MESSAGES.PLAYWRIGHT_CLOSED_DETECTED_RESET);
-          await closePlaywright().catch(() => { });
+        if (browserInstance) {
+          await browserInstance.context.close().catch(() => { });
+          browserInstance = null;
+          activePage = null;
         }
 
-        if (attempts < maxAttempts) {
-          try {
-            if (globalPlaywrightPage && !globalPlaywrightPage.isClosed()) {
-              appLog(BACKEND_MESSAGES.IMAGE_RENDER_RELOAD);
-              await globalPlaywrightPage.reload({
-                waitUntil: "domcontentloaded",
-              });
-              await globalPlaywrightPage.waitForTimeout(5000);
-            }
-          } catch (reloadErr: any) {
-            appError("FAILED_RELOAD_PAGE_RETRY", reloadErr);
-            if (_.some(closedKeywords, (kw) => _.includes(reloadErr.message?.toLowerCase(), kw))) {
-              await closePlaywright().catch(() => { });
-            }
-          }
-        } else {
+        if (attempts >= maxAttempts) {
           throw err;
         }
       }
     }
   } catch (err: any) {
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${err.message}`);
-    // Nếu có lỗi, thử xoay tài khoản
-    appLog(ImageGenMessages.IMG_GEN_ERROR);
-    if (globalPlaywrightPage) {
-      const switched = await switchGoogleAccount(globalPlaywrightPage);
-      if (switched) {
-        release(); // Release current mutex before recursive call
-        return generateImageWithPlaywright(options);
-      }
-    }
   } finally {
+    if (browserInstance) {
+      await browserInstance.context.close().catch(() => { });
+    }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.PLAYWRIGHT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
     release();
@@ -626,6 +679,9 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let roomAttempts = 0;
   const maxRoomAttempts = 2;
 
+  let browserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
+  let activePage: Page | null = null;
+
   try {
     while (roomAttempts < maxRoomAttempts && !success) {
       roomAttempts++;
@@ -650,10 +706,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       const isConfigChanged = currentConfigState !== lastGeminiConfigState;
 
       let needNewRoom = false;
-      if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
+      if (!browserInstance) {
         needNewRoom = true;
       } else {
-        const currentUrl = globalPlaywrightPage.url();
+        const currentUrl = activePage!.url();
         if (!currentUrl.includes("gemini.google.com")) {
           needNewRoom = true;
         } else if (consecutiveGeminiErrors >= 2) {
@@ -668,14 +724,16 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       if (needNewRoom) {
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
         try {
-          if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
-            await initPlaywright();
-          }
-          if (!globalPlaywrightPage) {
-            throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
+          if (browserInstance) {
+            await browserInstance.context.close().catch(() => {});
+            browserInstance = null;
+            activePage = null;
           }
 
-          await globalPlaywrightPage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+          browserInstance = await launchBrowserForAccount();
+          activePage = browserInstance.page;
+
+          await activePage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
             waitUntil: "commit",
             timeout: 60000,
           });
@@ -683,6 +741,11 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           consecutiveGeminiErrors = 0;
         } catch (err: any) {
           appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", err.message));
+          if (browserInstance) {
+            await browserInstance.context.close().catch(() => {});
+            browserInstance = null;
+            activePage = null;
+          }
           if (roomAttempts >= maxRoomAttempts) {
             throw err;
           }
@@ -700,7 +763,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         if (reloadAttempts > 1) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace("{0}", (reloadAttempts - 1).toString()));
           try {
-            await globalPlaywrightPage.reload({ waitUntil: "domcontentloaded" });
+            await activePage!.reload({ waitUntil: "domcontentloaded" });
             await randomDelay(3000, 5000);
           } catch (reloadErr: any) {
             appError(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD_FAILED.replace("{0}", reloadErr.message));
@@ -709,22 +772,22 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         }
 
         try {
-          const inputLoc = globalPlaywrightPage.locator(GeminiChatSelector.Input).first();
+          const inputLoc = activePage!.locator(GeminiChatSelector.Input).first();
           await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
           const forceSetting = needNewRoom || isConfigChanged;
 
-          await configureGeminiModel(globalPlaywrightPage, visualConfig, forceSetting);
-          await configureGeminiGenerateType(globalPlaywrightPage, visualConfig, forceSetting);
+          await configureGeminiModel(activePage!, visualConfig, forceSetting);
+          await configureGeminiGenerateType(activePage!, visualConfig, forceSetting);
 
           if (forceSetting) {
             lastGeminiConfigState = currentConfigState;
           }
 
-          await enterGeminiPrompt(globalPlaywrightPage, finalPrompt, visualConfig);
+          await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
 
-          const initialResponseCount = await globalPlaywrightPage.locator("model-response").count();
-          const sendBtn = globalPlaywrightPage.locator(GeminiChatSelector.SendButton).first();
+          const initialResponseCount = await activePage!.locator("model-response").count();
+          const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
           let clicked = false;
           try {
             if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
@@ -737,12 +800,12 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           }
 
           if (!clicked) {
-            await globalPlaywrightPage.keyboard.press("Enter");
+            await activePage!.keyboard.press("Enter");
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
           }
           await randomDelay(1200, 2200);
 
-          base64Result = await waitForDownloadAndGetBase64(globalPlaywrightPage, visualConfig, initialResponseCount);
+          base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -757,16 +820,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     }
   } catch (err: any) {
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", err.message));
-    // Nếu có lỗi, thử xoay tài khoản
-    appLog(ImageGenMessages.GEMINI_CHAT_ERROR);
-    if (globalPlaywrightPage) {
-      const switched = await switchGoogleAccount(globalPlaywrightPage);
-      if (switched) {
-        release();
-        return generateImageWithGeminiChat(options);
-      }
-    }
   } finally {
+    if (browserInstance) {
+      await browserInstance.context.close().catch(() => {});
+    }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
     release();
@@ -856,24 +913,11 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
   const release = await imageGenMutex.acquire();
   const results: BatchImageResult[] = [];
+  let browserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
 
   try {
-    if (!globalPlaywrightPage || globalPlaywrightPage.isClosed()) {
-      await initPlaywright();
-    }
-    if (!globalPlaywrightPage) {
-      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-    }
-
-    const browser = globalPlaywrightPage.context().browser();
-    if (!browser) {
-      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-    }
-
-    const context = browser.contexts()[0];
-    if (!context) {
-      throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_REQUIRED);
-    }
+    browserInstance = await launchBrowserForAccount();
+    const context = browserInstance.context;
 
     globalBatchPages = globalBatchPages.filter((p) => !p.isClosed());
 
@@ -1116,6 +1160,9 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       }
     }
   } finally {
+    if (browserInstance) {
+      await browserInstance.context.close().catch(() => {});
+    }
     release();
   }
 

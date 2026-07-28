@@ -36,6 +36,8 @@ pnpm-debug.log*
 # Puppeteer / Playwright browser profiles and caches
 google_profile/
 google-profile/
+google_profiles/
+google_accounts.json
 .cache/
 ms-playwright/
 

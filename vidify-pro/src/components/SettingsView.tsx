@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS, REFACTOR_CONSTANTS } from "../constants";
 import { appError } from "../lib/logger.js";
-import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle, LogOut, KeyRound } from "lucide-react";
+import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle, LogOut, KeyRound, Users, Plus, X } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Modal } from "./ui/Modal";
 import { Tooltip } from "./ui/Tooltip";
@@ -48,6 +48,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   const [confirmClearType, setConfirmClearType] = useState<ClearType | null>(null);
 
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [newEmail, setNewEmail] = useState(SecurityConstants.EMPTY_STRING);
+  const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
+  const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
+
   const [config, setConfig] = useState({
     projectId: SecurityConstants.EMPTY_STRING,
     authToken: SecurityConstants.EMPTY_STRING,
@@ -81,6 +86,22 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             });
           }
         }
+
+        try {
+          const resAcc = await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS);
+          const dataAcc = await resAcc.json();
+          if (dataAcc.success) {
+            setAccounts(dataAcc.accounts || []);
+          } else {
+            const savedAcc = await storageUtils.getAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
+            if (savedAcc) setAccounts(jsonUtils.safeParse<any[]>(savedAcc, []));
+          }
+        } catch (e) {
+          try {
+            const savedAcc = await storageUtils.getAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
+            if (savedAcc) setAccounts(jsonUtils.safeParse<any[]>(savedAcc, []));
+          } catch {}
+        }
       } catch (e) {
         appError(SecurityConstants.LOG_ERROR_PARSING_SANDBOX_SETTINGS, e);
       }
@@ -105,6 +126,46 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
         setSavingState(false);
       }
     }, SETTINGS_CONSTS.MOCK_SAVE_DELAY);
+  };
+
+  const handleAddAccount = async () => {
+    if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
+    const newAcc = {
+      id: Date.now(),
+      email: _.trim(newEmail),
+      password: _.trim(newPassword),
+      recoveryEmail: _.trim(newRecovery)
+    };
+    const updated = [...accounts, newAcc];
+    setAccounts(updated);
+
+    try {
+      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+        headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
+        body: jsonUtils.safeStringify({ accounts: updated })
+      });
+    } catch (e) {}
+
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, jsonUtils.safeStringify(updated));
+    setNewEmail(SecurityConstants.EMPTY_STRING);
+    setNewPassword(SecurityConstants.EMPTY_STRING);
+    setNewRecovery(SecurityConstants.EMPTY_STRING);
+  };
+
+  const handleRemoveAccount = async (id: number) => {
+    const updated = _.filter(accounts, a => a.id !== id);
+    setAccounts(updated);
+
+    try {
+      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+        headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
+        body: jsonUtils.safeStringify({ accounts: updated })
+      });
+    } catch (e) {}
+
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, jsonUtils.safeStringify(updated));
   };
 
   const handleSaveKeys = () => {
@@ -253,78 +314,154 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 bg-slate-800 rounded-xl">
-                <Key className="w-4 h-4 text-amber-500" />
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-slate-800 rounded-xl">
+                  <Key className="w-4 h-4 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{t.apiKeysConfig}</h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{geminiKey || ai33Key ? t.configured : t.notSet}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{t.apiKeysConfig}</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">{geminiKey || ai33Key ? t.configured : t.notSet}</p>
-              </div>
-            </div>
 
-            {keysSavedSuccess && (
-              <div className="flex items-center gap-1 text-[10px] text-green-500 font-bold bg-green-500/10 px-2.5 py-1 rounded-lg">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{t.Saved}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">GEMINI_API_KEY</label>
-              <input
-                type={SecurityConstants.INPUT_TYPE_PASSWORD}
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder={t.enterGeminiKey}
-                className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">AI33_API_KEY</label>
-              <input
-                type={SecurityConstants.INPUT_TYPE_PASSWORD}
-                value={ai33Key}
-                onChange={(e) => setAi33Key(e.target.value)}
-                placeholder={t.enterAi33Key}
-                className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
-            <Button
-              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
-              onClick={() => setConfirmClearType(CLEAR_TYPES.API)}
-              disabled={isSavingKeys || isApiEmpty}
-              className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>{pageTexts.CLEAR_BTN}</span>
-            </Button>
-            <Button
-              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
-              onClick={handleSaveKeys}
-              disabled={isSavingKeys}
-              className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5"
-            >
-              {isSavingKeys ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>{t.Saving}</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{t.Save_Config}</span>
-                </>
+              {keysSavedSuccess && (
+                <div className="flex items-center gap-1 text-[10px] text-green-500 font-bold bg-green-500/10 px-2.5 py-1 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{t.Saved}</span>
+                </div>
               )}
-            </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">GEMINI_API_KEY</label>
+                <input
+                  type={SecurityConstants.INPUT_TYPE_PASSWORD}
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  placeholder={t.enterGeminiKey}
+                  className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">AI33_API_KEY</label>
+                <input
+                  type={SecurityConstants.INPUT_TYPE_PASSWORD}
+                  value={ai33Key}
+                  onChange={(e) => setAi33Key(e.target.value)}
+                  placeholder={t.enterAi33Key}
+                  className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
+              <Button
+                variant={SecurityConstants.BTN_VARIANT_PRIMARY}
+                onClick={() => setConfirmClearType(CLEAR_TYPES.API)}
+                disabled={isSavingKeys || isApiEmpty}
+                className="bg-gradient-to-r from-slate-700 to-slate-600 hover:from-rose-600 hover:to-rose-500 disabled:hover:from-slate-700 disabled:hover:to-slate-600 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{pageTexts.CLEAR_BTN}</span>
+              </Button>
+              <Button
+                variant={SecurityConstants.BTN_VARIANT_PRIMARY}
+                onClick={handleSaveKeys}
+                disabled={isSavingKeys}
+                className="bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5"
+              >
+                {isSavingKeys ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>{t.Saving}</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{t.Save_Config}</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-slate-800 rounded-xl">
+                  <Users className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">
+                    {_.isEqual(currentLang, "vi") ? "Tài khoản Google" : "Google Accounts"}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {_.isEqual(currentLang, "vi") ? `Đang liên kết: ${accounts.length}` : `Linked: ${accounts.length}`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type={SecurityConstants.INPUT_TYPE_TEXT}
+                  placeholder="Email"
+                  value={newEmail}
+                  onChange={e => setNewEmail(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-300 outline-none focus:border-blue-500/50"
+                />
+                <input
+                  type={SecurityConstants.INPUT_TYPE_PASSWORD}
+                  placeholder={_.isEqual(currentLang, "vi") ? "Mật khẩu" : "Password"}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="bg-slate-955 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-300 outline-none focus:border-blue-500/50"
+                />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type={SecurityConstants.INPUT_TYPE_TEXT}
+                  placeholder={_.isEqual(currentLang, "vi") ? "Email khôi phục" : "Recovery Email"}
+                  value={newRecovery}
+                  onChange={e => setNewRecovery(e.target.value)}
+                  className="bg-slate-955 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1"
+                />
+                <Button 
+                  variant={SecurityConstants.BTN_VARIANT_PRIMARY} 
+                  onClick={handleAddAccount} 
+                  disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))}
+                  className="bg-blue-600 hover:bg-blue-500 text-xs px-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="mt-4 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar">
+                {_.isEmpty(accounts) ? (
+                  <div className="text-center text-xs text-slate-500 py-4 italic">
+                    {_.isEqual(currentLang, "vi") ? "Chưa có tài khoản" : "No accounts"}
+                  </div>
+                ) : (
+                  _.map(accounts, acc => (
+                    <div key={acc.id} className="flex justify-between items-center bg-slate-850/50 border border-slate-800 p-2.5 rounded-xl">
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold text-slate-200">{acc.email}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">••••••••</span>
+                      </div>
+                      <button onClick={() => handleRemoveAccount(acc.id)} className="text-slate-500 hover:text-rose-500 transition-colors p-1">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

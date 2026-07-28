@@ -10,6 +10,7 @@ import { SecurityConstants, SecurityMessages } from "../constants/security";
 import { AppLanguage } from "../constants/enums";
 import { Tooltip } from "./ui/Tooltip";
 import _ from "lodash";
+import { jsonUtils } from "../lib/json";
 
 interface SettingsViewProps {
   currentLang: Lang;
@@ -28,8 +29,17 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   useEffect(() => {
     const loadAccounts = async () => {
       try {
+        const res = await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS);
+        const data = await res.json();
+        if (data.success) {
+          setAccounts(data.accounts || []);
+          return;
+        }
+      } catch (e) {}
+
+      try {
         const saved = await storageUtils.getAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string);
-        if (saved) setAccounts(JSON.parse(saved));
+        if (saved) setAccounts(jsonUtils.safeParse<any[]>(saved, []));
       } catch {}
     };
     loadAccounts();
@@ -47,7 +57,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     }, REFACTOR_CONSTANTS.DELAY_SAVE_KEYS_MS);
   };
 
-  const handleAddAccount = () => {
+  const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
     const newAcc = {
       id: Date.now(),
@@ -57,16 +67,34 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     };
     const updated = [...accounts, newAcc];
     setAccounts(updated);
-    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
+
+    try {
+      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+        headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
+        body: jsonUtils.safeStringify({ accounts: updated })
+      });
+    } catch (e) {}
+
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, jsonUtils.safeStringify(updated));
     setNewEmail(SecurityConstants.EMPTY_STRING);
     setNewPassword(SecurityConstants.EMPTY_STRING);
     setNewRecovery(SecurityConstants.EMPTY_STRING);
   };
 
-  const handleRemoveAccount = (id: number) => {
+  const handleRemoveAccount = async (id: number) => {
     const updated = _.filter(accounts, a => a.id !== id);
     setAccounts(updated);
-    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, JSON.stringify(updated));
+
+    try {
+      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+        headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
+        body: jsonUtils.safeStringify({ accounts: updated })
+      });
+    } catch (e) {}
+
+    storageUtils.setAsync(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, jsonUtils.safeStringify(updated));
   };
 
   return (
