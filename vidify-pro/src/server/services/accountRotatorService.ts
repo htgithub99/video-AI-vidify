@@ -87,7 +87,7 @@ async function getGasAccounts(): Promise<GoogleAccount[]> {
 
 export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount | null> {
   const localAccounts = getLocalAccounts();
-  const activeLocal = _.filter(localAccounts, (acc) => acc.status !== AccountStatus.ERROR);
+  const activeLocal = _.filter(localAccounts, (acc) => !_.isEqual(_.toUpper(acc.status), _.toUpper(AccountStatus.ERROR)));
 
   if (!_.isEmpty(activeLocal)) {
     let selected = _.first(activeLocal)!;
@@ -103,7 +103,7 @@ export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount 
 
   logger.info(REFACTOR_CONSTANTS.LOG_NO_LOCAL_ACC);
   const gasAccounts = await getGasAccounts();
-  const activeGas = _.filter(gasAccounts, (acc) => acc.status === AccountStatus.ACTIVE);
+  const activeGas = _.filter(gasAccounts, (acc) => _.isEqual(_.toUpper(acc.status), _.toUpper(AccountStatus.ACTIVE)));
 
   if (_.isEmpty(activeGas)) {
     logger.warn(REFACTOR_CONSTANTS.LOG_NO_ACC_AVAIL);

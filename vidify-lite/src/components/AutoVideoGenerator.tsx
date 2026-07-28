@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
-import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod } from "../types";
+import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig } from "../types";
 import { VideoQuality } from "../constants/enums";
 import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
@@ -552,34 +552,89 @@ export default function AutoVideoGenerator({
       setCurrentStepIndex(2);
 
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN.replace(SecurityConstants.PLACEHOLDER_0, voiceName || REFACTOR_CONSTANTS.AVG_VIET_NAM_LANG));
-      for (let i = 0; i < realScenes.length; i++) {
-        const sc = _.get(realScenes, i);
+
+      const buildVoicePayload = (text: string) => ({
+        text,
+        voiceURI,
+        provider: voiceProvider,
+        speed: voiceSpeed,
+        pitch: voicePitch
+      });
+
+      const buildAlignPayload = (audioBase64: string) => ({
+        audioBase64,
+        scenes: _.map(realScenes, (sc) => ({
+          id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
+          script: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+        }))
+      });
+
+      const applyAlignmentToScene = (sc: any, alignments: any[]) => {
+        const align = _.find(alignments, (a) => _.isEqual(a.id, _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY)));
+        if (!align) return;
+        sc.duration = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_DURATION_KEY);
+        sc.startTime = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_START_KEY);
+        sc.endTime = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_END_KEY);
+        sc._start = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_START_KEY);
+        sc._end = _.get(align, AUTO_GENERATOR_CONSTANTS.AVG_ALIGN_END_KEY);
+        delete sc.audioBase64;
+        delete sc.audioUrl;
+      };
+
+      const fullScript = _.map(realScenes, (sc) => _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)).join(REFACTOR_CONSTANTS.AVG_BLANK);
+      let globalAudioBase64 = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+      let globalAudioUrl = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+
+      try {
+        const ttsRes = await fetch(API_ROUTES.PIPELINE_VOICE, {
+          method: HTTP_METHODS.POST,
+          headers: {
+            [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+            [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+          },
+          body: jsonUtils.safeStringify(buildVoicePayload(fullScript))
+        });
+        if (ttsRes.ok) {
+          const ttsData = await ttsRes.json();
+          globalAudioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+          globalAudioUrl = _.get(ttsData, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        }
+      } catch (e) {
+        logger.error(AUTO_GENERATOR_CONSTANTS.ERR_VOICE_GEN_FAILED, e);
+      }
+
+      if (!_.isEmpty(globalAudioBase64)) {
         try {
-          const ttsRes = await fetch(API_ROUTES.PIPELINE_VOICE, {
+          const alignRes = await fetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
             method: HTTP_METHODS.POST,
             headers: {
               [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
             },
-            body: jsonUtils.safeStringify({
-              text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-              voiceURI,
-              provider: voiceProvider,
-              speed: voiceSpeed,
-              pitch: voicePitch
-            })
+            body: jsonUtils.safeStringify(buildAlignPayload(globalAudioBase64))
           });
-          if (ttsRes.ok) {
-            const ttsData = await ttsRes.json();
-            if (_.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY)) sc.audioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY);
+          if (alignRes.ok) {
+            const alignData = await alignRes.json();
+            const alignments = _.get(alignData, AUTO_GENERATOR_CONSTANTS.AVG_ALIGNMENTS_KEY);
+            if (alignData.success && _.isArray(alignments)) {
+              _.forEach(realScenes, (sc) => applyAlignmentToScene(sc, alignments));
+            }
           }
-        } catch (e) { }
+        } catch (alignErr) {
+          logger.error(AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED, alignErr);
+        }
       }
+
       appendLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
 
-      const voiceUpdatedProj = {
+      const voiceUpdatedProj: VideoProject = {
         ...scriptUpdatedProj,
-        storyboard: realScenes
+        storyboard: realScenes,
+        voiceConfig: {
+          ...(scriptUpdatedProj.voiceConfig || {} as any),
+          audioBase64: globalAudioBase64,
+          audioUrl: globalAudioUrl
+        } as VoiceConfig
       };
       await syncProject(voiceUpdatedProj);
 
@@ -596,10 +651,10 @@ export default function AutoVideoGenerator({
             method: HTTP_METHODS.POST,
             headers: {
               [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
             },
             body: jsonUtils.safeStringify({
-              prompt: _.get(sc, "prompt") || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+              prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
               style: stylePreset,
               visualConfig: {
                 generationMode,
@@ -646,6 +701,7 @@ export default function AutoVideoGenerator({
           text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)
         })),
         quality: ffmpegQuality,
+        globalAudioUrl: _.get(voiceUpdatedProj, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_URL_PATH),
         aspectRatio: _.isEqual(aspectRatio, AspectRatio.NineSixteen) ? FFMPEG_RENDER_CONSTANTS.ASPECT_RATIO_9_16 : REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_16_9
       };
 
@@ -653,7 +709,7 @@ export default function AutoVideoGenerator({
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: {
           [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
         },
         body: jsonUtils.safeStringify(renderPayload)
       });

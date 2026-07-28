@@ -98,6 +98,14 @@ export const AUTO_GENERATOR_CONSTANTS = {
   ERR_AUTO_GEN_FAILED: "❌ Quy trình tạo video gặp sự cố: {0}",
   CHARACTER_ID_DEFAULT: "char_1",
   DEFAULT_SCENE_DURATION: 5,
+  AVG_AUDIO_URL_KEY: "audioUrl",
+  VOICE_CONFIG_AUDIO_URL_PATH: "voiceConfig.audioUrl",
+  ERR_VOICE_GEN_FAILED: "Không thể tạo giọng đọc. Vui lòng thử lại.",
+  ERR_VOICE_ALIGN_FAILED: "Không thể phân chia giọng theo phân cảnh. Sẽ tiếp tục mà không căn chỉnh.",
+  AVG_ALIGNMENTS_KEY: "alignments",
+  AVG_ALIGN_START_KEY: "start",
+  AVG_ALIGN_END_KEY: "end",
+  AVG_ALIGN_DURATION_KEY: "duration",
 } as const;
 
 export const RENDER_LOGIC_CONSTANTS = {
