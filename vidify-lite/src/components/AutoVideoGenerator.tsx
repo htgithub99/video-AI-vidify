@@ -3,7 +3,7 @@ import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS } from "../constants";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
@@ -115,7 +115,7 @@ export default function AutoVideoGenerator({
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless] = useState<boolean>(true);
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(true);
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
@@ -155,6 +155,8 @@ export default function AutoVideoGenerator({
           if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
           if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
           if (parsed.projectName) setProjectName(parsed.projectName);
+          if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
+          if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
         }
       } catch (e) {
         logger.error("Error loading config", e);
@@ -185,6 +187,8 @@ export default function AutoVideoGenerator({
       thumbnailCount,
       thumbnailStylePreset,
       projectName,
+      referenceImages,
+      thumbnailReferenceImages,
     };
     storageUtils.setAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
   }, [
@@ -192,7 +196,7 @@ export default function AutoVideoGenerator({
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
-    projectName
+    projectName, referenceImages, thumbnailReferenceImages
   ]);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
@@ -510,7 +514,10 @@ export default function AutoVideoGenerator({
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_GEN);
       const scriptRes = await fetch(API_ROUTES.PIPELINE_SCRIPT, {
         method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        headers: {
+          [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+        },
         body: jsonUtils.safeStringify({
           content: scriptContent,
           genre,
@@ -545,14 +552,14 @@ export default function AutoVideoGenerator({
       }
 
       appendLog(AUTO_GENERATOR_CONSTANTS.API_SCRIPT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
-      
+
       const scriptUpdatedProj = {
         ...newProj,
         scriptRewritten: realScript,
         storyboard: realScenes
       };
       await syncProject(scriptUpdatedProj);
-      
+
       setStepProgress(35);
       setCurrentStepIndex(2);
 
@@ -562,7 +569,10 @@ export default function AutoVideoGenerator({
         try {
           const ttsRes = await fetch(API_ROUTES.PIPELINE_VOICE, {
             method: HTTP_METHODS.POST,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            headers: {
+              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+            },
             body: jsonUtils.safeStringify({
               text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
               voiceURI,
@@ -575,16 +585,16 @@ export default function AutoVideoGenerator({
             const ttsData = await ttsRes.json();
             if (_.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY)) sc.audioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
-      
+
       const voiceUpdatedProj = {
         ...scriptUpdatedProj,
         storyboard: realScenes
       };
       await syncProject(voiceUpdatedProj);
-      
+
       setStepProgress(55);
 
       const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
@@ -596,7 +606,10 @@ export default function AutoVideoGenerator({
         try {
           const imgRes = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
             method: HTTP_METHODS.POST,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            headers: {
+              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+            },
             body: jsonUtils.safeStringify({
               prompt: _.get(sc, "prompt") || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
               style: stylePreset,
@@ -611,8 +624,8 @@ export default function AutoVideoGenerator({
           });
           if (imgRes.ok) {
             const imgData = await imgRes.json();
-            if (_.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY)) {
-              sc.imageBase64 = _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+            if (imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY)) {
+              sc.imageBase64 = imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
             } else if (_.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY)) {
               sc.imageUrl = _.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
             }
@@ -622,13 +635,13 @@ export default function AutoVideoGenerator({
         }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
-      
+
       const imageUpdatedProj = {
         ...voiceUpdatedProj,
         storyboard: realScenes
       };
       await syncProject(imageUpdatedProj);
-      
+
       setStepProgress(80);
       setCurrentStepIndex(3);
 
@@ -650,7 +663,10 @@ export default function AutoVideoGenerator({
 
       const renderRes = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        headers: {
+          [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+        },
         body: jsonUtils.safeStringify(renderPayload)
       });
 
@@ -669,7 +685,7 @@ export default function AutoVideoGenerator({
                   clearInterval(checkStatus);
                   setRenderedVideoUrl(statusData.url);
                   appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, statusData.url));
-                  
+
                   const renderCompletedProj = {
                     ...imageUpdatedProj,
                     renderedVideoUrl: statusData.url,
@@ -775,9 +791,9 @@ export default function AutoVideoGenerator({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 h-[calc(100vh-56px)] lg:h-auto grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
         <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 scrollbar-none flex flex-col">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 p-6 relative h-fit flex flex-col justify-between overflow-visible">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-3 p-6 relative h-fit flex flex-col justify-between overflow-visible">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="border-b border-slate-800/80 pb-4 flex items-center justify-between">
@@ -943,7 +959,7 @@ export default function AutoVideoGenerator({
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -966,14 +982,14 @@ export default function AutoVideoGenerator({
                     <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500">
                       <Mic className="w-5 h-5" />
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                       {(() => {
                         const rawName = voiceName || voiceURI;
                         const words = _.words(rawName);
                         const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), ' ') + '...' : rawName;
                         return (
                           <Tooltip content={rawName} position="top">
-                            <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors">
+                            <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
                               {displayVoiceName}
                             </span>
                           </Tooltip>
@@ -992,7 +1008,7 @@ export default function AutoVideoGenerator({
                 currentLang={currentLang}
                 selectedVoiceId={voiceURI}
                 favoriteVoices={[]}
-                onToggleFavoriteVoice={() => {}}
+                onToggleFavoriteVoice={() => { }}
                 onSelectVoice={(v: any) => {
                   setVoiceURI(v.voice_id || v.voiceURI || v.id);
                   setVoiceName(v.name);
@@ -1002,7 +1018,7 @@ export default function AutoVideoGenerator({
               />
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -1090,6 +1106,22 @@ export default function AutoVideoGenerator({
                     >
                       <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
                       <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Chế độ Chrome</span>
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                    <select
+                      value={chromeHeadless ? "headless" : "windowed"}
+                      onChange={(e) => setChromeHeadless(e.target.value === "headless")}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
+                      <option value="headless" className="bg-slate-955 text-slate-300">Chạy ngầm</option>
+                      <option value="windowed" className="bg-slate-955 text-slate-300">Hiển thị</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -1186,7 +1218,7 @@ export default function AutoVideoGenerator({
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -1318,7 +1350,7 @@ export default function AutoVideoGenerator({
         </div>
 
         <div className="lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
-          <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden">
+          <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="space-y-1">
@@ -1363,7 +1395,7 @@ export default function AutoVideoGenerator({
               <span className="text-[10px] text-slate-400 font-mono">{T.logEventsCount(logs.length)}</span>
             </div>
 
-            <div className="flex-1 bg-black/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
+            <div className="flex-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
               {_.isEmpty(logs) ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 italic text-center text-xs p-6 w-full h-full my-auto gap-2">
                   <Terminal className="w-8 h-8 text-slate-700/80 mb-1" />
@@ -1384,11 +1416,13 @@ export default function AutoVideoGenerator({
               <Eye className="w-4 h-4 text-amber-400" /> {T.previewHeaderTitle}
             </h3>
 
-            <div className="flex-1 min-h-[260px] bg-black rounded-2xl border border-slate-800/80 overflow-hidden relative flex flex-col items-center justify-center p-6 shadow-inner">
+            <div className="flex-1 min-h-[260px] bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden relative p-4 shadow-inner">
               {!_.isEmpty(renderedVideoUrl) ? (
-                <video src={renderedVideoUrl} controls className="w-full h-full object-cover rounded-xl" autoPlay />
+                <div className="absolute inset-4 flex items-center justify-center">
+                  <video src={renderedVideoUrl} controls className="max-w-full max-h-full object-contain rounded-xl" autoPlay />
+                </div>
               ) : (
-                <div className="text-center p-6 text-slate-400 font-mono text-xs my-auto flex flex-col items-center justify-center gap-3">
+                <div className="absolute inset-0 text-center p-6 text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-3">
                   <Video className="w-10 h-10 text-slate-600" />
                   <span className="text-slate-400 leading-relaxed max-w-xs block">
                     {T.previewEmpty}

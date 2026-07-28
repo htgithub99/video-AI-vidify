@@ -3,7 +3,7 @@ import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS } from "../constants";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
@@ -13,8 +13,6 @@ import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
-
-
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import {
   Zap,
@@ -50,6 +48,8 @@ interface AutoVideoGeneratorProps {
   theme?: "dark" | "light";
 }
 
+
+
 const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
   if (_.isEqual(genMode, ImageGenerationMode.GeminiChat)) {
     return [
@@ -79,7 +79,7 @@ export default function AutoVideoGenerator({
   onSelectProject,
   onUpdateProject,
 }: AutoVideoGeneratorProps) {
-  const T = _.get(AUTO_GENERATOR_PANEL_TEXTS, currentLang) || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
@@ -115,7 +115,7 @@ export default function AutoVideoGenerator({
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless] = useState<boolean>(true);
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(true);
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
@@ -155,9 +155,11 @@ export default function AutoVideoGenerator({
           if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
           if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
           if (parsed.projectName) setProjectName(parsed.projectName);
+          if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
+          if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
         }
       } catch (e) {
-        logger.error("Error loading auto config", e);
+        logger.error("Error loading config", e);
       } finally {
         setIsConfigLoaded(true);
       }
@@ -185,15 +187,17 @@ export default function AutoVideoGenerator({
       thumbnailCount,
       thumbnailStylePreset,
       projectName,
+      referenceImages,
+      thumbnailReferenceImages,
     };
     storageUtils.setAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
   }, [
-    isConfigLoaded, inputType, scriptContent, genre, language, duration, splitStrategy,
+    isConfigLoaded,
+    inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
-    projectName
+    projectName, referenceImages, thumbnailReferenceImages
   ]);
-
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -327,7 +331,7 @@ export default function AutoVideoGenerator({
     const thumbStylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY);
     if (thumbStylePresetVal) setThumbnailStylePreset(thumbStylePresetVal);
     setSelectedPresetId(presetId);
-    addLog(T.logAppliedPreset(_.get(preset, "name")));
+    addLog(T.logAppliedPreset(preset.name));
   };
 
   const handleDeletePreset = async (id: string) => {
@@ -336,7 +340,7 @@ export default function AutoVideoGenerator({
         method: HTTP_METHODS.DELETE,
       });
       const json = await res.json();
-      if (_.get(json, "success")) {
+      if (json.success) {
         refetchPresets();
         if (_.isEqual(selectedPresetId, id)) setSelectedPresetId(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       }
@@ -385,7 +389,7 @@ export default function AutoVideoGenerator({
 
   const handleStartAutoGenerate = async () => {
     if (_.isEmpty(_.trim(scriptContent))) {
-      alert(_.get(T, "alertEmptyScript"));
+      alert(T.alertEmptyScript);
       return;
     }
 
@@ -403,7 +407,7 @@ export default function AutoVideoGenerator({
       setLogs([...currentLogs]);
     };
 
-    appendLog(_.get(T, "logPipelineStart"));
+    appendLog(T.logPipelineStart);
 
     try {
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
@@ -510,7 +514,10 @@ export default function AutoVideoGenerator({
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_GEN);
       const scriptRes = await fetch(API_ROUTES.PIPELINE_SCRIPT, {
         method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        headers: {
+          [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+        },
         body: jsonUtils.safeStringify({
           content: scriptContent,
           genre,
@@ -545,14 +552,14 @@ export default function AutoVideoGenerator({
       }
 
       appendLog(AUTO_GENERATOR_CONSTANTS.API_SCRIPT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
-      
+
       const scriptUpdatedProj = {
         ...newProj,
         scriptRewritten: realScript,
         storyboard: realScenes
       };
       await syncProject(scriptUpdatedProj);
-      
+
       setStepProgress(35);
       setCurrentStepIndex(2);
 
@@ -562,7 +569,10 @@ export default function AutoVideoGenerator({
         try {
           const ttsRes = await fetch(API_ROUTES.PIPELINE_VOICE, {
             method: HTTP_METHODS.POST,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            headers: {
+              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+            },
             body: jsonUtils.safeStringify({
               text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
               voiceURI,
@@ -575,16 +585,16 @@ export default function AutoVideoGenerator({
             const ttsData = await ttsRes.json();
             if (_.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY)) sc.audioBase64 = _.get(ttsData, REFACTOR_CONSTANTS.AVG_AUDIO_BASE64_KEY);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_VOICE_SUCCESS);
-      
+
       const voiceUpdatedProj = {
         ...scriptUpdatedProj,
         storyboard: realScenes
       };
       await syncProject(voiceUpdatedProj);
-      
+
       setStepProgress(55);
 
       const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
@@ -596,7 +606,10 @@ export default function AutoVideoGenerator({
         try {
           const imgRes = await fetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
             method: HTTP_METHODS.POST,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            headers: {
+              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+            },
             body: jsonUtils.safeStringify({
               prompt: _.get(sc, "prompt") || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
               style: stylePreset,
@@ -611,8 +624,8 @@ export default function AutoVideoGenerator({
           });
           if (imgRes.ok) {
             const imgData = await imgRes.json();
-            if (_.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY)) {
-              sc.imageBase64 = _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+            if (imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY)) {
+              sc.imageBase64 = imgData.base64 || _.get(imgData, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
             } else if (_.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY)) {
               sc.imageUrl = _.get(imgData, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
             }
@@ -622,13 +635,13 @@ export default function AutoVideoGenerator({
         }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
-      
+
       const imageUpdatedProj = {
         ...voiceUpdatedProj,
         storyboard: realScenes
       };
       await syncProject(imageUpdatedProj);
-      
+
       setStepProgress(80);
       setCurrentStepIndex(3);
 
@@ -650,7 +663,10 @@ export default function AutoVideoGenerator({
 
       const renderRes = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+        headers: {
+          [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || ""
+        },
         body: jsonUtils.safeStringify(renderPayload)
       });
 
@@ -669,7 +685,7 @@ export default function AutoVideoGenerator({
                   clearInterval(checkStatus);
                   setRenderedVideoUrl(statusData.url);
                   appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, statusData.url));
-                  
+
                   const renderCompletedProj = {
                     ...imageUpdatedProj,
                     renderedVideoUrl: statusData.url,
@@ -718,36 +734,35 @@ export default function AutoVideoGenerator({
             <Zap className="w-5 h-5 fill-rose-500/20 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-100 flex items-center gap-2" title={_.get(T, "bannerTitleTooltip")}>
-              {_.get(T, "bannerTitle")}
+            <h1 className="text-sm font-bold text-slate-100 flex items-center gap-2" title={T.bannerTitleTooltip}>
+              {T.bannerTitle}
               <span className="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase font-bold">
-                {_.get(T, "bannerBadge")}
+                {T.bannerBadge}
               </span>
             </h1>
-            <p className="text-[11px] text-slate-400" title={_.get(T, "bannerSubtitle")}>{_.get(T, "bannerSubtitle").slice(0, 35)}...</p>
+            <p className="text-[11px] text-slate-400">{T.bannerSubtitle}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-slate-400 font-mono">{_.get(T, "presetLabel")}</span>
+          <span className="text-[11px] text-slate-400 font-mono">{T.presetLabel}</span>
           <div className="relative flex items-center bg-slate-955/80 border border-slate-800/80 rounded-lg px-2.5 py-1">
             <select
               value={selectedPresetId}
               onChange={(e) => handleApplyPreset(e.target.value)}
               className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none"
             >
-              <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{_.get(T, "presetDefaultOption")}</option>
+              <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{T.presetDefaultOption}</option>
               {_.map(presets, (p) => {
-                const name = _.get(p, "name");
                 const formattedName = (() => {
-                  const words = _.words(name);
+                  const words = _.words(p.name);
                   if (words.length > 4) {
                     return _.join(_.take(words, 4), ' ') + '...';
                   }
-                  return name;
+                  return p.name;
                 })();
                 return (
-                  <option key={_.get(p, "id")} value={_.get(p, "id")} className="bg-slate-955 text-slate-300" title={name}>
+                  <option key={p.id} value={p.id} className="bg-slate-955 text-slate-300" title={p.name}>
                     {formattedName}
                   </option>
                 );
@@ -759,16 +774,16 @@ export default function AutoVideoGenerator({
           <div className="flex items-center gap-1">
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-              placeholder={_.get(T, "presetNamePlaceholder")}
+              placeholder={T.presetNamePlaceholder}
               value={presetNameInput}
               onChange={(e) => setPresetNameInput(e.target.value)}
               className="bg-slate-955 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 w-28 focus:outline-none focus:border-rose-500"
             />
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={handleSavePreset} title={_.get(T, "savePresetTooltip")}>
-              <Save className="w-3.5 h-3.5 text-rose-400" /> {_.get(T, "savePresetBtn")}
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={handleSavePreset} title={T.savePresetTooltip}>
+              <Save className="w-3.5 h-3.5 text-rose-400" /> {T.savePresetBtn}
             </Button>
             {selectedPresetId && (
-              <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={() => handleDeletePreset(selectedPresetId)} title={_.get(T, "deletePresetTooltip")}>
+              <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={() => handleDeletePreset(selectedPresetId)} title={T.deletePresetTooltip}>
                 <Trash className="w-3.5 h-3.5 text-slate-500 hover:text-rose-500" />
               </Button>
             )}
@@ -776,9 +791,9 @@ export default function AutoVideoGenerator({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 h-[calc(100vh-56px)] lg:h-auto grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
         <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 scrollbar-none flex flex-col">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 p-6 relative h-fit flex flex-col justify-between overflow-visible">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-3 p-6 relative h-fit flex flex-col justify-between overflow-visible">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="border-b border-slate-800/80 pb-4 flex items-center justify-between">
@@ -787,13 +802,13 @@ export default function AutoVideoGenerator({
                   <Sliders className="w-5 h-5 text-rose-500" />
                 </div>
                 <div>
-                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-100 flex items-center gap-2 font-mono" title={_.get(T, "panelTitleTooltip")}>
-                    {_.get(T, "panelTitle")}
+                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-100 flex items-center gap-2 font-mono" title={T.panelTitleTooltip}>
+                    {T.panelTitle}
                     <span className="text-[9px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
-                      {_.get(T, "panelBadge")}
+                      {T.panelBadge}
                     </span>
                   </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5" title={_.get(T, "panelSubtitle")}>{_.get(T, "panelSubtitle").slice(0, 40)}...</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">{T.panelSubtitle}</p>
                 </div>
               </div>
             </div>
@@ -803,8 +818,8 @@ export default function AutoVideoGenerator({
                 <span className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">
                   1
                 </span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={_.get(T, "sec1TitleTooltip")}>
-                  <FileText className="w-3.5 h-3.5 text-emerald-400" /> {_.get(T, "sec1Title")}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec1TitleTooltip}>
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" /> {T.sec1Title}
                 </h3>
               </div>
 
@@ -818,11 +833,11 @@ export default function AutoVideoGenerator({
                       ? "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/20 font-bold"
                       : "bg-slate-955/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                   )}
-                  title={_.get(T, "inputTypeScriptTooltip")}
+                  title={T.inputTypeScriptTooltip}
                 >
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-rose-500" />
-                    <span className="text-xs">{_.get(T, "inputTypeScript")}</span>
+                    <span className="text-xs">{T.inputTypeScript}</span>
                   </div>
                   {_.isEqual(inputType, ProjectInputType.Script) && <Check className="w-4 h-4 text-rose-500" />}
                 </button>
@@ -836,11 +851,11 @@ export default function AutoVideoGenerator({
                       ? "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/20 font-bold"
                       : "bg-slate-955/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                   )}
-                  title={_.get(T, "inputTypeIdeaTooltip")}
+                  title={T.inputTypeIdeaTooltip}
                 >
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-rose-500" />
-                    <span className="text-xs">{_.get(T, "inputTypeIdea")}</span>
+                    <span className="text-xs">{T.inputTypeIdea}</span>
                   </div>
                   {_.isEqual(inputType, ProjectInputType.Idea) && <Check className="w-4 h-4 text-rose-500" />}
                 </button>
@@ -850,13 +865,13 @@ export default function AutoVideoGenerator({
                 rows={4}
                 value={scriptContent}
                 onChange={(e) => setScriptContent(e.target.value)}
-                placeholder={_.isEqual(inputType, ProjectInputType.Script) ? _.get(T, "scriptPlaceholderScript") : _.get(T, "scriptPlaceholderIdea")}
+                placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea}
                 className="w-full bg-slate-955 border border-slate-800 focus:border-rose-500/80 text-slate-200 p-3 rounded-xl text-xs leading-relaxed outline-none resize-none shadow-inner"
               />
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblGenre")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenre}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -866,7 +881,7 @@ export default function AutoVideoGenerator({
                     >
                       {_.map(GENRE_OPTIONS, (g) => (
                         <option key={g} value={g} className="bg-slate-955 text-slate-300">
-                          {_.get(genreLabels, g) || g}
+                          {genreLabels[g as keyof typeof genreLabels] || g}
                         </option>
                       ))}
                     </select>
@@ -875,7 +890,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblLanguage")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblLanguage}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -884,8 +899,8 @@ export default function AutoVideoGenerator({
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
                       {_.map(PROJECT_LANGUAGE_OPTIONS, (l) => (
-                        <option key={_.get(l, "value")} value={_.get(l, "value")} className="bg-slate-955 text-slate-300">
-                          {_.isEqual(_.get(l, "value"), "vi") ? _.get(T, "langVi") : _.get(T, "langEn")}
+                        <option key={l.value} value={l.value} className="bg-slate-955 text-slate-300">
+                          {_.isEqual(l.value, "vi") ? T.langVi : T.langEn}
                         </option>
                       ))}
                     </select>
@@ -894,7 +909,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblDuration")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblDuration}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Clock className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -903,8 +918,8 @@ export default function AutoVideoGenerator({
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
                       {_.map(DURATION_OPTIONS, (d) => (
-                        <option key={_.get(d, "val")} value={_.get(d, "val")} className="bg-slate-955 text-slate-300">
-                          {_.get(d, "label")}
+                        <option key={d.val} value={d.val} className="bg-slate-955 text-slate-300">
+                          {d.label}
                         </option>
                       ))}
                     </select>
@@ -913,7 +928,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblSplitStrategy")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblSplitStrategy}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Sliders className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -922,13 +937,13 @@ export default function AutoVideoGenerator({
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
                       {_.map(SPLIT_STRATEGY_OPTIONS, (s: any) => {
-                        const val = _.get(s, "value");
+                        const val = s.value;
                         const SPLIT_LABEL_MAP: Record<string, string> = {
-                          word: _.get(T, "splitWord"),
-                          short_sentence: _.get(T, "splitShort"),
-                          long_sentence: _.get(T, "splitLong"),
-                          mixed_sentences: _.get(T, "splitMixed"),
-                          paragraph: _.get(T, "splitParagraph"),
+                          word: T.splitWord,
+                          short_sentence: T.splitShort,
+                          long_sentence: T.splitLong,
+                          mixed_sentences: T.splitMixed,
+                          paragraph: T.splitParagraph,
                         };
                         const displayLabel = _.get(SPLIT_LABEL_MAP, val, val);
                         return (
@@ -944,15 +959,15 @@ export default function AutoVideoGenerator({
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">
                   2
                 </span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={_.get(T, "sec2TitleTooltip")}>
-                  <Mic className="w-3.5 h-3.5 text-rose-500" /> {_.get(T, "sec2Title")}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
+                  <Mic className="w-3.5 h-3.5 text-rose-500" /> {T.sec2Title}
                 </h3>
               </div>
 
@@ -961,20 +976,20 @@ export default function AutoVideoGenerator({
                   type="button"
                   onClick={() => setIsVoiceDialogOpen(true)}
                   className="w-full bg-slate-955/80 border border-slate-800 hover:border-rose-500/50 rounded-xl p-3 text-left flex items-center justify-between transition-all group"
-                  title={_.get(T, "voiceBtnTooltip")}
+                  title={T.voiceBtnTooltip}
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500">
                       <Mic className="w-5 h-5" />
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                       {(() => {
                         const rawName = voiceName || voiceURI;
                         const words = _.words(rawName);
                         const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), ' ') + '...' : rawName;
                         return (
                           <Tooltip content={rawName} position="top">
-                            <span className="font-bold text-slate-100 block text-xs group-hover:text-rose-400 transition-colors">
+                            <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
                               {displayVoiceName}
                             </span>
                           </Tooltip>
@@ -993,31 +1008,31 @@ export default function AutoVideoGenerator({
                 currentLang={currentLang}
                 selectedVoiceId={voiceURI}
                 favoriteVoices={[]}
-                onToggleFavoriteVoice={() => {}}
+                onToggleFavoriteVoice={() => { }}
                 onSelectVoice={(v: any) => {
-                  setVoiceURI(_.get(v, "voice_id") || _.get(v, "voiceURI") || _.get(v, "id"));
-                  setVoiceName(_.get(v, "name"));
-                  if (_.get(v, "provider")) setVoiceProvider(_.get(v, "provider"));
+                  setVoiceURI(v.voice_id || v.voiceURI || v.id);
+                  setVoiceName(v.name);
+                  if (v.provider) setVoiceProvider(v.provider);
                   setIsVoiceDialogOpen(false);
                 }}
               />
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-mono font-bold text-xs">
                   3
                 </span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={_.get(T, "sec3TitleTooltip")}>
-                  <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {_.get(T, "sec3Title")}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec3TitleTooltip}>
+                  <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {T.sec3Title}
                 </h3>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblGenMode")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -1041,7 +1056,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblEngine")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblEngine}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -1060,7 +1075,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblAspectRatio")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAspectRatio}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
@@ -1075,7 +1090,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblGenType")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
@@ -1089,8 +1104,24 @@ export default function AutoVideoGenerator({
                       }}
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
-                      <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{_.get(T, "optionImage")}</option>
-                      <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{_.get(T, "optionVideo")}</option>
+                      <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
+                      <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Chế độ Chrome</span>
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                    <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                    <select
+                      value={chromeHeadless ? "headless" : "windowed"}
+                      onChange={(e) => setChromeHeadless(e.target.value === "headless")}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
+                      <option value="headless" className="bg-slate-955 text-slate-300">Chạy ngầm</option>
+                      <option value="windowed" className="bg-slate-955 text-slate-300">Hiển thị</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -1128,10 +1159,10 @@ export default function AutoVideoGenerator({
                     <Upload className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-200 block mb-0.5 whitespace-nowrap">
-                    {_.get(T, "styleUploadTitle")}
+                    {T.styleUploadTitle}
                   </span>
                   <span className="text-[8px] text-slate-500 leading-tight block whitespace-nowrap">
-                    {_.get(T, "styleUploadSub")}
+                    {T.styleUploadSub}
                   </span>
                 </div>
 
@@ -1145,7 +1176,7 @@ export default function AutoVideoGenerator({
                             type="button"
                             onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
                             className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={_.get(T, "deleteStyleImgTooltip")}
+                            title={T.deleteStyleImgTooltip}
                           >
                             <X className="w-2.5 h-2.5" />
                           </button>
@@ -1154,7 +1185,7 @@ export default function AutoVideoGenerator({
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center border border-dashed border-slate-800/80 rounded-lg bg-slate-900/20 text-slate-500 text-[10px] italic p-1.5 text-center">
-                      {_.get(T, "styleUploadEmpty")}
+                      {T.styleUploadEmpty}
                     </div>
                   )}
 
@@ -1163,7 +1194,7 @@ export default function AutoVideoGenerator({
                       type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                       value={stylePreset}
                       onChange={(e) => setStylePreset(e.target.value)}
-                      placeholder={_.get(T, "stylePresetPlaceholder")}
+                      placeholder={T.stylePresetPlaceholder}
                       className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
                     />
                     <Button
@@ -1173,55 +1204,53 @@ export default function AutoVideoGenerator({
                         setIsExtractingStyle(true);
                         setTimeout(() => {
                           setIsExtractingStyle(false);
-                          addLog(_.get(T, "logStyleManualExtracted"));
+                          addLog(T.logStyleManualExtracted);
                         }, REFACTOR_CONSTANTS.DELAY_1000_MS);
                       }}
                       disabled={isExtractingStyle}
                       className="px-2.5 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
-                      title={_.get(T, "extractStyleTooltip")}
+                      title={T.extractStyleTooltip}
                     >
-                      <Sparkles className="w-3 h-3 text-emerald-400" /> {_.get(T, "extractStyleBtn")}
+                      <Sparkles className="w-3 h-3 text-emerald-400" /> {T.extractStyleBtn}
                     </Button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-800/80 my-4" />
+            <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <span className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
                   4
                 </span>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={_.get(T, "sec4TitleTooltip")}>
-                  <ImageIcon className="w-3.5 h-3.5 text-purple-400" /> {_.get(T, "sec4Title")}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec4TitleTooltip}>
+                  <ImageIcon className="w-3.5 h-3.5 text-purple-400" /> {T.sec4Title}
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={_.get(T, "lblProjectNameTooltip")}>
-                    {_.get(T, "lblProjectName")}
-                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblProjectName}</span>
                   <input
                     type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
-                    placeholder={REFACTOR_CONSTANTS.VD_EMPTY_STRING}
+                    placeholder={REFACTOR_CONSTANTS.PROJECT_NAME_PLACEHOLDER}
                     className="w-full bg-slate-955 border border-slate-800 focus:border-rose-500/80 text-slate-200 p-2 rounded-xl text-xs outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{_.get(T, "lblThumbCount")}</span>
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblThumbCount}</span>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select value={thumbnailCount} onChange={(e) => setThumbnailCount(Number(e.target.value))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      <option value={1} className="bg-slate-955 text-slate-300">{_.get(T, "thumbCountOption")(1)}</option>
-                      <option value={2} className="bg-slate-955 text-slate-300">{_.get(T, "thumbCountOption")(2)}</option>
-                      <option value={3} className="bg-slate-955 text-slate-300">{_.get(T, "thumbCountOption")(3)}</option>
-                      <option value={4} className="bg-slate-955 text-slate-300">{_.get(T, "thumbCountOption")(4)}</option>
+                      <option value={1} className="bg-slate-955 text-slate-300">{T.thumbCountOption(1)}</option>
+                      <option value={2} className="bg-slate-955 text-slate-300">{T.thumbCountOption(2)}</option>
+                      <option value={3} className="bg-slate-955 text-slate-300">{T.thumbCountOption(3)}</option>
+                      <option value={4} className="bg-slate-955 text-slate-300">{T.thumbCountOption(4)}</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -1259,10 +1288,10 @@ export default function AutoVideoGenerator({
                     <Upload className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400 transition-colors" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-200 block mb-0.5 whitespace-nowrap">
-                    {_.get(T, "thumbUploadTitle")}
+                    {T.thumbUploadTitle}
                   </span>
                   <span className="text-[8px] text-slate-500 leading-tight block whitespace-nowrap">
-                    {_.get(T, "thumbUploadSub")}
+                    {T.thumbUploadSub}
                   </span>
                 </div>
 
@@ -1276,7 +1305,7 @@ export default function AutoVideoGenerator({
                             type="button"
                             onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
                             className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={_.get(T, "deleteThumbImgTooltip")}
+                            title={T.deleteThumbImgTooltip}
                           >
                             <X className="w-2.5 h-2.5" />
                           </button>
@@ -1285,7 +1314,7 @@ export default function AutoVideoGenerator({
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center justify-center border border-dashed border-slate-800/80 rounded-lg bg-slate-900/20 text-slate-500 text-[10px] italic p-1.5 text-center">
-                      {_.get(T, "thumbUploadEmpty")}
+                      {T.thumbUploadEmpty}
                     </div>
                   )}
 
@@ -1294,7 +1323,7 @@ export default function AutoVideoGenerator({
                       type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
                       value={thumbnailStylePreset}
                       onChange={(e) => setThumbnailStylePreset(e.target.value)}
-                      placeholder={_.get(T, "thumbPresetPlaceholder")}
+                      placeholder={T.thumbPresetPlaceholder}
                       className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
                     />
                     <Button
@@ -1304,14 +1333,14 @@ export default function AutoVideoGenerator({
                         setIsExtractingThumbnailStyle(true);
                         setTimeout(() => {
                           setIsExtractingThumbnailStyle(false);
-                          addLog(_.get(T, "logThumbStyleManualExtracted"));
+                          addLog(T.logThumbStyleManualExtracted);
                         }, REFACTOR_CONSTANTS.DELAY_1000_MS);
                       }}
                       disabled={isExtractingThumbnailStyle}
                       className="px-2.5 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
-                      title={_.get(T, "extractThumbStyleTooltip")}
+                      title={T.extractThumbStyleTooltip}
                     >
-                      <Sparkles className="w-3 h-3 text-purple-400" /> {_.get(T, "extractStyleBtn")}
+                      <Sparkles className="w-3 h-3 text-purple-400" /> {T.extractStyleBtn}
                     </Button>
                   </div>
                 </div>
@@ -1321,15 +1350,15 @@ export default function AutoVideoGenerator({
         </div>
 
         <div className="lg:col-span-5 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 bg-slate-955 space-y-5 flex flex-col justify-between scrollbar-none">
-          <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden">
+          <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0">
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="space-y-1">
-              <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono flex items-center justify-center gap-2" title={_.get(T, "rightActionTitleTooltip")}>
+              <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono flex items-center justify-center gap-2" title={T.rightActionTitleTooltip}>
                 <Sparkles className="w-4 h-4 text-rose-500 animate-pulse" />
-                {_.get(T, "rightActionTitle")}
+                {T.rightActionTitle}
               </h2>
-              <p className="text-[11px] text-slate-400 leading-relaxed">{_.get(T, "rightActionSub")}</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">{T.rightActionSub}</p>
             </div>
 
             <Button
@@ -1339,17 +1368,17 @@ export default function AutoVideoGenerator({
               disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
               isLoading={isProcessing}
               className="w-full py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all"
-              title={_.get(T, "startBtnTooltip")}
+              title={T.startBtnTooltip}
             >
               <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
-              <span>{isProcessing ? _.get(T, "startBtnProcessing") : _.get(T, "startBtnStart")}</span>
+              <span>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
             </Button>
 
             {isProcessing || _.gt(stepProgress, 0) ? (
               <div className="space-y-2 pt-2 text-left">
                 <div className="flex justify-between items-center text-[10px] font-mono font-bold">
-                  <span>{_.get(T, "progressNodeLabel")} [{currentStepIndex}/4]</span>
-                  <span>{stepProgress}%</span>
+                  <span className="text-rose-400">{T.progressNodeLabel} [{currentStepIndex}/4]</span>
+                  <span className="text-slate-200">{stepProgress}%</span>
                 </div>
                 <div className="w-full bg-slate-955 h-2 rounded-full overflow-hidden border border-slate-800">
                   <div className="bg-gradient-to-r from-rose-600 to-amber-500 h-full transition-all duration-300" style={{ width: `${stepProgress}%` }} />
@@ -1360,17 +1389,17 @@ export default function AutoVideoGenerator({
 
           <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 flex-1 flex flex-col min-h-[200px] shadow-xl font-mono text-[11px]">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-slate-200 font-bold flex items-center gap-2 uppercase text-xs" title={_.get(T, "logHeaderTooltip")}>
-                <Terminal className="w-4 h-4 text-amber-400" /> {_.get(T, "logHeaderTitle")}
+              <span className="text-slate-200 font-bold flex items-center gap-2 uppercase text-xs" title={T.logHeaderTooltip}>
+                <Terminal className="w-4 h-4 text-amber-400" /> {T.logHeaderTitle}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">{_.get(T, "logEventsCount")(logs.length)}</span>
+              <span className="text-[10px] text-slate-400 font-mono">{T.logEventsCount(logs.length)}</span>
             </div>
 
-            <div className="flex-1 bg-black/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
+            <div className="flex-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
               {_.isEmpty(logs) ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 italic text-center text-xs p-6 w-full h-full my-auto gap-2">
                   <Terminal className="w-8 h-8 text-slate-700/80 mb-1" />
-                  <span>{_.get(T, "logEmpty")}</span>
+                  <span>{T.logEmpty}</span>
                 </div>
               ) : (
                 _.map(logs, (log, idx) => (
@@ -1383,18 +1412,20 @@ export default function AutoVideoGenerator({
           </div>
 
           <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col justify-between">
-            <h3 className="text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-2" title={_.get(T, "previewHeaderTooltip")}>
-              <Eye className="w-4 h-4 text-amber-400" /> {_.get(T, "previewHeaderTitle")}
+            <h3 className="text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-2" title={T.previewHeaderTooltip}>
+              <Eye className="w-4 h-4 text-amber-400" /> {T.previewHeaderTitle}
             </h3>
 
-            <div className="flex-1 min-h-[260px] bg-black rounded-2xl border border-slate-800/80 overflow-hidden relative flex flex-col items-center justify-center p-6 shadow-inner">
+            <div className="flex-1 min-h-[260px] bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden relative p-4 shadow-inner">
               {!_.isEmpty(renderedVideoUrl) ? (
-                <video src={renderedVideoUrl} controls className="w-full h-full object-cover rounded-xl" autoPlay />
+                <div className="absolute inset-4 flex items-center justify-center">
+                  <video src={renderedVideoUrl} controls className="max-w-full max-h-full object-contain rounded-xl" autoPlay />
+                </div>
               ) : (
-                <div className="text-center p-6 text-slate-400 font-mono text-xs my-auto flex flex-col items-center justify-center gap-3">
+                <div className="absolute inset-0 text-center p-6 text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-3">
                   <Video className="w-10 h-10 text-slate-600" />
                   <span className="text-slate-400 leading-relaxed max-w-xs block">
-                    {_.get(T, "previewEmpty")}
+                    {T.previewEmpty}
                   </span>
                 </div>
               )}
@@ -1412,9 +1443,9 @@ export default function AutoVideoGenerator({
                     a.click();
                   }}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 border-emerald-500/30 text-white font-bold text-xs"
-                  title={_.get(T, "downloadVideoTooltip")}
+                  title={T.downloadVideoTooltip}
                 >
-                  <Download className="w-4 h-4" /> {_.get(T, "downloadVideoBtn")}
+                  <Download className="w-4 h-4" /> {T.downloadVideoBtn}
                 </Button>
 
                 {activeCreatedProject && (
@@ -1423,9 +1454,9 @@ export default function AutoVideoGenerator({
                     size={REFACTOR_CONSTANTS.SIZE_SM}
                     onClick={() => onSelectProject(activeCreatedProject.id)}
                     className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold"
-                    title={_.get(T, "openStudioTooltip")}
+                    title={T.openStudioTooltip}
                   >
-                    <Sliders className="w-4 h-4 text-rose-400" /> {_.get(T, "openStudioBtn")}
+                    <Sliders className="w-4 h-4 text-rose-400" /> {T.openStudioBtn}
                   </Button>
                 )}
               </div>
