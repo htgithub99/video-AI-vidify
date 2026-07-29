@@ -31,7 +31,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
   }
 }
 
-function getSafeFolderName(name: string): string {
+export function getSafeFolderName(name: string): string {
   if (_.isEmpty(name)) return COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 
   const safeName = name.normalize(COMMON_STRINGS.NORMALIZATION_FORM)

@@ -324,4 +324,5 @@ export const ROUTER_PATHS = {
   REWRITE_PROMPTS_CHARACTER: "/rewrite-prompts-character",
   HOOKS: "/hooks",
   SCRIPT: "/script",
+  ALIGN_VOICE: "/align-voice",
 } as const;

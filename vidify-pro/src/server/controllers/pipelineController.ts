@@ -11,13 +11,13 @@ import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
+import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
 
 import {
-  REFACTOR_CONSTANTS,
   EXTERNAL_URLS,
   ALIGN_CONFIG,
   EXPORT_ZIP_CONFIG,
@@ -100,6 +100,9 @@ import {
   MimeType,
   TEMPLATE_TMP_CONTENT,
   FFMPEG_CONFIG,
+  COMMON_STRINGS,
+  ROUTER_PATHS,
+  REFACTOR_CONSTANTS,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
@@ -109,6 +112,7 @@ import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAl
 import { resolveApiKeys } from "../services/apiKeyResolver.js";
 
 import { AspectRatio, ProjectLanguage } from "../../types.js";
+import { VideoQuality } from "../../constants/enums.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { randomUUID } from "crypto";
@@ -129,13 +133,19 @@ import { requireLicense } from "../middlewares/requireLicense.js";
 import { FeatureType, SecurityConstants } from "../../constants/security.js";
 import { requestContext } from "../utils/requestContext.js";
 
-
-import { VideoQuality } from "../../constants/enums.js";
-import { FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
-
 const router = express.Router();
 
-// Cache constants removed and imported from REFACTOR_CONSTANTS
+
+
+
+
+
+
+
+
+
+
+
 
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
   const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
@@ -162,7 +172,7 @@ function parseBase64Image(imgBase64: string): { data: string; mimeType: string }
   return { data: base64Data, mimeType };
 }
 
-router.post("/extract-style", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images } = req.body;
@@ -214,7 +224,7 @@ router.post("/extract-style", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/rewrite-prompts", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, newStyle, aspectRatio } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
@@ -290,7 +300,7 @@ router.post("/rewrite-prompts", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/optimize-prompts", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, visualConfig, aspectRatio } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
@@ -368,7 +378,7 @@ router.post("/optimize-prompts", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, newStyle, aspectRatio } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
@@ -421,7 +431,7 @@ router.post("/rewrite-thumbnails", async (req: Request, res: Response) => {
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
-router.post("/rewrite-thumbnails-character", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { thumbnails, characters, aspectRatio } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
@@ -475,7 +485,7 @@ router.post("/rewrite-thumbnails-character", async (req: Request, res: Response)
     return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: err.message });
   }
 });
-router.post("/analyze-character", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { script } = req.body;
@@ -495,7 +505,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
     });
 
     const parsed = safeParseJSON(response.text, []);
-    const characters = _.take(_.isArray(parsed) ? parsed : [], 3);
+    const characters = _.take(_.isArray(parsed) ? parsed : [], REFACTOR_CONSTANTS.HOOK_COUNT);
     return res.json({ characters });
   } catch (error: any) {
     const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
@@ -507,7 +517,7 @@ router.post("/analyze-character", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/extract-character", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images, characterDescription } = req.body;
@@ -562,7 +572,7 @@ router.post("/extract-character", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/rewrite-prompts-character", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
@@ -653,7 +663,7 @@ router.post("/rewrite-prompts-character", async (req: Request, res: Response) =>
   }
 });
 
-router.post("/hooks", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   const { originalInput, config = {}, hookType, duration, count, language, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_HOOKS, req.body, bypassCache);
@@ -723,7 +733,7 @@ router.post("/hooks", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/script", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   const { originalInput, config = {}, selectedHookText, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
@@ -1585,7 +1595,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
 
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
+    
     try {
       fs.writeFileSync(cachedFilePath, buffer);
     } catch (cacheErr) {
@@ -1778,10 +1788,10 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/align-voice", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { audioBase64, scenes, segment, projectId } = req.body;
+    const { audioBase64, scenes, segment, projectId, projectName } = req.body;
     if (!audioBase64) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
@@ -1799,7 +1809,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
     const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
 
-    const audioBuffer = Buffer.from(audioBase64, "base64");
+    const audioBuffer = Buffer.from(audioBase64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     fs.writeFileSync(audioPath, audioBuffer);
 
     fs.writeFileSync(scenesPath, jsonUtils.safeStringify(scenes, null, 2), ENCODING_UTF8);
@@ -1837,28 +1847,47 @@ router.post("/align-voice", async (req: Request, res: Response) => {
       }
     });
 
-    const runAligner = () => {
+    const runAligner = async () => {
+      let folderName = projectId || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+      if (projectId) {
+        try {
+          const project = await getProjectDetailFromDb(projectId);
+          if (project && project.name) {
+            folderName = getSafeFolderName(project.name);
+          } else if (projectName) {
+            folderName = getSafeFolderName(projectName);
+          }
+        } catch (err) {
+          if (projectName) {
+            folderName = getSafeFolderName(projectName);
+          }
+        }
+      }
+
       const pyCmd = getPythonCommand();
       let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       if (segment && projectId) {
-        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, ALIGN_CONFIG.VOICES_DIR);
+        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
-        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${ALIGN_CONFIG.VOICES_DIR}`;
+        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}`;
         cmd += ` "${outputDir}" "${urlPrefix}"`;
       }
       logger.log(`Running voice aligner command: ${cmd}`);
 
-      exec(cmd, (error, stdout, stderr) => {
-        try {
-          if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-          if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-        } catch (err) {
-          logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
-        }
+      exec(cmd, async (error, stdout, stderr) => {
+        const cleanup = () => {
+          try {
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+            if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
+          } catch (err) {
+            logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
+          }
+        };
 
         if (error) {
+          cleanup();
           logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
           if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
           if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
@@ -1877,12 +1906,50 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
           const rawResult = fs.readFileSync(outputPath, ENCODING_UTF8);
           const result = jsonUtils.safeParse<any>(rawResult, null);
-          if (!result) throw new Error("JSON Parse failed");
+          if (!result) throw new Error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL);
 
           fs.unlinkSync(outputPath);
 
+          if (segment && projectId && result.success && _.isArray(result.alignments)) {
+            const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
+            if (!fs.existsSync(outputDir)) {
+              fs.mkdirSync(outputDir, { recursive: true });
+            }
+
+            const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
+              return new Promise<void>((resolve) => {
+                const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
+                const ffmpegCmd = fs.existsSync(ffmpegBinary) ? `"${ffmpegBinary}"` : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
+                const cmdRun = `${ffmpegCmd} -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
+                exec(cmdRun, (err) => {
+                  if (err) {
+                    logger.error(`Error cutting segment: ${cmdRun}`, err);
+                  }
+                  resolve();
+                });
+              });
+            };
+
+            for (const align of result.alignments) {
+              const startVal = align.start;
+              const endVal = align.end;
+              if (!_.isNil(startVal) && !_.isNil(endVal)) {
+                const fileName = `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${align.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+                const outPath = path.join(outputDir, fileName);
+                await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+                if (fs.existsSync(outPath)) {
+                  const slicedBuffer = fs.readFileSync(outPath);
+                  align.audioBase64 = slicedBuffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+                  align.audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}/${fileName}`;
+                }
+              }
+            }
+          }
+
+          cleanup();
           return res.json(result);
         } catch (err: any) {
+          cleanup();
           logger.error(`Error parsing python_scripts/voice_aligner.py output: ${err.message}`);
           if (fs.existsSync(outputPath)) {
             try {
@@ -2537,10 +2604,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const scenes = _.get(req.body, "scenes");
-    const globalAudioUrl = _.get(req.body, "globalAudioUrl");
-    const quality = _.get(req.body, "quality");
-    const aspectRatio = _.get(req.body, "aspectRatio");
+    const { scenes, globalAudioUrl, quality, aspectRatio } = req.body;
     const jobId = randomUUID();
 
     renderQueueService.addJob(jobId, {
@@ -2550,11 +2614,11 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
       aspectRatio: aspectRatio as string
     });
 
-    await incrementFeatureUsage(req, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
     res.json({ success: true, jobId });
   } catch (error: any) {
-    logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER_ROUTE, error);
-    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ success: false, error: _.get(error, "message") });
+    const isVi = req.headers[SecurityConstants.HEADER_ACCEPT_LANGUAGE]?.includes(COMMON_STRINGS.VI);
+    logger.error(getBackendMsg("FFMPEG_RENDER_ERROR", isVi), error);
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
   }
 });
 

@@ -11,10 +11,11 @@ import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb } from "../utils/db.js";
+import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -1787,10 +1788,10 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/align-voice", async (req: Request, res: Response) => {
+router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { audioBase64, scenes, segment, projectId } = req.body;
+    const { audioBase64, scenes, segment, projectId, projectName } = req.body;
     if (!audioBase64) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
@@ -1808,7 +1809,7 @@ router.post("/align-voice", async (req: Request, res: Response) => {
     const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
     const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
 
-    const audioBuffer = Buffer.from(audioBase64, "base64");
+    const audioBuffer = Buffer.from(audioBase64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     fs.writeFileSync(audioPath, audioBuffer);
 
     fs.writeFileSync(scenesPath, jsonUtils.safeStringify(scenes, null, 2), ENCODING_UTF8);
@@ -1846,28 +1847,47 @@ router.post("/align-voice", async (req: Request, res: Response) => {
       }
     });
 
-    const runAligner = () => {
+    const runAligner = async () => {
+      let folderName = projectId || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+      if (projectId) {
+        try {
+          const project = await getProjectDetailFromDb(projectId);
+          if (project && project.name) {
+            folderName = getSafeFolderName(project.name);
+          } else if (projectName) {
+            folderName = getSafeFolderName(projectName);
+          }
+        } catch (err) {
+          if (projectName) {
+            folderName = getSafeFolderName(projectName);
+          }
+        }
+      }
+
       const pyCmd = getPythonCommand();
       let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       if (segment && projectId) {
-        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, ALIGN_CONFIG.VOICES_DIR);
+        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
-        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${ALIGN_CONFIG.VOICES_DIR}`;
+        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}`;
         cmd += ` "${outputDir}" "${urlPrefix}"`;
       }
       logger.log(`Running voice aligner command: ${cmd}`);
 
-      exec(cmd, (error, stdout, stderr) => {
-        try {
-          if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-          if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-        } catch (err) {
-          logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
-        }
+      exec(cmd, async (error, stdout, stderr) => {
+        const cleanup = () => {
+          try {
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
+            if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
+          } catch (err) {
+            logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
+          }
+        };
 
         if (error) {
+          cleanup();
           logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
           if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
           if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
@@ -1886,12 +1906,50 @@ router.post("/align-voice", async (req: Request, res: Response) => {
 
           const rawResult = fs.readFileSync(outputPath, ENCODING_UTF8);
           const result = jsonUtils.safeParse<any>(rawResult, null);
-          if (!result) throw new Error("JSON Parse failed");
+          if (!result) throw new Error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL);
 
           fs.unlinkSync(outputPath);
 
+          if (segment && projectId && result.success && _.isArray(result.alignments)) {
+            const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
+            if (!fs.existsSync(outputDir)) {
+              fs.mkdirSync(outputDir, { recursive: true });
+            }
+
+            const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
+              return new Promise<void>((resolve) => {
+                const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
+                const ffmpegCmd = fs.existsSync(ffmpegBinary) ? `"${ffmpegBinary}"` : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
+                const cmdRun = `${ffmpegCmd} -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
+                exec(cmdRun, (err) => {
+                  if (err) {
+                    logger.error(`Error cutting segment: ${cmdRun}`, err);
+                  }
+                  resolve();
+                });
+              });
+            };
+
+            for (const align of result.alignments) {
+              const startVal = align.start;
+              const endVal = align.end;
+              if (!_.isNil(startVal) && !_.isNil(endVal)) {
+                const fileName = `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${align.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+                const outPath = path.join(outputDir, fileName);
+                await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+                if (fs.existsSync(outPath)) {
+                  const slicedBuffer = fs.readFileSync(outPath);
+                  align.audioBase64 = slicedBuffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+                  align.audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}/${fileName}`;
+                }
+              }
+            }
+          }
+
+          cleanup();
           return res.json(result);
         } catch (err: any) {
+          cleanup();
           logger.error(`Error parsing python_scripts/voice_aligner.py output: ${err.message}`);
           if (fs.existsSync(outputPath)) {
             try {
