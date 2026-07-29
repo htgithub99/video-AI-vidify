@@ -133,6 +133,7 @@ export default function AutoVideoGenerator({
 
   const [projectName, setProjectName] = useState<string>(() => _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
   const [resumeMode, setResumeMode] = useState<boolean>(true);
+  const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -1215,8 +1216,8 @@ export default function AutoVideoGenerator({
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
-        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 scrollbar-none flex flex-col">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-3 p-6 relative h-fit flex flex-col justify-between overflow-visible">
+        <div className="lg:col-span-7 h-auto lg:h-full overflow-hidden p-5 flex flex-col">
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-4 p-6 relative lg:h-full flex flex-col justify-start overflow-y-auto scrollbar-none">
             <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="border-b border-slate-800/80 pb-4 flex items-center justify-between">
@@ -1247,8 +1248,9 @@ export default function AutoVideoGenerator({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
+                <Button
+                  type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                   onClick={() => setInputType(ProjectInputType.Script)}
                   className={cn(
                     "p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between",
@@ -1263,10 +1265,11 @@ export default function AutoVideoGenerator({
                     <span className="text-xs">{T.inputTypeScript}</span>
                   </div>
                   {_.isEqual(inputType, ProjectInputType.Script) && <Check className="w-4 h-4 text-rose-500" />}
-                </button>
+                </Button>
 
-                <button
-                  type="button"
+                <Button
+                  type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                   onClick={() => setInputType(ProjectInputType.Idea)}
                   className={cn(
                     "p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between",
@@ -1281,7 +1284,7 @@ export default function AutoVideoGenerator({
                     <span className="text-xs">{T.inputTypeIdea}</span>
                   </div>
                   {_.isEqual(inputType, ProjectInputType.Idea) && <Check className="w-4 h-4 text-rose-500" />}
-                </button>
+                </Button>
               </div>
 
               <textarea
@@ -1295,7 +1298,7 @@ export default function AutoVideoGenerator({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenre}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                     <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
                       value={genre}
@@ -1314,7 +1317,7 @@ export default function AutoVideoGenerator({
 
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblLanguage}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                     <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
                       value={language}
@@ -1333,7 +1336,7 @@ export default function AutoVideoGenerator({
 
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblDuration}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                     <Clock className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
                       value={duration}
@@ -1352,7 +1355,7 @@ export default function AutoVideoGenerator({
 
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblSplitStrategy}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                     <Sliders className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
                       value={splitStrategy}
@@ -1395,10 +1398,11 @@ export default function AutoVideoGenerator({
               </div>
 
               <div>
-                <button
-                  type="button"
+                <Button
+                  type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                   onClick={() => setIsVoiceDialogOpen(true)}
-                  className="w-full bg-slate-955/80 border border-slate-800 hover:border-rose-500/50 rounded-xl p-3 text-left flex items-center justify-between transition-all group"
+                  className="w-full bg-slate-955/80 border border-slate-800 hover:border-rose-500/50 rounded-xl p-3 text-left flex items-center justify-between transition-all group h-auto"
                   title={T.voiceBtnTooltip}
                 >
                   <div className="flex items-center gap-3">
@@ -1422,7 +1426,7 @@ export default function AutoVideoGenerator({
                     </div>
                   </div>
                   <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-rose-400" />
-                </button>
+                </Button>
               </div>
 
               <VoiceSelectionDialog
@@ -1453,123 +1457,143 @@ export default function AutoVideoGenerator({
                 </h3>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
-                    <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={generationMode}
-                      onChange={(e) => {
-                        const mode = e.target.value as any;
-                        setGenerationMode(mode);
-                        if (mode === ImageGenerationMode.GeminiChat) {
-                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
-                        } else {
-                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
-                        }
-                      }}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_LABS_FLOW}</option>
-                      <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_GEMINI_ROOM}</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              <div className="space-y-3.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
+                    <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                      <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <select
+                        value={generationMode}
+                        onChange={(e) => {
+                          const mode = e.target.value as any;
+                          setGenerationMode(mode);
+                          if (mode === ImageGenerationMode.GeminiChat) {
+                            setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                          } else {
+                            setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                          }
+                        }}
+                        className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                      >
+                        <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_LABS_FLOW}</option>
+                        <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_GEMINI_ROOM}</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblEngine}</span>
+                    <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                      <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <select
+                        value={imageGeneratorEngine}
+                        onChange={(e) => setImageGeneratorEngine(e.target.value as any)}
+                        className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                      >
+                        {_.map(getEngineOptions(generationMode, generateType), (opt) => (
+                          <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAspectRatio}</span>
+                    <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                      <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                        {_.map(_.values(AspectRatio), (r) => (
+                          <option key={r} value={r} className="bg-slate-955 text-slate-300">
+                            {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType}</span>
+                    <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                      <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                      <select
+                        value={generateType}
+                        onChange={(e) => {
+                          const type = e.target.value as any;
+                          setGenerateType(type);
+                          if (generationMode !== ImageGenerationMode.GeminiChat) {
+                            setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                          }
+                        }}
+                        className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                      >
+                        <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
+                        <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblEngine}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
-                    <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={imageGeneratorEngine}
-                      onChange={(e) => setImageGeneratorEngine(e.target.value as any)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      {_.map(getEngineOptions(generationMode, generateType), (opt) => (
-                        <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
+                <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-955/45">
+                  <Button
+                    type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                    variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                    onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
+                    className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] font-bold font-mono uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors h-auto p-0"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                      {T.advancedConfig}
+                    </span>
+                    <ChevronDown className={cn("w-4 h-4 text-slate-500 transition-transform duration-250", showAdvancedImageSettings && "rotate-180")} />
+                  </Button>
+                  {showAdvancedImageSettings && (
+                    <div className="px-3.5 pb-3.5 pt-1.5 grid grid-cols-2 gap-3.5 border-t border-slate-800/60 animate-fadeIn">
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
+                        <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblChromeHeadlessTooltip}>
+                          <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                          <select
+                            value={chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED}
+                            onChange={(e) => setChromeHeadless(e.target.value === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS)}
+                            className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                          >
+                            <option value={REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
+                            <option value={REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                        </div>
+                      </div>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAspectRatio}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
-                    <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      {_.map(_.values(AspectRatio), (r) => (
-                        <option key={r} value={r} className="bg-slate-955 text-slate-300">
-                          {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
-                    <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={generateType}
-                      onChange={(e) => {
-                        const type = e.target.value as any;
-                        setGenerateType(type);
-                        if (generationMode !== ImageGenerationMode.GeminiChat) {
-                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
-                        }
-                      }}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
-                      <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2" title={T.lblChromeHeadlessTooltip}>
-                    <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED}
-                      onChange={(e) => setChromeHeadless(e.target.value === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      <option value={REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
-                      <option value={REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblResumeModeTooltip}>{T.lblResumeMode}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2" title={T.lblResumeModeTooltip}>
-                    <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW}
-                      onChange={(e) => setResumeMode(e.target.value === REFACTOR_CONSTANTS.RESUME_MODE_RESUME)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      <option value={REFACTOR_CONSTANTS.RESUME_MODE_RESUME} className="bg-slate-955 text-slate-300">{T.optionResume}</option>
-                      <option value={REFACTOR_CONSTANTS.RESUME_MODE_NEW} className="bg-slate-955 text-slate-300">{T.optionNew}</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblResumeModeTooltip}>{T.lblResumeMode}</span>
+                        <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblResumeModeTooltip}>
+                          <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                          <select
+                            value={resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW}
+                            onChange={(e) => setResumeMode(e.target.value === REFACTOR_CONSTANTS.RESUME_MODE_RESUME)}
+                            className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                          >
+                            <option value={REFACTOR_CONSTANTS.RESUME_MODE_RESUME} className="bg-slate-955 text-slate-300">{T.optionResume}</option>
+                            <option value={REFACTOR_CONSTANTS.RESUME_MODE_NEW} className="bg-slate-955 text-slate-300">{T.optionNew}</option>
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="bg-slate-955/80 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row gap-3.5 shadow-inner items-stretch">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 <div
-                  className="bg-slate-900/40 border-[2px] border-dashed border-slate-800 hover:border-emerald-500/50 rounded-lg p-3 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer w-full md:w-60 shrink-0 min-h-[85px]"
+                  className="bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-emerald-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden"
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1594,40 +1618,35 @@ export default function AutoVideoGenerator({
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="p-1 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300 mb-1 shadow-lg">
-                    <Upload className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
+                    <div className="p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300 mb-1.5 shadow-lg">
+                      <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-emerald-400 transition-colors">
+                      {T.styleUploadTitle}
+                    </span>
+                    <span className="text-[8px] text-slate-505 leading-tight block truncate max-w-full">
+                      {T.styleUploadSub}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-200 block mb-0.5 whitespace-nowrap">
-                    {T.styleUploadTitle}
-                  </span>
-                  <span className="text-[8px] text-slate-500 leading-tight block whitespace-nowrap">
-                    {T.styleUploadSub}
-                  </span>
                 </div>
 
-                <div className="flex-1 flex flex-col min-w-0 w-full justify-between space-y-2">
-                  {!_.isEmpty(referenceImages) ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {_.map(referenceImages, (imgBase64, idx) => (
-                        <div key={idx} className="relative w-10 h-10 rounded-lg group shadow-sm">
-                          <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.STYLE_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
-                          <button
-                            type="button"
-                            onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                            className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={T.deleteStyleImgTooltip}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
+                {_.map(referenceImages, (imgBase64, idx) => (
+                  <div key={idx} className="relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-rose-500/30 transition-colors">
+                    <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.STYLE_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <Button
+                        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                        onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
+                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 h-auto p-0"
+                        title={T.deleteStyleImgTooltip}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center border border-dashed border-slate-800/80 rounded-lg bg-slate-900/20 text-slate-500 text-[10px] italic p-1.5 text-center">
-                      {T.styleUploadEmpty}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1670,9 +1689,9 @@ export default function AutoVideoGenerator({
                 </div>
               </div>
 
-              <div className="bg-slate-955/80 border border-slate-800 rounded-xl p-3 flex flex-col md:flex-row gap-3.5 shadow-inner items-stretch">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 <div
-                  className="bg-slate-900/40 border-[2px] border-dashed border-slate-800 hover:border-purple-500/50 rounded-lg p-3 transition-all flex flex-col items-center justify-center text-center relative group cursor-pointer w-full md:w-60 shrink-0 min-h-[85px]"
+                  className="bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-purple-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden"
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1697,40 +1716,35 @@ export default function AutoVideoGenerator({
                     }}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="p-1 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-purple-500/30 transition-all duration-300 mb-1 shadow-lg">
-                    <Upload className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-400 transition-colors" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
+                    <div className="p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-purple-500/30 transition-all duration-300 mb-1.5 shadow-lg">
+                      <Upload className="w-4 h-4 text-slate-400 group-hover:text-purple-400 transition-colors" />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-purple-400 transition-colors">
+                      {T.thumbUploadTitle}
+                    </span>
+                    <span className="text-[8px] text-slate-505 leading-tight block truncate max-w-full">
+                      {T.thumbUploadSub}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-200 block mb-0.5 whitespace-nowrap">
-                    {T.thumbUploadTitle}
-                  </span>
-                  <span className="text-[8px] text-slate-500 leading-tight block whitespace-nowrap">
-                    {T.thumbUploadSub}
-                  </span>
                 </div>
 
-                <div className="flex-1 flex flex-col min-w-0 w-full justify-between space-y-2">
-                  {!_.isEmpty(thumbnailReferenceImages) ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {_.map(thumbnailReferenceImages, (imgBase64, idx) => (
-                        <div key={idx} className="relative w-10 h-10 rounded-lg group shadow-sm">
-                          <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.THUMB_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-800" />
-                          <button
-                            type="button"
-                            onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                            className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-600 rounded-full flex items-center justify-center text-white text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={T.deleteThumbImgTooltip}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      ))}
+                {_.map(thumbnailReferenceImages, (imgBase64, idx) => (
+                  <div key={idx} className="relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-rose-500/30 transition-colors">
+                    <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.THUMB_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <Button
+                        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                        onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
+                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 h-auto p-0"
+                        title={T.deleteThumbImgTooltip}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center border border-dashed border-slate-800/80 rounded-lg bg-slate-900/20 text-slate-500 text-[10px] italic p-1.5 text-center">
-                      {T.thumbUploadEmpty}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1865,16 +1879,18 @@ export default function AutoVideoGenerator({
                       <div key={i} className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-2xl space-y-2">
                         <div className="flex items-start justify-between gap-3">
                           <p className="font-bold text-slate-100 text-xs leading-snug">{title.text}</p>
-                          <button
+                          <Button
+                            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                             onClick={() => {
                               navigator.clipboard.writeText(title.text);
                               alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TITLE);
                             }}
-                            className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                            className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto"
                             title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TITLE_TOOLTIP}
                           >
                             <Copy className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </div>
                         <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-900 text-[9px] font-mono">
                           <div>
@@ -1927,16 +1943,18 @@ export default function AutoVideoGenerator({
                     {_.map(activeCreatedProject.seo.descriptions || [], (desc, i) => (
                       <div key={i} className="bg-slate-950/60 border border-slate-800/80 p-3 rounded-2xl flex items-start justify-between gap-3">
                         <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{desc.text}</p>
-                        <button
+                        <Button
+                          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                          variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                           onClick={() => {
                             navigator.clipboard.writeText(desc.text);
                             alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_DESC);
                           }}
-                          className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0"
+                          className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto"
                           title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_DESC_TOOLTIP}
                         >
                           <Copy className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>

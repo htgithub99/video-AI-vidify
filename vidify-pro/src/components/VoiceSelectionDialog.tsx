@@ -73,6 +73,26 @@ const getReadableLanguage = (code: string, lang: "vi" | "en", isLocale: boolean 
 };
 
 
+const LANGUAGE_LABEL_MAP: Record<string, Record<"vi" | "en", string>> = {
+  "": { vi: "Tất cả", en: "All" },
+  "en": { vi: "Tiếng Anh", en: "English" },
+  "vi": { vi: "Tiếng Việt", en: "Vietnamese" },
+  "fr": { vi: "Tiếng Pháp", en: "French" },
+  "de": { vi: "Tiếng Đức", en: "German" },
+  "es": { vi: "Tiếng Tây Ban Nha", en: "Spanish" },
+  "ja": { vi: "Tiếng Nhật", en: "Japanese" },
+  "ko": { vi: "Tiếng Hàn", en: "Korean" },
+  "zh": { vi: "Tiếng Trung", en: "Chinese" },
+};
+
+const AGE_LABEL_MAP: Record<string, Record<"vi" | "en", string>> = {
+  "": { vi: "Tất cả", en: "All" },
+  "young": { vi: "Trẻ tuổi", en: "Young" },
+  "middle_aged": { vi: "Trung niên", en: "Middle Aged" },
+  "old": { vi: "Cao tuổi", en: "Elderly" },
+};
+
+
 export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   isOpen,
   onClose,
@@ -288,7 +308,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 >
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className="bg-slate-900 text-slate-200">
-                      {_.get(opt, "value")}
+                      {LANGUAGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>
@@ -337,11 +357,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                 >
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
                     <option key={_.get(opt, "value")} value={_.get(opt, "value")} className="bg-slate-900 text-slate-200">
-                      {_.get(opt, "value")}
+                      {AGE_LABEL_MAP[_.get(opt, "value")]?.[currentLang] || _.get(opt, "value")}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                <ChevronDown className="pointer-events-none absolute right-3 text-slate-450 w-4 h-4" />
               </div>
             </div>
           </div>

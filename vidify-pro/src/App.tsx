@@ -378,6 +378,9 @@ export default function App() {
           activeTab={activeTab}
           setActiveTab={(tab) => {
             if (_.isEqual(tab, AppTab.STUDIO) && !selectedProjectId) return;
+            if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab)) {
+              setSelectedProjectId(null);
+            }
             setActiveTab(tab);
           }}
           selectedProjectId={selectedProjectId}

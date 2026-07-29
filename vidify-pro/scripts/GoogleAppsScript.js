@@ -96,6 +96,8 @@ const _ = {
         if (this.isEqual(action, AppActions.ADMIN_UPDATE_ACCOUNT_STATUS)) return this.updateAccountStatus(params);
       }
 
+      if (this.isEqual(action, AppActions.ADMIN_LOGIN)) return this.adminLogin(params);
+
       if (this.isEqual(action, AppActions.VERIFY_KEY)) return this.verifyKey(params);
 
       const licenseKey = this.get(params, ApiFields.LICENSE_KEY);

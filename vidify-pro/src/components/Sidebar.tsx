@@ -44,7 +44,7 @@ export default function Sidebar({
       id: AppTab.AUTO_GENERATOR,
       label: SIDEBAR_TEXTS[currentLang].AUTO_CREATOR,
       icon: Zap,
-      requiresProject: false,
+      requiresProject: true,
     },
     {
       id: AppTab.STUDIO,

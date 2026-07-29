@@ -2,7 +2,7 @@ import { cn } from "../lib/utils";
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { VideoProject } from "../types.js";
-import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight } from "lucide-react";
+import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight, Image, Mic } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { COMMON_STRINGS, ERROR_MESSAGES } from "../constants/index.js";
@@ -10,6 +10,7 @@ import _ from "lodash";
 import { appError } from "../lib/logger.js";
 import { delayAsync } from "../lib/shared-utils.js";
 import { PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS, SortOrder } from "../constants/index.js";
+import { useLicense } from "../contexts/LicenseContext";
 
 const getGenreLabel = (genre: string, lang: Lang) => {
   const labels = PROJECT_LIST_TEXTS[lang].genreLabels;
@@ -35,6 +36,11 @@ export default function ProjectList({
 }: ProjectListProps) {
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
+  const { licenseInfo } = useLicense();
+  const limitVideo = licenseInfo?.limits?.video ?? 0;
+  const limitImage = licenseInfo?.limits?.image ?? 0;
+  const limitVoice = licenseInfo?.limits?.voice ?? 0;
+  const isUnlimited = licenseInfo?.limits?.unlimited ?? false;
 
   const [showModal, setShowModal] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
@@ -212,34 +218,53 @@ export default function ProjectList({
       </div>
 
       {isLoadingAction ? (
-        <div className="w-full animate-pulse space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {_.map(PROJECT_LIST_CONSTANTS.SKELETON_ITEMS, (i) => (
-              <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-                <div className="h-3 w-1/3 bg-slate-800 rounded mb-4"></div>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-slate-800/80 shrink-0"></div>
-                  <div className="space-y-2 w-full">
-                    <div className="h-4 bg-slate-800 rounded w-3/4"></div>
-                    <div className="h-3 bg-slate-800/80 rounded w-1/2"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-            <div className="h-3 w-1/4 bg-slate-800 rounded mb-5"></div>
-            <div className="flex flex-col sm:flex-row gap-5 items-start">
-              <div className="w-full sm:w-48 aspect-video bg-slate-800/80 rounded-xl shrink-0"></div>
-              <div className="flex-1 space-y-3 w-full">
-                <div className="h-4 bg-slate-800 rounded w-1/3"></div>
-                <div className="h-3 bg-slate-800/80 rounded w-full"></div>
-                <div className="h-3 bg-slate-800/80 rounded w-5/6"></div>
-                <div className="pt-2">
-                  <div className="h-8 w-24 bg-slate-800 rounded-lg"></div>
-                </div>
-              </div>
-            </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden animate-pulse">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-800 text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase font-black tracking-wider bg-slate-950/20">
+                  <th className="py-4 px-6 min-w-[280px]">{localT.colVideoProject}</th>
+                  <th className="py-4 px-4 text-center min-w-[100px]">{t.outputLang}</th>
+                  <th className="py-4 px-4 text-center min-w-[120px]">{localT.colCredits}</th>
+                  <th className="py-4 px-4 min-w-[140px]">{localT.colUpdatedAt}</th>
+                  <th className="py-4 px-6 text-right min-w-[150px]">{localT.colActions}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {_.map([1, 2, 3], (i) => (
+                  <tr key={i} className="border-b border-slate-800/60">
+                    <td className="py-4 px-6">
+                      <div className="flex items-start gap-4">
+                        <div className="w-24 h-14 bg-slate-800/50 rounded shrink-0"></div>
+                        <div className="space-y-2 w-full mt-1">
+                          <div className="h-3.5 bg-slate-800 rounded w-1/3"></div>
+                          <div className="h-3 bg-slate-800/60 rounded w-2/3"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <div className="inline-flex h-5 w-16 bg-slate-800/60 rounded-lg mx-auto"></div>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <div className="inline-flex h-4.5 w-12 bg-slate-800/60 rounded mx-auto"></div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3.5 h-3.5 bg-slate-800/60 rounded-full"></div>
+                        <div className="h-3 bg-slate-800/60 rounded w-24"></div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <div className="h-7 w-20 bg-slate-800/60 rounded-lg"></div>
+                        <div className="h-7 w-7 bg-slate-800/60 rounded-lg"></div>
+                        <div className="h-7 w-7 bg-slate-800/60 rounded-lg"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : filteredProjects.length === 0 ? (
@@ -278,6 +303,10 @@ export default function ProjectList({
                     minute: "2-digit",
                   });
 
+                  const imagesCount = _.filter(project.storyboard || [], (scene) => scene.assetType === "image" && !_.isEmpty(scene.assetUrl)).length;
+                  const videosCount = _.filter(project.storyboard || [], (scene) => scene.assetType === "video" && !_.isEmpty(scene.assetUrl)).length;
+                  const voiceCount = _.sumBy(project.storyboard || [], (scene) => (scene.script || scene.subtitle || "").length);
+
                   return (
                     <tr
                       key={project.id}
@@ -312,11 +341,38 @@ export default function ProjectList({
                         </span>
                       </td>
 
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-slate-200 text-[10px] font-bold font-mono">
-                          <Coins className="w-3.5 h-3.5 text-rose-500/80" />
-                          {project.creditsUsed.toLocaleString()} {t.pts}
-                        </span>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center justify-center gap-4 text-xs font-mono font-bold select-none">
+                          {/* Video */}
+                          <div className="flex items-center gap-1.5" title={localT.videoTooltip}>
+                            <Video className="w-4 h-4 text-blue-500" />
+                            <span className="text-slate-400">
+                              <strong className="text-blue-400">{videosCount}</strong>
+                              <span className="mx-0.5 text-slate-600">/</span>
+                              {isUnlimited ? "∞" : limitVideo.toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Image */}
+                          <div className="flex items-center gap-1.5" title={localT.imageTooltip}>
+                            <Image className="w-4 h-4 text-emerald-500" />
+                            <span className="text-slate-400">
+                              <strong className="text-emerald-400">{imagesCount}</strong>
+                              <span className="mx-0.5 text-slate-600">/</span>
+                              {isUnlimited ? "∞" : limitImage.toLocaleString()}
+                            </span>
+                          </div>
+
+                          {/* Voice */}
+                          <div className="flex items-center gap-1.5" title={localT.voiceTooltip}>
+                            <Mic className="w-4 h-4 text-amber-500" />
+                            <span className="text-slate-400">
+                              <strong className="text-amber-400">{voiceCount.toLocaleString()}</strong>
+                              <span className="mx-0.5 text-slate-600">/</span>
+                              {isUnlimited ? "∞" : limitVoice.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
                       </td>
 
                       <td className="py-4 px-4 text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
