@@ -276,7 +276,13 @@ export default function App() {
   };
 
   const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
-    setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p)));
+    setProjects((prev) => {
+      const exists = _.some(prev, { id: updated.id });
+      if (exists) {
+        return _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p));
+      }
+      return [...prev, updated];
+    });
 
     if (pendingSavesRef.current[updated.id]) {
       clearTimeout(pendingSavesRef.current[updated.id]);

@@ -1,10 +1,9 @@
 import { appLog, appError, createAppError } from "./logger";
-import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS } from "../constants";
+import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES } from "../constants";
 import { BatchDelayOption } from "../types";
 import _ from 'lodash';
 import { storageUtils } from './storage';
 import { jsonUtils } from "./json";
-
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY | typeof STORAGE_KEYS.LICENSE_KEY): string => {
   return storageUtils.get(keyName) || "";
@@ -12,8 +11,8 @@ export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | ty
 
 export const safeSystemFetch = async (url: string, payload: any) => {
   try {
-    const geminiKey = getStoredApiKey("GEMINI_API_KEY");
-    const ai33Key = getStoredApiKey("AI33_API_KEY");
+    const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
+    const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
 
     const response = await fetch(url, {
       method: "POST",
@@ -36,20 +35,83 @@ export const safeSystemFetch = async (url: string, payload: any) => {
     }
 
     if (_.eq(response.ok, false)) {
-      throw createAppError(data?.error || `API Error: ${response.status}`);
+      throw createAppError(data?.error || `${ERROR_MESSAGES.API_ERROR_PREFIX}${response.status}`);
     }
 
     return { success: true, data };
   } catch (error: any) {
-    appError("SYSTEM_FLOW_ERROR", url, error);
+    appError(ERROR_MESSAGES.SYSTEM_FLOW_ERROR, url, error);
     return { success: false, error: error.message };
+  }
+};
+
+export const safeSystemFetchStream = async (
+  url: string,
+  payload: any,
+  onLine: (data: any) => void,
+  onComplete?: () => void,
+  onError?: (err: any) => void,
+  cancelRef?: { current: boolean }
+) => {
+  try {
+    const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
+    const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
+    const licenseKey = getStoredApiKey(STORAGE_KEYS.LICENSE_KEY);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-gemini-api-key": geminiKey,
+        "x-ai33-api-key": ai33Key,
+        "x-license-key": licenseKey
+      },
+      body: jsonUtils.safeStringify(payload),
+    });
+
+    if (!response.body) {
+      throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      if (cancelRef && cancelRef.current) {
+        reader.cancel().catch(() => {});
+        break;
+      }
+
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = _.split(buffer, "\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (_.isEmpty(_.trim(line))) continue;
+        try {
+          const result = jsonUtils.safeParse<any>(line, null);
+          if (result) {
+            onLine(result);
+          }
+        } catch (e) {
+        }
+      }
+    }
+    if (onComplete) onComplete();
+  } catch (error: any) {
+    appError(ERROR_MESSAGES.STREAM_FLOW_ERROR, url, error);
+    if (onError) onError(error);
   }
 };
 
 export const delayAsync = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export const randomDelay = (min: number = 1000, max: number = 2000): Promise<number> => {
-  const ms = _.floor(_.add(_.multiply(Math.random(), _.add(_.subtract(max, min), 1)), min));
+  const ms = _.random(min, max);
   return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
 };
 
@@ -65,5 +127,18 @@ export const getBatchDelayMs = (option?: BatchDelayOption | string): number => {
   if (_.eq(opt, BatchDelayOption.Random123)) {
     return _.sample([1000, 2000, 3000]) || 1000;
   }
-  return _.add(_.floor(_.multiply(Math.random(), 1001)), 1000);
+  return _.random(1000, 2000);
 };
+
+export const readFilesAsDataURL = (files: FileList, callback: (result: string) => void): void => {
+  _.forEach(_.toArray(files), (file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (_.isString(reader.result)) {
+        callback(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+};
+

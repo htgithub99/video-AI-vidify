@@ -135,18 +135,6 @@ import { requestContext } from "../utils/requestContext.js";
 
 const router = express.Router();
 
-
-
-
-
-
-
-
-
-
-
-
-
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
   const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
   if (!_.isEmpty(licenseKey)) {
@@ -1848,21 +1836,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
     });
 
     const runAligner = async () => {
-      let folderName = projectId || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      if (projectId) {
-        try {
-          const project = await getProjectDetailFromDb(projectId);
-          if (project && project.name) {
-            folderName = getSafeFolderName(project.name);
-          } else if (projectName) {
-            folderName = getSafeFolderName(projectName);
-          }
-        } catch (err) {
-          if (projectName) {
-            folderName = getSafeFolderName(projectName);
-          }
-        }
-      }
+      let folderName = projectId || (projectName ? getSafeFolderName(projectName) : "default_project");
 
       const pyCmd = getPythonCommand();
       let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
@@ -2046,7 +2020,6 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${safeFilePath}" "${tempOutputPath}" "${optsJsonPath}"`);
     const pythonProcess = spawn(pyCmd, ["-u", scriptPath, safeFilePath, tempOutputPath, optsJsonPath]);
     
-
     pythonProcess.stdout.on("data", (data) => {
       _.forEach(_.split(data.toString(), "\n"), (line) => {
         const trimmed = _.trim(line);

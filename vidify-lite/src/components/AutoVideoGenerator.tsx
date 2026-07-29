@@ -13,8 +13,9 @@ import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
+import { formatTimeHelper } from "../utils/helpers";
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
-import { safeSystemFetch } from "../lib/shared-utils";
+import { safeSystemFetch, safeSystemFetchStream, readFilesAsDataURL } from "../lib/shared-utils";
 import {
   Zap,
   Sparkles,
@@ -40,6 +41,7 @@ import {
   ImageIcon,
   Target,
   Copy,
+  RefreshCw,
 } from "lucide-react";
 
 interface AutoVideoGeneratorProps {
@@ -122,16 +124,15 @@ export default function AutoVideoGenerator({
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [isExtractingStyle, setIsExtractingStyle] = useState<boolean>(false);
 
   const [characterImages] = useState<string[]>([]);
 
   const [thumbnailCount, setThumbnailCount] = useState<number>(2);
   const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
-  const [isExtractingThumbnailStyle, setIsExtractingThumbnailStyle] = useState<boolean>(false);
 
   const [projectName, setProjectName] = useState<string>(() => _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+  const [resumeMode, setResumeMode] = useState<boolean>(true);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -158,9 +159,11 @@ export default function AutoVideoGenerator({
           if (parsed.projectName) setProjectName(parsed.projectName);
           if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
           if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
+          if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
+          if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
         }
       } catch (e) {
-        logger.error("Error loading config", e);
+        logger.error(T.errLoadConfig, e);
       } finally {
         setIsConfigLoaded(true);
       }
@@ -190,6 +193,8 @@ export default function AutoVideoGenerator({
       projectName,
       referenceImages,
       thumbnailReferenceImages,
+      resumeMode,
+      chromeHeadless,
     };
     storageUtils.setAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
   }, [
@@ -197,7 +202,7 @@ export default function AutoVideoGenerator({
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
-    projectName, referenceImages, thumbnailReferenceImages
+    projectName, referenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless
   ]);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
@@ -351,30 +356,19 @@ export default function AutoVideoGenerator({
   };
 
   const handleStyleFilesUpload = (files: FileList) => {
-    _.forEach(Array.from(files), (file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (_.isString(reader.result)) {
-          setReferenceImages((prev) => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+    readFilesAsDataURL(files, (result) => {
+      setReferenceImages((prev) => [...prev, result]);
     });
     addLog(T.logStyleUploaded(files.length));
   };
 
   const handleThumbnailStyleFilesUpload = (files: FileList) => {
-    _.forEach(Array.from(files), (file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (_.isString(reader.result)) {
-          setThumbnailReferenceImages((prev) => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
+    readFilesAsDataURL(files, (result) => {
+      setThumbnailReferenceImages((prev) => [...prev, result]);
     });
     addLog(T.logThumbUploaded(files.length));
   };
+
 
   const handleStartAutoGenerate = async () => {
     if (_.isEmpty(_.trim(scriptContent))) {
@@ -400,93 +394,106 @@ export default function AutoVideoGenerator({
 
     try {
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
-      const newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      const newProj: VideoProject = {
-        id: newProjectId,
-        name: _.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-        description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: REFACTOR_CONSTANTS.STATUS_GENERATING,
-        input: {
-          type: inputType,
-          content: scriptContent,
-        },
-        config: {
-          genre,
-          language,
-          duration,
-          rewriteLevel,
-          similarityReduction,
-          creativityLevel,
-          factCheck,
-          audience,
-          writingStyle,
-          splitStrategy,
-        },
-        hookConfig: {
-          type: hookStrategy,
-          duration: hookDuration,
-          count: 3,
-          positions: hookPosition as any,
-          versions: [],
-        },
-        voiceConfig: {
-          provider: voiceProvider,
-          audioType: REFACTOR_CONSTANTS.AVG_AUDIO_TYPE_TTS as any,
-          gender: Gender.Male,
-          age: AgeGroup.Adult,
-          emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
-          speed: voiceSpeed,
-          pitch: voicePitch,
-          volume: voiceVolume,
-          voiceURI,
-          voiceName,
-        },
-        visualConfig: {
-          source: REFACTOR_CONSTANTS.AVG_VISUAL_SOURCE_AUTO,
-          style: stylePreset,
-          quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-          density: 5,
-          characterConsistency: true,
-          assetsMode: REFACTOR_CONSTANTS.AVG_ASSETS_MODE_MIXED as any,
-          imageGeneratorEngine,
-          generateType,
-          aspectRatio,
-          promptInputMethod,
-          generateCount: sampleCount,
-          chromeHeadless,
-          generationMode,
-          geminiChatSpeed,
-          batchDelay,
-          videoDuration,
-          thumbnailCount,
-          thumbnailReferenceImages,
-          thumbnailReferencePrompt: thumbnailStylePreset,
-          referenceImages,
-          referencePrompt: stylePreset,
-          characters: [
-            {
-              id: REFACTOR_CONSTANTS.AVG_CHARACTER_ID_DEFAULT,
-              name: PRESET_CONSTANTS.CHARACTER_NAME,
-              description: PRESET_CONSTANTS.CHARACTER_BIO,
-              images: characterImages,
-            },
-          ],
-        },
-        seoConfig: {
-          numTitles: 3,
-          numDescriptions: 1,
-          numHashtags: 5,
-          numTags: 10,
-        },
-        creditsUsed: 0,
-      };
+      let newProjectId = "";
+      let newProj: VideoProject;
+
+      if (resumeMode && activeCreatedProject) {
+        newProjectId = activeCreatedProject.id;
+        newProj = {
+          ...activeCreatedProject,
+          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+        };
+        appendLog(T.logResumeProject(newProj.name));
+      } else {
+        newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        newProj = {
+          id: newProjectId,
+          name: _.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+          input: {
+            type: inputType,
+            content: scriptContent,
+          },
+          config: {
+            genre,
+            language,
+            duration,
+            rewriteLevel,
+            similarityReduction,
+            creativityLevel,
+            factCheck,
+            audience,
+            writingStyle,
+            splitStrategy,
+          },
+          hookConfig: {
+            type: hookStrategy,
+            duration: hookDuration,
+            count: 3,
+            positions: hookPosition as any,
+            versions: [],
+          },
+          voiceConfig: {
+            provider: voiceProvider,
+            audioType: REFACTOR_CONSTANTS.AVG_AUDIO_TYPE_TTS as any,
+            gender: Gender.Male,
+            age: AgeGroup.Adult,
+            emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
+            speed: voiceSpeed,
+            pitch: voicePitch,
+            volume: voiceVolume,
+            voiceURI,
+            voiceName,
+          },
+          visualConfig: {
+            source: REFACTOR_CONSTANTS.AVG_VISUAL_SOURCE_AUTO,
+            style: stylePreset,
+            quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+            density: 5,
+            characterConsistency: true,
+            assetsMode: REFACTOR_CONSTANTS.AVG_ASSETS_MODE_MIXED as any,
+            imageGeneratorEngine,
+            generateType,
+            aspectRatio,
+            promptInputMethod,
+            generateCount: sampleCount,
+            chromeHeadless,
+            generationMode,
+            geminiChatSpeed,
+            batchDelay,
+            videoDuration,
+            thumbnailCount,
+            thumbnailReferenceImages,
+            thumbnailReferencePrompt: thumbnailStylePreset,
+            referenceImages,
+            referencePrompt: stylePreset,
+            characters: [
+              {
+                id: REFACTOR_CONSTANTS.AVG_CHARACTER_ID_DEFAULT,
+                name: PRESET_CONSTANTS.CHARACTER_NAME,
+                description: PRESET_CONSTANTS.CHARACTER_BIO,
+                images: characterImages,
+              },
+            ],
+          },
+          seoConfig: {
+            numTitles: 3,
+            numDescriptions: 1,
+            numHashtags: 5,
+            numTags: 10,
+          },
+          creditsUsed: 0,
+        };
+      }
 
       await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
       setActiveCreatedProject(newProj);
 
       const syncProject = async (proj: VideoProject) => {
+        const currentLogs = _.clone(logs);
         const finalProj = {
           ...proj,
           generationLogs: currentLogs,
@@ -500,210 +507,380 @@ export default function AutoVideoGenerator({
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
       setStepProgress(10);
 
-      // Bước 1: Viết lại kịch bản (Script generation) & Phân tách phân cảnh (Storyboard Split)
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_WRITE);
-      const scriptPayload = {
-        originalInput: scriptContent,
-        inputType: inputType,
-        config: {
-          ...newProj.config,
-          hookConfig: newProj.hookConfig,
-        },
-        selectedHookText: "",
-        bypassCache: true,
-      };
+      let realScript = "";
+      let chapters = [];
+      let factCheckNotes = "";
+      let realScenes = [];
+      let isScriptCached = false;
 
-      const scriptRes = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, scriptPayload);
-      if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
-        throw new Error(scriptRes.error || scriptRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_SCRIPT_REWRITE);
+      if (resumeMode && !_.isEmpty(newProj.scriptRewritten) && !_.isEmpty(newProj.storyboard)) {
+        realScript = newProj.scriptRewritten;
+        chapters = newProj.chapters || [];
+        factCheckNotes = newProj.factCheckNotes || "";
+        realScenes = _.cloneDeep(newProj.storyboard);
+        isScriptCached = true;
+        appendLog(T.logResumeScript);
+        setStepProgress(30);
       }
 
-      let realScript = scriptRes.data.rewrittenScript || scriptContent;
-      let chapters = scriptRes.data.chapters || [];
-      let factCheckNotes = scriptRes.data.factCheckNotes || "";
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
-      setStepProgress(20);
+      if (!isScriptCached) {
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_WRITE);
+        const scriptPayload = {
+          originalInput: scriptContent,
+          inputType: inputType,
+          config: {
+            ...newProj.config,
+            hookConfig: newProj.hookConfig,
+          },
+          selectedHookText: "",
+          bypassCache: true,
+        };
 
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
-      const storyboardPayload = {
-        rewrittenScript: realScript,
-        chapters: chapters,
-        config: {
-          ...newProj.config,
-          ...newProj.voiceConfig,
-          visualStylePreset: newProj.visualConfig.style,
-          aspectRatio: newProj.visualConfig.aspectRatio,
-          imageQuality: newProj.visualConfig.quality,
-        },
-        visualStyle: newProj.visualConfig.style || "Cinematic",
-        referenceImages: newProj.visualConfig.referenceImages || [],
-        referenceStyle: newProj.visualConfig.referencePrompt,
-        visualDensity: 5,
-        bypassCache: true,
-      };
+        const scriptRes = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, scriptPayload);
+        if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
+          throw new Error(scriptRes.error || scriptRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_SCRIPT_REWRITE);
+        }
 
-      const storyboardRes = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, storyboardPayload);
-      if (!storyboardRes.success || !storyboardRes.data || storyboardRes.data.error) {
-        throw new Error(storyboardRes.error || storyboardRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_STORYBOARD_SPLIT);
+        realScript = scriptRes.data.rewrittenScript || scriptContent;
+        chapters = scriptRes.data.chapters || [];
+        factCheckNotes = scriptRes.data.factCheckNotes || "";
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
+        setStepProgress(20);
+
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
+        const storyboardPayload = {
+          rewrittenScript: realScript,
+          chapters: chapters,
+          config: {
+            ...newProj.config,
+            ...newProj.voiceConfig,
+            visualStylePreset: newProj.visualConfig.style,
+            aspectRatio: newProj.visualConfig.aspectRatio,
+            imageQuality: newProj.visualConfig.quality,
+          },
+          visualStyle: newProj.visualConfig.style || "Cinematic",
+          referenceImages: newProj.visualConfig.referenceImages || [],
+          referenceStyle: newProj.visualConfig.referencePrompt,
+          visualDensity: 5,
+          bypassCache: true,
+        };
+
+        const storyboardRes = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, storyboardPayload);
+        if (!storyboardRes.success || !storyboardRes.data || storyboardRes.data.error) {
+          throw new Error(storyboardRes.error || storyboardRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_STORYBOARD_SPLIT);
+        }
+
+        realScenes = storyboardRes.data.scenes || [];
+        if (_.isEmpty(realScenes)) {
+          throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
+        }
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
+        setStepProgress(30);
+
+        const scriptUpdatedProj = {
+          ...newProj,
+          scriptRewritten: realScript,
+          factCheckNotes,
+          chapters,
+          storyboard: realScenes
+        };
+        await syncProject(scriptUpdatedProj);
+        newProj = scriptUpdatedProj;
       }
 
-      let realScenes = storyboardRes.data.scenes || [];
-      if (_.isEmpty(realScenes)) {
-        throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
-      }
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
-      setStepProgress(30);
+      let globalAudioBase64 = "";
+      let globalAudioUrl = "";
+      let isVoiceCached = false;
 
-      const scriptUpdatedProj = {
-        ...newProj,
-        scriptRewritten: realScript,
-        factCheckNotes,
-        chapters,
-        storyboard: realScenes
-      };
-      await syncProject(scriptUpdatedProj);
-
-      // Bước 2: Tạo giọng đọc và căn khớp (Voice & Alignment)
-      setStepProgress(35);
-      setCurrentStepIndex(2);
-
-      const formatTimeHelper = (seconds: number): string => {
-        const mins = Math.floor(seconds / 60);
-        const secs = (seconds % 60).toFixed(2).padStart(5, "0");
-        return `${String(mins).padStart(2, "0")}:${secs}`;
-      };
-
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, voiceName || "Mặc định"));
-      const voicePayload = {
-        text: realScript,
-        voiceURI: voiceURI,
-        voice_id: voiceURI,
-        provider: voiceProvider,
-        speed: voiceSpeed,
-        pitch: voicePitch,
-        volume: voiceVolume,
-        gender: Gender.Male,
-        age: AgeGroup.Adult,
-        emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
-      };
-
-      const ttsRes = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, voicePayload);
-      if (!ttsRes.success || !ttsRes.data || !ttsRes.data.success || !ttsRes.data.audioBase64) {
-        throw new Error(ttsRes.error || ttsRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED);
+      if (resumeMode && newProj.voiceConfig?.audioBase64) {
+        globalAudioBase64 = newProj.voiceConfig.audioBase64;
+        globalAudioUrl = newProj.voiceConfig.audioUrl || "";
+        isVoiceCached = true;
+        appendLog(T.logResumeVoice);
+        setStepProgress(50);
       }
 
-      const globalAudioBase64 = ttsRes.data.audioBase64;
-      const globalAudioUrl = ttsRes.data.audioUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_TTS_SUCCESS);
-      setStepProgress(50);
+      let voiceUpdatedProj = newProj;
+      if (!isVoiceCached) {
+        setStepProgress(35);
+        setCurrentStepIndex(2);
 
-      let voiceUpdatedProj: VideoProject = {
-        ...scriptUpdatedProj,
-        storyboard: realScenes,
-        voiceConfig: {
-          ...(scriptUpdatedProj.voiceConfig || {} as any),
-          audioType: AUTO_GENERATOR_CONSTANTS.AUDIO_TYPE_TTS as any,
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, voiceName || "Mặc định"));
+        const voicePayload = {
+          text: realScript,
+          voiceURI: voiceURI,
+          voice_id: voiceURI,
           provider: voiceProvider,
-          audioBase64: globalAudioBase64,
-          audioUrl: globalAudioUrl
-        } as VoiceConfig
-      };
-      await syncProject(voiceUpdatedProj);
+          speed: voiceSpeed,
+          pitch: voicePitch,
+          volume: voiceVolume,
+          gender: Gender.Male,
+          age: AgeGroup.Adult,
+          emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
+        };
 
-      // Bước 3: Đồng nhất phong cách (Style Consistency)
-      if (!_.isEmpty(referenceImages)) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-        const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: referenceImages });
-        if (extractStyleRes.success && extractStyleRes.data?.style) {
-          const extractedStyle = extractStyleRes.data.style;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, `"${extractedStyle.substring(0, 60)}..."`));
-
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY);
-          const rewriteStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, {
-            storyboard: realScenes,
-            newStyle: extractedStyle,
-            aspectRatio: aspectRatio,
-          });
-          if (rewriteStyleRes.success && rewriteStyleRes.data?.storyboard) {
-            realScenes = rewriteStyleRes.data.storyboard;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY_SUCCESS);
-          }
+        const ttsRes = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, voicePayload);
+        if (!ttsRes.success || !ttsRes.data || !ttsRes.data.success || !ttsRes.data.audioBase64) {
+          throw new Error(ttsRes.error || ttsRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED);
         }
+
+        globalAudioBase64 = ttsRes.data.audioBase64;
+        globalAudioUrl = ttsRes.data.audioUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_TTS_SUCCESS);
+        setStepProgress(50);
+
+        voiceUpdatedProj = {
+          ...newProj,
+          storyboard: realScenes,
+          voiceConfig: {
+            ...(newProj.voiceConfig || {} as any),
+            audioType: AUTO_GENERATOR_CONSTANTS.AUDIO_TYPE_TTS as any,
+            provider: voiceProvider,
+            audioBase64: globalAudioBase64,
+            audioUrl: globalAudioUrl
+          } as VoiceConfig
+        };
+        await syncProject(voiceUpdatedProj);
+      } else {
+        voiceUpdatedProj = {
+          ...newProj,
+          storyboard: realScenes,
+          voiceConfig: {
+            ...(newProj.voiceConfig || {} as any),
+            audioBase64: globalAudioBase64,
+            audioUrl: globalAudioUrl
+          } as VoiceConfig
+        };
       }
 
-      // Bước 4: Đồng nhất nhân vật (Character Consistency)
-      if (!_.isEmpty(characterImages)) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
-        const extractCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, {
-          images: characterImages,
-          characterDescription: PRESET_CONSTANTS.CHARACTER_BIO,
+      let currentStylePreset = stylePreset;
+      let currentThumbnailStyle = thumbnailStylePreset;
+
+      if (!isScriptCached) {
+        if (!_.isEmpty(referenceImages)) {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
+          const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: referenceImages });
+          if (extractStyleRes.success && extractStyleRes.data?.style) {
+            const extractedStyle = extractStyleRes.data.style;
+            currentStylePreset = extractedStyle;
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(
+              SecurityConstants.PLACEHOLDER_0,
+              _.join([
+                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE,
+                _.truncate(extractedStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }),
+                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE
+              ], REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+            ));
+            setStylePreset(extractedStyle);
+
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY);
+            const rewriteStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, {
+              storyboard: realScenes,
+              newStyle: extractedStyle,
+              aspectRatio: aspectRatio,
+            });
+            if (rewriteStyleRes.success && rewriteStyleRes.data?.storyboard) {
+              realScenes = rewriteStyleRes.data.storyboard;
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY_SUCCESS);
+            }
+          }
+        }
+
+        if (!_.isEmpty(thumbnailReferenceImages)) {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
+          const extractThumbStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: thumbnailReferenceImages });
+          if (extractThumbStyleRes.success && extractThumbStyleRes.data?.style) {
+            currentThumbnailStyle = extractThumbStyleRes.data.style;
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
+              SecurityConstants.PLACEHOLDER_0,
+              _.join([
+                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE,
+                _.truncate(currentThumbnailStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }),
+                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE
+              ], REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+            ));
+            setThumbnailStylePreset(currentThumbnailStyle);
+          }
+        }
+
+        voiceUpdatedProj = {
+          ...voiceUpdatedProj,
+          visualConfig: {
+            ...(voiceUpdatedProj.visualConfig || {} as any),
+            style: currentStylePreset,
+            referencePrompt: currentStylePreset,
+            thumbnailReferencePrompt: currentThumbnailStyle,
+          }
+        };
+        await syncProject(voiceUpdatedProj);
+
+        if (!_.isEmpty(characterImages)) {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
+          const extractCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, {
+            images: characterImages,
+            characterDescription: PRESET_CONSTANTS.CHARACTER_BIO,
+          });
+          if (extractCharRes.success && extractCharRes.data?.characterPrompt) {
+            const characterPrompt = extractCharRes.data.characterPrompt;
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT_SUCCESS);
+
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
+            const rewriteCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
+              storyboard: realScenes,
+              characters: [{ name: PRESET_CONSTANTS.CHARACTER_NAME, prompt: characterPrompt }],
+              aspectRatio: aspectRatio,
+            });
+            if (rewriteCharRes.success && rewriteCharRes.data?.storyboard) {
+              realScenes = rewriteCharRes.data.storyboard;
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
+            }
+          }
+        }
+
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
+        const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
+          storyboard: realScenes,
+          visualConfig: voiceUpdatedProj.visualConfig,
+          aspectRatio: aspectRatio,
+          language: language,
         });
-        if (extractCharRes.success && extractCharRes.data?.characterPrompt) {
-          const characterPrompt = extractCharRes.data.characterPrompt;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT_SUCCESS);
-
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
-          const rewriteCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
-            storyboard: realScenes,
-            characters: [{ name: PRESET_CONSTANTS.CHARACTER_NAME, prompt: characterPrompt }],
-            aspectRatio: aspectRatio,
-          });
-          if (rewriteCharRes.success && rewriteCharRes.data?.storyboard) {
-            realScenes = rewriteCharRes.data.storyboard;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
-          }
+        if (optimizeRes.success && optimizeRes.data?.storyboard) {
+          realScenes = optimizeRes.data.storyboard;
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
         }
-      }
-
-      // Bước 5: Tối ưu hóa câu lệnh tạo ảnh nâng cao (Prompt Optimization)
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
-      const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
-        storyboard: realScenes,
-        visualConfig: voiceUpdatedProj.visualConfig,
-        aspectRatio: aspectRatio,
-        language: language,
-      });
-      if (optimizeRes.success && optimizeRes.data?.storyboard) {
-        realScenes = optimizeRes.data.storyboard;
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
+      } else {
+        currentStylePreset = voiceUpdatedProj.visualConfig?.style || stylePreset;
+        currentThumbnailStyle = voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt || thumbnailStylePreset;
       }
       setStepProgress(60);
 
-      // Bước 6: Tạo ảnh phân cảnh hàng loạt (Scene Image Generation)
       setStepProgress(65);
       setCurrentStepIndex(3);
       const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
 
-      for (let i = 0; i < realScenes.length; i++) {
-        const sc = _.get(realScenes, i);
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(realScenes.length)));
-        try {
-          const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-            prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-            style: stylePreset,
-            visualConfig: {
-              generationMode,
-              imageGeneratorEngine,
-              aspectRatio,
-              generateType,
-              chromeHeadless
+      const targetScenesToGen = _.filter(realScenes, (sc) => {
+        if (resumeMode && (!_.isEmpty(sc.assetUrl) || !_.isEmpty(sc.assetUrls))) {
+          return false;
+        }
+        return true;
+      });
+
+      if (resumeMode) {
+        realScenes.forEach((sc, idx) => {
+          if (!_.isEmpty(sc.assetUrl) || !_.isEmpty(sc.assetUrls)) {
+            appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length));
+          }
+        });
+      }
+
+      if (targetScenesToGen.length > 0) {
+        const visualConfigPayload = {
+          ...(voiceUpdatedProj.visualConfig || {}),
+          generationMode,
+          imageGeneratorEngine,
+          aspectRatio,
+          generateType,
+          chromeHeadless,
+          geminiChatSpeed,
+          style: currentStylePreset,
+        };
+        const sandboxConfigPayload = {
+          projectId: voiceUpdatedProj.id
+        };
+
+        if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
+          appendLog(T.logBatchImageStreamStart);
+          try {
+            const batchItems = _.map(targetScenesToGen, (s) => ({
+              sceneId: s.id,
+              prompt: _.get(s, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(s, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+            }));
+
+            let completedCount = 0;
+            await safeSystemFetchStream(
+              API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
+              {
+                items: batchItems,
+                visualConfig: visualConfigPayload,
+                style: currentStylePreset,
+                sandboxConfig: sandboxConfigPayload
+              },
+              (result) => {
+                if (result && result.success && result.base64) {
+                  const imageUrl = `${REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX}${result.base64}`;
+                  const sc = _.find(realScenes, (s) => _.eq(s.id, result.sceneId));
+                  if (sc) {
+                    sc.assetUrl = imageUrl;
+                    sc.assetUrls = [imageUrl];
+                    completedCount++;
+                    appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, targetScenesToGen.length));
+                  }
+                } else {
+                  appendLog(T.logBatchImageSceneError(result?.sceneId || "unknown", result?.warning || "Unknown warning"));
+                }
+              }
+            );
+          } catch (e: any) {
+            appendLog(T.logBatchStreamErrorFallback(e.message));
+            for (let i = 0; i < targetScenesToGen.length; i++) {
+              const sc = targetScenesToGen[i];
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
+              try {
+                const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+                  prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+                  style: currentStylePreset,
+                  resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
+                  bypassCache: false,
+                  engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+                  sandboxConfig: sandboxConfigPayload,
+                  visualConfig: visualConfigPayload
+                });
+                if (imgRes.success && imgRes.data) {
+                  const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+                  if (base64Val) {
+                    const dataUrl = `${REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX}${base64Val}`;
+                    sc.assetUrl = dataUrl;
+                    sc.assetUrls = [dataUrl];
+                  }
+                }
+              } catch (err) {
+                appendLog(T.logFallbackSceneError(sc.id));
+              }
             }
-          });
-          if (imgRes.success && imgRes.data) {
-            const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
-            const fallbackUrl = _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
-            if (base64Val) {
-              const dataUrl = `data:image/jpeg;base64,${base64Val}`;
-              sc.assetUrl = dataUrl;
-              sc.assetUrls = [dataUrl];
-            } else if (fallbackUrl) {
-              sc.assetUrl = fallbackUrl;
-              sc.assetUrls = [fallbackUrl];
+          } finally {
+            fetch(`${window.location.origin}${API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES}`, { method: "POST" }).catch(() => {});
+          }
+        } else {
+          for (let i = 0; i < targetScenesToGen.length; i++) {
+            const sc = targetScenesToGen[i];
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
+            try {
+              const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+                prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+                style: currentStylePreset,
+                resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
+                bypassCache: false,
+                engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+                sandboxConfig: sandboxConfigPayload,
+                visualConfig: visualConfigPayload
+              });
+              if (imgRes.success && imgRes.data) {
+                const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+                const fallbackUrl = _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+                if (base64Val) {
+                  const dataUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, base64Val], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                  sc.assetUrl = dataUrl;
+                  sc.assetUrls = [dataUrl];
+                } else if (fallbackUrl) {
+                  sc.assetUrl = fallbackUrl;
+                  sc.assetUrls = [fallbackUrl];
+                }
+              }
+            } catch (e) {
+              appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
             }
           }
-        } catch (e) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
         }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
@@ -715,113 +892,175 @@ export default function AutoVideoGenerator({
       };
       await syncProject(imageUpdatedProj);
 
-      // Bước 7: Tự động tối ưu SEO Boost
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_OPTIMIZE);
-      const seoPayload = {
-        originalInput: scriptContent,
-        config: imageUpdatedProj.config,
-        seoConfig: imageUpdatedProj.seoConfig,
-        rewrittenScript: realScript,
-        bypassCache: true,
-      };
-      const seoRes = await safeSystemFetch(API_ROUTES.PIPELINE_SEO, seoPayload);
       let seoData = null;
-      if (seoRes.success && seoRes.data) {
-        seoData = seoRes.data;
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_SUCCESS);
-      } else {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_FAILED);
+      let isSeoCached = false;
+      if (resumeMode && newProj.seo) {
+        seoData = newProj.seo;
+        isSeoCached = true;
+        appendLog(T.logResumeSeo);
       }
 
-      // Bước 8: Tự động sinh danh sách ảnh bìa thu nhỏ (Thumbnails)
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_GEN);
-      const thumbPayload = {
-        rewrittenScript: realScript,
-        config: imageUpdatedProj.config,
-        visualConfig: imageUpdatedProj.visualConfig,
-        bypassCache: true,
-      };
-      const thumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, thumbPayload);
-      let thumbnailsList: ThumbnailItem[] = [];
-      if (thumbRes.success && thumbRes.data?.thumbnails) {
-        const parsedThumbs = thumbRes.data.thumbnails;
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED.replace(SecurityConstants.PLACEHOLDER_0, String(parsedThumbs.length)));
-        for (let tIdx = 0; tIdx < parsedThumbs.length; tIdx++) {
-          const thumb = parsedThumbs[tIdx];
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(tIdx + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(parsedThumbs.length)));
-          let cleanPromptText = (thumb.prompt || "").replace(/--ar\s+\d+:\d+/g, "");
-          const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-            prompt: `${cleanPromptText}. Designed in rich high-CTR ${thumb.style || stylePreset} layout. --ar ${aspectRatio}`,
-            style: thumb.style || stylePreset,
-            resolution: "Standard",
-            bypassCache: true,
-            engine: imageGeneratorEngine,
-            visualConfig: imageUpdatedProj.visualConfig,
-          });
-          let imgUrl = "";
-          if (renderThumbRes.success && renderThumbRes.data?.base64) {
-            imgUrl = `data:image/jpeg;base64,${renderThumbRes.data.base64}`;
-          } else if (renderThumbRes.data?.fallbackUrl) {
-            imgUrl = renderThumbRes.data.fallbackUrl;
-          }
-          thumbnailsList.push({
-            ...thumb,
-            imageUrl: imgUrl,
-          });
+      if (!isSeoCached) {
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_OPTIMIZE);
+        const seoPayload = {
+          originalInput: scriptContent,
+          config: imageUpdatedProj.config,
+          seoConfig: imageUpdatedProj.seoConfig,
+          rewrittenScript: realScript,
+          bypassCache: true,
+        };
+        const seoRes = await safeSystemFetch(API_ROUTES.PIPELINE_SEO, seoPayload);
+        if (seoRes.success && seoRes.data) {
+          seoData = seoRes.data;
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_SUCCESS);
+        } else {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_FAILED);
         }
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
-      } else {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
+      }
+
+      let thumbnailsList: ThumbnailItem[] = [];
+      let isThumbsCached = false;
+      if (resumeMode && !_.isEmpty(newProj.thumbnails)) {
+        const cachedThumbs = newProj.thumbnails;
+        if (_.every(cachedThumbs, (t) => !_.isEmpty(t.imageUrl))) {
+          thumbnailsList = cachedThumbs;
+          isThumbsCached = true;
+          appendLog(T.logResumeThumbnails);
+        }
+      }
+
+      if (!isThumbsCached) {
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_GEN);
+        const thumbPayload = {
+          rewrittenScript: realScript,
+          config: imageUpdatedProj.config,
+          visualConfig: {
+            ...imageUpdatedProj.visualConfig,
+            thumbnailReferencePrompt: currentThumbnailStyle,
+          },
+          bypassCache: true,
+        };
+        const thumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, thumbPayload);
+        if (thumbRes.success && thumbRes.data?.thumbnails) {
+          let parsedThumbs = thumbRes.data.thumbnails;
+
+          if (currentThumbnailStyle) {
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY);
+            const rewriteThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS, {
+              thumbnails: parsedThumbs,
+              newStyle: currentThumbnailStyle,
+              aspectRatio: aspectRatio,
+            });
+            if (rewriteThumbRes.success && rewriteThumbRes.data?.thumbnails) {
+              parsedThumbs = rewriteThumbRes.data.thumbnails;
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY_SUCCESS);
+            }
+          }
+
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED.replace(SecurityConstants.PLACEHOLDER_0, String(parsedThumbs.length)));
+          for (let tIdx = 0; tIdx < parsedThumbs.length; tIdx++) {
+            const thumb = parsedThumbs[tIdx];
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(tIdx + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(parsedThumbs.length)));
+            let cleanPromptText = (thumb.prompt || REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+              prompt: REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE
+                .replace(SecurityConstants.PLACEHOLDER_0, cleanPromptText)
+                .replace(SecurityConstants.PLACEHOLDER_1, String(thumb.style || currentThumbnailStyle || currentStylePreset)),
+              style: thumb.style || currentThumbnailStyle || currentStylePreset,
+              resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+              bypassCache: true,
+              engine: imageGeneratorEngine,
+              visualConfig: {
+                generationMode,
+                imageGeneratorEngine,
+                aspectRatio,
+                generateType,
+                chromeHeadless
+              }
+            });
+            let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+            if (renderThumbRes.success && renderThumbRes.data?.base64) {
+              imgUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, renderThumbRes.data.base64], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            } else if (renderThumbRes.data?.fallbackUrl) {
+              imgUrl = renderThumbRes.data.fallbackUrl;
+            }
+            thumbnailsList.push({
+              ...thumb,
+              imageUrl: imgUrl,
+            });
+          }
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
+        } else {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
+        }
       }
       setStepProgress(85);
 
-      let slicedUpdatedProj: VideoProject = imageUpdatedProj;
+      let slicedUpdatedProj: VideoProject = {
+        ...imageUpdatedProj,
+        seo: seoData,
+        thumbnails: thumbnailsList,
+      };
       if (globalAudioBase64) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
-        try {
-          const alignPayload = {
-            audioBase64: globalAudioBase64,
-            scenes: _.map(realScenes, (sc) => ({
-              id: sc.id,
-              script: sc.script || sc.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-            })),
-            segment: true,
-            projectId: activeCreatedProject?.id,
-            projectName: activeCreatedProject?.name
-          };
-
-          const alignRes = await safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, alignPayload);
-          if (!alignRes.success || !alignRes.data || !alignRes.data.success || !_.isArray(alignRes.data.alignments)) {
-            throw new Error(alignRes.error || alignRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED);
-          }
-
-          const alignments = alignRes.data.alignments;
-          realScenes = _.map(realScenes, (sc) => {
-            const align = _.find(alignments, (a) => a.id === sc.id);
-            if (align) {
-              return {
-                ...sc,
-                duration: align.duration,
-                startTime: formatTimeHelper(align.start),
-                endTime: formatTimeHelper(align.end),
-                _start: align.start,
-                _end: align.end,
-                audioBase64: align.audioBase64,
-                audioUrl: align.audioUrl
-              };
-            }
-            return sc;
-          });
-
+        const isAligned = resumeMode && _.every(realScenes, (sc) => !_.isEmpty(sc.startTime) && !_.isEmpty(sc.endTime) && !_.isUndefined(sc.duration));
+        if (isAligned) {
+          appendLog(T.logResumeAlignment);
           slicedUpdatedProj = {
             ...imageUpdatedProj,
+            seo: seoData,
+            thumbnails: thumbnailsList,
             storyboard: realScenes
           };
           await syncProject(slicedUpdatedProj);
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_SUCCESS);
-        } catch (audioErr: any) {
-          logger.error("Audio alignment/slicing on backend failed", audioErr);
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioErr.message || REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+        } else {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
+          try {
+            const alignPayload = {
+              audioBase64: globalAudioBase64,
+              scenes: _.map(realScenes, (sc) => ({
+                id: sc.id,
+                script: sc.script || sc.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+              })),
+              segment: true,
+              projectId: newProj?.id,
+              projectName: newProj?.name
+            };
+
+            const alignRes = await safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, alignPayload);
+            if (!alignRes.success || !alignRes.data || !alignRes.data.success || !_.isArray(alignRes.data.alignments)) {
+              throw new Error(alignRes.error || alignRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED);
+            }
+
+            const alignments = alignRes.data.alignments;
+            realScenes = _.map(realScenes, (sc) => {
+              const align = _.find(alignments, (a) => a.id === sc.id);
+              if (align) {
+                return {
+                  ...sc,
+                  duration: align.duration,
+                  startTime: formatTimeHelper(align.start),
+                  endTime: formatTimeHelper(align.end),
+                  _start: align.start,
+                  _end: align.end,
+                  audioBase64: align.audioBase64,
+                  audioUrl: align.audioUrl
+                };
+              }
+              return sc;
+            });
+
+            slicedUpdatedProj = {
+              ...imageUpdatedProj,
+              seo: seoData,
+              thumbnails: thumbnailsList,
+              storyboard: realScenes
+            };
+            await syncProject(slicedUpdatedProj);
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_SUCCESS);
+          } catch (audioErr: any) {
+            logger.error(T.errAudioAlignBackend, audioErr);
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioErr.message || REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+          }
         }
       }
       setStepProgress(90);
@@ -1263,7 +1502,7 @@ export default function AutoVideoGenerator({
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      {_.map(Object.values(AspectRatio), (r) => (
+                      {_.map(_.values(AspectRatio), (r) => (
                         <option key={r} value={r} className="bg-slate-955 text-slate-300">
                           {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
                         </option>
@@ -1296,16 +1535,32 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">Chế độ Chrome</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2" title={T.lblChromeHeadlessTooltip}>
                     <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
-                      value={chromeHeadless ? "headless" : "windowed"}
-                      onChange={(e) => setChromeHeadless(e.target.value === "headless")}
+                      value={chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED}
+                      onChange={(e) => setChromeHeadless(e.target.value === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS)}
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
-                      <option value="headless" className="bg-slate-955 text-slate-300">Chạy ngầm</option>
-                      <option value="windowed" className="bg-slate-955 text-slate-300">Hiển thị</option>
+                      <option value={REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
+                      <option value={REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblResumeModeTooltip}>{T.lblResumeMode}</span>
+                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2" title={T.lblResumeModeTooltip}>
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                    <select
+                      value={resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW}
+                      onChange={(e) => setResumeMode(e.target.value === REFACTOR_CONSTANTS.RESUME_MODE_RESUME)}
+                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                    >
+                      <option value={REFACTOR_CONSTANTS.RESUME_MODE_RESUME} className="bg-slate-955 text-slate-300">{T.optionResume}</option>
+                      <option value={REFACTOR_CONSTANTS.RESUME_MODE_NEW} className="bg-slate-955 text-slate-300">{T.optionNew}</option>
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -1372,55 +1627,6 @@ export default function AutoVideoGenerator({
                       {T.styleUploadEmpty}
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-                      value={stylePreset}
-                      onChange={(e) => setStylePreset(e.target.value)}
-                      placeholder={T.stylePresetPlaceholder}
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-                    />
-                    <Button
-                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                      variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                      onClick={async () => {
-                        if (_.isEmpty(referenceImages)) {
-                          alert(_.get(T, "styleUploadEmpty"));
-                          return;
-                        }
-                        setIsExtractingStyle(true);
-                        try {
-                          const res = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-                            method: HTTP_METHODS.POST,
-                            headers: {
-                              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-                              [API_HEADERS.LICENSE_KEY]: await storageUtils.getAsync(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-                            },
-                            body: jsonUtils.safeStringify({ images: referenceImages })
-                          });
-                          const data = await res.json();
-                          if (_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY)) {
-                            setStylePreset(_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY));
-                            addLog(_.get(T, "logStyleManualExtracted"));
-                          } else {
-                            throw new Error(_.get(data, REFACTOR_CONSTANTS.AVG_ERROR_KEY) || _.get(T, "errExtractStyleFailed"));
-                          }
-                        } catch (err: any) {
-                          logger.error(REFACTOR_CONSTANTS.AVG_EXTRACT_STYLE_ERROR, err);
-                          addLog(_.get(T, "errExtractStyle"));
-                        } finally {
-                          setIsExtractingStyle(false);
-                        }
-                      }}
-                      disabled={isExtractingStyle}
-                      isLoading={isExtractingStyle}
-                      className="px-2.5 py-1.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
-                      title={T.extractStyleTooltip}
-                    >
-                      <Sparkles className="w-3 h-3 text-emerald-400" /> {T.extractStyleBtn}
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1524,55 +1730,6 @@ export default function AutoVideoGenerator({
                       {T.thumbUploadEmpty}
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-                      value={thumbnailStylePreset}
-                      onChange={(e) => setThumbnailStylePreset(e.target.value)}
-                      placeholder={T.thumbPresetPlaceholder}
-                      className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
-                    />
-                    <Button
-                      type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                      variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                      onClick={async () => {
-                        if (_.isEmpty(thumbnailReferenceImages)) {
-                          alert(_.get(T, "thumbUploadEmpty"));
-                          return;
-                        }
-                        setIsExtractingThumbnailStyle(true);
-                        try {
-                          const res = await fetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-                            method: HTTP_METHODS.POST,
-                            headers: {
-                              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-                              [API_HEADERS.LICENSE_KEY]: await storageUtils.getAsync(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-                            },
-                            body: jsonUtils.safeStringify({ images: thumbnailReferenceImages })
-                          });
-                          const data = await res.json();
-                          if (_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY)) {
-                            setThumbnailStylePreset(_.get(data, REFACTOR_CONSTANTS.AVG_STYLE_KEY));
-                            addLog(_.get(T, "logThumbStyleManualExtracted"));
-                          } else {
-                            throw new Error(_.get(data, REFACTOR_CONSTANTS.AVG_ERROR_KEY) || _.get(T, "errExtractStyleFailed"));
-                          }
-                        } catch (err: any) {
-                          logger.error(REFACTOR_CONSTANTS.AVG_EXTRACT_THUMB_STYLE_ERROR, err);
-                          addLog(_.get(T, "errExtractStyle"));
-                        } finally {
-                          setIsExtractingThumbnailStyle(false);
-                        }
-                      }}
-                      disabled={isExtractingThumbnailStyle}
-                      isLoading={isExtractingThumbnailStyle}
-                      className="px-2.5 py-1.5 bg-purple-600/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
-                      title={T.extractThumbStyleTooltip}
-                    >
-                      <Sparkles className="w-3 h-3 text-purple-400" /> {T.extractStyleBtn}
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>

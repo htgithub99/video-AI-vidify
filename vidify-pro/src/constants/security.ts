@@ -291,7 +291,7 @@ export const SecurityMessages = {
 
 export const AutoLoginConstants = {
   URLS: {
-    SIGN_IN: 'https://accounts.google.com/signin/v2/identifier?hl=en',
+    SIGN_IN: 'https://accounts.google.com/ServiceLogin?hl=en',
     LOGOUT: 'https://accounts.google.com/Logout',
     SIGN_IN_KEYWORD: 'signin',
   },
@@ -301,6 +301,19 @@ export const AutoLoginConstants = {
     NO_ACCOUNT_TEXT: "text=Couldn't find your Google Account",
     CONFIRM_RECOVERY_TEXT: 'text=Confirm your recovery email',
     VERIFY_IT_IS_YOU: "text=Verify it's you",
+    ABOUT_SIGN_IN_BTN: 'a[href*="ServiceLogin"], a[data-g-label="sign-in"], a:has-text("Sign in"), a:has-text("Đăng nhập")',
+    EMAIL_SELECTORS: [
+      'input[type="email"]',
+      'input[name="identifier"]',
+      'input[aria-label*="Email"]',
+      'input[aria-label*="email"]',
+    ],
+    PWD_SELECTORS: [
+      'input[type="password"]',
+      'input[name="password"]',
+      'input[aria-label*="password"]',
+      'input[aria-label*="Mật khẩu"]',
+    ],
   },
   LOGS: {
     START_LOGIN: 'Bắt đầu đăng nhập tài khoản: ',
@@ -308,6 +321,21 @@ export const AutoLoginConstants = {
     VERIFY_RECOVERY: 'Đang xác minh Recovery Email...',
     LOGIN_SUCCESS: 'Đăng nhập thành công: ',
     LOGIN_ERROR: 'Lỗi đăng nhập ',
+    NAVIGATING_SIGN_IN: 'Đang điều hướng đến trang Đăng nhập Google...',
+    REDIRECT_ABOUT: 'Phát hiện bị Google redirect về trang About. Đang click nút Đăng nhập...',
+    CLICKED_ABOUT_SIGN_IN: 'Đã click nút Đăng nhập trên trang About. URL hiện tại: {0}',
+    ABOUT_SIGN_IN_NOT_FOUND: 'Không tìm thấy nút Đăng nhập trên trang About. Đang điều hướng trực tiếp...',
+    CURRENT_BROWSER_URL: 'URL hiện tại của trình duyệt: {0}',
+    SEARCHING_EMAIL: 'Đang tìm kiếm ô nhập Email. URL hiện tại: {0}',
+    FOUND_EMAIL_SELECTOR: 'Đã tìm thấy Email Input bằng selector: {0}',
+    EMAIL_SELECTOR_FALLBACK: 'Không tìm thấy ô nhập Email thông qua bộ định vị động. Đang thử selector mặc định...',
+    EMAIL_NOT_FOUND_BLOCKED: 'Email input not found or page blocked. Proceeding.',
+    SEARCHING_PWD: 'Đang tìm kiếm ô nhập Password. URL hiện tại: {0}',
+    FOUND_PWD_SELECTOR: 'Đã tìm thấy Password Input bằng selector: {0}',
+    PWD_SELECTOR_FALLBACK: 'Không tìm thấy ô nhập Password thông qua bộ định vị động. Đang thử selector mặc định...',
+    PWD_NOT_FOUND_MANUAL: 'Password input not found or needs manual entry.',
+    RECOVERY_CONFIG_EMPTY: 'Recovery email requested but recoveryEmail config is empty.',
+    VERIFICATION_TIMEOUT: 'Login verification timed out for: {0}',
   },
   ERRORS: {
     NO_ACCOUNT: 'Tài khoản không tồn tại.',
@@ -325,6 +353,13 @@ export const ImageGenMessages = {
   INJECT_HELPERS_ERR: 'Failed to inject helpers on current page context:',
   IMAGE_RENDER_ERR: '[Image Render] Attempt {0} failed: {1}',
   IMAGE_RENDER_GLOBAL_ERR: '[Image Render] Error in generateImageWithPlaywright: ',
+  RELEASING_GLOBAL_CHROME: 'Đang giải phóng trình duyệt Chrome toàn cục...',
+  AUTO_RELEASE_CHROME_IDLE: 'Không có yêu cầu tạo ảnh mới trong 2 phút. Đang tự động giải phóng trình duyệt Chrome...',
+  REUSING_GLOBAL_CHROME: 'Sử dụng lại trình duyệt Chrome toàn cục đang hoạt động.',
+  GLOBAL_CHROME_ERROR_REINIT: 'Trình duyệt Chrome toàn cục cũ đã bị đóng hoặc lỗi. Đang khởi tạo trình duyệt mới...',
+  LAUNCHING_GLOBAL_CHROME: 'Đang khởi chạy trình duyệt Chrome toàn cục...',
+  GLOBAL_CHROME_CLOSED_EXTERNAL: 'Trình duyệt Chrome toàn cục đã bị đóng từ bên ngoài.',
+  CONFIG_CHANGED_FORCE_NEW_ROOM: 'Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.',
 };
 
 export const AppLogger = {

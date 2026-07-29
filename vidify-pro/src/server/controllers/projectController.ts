@@ -45,53 +45,6 @@ export function getSafeFolderName(name: string): string {
   return safeName || COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 }
 
-function replaceAssetPaths(project: VideoProject, oldFolderName: string, newFolderName: string): VideoProject {
-  const updateUrl = (url: string | undefined) => {
-    if (!url) return url;
-    if (_.includes(url, COMMON_STRINGS.HTTP_PREFIX) || _.includes(url, COMMON_STRINGS.HTTPS_PREFIX)) return url;
-
-    const match = url.match(ASSET_PROJECT_PATH_REGEX);
-    if (match) {
-      const parts = _.split(match[0], COMMON_STRINGS.SLASH_PREFIX);
-      const currentFolderInUrl = _.nth(parts, 3);
-
-      if (_.eq(currentFolderInUrl, oldFolderName) || _.eq(currentFolderInUrl, project.id)) {
-        return _.replace(url, ASSET_PROJECT_PATH_REGEX, `${COMMON_STRINGS.REGEX_REPLACE_GROUP_1}${newFolderName}${COMMON_STRINGS.SLASH_PREFIX}`);
-      }
-    }
-
-    return url;
-  };
-
-  const storyboard = _.map(project.storyboard || [], (scene) => {
-    let { assetUrl, assetUrls, audioUrl } = scene;
-
-    assetUrl = updateUrl(assetUrl) as string | undefined;
-
-    if (_.size(assetUrls) > 0) {
-      assetUrls = _.map(assetUrls, (url) => updateUrl(url) as string);
-    }
-
-    audioUrl = updateUrl(audioUrl) as string | undefined;
-
-    return { ...scene, assetUrl, assetUrls, audioUrl };
-  });
-
-  const thumbnails = _.map(project.thumbnails || [], (thumb) => {
-    let { imageUrl } = thumb;
-    imageUrl = updateUrl(imageUrl) as string | undefined;
-    return { ...thumb, imageUrl };
-  });
-
-  let voiceConfig = project.voiceConfig;
-  const oldVoiceUrl = _.get(voiceConfig, 'audioUrl', '');
-  const updatedVoiceUrl = updateUrl(oldVoiceUrl) as string | undefined;
-  if (updatedVoiceUrl && !_.eq(oldVoiceUrl, updatedVoiceUrl)) {
-    voiceConfig = { ...voiceConfig, audioUrl: updatedVoiceUrl };
-  }
-
-  return { ...project, storyboard, thumbnails, voiceConfig };
-}
 
 function processSceneAssets(scene: any, imageDir: string, audioDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
@@ -239,8 +192,21 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
 
   return _.map(projects, (project) => {
-    const folderName = getSafeFolderName(project.name);
-    const projectDir = path.join(assetsDir, folderName);
+    const oldFolderName = getSafeFolderName(project.name);
+    const oldProjectDir = path.join(assetsDir, oldFolderName);
+    const newProjectDir = path.join(assetsDir, project.id);
+
+    if (!_.eq(oldFolderName, project.id) && fs.existsSync(oldProjectDir) && !fs.existsSync(newProjectDir)) {
+      try {
+        fs.renameSync(oldProjectDir, newProjectDir);
+        appLog(`${LOG_MESSAGES.MIGRATE_PROJECT_DIR_SUCCESS}${oldFolderName} -> ${project.id}`);
+      } catch (err) {
+        appError(`${ERROR_MESSAGES.MIGRATE_PROJECT_DIR_ERR}${oldFolderName} -> ${project.id}`, err);
+      }
+    }
+
+    const folderName = project.id;
+    const projectDir = newProjectDir;
     const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
     const audioDir = path.join(projectDir, VOICES_DIR_NAME);
 
@@ -471,25 +437,18 @@ export const updateProject = async (req: Request, res: Response) => {
 
     if (oldProject) {
       let newProject = req.body;
-      let isRenamed = false;
-      let oldFolderName = "";
-      let newFolderName = "";
 
       if (newProject.name && oldProject.name && !_.eq(newProject.name, oldProject.name)) {
-        oldFolderName = getSafeFolderName(oldProject.name);
-        newFolderName = getSafeFolderName(newProject.name);
-
-        if (!_.eq(oldFolderName, newFolderName)) {
-          const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
-          const oldDir = path.join(assetsDir, oldFolderName);
-          const newDir = path.join(assetsDir, newFolderName);
-
-          isRenamed = renameProjectAssetsDir(oldDir, newDir, newProject, oldProject);
+        const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
+        const oldDir = path.join(assetsDir, getSafeFolderName(oldProject.name));
+        const newDir = path.join(assetsDir, id);
+        if (fs.existsSync(oldDir) && !fs.existsSync(newDir)) {
+          renameProjectAssetsDir(oldDir, newDir, newProject, oldProject);
         }
       }
 
       if (oldProject?.storyboard && newProject?.storyboard) {
-        const folderName = getSafeFolderName(newProject.name || oldProject.name);
+        const folderName = id;
         const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
 
         if (newProject.isRecreatingStoryboard) {
@@ -513,15 +472,19 @@ export const updateProject = async (req: Request, res: Response) => {
       delete newProject.isRecreatingStoryboard;
 
       let updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
-      if (isRenamed) {
-        updatedProject = replaceAssetPaths(updatedProject, oldFolderName, newFolderName);
-      }
 
       const savedProject = await saveProjectDetail(updatedProject);
       res.json(savedProject);
     } else {
-      const isVi = !_.eq(req.query.lang, COMMON_STRINGS.EN);
-      res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
+      const now = new Date().toISOString();
+      const newProject: VideoProject = {
+        ...req.body,
+        id: id,
+        createdAt: req.body.createdAt || now,
+        updatedAt: req.body.updatedAt || now,
+      };
+      const savedProject = await saveProjectDetail(newProject);
+      res.json(savedProject);
     }
   } catch (error: any) {
     res.status(500).json({ error: error.message || getBackendMsg("SQLITE_WRITE_ERR") });
@@ -537,15 +500,23 @@ export const deleteProject = async (req: Request, res: Response) => {
     const deleted = await deleteProjectFromDb(id);
 
     if (deleted) {
-      if (project?.name) {
-        const folderName = getSafeFolderName(project.name);
-        const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
+      if (project?.id) {
+        const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, project.id);
         if (fs.existsSync(projectDir)) {
           try {
             fs.rmSync(projectDir, { recursive: true, force: true });
           } catch (err) {
             appError(ERROR_MESSAGES.DELETE_PROJECT_ASSETS_ERR, err);
           }
+        }
+      }
+      if (project?.name) {
+        const folderName = getSafeFolderName(project.name);
+        const oldProjectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
+        if (fs.existsSync(oldProjectDir)) {
+          try {
+            fs.rmSync(oldProjectDir, { recursive: true, force: true });
+          } catch (err) { }
         }
       }
       res.json({ success: true });

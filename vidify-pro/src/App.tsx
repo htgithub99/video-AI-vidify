@@ -7,6 +7,7 @@ import PipelineWizard from "./components/PipelineWizard.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
+
 import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
@@ -15,30 +16,31 @@ import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
+import { storageUtils } from "./lib/storage";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
   const [activeTab, setActiveTab] = useState<string>(() => {
-    const savedTab = localStorage.getItem(STORAGE_KEYS.ACTIVE_TAB);
+    const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);
     const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
     if (isValidTab) {
       if (_.isEqual(savedTab, AppTab.STUDIO)) {
-        const cachedProj = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+        const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
         const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
         return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
       }
       return savedTab!;
     }
-    const cachedProj = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
     const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
     return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
   });
 
   useEffect(() => {
     if (!_.isEmpty(activeTab) && !_.includes(INVALID_CACHE_VALUES, activeTab)) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, activeTab);
+      storageUtils.set(STORAGE_KEYS.ACTIVE_TAB, activeTab);
     }
   }, [activeTab]);
 
@@ -69,25 +71,26 @@ export default function App() {
       });
     };
   }, []);
+
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
-    const cached = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const cached = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
     return !cached || _.includes(INVALID_CACHE_VALUES, cached) ? null : cached;
   });
 
   useEffect(() => {
     if (selectedProjectId && !_.includes(INVALID_CACHE_VALUES, selectedProjectId)) {
-      localStorage.setItem(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
+      storageUtils.set(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
-      localStorage.removeItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+      storageUtils.remove(STORAGE_KEYS.SELECTED_PROJECT_ID);
     }
   }, [selectedProjectId]);
 
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;
+    return (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.APP_THEME, theme);
+    storageUtils.set(STORAGE_KEYS.APP_THEME, theme);
     if (_.isEqual(theme, THEME_VALUES.LIGHT)) {
       document.documentElement.classList.add(THEME_VALUES.LIGHT);
       document.documentElement.classList.remove(THEME_VALUES.DARK);
@@ -108,7 +111,7 @@ export default function App() {
     let active = true;
     let timerId: NodeJS.Timeout;
 
-    const cachedId = localStorage.getItem(STORAGE_KEYS.SELECTED_PROJECT_ID);
+    const cachedId = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
     const fetchProjects = fetch(API_ROUTES.PROJECTS).then(async (res) => {
       try {
         const text = await res.text();
@@ -123,8 +126,11 @@ export default function App() {
             try {
               const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
               if (detailRes.ok) {
-                const detailData = await detailRes.json();
-                return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
+                const detailText = await detailRes.text();
+                const detailData = jsonUtils.safeParse(detailText, null);
+                if (detailData) {
+                  return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
+                }
               }
             } catch (e) {
               appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
@@ -178,8 +184,11 @@ export default function App() {
       try {
         const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`);
         if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
-        const detailData = await res.json();
-        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
+        const detailText = await res.text();
+        const detailData = jsonUtils.safeParse(detailText, null);
+        if (detailData) {
+          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
+        }
         setSelectedProjectId(id);
         setActiveTab(AppTab.STUDIO);
       } catch (err) {
@@ -254,9 +263,12 @@ export default function App() {
         body: jsonUtils.safeStringify(newProject),
       });
       if (response.ok) {
-        const savedProject = await response.json();
-        setProjects((prev) => [...prev, savedProject]);
-        setSelectedProjectId(savedProject.id);
+        const text = await response.text();
+        const savedProject = jsonUtils.safeParse(text, null);
+        if (savedProject) {
+          setProjects((prev) => [...prev, savedProject]);
+          setSelectedProjectId(savedProject.id);
+        }
       }
     } catch (e) {
       appError(ERROR_MESSAGES.CREATING_PROJECT, e);
@@ -264,7 +276,13 @@ export default function App() {
   };
 
   const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
-    setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p)));
+    setProjects((prev) => {
+      const exists = _.some(prev, { id: updated.id });
+      if (exists) {
+        return _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p));
+      }
+      return [...prev, updated];
+    });
 
     if (pendingSavesRef.current[updated.id]) {
       clearTimeout(pendingSavesRef.current[updated.id]);
@@ -328,8 +346,11 @@ export default function App() {
         body: jsonUtils.safeStringify(updated),
       });
       if (res.ok) {
-        const savedProject = await res.json();
-        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
+        const text = await res.text();
+        const savedProject = jsonUtils.safeParse(text, null);
+        if (savedProject) {
+          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
+        }
       } else {
         setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
         appError(`${ERROR_MESSAGES.UPDATING_PROJECT}: STATUS ${res.status}`);
@@ -347,7 +368,7 @@ export default function App() {
         setLang={setLang}
         credits={credits}
         costTracker={costTracker}
-        theme={theme}
+        theme={theme as any}
         toggleTheme={toggleTheme}
       />
 
@@ -361,7 +382,7 @@ export default function App() {
           }}
           selectedProjectId={selectedProjectId}
           activeProjectName={activeProject?.name || null}
-          theme={theme}
+          theme={theme as any}
           toggleTheme={toggleTheme}
         />
 
@@ -369,7 +390,7 @@ export default function App() {
           {_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
             <PipelineWizard
               key={selectedProjectId}
-              theme={theme}
+              theme={theme as any}
               currentLang={currentLang}
               project={activeProject}
               onSaveProject={handleUpdateProject}

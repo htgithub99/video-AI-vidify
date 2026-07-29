@@ -1,5 +1,5 @@
 export const REFACTOR_CONSTANTS = {
-  // Common UI configs
+  
   POSITION_BOTTOM: 'bottom',
   ALIGN_START: 'start',
   INPUT_TYPE_TEXT: 'text',
@@ -11,17 +11,14 @@ export const REFACTOR_CONSTANTS = {
   SIZE_XS: 'xs',
   PROJECT_NAME_PLACEHOLDER: 'Auto_Video_Project...',
 
-  // useVoices
   VOICES_CACHE_PREFIX: 'vidify_voices_cache',
   VOICES_QUERY_KEY: 'voices',
   VOICES_JOIN_CHAR: '_',
   VOICES_ERR_FAILED_TO_FETCH: 'Không thể tải danh sách giọng nói. Vui lòng thử lại sau.',
 
-  // usePresets
   PRESETS_QUERY_KEY: 'presets',
   PRESETS_ERR_FAILED_TO_FETCH: 'Không thể tải cấu hình mẫu. Vui lòng thử lại sau.',
 
-  // LicenseContext
   LICENSE_QUERY_KEY: 'licenseInfo',
   LICENSE_METHOD_POST: 'POST',
   LICENSE_HEADER_CONTENT_TYPE: 'Content-Type',
@@ -31,7 +28,6 @@ export const REFACTOR_CONSTANTS = {
   LICENSE_ERR_INVALID_LICENSE_STATUS: 'Không thể xác thực trạng thái bản quyền. Vui lòng kết nối mạng và thử lại.',
   LICENSE_CACHE_KEY: 'vidify_license_info_cache',
 
-  // VoiceSelectionDialog
   VD_NORMALIZE_FORM: 'NFD',
   VD_NORMALIZE_REGEX: /[\u0300-\u036f]/g,
   VD_HYPHEN: '-',
@@ -48,7 +44,6 @@ export const REFACTOR_CONSTANTS = {
   VD_DESC_PREFIX: 'desc-',
   VD_BLANK: ' ',
 
-  // AutoVideoGenerator
   AVG_SPLIT_MIXED: 'mixed_sentences',
   AVG_DEFAULT_DURATION: '8s',
   AVG_PROJECT_NAME_PREFIX: 'Auto_Video_Project',
@@ -89,7 +84,6 @@ export const REFACTOR_CONSTANTS = {
   AVG_EXTRACT_STYLE_ERROR: 'Extract Style Error',
   AVG_EXTRACT_THUMB_STYLE_ERROR: 'Extract Thumb Style Error',
 
-  // New refactored constants
   ENGINE_IMAGEN: "Gemini 3.5 Pro",
   ENGINE_VEO3: "Gemini 3.5 Flash",
   ENGINE_LABS_SANDBOX: "Gemini 3.5 Flash Lite",
@@ -125,8 +119,13 @@ export const REFACTOR_CONSTANTS = {
   SIZE_SM: "sm",
   SIZE_LG: "lg",
   ERR_SAVE_CONFIG_LOCAL_STORAGE: "Không thể lưu cấu hình của bạn. Vui lòng kiểm tra lại bộ nhớ trình duyệt.",
+  AVG_THUMB_PROMPT_TEMPLATE: "{0}. Designed in rich high-CTR {1} layout.",
+  AVG_ELLIPSIS: "...",
+  AVG_DOUBLE_QUOTE: "\"",
+  AVG_DEFAULT_AR: "16:9",
+  AVG_AR_REGEX: /--ar\s+\d+:\d+/g,
+  AVG_DATA_IMAGE_BASE64_PREFIX: "data:image/jpeg;base64,",
 
-  // New key object constants for dynamic properties to avoid string literals
   AVG_PROMPT_KEY: 'prompt',
   AVG_DURATION_KEY: 'duration',
   AVG_GENRE_KEY: 'genre',
@@ -149,7 +148,6 @@ export const REFACTOR_CONSTANTS = {
   AVG_ASSET_URL_KEY: 'assetUrl',
   AVG_IMAGE_GENERATOR_ENGINE_KEY: 'imageGeneratorEngine',
 
-  // Config metrics and step indexes
   PAGE_ONE: 1,
   TAKE_DESC_COUNT: 2,
   INDEX_ONE: 1,
@@ -162,10 +160,8 @@ export const REFACTOR_CONSTANTS = {
   TEXTAREA_ROWS: 4,
   ZERO: 0,
 
-  // Dropdown count list
   THUMBNAIL_COUNT_OPTIONS: [1, 2, 3, 4],
 
-  // storage.ts constants
   DB_NAME: 'VidifyDB',
   DB_STORE_NAME: 'app_settings',
   DB_VERSION: 1,
@@ -180,7 +176,6 @@ export const REFACTOR_CONSTANTS = {
   LOG_ERROR_WRITE_IDB: 'ERROR_WRITING_INDEXEDDB_KEY: ',
   LOG_ERROR_REMOVE_IDB: 'ERROR_REMOVING_INDEXEDDB_KEY: ',
 
-  // renderQueueService.ts constants
   JOB_STATUS_PENDING: "pending",
   JOB_STATUS_PROCESSING: "processing",
   JOB_STATUS_COMPLETED: "completed",
@@ -192,11 +187,9 @@ export const REFACTOR_CONSTANTS = {
   RENDER_LOG_COMPLETED: "[RenderQueue] Job {0} completed. URL: {1}",
   RENDER_LOG_FAILED: "[RenderQueue] Job {0} failed: {1}",
 
-  // projectController.ts constants
   SCENE_ASSET_TYPE_IMAGE: "image",
   SCENE_ASSET_NAME_BULK: "Scene_{0}_bulk.jpg",
 
-  // pipelineController.ts constants
   CACHE_DIR_VOICES: "voices",
   CACHE_DIR_IMAGES: "images",
   CACHE_FILE_PREFIX_TTS: "tts_",
@@ -214,7 +207,6 @@ export const REFACTOR_CONSTANTS = {
   LOG_WARN_WRITE_TTS_CACHE: "Failed to write tts cache file",
   LOG_WARN_WRITE_IMG_CACHE: "Failed to write image cache",
 
-  // PipelineStep4.tsx constants
   HTTP_METHOD_POST: "POST",
   HEADER_CONTENT_TYPE: "Content-Type",
   MIME_JSON: "application/json",
@@ -233,7 +225,6 @@ export const REFACTOR_CONSTANTS = {
   VALUE_FALSE: "false",
   PROVIDER_AI33: "AI33",
 
-  // SettingsView.tsx constants & tooltips
   DELAY_SAVE_KEYS_MS: 500,
   RECOVERY_PLACEHOLDER_SHORT_VI: "Email khôi phục...",
   RECOVERY_PLACEHOLDER_TOOLTIP_VI: "Email Khôi phục (Tuỳ chọn)",
@@ -256,7 +247,6 @@ export const REFACTOR_CONSTANTS = {
   THUMB_PRESET_PLACEHOLDER_SHORT: "Mô tả bìa...",
   THUMB_PRESET_PLACEHOLDER_TOOLTIP: "Mô tả style ảnh bìa sinh ra (Bold Clickbait 3D Style...)",
 
-  // usePipelineWizard.ts constants
   DEFAULT_FAVORITE_STYLE_ID: "style_1",
   DEFAULT_FAVORITE_STYLE_NAME: "Cinematic Realistic",
   DEFAULT_FAVORITE_STYLE_PROMPT: "cinematic realistic, photographic, detailed, 8k, dramatic lighting, high contrast",
@@ -268,7 +258,6 @@ export const REFACTOR_CONSTANTS = {
   LOG_ERROR_GENERAL: "GENERAL_ERROR",
   LOG_ERROR_LOADING_SANDBOX: "ERROR_LOADING_SANDBOX",
 
-  // AutoVideoGenerator state keys
   KEY_SELECTED_AUTO_PROJECT: "selected_auto_project_id",
   STATUS_GENERATING: "Generating",
   ERR_RESTORE: "Không thể khôi phục dự án tự động sinh",
@@ -277,7 +266,6 @@ export const REFACTOR_CONSTANTS = {
   MSG_RENDER_PREFIX: "Đang tạo video: ",
   MSG_PERCENT: "%",
 
-  // Account Rotator Constants
   ACCOUNTS_FILE: "google_accounts.json",
   ENCODING_UTF8: "utf-8",
   LOG_READ_ACC_ERR: "Failed to read local google accounts file",
@@ -311,6 +299,10 @@ export const REFACTOR_CONSTANTS = {
   MSG_ALREADY_LOGGED_IN: "Tài khoản {0} đã đăng nhập sẵn trong Profile.",
   MSG_LAUNCH_LOGIN_ERR: "Lỗi khi khởi động/đăng nhập tài khoản {0}: {1}",
   MSG_ALL_ACC_FAILED: "Tất cả các tài khoản Google thử nghiệm đều bị lỗi đăng nhập.",
+  CHROME_MODE_HEADLESS: "headless",
+  CHROME_MODE_WINDOWED: "windowed",
+  RESUME_MODE_RESUME: "resume",
+  RESUME_MODE_NEW: "new",
 } as const;
 
 export const ROUTER_PATHS = {

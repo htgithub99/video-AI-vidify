@@ -237,6 +237,11 @@ export const ERROR_MESSAGES = {
   FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
   RENAME_ASSETS_DIR_ERR_FALLBACK: "(Đang thử copy đệ quy...)",
   COPY_ASSETS_DIR_ERR: "Lỗi không thể copy thư mục mới",
+  STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
+  SYSTEM_FLOW_ERROR: "SYSTEM_FLOW_ERROR",
+  STREAM_FLOW_ERROR: "STREAM_FLOW_ERROR",
+  API_ERROR_PREFIX: "API Error: ",
+  MIGRATE_PROJECT_DIR_ERR: "Lỗi chuyển đổi thư mục dự án từ tên cũ sang ID: ",
 } as const;
 
 export const LOG_MESSAGES = {
@@ -245,6 +250,7 @@ export const LOG_MESSAGES = {
   DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
   BULK_DELETE_PROJECT_DIR_SUCCESS: "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
   DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ",
+  MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi thư mục dự án từ tên cũ sang ID: ",
 } as const;
 
 export const DEFAULT_PROJECT_CONFIGS = {
@@ -547,8 +553,6 @@ export const SEO_DEFAULT_CONFIGS = {
   MIN_TITLES_OPTION: 1,
   MAX_TITLES_OPTION: 10,
 } as const;
-
-
 
 export const PROJECT_LIST_TEXTS = {
   vi: {
@@ -865,6 +869,26 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     rightActionTitle: "Tạo Video 1-Click",
     rightActionTitleTooltip: "Tự Động Tạo Video 1-Click",
     rightActionSub: "Tự động tạo video",
+    lblResumeMode: "Chạy tiếp tục",
+    lblResumeModeTooltip: "Tái sử dụng Kịch bản, Giọng đọc và các Phân cảnh/Ảnh đã tạo thành công của dự án hiện tại để tránh tốn token/tiền.",
+    lblChromeHeadless: "Chế độ Chrome",
+    lblChromeHeadlessTooltip: "Cấu hình Chrome chạy ngầm hoặc hiển thị cửa sổ",
+    optionHeadless: "Chạy ngầm",
+    optionWindowed: "Hiển thị",
+    optionResume: "Tiếp tục cũ",
+    optionNew: "Tạo mới",
+    logResumeProject: (name: string) => `♻️ Sử dụng lại dự án: [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
+    logResumeScript: "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
+    logResumeVoice: "♻️ Sử dụng lại Giọng đọc (TTS) đã tạo từ phiên chạy trước.",
+    logResumeSceneSkip: (idx: number, total: number) => `♻️ Phân cảnh ${idx}/${total}: Đã có ảnh từ trước, bỏ qua.`,
+    logResumeThumbnails: "♻️ Sử dụng lại ảnh bìa (Thumbnails) đã tạo.",
+    logResumeAlignment: "♻️ Sử dụng lại Căn khớp & Phân đoạn âm thanh đã tạo.",
+    logResumeSeo: "♻️ Sử dụng lại dữ liệu SEO đã tạo từ phiên chạy trước.",
+    logBatchImageStreamStart: "🚀 Bắt đầu tạo ảnh hàng loạt bằng Gemini Chat qua luồng Stream...",
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string) => `❌ Lỗi luồng tạo ảnh hàng loạt: ${msg}. Chuyển sang cơ chế dự phòng sinh tuần tự...`,
+    logFallbackSceneError: (id: string) => `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
     startBtnProcessing: "Đang Tạo Video...",
     startBtnStart: " Bắt Đầu Tạo",
     startBtnTooltip: "Khởi động luồng tạo video tự động 1-Click",
@@ -906,6 +930,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logAppliedPreset: (name: string) => `Đã áp dụng mẫu cấu hình: "${name}"`,
     errExtractStyle: "Lỗi phân tích phong cách.",
     errExtractStyleFailed: "Lỗi phân tích.",
+    errLoadConfig: "Lỗi tải cấu hình tự động.",
+    errAudioAlignBackend: "Lỗi căn khớp/cắt âm thanh ở backend.",
   },
   en: {
     bannerTitle: "Auto Creator",
@@ -974,6 +1000,26 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     rightActionTitle: "1-Click Video Creator",
     rightActionTitleTooltip: "One-Click Auto Video Creator",
     rightActionSub: "Auto generate video",
+    lblResumeMode: "Resume Project",
+    lblResumeModeTooltip: "Reuse generated Script, Voice, and Scene Images of current project to avoid wasting tokens or funds.",
+    lblChromeHeadless: "Chrome Mode",
+    lblChromeHeadlessTooltip: "Run Chrome headless in background or show window",
+    optionHeadless: "Headless",
+    optionWindowed: "Windowed",
+    optionResume: "Resume old",
+    optionNew: "Create new",
+    logResumeProject: (name: string) => `♻️ Reusing project: [${name}]. Resume mode is active.`,
+    logResumeScript: "♻️ Reusing Script & Storyboard from previous session.",
+    logResumeVoice: "♻️ Reusing Voice (TTS) from previous session.",
+    logResumeSceneSkip: (idx: number, total: number) => `♻️ Scene ${idx}/${total}: Already has image, skipped.`,
+    logResumeThumbnails: "♻️ Reusing generated thumbnails.",
+    logResumeAlignment: "♻️ Reusing generated voice alignments.",
+    logResumeSeo: "♻️ Reusing SEO data from previous session.",
+    logBatchImageStreamStart: "🚀 Starting batch image generation using Gemini Chat stream...",
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to sequential generation...`,
+    logFallbackSceneError: (id: string) => `⚠️ Error generating fallback image for scene ${id}`,
     startBtnProcessing: "Creating Video...",
     startBtnStart: "🚀 Start Creating",
     startBtnTooltip: "Launch 1-Click automated video creation pipeline",
@@ -1015,6 +1061,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logAppliedPreset: (name: string) => `Applied Preset: "${name}"`,
     errExtractStyle: "Style analysis error.",
     errExtractStyleFailed: "Analysis failed.",
+    errLoadConfig: "Error loading automatic configuration.",
+    errAudioAlignBackend: "Audio alignment/slicing on backend failed.",
   },
 } as const;
 
@@ -1128,6 +1176,3 @@ export const PRESET_CONSTANTS = {
   DEFAULT_CAMERA_MOTION: "default",
   DEFAULT_TRANSITION: "default",
 } as const;
-
-
-

@@ -4,10 +4,9 @@ import { getNextAccount, markAccountError, GoogleAccount } from "./accountRotato
 import { autoLoginGoogle } from "./autoLoginGoogle.js";
 import path from "path";
 import { getDataDirectory } from "../utils/paths.js";
+import { ImageGenMessages } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-
-import { ImageGenMessages } from "../../constants/security.js";
 import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
@@ -181,7 +180,7 @@ import crypto from "crypto";
 
 let lastUsedEmail: string | undefined = undefined;
 
-export async function launchBrowserForAccount(): Promise<{ context: any; page: Page; account: GoogleAccount }> {
+export async function launchBrowserForAccount(chromeHeadless?: boolean): Promise<{ context: any; page: Page; account: GoogleAccount }> {
   let attempts = 0;
   const maxAttempts = 3;
   let account: GoogleAccount | null = null;
@@ -200,14 +199,28 @@ export async function launchBrowserForAccount(): Promise<{ context: any; page: P
     const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
 
     try {
-      context = await chromium.launchPersistentContext(profilePath, {
-        headless: true,
-        args: [
-          REFACTOR_CONSTANTS.ARG_NO_SANDBOX,
-          REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX,
-          REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED,
-        ],
-      });
+      try {
+        context = await chromium.launchPersistentContext(profilePath, {
+          headless: chromeHeadless !== false,
+          channel: "chrome",
+          ignoreDefaultArgs: ["--enable-automation"],
+          args: [
+            REFACTOR_CONSTANTS.ARG_NO_SANDBOX,
+            REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX,
+            REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED,
+          ],
+        });
+      } catch (chromeErr) {
+        context = await chromium.launchPersistentContext(profilePath, {
+          headless: chromeHeadless !== false,
+          ignoreDefaultArgs: ["--enable-automation"],
+          args: [
+            REFACTOR_CONSTANTS.ARG_NO_SANDBOX,
+            REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX,
+            REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED,
+          ],
+        });
+      }
 
       page = context.pages()[0] || (await context.newPage());
 
@@ -224,11 +237,11 @@ export async function launchBrowserForAccount(): Promise<{ context: any; page: P
         `);
       } catch (e) {}
 
-      await page.goto(REFACTOR_CONSTANTS.URL_MY_ACCOUNT, { waitUntil: "networkidle", timeout: 45000 }).catch(() => {});
+      await page.goto(REFACTOR_CONSTANTS.URL_MY_ACCOUNT, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(2000);
 
       const currentUrl = page.url();
-      const isLoggedIn = currentUrl.includes(REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT);
+      const isLoggedIn = _.includes(currentUrl, REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT);
 
       if (!isLoggedIn) {
         appLog(REFACTOR_CONSTANTS.MSG_NOT_LOGGED_IN.replace("{0}", account.email));
@@ -259,6 +272,63 @@ let lastGeminiConfigState: string | null = null;
 let globalBatchPages: Page[] = [];
 const batchPagesErrors = new WeakMap<Page, number>();
 const batchPagesConfigs = new WeakMap<Page, string>();
+
+let activeBrowserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
+let activeBrowserTimeout: NodeJS.Timeout | null = null;
+
+export async function closeActiveBrowser() {
+  if (activeBrowserTimeout) {
+    clearTimeout(activeBrowserTimeout);
+    activeBrowserTimeout = null;
+  }
+  if (activeBrowserInstance) {
+    appLog(ImageGenMessages.RELEASING_GLOBAL_CHROME);
+    try {
+      await activeBrowserInstance.context.close();
+    } catch (e) {}
+    activeBrowserInstance = null;
+  }
+}
+
+export function scheduleGlobalBrowserCleanup() {
+  if (activeBrowserTimeout) {
+    clearTimeout(activeBrowserTimeout);
+  }
+  activeBrowserTimeout = setTimeout(async () => {
+    appLog(ImageGenMessages.AUTO_RELEASE_CHROME_IDLE);
+    await closeActiveBrowser();
+  }, 120000);
+}
+
+export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promise<{ context: any; page: Page; account: GoogleAccount }> {
+  if (activeBrowserTimeout) {
+    clearTimeout(activeBrowserTimeout);
+    activeBrowserTimeout = null;
+  }
+
+  if (activeBrowserInstance) {
+    try {
+      await activeBrowserInstance.page.url();
+      appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
+      return activeBrowserInstance;
+    } catch (e) {
+      appLog(ImageGenMessages.GLOBAL_CHROME_ERROR_REINIT);
+      await closeActiveBrowser();
+    }
+  }
+
+  appLog(ImageGenMessages.LAUNCHING_GLOBAL_CHROME);
+  activeBrowserInstance = await launchBrowserForAccount(chromeHeadless);
+
+  try {
+    activeBrowserInstance.context.on("close", () => {
+      appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
+      activeBrowserInstance = null;
+    });
+  } catch (err) {}
+
+  return activeBrowserInstance;
+}
 
 export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, style, visualConfig, sandboxConfig = {} } = options;
@@ -301,7 +371,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
       appLog(`${BACKEND_MESSAGES.IMAGE_RENDER_ATTEMPT}${attempts}/${maxAttempts}${BACKEND_MESSAGES.IMAGE_RENDER_STARTING}`);
       try {
         if (!browserInstance) {
-          browserInstance = await launchBrowserForAccount();
+          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
           activePage = browserInstance.page;
 
           try {
@@ -614,7 +684,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         appError(ImageGenMessages.IMAGE_RENDER_ERR.replace('{0}', attempts.toString()).replace('{1}', err.message));
 
         if (browserInstance) {
-          await browserInstance.context.close().catch(() => { });
+          await closeActiveBrowser();
           browserInstance = null;
           activePage = null;
         }
@@ -628,7 +698,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${err.message}`);
   } finally {
     if (browserInstance) {
-      await browserInstance.context.close().catch(() => { });
+      scheduleGlobalBrowserCleanup();
     }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.PLAYWRIGHT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -639,8 +709,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     const parsed = jsonUtils.safeParse<any>(responseText, {});
     if (parsed.directBase64) {
       let cleanBase64 = parsed.directBase64;
-      if (cleanBase64.includes(",")) {
-        cleanBase64 = cleanBase64.split(",")[1];
+      if (_.includes(cleanBase64, ",")) {
+        cleanBase64 = _.split(cleanBase64, ",")[1];
       }
 
       return {
@@ -689,9 +759,9 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
       let detectedRatio = visualConfig?.aspectRatio;
       if (!detectedRatio && finalPrompt) {
-        if (finalPrompt.includes("16:9") || finalPrompt.toLowerCase().includes("horizontal")) {
+        if (_.includes(finalPrompt, "16:9") || _.includes(finalPrompt.toLowerCase(), "horizontal")) {
           detectedRatio = "16:9";
-        } else if (finalPrompt.includes("9:16") || finalPrompt.toLowerCase().includes("vertical")) {
+        } else if (_.includes(finalPrompt, "9:16") || _.includes(finalPrompt.toLowerCase(), "vertical")) {
           detectedRatio = "9:16";
         }
       }
@@ -711,14 +781,14 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         needNewRoom = true;
       } else {
         const currentUrl = activePage!.url();
-        if (!currentUrl.includes("gemini.google.com")) {
+        if (!_.includes(currentUrl, "gemini.google.com")) {
           needNewRoom = true;
         } else if (consecutiveGeminiErrors >= 2) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
         } else if (isConfigChanged) {
           needNewRoom = true;
-          appLog("Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.");
+          appLog(ImageGenMessages.CONFIG_CHANGED_FORCE_NEW_ROOM);
         }
       }
 
@@ -726,12 +796,12 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
         try {
           if (browserInstance) {
-            await browserInstance.context.close().catch(() => {});
+            await closeActiveBrowser();
             browserInstance = null;
             activePage = null;
           }
 
-          browserInstance = await launchBrowserForAccount();
+          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
           activePage = browserInstance.page;
 
           await activePage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
@@ -743,7 +813,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         } catch (err: any) {
           appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", err.message));
           if (browserInstance) {
-            await browserInstance.context.close().catch(() => {});
+            await closeActiveBrowser();
             browserInstance = null;
             activePage = null;
           }
@@ -823,7 +893,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", err.message));
   } finally {
     if (browserInstance) {
-      await browserInstance.context.close().catch(() => {});
+      scheduleGlobalBrowserCleanup();
     }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -860,6 +930,7 @@ export interface BatchImageResult {
 }
 
 export async function closeAllBatchPages() {
+  await closeActiveBrowser();
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_CLOSE_TABS.replace("{0}", globalBatchPages.length.toString()));
   for (const page of globalBatchPages) {
     try {
@@ -917,20 +988,20 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   let browserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
 
   try {
-    browserInstance = await launchBrowserForAccount();
+    browserInstance = await launchBrowserForAccount(visualConfig?.chromeHeadless);
     const context = browserInstance.context;
 
-    globalBatchPages = globalBatchPages.filter((p) => !p.isClosed());
+    globalBatchPages = _.filter(globalBatchPages, (p) => !p.isClosed());
 
-    if (globalBatchPages.length < maxTabs) {
-      const needed = maxTabs - globalBatchPages.length;
+    if (_.size(globalBatchPages) < maxTabs) {
+      const needed = maxTabs - _.size(globalBatchPages);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
       for (let i = 0; i < needed; i++) {
         const newPage = await context.newPage();
         await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
         await randomDelay(2000, 4000);
         globalBatchPages.push(newPage);
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", globalBatchPages.length.toString()).replace("{1}", maxTabs.toString()));
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", _.size(globalBatchPages).toString()).replace("{1}", maxTabs.toString()));
       }
     }
 
@@ -976,7 +1047,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           const consecutiveErrors = batchPagesErrors.get(page) || 0;
           let needNewRoom = false;
 
-          if (!currentUrl.includes("gemini.google.com")) {
+          if (!_.includes(currentUrl, "gemini.google.com")) {
             needNewRoom = true;
           } else if (consecutiveErrors >= 2) {
             needNewRoom = true;
@@ -1131,21 +1202,21 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
         }
 
-        if (queue?.length) {
+        if (_.size(queue)) {
           const delayTime = await applyBatchDelay(visualConfig);
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
         }
       }
     };
 
-    const workers = activePages.map((page, idx) => runWorker(page, idx));
+    const workers = _.map(activePages, (page, idx) => runWorker(page, idx));
     await Promise.all(workers);
 
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", results.filter((r) => r.success).length.toString()).replace("{1}", items.length.toString()));
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", _.size(_.filter(results, (r) => r.success)).toString()).replace("{1}", items.length.toString()));
   } catch (err: any) {
     appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", err.message));
-    for (const item of items) {
-      if (!results.find((r) => r.sceneId === item.sceneId)) {
+    _.forEach(items, (item) => {
+      if (!_.find(results, (r) => _.eq(r.sceneId, item.sceneId))) {
         const kws = extractKeywords(item.prompt);
         const res = {
           sceneId: item.sceneId,
@@ -1159,7 +1230,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           onProgress(res);
         }
       }
-    }
+    });
   } finally {
     if (browserInstance) {
       await browserInstance.context.close().catch(() => {});
@@ -1190,14 +1261,14 @@ async function configureGeminiModel(page: Page, visualConfig: any, forceSetting:
     const currentText = await modelPickerBtn.textContent();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
 
-    let isCorrect = false;
-    if (targetModelText === GeminiChatModelName.FlashLite && currentText?.includes("Lite")) {
-      isCorrect = true;
-    } else if (targetModelText === GeminiChatModelName.Flash && currentText?.includes("Flash") && !currentText?.includes("Lite")) {
-      isCorrect = true;
-    } else if (targetModelText === GeminiChatModelName.Pro && currentText?.includes("Pro")) {
-      isCorrect = true;
-    }
+     let isCorrect = false;
+     if (targetModelText === GeminiChatModelName.FlashLite && _.includes(currentText, "Lite")) {
+       isCorrect = true;
+     } else if (targetModelText === GeminiChatModelName.Flash && _.includes(currentText, "Flash") && !_.includes(currentText, "Lite")) {
+       isCorrect = true;
+     } else if (targetModelText === GeminiChatModelName.Pro && _.includes(currentText, "Pro")) {
+       isCorrect = true;
+     }
 
     if (isCorrect) {
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);

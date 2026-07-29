@@ -7,7 +7,6 @@ import { storageUtils } from '../../lib/storage';
 import { useState, useEffect, useRef, useMemo } from "react";
 import _ from 'lodash';
 
-
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
@@ -20,7 +19,7 @@ import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
-import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
+import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs, safeSystemFetchStream } from "../../lib/shared-utils";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
@@ -2611,85 +2610,55 @@ export function usePipelineWizard(props: any) {
           }));
         }
 
-        const batchItems = targetScenes.map((s) => ({
+        const batchItems = _.map(targetScenes, (s) => ({
           sceneId: s.id,
           prompt: s.prompt,
         }));
-        const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES, {
-          items: batchItems,
-          visualConfig: project.visualConfig,
-          style: project.visualConfig.style,
-        });
+        await safeSystemFetchStream(
+          API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
+          {
+            items: batchItems,
+            visualConfig: project.visualConfig,
+            style: project.visualConfig.style,
+          },
+          (result) => {
+            setLoadingStates((prev) => ({
+              ...prev,
+              ["renderScene_" + result.sceneId]: false,
+            }));
 
-        if (!response.body) {
-          throw new Error(t.streamNotSupported || "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        let isReadingStream = true;
-        while (isReadingStream) {
-          if (cancelBatchImageRef.current) {
-            reader.cancel().catch(() => { });
-            setInfoMsg(t.batchGenCancelled.replace("{completedCount}", completedCount.toString()));
-            isReadingStream = false;
-            break;
-          }
-
-          const { value, done } = await reader.read();
-          if (done) {
-            isReadingStream = false;
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            try {
-              const result = jsonUtils.safeParse<any>(line, null);
-
-              setLoadingStates((prev) => ({
-                ...prev,
-                ["renderScene_" + result.sceneId]: false,
-              }));
-
-              if (result.success && result.base64) {
-                const imageUrl = `data:image/jpeg;base64,${result.base64}`;
-                setProject((prev) => {
-                  const updated = (prev.storyboard || []).map((sc) => {
-                    if (sc.id === result.sceneId) {
-                      return {
-                        ...sc,
-                        assetUrl: imageUrl,
-                        assetUrls: [imageUrl],
-                        isGenerated: true,
-                      };
-                    }
-                    return sc;
-                  });
-                  const updatedProject = { ...prev, storyboard: updated };
-                  setTimeout(() => {
-                    onSaveProject(updatedProject, true);
-                  }, 0);
-                  return updatedProject;
+            if (result.success && result.base64) {
+              const imageUrl = `data:image/jpeg;base64,${result.base64}`;
+              setProject((prev) => {
+                const updated = _.map(prev.storyboard || [], (sc) => {
+                  if (_.eq(sc.id, result.sceneId)) {
+                    return {
+                      ...sc,
+                      assetUrl: imageUrl,
+                      assetUrls: [imageUrl],
+                      isGenerated: true,
+                    };
+                  }
+                  return sc;
                 });
-                completedCount++;
-              } else {
-                logger.error("BATCH_SCENE_FAILED", result.sceneId, result.warning);
-                setErrorMsg(t.errorRenderingSceneBatch.replace("{sceneId}", result.sceneId).replace("{error}", result.warning || "Unknown"));
-              }
-
-              setBatchProgressMsg(t.generatingSceneBatch.replace("{sceneId}", result.sceneId).replace("{currentIndex}", completedCount.toString()).replace("{totalToProcess}", totalToProcess.toString()));
-            } catch (err) {
-              logger.error("Failed to parse NDJSON line", line, err);
+                const updatedProject = { ...prev, storyboard: updated };
+                setTimeout(() => {
+                  onSaveProject(updatedProject, true);
+                }, 0);
+                return updatedProject;
+              });
+              completedCount++;
+            } else {
+              logger.error("BATCH_SCENE_FAILED", result.sceneId, result.warning);
+              setErrorMsg(t.errorRenderingSceneBatch.replace("{sceneId}", result.sceneId).replace("{error}", result.warning || "Unknown"));
             }
-          }
-        }
+
+            setBatchProgressMsg(t.generatingSceneBatch.replace("{sceneId}", result.sceneId).replace("{currentIndex}", completedCount.toString()).replace("{totalToProcess}", totalToProcess.toString()));
+          },
+          undefined,
+          undefined,
+          cancelBatchImageRef
+        );
       } else {
         const batches = _.chunk(targetScenes, concurrency);
         let completedBatchesCount = 0;
@@ -3587,7 +3556,6 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-
   const startPlaybackSim = () => {
     if (!project.storyboard || _.isEmpty(project.storyboard)) return;
     setIsPlayingSim(true);
@@ -3880,8 +3848,6 @@ export function usePipelineWizard(props: any) {
       setLoadingExportType(null);
     }
   };
-
-
 
   return {
     t,

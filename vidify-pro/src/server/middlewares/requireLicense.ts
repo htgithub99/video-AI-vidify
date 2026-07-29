@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { LicenseService } from '../services/licenseService.js';
+import { LicenseService, LicenseValidationError } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
 import { SecurityConstants, SecurityMessages, LocalizationConstants, FeatureType, LicenseStatus } from '../../constants/security.js';
@@ -71,14 +71,14 @@ export const requireLicense = (featureType?: FeatureType) => {
                         ? LocalizationConstants.FEATURE_IMAGE
                         : LocalizationConstants.FEATURE_VOICE);
                 const planName = _.get(license, SecurityConstants.PROP_PLAN_ID, SecurityConstants.UNKNOWN_PLAN_NAME);
-                
+
                 let errorMsg = SecurityConstants.EMPTY_STRING;
                 if (_.isEqual(_.get(license, SecurityConstants.PROP_QUOTA_TYPE), SecurityConstants.QUOTA_TYPE_TOTAL)) {
                     errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_TOTAL_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
                 } else {
                     errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
                 }
-                
+
                 return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: errorMsg,
                     code: SecurityConstants.QUOTA_EXCEEDED_CODE
@@ -87,6 +87,12 @@ export const requireLicense = (featureType?: FeatureType) => {
 
             next();
         } catch (error) {
+            if (error instanceof LicenseValidationError) {
+                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                    error: error.message,
+                    code: SecurityConstants.LICENSE_INVALID_CODE
+                });
+            }
             appError(SecurityConstants.REQUIRE_LICENSE_ERROR_LOG, error);
             res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
         }

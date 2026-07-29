@@ -163,6 +163,10 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_THUMBNAILS_IDEAS_CREATED: "✓ Tạo {0} ý tưởng ảnh bìa. Bắt đầu vẽ ảnh bìa hàng loạt...",
   LOG_THUMBNAILS_SCENE_GEN: "Đang vẽ ảnh bìa {0}/{1}...",
   LOG_VOICE_GEN_TTS: "Bước 2: Đang tạo giọng đọc AI (TTS) với giọng đọc \"{0}\"...",
+  LOG_THUMB_STYLE_EXTRACT: "Bước 3.5: Phát hiện ảnh mẫu ảnh bìa. Đang trích xuất phong cách ảnh bìa...",
+  LOG_THUMB_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách ảnh bìa thành công: {0}",
+  LOG_THUMB_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả ảnh bìa...",
+  LOG_THUMB_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách ảnh bìa thành công.",
 } as const;
 
 export const RENDER_LOGIC_CONSTANTS = {

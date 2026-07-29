@@ -61,6 +61,13 @@ export interface LicenseInfo {
     };
 }
 
+export class LicenseValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'LicenseValidationError';
+    }
+}
+
 export class LicenseService {
     static async validateKey(licenseKey: string): Promise<LicenseInfo | null> {
         if (_.isEmpty(licenseKey)) return null;
@@ -84,7 +91,7 @@ export class LicenseService {
             if (_.has(data, SecurityConstants.ERROR_KEY)) {
                 const errorMsg = _.get(data, SecurityConstants.ERROR_KEY);
                 appError(SecurityMessages.LICENSE_VALIDATION_ERROR, errorMsg);
-                throw new Error(errorMsg);
+                throw new LicenseValidationError(errorMsg);
             }
             
             return {
@@ -106,6 +113,9 @@ export class LicenseService {
                 }
             };
         } catch (error: any) {
+            if (error instanceof LicenseValidationError) {
+                throw error;
+            }
             appError(SecurityMessages.FAILED_TO_CONNECT, error);
             throw new Error(error.message || SecurityMessages.FAILED_TO_CONNECT);
         }
