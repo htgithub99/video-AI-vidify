@@ -5,7 +5,7 @@ import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -135,7 +135,7 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
   return scene;
 }
 
-function processThumbAssets(thumb: any, imageDir: string, folderName: string): any {
+function processThumbAssets(thumb: any, thumbDir: string, folderName: string): any {
   let { imageUrl } = thumb;
   let thumbUpdated = false;
 
@@ -145,11 +145,11 @@ function processThumbAssets(thumb: any, imageDir: string, folderName: string): a
       const ext = _.eq(matches[1], COMMON_STRINGS.JPEG_EXT) ? COMMON_STRINGS.JPG_EXT : matches[1];
       const data = matches[2];
       const fileName = `${COMMON_STRINGS.THUMB_PREFIX}${thumb.id}.${ext}`;
-      const filePath = path.join(imageDir, fileName);
+      const filePath = path.join(thumbDir, fileName);
 
       try {
         fs.writeFileSync(filePath, Buffer.from(data, COMMON_STRINGS.BASE64));
-        imageUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${IMAGES_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
+        imageUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${THUMBNAILS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
         thumbUpdated = true;
       } catch (err) {
         appError(`${ERROR_MESSAGES.WRITE_THUMB_IMAGE_ERR}${thumb.id}`, err);
@@ -209,9 +209,11 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     const projectDir = newProjectDir;
     const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
     const audioDir = path.join(projectDir, VOICES_DIR_NAME);
+    const thumbDir = path.join(projectDir, THUMBNAILS_DIR_NAME);
 
     if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
     if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
+    if (!fs.existsSync(thumbDir)) fs.mkdirSync(thumbDir, { recursive: true });
 
     let storyboardUpdated = false;
     let storyboard = project.storyboard;
@@ -230,7 +232,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     let thumbnails = project.thumbnails;
     if (_.isArray(thumbnails)) {
       thumbnails = _.map(thumbnails, (thumb) => {
-        const processed = processThumbAssets(thumb, imageDir, folderName);
+        const processed = processThumbAssets(thumb, thumbDir, folderName);
         if (processed.isUpdated) {
           thumbnailsUpdated = true;
           delete processed.isUpdated;

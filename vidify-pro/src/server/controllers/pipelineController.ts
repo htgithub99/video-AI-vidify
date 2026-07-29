@@ -1479,29 +1479,6 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       finalVoiceId = VOICE_PRESET_MAP["preset-vi-bac-female"] || "edge_vi-VN-HoaiMyNeural";
     }
 
-    const voicesCacheDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, REFACTOR_CONSTANTS.CACHE_DIR_VOICES);
-    if (!fs.existsSync(voicesCacheDir)) {
-      fs.mkdirSync(voicesCacheDir, { recursive: true });
-    }
-
-    const hashInput = `${text}_${finalVoiceId}_${speed || 1}`;
-    const md5Hash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(hashInput).digest(REFACTOR_CONSTANTS.ENCODING_HEX as crypto.BinaryToTextEncoding);
-    const cachedFileName = `${REFACTOR_CONSTANTS.CACHE_FILE_PREFIX_TTS}${md5Hash}${REFACTOR_CONSTANTS.CACHE_EXT_WAV}`;
-    const cachedFilePath = path.join(voicesCacheDir, cachedFileName);
-    const cachedFileUrl = `/${ASSETS_DIR_NAME}/${REFACTOR_CONSTANTS.CACHE_DIR_VOICES}/${cachedFileName}`;
-
-    if (fs.existsSync(cachedFilePath)) {
-      const buffer = fs.readFileSync(cachedFilePath);
-      const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-      return res.json({
-        success: true,
-        audioBase64,
-        mimeType: REFACTOR_CONSTANTS.CONTENT_TYPE_WAV,
-        audioUrl: cachedFileUrl,
-        provider: REFACTOR_CONSTANTS.PROVIDER_AI33_CACHE
-      });
-    }
-
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, 'ai33Key', '');
 
@@ -1583,12 +1560,6 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
 
     const arrayBuffer = await audioRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
-    try {
-      fs.writeFileSync(cachedFilePath, buffer);
-    } catch (cacheErr) {
-      logger.warn(REFACTOR_CONSTANTS.LOG_WARN_WRITE_TTS_CACHE, cacheErr);
-    }
 
     const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
@@ -1599,7 +1570,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       success: true,
       audioBase64,
       mimeType,
-      audioUrl: cachedFileUrl,
+      audioUrl: "",
       provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
     });
   } catch (error: any) {
