@@ -1642,7 +1642,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
   }
 });
 
-router.post("/generate-batch-images", async (req: Request, res: Response) => {
+router.post("/generate-batch-images", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
   try {
     const { items, visualConfig, style } = req.body;
 
@@ -1654,6 +1654,11 @@ router.post("/generate-batch-images", async (req: Request, res: Response) => {
     res.setHeader("Transfer-Encoding", "chunked");
 
     await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
+      if (progressResult.success) {
+        incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT).catch((err) => {
+          logger.error(SecurityMessages.USAGE_UPDATE_ERROR, err);
+        });
+      }
       res.write(jsonUtils.safeStringify(progressResult) + "\n");
     });
 
@@ -2551,12 +2556,18 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
     const { scenes, globalAudioUrl, quality, aspectRatio } = req.body;
     const jobId = randomUUID();
 
-    renderQueueService.addJob(jobId, {
-      scenes,
-      globalAudioUrl,
-      quality: quality as VideoQuality,
-      aspectRatio: aspectRatio as string
-    });
+    const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
+
+    renderQueueService.addJob(
+      jobId,
+      {
+        scenes,
+        globalAudioUrl,
+        quality: quality as VideoQuality,
+        aspectRatio: aspectRatio as string
+      },
+      licenseKey
+    );
 
     res.json({ success: true, jobId });
   } catch (error: any) {

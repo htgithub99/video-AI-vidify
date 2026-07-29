@@ -2,6 +2,8 @@ import { renderFFmpegVideo, FFmpegRenderOptions } from "../utils/ffmpegRender.js
 import { logger } from "../../lib/logger.js";
 import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../../constants/index.js";
+import { LicenseService } from "./licenseService.js";
+import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
 
 export enum JobStatus {
   PENDING = "pending",
@@ -20,6 +22,7 @@ export interface RenderJob {
   createdAt: Date;
   startedAt?: Date;
   completedAt?: Date;
+  licenseKey?: string;
 }
 
 class RenderQueueService {
@@ -27,13 +30,14 @@ class RenderQueueService {
   private isProcessing = false;
   private jobsMap = new Map<string, RenderJob>();
 
-  public addJob(jobId: string, payload: FFmpegRenderOptions): RenderJob {
+  public addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): RenderJob {
     const job: RenderJob = {
       id: jobId,
       payload,
       status: JobStatus.PENDING,
       progress: _.get(REFACTOR_CONSTANTS, 'ZERO', 0),
       createdAt: new Date(),
+      licenseKey,
     };
     this.queue.push(job);
     this.jobsMap.set(jobId, job);
@@ -86,6 +90,14 @@ class RenderQueueService {
       job.progress = 100;
       job.url = url;
       job.completedAt = new Date();
+
+      if (!_.isEmpty(job.licenseKey)) {
+        try {
+          await LicenseService.incrementUsage(job.licenseKey, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
+        } catch (e) {
+          logger.error(SecurityMessages.USAGE_UPDATE_ERROR, e);
+        }
+      }
       
       logger.info(
         REFACTOR_CONSTANTS.RENDER_LOG_COMPLETED
