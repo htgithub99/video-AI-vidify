@@ -1571,7 +1571,8 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
-    await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
+    const generatedCharacterCount = _.size(text);
+    await incrementFeatureUsage(req, FeatureType.VOICE, generatedCharacterCount);
 
     res.json({
       success: true,
@@ -1627,15 +1628,17 @@ router.post("/generate-batch-images", requireLicense(FeatureType.IMAGE), async (
     res.setHeader("Content-Type", "application/x-ndjson");
     res.setHeader("Transfer-Encoding", "chunked");
 
+    let successfulImageCount = SecurityConstants.ZERO;
     await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
-      if (progressResult.success) {
-        incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT).catch((err) => {
-          logger.error(SecurityMessages.USAGE_UPDATE_ERROR, err);
-        });
+      if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
+        successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
       }
       res.write(jsonUtils.safeStringify(progressResult) + "\n");
     });
 
+    if (_.gt(successfulImageCount, SecurityConstants.ZERO)) {
+      await incrementFeatureUsage(req, FeatureType.IMAGE, successfulImageCount);
+    }
     res.end();
   } catch (error: any) {
     logger.error(LogEvent.GENERATE_BATCH_IMAGES_ROUTE_ERROR, error);
@@ -2532,7 +2535,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const { scenes, globalAudioUrl, quality, aspectRatio } = req.body;
+    const { scenes, globalAudioUrl, quality, aspectRatio, projectId } = req.body;
     const jobId = randomUUID();
 
     const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
@@ -2543,7 +2546,8 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
         scenes,
         globalAudioUrl,
         quality: quality as VideoQuality,
-        aspectRatio: aspectRatio as string
+        aspectRatio: aspectRatio as string,
+        projectId: projectId as string
       },
       licenseKey
     );

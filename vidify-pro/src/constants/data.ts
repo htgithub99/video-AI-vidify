@@ -114,6 +114,23 @@ export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ["429", "quota", "Quota exceeded"
 export const STICKMAN_KEYWORDS = ["người que", "hình que", "nét que", "stickman", "stick figure", "hoạt hình", "stick"] as const;
 
 export const LOG_SUCCESS_KEYWORDS = ["thành công", "success", "hoàn thành"] as const;
+export const CONSOLE_LOG_IGNORED_MESSAGES = [
+  "Warning:",
+  "Maximum update depth exceeded",
+  "setState inside useEffect",
+  "React limits the number of nested updates",
+  "Cannot update a component while rendering",
+] as const;
+export const VITE_CONNECTION_LOST_KEYWORDS = [
+  "[vite] server connection lost",
+  "server connection lost. polling for restart",
+] as const;
+export const VITE_HOT_UPDATE_KEYWORDS = [
+  "[vite] hot updated",
+  "[vite] hmr update",
+] as const;
+export const VITE_FAILED_RELOAD_KEYWORD = "[hmr] failed to reload";
+export const VITE_CONNECTED_KEYWORD = "[vite] connected";
 export const LOG_PENDING_KEYWORDS = ["bắt đầu thực thi", "pending", "đang xử lý", "trigger"] as const;
 export const LOG_WARN_KEYWORDS = ["cảnh báo", "warning", "warn"] as const;
 export const LOG_ERROR_KEYWORDS = ["lỗi", "error", "fail"] as const;

@@ -87,6 +87,23 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     }, [licenseInfo]);
 
+    React.useEffect(() => {
+        let refreshTimer: number | undefined;
+        const handleUsageUpdated = () => {
+            if (_.isEmpty(licenseKey)) return;
+            if (_.isNumber(refreshTimer)) window.clearTimeout(refreshTimer);
+            refreshTimer = window.setTimeout(() => {
+                void refetch();
+            }, REFACTOR_CONSTANTS.USAGE_REFRESH_DEBOUNCE_MS);
+        };
+
+        window.addEventListener(SecurityConstants.USAGE_UPDATED_EVENT, handleUsageUpdated);
+        return () => {
+            window.removeEventListener(SecurityConstants.USAGE_UPDATED_EVENT, handleUsageUpdated);
+            if (_.isNumber(refreshTimer)) window.clearTimeout(refreshTimer);
+        };
+    }, [licenseKey, refetch]);
+
     const activateLicense = async (key: string): Promise<boolean | string> => {
         try {
             const res = await fetch(`${API_ROUTES.BASE_API}${SecurityConstants.API_VALIDATE_PATH}`, {

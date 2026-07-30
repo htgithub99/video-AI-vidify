@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   LOCAL_GOOGLE_ACCOUNTS: "LOCAL_GOOGLE_ACCOUNTS",
   LICENSE_KEY: "vidify_license_key",
   AUTO_GENERATOR_CONFIG: "auto_generator_config",
+  VOICE_DIALOG_FILTERS: "voice_dialog_filters",
 } as const;
 
 export type StorageKeyType = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

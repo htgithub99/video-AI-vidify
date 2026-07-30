@@ -1,22 +1,22 @@
 import { StoryboardSourceMode } from "../../constants";
 import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { PipelineConstants } from "../../constants/pipelineConstants";
-import { logger } from "../../utils/logger";
+import { logger, subscribeToLogs } from "../../utils/logger";
 import { jsonUtils } from "../../lib/json";
 import { storageUtils } from '../../lib/storage';
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import _ from 'lodash';
 
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { EXTERNAL_URLS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER } from "../../constants";
 import { LOADING_KEYS } from "../../constants/loading";
-import { EXPORT_TYPES } from "../../constants/enums";
-import { LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS } from "../../constants/data";
+import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
+import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType } from "../../types";
+import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs, safeSystemFetchStream } from "../../lib/shared-utils";
@@ -25,6 +25,7 @@ import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import { delayAsync } from "../../lib/shared-utils.js";
+import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -253,6 +254,32 @@ export function usePipelineWizard(props: any) {
   const [loading, setLoading] = useState(false);
 
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
+
+  const selectVoiceForProject = useCallback((voice: any) => {
+    const updatedProject: VideoProject = {
+      ...project,
+      voiceConfig: {
+        ...project.voiceConfig,
+        voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+        voiceName: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH),
+        previewUrl: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_PREVIEW_PATH),
+        provider: _.get(
+          voice,
+          REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
+          _.get(project, REFACTOR_CONSTANTS.VOICE_CONFIG_PROVIDER_PATH),
+        ),
+        gender: _.isEqual(
+          _.toLower(_.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH)),
+          VOICE_GENDER.MALE,
+        )
+          ? Gender.Male
+          : Gender.Female,
+      },
+    };
+    setProject(updatedProject);
+    void onSaveProject(updatedProject, true);
+    setIsVoiceDialogOpen(false);
+  }, [project, onSaveProject]);
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
 
@@ -605,23 +632,23 @@ export function usePipelineWizard(props: any) {
     return () => window.removeEventListener("storage", syncConfig);
   }, []);
 
-  const [systemLogs, setSystemLogs] = useState<{ time: string; type: string; msg: string }[]>(() => {
+  const [systemLogs, setSystemLogs] = useState<{ time: string; type: ConsoleLogType; msg: string }[]>(() => {
     try {
-      const savedLogs = sessionStorage.getItem("pipeline_system_logs");
+      const savedLogs = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY);
       if (savedLogs) return jsonUtils.safeParse<any[]>(savedLogs, []);
-    } catch (e) { }
+    } catch { }
     return [];
   });
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("pipeline_system_logs", jsonUtils.safeStringify(systemLogs));
+      sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(systemLogs));
     } catch (e: any) {
-      if (e.name === "QuotaExceededError") {
-        const reduced = systemLogs.slice(-100);
+      if (_.isEqual(e.name, REFACTOR_CONSTANTS.STORAGE_QUOTA_ERROR_NAME)) {
+        const reduced = _.slice(systemLogs, REFACTOR_CONSTANTS.SYSTEM_LOG_REDUCED_START);
         try {
-          sessionStorage.setItem("pipeline_system_logs", jsonUtils.safeStringify(reduced));
-        } catch (err) { }
+          sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(reduced));
+        } catch { }
       }
     }
   }, [systemLogs]);
@@ -629,14 +656,17 @@ export function usePipelineWizard(props: any) {
   const [showLogsModal, setShowLogsModal] = useState(false);
 
   useEffect(() => {
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-
-    const captureLog = (type: string, args: any[]) => {
+    const captureLog = (type: ConsoleLogType, args: unknown[]) => {
       try {
-        const msg = _.join(_.map(args, (a) => (typeof a === "object" ? jsonUtils.safeStringify(a) : String(a))), REFACTOR_CONSTANTS.VD_BLANK);
-        if (_.some(["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"], (w) => _.includes(msg, w))) return;
+        const msg = _.join(
+          _.map(args, (value) => (
+            _.isObject(value)
+              ? jsonUtils.safeStringify(value)
+              : _.toString(value)
+          )),
+          REFACTOR_CONSTANTS.VD_BLANK,
+        );
+        if (_.some(CONSOLE_LOG_IGNORED_MESSAGES, (keyword) => _.includes(msg, keyword))) return;
 
         let processedMsg = msg;
         const msgLower = _.toLower(msg);
@@ -644,48 +674,34 @@ export function usePipelineWizard(props: any) {
         const logsLang = _.includes([COMMON_STRINGS.VI, COMMON_STRINGS.EN], currentLang) ? currentLang : COMMON_STRINGS.VI;
         const logTexts = VITE_HMR_LOGS[logsLang as "vi" | "en"];
 
-        if (_.some(["[vite] server connection lost", "server connection lost. polling for restart"], (k) => _.includes(msgLower, k))) {
+        if (_.some(VITE_CONNECTION_LOST_KEYWORDS, (keyword) => _.includes(msgLower, keyword))) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
-        } else if (_.includes(msgLower, "[hmr] failed to reload")) {
+        } else if (_.includes(msgLower, VITE_FAILED_RELOAD_KEYWORD)) {
           processedMsg = logTexts.FAILED_RELOAD_GENERIC;
-        } else if (_.includes(msgLower, "[vite] connected")) {
+        } else if (_.includes(msgLower, VITE_CONNECTED_KEYWORD)) {
           processedMsg = logTexts.CONNECTED;
-        } else if (_.some(["[vite] hot updated", "[vite] hmr update"], (k) => _.includes(msgLower, k))) {
+        } else if (_.some(VITE_HOT_UPDATE_KEYWORDS, (keyword) => _.includes(msgLower, keyword))) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 
         let enrichedType = type;
         const processedMsgLower = _.toLower(processedMsg);
-        if (_.some(LOG_SUCCESS_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "success";
-        else if (_.some(LOG_PENDING_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "pending";
-        else if (_.isEqual(type, "log") && _.some(LOG_WARN_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "warn";
-        else if (_.isEqual(type, "log") && _.some(LOG_ERROR_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "error";
+        if (_.some(LOG_SUCCESS_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.SUCCESS;
+        else if (_.some(LOG_PENDING_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.PENDING;
+        else if (_.isEqual(type, ConsoleLogType.LOG) && _.some(LOG_WARN_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.WARN;
+        else if (_.isEqual(type, ConsoleLogType.LOG) && _.some(LOG_ERROR_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.ERROR;
 
         const time = new Date().toLocaleTimeString();
         setTimeout(() => {
-          setSystemLogs((prev) => _.slice([...prev, { time, type: enrichedType, msg: processedMsg }], -200));
-        }, 0);
-      } catch (e) { }
+          setSystemLogs((prev) => _.slice(
+            _.concat(prev, { time, type: enrichedType, msg: processedMsg }),
+            REFACTOR_CONSTANTS.SYSTEM_LOG_LIMIT_START,
+          ));
+        }, REFACTOR_CONSTANTS.LOG_CAPTURE_DELAY_MS);
+      } catch { }
     };
 
-    console.log = (...args) => {
-      captureLog("log", args);
-      originalLog(...args);
-    };
-    console.warn = (...args) => {
-      captureLog("warn", args);
-      originalWarn(...args);
-    };
-    console.error = (...args) => {
-      captureLog("error", args);
-      originalError(...args);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.warn = originalWarn;
-      console.error = originalError;
-    };
+    return subscribeToLogs(captureLog);
   }, []);
 
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
@@ -1064,32 +1080,41 @@ export function usePipelineWizard(props: any) {
   };
 
   useEffect(() => {
-    const loadVoices = async () => {
-      try {
-        const response = await fetch(`${API_ROUTES.VOICES}?provider=edge`, {
-          headers: {
-            "x-ai33-api-key": getStoredApiKey("AI33_API_KEY"),
-          },
-        });
-        if (response.ok) {
-          const json = await response.json();
-          if (json.success && json.data) {
-            const mappedVoices = json.data.map((v: any) => ({
-              voiceURI: v.voice_id,
-              name: v.name + (v.gender ? ` - ${v.gender}` : ""),
-              lang: v.language || "vi-VN",
-              localService: false,
-              default: false,
-            }));
-            setSystemVoices(mappedVoices);
-          }
-        }
-      } catch (err) {
-        logger.error("FAILED_LOAD_VOICES", err);
-      }
-    };
+    let isActive = true;
+    const params = new URLSearchParams();
+    params.append(API_QUERY_PARAMS.PROVIDER, DEFAULT_PROVIDER);
 
-    loadVoices();
+    void fetchVoiceCatalog(params)
+      .then((responseData) => {
+        const voices = _.get(responseData, SecurityConstants.DATA_KEY);
+        if (!_.every([
+          isActive,
+          _.get(responseData, SecurityConstants.SUCCESS_KEY),
+          _.isArray(voices),
+        ], Boolean)) return;
+
+        const mappedVoices = _.map(voices, (voice) => {
+          const voiceName = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, SecurityConstants.EMPTY_STRING);
+          const voiceGender = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH, SecurityConstants.EMPTY_STRING);
+          return {
+            voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+            name: _.isEmpty(voiceGender)
+              ? voiceName
+              : _.join([voiceName, voiceGender], REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_SEPARATOR),
+            lang: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_LANGUAGE_PATH, APP_LOCALES.VI),
+            localService: REFACTOR_CONSTANTS.VOICE_CATALOG_REMOTE_SERVICE,
+            default: REFACTOR_CONSTANTS.VOICE_CATALOG_NOT_DEFAULT,
+          };
+        });
+        setSystemVoices(mappedVoices);
+      })
+      .catch((error) => {
+        if (isActive) logger.error(LogEvent.FAILED_LOAD_VOICES, error);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   const [isPlayingSim, setIsPlayingSim] = useState(false);
@@ -3870,6 +3895,7 @@ export function usePipelineWizard(props: any) {
     setLoading,
     isVoiceDialogOpen,
     setIsVoiceDialogOpen,
+    selectVoiceForProject,
     loadingStates,
     setLoadingStates,
     errorMsg,

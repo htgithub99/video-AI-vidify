@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
-import { VideoQuality } from "../constants/enums";
+import { AppTab, VideoQuality } from "../constants/enums";
 import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
@@ -87,6 +87,7 @@ export default function AutoVideoGenerator({
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
   const processingRef = useRef(false);
+  const boundSelectedProjectIdRef = useRef<string | null>(null);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
@@ -256,6 +257,7 @@ export default function AutoVideoGenerator({
 
   useEffect(() => {
     const restoreAutoProject = async () => {
+      if (processingRef.current) return;
       try {
         const savedId = await storageUtils.getAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT);
         if (savedId && !activeCreatedProject) {
@@ -301,7 +303,11 @@ export default function AutoVideoGenerator({
   }, [projects, activeCreatedProject]);
 
   useEffect(() => {
+    if (processingRef.current) return;
     if (selectedProjectId) {
+      const selectionChanged = !_.isEqual(boundSelectedProjectIdRef.current, selectedProjectId);
+      if (!selectionChanged && activeCreatedProject) return;
+      boundSelectedProjectIdRef.current = selectedProjectId;
       const foundProj = _.find(projects, { id: selectedProjectId });
       if (foundProj) {
         setActiveCreatedProject(foundProj);
@@ -341,7 +347,7 @@ export default function AutoVideoGenerator({
         }
       }
     }
-  }, [selectedProjectId, projects]);
+  }, [selectedProjectId, projects, activeCreatedProject]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
@@ -465,15 +471,15 @@ export default function AutoVideoGenerator({
     setIsProcessing(true);
     setStepProgress(5);
     setCurrentStepIndex(1);
-    setLogs([]);
     setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-    let currentLogs: string[] = [];
+    let currentLogs: string[] = resumeMode ? _.clone(logs) : [];
+    setLogs(_.clone(currentLogs));
     const appendLog = (msg: string) => {
       const timestamp = new Date().toLocaleTimeString();
       const formatted = `[${timestamp}] ${msg}`;
-      currentLogs.push(formatted);
-              setLogs([...currentLogs]);
+      currentLogs = _.concat(currentLogs, formatted);
+      setLogs(_.clone(currentLogs));
     };
 
     appendLog(T.logPipelineStart);
@@ -483,10 +489,21 @@ export default function AutoVideoGenerator({
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
-      let existingTargetProj = activeCreatedProject;
-      if (!existingTargetProj && selectedProjectId) {
-        existingTargetProj = _.find(projects, { id: selectedProjectId }) || null;
-      }
+      const directlySelectedProj = selectedProjectId
+        ? _.find(projects, { id: selectedProjectId }) || null
+        : null;
+      const selectedAutoProj = directlySelectedProj
+        ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
+            ? directlySelectedProj
+            : (_.find(projects, (project) => {
+                const targetParentId = directlySelectedProj.parentId || directlySelectedProj.id;
+                return _.isEqual(project.parentId, targetParentId)
+                  && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX);
+              }) || directlySelectedProj))
+        : null;
+
+      let existingTargetProj = selectedAutoProj
+        || (!selectedProjectId ? activeCreatedProject : null);
       if (!existingTargetProj && !_.isEmpty(projectName)) {
         existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))) || null;
       }
@@ -506,25 +523,23 @@ export default function AutoVideoGenerator({
         setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {
-        const selectedProj = selectedProjectId ? _.find(projects, { id: selectedProjectId }) : null;
+        const selectedProj = selectedAutoProj;
         const isChildProject = selectedProj && selectedProj.parentId;
 
-        newProjectId = isChildProject
+        newProjectId = selectedProj
           ? selectedProj.id
           : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-        const defaultName = isChildProject
+        const defaultName = selectedProj
           ? selectedProj.name
-          : (selectedProj
-              ? `${selectedProj.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`
-              : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING)));
+          : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
         newProj = {
           id: newProjectId,
-          parentId: isChildProject ? selectedProj.parentId : (selectedProj ? selectedProj.id : undefined),
+          parentId: isChildProject ? selectedProj.parentId : undefined,
           name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          createdAt: new Date().toISOString(),
+          createdAt: selectedProj?.createdAt || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           input: {
@@ -607,10 +622,9 @@ export default function AutoVideoGenerator({
       setActiveCreatedProject(newProj);
 
       const syncProject = async (proj: VideoProject) => {
-        const currentLogs = _.clone(logs);
         const finalProj = {
           ...proj,
-          generationLogs: currentLogs,
+          generationLogs: _.clone(currentLogs),
           updatedAt: new Date().toISOString()
         };
         setActiveCreatedProject(finalProj);
@@ -626,14 +640,20 @@ export default function AutoVideoGenerator({
       let factCheckNotes: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let realScenes = [];
       let isScriptCached = false;
+      let isStoryboardCached = false;
 
-      if (resumeMode && !_.isEmpty(newProj.scriptRewritten) && !_.isEmpty(newProj.storyboard)) {
+      if (resumeMode && !_.isEmpty(newProj.scriptRewritten)) {
         realScript = newProj.scriptRewritten;
         chapters = newProj.chapters || [];
-        factCheckNotes = newProj.factCheckNotes || "";
-        realScenes = _.cloneDeep(newProj.storyboard);
+        factCheckNotes = newProj.factCheckNotes || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
         isScriptCached = true;
         appendLog(T.logResumeScript);
+        setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
+      }
+
+      if (resumeMode && !_.isEmpty(newProj.storyboard)) {
+        realScenes = _.cloneDeep(newProj.storyboard);
+        isStoryboardCached = true;
         setStepProgress(30);
       }
 
@@ -661,6 +681,17 @@ export default function AutoVideoGenerator({
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
         setStepProgress(20);
 
+        const scriptUpdatedProj = {
+          ...newProj,
+          scriptRewritten: realScript,
+          factCheckNotes,
+          chapters,
+        };
+        await syncProject(scriptUpdatedProj);
+        newProj = scriptUpdatedProj;
+      }
+
+      if (!isStoryboardCached) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
         const storyboardPayload = {
           rewrittenScript: realScript,
@@ -770,7 +801,7 @@ export default function AutoVideoGenerator({
       let currentStylePreset = stylePreset;
       let currentThumbnailStyle = thumbnailStylePreset;
 
-      if (!isScriptCached) {
+      if (!isStoryboardCached) {
         if (!_.isEmpty(referenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
           const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: referenceImages });
@@ -1192,6 +1223,7 @@ export default function AutoVideoGenerator({
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
 
       const renderPayload = {
+        projectId: newProj.id,
         scenes: _.map(realScenes, (sc) => ({
           id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
           duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
@@ -1219,50 +1251,47 @@ export default function AutoVideoGenerator({
 
       if (renderData.success && renderData.jobId) {
         const jobId = renderData.jobId;
-        await new Promise<void>((resolve, reject) => {
-          let lastLoggedProgress: number | null = null;
-          const checkStatus = setInterval(async () => {
-            try {
-              const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
-                headers: {
-                  [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-                }
-              });
-              const statusData = await statusRes.json();
-              if (statusData.success) {
-                if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
-                  clearInterval(checkStatus);
-                  setRenderedVideoUrl(statusData.url);
-                  appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
-
-                  const renderCompletedProj = {
-                    ...slicedUpdatedProj,
-                    seo: _.defaultTo(seoData, undefined),
-                    thumbnails: _.defaultTo(thumbnailsList, undefined),
-                    renderedVideoUrl: statusData.url,
-                    status: REFACTOR_CONSTANTS.STATUS_COMPLETED
-                  };
-                  syncProject(renderCompletedProj).then(() => resolve()).catch(reject);
-                } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
-                  clearInterval(checkStatus);
-                  reject(new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
-                } else {
-                  const currentProgress = _.defaultTo(statusData.progress, 0);
-                  if (!_.isEqual(currentProgress, lastLoggedProgress)) {
-                    lastLoggedProgress = currentProgress;
-                    appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${currentProgress}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
-                  }
-                }
-              } else {
-                clearInterval(checkStatus);
-                reject(new Error(REFACTOR_CONSTANTS.ERR_STATUS_FAILED));
-              }
-            } catch (err: any) {
-              clearInterval(checkStatus);
-              reject(new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
+        let lastLoggedProgress: number | null = null;
+        let renderPending = true;
+        while (renderPending) {
+          const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
+            headers: {
+              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
             }
-          }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
-        });
+          });
+          const statusData = await statusRes.json();
+          if (!statusData.success) {
+            throw new Error(REFACTOR_CONSTANTS.ERR_STATUS_FAILED);
+          }
+          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
+            renderPending = false;
+            setRenderedVideoUrl(statusData.url);
+            appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
+
+            const renderCompletedProj = {
+              ...slicedUpdatedProj,
+              seo: _.defaultTo(seoData, undefined),
+              thumbnails: _.defaultTo(thumbnailsList, undefined),
+              renderedVideoUrl: statusData.url,
+              status: REFACTOR_CONSTANTS.STATUS_COMPLETED
+            };
+            await syncProject(renderCompletedProj);
+            continue;
+          }
+          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
+            throw new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED);
+          }
+          const currentProgress = _.defaultTo(statusData.progress, SecurityConstants.ZERO);
+          if (!_.isEqual(currentProgress, lastLoggedProgress)) {
+            lastLoggedProgress = currentProgress;
+            appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${currentProgress}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
+          }
+          if (renderPending) {
+            await new Promise((pollDelayResolve) => {
+              window.setTimeout(pollDelayResolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+            });
+          }
+        }
       } else {
         throw new Error(renderData.error || REFACTOR_CONSTANTS.ERR_RENDER_QUEUE);
       }
@@ -1281,6 +1310,16 @@ export default function AutoVideoGenerator({
       processingRef.current = false;
     }
   };
+
+  const voiceDialogPersistenceScope = _.join(
+    [
+      AppTab.AUTO_GENERATOR,
+      activeCreatedProject?.id
+        || selectedProjectId
+        || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
+    ],
+    REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
+  );
 
   return (
     <div className="flex-1 h-full w-full bg-slate-955 text-slate-100 flex flex-col min-h-0 overflow-hidden font-sans select-none">
@@ -1561,20 +1600,53 @@ export default function AutoVideoGenerator({
                 </Button>
               </div>
 
-              <VoiceSelectionDialog
+              {isVoiceDialogOpen && <VoiceSelectionDialog
+                key={voiceDialogPersistenceScope}
                 isOpen={isVoiceDialogOpen}
                 onClose={() => setIsVoiceDialogOpen(false)}
                 currentLang={currentLang}
                 selectedVoiceId={voiceURI}
                 favoriteVoices={[]}
                 onToggleFavoriteVoice={() => { }}
+                persistenceScope={voiceDialogPersistenceScope}
                 onSelectVoice={(v: any) => {
-                  setVoiceURI(v.voice_id || v.voiceURI || v.id);
-                  setVoiceName(v.name);
-                  if (v.provider) setVoiceProvider(v.provider);
+                  const selectedVoiceURI = _.find([
+                    _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+                    _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
+                    _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
+                  ], (value) => !_.isEmpty(value));
+                  const selectedVoiceName = _.get(
+                    v,
+                    REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH,
+                    selectedVoiceURI,
+                  );
+                  const selectedVoiceProvider = _.get(
+                    v,
+                    REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
+                    voiceProvider,
+                  );
+                  setVoiceURI(selectedVoiceURI);
+                  setVoiceName(selectedVoiceName);
+                  setVoiceProvider(selectedVoiceProvider);
+
+                  const targetProject = activeCreatedProject
+                    || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
+                  if (targetProject) {
+                    const updatedProject = {
+                      ...targetProject,
+                      voiceConfig: {
+                        ...(targetProject.voiceConfig || {} as VoiceConfig),
+                        voiceURI: selectedVoiceURI,
+                        voiceName: selectedVoiceName,
+                        provider: selectedVoiceProvider,
+                      } as VoiceConfig,
+                    };
+                    setActiveCreatedProject(updatedProject);
+                    void onUpdateProject(updatedProject, true);
+                  }
                   setIsVoiceDialogOpen(false);
                 }}
-              />
+              />}
             </div>
 
             <div className="border-t border-slate-800/80 my-2" />
@@ -1672,21 +1744,40 @@ export default function AutoVideoGenerator({
                   </div>
                 </div>
 
-                <div className="border border-slate-800/90 rounded-2xl overflow-hidden bg-slate-900/60 shadow-sm transition-all">
+                <div className={cn(
+                  AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS,
+                  showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS,
+                )}>
                   <Button
                     type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                     variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                     onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
-                    className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold font-mono uppercase tracking-wider text-slate-300 hover:text-white transition-colors h-auto"
+                    aria-expanded={showAdvancedImageSettings}
+                    className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}
                   >
-                    <span className="flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-blue-400" />
-                      {T.advancedConfig}
+                    <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS}>
+                      <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS}>
+                        <Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} />
+                      </span>
+                      <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TEXT_WRAP_CLASS}>
+                        <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TITLE_CLASS}>{T.advancedConfig}</span>
+                        <span
+                          className={AUTO_GENERATOR_CONSTANTS.ADVANCED_HINT_CLASS}
+                          title={T.advancedConfigTooltip}
+                        >
+                          {T.advancedConfigHint}
+                        </span>
+                      </span>
                     </span>
-                    <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-250", showAdvancedImageSettings && "rotate-180")} />
+                    <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_WRAP_CLASS}>
+                      <ChevronDown className={cn(
+                        AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_CLASS,
+                        showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_OPEN_CLASS,
+                      )} />
+                    </span>
                   </Button>
                   {showAdvancedImageSettings && (
-                    <div className="px-4 pb-4 pt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800/60 animate-fadeIn">
+                    <div className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS}>
                       <div className="space-y-1">
                         <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
                         <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblChromeHeadlessTooltip}>

@@ -35,7 +35,7 @@ class RenderQueueService {
       id: jobId,
       payload,
       status: JobStatus.PENDING,
-      progress: _.get(REFACTOR_CONSTANTS, 'ZERO', 0),
+      progress: SecurityConstants.ZERO,
       createdAt: new Date(),
       licenseKey,
     };
@@ -44,8 +44,8 @@ class RenderQueueService {
     
     logger.info(
       REFACTOR_CONSTANTS.RENDER_LOG_ADDED
-        .replace("{0}", jobId)
-        .replace("{1}", String(this.queue.length))
+        .replace(SecurityConstants.PLACEHOLDER_0, jobId)
+        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue)))
     );
     this.processQueue();
     return job;
@@ -66,17 +66,14 @@ class RenderQueueService {
     
     logger.info(
       REFACTOR_CONSTANTS.RENDER_LOG_PROCESSING
-        .replace("{0}", job.id)
+        .replace(SecurityConstants.PLACEHOLDER_0, job.id)
     );
 
     let progressTimer: NodeJS.Timeout | null = null;
-    const MAX_PROGRESS = 95;
-    const PROGRESS_STEP = 5;
-
     try {
       progressTimer = setInterval(() => {
-        if (_.eq(job.status, JobStatus.PROCESSING) && _.lt(job.progress, MAX_PROGRESS)) {
-          job.progress += PROGRESS_STEP;
+        if (_.eq(job.status, JobStatus.PROCESSING) && _.lt(job.progress, REFACTOR_CONSTANTS.RENDER_PROGRESS_MAX)) {
+          job.progress = _.add(job.progress, REFACTOR_CONSTANTS.RENDER_PROGRESS_STEP);
         }
       }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
 
@@ -86,10 +83,7 @@ class RenderQueueService {
         clearInterval(progressTimer);
       }
 
-      job.status = JobStatus.COMPLETED;
-      job.progress = 100;
       job.url = url;
-      job.completedAt = new Date();
 
       if (!_.isEmpty(job.licenseKey)) {
         try {
@@ -98,11 +92,15 @@ class RenderQueueService {
           logger.error(SecurityMessages.USAGE_UPDATE_ERROR, e);
         }
       }
+
+      job.status = JobStatus.COMPLETED;
+      job.progress = REFACTOR_CONSTANTS.RENDER_PROGRESS_COMPLETE;
+      job.completedAt = new Date();
       
       logger.info(
         REFACTOR_CONSTANTS.RENDER_LOG_COMPLETED
-          .replace("{0}", job.id)
-          .replace("{1}", url)
+          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
+          .replace(SecurityConstants.PLACEHOLDER_1, url)
       );
     } catch (error: any) {
       if (progressTimer) {
@@ -114,8 +112,8 @@ class RenderQueueService {
       
       logger.error(
         REFACTOR_CONSTANTS.RENDER_LOG_FAILED
-          .replace("{0}", job.id)
-          .replace("{1}", job.error),
+          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
+          .replace(SecurityConstants.PLACEHOLDER_1, job.error),
         error
       );
     } finally {

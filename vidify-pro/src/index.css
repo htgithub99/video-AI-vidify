@@ -477,16 +477,59 @@ input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="
   outline: none !important;
 }
 
-/* Thẻ select không có màu nền và không có viền */
+/* Select phẳng, không viền, đồng bộ cho dark/light mode. */
+:root {
+  --app-select-bg: #000000;
+  --app-select-bg-hover: #0a0a0a;
+  --app-select-text: #ffffff;
+  --app-select-option-bg: #09090b;
+  --app-select-option-active: #27272a;
+}
+
+:root.light {
+  --app-select-bg: #ffffff;
+  --app-select-bg-hover: #fafafa;
+  --app-select-text: #09090b;
+  --app-select-option-bg: #ffffff;
+  --app-select-option-active: #e4e4e7;
+}
+
 select {
+  background-color: var(--app-select-bg) !important;
+  color: var(--app-select-text) !important;
+  border: 0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Keep icon, value and chevron on one flat select surface. */
+.relative:has(> select) {
+  background-color: var(--app-select-bg) !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+}
+
+select:hover,
+select:focus,
+.relative:has(> select):hover,
+.relative:has(> select):focus-within {
+  background-color: var(--app-select-bg-hover) !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.relative:has(> select) select {
   background-color: transparent !important;
-  color: var(--color-slate-200) !important;
-  border: none !important;
 }
 
 select option {
-  background-color: #090d16 !important;
-  color: #e2e8f0 !important;
+  background-color: var(--app-select-option-bg) !important;
+  color: var(--app-select-text) !important;
   padding: 8px 12px;
 }
 
@@ -494,8 +537,68 @@ select option:hover,
 select option:focus,
 select option:active,
 select option:checked {
-  background-color: #1e293b !important;
-  color: #ffffff !important;
+  background-color: var(--app-select-option-active) !important;
+  color: var(--app-select-text) !important;
+}
+
+/* Advanced settings accordion follows the same flat dark/light surfaces. */
+.advanced-config-panel {
+  --advanced-panel-content: #0a0a0a;
+  --advanced-panel-muted: #a3a3a3;
+  --advanced-panel-icon: rgba(59, 130, 246, 0.14);
+  --advanced-panel-control: #18181b;
+  background-color: var(--app-select-bg) !important;
+  color: var(--app-select-text);
+  border: 0 !important;
+  border-radius: 1rem;
+  box-shadow: none !important;
+}
+
+:root.light .advanced-config-panel {
+  --advanced-panel-content: #fafafa;
+  --advanced-panel-muted: #52525b;
+  --advanced-panel-icon: rgba(37, 99, 235, 0.10);
+  --advanced-panel-control: #f4f4f5;
+}
+
+.advanced-config-trigger {
+  color: var(--app-select-text) !important;
+  background-color: transparent !important;
+  border: 0 !important;
+}
+
+.advanced-config-trigger:hover,
+.advanced-config-trigger:focus-visible {
+  color: var(--app-select-text) !important;
+  background-color: var(--app-select-bg-hover) !important;
+  outline: none !important;
+}
+
+.advanced-config-icon {
+  background-color: var(--advanced-panel-icon);
+}
+
+.advanced-config-title {
+  color: var(--app-select-text);
+}
+
+.advanced-config-hint {
+  color: var(--advanced-panel-muted);
+  font-weight: 500;
+}
+
+.advanced-config-chevron {
+  color: var(--advanced-panel-muted);
+  background-color: var(--advanced-panel-control);
+}
+
+.advanced-config-panel.is-open .advanced-config-chevron {
+  color: var(--app-select-text);
+}
+
+.advanced-config-content {
+  background-color: var(--advanced-panel-content);
+  border: 0 !important;
 }
 
 /* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */

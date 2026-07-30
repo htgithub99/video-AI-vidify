@@ -4,7 +4,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { LicenseProvider } from "./contexts/LicenseContext.tsx";
 import { LicenseActivation } from "./components/LicenseActivation.tsx";
-import { SecurityConstants } from "./constants/security";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "./constants";
 import _ from "lodash";
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -19,6 +19,58 @@ if (tokenFromUrl) {
 }
 
 const originalFetch = window.fetch;
+const usageJsonRoutes = [
+  API_ROUTES.PIPELINE_VOICE,
+  API_ROUTES.PIPELINE_GENERATE_IMAGE,
+];
+const usageTrackedRoutes = [
+  ...usageJsonRoutes,
+  API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
+  API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS,
+];
+
+const dispatchUsageUpdated = () => {
+  window.dispatchEvent(new CustomEvent(SecurityConstants.USAGE_UPDATED_EVENT));
+};
+
+const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: Response) => {
+  const rawUrl = input instanceof Request ? input.url : input.toString();
+  const pathname = new URL(rawUrl, window.location.origin).pathname;
+  const isTrackedRoute = _.some(usageTrackedRoutes, (route) => _.includes(pathname, route));
+  if (!_.every([response.ok, isTrackedRoute], Boolean)) return;
+
+  const responseCopy = response.clone();
+
+  if (_.includes(usageJsonRoutes, pathname)) {
+    void responseCopy.json()
+      .then((data) => {
+        if (_.get(data, SecurityConstants.SUCCESS_KEY)) dispatchUsageUpdated();
+      })
+      .catch(_.noop);
+    return;
+  }
+
+  if (_.isEqual(pathname, API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES)) {
+    void responseCopy.text()
+      .then((body) => {
+        if (_.includes(body, REFACTOR_CONSTANTS.USAGE_BATCH_SUCCESS_FRAGMENT)) dispatchUsageUpdated();
+      })
+      .catch(_.noop);
+    return;
+  }
+
+  if (_.includes(pathname, API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS)) {
+    void responseCopy.json()
+      .then((data) => {
+        if (_.isEqual(
+          _.get(data, SecurityConstants.STATUS_KEY),
+          REFACTOR_CONSTANTS.STATUS_COMPLETED,
+        )) dispatchUsageUpdated();
+      })
+      .catch(_.noop);
+  }
+};
+
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const licenseKey = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
   const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
@@ -34,7 +86,9 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   }
 
   requestInit.headers = headers;
-  return originalFetch(input, requestInit);
+  const response = await originalFetch(input, requestInit);
+  notifyUsageAfterSuccessfulResponse(input, response);
+  return response;
 };
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

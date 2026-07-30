@@ -62,6 +62,19 @@ export const FFMPEG_RENDER_CONSTANTS = {
 } as const;
 
 export const AUTO_GENERATOR_CONSTANTS = {
+  ADVANCED_PANEL_CLASS: "advanced-config-panel overflow-hidden transition-colors",
+  ADVANCED_PANEL_OPEN_CLASS: "is-open",
+  ADVANCED_TRIGGER_CLASS: "advanced-config-trigger w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left transition-colors h-auto",
+  ADVANCED_LAYOUT_CLASS: "flex items-center gap-3 min-w-0",
+  ADVANCED_ICON_WRAP_CLASS: "advanced-config-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+  ADVANCED_ICON_CLASS: "w-4 h-4 text-blue-400",
+  ADVANCED_TEXT_WRAP_CLASS: "min-w-0",
+  ADVANCED_TITLE_CLASS: "advanced-config-title block text-xs font-bold",
+  ADVANCED_HINT_CLASS: "advanced-config-hint block text-[10px] mt-0.5 truncate",
+  ADVANCED_CHEVRON_WRAP_CLASS: "advanced-config-chevron w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+  ADVANCED_CHEVRON_CLASS: "w-4 h-4 transition-transform duration-250",
+  ADVANCED_CHEVRON_OPEN_CLASS: "rotate-180",
+  ADVANCED_CONTENT_CLASS: "advanced-config-content px-4 pb-4 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn",
   HOOK_POSITION_START: "start",
   AUDIO_TYPE_TTS: "tts",
   EMOTION_NORMAL: "Normal",

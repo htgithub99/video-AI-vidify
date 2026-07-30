@@ -6,6 +6,7 @@ export const EMOJI_REGEX =
 export const VIETNAMESE_ACCENT_MARKS_REGEX = /[\u0300-\u036f]/g;
 export const VIETNAMESE_D_LETTER_REGEX = /[đĐ]/g;
 export const SAFE_FOLDER_CHARS_REGEX = /[^a-zA-Z0-9\s-_]/g;
+export const SAFE_PROJECT_ID_REGEX = /[^a-zA-Z0-9_-]/g;
 export const MULTIPLE_SPACES_REGEX = /\s+/g;
 
 export const SENTENCE_SPLIT_REGEX = /[^.!?]+[.!?]*/g;

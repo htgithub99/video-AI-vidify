@@ -8,6 +8,7 @@ import { promisify } from "util";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
+import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 
 const execAsync = promisify(exec);
 
@@ -24,6 +25,7 @@ export interface FFmpegRenderOptions {
   quality?: VideoQuality;
   globalAudioUrl?: string;
   aspectRatio?: string;
+  projectId?: string;
 }
 
 export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<string> => {
@@ -57,14 +59,58 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
   }
 
   const finalOutputName = `${FFMPEG_RENDER_CONSTANTS.OUTPUT_FILE_PREFIX}${uuidv4()}${FFMPEG_RENDER_CONSTANTS.MP4_EXTENSION}`;
-  const finalOutputPath = path.join(getDataDirectory(), FFMPEG_RENDER_CONSTANTS.ASSETS_DIR, finalOutputName);
-  const finalOutputUrl = `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
+  const rawProjectId = _.trim(_.get(
+    options,
+    REFACTOR_CONSTANTS.FFMPEG_PROJECT_ID_PATH,
+    SecurityConstants.EMPTY_STRING,
+  ));
+  const safeProjectId = _.isEmpty(rawProjectId)
+    ? SecurityConstants.EMPTY_STRING
+    : _.replace(
+      path.basename(rawProjectId),
+      SAFE_PROJECT_ID_REGEX,
+      REFACTOR_CONSTANTS.VD_UNDERSCORE,
+    );
+  const outputDir = !_.isEmpty(safeProjectId)
+    ? path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId, VIDEOS_DIR_NAME)
+    : path.join(getDataDirectory(), ASSETS_DIR_NAME);
+  fs.mkdirSync(outputDir, { recursive: true });
+  const finalOutputPath = path.join(outputDir, finalOutputName);
+  const finalOutputUrl = !_.isEmpty(safeProjectId)
+    ? _.join(
+      [
+        SecurityConstants.EMPTY_STRING,
+        ASSETS_DIR_NAME,
+        PROJECTS_DIR_NAME,
+        safeProjectId,
+        VIDEOS_DIR_NAME,
+        finalOutputName,
+      ],
+      REFACTOR_CONSTANTS.VD_SLASH,
+    )
+    : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
   
-  let globalAudioPath = "";
-  if (globalAudioUrlVal) {
-    const filename = path.basename(globalAudioUrlVal);
-    const candidatePath = path.join(getDataDirectory(), FFMPEG_RENDER_CONSTANTS.ASSETS_DIR, filename);
-    if (fs.existsSync(candidatePath)) {
+  let globalAudioPath = SecurityConstants.EMPTY_STRING;
+  if (_.every([
+    !_.isEmpty(globalAudioUrlVal),
+    !_.startsWith(globalAudioUrlVal, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX),
+  ], Boolean)) {
+    const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME);
+    const cleanAudioUrl = _.first(_.split(globalAudioUrlVal, SecurityConstants.QUERY_MARK));
+    const relativeAudioPath = _.trimStart(cleanAudioUrl, REFACTOR_CONSTANTS.VD_SLASH);
+    const assetsPathPrefix = _.join(
+      [ASSETS_DIR_NAME, SecurityConstants.EMPTY_STRING],
+      REFACTOR_CONSTANTS.VD_SLASH,
+    );
+    const normalizedAudioPath = _.startsWith(relativeAudioPath, assetsPathPrefix)
+      ? _.slice(relativeAudioPath, _.size(assetsPathPrefix)).join(SecurityConstants.EMPTY_STRING)
+      : relativeAudioPath;
+    const candidatePath = path.resolve(assetsRoot, normalizedAudioPath);
+    const containedPathPrefix = _.join([assetsRoot, path.sep], SecurityConstants.EMPTY_STRING);
+    if (_.every([
+      _.startsWith(candidatePath, containedPathPrefix),
+      fs.existsSync(candidatePath),
+    ], Boolean)) {
       globalAudioPath = candidatePath;
     }
   }

@@ -114,6 +114,7 @@ export const SecurityConstants = {
   HTTP_FORBIDDEN: 403,
   HTTP_INTERNAL_ERROR: 500,
   DEFAULT_AMOUNT: 1,
+  USAGE_UPDATED_EVENT: 'vidify:usage-updated',
   ZERO: 0,
   REQUIRE_LICENSE_ERROR_LOG: 'RequireLicense Middleware Error',
   THEME_LIGHT_TOOLTIP: 'Sáng',

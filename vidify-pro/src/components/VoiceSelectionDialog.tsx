@@ -7,6 +7,8 @@ import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { useVoices } from "../hooks/useVoices";
 import { logger } from "../utils/logger";
+import { jsonUtils } from "../lib/json";
+import { storageUtils } from "../lib/storage";
 import { VOICE_DIALOG_TEXTS } from "../constants/texts";
 import {
   VOICE_PROVIDER_OPTIONS,
@@ -20,6 +22,7 @@ import {
   REFACTOR_CONSTANTS,
   SecurityConstants,
   COMMON_STRINGS,
+  STORAGE_KEYS,
   VOICE_GENDER
 } from "../constants";
 
@@ -37,6 +40,7 @@ export interface Voice {
   descriptives: string[];
   tags: string[];
   preview_url: string;
+  provider?: string;
 }
 
 interface VoiceSelectionDialogProps {
@@ -47,7 +51,39 @@ interface VoiceSelectionDialogProps {
   selectedVoiceId?: string;
   favoriteVoices: any[];
   onToggleFavoriteVoice: (voiceId: string, name: string, providerName?: string) => void;
+  persistenceScope: string;
 }
+
+interface VoiceDialogFilterState {
+  search: string;
+  language: string;
+  gender: string;
+  age: string;
+  provider: string;
+}
+
+const DEFAULT_FILTER_STATE: VoiceDialogFilterState = {
+  search: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  language: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  gender: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  age: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  provider: DEFAULT_PROVIDER,
+};
+
+const getFilterStorageKey = (scope: string): string => (
+  _.join(
+    [STORAGE_KEYS.VOICE_DIALOG_FILTERS, scope],
+    REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
+  )
+);
+
+const getStoredFilters = (storageKey: string): VoiceDialogFilterState => {
+  const storedFilters = jsonUtils.safeParse<Partial<VoiceDialogFilterState>>(
+    storageUtils.get(storageKey),
+    DEFAULT_FILTER_STATE,
+  );
+  return _.assign({}, DEFAULT_FILTER_STATE, storedFilters);
+};
 
 const normalizeText = (text: string): string => {
   if (_.isEmpty(text)) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -100,22 +136,29 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   currentLang,
   selectedVoiceId,
   favoriteVoices = [],
-  onToggleFavoriteVoice
+  onToggleFavoriteVoice,
+  persistenceScope,
 }) => {
+  const filterStorageKey = getFilterStorageKey(persistenceScope);
+  const initialFilters = useMemo(
+    () => getStoredFilters(filterStorageKey),
+    [filterStorageKey],
+  );
   const [voices, setVoices] = useState<Voice[]>([]);
   const [page, setPage] = useState<number>(REFACTOR_CONSTANTS.PAGE_ONE);
   const [hasMore, setHasMore] = useState(true);
 
-  const [search, setSearch] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [debouncedSearch, setDebouncedSearch] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [language, setLanguage] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [gender, setGender] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [age, setAge] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [provider, setProvider] = useState(DEFAULT_PROVIDER);
+  const [search, setSearch] = useState<string>(initialFilters.search);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(initialFilters.search);
+  const [language, setLanguage] = useState<string>(initialFilters.language);
+  const [gender, setGender] = useState<string>(initialFilters.gender);
+  const [age, setAge] = useState<string>(initialFilters.age);
+  const [provider, setProvider] = useState(initialFilters.provider);
 
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const userRequestedNextPageRef = useRef(false);
 
   const debouncedSetSearch = useCallback(
     _.debounce((val: string) => {
@@ -130,6 +173,17 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
     debouncedSetSearch(val);
   };
 
+  useEffect(() => {
+    storageUtils.set(
+      filterStorageKey,
+      jsonUtils.safeStringify({ search, language, gender, age, provider }),
+    );
+  }, [filterStorageKey, search, language, gender, age, provider]);
+
+  useEffect(() => () => {
+    debouncedSetSearch.cancel();
+  }, [debouncedSetSearch]);
+
   const { data: queryData, isLoading, isFetching } = useVoices({
     provider,
     page,
@@ -143,20 +197,21 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   const loading = isLoading || isFetching;
 
   useEffect(() => {
-    if (_.get(queryData, "success") && _.get(queryData, "data")) {
+    if (_.get(queryData, SecurityConstants.SUCCESS_KEY) && _.get(queryData, SecurityConstants.DATA_KEY)) {
       if (_.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE)) {
-        setVoices(_.get(queryData, "data"));
+        setVoices(_.get(queryData, SecurityConstants.DATA_KEY));
       } else {
-        setVoices((prev) => _.unionBy(prev, _.get(queryData, "data"), REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
+        setVoices((prev) => _.unionBy(prev, _.get(queryData, SecurityConstants.DATA_KEY), REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
       }
       setHasMore(_.get(queryData, REFACTOR_CONSTANTS.VD_PAGINATION_HAS_MORE, false));
-    } else if (_.isEqual(_.get(queryData, "success"), false)) {
+    } else if (_.isEqual(_.get(queryData, SecurityConstants.SUCCESS_KEY), false)) {
       setHasMore(false);
     }
   }, [queryData, page]);
 
   useEffect(() => {
     setPage(REFACTOR_CONSTANTS.PAGE_ONE);
+    userRequestedNextPageRef.current = false;
   }, [language, gender, age, debouncedSearch, provider]);
 
   useEffect(() => {
@@ -172,8 +227,15 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((prev) => prev + REFACTOR_CONSTANTS.INDEX_ONE);
+        const firstEntry = _.first(entries);
+        if (_.every([
+          firstEntry?.isIntersecting,
+          hasMore,
+          !loading,
+          userRequestedNextPageRef.current,
+        ], Boolean)) {
+          userRequestedNextPageRef.current = false;
+          setPage((prev) => _.add(prev, REFACTOR_CONSTANTS.INDEX_ONE));
         }
       },
       { threshold: REFACTOR_CONSTANTS.OBSERVER_THRESHOLD }
@@ -220,7 +282,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
   }, [voices, gender, age, language, debouncedSearch]);
 
   const handlePlay = (voice: Voice) => {
-    if (_.isEqual(playingId, _.get(voice, "voice_id"))) {
+    if (_.isEqual(playingId, _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY))) {
       if (audioRef.current) {
         audioRef.current.pause();
         setPlayingId(null);
@@ -232,7 +294,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
       audioRef.current.pause();
     }
 
-    const audio = new Audio(_.get(voice, "preview_url"));
+    const audio = new Audio(_.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_PREVIEW_PATH));
     audio.onended = () => setPlayingId(null);
     audio.play().catch((e) => logger.error(AUDIO_PLAYBACK_FAILED_ERR, e));
     audioRef.current = audio;
@@ -367,7 +429,14 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto relative p-5">
+        <div
+          className={REFACTOR_CONSTANTS.VOICE_DIALOG_SCROLL_CLASS}
+          onScroll={(event) => {
+            if (_.gt(event.currentTarget.scrollTop, SecurityConstants.ZERO)) {
+              userRequestedNextPageRef.current = true;
+            }
+          }}
+        >
           {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) && (
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-900/50 backdrop-blur-sm text-slate-500">
               <div className="w-10 h-10 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(244,63,94,0.3)]" />
@@ -385,7 +454,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {_.map(filteredVoices, (voice) => {
               const isSelected = _.isEqual(selectedVoiceId, _.get(voice, "voice_id"));
-              const isPlaying = _.isEqual(playingId, _.get(voice, "voice_id"));
+              const isPlaying = _.isEqual(playingId, _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
 
               return (
                 <div
@@ -396,7 +465,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({
                       : "bg-slate-900 border-slate-700/80 hover:border-slate-500 hover:bg-slate-850 shadow-sm"
                     }`
                   )}
-                  onClick={() => onSelectVoice(voice)}
+                  onClick={() => onSelectVoice({ ...voice, provider })}
                 >
                   <Button
                     variant={isPlaying ? REFACTOR_CONSTANTS.VARIANT_PRIMARY : REFACTOR_CONSTANTS.VARIANT_SECONDARY}

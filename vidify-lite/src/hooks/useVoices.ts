@@ -2,21 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import _ from 'lodash';
 import {
-  API_ROUTES,
   API_QUERY_PARAMS,
   VBEE_PROVIDER_ID,
   VOICE_OWNERSHIP_KEY,
   VOICE_OWNERSHIP_COMMUNITY,
-  REFACTOR_CONSTANTS,
-  SecurityConstants
+  REFACTOR_CONSTANTS
 } from '../constants';
+import { fetchVoiceCatalog } from '../services/voiceCatalogService';
 
 const CACHE_PREFIX = REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX;
 const QUERY_KEY = REFACTOR_CONSTANTS.VOICES_QUERY_KEY;
 const EMPTY_STRING = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 const JOIN_CHAR = REFACTOR_CONSTANTS.VOICES_JOIN_CHAR;
-const STALE_TIME = 24 * 60 * 60 * 1000;
-const ERR_FAILED_TO_FETCH = REFACTOR_CONSTANTS.VOICES_ERR_FAILED_TO_FETCH;
+const STALE_TIME = REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS;
 
 export interface UseVoicesFilters {
   provider: string;
@@ -42,7 +40,7 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
   const cacheKey = _.join(parts, JOIN_CHAR);
 
   const query = useQuery({
-    queryKey: [QUERY_KEY, filters],
+    queryKey: [QUERY_KEY, ..._.slice(parts, REFACTOR_CONSTANTS.INDEX_ONE)],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append(API_QUERY_PARAMS.PROVIDER, filters.provider);
@@ -66,13 +64,7 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
         params.append(VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY);
       }
 
-      const res = await fetch(
-        _.join([API_ROUTES.VOICES, params.toString()], SecurityConstants.QUERY_MARK)
-      );
-      if (!res.ok) {
-        throw new Error(ERR_FAILED_TO_FETCH);
-      }
-      return res.json();
+      return fetchVoiceCatalog(params);
     },
     initialData: () => {
       const cached = localStorage.getItem(cacheKey);
@@ -80,6 +72,9 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
     },
     enabled,
     staleTime: STALE_TIME,
+    gcTime: STALE_TIME,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   useEffect(() => {

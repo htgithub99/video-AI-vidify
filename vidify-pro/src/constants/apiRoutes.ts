@@ -28,6 +28,7 @@ export const API_ROUTES = {
   PIPELINE_SELECT_FILE: "/api/pipeline/select-file",
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
   PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
+  PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
 };
 
 export const EXTERNAL_URLS = {
@@ -79,6 +80,7 @@ export const ASSETS_DIR_NAME = "assets";
 export const IMAGES_DIR_NAME = "images";
 export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
+export const VIDEOS_DIR_NAME = "videos";
 export const UNSPLASH_IMAGE_REGEX = /https:\/\/images\.unsplash\.com\/featured\/800x450\/\?([a-zA-Z0-9%_,\-\+]+)/g;
 
 export const DEFAULT_AI33_API_KEY =

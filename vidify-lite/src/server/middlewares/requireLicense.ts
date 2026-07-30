@@ -2,9 +2,28 @@ import { Request, Response, NextFunction } from 'express';
 import { LicenseService, LicenseValidationError } from '../services/licenseService.js';
 import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
+import { REFACTOR_CONSTANTS } from '../../constants/index.js';
 import { SecurityConstants, SecurityMessages, LocalizationConstants, FeatureType, LicenseStatus } from '../../constants/security.js';
 import { requestContext } from '../utils/requestContext.js';
 import { getResolvedLicenseKey } from '../services/apiKeyResolver.js';
+
+const getRequestedUsageAmount = (req: Request, featureType: FeatureType): number => {
+    const requestedItems = _.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
+    const requestedAmountByFeature: Record<FeatureType, number> = {
+        [FeatureType.VIDEO]: SecurityConstants.DEFAULT_AMOUNT,
+        [FeatureType.IMAGE]: _.isArray(requestedItems)
+            ? _.size(requestedItems)
+            : SecurityConstants.DEFAULT_AMOUNT,
+        [FeatureType.VOICE]: _.size(
+            _.toString(_.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))
+        ),
+    };
+
+    return _.max([
+        _.get(requestedAmountByFeature, featureType, SecurityConstants.DEFAULT_AMOUNT),
+        SecurityConstants.DEFAULT_AMOUNT,
+    ]) ?? SecurityConstants.DEFAULT_AMOUNT;
+};
 
 export const requireLicense = (featureType?: FeatureType) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -64,8 +83,10 @@ export const requireLicense = (featureType?: FeatureType) => {
 
             const currentUsage = _.get(license, _.join([SecurityConstants.USAGE_PREFIX, featureType], SecurityConstants.EMPTY_STRING), SecurityConstants.ZERO);
             const maxLimit = _.get(license, _.join([SecurityConstants.LIMITS_PREFIX_LOWER, featureType], SecurityConstants.DOT), SecurityConstants.ZERO);
+            const requestedAmount = getRequestedUsageAmount(req, featureType);
+            const projectedUsage = _.add(currentUsage, requestedAmount);
 
-            if (_.gte(currentUsage, maxLimit)) {
+            if (_.gt(projectedUsage, maxLimit)) {
                 const featureName = _.isEqual(featureType, FeatureType.VIDEO)
                     ? LocalizationConstants.FEATURE_VIDEO
                     : (_.isEqual(featureType, FeatureType.IMAGE)

@@ -74,13 +74,14 @@ export default function PipelineStep4(props: PipelineWizardState) {
     props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDERING_WAIT);
     try {
       const payload = {
+        projectId: props.project.id,
         scenes: _.map(props.project.storyboard, sc => ({
             id: sc.id,
             duration: sc.duration,
             imageBase64: getSceneImageUrl(sc), 
             audioBase64: sc.audioBase64 
         })),
-        globalAudioUrl: props.project?.voiceConfig?.audioBase64,
+        globalAudioUrl: props.project?.voiceConfig?.audioUrl,
         quality: ffmpegQuality
       };
       
@@ -95,7 +96,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
       const data = await response.json();
       if (data.success && data.jobId) {
          const jobId = data.jobId;
-         const checkStatus = setInterval(async () => {
+         let renderPending = true;
+         while (renderPending) {
            try {
              const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
                headers: {
@@ -105,28 +107,36 @@ export default function PipelineStep4(props: PipelineWizardState) {
              const statusData = await statusRes.json();
              if (statusData.success) {
                if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
-                 clearInterval(checkStatus);
+                 renderPending = false;
                  setPreviewVideoUrl(statusData.url);
                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
                  setIsRenderLoading(false);
+                 return;
                } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
-                 clearInterval(checkStatus);
                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_UNKNOWN);
                  setIsRenderLoading(false);
+                 return;
                } else {
                  props.setInfoMsg(`${REFACTOR_CONSTANTS.MSG_RENDERING_PREFIX}${statusData.progress || 0}${REFACTOR_CONSTANTS.MSG_PERCENT_SUFFIX}`);
                }
              } else {
-               clearInterval(checkStatus);
                props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_STATUS_FAILED);
                setIsRenderLoading(false);
+               return;
              }
            } catch (err: any) {
-             clearInterval(checkStatus);
              props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_UNKNOWN);
              setIsRenderLoading(false);
+             return;
            }
-         }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+           await new Promise((pollDelayResolve) => {
+             if (renderPending) {
+               window.setTimeout(pollDelayResolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+             } else {
+               pollDelayResolve(undefined);
+             }
+           });
+         }
       } else {
          props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_ERR + REFACTOR_CONSTANTS.ERR_QUEUE);
          setIsRenderLoading(false);

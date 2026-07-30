@@ -1,4 +1,4 @@
-import { StoryboardSourceMode } from "../../constants";
+import { AppTab, REFACTOR_CONSTANTS, StoryboardSourceMode } from "../../constants";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
 import { Tooltip } from "../ui/Tooltip";
@@ -25,7 +25,6 @@ import { Button } from "../ui/Button";
 import {
   WizardStep,
   AudioType,
-  Gender,
   ImageGenerationMode,
   ImageGeneratorEngine,
   ImageModelLabel,
@@ -108,6 +107,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
     setCurrentStep,
     isVoiceDialogOpen,
     setIsVoiceDialogOpen,
+    selectVoiceForProject,
     loadingStates,
     setInfoMsg,
     activeSceneId,
@@ -212,6 +212,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
     favoriteVoices,
     handleToggleFavoriteVoice,
   } = props;
+
+  const voiceDialogPersistenceScope = _.join(
+    [
+      AppTab.STUDIO,
+      project.id || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
+    ],
+    REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
+  );
 
   const [showConfirmRecreateModal, setShowConfirmRecreateModal] =
     useState(false);
@@ -362,30 +370,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0 ml-2" />
                   </Button>
 
-                  <VoiceSelectionDialog
+                  {isVoiceDialogOpen && <VoiceSelectionDialog
+                    key={voiceDialogPersistenceScope}
                     isOpen={isVoiceDialogOpen}
                     onClose={() => setIsVoiceDialogOpen(false)}
                     currentLang={currentLang}
                     selectedVoiceId={project.voiceConfig.voiceURI}
                     favoriteVoices={favoriteVoices}
                     onToggleFavoriteVoice={handleToggleFavoriteVoice}
-                    onSelectVoice={(voice) => {
-                      setProject((prev) => ({
-                        ...prev,
-                        voiceConfig: {
-                          ...prev.voiceConfig,
-                          voiceURI: voice.voice_id,
-                          voiceName: voice.name,
-                          previewUrl: voice.preview_url,
-                          gender:
-                            voice.gender === "male"
-                              ? Gender.Male
-                              : Gender.Female,
-                        },
-                      }));
-                      setIsVoiceDialogOpen(false);
-                    }}
-                  />
+                    persistenceScope={voiceDialogPersistenceScope}
+                    onSelectVoice={selectVoiceForProject}
+                  />}
                 </div>
               </div>
 

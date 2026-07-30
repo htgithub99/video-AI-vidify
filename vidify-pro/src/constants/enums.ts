@@ -68,6 +68,16 @@ export enum LogEvent {
   CAPCUT_ULTRA_FS_FAILED = "CAPCUT_ULTRA_FS_FAILED",
 }
 
+export enum ConsoleLogType {
+  LOG = "log",
+  INFO = "info",
+  WARN = "warn",
+  ERROR = "error",
+  DEBUG = "debug",
+  SUCCESS = "success",
+  PENDING = "pending",
+}
+
 export enum ErrorMessage {
   PROJECT_LOAD_ERROR = "Lỗi tải chi tiết dự án",
   MISSING_AUDIO_URL_FROM_SYNTHESIS = "Missing audio URL from synthesis",
