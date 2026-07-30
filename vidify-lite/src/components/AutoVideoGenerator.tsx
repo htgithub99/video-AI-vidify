@@ -138,45 +138,81 @@ export default function AutoVideoGenerator({
   const [resumeMode, setResumeMode] = useState<boolean>(true);
   const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
 
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const saved = await storageUtils.getAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
-        const parsed = jsonUtils.safeParse<any>(saved, null);
-        if (parsed) {
-          if (parsed.inputType) setInputType(parsed.inputType);
-          if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
-          if (parsed.genre) setGenre(parsed.genre);
-          if (parsed.language) setLanguage(parsed.language);
-          if (parsed.duration) setDuration(parsed.duration);
-          if (parsed.splitStrategy) setSplitStrategy(parsed.splitStrategy);
-          if (parsed.voiceProvider) setVoiceProvider(parsed.voiceProvider);
-          if (parsed.voiceURI) setVoiceURI(parsed.voiceURI);
-          if (parsed.voiceName) setVoiceName(parsed.voiceName);
-          if (parsed.generationMode) setGenerationMode(parsed.generationMode);
-          if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
-          if (parsed.generateType) setGenerateType(parsed.generateType);
-          if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
-          if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
-          if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
-          if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
-          if (parsed.projectName) setProjectName(parsed.projectName);
-          if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
-          if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
-          if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
-          if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
+  const loadConfigForProject = async (id: string) => {
+    try {
+      const saved = await storageUtils.getAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${id}`);
+      const parsed = jsonUtils.safeParse<any>(saved, null);
+      if (parsed) {
+        if (parsed.inputType) setInputType(parsed.inputType);
+        if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
+        if (parsed.genre) setGenre(parsed.genre);
+        if (parsed.language) setLanguage(parsed.language);
+        if (parsed.duration) setDuration(parsed.duration);
+        if (parsed.splitStrategy) setSplitStrategy(parsed.splitStrategy);
+        if (parsed.voiceProvider) setVoiceProvider(parsed.voiceProvider);
+        if (parsed.voiceURI) setVoiceURI(parsed.voiceURI);
+        if (parsed.voiceName) setVoiceName(parsed.voiceName);
+        if (parsed.generationMode) setGenerationMode(parsed.generationMode);
+        if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
+        if (parsed.generateType) setGenerateType(parsed.generateType);
+        if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
+        if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
+        if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
+        if (parsed.projectName) setProjectName(parsed.projectName);
+        if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
+        if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
+        if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
+        if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
+      } else {
+        const foundProj = _.find(projects, { id });
+        if (foundProj) {
+          if (foundProj.input?.content) setScriptContent(foundProj.input.content);
+          if (foundProj.config) {
+            if (foundProj.config.genre) setGenre(foundProj.config.genre);
+            if (foundProj.config.language) setLanguage(foundProj.config.language);
+            if (foundProj.config.duration) setDuration(foundProj.config.duration);
+            if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
+          }
+          if (foundProj.voiceConfig) {
+            if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
+            if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
+            if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
+          }
+          if (foundProj.visualConfig) {
+            if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
+            if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
+            if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+            if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
+            if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
+            if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
+            if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+          }
+          setProjectName(foundProj.name);
+          setReferenceImages([]);
+          setThumbnailReferenceImages([]);
         }
-      } catch (e) {
-        logger.error(T.errLoadConfig, e);
-      } finally {
-        setIsConfigLoaded(true);
       }
-    };
-    loadConfig();
-  }, []);
+    } catch (e) {
+      logger.error(T.errLoadConfig, e);
+    }
+  };
 
   useEffect(() => {
-    if (!isConfigLoaded) return;
+    if (!selectedProjectId) {
+      setIsConfigLoaded(true);
+      return;
+    }
+    const loadConfig = async () => {
+      setIsConfigLoaded(false);
+      await loadConfigForProject(selectedProjectId);
+      setIsConfigLoaded(true);
+    };
+    loadConfig();
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    if (!isConfigLoaded || !selectedProjectId) return;
     const config = {
       inputType,
       scriptContent,
@@ -200,9 +236,10 @@ export default function AutoVideoGenerator({
       resumeMode,
       chromeHeadless,
     };
-    storageUtils.setAsync(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, jsonUtils.safeStringify(config));
+    storageUtils.setAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${selectedProjectId}`, jsonUtils.safeStringify(config));
   }, [
     isConfigLoaded,
+    selectedProjectId,
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
@@ -262,6 +299,49 @@ export default function AutoVideoGenerator({
     };
     restoreAutoProject();
   }, [projects, activeCreatedProject]);
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      const foundProj = _.find(projects, { id: selectedProjectId });
+      if (foundProj) {
+        setActiveCreatedProject(foundProj);
+        storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
+        if (foundProj.renderedVideoUrl) {
+          setRenderedVideoUrl(foundProj.renderedVideoUrl);
+        } else {
+          setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        }
+        if (foundProj.generationLogs) {
+          setLogs(foundProj.generationLogs);
+        } else {
+          setLogs([]);
+        }
+        if (foundProj.input?.content) {
+          setScriptContent(foundProj.input.content);
+        }
+        if (foundProj.config) {
+          if (foundProj.config.genre) setGenre(foundProj.config.genre);
+          if (foundProj.config.language) setLanguage(foundProj.config.language);
+          if (foundProj.config.duration) setDuration(foundProj.config.duration);
+          if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
+        }
+        if (foundProj.voiceConfig) {
+          if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
+          if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
+          if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
+        }
+        if (foundProj.visualConfig) {
+          if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
+          if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
+          if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+          if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
+          if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
+          if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
+          if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+        }
+      }
+    }
+  }, [selectedProjectId, projects]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
@@ -393,14 +473,14 @@ export default function AutoVideoGenerator({
       const timestamp = new Date().toLocaleTimeString();
       const formatted = `[${timestamp}] ${msg}`;
       currentLogs.push(formatted);
-      setLogs([...currentLogs]);
+              setLogs([...currentLogs]);
     };
 
     appendLog(T.logPipelineStart);
 
     try {
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
-      let newProjectId = "";
+      let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
       if (resumeMode && activeCreatedProject) {
@@ -411,14 +491,22 @@ export default function AutoVideoGenerator({
         };
         appendLog(T.logResumeProject(newProj.name));
       } else {
-        newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        const parentProject = selectedProjectId ? _.find(projects, { id: selectedProjectId }) : null;
-        const defaultName = parentProject
-          ? `${parentProject.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`
-          : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+        const selectedProj = selectedProjectId ? _.find(projects, { id: selectedProjectId }) : null;
+        const isChildProject = selectedProj && selectedProj.parentId;
+
+        newProjectId = isChildProject
+          ? selectedProj.id
+          : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+
+        const defaultName = isChildProject
+          ? selectedProj.name
+          : (selectedProj
+              ? `${selectedProj.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`
+              : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING)));
+
         newProj = {
           id: newProjectId,
-          parentId: parentProject && !parentProject.parentId ? parentProject.id : undefined,
+          parentId: isChildProject ? selectedProj.parentId : (selectedProj ? selectedProj.id : undefined),
           name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
           createdAt: new Date().toISOString(),
@@ -518,9 +606,9 @@ export default function AutoVideoGenerator({
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
       setStepProgress(10);
 
-      let realScript = "";
+      let realScript: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let chapters = [];
-      let factCheckNotes = "";
+      let factCheckNotes: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let realScenes = [];
       let isScriptCached = false;
 
@@ -543,7 +631,7 @@ export default function AutoVideoGenerator({
             ...newProj.config,
             hookConfig: newProj.hookConfig,
           },
-          selectedHookText: "",
+          selectedHookText: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           bypassCache: true,
         };
 
@@ -599,8 +687,8 @@ export default function AutoVideoGenerator({
         newProj = scriptUpdatedProj;
       }
 
-      let globalAudioBase64 = "";
-      let globalAudioUrl = "";
+      let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+      let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let isVoiceCached = false;
 
       if (resumeMode && newProj.voiceConfig?.audioBase64) {
@@ -1053,7 +1141,7 @@ export default function AutoVideoGenerator({
 
             const alignments = alignRes.data.alignments;
             realScenes = _.map(realScenes, (sc) => {
-              const align = _.find(alignments, (a) => a.id === sc.id);
+              const align = _.find(alignments, (a) => _.isEqual(a.id, sc.id));
               if (align) {
                 return {
                   ...sc,
@@ -1210,7 +1298,7 @@ export default function AutoVideoGenerator({
                 const formattedName = (() => {
                   const words = _.words(p.name);
                   if (words.length > 4) {
-                    return _.join(_.take(words, 4), ' ') + '...';
+                    return _.join(_.take(words, 4), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS;
                   }
                   return p.name;
                 })();
@@ -1442,7 +1530,7 @@ export default function AutoVideoGenerator({
                       {(() => {
                         const rawName = voiceName || voiceURI;
                         const words = _.words(rawName);
-                        const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), ' ') + '...' : rawName;
+                        const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS : rawName;
                         return (
                           <Tooltip content={rawName} position="top">
                             <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">

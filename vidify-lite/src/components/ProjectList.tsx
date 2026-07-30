@@ -2,14 +2,13 @@ import { cn } from "../lib/utils";
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { VideoProject } from "../types.js";
-import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight, ChevronDown, Layers, Image, Mic } from "lucide-react";
+import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Search, Globe, ChevronRight, ChevronDown, Layers, Image, Mic } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
-import { COMMON_STRINGS, ERROR_MESSAGES } from "../constants/index.js";
+import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS, SortOrder } from "../constants/index.js";
 import _ from "lodash";
 import { appError } from "../lib/logger.js";
 import { delayAsync } from "../lib/shared-utils.js";
-import { PROJECT_LIST_TEXTS, PROJECT_LIST_CONSTANTS, SortOrder } from "../constants/index.js";
 import { useLicense } from "../contexts/LicenseContext";
 
 const getGenreLabel = (genre: string, lang: Lang) => {
@@ -20,6 +19,7 @@ const getGenreLabel = (genre: string, lang: Lang) => {
 interface ProjectListProps {
   currentLang: Lang;
   projects: VideoProject[];
+  isLoading?: boolean;
   onSelectProject: (p: VideoProject) => void;
   onCreateProject: (name: string, desc: string) => Promise<void> | void;
   onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void;
@@ -29,6 +29,7 @@ interface ProjectListProps {
 export default function ProjectList({
   currentLang,
   projects,
+  isLoading = false,
   onSelectProject,
   onCreateProject,
   onUpdateProject,
@@ -46,11 +47,12 @@ export default function ProjectList({
   const [expandedParentIds, setExpandedParentIds] = useState<Record<string, boolean>>({});
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
+  const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
+  const [name, setName] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [desc, setDesc] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [projectToDelete, setProjectToDelete] = useState<VideoProject | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [filterLang, setFilterLang] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
   const [filterGenre, setFilterGenre] = useState<string>(PROJECT_LIST_CONSTANTS.FILTER_ALL);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,15 +63,15 @@ export default function ProjectList({
 
   const handleOpenCreateTarget = () => {
     setEditingId(null);
-    setName("");
-    setDesc("");
+    setName(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+    setDesc(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     setShowModal(true);
   };
 
   const handleOpenEditTarget = (p: VideoProject) => {
     setEditingId(p.id);
     setName(p.name);
-    setDesc(p.description || "");
+    setDesc(p.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     setShowModal(true);
   };
 
@@ -92,9 +94,18 @@ export default function ProjectList({
       appError(ERROR_MESSAGES.UPDATING_PROJECT, err);
     } finally {
       setIsLoadingAction(false);
-      setName("");
-      setDesc("");
+      setName(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      setDesc(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       setEditingId(null);
+    }
+  };
+
+  const handleOpenProject = async (project: VideoProject) => {
+    setOpeningProjectId(project.id);
+    try {
+      await onSelectProject(project);
+    } finally {
+      setOpeningProjectId(null);
     }
   };
 
@@ -118,7 +129,7 @@ export default function ProjectList({
   const filteredProjects = _.orderBy(
     _.filter(projects, (proj) => {
       if (proj.parentId) return false;
-      const matchesSearch = _.some([proj.name, proj.description || ""], (text) =>
+      const matchesSearch = _.some([proj.name, proj.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING], (text) =>
         _.includes(_.toLower(text), searchLower)
       );
       const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
@@ -157,7 +168,7 @@ export default function ProjectList({
             {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
           </p>
         </div>
-        <Button variant="primary" onClick={handleOpenCreateTarget} className="flex items-center gap-2 self-start md:self-auto px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl shadow-md shadow-rose-500/10">
+        <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} onClick={handleOpenCreateTarget} className="flex items-center gap-2 self-start md:self-auto px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl shadow-md shadow-rose-500/10">
           <Plus className="w-4 h-4" />
           {t.newProject}
         </Button>
@@ -168,8 +179,8 @@ export default function ProjectList({
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
-                ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
               }`)}
           >
             {localT.allLangs}
@@ -177,8 +188,8 @@ export default function ProjectList({
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
-                ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
               }`)}
           >
             {localT.viBtn}
@@ -186,8 +197,8 @@ export default function ProjectList({
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
-                ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-                : "bg-slate-950 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
+              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
               }`)}
           >
             {localT.enBtn}
@@ -210,16 +221,16 @@ export default function ProjectList({
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
-            type="text"
+            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
             placeholder={localT.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans"
+            className="w-full bg-slate-100 dark:bg-slate-955 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans"
           />
         </div>
       </div>
 
-      {isLoadingAction ? (
+      {isLoading || isLoadingAction ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden animate-pulse">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
@@ -277,7 +288,7 @@ export default function ProjectList({
           <p className="text-slate-400 text-xs font-semibold max-w-sm leading-relaxed">
             {projects.length === 0 ? t.noProjects : localT.noProjectsMatch}
           </p>
-          <Button variant="ghost" onClick={handleOpenCreateTarget} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-bold text-xs">
+          <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={handleOpenCreateTarget} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-bold text-xs">
             <Plus className="w-4.5 h-4.5" />
             {t.createNew}
           </Button>
@@ -305,12 +316,19 @@ export default function ProjectList({
                     minute: "2-digit",
                   });
 
-                  const imagesCount = _.filter(project.storyboard || [], (scene) => scene.assetType === "image" && !_.isEmpty(scene.assetUrl)).length;
-                  const videosCount = _.filter(project.storyboard || [], (scene) => scene.assetType === "video" && !_.isEmpty(scene.assetUrl)).length;
-                  const voiceCount = _.sumBy(project.storyboard || [], (scene) => (scene.script || scene.subtitle || "").length);
-
                   const children = _.filter(projects, { parentId: project.id });
                   const hasChildren = children.length > 0;
+
+                  const allRelatedProjects = [project, ...children];
+                  let imagesCount = 0;
+                  let videosCount = 0;
+                  let voiceCount = 0;
+
+                  _.forEach(allRelatedProjects, (p) => {
+                    imagesCount += _.filter(p.storyboard || [], (scene) => scene.assetType === "image" && !_.isEmpty(scene.assetUrl)).length;
+                    videosCount += _.filter(p.storyboard || [], (scene) => scene.assetType === "video" && !_.isEmpty(scene.assetUrl)).length;
+                    voiceCount += _.sumBy(p.storyboard || [], (scene) => (scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING).length);
+                  });
 
                   return (
                     <React.Fragment key={project.id}>
@@ -336,159 +354,158 @@ export default function ProjectList({
                               </button>
                             )}
                             <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
-                            <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
-                            {project.config.genre && (
-                              <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm">
-                                {getGenreLabel(project.config.genre, currentLang)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-bold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors uppercase line-clamp-1">
-                              {project.name}
-                            </h3>
-                            <p className="text-slate-400 text-[10px] font-medium line-clamp-2 leading-relaxed max-w-md">
-                              {project.description || t.No_description_1}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 bg-slate-800/40 border border-slate-700/50 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg text-[9px] font-bold">
-                          <Globe className="w-3 h-3 text-slate-500" />
-                          {project.config.language === COMMON_STRINGS.EN ? t.englishLanguage : t.vietnamLanguage}
-                        </span>
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <div className="flex items-center justify-center gap-4 text-xs font-mono font-bold select-none">
-                          {/* Video */}
-                          <div className="flex items-center gap-1.5" title={localT.videoTooltip}>
-                            <Video className="w-4 h-4 text-blue-500" />
-                            <span className="text-slate-400">
-                              <strong className="text-blue-400">{videosCount}</strong>
-                              <span className="mx-0.5 text-slate-600">/</span>
-                              {isUnlimited ? "∞" : limitVideo.toLocaleString()}
-                            </span>
-                          </div>
-
-                          {/* Image */}
-                          <div className="flex items-center gap-1.5" title={localT.imageTooltip}>
-                            <Image className="w-4 h-4 text-emerald-500" />
-                            <span className="text-slate-400">
-                              <strong className="text-emerald-400">{imagesCount}</strong>
-                              <span className="mx-0.5 text-slate-600">/</span>
-                              {isUnlimited ? "∞" : limitImage.toLocaleString()}
-                            </span>
-                          </div>
-
-                          {/* Voice */}
-                          <div className="flex items-center gap-1.5" title={localT.voiceTooltip}>
-                            <Mic className="w-4 h-4 text-amber-500" />
-                            <span className="text-slate-400">
-                              <strong className="text-amber-400">{voiceCount.toLocaleString()}</strong>
-                              <span className="mx-0.5 text-slate-600">/</span>
-                              {isUnlimited ? "∞" : limitVoice.toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                          <span>{dateStr}</span>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="primary"
-                            size="xs"
-                            onClick={() => onSelectProject(project)}
-                            className="text-[10px] uppercase font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 bg-rose-600 text-white shadow-sm hover:bg-rose-700 border border-transparent transition-all"
-                          >
-                            <PlayCircle className="w-3.5 h-3.5" />
-                            <span>{t.Open}</span>
-                            <ChevronRight className="w-3 h-3" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleOpenEditTarget(project)}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none"
-                            title={t.editProject}
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            onClick={() => setProjectToDelete(project)}
-                            className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none"
-                            title={t.delete}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedParentIds[project.id] && hasChildren && (
-                      <tr className="bg-slate-950/20 border-b border-slate-800/60" onClick={(e) => e.stopPropagation()}>
-                        <td colSpan={5} className="py-3 px-6 bg-slate-950/10">
-                          <div className="space-y-2 pl-6 border-l-2 border-rose-500/30 ml-4 py-1">
-                            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1 select-none">
-                              <Layers className="w-3.5 h-3.5 text-rose-500/60" />
-                              {localT.linkedChildProjects}
-                            </h4>
-                            <div className="grid gap-2">
-                              {children.map((child) => (
-                                <div
-                                  key={child.id}
-                                  onClick={() => onSelectProject(child)}
-                                  className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm"
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <PlayCircle className="w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors" />
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">
-                                        {child.name}
-                                      </span>
-                                      <span className="text-[9px] text-slate-500 font-medium font-mono">
-                                        Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                      variant="primary"
-                                      size="xs"
-                                      onClick={() => onSelectProject(child)}
-                                      className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all"
-                                    >
-                                      {t.Open}
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      onClick={() => setProjectToDelete(child)}
-                                      className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors"
-                                      title={t.delete}
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </div>
+                              <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
+                              {project.config.genre && (
+                                <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm">
+                                  {getGenreLabel(project.config.genre, currentLang)}
                                 </div>
-                              ))}
+                              )}
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="font-bold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors uppercase line-clamp-1">
+                                {project.name}
+                              </h3>
+                              <p className="text-slate-400 text-[10px] font-medium line-clamp-2 leading-relaxed max-w-md">
+                                {project.description || t.No_description_1}
+                              </p>
                             </div>
                           </div>
                         </td>
+
+                        <td className="py-4 px-4 text-center">
+                          <span className="inline-flex items-center gap-1 bg-slate-800/40 border border-slate-700/50 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg text-[9px] font-bold">
+                            <Globe className="w-3 h-3 text-slate-500" />
+                            {project.config.language === COMMON_STRINGS.EN ? t.englishLanguage : t.vietnamLanguage}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="flex items-center justify-center gap-4 text-xs font-mono font-bold select-none">
+                            <div className="flex items-center gap-1.5" title={localT.videoTooltip}>
+                              <Video className="w-4 h-4 text-blue-500" />
+                              <span className="text-slate-400">
+                                <strong className="text-blue-400">{videosCount}</strong>
+                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                                {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVideo.toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5" title={localT.imageTooltip}>
+                              <Image className="w-4 h-4 text-emerald-500" />
+                              <span className="text-slate-400">
+                                <strong className="text-emerald-400">{imagesCount}</strong>
+                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                                {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitImage.toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5" title={localT.voiceTooltip}>
+                              <Mic className="w-4 h-4 text-amber-500" />
+                              <span className="text-slate-400">
+                                <strong className="text-amber-400">{voiceCount.toLocaleString()}</strong>
+                                <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
+                                {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVoice.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4 text-xs text-slate-500 dark:text-slate-400 font-mono font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                            <span>{dateStr}</span>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                              size={REFACTOR_CONSTANTS.SIZE_XS}
+                              isLoading={openingProjectId === project.id}
+                              onClick={() => handleOpenProject(project)}
+                              className="text-[10px] uppercase font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 bg-rose-600 text-white shadow-sm hover:bg-rose-700 border border-transparent transition-all"
+                            >
+                              <PlayCircle className="w-3.5 h-3.5" />
+                              <span>{t.Open}</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </Button>
+
+                            <Button
+                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                              onClick={() => handleOpenEditTarget(project)}
+                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none"
+                              title={t.editProject}
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </Button>
+
+                            <Button
+                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                              onClick={() => setProjectToDelete(project)}
+                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none"
+                              title={t.delete}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+                      {expandedParentIds[project.id] && hasChildren && (
+                        <tr className="bg-slate-950/20 border-b border-slate-800/60" onClick={(e) => e.stopPropagation()}>
+                          <td colSpan={5} className="py-3 px-6 bg-slate-955/10">
+                            <div className="space-y-2 pl-6 border-l-2 border-rose-500/30 ml-4 py-1">
+                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1 select-none">
+                                <Layers className="w-3.5 h-3.5 text-rose-500/60" />
+                                {localT.linkedChildProjects}
+                              </h4>
+                              <div className="grid gap-2">
+                                {children.map((child) => (
+                                  <div
+                                    key={child.id}
+                                    onClick={() => onSelectProject(child)}
+                                    className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <PlayCircle className="w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors" />
+                                      <div className="flex flex-col gap-0.5">
+                                        <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">
+                                          {child.name}
+                                        </span>
+                                        <span className="text-[9px] text-slate-500 font-medium font-mono">
+                                          Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                      <Button
+                                        variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                                        size={REFACTOR_CONSTANTS.SIZE_XS}
+                                        isLoading={openingProjectId === child.id}
+                                        onClick={() => handleOpenProject(child)}
+                                        className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all"
+                                      >
+                                        {t.Open}
+                                      </Button>
+                                      <Button
+                                        variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+                                        onClick={() => setProjectToDelete(child)}
+                                        className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors"
+                                        title={t.delete}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -499,7 +516,7 @@ export default function ProjectList({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  variant="ghost"
+                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                   onClick={() => setCurrentPage(prev => _.max([prev - 1, 1]) as number)}
                   disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)}
                   className={cn(
@@ -515,7 +532,7 @@ export default function ProjectList({
                   {validCurrentPage} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {totalPages}
                 </div>
                 <Button
-                  variant="ghost"
+                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
                   onClick={() => setCurrentPage(prev => _.min([prev + 1, totalPages]) as number)}
                   disabled={_.isEqual(validCurrentPage, totalPages)}
                   className={cn(
@@ -550,11 +567,12 @@ export default function ProjectList({
           </p>
           <p className="text-rose-500/80 text-[10px] font-bold uppercase tracking-wider">{t.This_action_cannot_be_und}</p>
           <div className="flex items-center justify-end gap-3 pt-6 mt-2">
-            <Button variant="ghost" onClick={() => setProjectToDelete(null)} className="px-4 py-2 text-xs font-bold rounded-xl">
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className="px-4 py-2 text-xs font-bold rounded-xl">
               {t.cancel}
             </Button>
             <Button
-              variant="danger"
+              variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
+              isLoading={isLoadingAction}
               onClick={handleDeleteConfirm}
               className="px-5 py-2 text-xs font-bold rounded-xl"
             >
@@ -577,7 +595,7 @@ export default function ProjectList({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
             <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectName} *</label>
-            <input type="text" required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans" />
+            <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} required placeholder={t.E_g_Legends_of_Rome} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700/60 focus:border-rose-500/50 text-slate-900 dark:text-slate-200 rounded-xl p-3 text-xs focus:outline-none transition-all font-sans" />
           </div>
 
           <div className="space-y-1.5">
@@ -593,10 +611,10 @@ export default function ProjectList({
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
-            <Button type="button" variant="ghost" onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-bold rounded-xl">
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setShowModal(false)} className="px-4 py-2 text-xs font-bold rounded-xl">
               {t.cancel}
             </Button>
-            <Button type="submit" variant="primary" className="px-5 py-2 text-xs font-bold rounded-xl">
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_SUBMIT} variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} isLoading={isLoadingAction} className="px-5 py-2 text-xs font-bold rounded-xl">
               {editingId ? t.Update : t.create}
             </Button>
           </div>

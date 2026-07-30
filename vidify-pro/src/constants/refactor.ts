@@ -304,6 +304,11 @@ export const REFACTOR_CONSTANTS = {
   CHROME_MODE_WINDOWED: "windowed",
   RESUME_MODE_RESUME: "resume",
   RESUME_MODE_NEW: "new",
+  VARIANT_DANGER: "danger",
+  BUTTON_TYPE_SUBMIT: "submit",
+  SYMBOL_INFINITY: "∞",
+  CREDITS_DEFAULT_10000: 10000,
+  ZERO_FLOAT: 0.0,
 } as const;
 
 export const ROUTER_PATHS = {

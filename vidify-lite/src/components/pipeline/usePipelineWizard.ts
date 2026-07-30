@@ -106,11 +106,11 @@ let workspaceRef: any = null;
 const isProjectContentEqual = (p1: any, p2: any) => {
   if (!p1 || !p2) return p1 === p2;
   const keysToCompare = ["name", "description", "input", "config", "hookConfig", "voiceConfig", "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig", "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"];
-  const isEmpty = (v: any) => [undefined, null, ""].includes(v) || (_.isArray(v) && _.isEmpty(v)) || (typeof v === "object" && Object.keys(v).length === 0);
-  return keysToCompare.every((key) => {
+  const isEmpty = (v: any) => _.includes([undefined, null, REFACTOR_CONSTANTS.VD_EMPTY_STRING], v) || (_.isArray(v) && _.isEmpty(v)) || (typeof v === "object" && _.keys(v).length === 0);
+  return _.every(keysToCompare, (key) => {
     const val1 = p1[key];
     const val2 = p2[key];
-    if (val1 === val2 || (isEmpty(val1) && isEmpty(val2))) return true;
+    if (_.isEqual(val1, val2) || (isEmpty(val1) && isEmpty(val2))) return true;
     return _.isEqual(val1, val2);
   });
 };
@@ -146,18 +146,18 @@ export function usePipelineWizard(props: any) {
         if (isServerUpdate) {
           return prev;
         }
-        const isTimingLogChanged = [prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog].some(Boolean);
+        const isTimingLogChanged = _.some([prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog], Boolean);
 
         let mergedStoryboard = prev.storyboard || [];
-        if ([isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)].some(Boolean)) {
+        if (_.some([isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)], Boolean)) {
           mergedStoryboard = normalizedInitialProject.storyboard || [];
         } else if (isTimingLogChanged) {
           mergedStoryboard = prev.storyboard;
         } else {
           mergedStoryboard = (prev.storyboard || []).map((localScene) => {
-            if (localScene.assetUrl === "") return localScene;
-            const serverScene = normalizedInitialProject.storyboard?.find((s) => s.id === localScene.id);
-            return serverScene?.assetUrl?.startsWith("/assets/")
+            if (localScene.assetUrl === REFACTOR_CONSTANTS.VD_EMPTY_STRING) return localScene;
+            const serverScene = _.find(normalizedInitialProject.storyboard, (s) => _.isEqual(s.id, localScene.id));
+            return serverScene?.assetUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH)
               ? {
                 ...localScene,
                 assetUrl: serverScene.assetUrl,
@@ -168,16 +168,16 @@ export function usePipelineWizard(props: any) {
         }
 
         let mergedThumbnails = prev.thumbnails || [];
-        if ([isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)].some(Boolean)) {
+        if (_.some([isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)], Boolean)) {
           mergedThumbnails = normalizedInitialProject.thumbnails || [];
         } else {
           mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
-            const serverThumb = normalizedInitialProject.thumbnails?.find((t) => t.id === localThumb.id);
-            return serverThumb?.imageUrl?.startsWith("/assets/") ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
+            const serverThumb = _.find(normalizedInitialProject.thumbnails, (t) => _.isEqual(t.id, localThumb.id));
+            return serverThumb?.imageUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH) ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
           });
         }
 
-        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig ? ["audioUrl", "audioBase64", "timingLog"].some((key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any]) : false;
+        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig ? _.some(["audioUrl", "audioBase64", "timingLog"], (key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any]) : false;
 
         const syncField = (key: keyof VideoProject, fallback: any = undefined, checkEmptyArray = false) => {
           const serverVal = normalizedInitialProject[key];
@@ -188,7 +188,7 @@ export function usePipelineWizard(props: any) {
 
         const voiceConfig = isServerUpdate
           ? normalizedInitialProject.voiceConfig || prev.voiceConfig
-          : [!isTimingLogChanged, shouldUpdateVoiceConfig, !!normalizedInitialProject.voiceConfig].every(Boolean)
+          : _.every([!isTimingLogChanged, shouldUpdateVoiceConfig, !!normalizedInitialProject.voiceConfig], Boolean)
             ? {
               ...(prev.voiceConfig || {}),
               audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
@@ -217,7 +217,7 @@ export function usePipelineWizard(props: any) {
           [prev.currentStep, normalizedInitialProject.currentStep],
           [prev.creditsUsed, normalizedInitialProject.creditsUsed],
         ];
-        const hasChanges = compareItems.some(([a, b, isJson]) => (isJson ? !_.isEqual(a, b) : a !== b));
+        const hasChanges = _.some(compareItems, ([a, b, isJson]) => (isJson ? !_.isEqual(a, b) : a !== b));
 
         if (!hasChanges) {
           return prev;
@@ -384,7 +384,7 @@ export function usePipelineWizard(props: any) {
 
   const handleDeleteFavoriteStyle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    saveFavoriteStyles(favoriteStyles.filter((item) => item.id !== id));
+    saveFavoriteStyles(_.filter(favoriteStyles, (item) => !_.isEqual(item.id, id)));
   };
 
   const handleSaveEditStyle = (id: string, name: string, promptText: string) => {
@@ -397,7 +397,7 @@ export function usePipelineWizard(props: any) {
   const handleSaveCurrentStyle = () => {
     const curStyle = project.visualConfig?.referencePrompt;
     if (!curStyle) return;
-    if (favoriteStyles.some((s) => s.prompt === curStyle)) {
+    if (_.some(favoriteStyles, (s) => _.isEqual(s.prompt, curStyle))) {
       setInfoMsg(t.saveStyleSuccess);
       setTimeout(() => setInfoMsg(""), 3000);
       return;
@@ -466,7 +466,7 @@ export function usePipelineWizard(props: any) {
 
   const handleDeleteFavoriteVoice = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    saveFavoriteVoices(favoriteVoices.filter((item) => item.id !== id));
+    saveFavoriteVoices(_.filter(favoriteVoices, (item) => !_.isEqual(item.id, id)));
   };
 
   const handleSaveEditVoice = (id: string, name: string, voiceURI: string, channelName?: string) => {
@@ -488,9 +488,9 @@ export function usePipelineWizard(props: any) {
   };
 
   const handleToggleFavoriteVoice = (voiceId: string, name: string, providerName?: string) => {
-    const exists = favoriteVoices.some((v) => v.voiceURI === voiceId);
+    const exists = _.some(favoriteVoices, (v) => _.isEqual(v.voiceURI, voiceId));
     if (exists) {
-      saveFavoriteVoices(favoriteVoices.filter((v) => v.voiceURI !== voiceId));
+      saveFavoriteVoices(_.filter(favoriteVoices, (v) => !_.isEqual(v.voiceURI, voiceId)));
     } else {
       saveFavoriteVoices([
         ...favoriteVoices,
@@ -558,7 +558,11 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, jsonUtils.safeStringify(sandboxConfig));
+      const currentSaved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
+      const newStr = jsonUtils.safeStringify(sandboxConfig);
+      if (currentSaved !== newStr) {
+        storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, newStr);
+      }
     }
   }, [sandboxConfig]);
 
@@ -587,7 +591,10 @@ export function usePipelineWizard(props: any) {
         if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
           const parsed = jsonUtils.safeParse<any>(saved, null);
           if (parsed && typeof parsed === "object") {
-            setSandboxConfig(parsed);
+            setSandboxConfig((prev: any) => {
+              if (_.isEqual(prev, parsed)) return prev;
+              return parsed;
+            });
           }
         }
       } catch (err) {
@@ -628,35 +635,35 @@ export function usePipelineWizard(props: any) {
 
     const captureLog = (type: string, args: any[]) => {
       try {
-        const msg = args.map((a) => (typeof a === "object" ? jsonUtils.safeStringify(a) : String(a))).join(" ");
-        if (["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"].some((w) => msg.includes(w))) return;
+        const msg = _.join(_.map(args, (a) => (typeof a === "object" ? jsonUtils.safeStringify(a) : String(a))), REFACTOR_CONSTANTS.VD_BLANK);
+        if (_.some(["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"], (w) => _.includes(msg, w))) return;
 
         let processedMsg = msg;
-        const msgLower = msg.toLowerCase();
+        const msgLower = _.toLower(msg);
 
-        const logsLang = [COMMON_STRINGS.VI, COMMON_STRINGS.EN].includes(currentLang) ? currentLang : COMMON_STRINGS.VI;
+        const logsLang = _.includes([COMMON_STRINGS.VI, COMMON_STRINGS.EN], currentLang) ? currentLang : COMMON_STRINGS.VI;
         const logTexts = VITE_HMR_LOGS[logsLang as "vi" | "en"];
 
-        if (["[vite] server connection lost", "server connection lost. polling for restart"].some(k => msgLower.includes(k))) {
+        if (_.some(["[vite] server connection lost", "server connection lost. polling for restart"], (k) => _.includes(msgLower, k))) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
-        } else if (msgLower.includes("[hmr] failed to reload")) {
+        } else if (_.includes(msgLower, "[hmr] failed to reload")) {
           processedMsg = logTexts.FAILED_RELOAD_GENERIC;
-        } else if (msgLower.includes("[vite] connected")) {
+        } else if (_.includes(msgLower, "[vite] connected")) {
           processedMsg = logTexts.CONNECTED;
-        } else if (["[vite] hot updated", "[vite] hmr update"].some(k => msgLower.includes(k))) {
+        } else if (_.some(["[vite] hot updated", "[vite] hmr update"], (k) => _.includes(msgLower, k))) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 
         let enrichedType = type;
-        const processedMsgLower = processedMsg.toLowerCase();
-        if (LOG_SUCCESS_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "success";
-        else if (LOG_PENDING_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "pending";
-        else if (type === "log" && LOG_WARN_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "warn";
-        else if (type === "log" && LOG_ERROR_KEYWORDS.some((term) => processedMsgLower.includes(term))) enrichedType = "error";
+        const processedMsgLower = _.toLower(processedMsg);
+        if (_.some(LOG_SUCCESS_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "success";
+        else if (_.some(LOG_PENDING_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "pending";
+        else if (_.isEqual(type, "log") && _.some(LOG_WARN_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "warn";
+        else if (_.isEqual(type, "log") && _.some(LOG_ERROR_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = "error";
 
         const time = new Date().toLocaleTimeString();
         setTimeout(() => {
-          setSystemLogs((prev) => [...prev, { time, type: enrichedType, msg: processedMsg }].slice(-200));
+          setSystemLogs((prev) => _.slice([...prev, { time, type: enrichedType, msg: processedMsg }], -200));
         }, 0);
       } catch (e) { }
     };

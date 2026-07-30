@@ -3,90 +3,20 @@ import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
-import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg } from "../../constants";
+import { 
+  PROJECTS_FILE_NAME, 
+  ENCODING_UTF8, 
+  SQLITE_DB_NAME, 
+  PROJECTS_BACKUP_DIR_NAME, 
+  getBackendMsg, 
+  SQL_STATEMENTS, 
+  MIGRATION_DEFAULTS, 
+  REFACTOR_CONSTANTS 
+} from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
-import _ from 'lodash';
+import _ from "lodash";
 import { getDataDirectory } from "./paths.js";
-import { jsonUtils } from "../../lib/json";
-
-const SQL_STATEMENTS = {
-  PRAGMA_WAL: "PRAGMA journal_mode = WAL;",
-  CREATE_PROJECTS_TABLE: `
-    CREATE TABLE IF NOT EXISTS projects (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      description TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      current_step INTEGER DEFAULT 0,
-      credits_used INTEGER DEFAULT 0,
-      data TEXT NOT NULL
-    );
-  `,
-  CREATE_PRESETS_TABLE: `
-    CREATE TABLE IF NOT EXISTS presets (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      config TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-  `,
-  SELECT_PROJECTS_LIST: `
-    SELECT id, name, description, created_at as createdAt, updated_at as updatedAt, 
-           current_step as currentStep, credits_used as creditsUsed, data 
-    FROM projects 
-    ORDER BY updated_at DESC
-  `,
-  SELECT_PRESETS_LIST: `
-    SELECT id, name, config, created_at as createdAt, updated_at as updatedAt
-    FROM presets
-    ORDER BY updated_at DESC
-  `,
-  SELECT_PROJECT_DETAIL: "SELECT data FROM projects WHERE id = ?",
-  INSERT_PROJECT: `
-    INSERT OR REPLACE INTO projects (id, name, description, created_at, updated_at, current_step, credits_used, data)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `,
-  INSERT_PRESET: `
-    INSERT OR REPLACE INTO presets (id, name, config, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?)
-  `,
-  DELETE_PROJECT: "DELETE FROM projects WHERE id = ?",
-  DELETE_PRESET: "DELETE FROM presets WHERE id = ?",
-  BEGIN_TRANSACTION: "BEGIN TRANSACTION;",
-  COMMIT: "COMMIT;",
-  ROLLBACK: "ROLLBACK;",
-} as const;
-
-const MIGRATION_DEFAULTS = {
-  PROJECTS_DIR: "projects",
-  BACKUP_JSON: "projects.backup.json",
-  MIGRATE_PROJECT_NAME: "Dự án di chuyển",
-  GENRE: "Kể chuyện",
-  LANGUAGE: "vi",
-  DURATION: "2m",
-  HOOK_TYPE: "Auto",
-  HOOK_DURATION: 10,
-  HOOK_COUNT: 3,
-  HOOK_POSITIONS: "start",
-  VOICE_PROVIDER: "google",
-  VOICE_AUDIO_TYPE: "tts",
-  VOICE_GENDER: "male",
-  VOICE_AGE: "adult",
-  VOICE_EMOTION: "neutral",
-  VOICE_SPEED: 1.0,
-  VOICE_PITCH: 1.0,
-  VOICE_VOLUME: 1.0,
-  VOICE_URI: "google-cloud-vi-a",
-  VISUAL_SOURCE: "Veo3",
-  VISUAL_STYLE: "cinematic",
-  VISUAL_QUALITY: "standard",
-  VISUAL_DENSITY: 5,
-  VISUAL_ASSETS_MODE: "mixed",
-  VISUAL_ASPECT_RATIO: "16:9",
-  VISUAL_PROMPT_INPUT: "paste",
-} as const;
+import { jsonUtils } from "../../lib/json.js";
 
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
@@ -148,7 +78,7 @@ export async function savePresetToDb(preset: { id: string; name: string; config:
       updatedAt: now,
     };
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_PRESET_WRITE_ERR")} ${preset.id}`, error);
+    appError(_.join([getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
   }
 }
@@ -159,11 +89,10 @@ export async function deletePresetFromDb(id: string): Promise<boolean> {
     const result = await db.run(SQL_STATEMENTS.DELETE_PRESET, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_PRESET_DELETE_ERR")} ${id}`, error);
+    appError(_.join([getBackendMsg("SQLITE_PRESET_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
     return false;
   }
 }
-
 
 export async function getProjectsListFromDb(): Promise<any[]> {
   try {
@@ -174,12 +103,12 @@ export async function getProjectsListFromDb(): Promise<any[]> {
       let config = undefined;
       const detail = jsonUtils.safeParse<any>(row.data, {});
       if (!_.isNil(detail.config)) {
-          config = {
-            genre: detail.config.genre,
-            language: detail.config.language,
-            duration: detail.config.duration,
-          };
-        }
+        config = {
+          genre: detail.config.genre,
+          language: detail.config.language,
+          duration: detail.config.duration,
+        };
+      }
 
       return {
         id: row.id,
@@ -189,6 +118,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         updatedAt: row.updatedAt,
         currentStep: row.currentStep,
         creditsUsed: row.creditsUsed,
+        parentId: detail.parentId,
         config,
       };
     });
@@ -206,7 +136,7 @@ export async function getProjectDetailFromDb(id: string): Promise<VideoProject |
       return jsonUtils.safeParse<VideoProject>(row.data, null);
     }
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
+    appError(_.join([getBackendMsg("SQLITE_DETAIL_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
   }
   return null;
 }
@@ -220,7 +150,7 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
       [
         project.id,
         project.name,
-        project.description || "",
+        project.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
         project.createdAt || new Date().toISOString(),
         project.updatedAt || new Date().toISOString(),
         project.currentStep || 0,
@@ -229,7 +159,7 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
       ],
     );
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_WRITE_ERR")} ${project.id}`, error);
+    appError(_.join([getBackendMsg("SQLITE_WRITE_ERR"), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
   }
 }
@@ -240,7 +170,7 @@ export async function deleteProjectFromDb(id: string): Promise<boolean> {
     const result = await db.run(SQL_STATEMENTS.DELETE_PROJECT, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(`${getBackendMsg("SQLITE_DELETE_ERR")} ${id}`, error);
+    appError(_.join([getBackendMsg("SQLITE_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
     return false;
   }
 }
@@ -289,12 +219,12 @@ export async function migrateJsonToSqlite(): Promise<void> {
         projectDetail = {
           id,
           name: meta.name || MIGRATION_DEFAULTS.MIGRATE_PROJECT_NAME,
-          description: meta.description || "",
+          description: meta.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           createdAt: meta.createdAt || new Date().toISOString(),
           updatedAt: meta.updatedAt || new Date().toISOString(),
           currentStep: meta.currentStep || 0,
           creditsUsed: meta.creditsUsed || 0,
-          input: meta.input || { type: "script", content: "" },
+          input: meta.input || { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING },
           config: meta.config || { 
             genre: MIGRATION_DEFAULTS.GENRE, 
             language: MIGRATION_DEFAULTS.LANGUAGE, 
@@ -339,7 +269,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
         [
           projectDetail!.id,
           projectDetail!.name,
-          projectDetail!.description || "",
+          projectDetail!.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           projectDetail!.createdAt || new Date().toISOString(),
           projectDetail!.updatedAt || new Date().toISOString(),
           projectDetail!.currentStep || 0,
@@ -352,7 +282,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
         try {
           fs.renameSync(detailFile, path.join(backupDir, `${id}.json`));
         } catch (e) {
-          appError(`${getBackendMsg("SQLITE_MIGRATE_PARSE_ERR")} ${id}.json`, e);
+          appError(_.join([getBackendMsg("SQLITE_MIGRATE_PARSE_ERR"), `${id}.json`], REFACTOR_CONSTANTS.VD_BLANK), e);
         }
       }
     }

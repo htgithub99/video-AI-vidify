@@ -11,7 +11,7 @@ import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS } from "./constants";
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS } from "./constants";
 import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync } from "./lib/shared-utils.js";
@@ -48,8 +48,10 @@ export default function App() {
     setLogLanguage(currentLang);
   }, [currentLang]);
   const [projects, setProjects] = useState<VideoProject[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const pendingSavesRef = useRef<Record<string, NodeJS.Timeout>>({});
   const projectsRef = useRef<VideoProject[]>([]);
+  const creatingChildRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     projectsRef.current = projects;
@@ -104,8 +106,8 @@ export default function App() {
     setTheme((prev) => (_.isEqual(prev, THEME_VALUES.DARK) ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
   };
 
-  const [credits] = useState<number>(10000);
-  const [costTracker, setCostTracker] = useState<number>(0.0);
+  const [credits] = useState<number>(REFACTOR_CONSTANTS.CREDITS_DEFAULT_10000);
+  const [costTracker, setCostTracker] = useState<number>(REFACTOR_CONSTANTS.ZERO_FLOAT);
 
   useEffect(() => {
     let active = true;
@@ -157,6 +159,7 @@ export default function App() {
       .catch((err) => appError(ERROR_MESSAGES.FETCHING_PROJECTS, err))
       .finally(() => {
         if (active) {
+          setIsLoadingProjects(false);
           const loader = document.getElementById(LOADING_CONFIG.ELEMENT_ID);
           if (loader) {
             loader.classList.add(LOADING_CONFIG.FADE_OUT_CLASS);
@@ -176,31 +179,91 @@ export default function App() {
   useEffect(() => {
     if (_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId) {
       const activeProj = _.find(projects, { id: selectedProjectId });
-      if (activeProj && !activeProj.parentId) {
-        const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
-        if (studioChild) {
-          setSelectedProjectId(studioChild.id);
-        } else {
-          const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(36).substring(2, 11);
-          const childProject: VideoProject = {
-            ...activeProj,
-            id: childId,
-            parentId: activeProj.id,
-            name: `${activeProj.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-          
-          fetch(API_ROUTES.PROJECTS, {
-            method: HTTP_METHODS.POST,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-            body: jsonUtils.safeStringify(childProject),
-          }).then(response => {
-            if (response.ok) {
-              setProjects((prev) => [...prev, childProject]);
-              setSelectedProjectId(childId);
-            }
-          }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err));
+      if (activeProj) {
+        if (!activeProj.parentId) {
+          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+          if (studioChild) {
+            setSelectedProjectId(studioChild.id);
+          } else {
+            if (creatingChildRef.current[activeProj.id]) return;
+            creatingChildRef.current[activeProj.id] = true;
+
+            const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const childProject: VideoProject = {
+              ...activeProj,
+              id: childId,
+              parentId: activeProj.id,
+              name: `${activeProj.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            
+            fetch(API_ROUTES.PROJECTS, {
+              method: HTTP_METHODS.POST,
+              headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+              body: jsonUtils.safeStringify(childProject),
+            }).then(response => {
+              if (response.ok) {
+                setProjects((prev) => [...prev, childProject]);
+                setSelectedProjectId(childId);
+              }
+            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+            .finally(() => {
+              creatingChildRef.current[activeProj.id] = false;
+            });
+          }
+        } else if (_.endsWith(activeProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+          if (studioChild) {
+            setSelectedProjectId(studioChild.id);
+          }
+        }
+      }
+    }
+  }, [activeTab, selectedProjectId, projects]);
+
+  useEffect(() => {
+    if (_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && selectedProjectId) {
+      const activeProj = _.find(projects, { id: selectedProjectId });
+      if (activeProj) {
+        if (!activeProj.parentId) {
+          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX));
+          if (autoChild) {
+            setSelectedProjectId(autoChild.id);
+          } else {
+            const childKey = _.join([activeProj.id, COMMON_STRINGS.AUTO_CHILD_SUFFIX], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            if (creatingChildRef.current[childKey]) return;
+            creatingChildRef.current[childKey] = true;
+
+            const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const childProject: VideoProject = {
+              ...activeProj,
+              id: childId,
+              parentId: activeProj.id,
+              name: `${activeProj.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+            
+            fetch(API_ROUTES.PROJECTS, {
+              method: HTTP_METHODS.POST,
+              headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+              body: jsonUtils.safeStringify(childProject),
+            }).then(response => {
+              if (response.ok) {
+                setProjects((prev) => [...prev, childProject]);
+                setSelectedProjectId(childId);
+              }
+            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+            .finally(() => {
+              creatingChildRef.current[childKey] = false;
+            });
+          }
+        } else if (_.endsWith(activeProj.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) {
+          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX));
+          if (autoChild) {
+            setSelectedProjectId(autoChild.id);
+          }
         }
       }
     }
@@ -223,26 +286,35 @@ export default function App() {
           setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
         }
         setSelectedProjectId(id);
-        setActiveTab(AppTab.STUDIO);
+        if (project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+          setActiveTab(AppTab.AUTO_GENERATOR);
+        } else {
+          setActiveTab(AppTab.STUDIO);
+        }
       } catch (err) {
         appError(ERROR_MESSAGES.FETCHING_PROJECTS, err);
       }
     } else {
       setSelectedProjectId(id);
-      setActiveTab(AppTab.STUDIO);
+      if (project && project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+        setActiveTab(AppTab.AUTO_GENERATOR);
+      } else {
+        setActiveTab(AppTab.STUDIO);
+      }
     }
   }, []);
 
   const handleCreateProject = async (name: string, desc: string) => {
-    const newProject: VideoProject = {
-      id: COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(36).substring(2, 11),
+    const parentId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const parentProject: VideoProject = {
+      id: parentId,
       name: name,
       description: desc,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       input: {
         type: ProjectInputType.Script,
-        content: "",
+        content: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
       },
       config: {
         genre: DEFAULT_PROJECT_CONFIGS.GENRE,
@@ -289,18 +361,53 @@ export default function App() {
       creditsUsed: 0,
     };
 
+    const studioChildId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const studioChildProject: VideoProject = {
+      ...parentProject,
+      id: studioChildId,
+      parentId: parentId,
+      name: `${parentProject.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const autoChildId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const autoChildProject: VideoProject = {
+      ...parentProject,
+      id: autoChildId,
+      parentId: parentId,
+      name: `${parentProject.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      const response = await fetch(API_ROUTES.PROJECTS, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify(newProject),
-      });
-      if (response.ok) {
-        const text = await response.text();
-        const savedProject = jsonUtils.safeParse(text, null);
-        if (savedProject) {
-          setProjects((prev) => [...prev, savedProject]);
-          setSelectedProjectId(savedProject.id);
+      const [resParent, resStudio, resAuto] = await Promise.all([
+        fetch(API_ROUTES.PROJECTS, {
+          method: HTTP_METHODS.POST,
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+          body: jsonUtils.safeStringify(parentProject),
+        }),
+        fetch(API_ROUTES.PROJECTS, {
+          method: HTTP_METHODS.POST,
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+          body: jsonUtils.safeStringify(studioChildProject),
+        }),
+        fetch(API_ROUTES.PROJECTS, {
+          method: HTTP_METHODS.POST,
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+          body: jsonUtils.safeStringify(autoChildProject),
+        })
+      ]);
+
+      if (resParent.ok && resStudio.ok && resAuto.ok) {
+        const parentData = jsonUtils.safeParse<VideoProject>(await resParent.text(), null);
+        const studioData = jsonUtils.safeParse<VideoProject>(await resStudio.text(), null);
+        const autoData = jsonUtils.safeParse<VideoProject>(await resAuto.text(), null);
+
+        if (parentData && studioData && autoData) {
+          setProjects((prev) => [...prev, parentData, studioData, autoData]);
+          setSelectedProjectId(parentData.id);
         }
       }
     } catch (e) {
@@ -325,7 +432,7 @@ export default function App() {
       try {
         const response = await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
           method: HTTP_METHODS.PUT,
-          headers: { "Content-Type": CONTENT_TYPES.JSON },
+          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
           body: jsonUtils.safeStringify(updated),
         });
         if (!response.ok) {
@@ -341,7 +448,7 @@ export default function App() {
       delete pendingSavesRef.current[updated.id];
       return doSave();
     } else {
-      pendingSavesRef.current[updated.id] = setTimeout(doSave, 1000);
+      pendingSavesRef.current[updated.id] = setTimeout(doSave, REFACTOR_CONSTANTS.SAVE_PROJECT_DELAY_MS);
       return Promise.resolve();
     }
   }, []);
@@ -386,7 +493,7 @@ export default function App() {
         }
       } else {
         setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
-        appError(`${ERROR_MESSAGES.UPDATING_PROJECT}: STATUS ${res.status}`);
+        appError(_.join([ERROR_MESSAGES.UPDATING_PROJECT, res.status], REFACTOR_CONSTANTS.VD_BLANK));
       }
     } catch (e) {
       setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
@@ -463,6 +570,7 @@ export default function App() {
               <ProjectList
                 currentLang={currentLang}
                 projects={projects}
+                isLoading={isLoadingProjects}
                 onSelectProject={(p) => handleSelectProject(p.id)}
                 onCreateProject={handleCreateProject}
                 onUpdateProject={handleUpdateProjectDetails}
