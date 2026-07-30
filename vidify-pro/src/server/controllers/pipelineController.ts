@@ -108,7 +108,7 @@ import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createApp
 import { SecurityMessages } from "../../constants/security.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
-import { resolveApiKeys } from "../services/apiKeyResolver.js";
+import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 
 import { AspectRatio, ProjectLanguage } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
@@ -135,12 +135,7 @@ import { requestContext } from "../utils/requestContext.js";
 const router = express.Router();
 
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
-  const licenseKey = (_.find([
-    _.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY),
-    _.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY),
-    _.get(req.body, SecurityConstants.STORE_LICENSE_KEY),
-    _.get(req.body, SecurityConstants.PROP_LICENSE_KEY_GAS)
-  ], (key) => !_.isEmpty(key)) as string) || SecurityConstants.EMPTY_STRING;
+  const licenseKey = getResolvedLicenseKey(req);
 
   if (!_.isEmpty(licenseKey)) {
     try {
@@ -1470,18 +1465,25 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, res: Response) => {
   try {
     let { text, speed, voice_id, voiceURI } = req.body;
-    let finalVoiceId = voice_id || voiceURI;
+    let finalVoiceId = voice_id || voiceURI || "";
 
-    if (finalVoiceId && VOICE_PRESET_MAP[finalVoiceId]) {
+    if (!_.isEmpty(finalVoiceId) && VOICE_PRESET_MAP[finalVoiceId]) {
       finalVoiceId = VOICE_PRESET_MAP[finalVoiceId];
+    }
+
+    const validPrefixes = REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES;
+    const hasValidPrefix = _.some(validPrefixes, (prefix) => _.startsWith(finalVoiceId, prefix));
+
+    if (!hasValidPrefix) {
+      if (!_.isEmpty(finalVoiceId)) {
+        finalVoiceId = `${REFACTOR_CONSTANTS.EDGE_PREFIX}${finalVoiceId}`;
+      } else {
+        finalVoiceId = REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID;
+      }
     }
 
     if (!text || !text.trim()) {
       text = BACKEND_MESSAGES.TTS_DEFAULT_TEST;
-    }
-
-    if (!finalVoiceId) {
-      finalVoiceId = VOICE_PRESET_MAP["preset-vi-bac-female"] || "edge_vi-VN-HoaiMyNeural";
     }
 
     const keys = await resolveApiKeys();

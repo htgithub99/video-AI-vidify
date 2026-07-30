@@ -15,6 +15,7 @@ import { API_ROUTES } from "./src/constants/apiRoutes.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { SecurityConstants } from "./src/constants/security.js";
+import { getResolvedLicenseKey } from "./src/server/services/apiKeyResolver.js";
 
 const SERVER_CONFIG = {
   PORT: 3002,
@@ -76,7 +77,8 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || SecurityConstants.EMPTY_STRING;
-  requestContext.run({ geminiKey, ai33Key }, next);
+  const licenseKey = getResolvedLicenseKey(req);
+  requestContext.run({ geminiKey, ai33Key, licenseKey }, next);
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));

@@ -4,11 +4,12 @@ import { appError } from '../../lib/logger.js';
 import _ from 'lodash';
 import { SecurityConstants, SecurityMessages, LocalizationConstants, FeatureType, LicenseStatus } from '../../constants/security.js';
 import { requestContext } from '../utils/requestContext.js';
+import { getResolvedLicenseKey } from '../services/apiKeyResolver.js';
 
 export const requireLicense = (featureType?: FeatureType) => {
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const licenseKey = _.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string;
+            const licenseKey = getResolvedLicenseKey(req);
 
             if (_.isEmpty(licenseKey)) {
                 return res.status(SecurityConstants.HTTP_UNAUTHORIZED).json({

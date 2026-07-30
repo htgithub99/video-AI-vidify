@@ -309,6 +309,13 @@ export const REFACTOR_CONSTANTS = {
   SYMBOL_INFINITY: "∞",
   CREDITS_DEFAULT_10000: 10000,
   STALE_TIME_LICENSE_MS: 10000,
+  VALID_VOICE_PREFIXES: ["elevenlabs_", "minimax_", "clone_", "edge_", "kokoro_", "vbee_", "fishaudio_"] as const,
+  DEFAULT_EDGE_VOICE_ID: "edge_vi-VN-HoaiMyNeural",
+  EDGE_PREFIX: "edge_",
+  REQ_PROP_HEADERS: "headers",
+  REQ_PROP_BODY: "body",
+  KEY_NAME_GEMINI_API_KEY: "gemini_api_key",
+  KEY_NAME_AI33_API_KEY: "ai33_api_key",
   ZERO_FLOAT: 0.0,
 } as const;
 
