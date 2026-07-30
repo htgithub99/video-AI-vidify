@@ -173,6 +173,39 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId) {
+      const activeProj = _.find(projects, { id: selectedProjectId });
+      if (activeProj && !activeProj.parentId) {
+        const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+        if (studioChild) {
+          setSelectedProjectId(studioChild.id);
+        } else {
+          const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(36).substring(2, 11);
+          const childProject: VideoProject = {
+            ...activeProj,
+            id: childId,
+            parentId: activeProj.id,
+            name: `${activeProj.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          
+          fetch(API_ROUTES.PROJECTS, {
+            method: HTTP_METHODS.POST,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            body: jsonUtils.safeStringify(childProject),
+          }).then(response => {
+            if (response.ok) {
+              setProjects((prev) => [...prev, childProject]);
+              setSelectedProjectId(childId);
+            }
+          }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err));
+        }
+      }
+    }
+  }, [activeTab, selectedProjectId, projects]);
+
   const handleSelectProject = useCallback(async (id: string | null) => {
     if (!id) {
       setSelectedProjectId(null);
@@ -408,6 +441,7 @@ export default function App() {
             <AutoVideoGenerator
               currentLang={currentLang}
               projects={projects}
+              selectedProjectId={selectedProjectId}
               onSelectProject={handleSelectProject}
               onCreateProject={handleCreateProject}
               onUpdateProject={handleUpdateProject}

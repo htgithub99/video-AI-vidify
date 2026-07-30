@@ -3,7 +3,7 @@ import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS } from "../constants";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
@@ -47,6 +47,7 @@ import {
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
   projects: VideoProject[];
+  selectedProjectId?: string | null;
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string, desc: string) => Promise<void>;
   onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
@@ -79,6 +80,7 @@ const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): 
 export default function AutoVideoGenerator({
   currentLang,
   projects,
+  selectedProjectId,
   onSelectProject,
   onUpdateProject,
 }: AutoVideoGeneratorProps) {
@@ -410,9 +412,14 @@ export default function AutoVideoGenerator({
         appendLog(T.logResumeProject(newProj.name));
       } else {
         newProjectId = _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        const parentProject = selectedProjectId ? _.find(projects, { id: selectedProjectId }) : null;
+        const defaultName = parentProject
+          ? `${parentProject.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`
+          : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
         newProj = {
           id: newProjectId,
-          name: _.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          parentId: parentProject && !parentProject.parentId ? parentProject.id : undefined,
+          name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

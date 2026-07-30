@@ -207,6 +207,8 @@ export const COMMON_STRINGS = {
   ARTWORK_PREFIX: "artwork_",
   MP4_EXT: "mp4",
   DUMMY_URL_BASE: "http://dummy.com",
+  STUDIO_CHILD_SUFFIX: " - Biên tập",
+  AUTO_CHILD_SUFFIX: " - Tự động",
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -580,6 +582,7 @@ export const PROJECT_LIST_TEXTS = {
       Story: "Kể Chuyện",
       News: "Tin Tức",
     } as Record<string, string>,
+    linkedChildProjects: "Dự án con liên kết:",
   },
   en: {
     desc: "Synthesize stories, design video structures with AI...",
@@ -606,6 +609,7 @@ export const PROJECT_LIST_TEXTS = {
       Story: "Story",
       News: "News",
     } as Record<string, string>,
+    linkedChildProjects: "Linked child projects:",
   },
 } as const;
 

@@ -268,6 +268,7 @@ export interface SEOConfig {
 
 export interface VideoProject {
   id: string;
+  parentId?: string;
   name: string;
   description: string;
   createdAt: string;

@@ -2,7 +2,7 @@ import { cn } from "../lib/utils";
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
 import { VideoProject } from "../types.js";
-import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight, Image, Mic } from "lucide-react";
+import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Coins, Search, Globe, ChevronRight, ChevronDown, Layers, Image, Mic } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { COMMON_STRINGS, ERROR_MESSAGES } from "../constants/index.js";
@@ -43,6 +43,7 @@ export default function ProjectList({
   const isUnlimited = licenseInfo?.limits?.unlimited ?? false;
 
   const [showModal, setShowModal] = useState(false);
+  const [expandedParentIds, setExpandedParentIds] = useState<Record<string, boolean>>({});
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -116,6 +117,7 @@ export default function ProjectList({
 
   const filteredProjects = _.orderBy(
     _.filter(projects, (proj) => {
+      if (proj.parentId) return false;
       const matchesSearch = _.some([proj.name, proj.description || ""], (text) =>
         _.includes(_.toLower(text), searchLower)
       );
@@ -307,15 +309,33 @@ export default function ProjectList({
                   const videosCount = _.filter(project.storyboard || [], (scene) => scene.assetType === "video" && !_.isEmpty(scene.assetUrl)).length;
                   const voiceCount = _.sumBy(project.storyboard || [], (scene) => (scene.script || scene.subtitle || "").length);
 
+                  const children = _.filter(projects, { parentId: project.id });
+                  const hasChildren = children.length > 0;
+
                   return (
-                    <tr
-                      key={project.id}
-                      onClick={() => onSelectProject(project)}
-                      className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200"
-                    >
-                      <td className="py-4 px-6">
-                        <div className="flex items-start gap-4">
-                          <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
+                    <React.Fragment key={project.id}>
+                      <tr
+                        onClick={() => onSelectProject(project)}
+                        className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200"
+                      >
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-4">
+                            {hasChildren && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedParentIds((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
+                                }}
+                                className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-slate-100 shrink-0"
+                              >
+                                {expandedParentIds[project.id] ? (
+                                  <ChevronDown className="w-4 h-4 text-rose-500" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                                )}
+                              </button>
+                            )}
+                            <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
                             <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
                             {project.config.genre && (
                               <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm">
@@ -415,8 +435,60 @@ export default function ProjectList({
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
+                    {expandedParentIds[project.id] && hasChildren && (
+                      <tr className="bg-slate-950/20 border-b border-slate-800/60" onClick={(e) => e.stopPropagation()}>
+                        <td colSpan={5} className="py-3 px-6 bg-slate-950/10">
+                          <div className="space-y-2 pl-6 border-l-2 border-rose-500/30 ml-4 py-1">
+                            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 font-mono flex items-center gap-1 select-none">
+                              <Layers className="w-3.5 h-3.5 text-rose-500/60" />
+                              {localT.linkedChildProjects}
+                            </h4>
+                            <div className="grid gap-2">
+                              {children.map((child) => (
+                                <div
+                                  key={child.id}
+                                  onClick={() => onSelectProject(child)}
+                                  className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <PlayCircle className="w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors" />
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">
+                                        {child.name}
+                                      </span>
+                                      <span className="text-[9px] text-slate-500 font-medium font-mono">
+                                        Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      variant="primary"
+                                      size="xs"
+                                      onClick={() => onSelectProject(child)}
+                                      className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all"
+                                    >
+                                      {t.Open}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      onClick={() => setProjectToDelete(child)}
+                                      className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors"
+                                      title={t.delete}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
               </tbody>
             </table>
           </div>
