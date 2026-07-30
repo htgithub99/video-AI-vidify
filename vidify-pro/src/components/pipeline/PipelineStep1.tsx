@@ -301,8 +301,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 </>
               ) : (
                 <>
-                  <Layout className="w-4 h-4 text-rose-200" />
-                  <span>{t.Generate_Storyboard}</span>
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>{t.AI_Auto_Split_Storyboard}</span>
                 </>
               )}
             </Button>
