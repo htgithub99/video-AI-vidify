@@ -483,12 +483,27 @@ export default function AutoVideoGenerator({
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
-      if (resumeMode && activeCreatedProject) {
-        newProjectId = activeCreatedProject.id;
+      let existingTargetProj = activeCreatedProject;
+      if (!existingTargetProj && selectedProjectId) {
+        existingTargetProj = _.find(projects, { id: selectedProjectId }) || null;
+      }
+      if (!existingTargetProj && !_.isEmpty(projectName)) {
+        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))) || null;
+      }
+      if (!existingTargetProj && !_.isEmpty(scriptContent)) {
+        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(_.get(p, 'input.content', '')), _.trim(scriptContent))) || null;
+      }
+      if (!existingTargetProj && !_.isEmpty(projects)) {
+        existingTargetProj = _.first(projects) || null;
+      }
+
+      if (resumeMode && existingTargetProj) {
+        newProjectId = existingTargetProj.id;
         newProj = {
-          ...activeCreatedProject,
+          ...existingTargetProj,
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
         };
+        setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {
         const selectedProj = selectedProjectId ? _.find(projects, { id: selectedProjectId }) : null;
@@ -1657,21 +1672,21 @@ export default function AutoVideoGenerator({
                   </div>
                 </div>
 
-                <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-955/45">
+                <div className="border border-slate-800/90 rounded-2xl overflow-hidden bg-slate-900/60 shadow-sm transition-all">
                   <Button
                     type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                     variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                     onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
-                    className="w-full flex items-center justify-between px-3.5 py-2 text-[10px] font-bold font-mono uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors h-auto p-0"
+                    className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold font-mono uppercase tracking-wider text-slate-300 hover:text-white transition-colors h-auto"
                   >
-                    <span className="flex items-center gap-1.5">
-                      <Sliders className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="flex items-center gap-2">
+                      <Sliders className="w-4 h-4 text-blue-400" />
                       {T.advancedConfig}
                     </span>
-                    <ChevronDown className={cn("w-4 h-4 text-slate-500 transition-transform duration-250", showAdvancedImageSettings && "rotate-180")} />
+                    <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-250", showAdvancedImageSettings && "rotate-180")} />
                   </Button>
                   {showAdvancedImageSettings && (
-                    <div className="px-3.5 pb-3.5 pt-1.5 grid grid-cols-2 gap-3.5 border-t border-slate-800/60 animate-fadeIn">
+                    <div className="px-4 pb-4 pt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-800/60 animate-fadeIn">
                       <div className="space-y-1">
                         <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
                         <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblChromeHeadlessTooltip}>
