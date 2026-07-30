@@ -15,6 +15,12 @@ export enum ProjectInputType {
   Idea = "idea",
 }
 
+export enum ProjectKind {
+  Container = "container",
+  Studio = "studio",
+  Auto = "auto",
+}
+
 export enum ProjectLanguage {
   VI = "vi",
   EN = "en",
@@ -269,6 +275,7 @@ export interface SEOConfig {
 export interface VideoProject {
   id: string;
   parentId?: string;
+  projectKind?: ProjectKind;
   name: string;
   description: string;
   createdAt: string;

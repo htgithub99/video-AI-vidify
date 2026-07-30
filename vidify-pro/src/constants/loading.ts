@@ -10,3 +10,8 @@ export const LOADING_KEYS = {
   GENERATE_DETAILED_PROMPT_PREFIX: "generateDetailedPrompt_",
   RENDER_SCENE_PREFIX: "renderScene_",
 } as const;
+
+export const TAB_CONTENT_LOADING_CONFIG = {
+  ROWS: [0, 1, 2],
+  MAX_WAIT_MS: 10000,
+} as const;

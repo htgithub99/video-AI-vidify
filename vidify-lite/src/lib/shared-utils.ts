@@ -71,6 +71,13 @@ export const safeSystemFetchStream = async (
       body: jsonUtils.safeStringify(payload),
     });
 
+    if (!response.ok) {
+      throw new Error(_.join(
+        [ERROR_MESSAGES.API_ERROR_PREFIX, response.status],
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      ));
+    }
+
     if (!response.body) {
       throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
     }
@@ -79,14 +86,19 @@ export const safeSystemFetchStream = async (
     const decoder = new TextDecoder();
     let buffer = "";
 
-    while (true) {
+    let isReading = true;
+    while (isReading) {
       if (cancelRef && cancelRef.current) {
         reader.cancel().catch(() => {});
+        isReading = false;
         break;
       }
 
       const { value, done } = await reader.read();
-      if (done) break;
+      if (done) {
+        isReading = false;
+        break;
+      }
 
       buffer += decoder.decode(value, { stream: true });
       const lines = _.split(buffer, "\n");
@@ -107,6 +119,7 @@ export const safeSystemFetchStream = async (
   } catch (error: any) {
     appError(ERROR_MESSAGES.STREAM_FLOW_ERROR, url, error);
     if (onError) onError(error);
+    throw error;
   }
 };
 

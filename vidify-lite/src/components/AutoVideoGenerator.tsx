@@ -3,7 +3,7 @@ import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
 import { AppTab, VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS } from "../constants";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
@@ -15,7 +15,9 @@ import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { formatTimeHelper } from "../utils/helpers";
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
-import { safeSystemFetch, safeSystemFetchStream, readFilesAsDataURL } from "../lib/shared-utils";
+import { safeSystemFetch, readFilesAsDataURL } from "../lib/shared-utils";
+import { blobToBase64 } from "../lib/fileUtils";
+import { createProjectImageUrl, generateProjectImages, type ProjectImageResult } from "../services/projectImageGenerationService";
 import {
   Zap,
   Sparkles,
@@ -53,6 +55,46 @@ interface AutoVideoGeneratorProps {
   onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
   theme?: "dark" | "light";
 }
+
+interface CachedVoiceAudio {
+  audioBase64: string;
+  audioUrl: string;
+  isCached: boolean;
+}
+
+const getCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
+  const audioUrl = _.get(
+    voiceConfig,
+    AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY,
+    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  );
+  let audioBase64 = _.get(
+    voiceConfig,
+    AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH,
+    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  );
+
+  if (_.every([
+    _.isEmpty(audioBase64),
+    !_.isEmpty(audioUrl),
+  ], Boolean)) {
+    try {
+      const audioResponse = await fetch(audioUrl);
+      if (!audioResponse.ok) {
+        throw new Error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR);
+      }
+      audioBase64 = await blobToBase64(await audioResponse.blob());
+    } catch (error) {
+      logger.error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR, error);
+    }
+  }
+
+  return {
+    audioBase64,
+    audioUrl,
+    isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)),
+  };
+};
 
 const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
   if (_.isEqual(genMode, ImageGenerationMode.GeminiChat)) {
@@ -737,12 +779,15 @@ export default function AutoVideoGenerator({
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let isVoiceCached = false;
 
-      if (resumeMode && newProj.voiceConfig?.audioBase64) {
-        globalAudioBase64 = newProj.voiceConfig.audioBase64;
-        globalAudioUrl = newProj.voiceConfig.audioUrl || "";
-        isVoiceCached = true;
-        appendLog(T.logResumeVoice);
-        setStepProgress(50);
+      if (resumeMode) {
+        const cachedVoiceAudio = await getCachedVoiceAudio(newProj.voiceConfig);
+        if (cachedVoiceAudio.isCached) {
+          globalAudioBase64 = cachedVoiceAudio.audioBase64;
+          globalAudioUrl = cachedVoiceAudio.audioUrl;
+          isVoiceCached = true;
+          appendLog(T.logResumeVoice);
+          setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_VOICE_COMPLETE);
+        }
       }
 
       let voiceUpdatedProj = newProj;
@@ -937,71 +982,69 @@ export default function AutoVideoGenerator({
 
         if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
-          try {
-            const batchItems = _.map(targetScenesToGen, (s) => ({
-              sceneId: s.id,
-              prompt: _.get(s, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(s, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-            }));
-
-            let completedCount = 0;
-            await safeSystemFetchStream(
-              API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
-              {
-                items: batchItems,
-                visualConfig: visualConfigPayload,
-                style: currentStylePreset,
-                sandboxConfig: sandboxConfigPayload
-              },
-              (result) => {
-                if (result && result.success && result.base64) {
-                  const imageUrl = `${REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX}${result.base64}`;
-                  const sc = _.find(realScenes, (s) => _.eq(s.id, result.sceneId));
-                  if (sc) {
-                    sc.assetUrl = imageUrl;
-                    sc.assetUrls = [imageUrl];
-                    completedCount++;
-                    appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, targetScenesToGen.length));
-                  }
-                } else {
-                  appendLog(T.logBatchImageSceneError(result?.sceneId || "unknown", result?.warning || "Unknown warning"));
-                }
-              }
-            );
-          } catch (e: any) {
-            appendLog(T.logBatchStreamErrorFallback(e.message));
-            for (let i = 0; i < targetScenesToGen.length; i++) {
-              const sc = targetScenesToGen[i];
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
-              try {
-                const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                  prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-                  style: currentStylePreset,
-                  resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
-                  bypassCache: false,
-                  engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-                  sandboxConfig: sandboxConfigPayload,
-                  visualConfig: visualConfigPayload
-                });
-                if (imgRes.success && imgRes.data) {
-                  const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
-                  if (base64Val) {
-                    const dataUrl = `${REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX}${base64Val}`;
-                    sc.assetUrl = dataUrl;
-                    sc.assetUrls = [dataUrl];
-                  }
-                }
-              } catch (err) {
-                appendLog(T.logFallbackSceneError(sc.id));
-              }
+          const batchItems = _.map(targetScenesToGen, (scene) => ({
+            sceneId: scene.id,
+            prompt: _.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY)
+              || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+          }));
+          let completedCount = SecurityConstants.ZERO;
+          const applyResult = (result: ProjectImageResult) => {
+            const imageUrl = createProjectImageUrl(result);
+            const scene = _.find(realScenes, (item) => _.isEqual(item.id, result.sceneId));
+            if (_.every([scene, !_.isEmpty(imageUrl)], Boolean)) {
+              scene!.assetUrl = imageUrl;
+              scene!.assetUrls = [imageUrl];
+              completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
+              appendLog(T.logBatchImageSceneSuccess(
+                result.sceneId,
+                completedCount,
+                _.size(targetScenesToGen),
+              ));
             }
-          } finally {
-            fetch(`${window.location.origin}${API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES}`, {
-              method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-              headers: {
-                [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+          };
+
+          await generateProjectImages({
+            items: batchItems,
+            visualConfig: visualConfigPayload,
+            style: currentStylePreset,
+            sandboxConfig: sandboxConfigPayload,
+            createFallbackPayload: (item) => ({
+              prompt: item.prompt,
+              style: currentStylePreset,
+              resolution: voiceUpdatedProj.visualConfig?.quality
+                || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+              bypassCache: false,
+              engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+              sandboxConfig: sandboxConfigPayload,
+              visualConfig: visualConfigPayload,
+            }),
+            onBatchResult: (result) => {
+              if (result.success) {
+                applyResult(result);
+                return;
               }
-            }).catch(() => {});
-          }
+              appendLog(T.logBatchImageSceneError(
+                result.sceneId || REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID,
+                result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+              ));
+            },
+            onFallbackStart: (error) => appendLog(T.logBatchStreamErrorFallback(error.message)),
+            onFallbackItemStart: (_item, index, total) => appendLog(
+              AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
+                .replace(
+                  SecurityConstants.PLACEHOLDER_0,
+                  _.toString(_.add(index, SecurityConstants.DEFAULT_AMOUNT)),
+                )
+                .replace(SecurityConstants.PLACEHOLDER_1, _.toString(total)),
+            ),
+            onFallbackResult: (result) => {
+              if (result.success) {
+                applyResult(result);
+                return;
+              }
+              appendLog(T.logFallbackSceneError(result.sceneId));
+            },
+          });
         } else {
           for (let i = 0; i < targetScenesToGen.length; i++) {
             const sc = targetScenesToGen[i];

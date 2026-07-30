@@ -7,11 +7,12 @@ import PipelineWizard from "./components/PipelineWizard.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
 import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
+import TabContentLoading from "./components/TabContentLoading.tsx";
 
-import { VideoProject, ProjectInputType, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
+import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS } from "./constants";
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS } from "./constants";
 import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync } from "./lib/shared-utils.js";
@@ -19,6 +20,31 @@ import { jsonUtils } from "./lib/json";
 import { storageUtils } from "./lib/storage";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
+const PROJECT_WORKSPACE_TABS = [AppTab.AUTO_GENERATOR, AppTab.STUDIO];
+
+const isProjectWorkspaceTab = (tab: string): boolean => (
+  _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab)
+);
+
+const isProjectReadyForTab = (
+  project: VideoProject | undefined,
+  tab: string,
+): boolean => _.some([
+  _.every([
+    _.isEqual(tab, AppTab.AUTO_GENERATOR),
+    _.some([
+      _.isEqual(project?.projectKind, ProjectKind.Auto),
+      _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+    ]),
+  ], Boolean),
+  _.every([
+    _.isEqual(tab, AppTab.STUDIO),
+    _.some([
+      _.isEqual(project?.projectKind, ProjectKind.Studio),
+      _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
+    ]),
+  ], Boolean),
+], Boolean);
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -49,6 +75,7 @@ export default function App() {
   }, [currentLang]);
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [isSwitchingWorkspaceTab, setIsSwitchingWorkspaceTab] = useState(false);
   const pendingSavesRef = useRef<Record<string, NodeJS.Timeout>>({});
   const projectsRef = useRef<VideoProject[]>([]);
   const creatingChildRef = useRef<Record<string, boolean>>({});
@@ -223,6 +250,29 @@ export default function App() {
   }, [activeTab, selectedProjectId, projects]);
 
   useEffect(() => {
+    if (!isSwitchingWorkspaceTab) {
+      return;
+    }
+    const activeWorkspaceProject = _.find(projects, { id: selectedProjectId });
+    if (!isProjectReadyForTab(activeWorkspaceProject, activeTab)) {
+      return;
+    }
+    const frameId = requestAnimationFrame(() => setIsSwitchingWorkspaceTab(false));
+    return () => cancelAnimationFrame(frameId);
+  }, [activeTab, isSwitchingWorkspaceTab, projects, selectedProjectId]);
+
+  useEffect(() => {
+    if (!isSwitchingWorkspaceTab) {
+      return;
+    }
+    const timeoutId = setTimeout(
+      () => setIsSwitchingWorkspaceTab(false),
+      TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS,
+    );
+    return () => clearTimeout(timeoutId);
+  }, [isSwitchingWorkspaceTab]);
+
+  useEffect(() => {
     if (_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && selectedProjectId) {
       const activeProj = _.find(projects, { id: selectedProjectId });
       if (activeProj) {
@@ -308,6 +358,7 @@ export default function App() {
     const parentId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
     const parentProject: VideoProject = {
       id: parentId,
+      projectKind: ProjectKind.Container,
       name: name,
       description: desc,
       createdAt: new Date().toISOString(),
@@ -366,6 +417,7 @@ export default function App() {
       ...parentProject,
       id: studioChildId,
       parentId: parentId,
+      projectKind: ProjectKind.Studio,
       name: `${parentProject.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -376,6 +428,7 @@ export default function App() {
       ...parentProject,
       id: autoChildId,
       parentId: parentId,
+      projectKind: ProjectKind.Auto,
       name: `${parentProject.name}${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -469,6 +522,27 @@ export default function App() {
 
   const activeProject = _.find(projects, { id: selectedProjectId });
 
+  const handleActiveTabChange = useCallback((tab: string) => {
+    if (_.some([
+      isSwitchingWorkspaceTab,
+      _.isEqual(tab, activeTab),
+      _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean),
+    ], Boolean)) {
+      return;
+    }
+
+    const shouldShowLoading = _.every(
+      [activeTab, tab],
+      isProjectWorkspaceTab,
+    );
+    setIsSwitchingWorkspaceTab(shouldShowLoading);
+
+    if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
+      setSelectedProjectId(null);
+    }
+    setActiveTab(tab);
+  }, [activeTab, isSwitchingWorkspaceTab, selectedProjectId]);
+
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = _.find(projects, { id });
     if (!projToUpdate) return;
@@ -516,13 +590,7 @@ export default function App() {
         <Sidebar
           currentLang={currentLang}
           activeTab={activeTab}
-          setActiveTab={(tab) => {
-            if (_.isEqual(tab, AppTab.STUDIO) && !selectedProjectId) return;
-            if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab)) {
-              setSelectedProjectId(null);
-            }
-            setActiveTab(tab);
-          }}
+          setActiveTab={handleActiveTabChange}
           selectedProjectId={selectedProjectId}
           activeProjectName={activeProject?.name || null}
           theme={theme as any}
@@ -530,7 +598,9 @@ export default function App() {
         />
 
         <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
-          {_.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
+          {isSwitchingWorkspaceTab ? (
+            <TabContentLoading />
+          ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
             <PipelineWizard
               key={selectedProjectId}
               theme={theme as any}

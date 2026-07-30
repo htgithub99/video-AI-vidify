@@ -965,7 +965,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   }
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Slow;
-  const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || 1;
+  const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
   const maxTabs = Math.min(items.length, concurrency);
 
   if (maxTabs === 1) {

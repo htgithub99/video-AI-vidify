@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
-import { VideoProject } from "../../types.js";
+import { ProjectKind, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
@@ -196,6 +196,8 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
 
   return _.map(projects, (project) => {
+    if (_.isEqual(project.projectKind, ProjectKind.Container)) return project;
+
     const oldFolderName = getSafeFolderName(project.name);
     const oldProjectDir = path.join(assetsDir, oldFolderName);
     const newProjectDir = path.join(assetsDir, project.id);

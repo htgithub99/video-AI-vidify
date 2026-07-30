@@ -16,16 +16,17 @@ import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
 import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AudioType, Gender } from "../../types";
+import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, AudioType, Gender } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
-import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs, safeSystemFetchStream } from "../../lib/shared-utils";
+import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
+import { createProjectImageUrl, generateProjectImages, type ProjectImageResult } from "../../services/projectImageGenerationService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -2630,15 +2631,14 @@ export function usePipelineWizard(props: any) {
     let hasError = false;
 
     const isGeminiChat = project.visualConfig.generationMode === ImageGenerationMode.GeminiChat;
-    const speed = project.visualConfig.geminiChatSpeed || GeminiChatSpeed.Slow;
-    const concurrency = isGeminiChat ? GEMINI_CHAT_SPEED_TAB_COUNT[speed] : 1;
+    const concurrency = SecurityConstants.DEFAULT_AMOUNT;
 
     try {
-      if (concurrency > 1 && isGeminiChat) {
+      if (isGeminiChat) {
         for (const scene of targetScenes) {
           setLoadingStates((prev) => ({
             ...prev,
-            ["renderScene_" + scene.id]: true,
+            [LOADING_KEYS.RENDER_SCENE_PREFIX + scene.id]: true,
           }));
         }
 
@@ -2646,51 +2646,91 @@ export function usePipelineWizard(props: any) {
           sceneId: s.id,
           prompt: s.prompt,
         }));
-        await safeSystemFetchStream(
-          API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
-          {
-            items: batchItems,
-            visualConfig: project.visualConfig,
+        const applyResult = (result: ProjectImageResult) => {
+          const imageUrl = createProjectImageUrl(result);
+          if (_.isEmpty(imageUrl)) {
+            return;
+          }
+          setProject((prev) => {
+            const updated = _.map(prev.storyboard || [], (sc) => {
+              if (_.eq(sc.id, result.sceneId)) {
+                return {
+                  ...sc,
+                  assetUrl: imageUrl,
+                  assetUrls: [imageUrl],
+                  isGenerated: true,
+                };
+              }
+              return sc;
+            });
+            const updatedProject = { ...prev, storyboard: updated };
+            setTimeout(() => {
+              onSaveProject(updatedProject, true);
+            }, SecurityConstants.ZERO);
+            return updatedProject;
+          });
+          completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
+        };
+
+        await generateProjectImages({
+          items: batchItems,
+          visualConfig: project.visualConfig,
+          style: project.visualConfig.style,
+          sandboxConfig,
+          cancelRef: cancelBatchImageRef,
+          createFallbackPayload: (item) => ({
+            prompt: item.prompt,
             style: project.visualConfig.style,
-          },
-          (result) => {
+            resolution: project.visualConfig.quality,
+            bypassCache: false,
+            engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+            sandboxConfig,
+            visualConfig: project.visualConfig,
+          }),
+          onBatchResult: (result) => {
             setLoadingStates((prev) => ({
               ...prev,
-              ["renderScene_" + result.sceneId]: false,
+              [LOADING_KEYS.RENDER_SCENE_PREFIX + result.sceneId]: false,
             }));
 
-            if (result.success && result.base64) {
-              const imageUrl = `data:image/jpeg;base64,${result.base64}`;
-              setProject((prev) => {
-                const updated = _.map(prev.storyboard || [], (sc) => {
-                  if (_.eq(sc.id, result.sceneId)) {
-                    return {
-                      ...sc,
-                      assetUrl: imageUrl,
-                      assetUrls: [imageUrl],
-                      isGenerated: true,
-                    };
-                  }
-                  return sc;
-                });
-                const updatedProject = { ...prev, storyboard: updated };
-                setTimeout(() => {
-                  onSaveProject(updatedProject, true);
-                }, 0);
-                return updatedProject;
-              });
-              completedCount++;
+            if (result.success) {
+              applyResult(result);
             } else {
-              logger.error("BATCH_SCENE_FAILED", result.sceneId, result.warning);
-              setErrorMsg(t.errorRenderingSceneBatch.replace("{sceneId}", result.sceneId).replace("{error}", result.warning || "Unknown"));
+              logger.error(LogEvent.BATCH_SCENE_FAILED, result.sceneId, result.warning);
+              setErrorMsg(t.errorRenderingSceneBatch
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                .replace(
+                  REFACTOR_CONSTANTS.TEMPLATE_ERROR,
+                  result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+                ));
             }
 
-            setBatchProgressMsg(t.generatingSceneBatch.replace("{sceneId}", result.sceneId).replace("{currentIndex}", completedCount.toString()).replace("{totalToProcess}", totalToProcess.toString()));
+            setBatchProgressMsg(t.generatingSceneBatch
+              .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+              .replace(REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX, _.toString(completedCount))
+              .replace(REFACTOR_CONSTANTS.TEMPLATE_TOTAL, _.toString(totalToProcess)));
           },
-          undefined,
-          undefined,
-          cancelBatchImageRef
-        );
+          onFallbackItemStart: (item) => setLoadingStates((prev) => ({
+            ...prev,
+            [LOADING_KEYS.RENDER_SCENE_PREFIX + item.sceneId]: true,
+          })),
+          onFallbackResult: (result) => {
+            setLoadingStates((prev) => ({
+              ...prev,
+              [LOADING_KEYS.RENDER_SCENE_PREFIX + result.sceneId]: false,
+            }));
+            if (result.success) {
+              applyResult(result);
+              return;
+            }
+            setErrorMsg(t.errorRenderingSceneBatch
+              .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+              .replace(
+                REFACTOR_CONSTANTS.TEMPLATE_ERROR,
+                result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+              ));
+          },
+        });
       } else {
         const batches = _.chunk(targetScenes, concurrency);
         let completedBatchesCount = 0;
@@ -2755,9 +2795,6 @@ export function usePipelineWizard(props: any) {
       setIsBatchGenerating(false);
       setIsCancellingBatch(false);
       setBatchProgressMsg("");
-      if (isGeminiChat && concurrency > 1) {
-        fetchSystemApi(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {}).catch(() => { });
-      }
     }
   };
 
