@@ -120,6 +120,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         creditsUsed: row.creditsUsed,
         parentId: detail.parentId,
         config,
+        storyboard: _.defaultTo(detail.storyboard, []),
       };
     });
   } catch (error) {

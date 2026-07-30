@@ -1,7 +1,7 @@
 import { cn } from "../lib/utils";
 import React, { useState } from "react";
 import { Lang, translations } from "../lib/lang.js";
-import { VideoProject } from "../types.js";
+import { VideoProject, GenerateType } from "../types.js";
 import { Plus, Video, Calendar, Trash2, Edit3, Film, Lightbulb, PlayCircle, Search, Globe, ChevronRight, ChevronDown, Layers, Image, Mic } from "lucide-react";
 import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
@@ -37,7 +37,7 @@ export default function ProjectList({
 }: ProjectListProps) {
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
-  const { licenseInfo } = useLicense();
+  const { licenseInfo, refetchLicense } = useLicense();
   const limitVideo = licenseInfo?.limits?.video ?? 0;
   const limitImage = licenseInfo?.limits?.image ?? 0;
   const limitVoice = licenseInfo?.limits?.voice ?? 0;
@@ -58,6 +58,9 @@ export default function ProjectList({
   const [currentPage, setCurrentPage] = useState(1);
 
   React.useEffect(() => {
+    if (refetchLicense) {
+      refetchLicense();
+    }
     setCurrentPage(PROJECT_LIST_CONSTANTS.PAGE_ONE);
   }, [searchQuery, filterLang, filterGenre]);
 
@@ -325,10 +328,15 @@ export default function ProjectList({
                   let voiceCount = 0;
 
                   _.forEach(allRelatedProjects, (p) => {
-                    imagesCount += _.filter(p.storyboard || [], (scene) => scene.assetType === "image" && !_.isEmpty(scene.assetUrl)).length;
-                    videosCount += _.filter(p.storyboard || [], (scene) => scene.assetType === "video" && !_.isEmpty(scene.assetUrl)).length;
-                    voiceCount += _.sumBy(p.storyboard || [], (scene) => (scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING).length);
+                    const sb = _.defaultTo(p.storyboard, []);
+                    imagesCount += _.filter(sb, (scene) => (!scene.assetType || _.isEqual(scene.assetType, GenerateType.Image)) && (!_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls))).length;
+                    videosCount += _.filter(sb, (scene) => _.isEqual(scene.assetType, GenerateType.Video) && (!_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls))).length;
+                    voiceCount += _.sumBy(sb, (scene) => (scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING).length);
                   });
+
+                  const usedVideos = _.max([_.get(licenseInfo, 'usage.video', 0), videosCount]) as number;
+                  const usedImages = _.max([_.get(licenseInfo, 'usage.image', 0), imagesCount]) as number;
+                  const usedVoice = _.max([_.get(licenseInfo, 'usage.voice', 0), voiceCount]) as number;
 
                   return (
                     <React.Fragment key={project.id}>
@@ -384,7 +392,7 @@ export default function ProjectList({
                             <div className="flex items-center gap-1.5" title={localT.videoTooltip}>
                               <Video className="w-4 h-4 text-blue-500" />
                               <span className="text-slate-400">
-                                <strong className="text-blue-400">{videosCount}</strong>
+                                <strong className="text-blue-400">{usedVideos}</strong>
                                 <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVideo.toLocaleString()}
                               </span>
@@ -393,7 +401,7 @@ export default function ProjectList({
                             <div className="flex items-center gap-1.5" title={localT.imageTooltip}>
                               <Image className="w-4 h-4 text-emerald-500" />
                               <span className="text-slate-400">
-                                <strong className="text-emerald-400">{imagesCount}</strong>
+                                <strong className="text-emerald-400">{usedImages}</strong>
                                 <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitImage.toLocaleString()}
                               </span>
@@ -402,7 +410,7 @@ export default function ProjectList({
                             <div className="flex items-center gap-1.5" title={localT.voiceTooltip}>
                               <Mic className="w-4 h-4 text-amber-500" />
                               <span className="text-slate-400">
-                                <strong className="text-amber-400">{voiceCount.toLocaleString()}</strong>
+                                <strong className="text-amber-400">{usedVoice.toLocaleString()}</strong>
                                 <span className="mx-0.5 text-slate-600">{REFACTOR_CONSTANTS.VD_SLASH}</span>
                                 {isUnlimited ? REFACTOR_CONSTANTS.SYMBOL_INFINITY : limitVoice.toLocaleString()}
                               </span>

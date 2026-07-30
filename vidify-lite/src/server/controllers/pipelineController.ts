@@ -135,7 +135,13 @@ import { requestContext } from "../utils/requestContext.js";
 const router = express.Router();
 
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
-  const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
+  const licenseKey = (_.find([
+    _.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY),
+    _.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY),
+    _.get(req.body, SecurityConstants.STORE_LICENSE_KEY),
+    _.get(req.body, SecurityConstants.PROP_LICENSE_KEY_GAS)
+  ], (key) => !_.isEmpty(key)) as string) || SecurityConstants.EMPTY_STRING;
+
   if (!_.isEmpty(licenseKey)) {
     try {
       await LicenseService.incrementUsage(licenseKey, feature, amount);
@@ -1563,7 +1569,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
-    await incrementFeatureUsage(req, FeatureType.VOICE, text.length);
+    await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
 
     res.json({
       success: true,
