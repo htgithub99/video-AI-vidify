@@ -1,25 +1,27 @@
 import { appLog, appError, createAppError } from "./logger";
-import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES } from "../constants";
+import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES, API_HEADERS, REFACTOR_CONSTANTS } from "../constants";
 import { BatchDelayOption } from "../types";
 import _ from 'lodash';
 import { storageUtils } from './storage';
 import { jsonUtils } from "./json";
 
 export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY | typeof STORAGE_KEYS.LICENSE_KEY): string => {
-  return storageUtils.get(keyName) || "";
+  return storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 
 export const safeSystemFetch = async (url: string, payload: any) => {
   try {
     const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
     const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
+    const licenseKey = getStoredApiKey(STORAGE_KEYS.LICENSE_KEY);
 
     const response = await fetch(url, {
-      method: "POST",
+      method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
       headers: {
-        "Content-Type": "application/json",
-        "x-gemini-api-key": geminiKey,
-        "x-ai33-api-key": ai33Key,
+        [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
+        [API_HEADERS.GEMINI_API_KEY]: geminiKey,
+        [API_HEADERS.AI33_API_KEY]: ai33Key,
+        [API_HEADERS.LICENSE_KEY]: licenseKey,
       },
       body: jsonUtils.safeStringify(payload),
     });
@@ -59,12 +61,12 @@ export const safeSystemFetchStream = async (
     const licenseKey = getStoredApiKey(STORAGE_KEYS.LICENSE_KEY);
 
     const response = await fetch(url, {
-      method: "POST",
+      method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
       headers: {
-        "Content-Type": "application/json",
-        "x-gemini-api-key": geminiKey,
-        "x-ai33-api-key": ai33Key,
-        "x-license-key": licenseKey
+        [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
+        [API_HEADERS.GEMINI_API_KEY]: geminiKey,
+        [API_HEADERS.AI33_API_KEY]: ai33Key,
+        [API_HEADERS.LICENSE_KEY]: licenseKey
       },
       body: jsonUtils.safeStringify(payload),
     });

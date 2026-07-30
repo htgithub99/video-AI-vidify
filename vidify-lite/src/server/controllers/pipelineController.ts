@@ -1564,13 +1564,13 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
 
-    await incrementFeatureUsage(req, FeatureType.VOICE, SecurityConstants.DEFAULT_AMOUNT);
+    await incrementFeatureUsage(req, FeatureType.VOICE, text.length);
 
     res.json({
       success: true,
       audioBase64,
       mimeType,
-      audioUrl: "",
+      audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
       provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
     });
   } catch (error: any) {

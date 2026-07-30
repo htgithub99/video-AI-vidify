@@ -854,7 +854,12 @@ export default function AutoVideoGenerator({
               }
             }
           } finally {
-            fetch(`${window.location.origin}${API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES}`, { method: "POST" }).catch(() => {});
+            fetch(`${window.location.origin}${API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES}`, {
+              method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
+              headers: {
+                [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+              }
+            }).catch(() => {});
           }
         } else {
           for (let i = 0; i < targetScenesToGen.length; i++) {
@@ -1108,7 +1113,11 @@ export default function AutoVideoGenerator({
           let lastLoggedProgress: number | null = null;
           const checkStatus = setInterval(async () => {
             try {
-              const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`);
+              const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
+                headers: {
+                  [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
+                }
+              });
               const statusData = await statusRes.json();
               if (statusData.success) {
                 if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {

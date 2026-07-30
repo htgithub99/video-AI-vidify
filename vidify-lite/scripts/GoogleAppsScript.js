@@ -216,19 +216,21 @@ const _ = {
 
     if (this.isNil(key)) return this.jsonResponse({ error: Messages.MISSING_KEY });
 
+    if (!this.validateClientLicense(key)) {
+      return this.jsonResponse({ error: Messages.INVALID_LICENSE_ERR, code: HttpCode.FORBIDDEN });
+    }
+
+    const cleanKey = String(key).trim();
     const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
     const usersData = usersSheet.getDataRange().getValues();
 
-    const isValid = this.some(usersData, (row, idx) => idx > 0 && this.isEqual(row[UserCols.LICENSE_KEY], key) && this.isEqual(row[UserCols.STATUS], StatusEnum.ACTIVE));
-    if (!isValid) return this.jsonResponse({ error: Messages.KEY_REVOKED, code: HttpCode.FORBIDDEN });
-
     const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
     const data = usageSheet.getDataRange().getValues();
-    const usageIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(row[UsageCols.LICENSE_KEY], key));
+    const usageIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(String(row[UsageCols.LICENSE_KEY]).trim(), cleanKey));
 
     if (usageIndex > 0) {
       const row = data[usageIndex];
-      const userRow = this.find(usersData, (r, idx) => idx > 0 && this.isEqual(r[UserCols.LICENSE_KEY], key));
+      const userRow = this.find(usersData, (r, idx) => idx > 0 && this.isEqual(String(r[UserCols.LICENSE_KEY]).trim(), cleanKey));
       const quotaType = userRow ? (userRow[UserCols.QUOTA_TYPE] || QuotaType.DAILY) : QuotaType.DAILY;
       const today = this.getCurrentISO().split(Constants.DATE_SPLIT_CHAR)[0];
       const lastResetDate = String(row[UsageCols.LAST_RESET] || Constants.EMPTY_STRING).split(Constants.DATE_SPLIT_CHAR)[0];
@@ -252,7 +254,7 @@ const _ = {
       usageSheet.getRange(usageIndex + 1, UsageCols.UPDATED_AT + 1).setValue(this.getCurrentISO());
     } else {
       const now = this.getCurrentISO();
-      const newRow = [this.generateUUID(), now, now, key, 0, 0, 0, now];
+      const newRow = [this.generateUUID(), now, now, cleanKey, 0, 0, 0, now];
       if (this.isEqual(feature, FeatureEnum.VIDEO)) newRow[UsageCols.VIDEO] = amount;
       if (this.isEqual(feature, FeatureEnum.IMAGE)) newRow[UsageCols.IMAGE] = amount;
       if (this.isEqual(feature, FeatureEnum.VOICE)) newRow[UsageCols.VOICE] = amount;

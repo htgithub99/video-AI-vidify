@@ -6,11 +6,11 @@ import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { WizardStep } from "../../types";
-import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS } from "../../constants";
+import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
-import { safeSystemFetch } from "../../lib/shared-utils";
+import { safeSystemFetch, getStoredApiKey } from "../../lib/shared-utils";
 import _ from "lodash";
 
 const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
@@ -86,7 +86,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
       
       const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
          method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
+         headers: {
+           [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
+           [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY)
+         },
          body: JSON.stringify(payload)
       });
       const data = await response.json();
@@ -94,7 +97,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
          const jobId = data.jobId;
          const checkStatus = setInterval(async () => {
            try {
-             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`);
+             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
+               headers: {
+                 [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY)
+               }
+             });
              const statusData = await statusRes.json();
              if (statusData.success) {
                if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
