@@ -56,7 +56,7 @@ const _decode = (encodedHex: string): string => {
 export const SecurityConstants = {
   get ADMIN_APP_KEY() { return _decode('7a7d447f4671546d46716a4f604d744b6a492626262cf716e5'); },
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
-  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f527974bb1dcdf334383dc033323e44013b381b1f2cf5474d6c5808e9040d10202a02d2ea1b1c04e4eadf1ae0bf4d46b3e6abd90719049711f5e3081902ca1d12e631a5d099b9dbc1'); },
+  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f527c557ee22652f85de400311625d60205033cc1dd0b939d43462c3d332e09fcdb06d015f5dd27dfe3e42dd8b6bdf0f2e5eb00e202bf96ba001a1cae0b8319e601c35ed099b9dbc1'); },
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
