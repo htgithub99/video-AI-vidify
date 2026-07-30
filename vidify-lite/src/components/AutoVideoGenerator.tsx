@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
@@ -84,6 +84,7 @@ export default function AutoVideoGenerator({
 }: AutoVideoGeneratorProps) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
+  const processingRef = useRef(false);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
@@ -372,11 +373,13 @@ export default function AutoVideoGenerator({
 
 
   const handleStartAutoGenerate = async () => {
+    if (processingRef.current) return;
     if (_.isEmpty(_.trim(scriptContent))) {
       alert(T.alertEmptyScript);
       return;
     }
 
+    processingRef.current = true;
     setIsProcessing(true);
     setStepProgress(5);
     setCurrentStepIndex(1);
@@ -760,6 +763,20 @@ export default function AutoVideoGenerator({
       const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
 
+      const visualConfigPayload = {
+        ...(voiceUpdatedProj.visualConfig || {}),
+        generationMode,
+        imageGeneratorEngine,
+        aspectRatio,
+        generateType,
+        chromeHeadless,
+        geminiChatSpeed,
+        style: currentStylePreset,
+      };
+      const sandboxConfigPayload = {
+        projectId: voiceUpdatedProj.id
+      };
+
       const targetScenesToGen = _.filter(realScenes, (sc) => {
         if (resumeMode && (!_.isEmpty(sc.assetUrl) || !_.isEmpty(sc.assetUrls))) {
           return false;
@@ -776,19 +793,6 @@ export default function AutoVideoGenerator({
       }
 
       if (targetScenesToGen.length > 0) {
-        const visualConfigPayload = {
-          ...(voiceUpdatedProj.visualConfig || {}),
-          generationMode,
-          imageGeneratorEngine,
-          aspectRatio,
-          generateType,
-          chromeHeadless,
-          geminiChatSpeed,
-          style: currentStylePreset,
-        };
-        const sandboxConfigPayload = {
-          projectId: voiceUpdatedProj.id
-        };
 
         if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
@@ -958,25 +962,28 @@ export default function AutoVideoGenerator({
             }
           }
 
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED.replace(SecurityConstants.PLACEHOLDER_0, String(parsedThumbs.length)));
+          appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED, SecurityConstants.PLACEHOLDER_0, _.toString(parsedThumbs.length)));
           for (let tIdx = 0; tIdx < parsedThumbs.length; tIdx++) {
             const thumb = parsedThumbs[tIdx];
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(tIdx + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(parsedThumbs.length)));
-            let cleanPromptText = (thumb.prompt || REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            appendLog(_.replace(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN, SecurityConstants.PLACEHOLDER_0, _.toString(tIdx + 1)), SecurityConstants.PLACEHOLDER_1, _.toString(parsedThumbs.length)));
+            let cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            const thumbPrompt = _.replace(
+              _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
+              SecurityConstants.PLACEHOLDER_1,
+              _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)))
+            );
+            const finalThumbPrompt = _.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+
             const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-              prompt: REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE
-                .replace(SecurityConstants.PLACEHOLDER_0, cleanPromptText)
-                .replace(SecurityConstants.PLACEHOLDER_1, String(thumb.style || currentThumbnailStyle || currentStylePreset)),
-              style: thumb.style || currentThumbnailStyle || currentStylePreset,
+              prompt: finalThumbPrompt,
+              style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
               resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
               bypassCache: true,
-              engine: imageGeneratorEngine,
+              engine: _.defaultTo(imageGeneratorEngine, ImageGeneratorEngine.Veo3),
+              sandboxConfig: sandboxConfigPayload,
               visualConfig: {
-                generationMode,
-                imageGeneratorEngine,
-                aspectRatio,
-                generateType,
-                chromeHeadless
+                ...visualConfigPayload,
+                style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
               }
             });
             let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -1098,6 +1105,7 @@ export default function AutoVideoGenerator({
       if (renderData.success && renderData.jobId) {
         const jobId = renderData.jobId;
         await new Promise<void>((resolve, reject) => {
+          let lastLoggedProgress: number | null = null;
           const checkStatus = setInterval(async () => {
             try {
               const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`);
@@ -1106,12 +1114,12 @@ export default function AutoVideoGenerator({
                 if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
                   clearInterval(checkStatus);
                   setRenderedVideoUrl(statusData.url);
-                  appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, statusData.url));
+                  appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
 
                   const renderCompletedProj = {
                     ...slicedUpdatedProj,
-                    seo: seoData || undefined,
-                    thumbnails: thumbnailsList || undefined,
+                    seo: _.defaultTo(seoData, undefined),
+                    thumbnails: _.defaultTo(thumbnailsList, undefined),
                     renderedVideoUrl: statusData.url,
                     status: REFACTOR_CONSTANTS.STATUS_COMPLETED
                   };
@@ -1120,7 +1128,11 @@ export default function AutoVideoGenerator({
                   clearInterval(checkStatus);
                   reject(new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
                 } else {
-                  appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${statusData.progress || 0}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
+                  const currentProgress = _.defaultTo(statusData.progress, 0);
+                  if (!_.isEqual(currentProgress, lastLoggedProgress)) {
+                    lastLoggedProgress = currentProgress;
+                    appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${currentProgress}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
+                  }
                 }
               } else {
                 clearInterval(checkStatus);
@@ -1147,6 +1159,7 @@ export default function AutoVideoGenerator({
       await onUpdateProject(failedProj, true);
     } finally {
       setIsProcessing(false);
+      processingRef.current = false;
     }
   };
 
@@ -1639,7 +1652,7 @@ export default function AutoVideoGenerator({
                         type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                         variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                         onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 h-auto p-0"
+                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
                         title={T.deleteStyleImgTooltip}
                       >
                         <X className="w-4 h-4" />
@@ -1737,7 +1750,7 @@ export default function AutoVideoGenerator({
                         type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                         variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
                         onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 h-auto p-0"
+                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
                         title={T.deleteThumbImgTooltip}
                       >
                         <X className="w-4 h-4" />

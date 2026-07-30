@@ -47,6 +47,7 @@ workspace/
 projects.json
 new_dictionary.json
 activeSceneId.txt
+temp_render_*/
 
 # Local Projects Database and Assets
 projects/

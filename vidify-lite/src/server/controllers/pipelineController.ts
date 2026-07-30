@@ -1587,7 +1587,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
     const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
 
     const imagesCacheDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, REFACTOR_CONSTANTS.CACHE_DIR_IMAGES);
-    if (!fs.existsSync(imagesCacheDir)) {
+    if (!bypassCache && !fs.existsSync(imagesCacheDir)) {
       fs.mkdirSync(imagesCacheDir, { recursive: true });
     }
 
@@ -1619,7 +1619,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
 
     if (result && result.success) {
       await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
-      if (result.base64) {
+      if (result.base64 && !bypassCache) {
         try {
           const buffer = Buffer.from(result.base64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
           fs.writeFileSync(cachedFilePath, buffer);

@@ -184,7 +184,7 @@ export const COMMON_STRINGS = {
   PROJECT_DEFAULT_NAME: "PROJECT",
   JPEG_EXT: "jpeg",
   JPG_EXT: "jpg",
-  UNIFIED_WAV: "unified.wav",
+  UNIFIED_WAV: "narration.wav",
   SLASH_ASSETS_SLASH: "/assets/",
   SCENE_PREFIX: "sc_",
   DEFAULT_GENRE: "Story",

@@ -12,7 +12,7 @@ class FFMPEG_CONSTANTS:
     RGB24 = "rgb24"
     RAW_VIDEO = "rawvideo"
     LIBX264 = "libx264"
-    SLOW = "slow"
+    SLOW = "veryfast"
     HIGH = "high"
     AAC = "aac"
     YUV420P = "yuv420p"
@@ -349,7 +349,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     
-    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.LANCZOS)
+    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
     total_frames = int(duration * fps)
     style = style_index % 13
     
@@ -359,7 +359,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
             (width, height),
             Image.Transform.EXTENT,
             (x0, y0, x1, y1),
-            resample=Image.Resampling.BICUBIC
+            resample=Image.Resampling.BILINEAR
         )
         try:
             for j in range(total_frames):
@@ -381,7 +381,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
                 (width, height),
                 Image.Transform.EXTENT,
                 (x0, y0, x1, y1),
-                resample=Image.Resampling.BICUBIC
+                resample=Image.Resampling.BILINEAR
             )
             final_frame = apply_visual_effects(final_frame, effects_str, j, total_frames)
             proc.stdin.write(final_frame.tobytes())
@@ -391,8 +391,8 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
 def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition_dur, transition_type, proc):
     total_frames = max(int(transition_dur * fps), 2)
     
-    img_a = img_prev.resize((width, height), Image.Resampling.LANCZOS).convert(FFMPEG_CONSTANTS.RGB_MODE)
-    img_b = img_next.resize((width, height), Image.Resampling.LANCZOS).convert(FFMPEG_CONSTANTS.RGB_MODE)
+    img_a = img_prev.resize((width, height), Image.Resampling.BILINEAR).convert(FFMPEG_CONSTANTS.RGB_MODE)
+    img_b = img_next.resize((width, height), Image.Resampling.BILINEAR).convert(FFMPEG_CONSTANTS.RGB_MODE)
     
     try:
         for j in range(total_frames):
@@ -425,7 +425,7 @@ def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition
                     left = (width - crop_w) // 2
                     top = (height - crop_h) // 2
                     frame = img_a.crop((left, top, left + crop_w, top + crop_h))
-                    frame = frame.resize((width, height), Image.Resampling.BICUBIC)
+                    frame = frame.resize((width, height), Image.Resampling.BILINEAR)
                     alpha = (t_smooth - 0.3) * 5.0 if t_smooth > 0.3 else 0
                     alpha = min(alpha, 1.0)
                     white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
@@ -437,7 +437,7 @@ def generate_crossfade_frames(img_prev, img_next, width, height, fps, transition
                     left = (width - crop_w) // 2
                     top = (height - crop_h) // 2
                     frame = img_b.crop((left, top, left + crop_w, top + crop_h))
-                    frame = frame.resize((width, height), Image.Resampling.BICUBIC)
+                    frame = frame.resize((width, height), Image.Resampling.BILINEAR)
                     alpha = (0.7 - t_smooth) * 5.0 if t_smooth < 0.7 else 0
                     alpha = max(min(alpha, 1.0), 0)
                     white = Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), FFMPEG_CONSTANTS.COLOR_WHITE_RGB)
@@ -566,14 +566,14 @@ def get_last_frame_from_scene(image_path, width, height, duration, fps, style_in
     scale_factor = max(width / w_orig, height / h_orig) * 1.08
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
-    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.LANCZOS)
+    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
     
     style = style_index % 13
     easing_fn = EASING_FUNCTIONS[style]
     t_smooth = easing_fn(1.0)
     
     x0, y0, x1, y1 = get_crop_coordinates(style, t_smooth, w_new, h_new, width, height)
-    final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
+    final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BILINEAR)
     
     total_frames = int(duration * fps)
     final = apply_visual_effects(final, effects_str, total_frames - 1, total_frames)
@@ -590,14 +590,14 @@ def get_first_frame_from_scene(image_path, width, height, style_index, effects_s
     scale_factor = max(width / w_orig, height / h_orig) * 1.08
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
-    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.LANCZOS)
+    img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
     
     style = style_index % 13
     easing_fn = EASING_FUNCTIONS[style]
     t_smooth = easing_fn(0.0)
     
     x0, y0, x1, y1 = get_crop_coordinates(style, t_smooth, w_new, h_new, width, height)
-    final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BICUBIC)
+    final = img_resized.transform((width, height), Image.Transform.EXTENT, (x0, y0, x1, y1), resample=Image.Resampling.BILINEAR)
     
     final = apply_visual_effects(final, effects_str, 0, 100)
     return final
