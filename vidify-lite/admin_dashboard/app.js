@@ -1,27 +1,6 @@
 const el = (id) => document.getElementById(id);
 const elq = (selector) => document.querySelector(selector);
 
-const AppStrings = {
-    REVOKED_BADGE: 'ĐÃ KHÓA',
-    TOOLTIP_DELETE_PLAN: 'Xóa gói này',
-    TOOLTIP_PLAN_NAME: 'Tên gói',
-    LABEL_PLAN_NAME: 'Tên Gói',
-    TOOLTIP_UNLIMITED: 'Dùng Không Giới Hạn (Unlimited)',
-    LABEL_UNLIMITED: 'Không Giới Hạn',
-    TOOLTIP_VIDEO: 'Số lượng Video',
-    LABEL_VIDEO: 'Số Video',
-    TOOLTIP_IMAGE: 'Số lượng Ảnh',
-    LABEL_IMAGE: 'Số Ảnh',
-    TOOLTIP_VOICE: 'Số lượng Ký tự',
-    LABEL_VOICE: 'Số Ký tự',
-    LOADING_PROCESS: 'Đang xử lý...',
-    SOFT_DELETE_SUCCESS: 'Khóa mềm thành công',
-    ERROR_PREFIX: 'Lỗi: ',
-    LOADING_DELETE: 'Đang xóa...',
-    HARD_DELETE_SUCCESS: 'Xóa cứng thành công',
-    STATUS_REVOKED: 'BỊ KHÓA'
-};
-
 let adminToken = AdminStorage.get(AdminConstants.TOKEN_KEY) || AdminConstants.EMPTY_STR;
 let apiUrl = API_BASE_URL;
 let currentPage = AdminConstants.DEFAULT_PAGE;
@@ -38,9 +17,13 @@ let tsKeysInstance = null;
 let tsAccInstance = null;
 let tsExcludedInstance = null;
 
+let tsKeysModalInstance = null;
+let tsExcludedModalInstance = null;
+let tsAccModalInstance = null;
+
 function escapeHTML(str) {
     if (_.isNil(str)) return AdminConstants.EMPTY_STR;
-    return _.replace(_.toString(str), AdminRegex.ESCAPE_HTML, 
+    return _.replace(_.toString(str), AdminRegex.ESCAPE_HTML,
         tag => _.get(AdminConstants.HTML_ENTITIES, tag, tag)
     );
 }
@@ -77,10 +60,10 @@ function setButtonLoading(btn, isLoading, loadingText = AdminConstants.EMPTY_STR
 function showToast(message, type = ToastType.SUCCESS) {
     const container = el(DOMIds.TOAST_CONTAINER);
     if (_.isNil(container)) return;
-    
+
     const toast = document.createElement(TagNames.DIV);
     toast.className = `${AdminClasses.TOAST} ${type === ToastType.SUCCESS ? AdminClasses.TOAST_SUCCESS : AdminClasses.TOAST_ERROR}`;
-    
+
     const iconSvg = type === ToastType.SUCCESS ? AdminIcons.SUCCESS_TOAST : AdminIcons.ERROR_TOAST;
     const title = type === ToastType.SUCCESS ? AdminMessages.TOAST_SUCCESS : AdminMessages.TOAST_ERROR;
 
@@ -112,7 +95,7 @@ async function fetchAPI(action, data = {}) {
             })
         });
         const resJson = await response.json();
-        
+
         if (_.has(resJson, ApiFields.ERROR)) {
             if (_.get(resJson, ApiFields.CODE) === AdminConstants.API_ERROR_UNAUTHORIZED) {
                 showToast(AdminMessages.INVALID_TOKEN, ToastType.ERROR);
@@ -137,12 +120,12 @@ async function showDashboard() {
     await loadAccountsAdmin();
 }
 
-window.switchAdminPage = function(pageId) {
+window.switchAdminPage = function (pageId) {
     if (typeof resetResourceForms === 'function') resetResourceForms();
 
-    document.querySelectorAll(AdminSelectors.ADMIN_PAGE_CONTENT).forEach(p => p.classList.remove(AdminClasses.ACTIVE));
-    document.querySelectorAll(AdminSelectors.NAV_TAB_BTN).forEach(b => b.classList.remove(AdminClasses.ACTIVE));
-    
+    _.forEach(document.querySelectorAll(AdminSelectors.ADMIN_PAGE_CONTENT), p => p.classList.remove(AdminClasses.ACTIVE));
+    _.forEach(document.querySelectorAll(AdminSelectors.NAV_TAB_BTN), b => b.classList.remove(AdminClasses.ACTIVE));
+
     const targetPage = el(`${AdminConstants.PAGE_PREFIX}${pageId}`);
     const targetBtn = el(`${AdminConstants.NAV_TAB_PREFIX}${pageId}`);
     if (targetPage) targetPage.classList.add(AdminClasses.ACTIVE);
@@ -158,12 +141,12 @@ window.switchAdminPage = function(pageId) {
     }
 };
 
-window.switchResourceSubTab = function(subTabId) {
+window.switchResourceSubTab = function (subTabId) {
     if (typeof resetResourceForms === 'function') resetResourceForms();
 
-    document.querySelectorAll(AdminSelectors.SUB_TAB_CONTENT).forEach(c => c.style.display = AdminClasses.DISPLAY_NONE);
-    document.querySelectorAll(AdminSelectors.SUB_TAB_BTN).forEach(b => b.classList.remove(AdminClasses.ACTIVE));
-    
+    _.forEach(document.querySelectorAll(AdminSelectors.SUB_TAB_CONTENT), c => c.style.display = AdminClasses.DISPLAY_NONE);
+    _.forEach(document.querySelectorAll(AdminSelectors.SUB_TAB_BTN), b => b.classList.remove(AdminClasses.ACTIVE));
+
     const targetContent = el(`${AdminConstants.TAB_CONTENT_PREFIX}${subTabId}`);
     const targetBtn = el(`${AdminConstants.TAB_BTN_PREFIX}${subTabId}`);
     if (targetContent) targetContent.style.display = AdminClasses.DISPLAY_BLOCK;
@@ -171,8 +154,8 @@ window.switchResourceSubTab = function(subTabId) {
 };
 
 async function handleLogin() {
-    const user = el(DOMIds.USERNAME_INPUT).value.trim();
-    const pass = el(DOMIds.PASSWORD_INPUT).value.trim();
+    const user = _.trim(el(DOMIds.USERNAME_INPUT).value);
+    const pass = _.trim(el(DOMIds.PASSWORD_INPUT).value);
     const loginBtn = el(DOMIds.LOGIN_BTN);
 
     if (_.isEmpty(API_BASE_URL)) {
@@ -229,17 +212,17 @@ function handleLogout() {
 async function loadUsers() {
     const tbody = elq(DOMIds.TBODY);
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_USERS, AdminMessages.DATA_LOADING);
-    
+
     try {
         const res = await fetchAPI(AdminActions.GET_USERS);
         window[AdminConstants.GLOBAL_USERS] = _.get(res, ApiFields.USERS, []);
-        
+
         populateAssignSelects();
         applyFilters();
     } catch (error) {
         const errMsg = _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR);
-        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_USERS, AdminMessages.FETCH_ERROR + escapeHTML(errMsg));
-        showToast(AdminMessages.FETCH_ERROR + errMsg, ToastType.ERROR);
+        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_USERS, _.join([AdminMessages.FETCH_ERROR, escapeHTML(errMsg)], AdminConstants.EMPTY_STR));
+        showToast(_.join([AdminMessages.FETCH_ERROR, errMsg], AdminConstants.EMPTY_STR), ToastType.ERROR);
     }
 }
 
@@ -247,7 +230,7 @@ function applyFilters() {
     const searchStr = _.toLower(_.get(el(DOMIds.SEARCH_INPUT), 'value', AdminConstants.EMPTY_STR));
     const planFilter = _.get(el(DOMIds.FILTER_PLAN), 'value', AdminConstants.FILTER_ALL);
     const statusFilter = _.get(el(DOMIds.FILTER_STATUS), 'value', AdminConstants.FILTER_ALL);
-    
+
     filteredUsers = _.filter(_.get(window, AdminConstants.GLOBAL_USERS, []), u => {
         let matchSearch = true;
         if (!_.isEmpty(searchStr)) {
@@ -266,22 +249,22 @@ function applyFilters() {
 function renderTable() {
     const tbody = elq(DOMIds.TBODY);
     tbody.innerHTML = AdminConstants.EMPTY_STR;
-    
+
     if (_.isEmpty(filteredUsers)) {
         tbody.innerHTML = AdminTemplates.TABLE_EMPTY(AdminConstants.COLSPAN_USERS, AdminMessages.EMPTY_USERS);
         el(DOMIds.PAGINATION_CONTAINER).style.display = AdminClasses.DISPLAY_NONE;
         return;
     }
-    
+
     const totalItems = _.size(filteredUsers);
-    const totalPages = Math.ceil(totalItems / pageSize) || AdminConstants.MIN_PAGE;
-    
+    const totalPages = _.ceil(totalItems / pageSize) || AdminConstants.MIN_PAGE;
+
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < AdminConstants.MIN_PAGE) currentPage = AdminConstants.MIN_PAGE;
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedUsers = _.slice(filteredUsers, startIndex, startIndex + pageSize);
-    
+
     const getPlanBadgeClass = (planName) => {
         const upper = _.toUpper(planName);
         if (_.includes(upper, AdminConstants.PLAN_FREE)) return AdminClasses.BADGE_FREE;
@@ -301,12 +284,12 @@ function renderTable() {
         if (_.isEqual(status, AdminConstants.STATUS_REVOKED)) return AdminClasses.BADGE_REVOKED;
         return AdminClasses.BADGE_EXPIRED;
     };
-    
+
     const htmlRows = _.map(paginatedUsers, user => {
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
         const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), _.get(user, ApiFields.PLAN_ID)));
-        
-        let tv = '0', ti = '0', tc = '0';
+
+        let tv = AdminConstants.DEFAULT_QUOTA_STR, ti = AdminConstants.DEFAULT_QUOTA_STR, tc = AdminConstants.DEFAULT_QUOTA_STR;
         if (plan) {
             const isUnlimited = _.get(plan, ApiFields.IS_UNLIMITED);
             tv = isUnlimited ? AdminConstants.INFINITY_SIGN : _.get(plan, ApiFields.QUOTA_VIDEO);
@@ -315,25 +298,25 @@ function renderTable() {
         }
 
         const usageText = AdminTemplates.USAGE_TEXT(
-            _.get(user, ApiFields.USAGE_VIDEO, 0), tv,
-            _.get(user, ApiFields.USAGE_IMAGE, 0), ti,
-            _.get(user, ApiFields.USAGE_VOICE, 0), tc
+            _.get(user, ApiFields.USAGE_VIDEO, AdminConstants.DEFAULT_QUOTA), tv,
+            _.get(user, ApiFields.USAGE_IMAGE, AdminConstants.DEFAULT_QUOTA), ti,
+            _.get(user, ApiFields.USAGE_VOICE, AdminConstants.DEFAULT_QUOTA), tc
         );
         const planName = plan ? _.get(plan, ApiFields.NAME) : AdminConstants.UNKNOWN_STR;
         const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
         const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
         const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
-        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(217, 119, 6, 0.15); border:1px solid rgba(245, 158, 11, 0.3); color:#fbbf24; font-family:var(--font-mono); font-weight:700;" title="${quotaType}">${quotaTypeLabel}</span>`;
-        
+        const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.2); color:#fbbf24; font-family:var(--font-mono); font-weight:700;" title="${quotaType}">${quotaTypeLabel}</span>`;
+
         const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
         const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
-        
+
         return `
             <tr>
                 <td><strong>${escapeHTML(_.get(user, ApiFields.USERNAME))}</strong></td>
                 <td>
                     <div style="display:flex; align-items:center; gap:0.5rem">
-                        <span style="font-family: monospace; font-size: 0.9rem; color: var(--text-muted);">${escapeHTML(_.get(user, ApiFields.LICENSE_KEY))}</span>
+                        <span style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">${escapeHTML(_.get(user, ApiFields.LICENSE_KEY))}</span>
                         ${btnCopy}
                     </div>
                 </td>
@@ -359,7 +342,7 @@ function renderTable() {
             </tr>
         `;
     });
-    
+
     tbody.innerHTML = _.join(htmlRows, AdminConstants.EMPTY_STR);
     renderPagination(totalPages);
 }
@@ -368,22 +351,22 @@ function renderPagination(totalPages) {
     const controls = el(DOMIds.PAGINATION_CONTROLS);
     if (_.isNil(controls)) return;
     controls.innerHTML = AdminConstants.EMPTY_STR;
-    
+
     const btnPrev = document.createElement(TagNames.BUTTON);
     btnPrev.className = AdminClasses.PAGE_BTN;
     btnPrev.textContent = AdminConstants.PAGINATION_PREV;
     btnPrev.disabled = currentPage === AdminConstants.MIN_PAGE;
     btnPrev.onclick = () => { currentPage--; renderTable(); };
     controls.appendChild(btnPrev);
-    
-    for (let i = 1; i <= totalPages; i++) {
+
+    _.forEach(_.range(1, totalPages + 1), i => {
         const btnPage = document.createElement(TagNames.BUTTON);
         btnPage.className = `${AdminClasses.PAGE_BTN} ${i === currentPage ? AdminClasses.ACTIVE : AdminConstants.EMPTY_STR}`;
         btnPage.textContent = i;
         btnPage.onclick = () => { currentPage = i; renderTable(); };
         controls.appendChild(btnPage);
-    }
-    
+    });
+
     const btnNext = document.createElement(TagNames.BUTTON);
     btnNext.className = AdminClasses.PAGE_BTN;
     btnNext.textContent = AdminConstants.PAGINATION_NEXT;
@@ -407,10 +390,10 @@ async function loadPlans() {
 function renderPlansConfig() {
     const container = el(DOMIds.PLANS_CONTAINER);
     if (!container) return;
-    
+
     container.innerHTML = AdminConstants.EMPTY_STR;
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    
+
     if (_.isEmpty(plans)) {
         container.innerHTML = AdminTemplates.PLAN_EMPTY(AdminMessages.EMPTY_PLANS);
         return;
@@ -423,41 +406,35 @@ function renderPlansConfig() {
         const isUnlimited = _.get(plan, ApiFields.IS_UNLIMITED);
         const isRevoked = _.isEqual(_.get(plan, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
 
-        const revokedBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
+        const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem;">${AdminMessages.REVOKED_BADGE}</span>` : '';
+        const limitBadge = isUnlimited ? `<span class="badge active">${AdminMessages.UNLIMITED_LABEL}</span>` : `<span class="badge free">${AdminMessages.LIMIT_QUOTA_LABEL}</span>`;
 
         rowsHtml += `
-            <tr class="quota-${planId}" style="${isRevoked ? 'opacity: 0.6;' : ''}">
+            <tr style="${isRevoked ? 'opacity: 0.6;' : ''}">
                 <td>
                     <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <input type="text" class="plan-name-input" data-plan-id="${planId}" value="${escapeHTML(planName)}" style="padding: 0 0.6rem; height: 34px !important; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: white; outline: none; font-weight: 700; font-size: 0.85rem; width: 140px;">
-                        ${revokedBadge}
+                        <strong>${escapeHTML(formatPlanDisplayName(planName))}</strong>
+                        ${statusBadge}
                     </div>
                 </td>
+                <td class="text-center">${limitBadge}</td>
+                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? '∞' : _.get(plan, ApiFields.QUOTA_VIDEO)}</td>
+                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? '∞' : _.get(plan, ApiFields.QUOTA_IMAGE)}</td>
+                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? '∞' : Number(_.get(plan, ApiFields.QUOTA_VOICE)).toLocaleString()}</td>
                 <td class="text-center">
-                    <label class="toggle-switch-wrapper" title="${AppStrings.TOOLTIP_UNLIMITED}">
-                        <input type="checkbox" class="plan-unlimited-input" data-plan-id="${planId}" ${isUnlimited ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-text" data-plan-id="${planId}">${isUnlimited ? AdminConstants.TOGGLE_UNLIMITED_ON : AdminConstants.TOGGLE_UNLIMITED_OFF}</span>
-                    </label>
-                </td>
-                <td class="text-center">
-                    <input type="text" inputmode="numeric" class="numeric-input plan-video-input quota-row-input" data-plan-id="${planId}" value="${_.get(plan, ApiFields.QUOTA_VIDEO)}" ${isUnlimited ? 'disabled' : ''}>
-                </td>
-                <td class="text-center">
-                    <input type="text" inputmode="numeric" class="numeric-input plan-image-input quota-row-input" data-plan-id="${planId}" value="${_.get(plan, ApiFields.QUOTA_IMAGE)}" ${isUnlimited ? 'disabled' : ''}>
-                </td>
-                <td class="text-center">
-                    <input type="text" inputmode="numeric" class="numeric-input plan-voice-input quota-row-input" data-plan-id="${planId}" value="${_.get(plan, ApiFields.QUOTA_VOICE)}" ${isUnlimited ? 'disabled' : ''}>
-                </td>
-                <td class="text-center">
-                    <button class="action-btn action-danger delete-plan-btn" data-plan-id="${planId}" title="${AdminMessages.ACTION_MODAL_DELETE}">
-                        ${AdminIcons.BTN_DELETE}
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_PLAN}" data-id="${planId}" title="${AdminMessages.ACTION_MODAL_EDIT}">
+                            ${AdminIcons.BTN_EDIT}
+                        </button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_PLAN}" data-id="${planId}" title="${AdminMessages.ACTION_MODAL_DELETE}">
+                            ${AdminIcons.BTN_DELETE}
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
     });
-    
+
     container.innerHTML = `
         <table id="plans-table">
             <thead>
@@ -475,93 +452,102 @@ function renderPlansConfig() {
             </tbody>
         </table>
     `;
-
-    const unlimitedCheckboxes = container.querySelectorAll(AdminSelectors.PLAN_UNLIMITED_INPUT);
-    _.forEach(unlimitedCheckboxes, chk => {
-        chk.addEventListener(EventTypes.CHANGE, (e) => {
-            const pId = e.target.getAttribute(DataAttributes.PLAN_ID);
-            const disabled = e.target.checked;
-            container.querySelector(AdminSelectors.PLAN_VIDEO_INPUT_BY_ID(pId)).disabled = disabled;
-            container.querySelector(AdminSelectors.PLAN_IMAGE_INPUT_BY_ID(pId)).disabled = disabled;
-            container.querySelector(AdminSelectors.PLAN_VOICE_INPUT_BY_ID(pId)).disabled = disabled;
-            const toggleTextEl = container.querySelector(AdminSelectors.TOGGLE_TEXT_BY_ID(pId));
-            if (toggleTextEl) {
-                toggleTextEl.textContent = disabled ? AdminConstants.TOGGLE_UNLIMITED_ON : AdminConstants.TOGGLE_UNLIMITED_OFF;
-            }
-        });
-    });
-    
-    const deletePlanBtns = container.querySelectorAll(AdminSelectors.DELETE_PLAN_BTN);
-    _.forEach(deletePlanBtns, btn => {
-        btn.addEventListener(EventTypes.CLICK, async (e) => {
-            const pId = e.target.getAttribute(DataAttributes.PLAN_ID);
-            deletingResourceId = pId;
-            deletingResourceType = AdminConstants.TYPE_PLAN;
-            el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
-        });
-    });
-    
-    preventNonNumericInput();
 }
 
-async function handleAddPlan() {
-    const addPlanBtn = el(DOMIds.ADD_PLAN_BTN);
-    setButtonLoading(addPlanBtn, true, AdminConstants.EMPTY_STR);
-    try {
-        await fetchAPI(AdminActions.CREATE_PLAN, {
-            [ApiFields.NAME]: AdminMessages.NEW_PLAN_NAME,
-            [ApiFields.QUOTA_VIDEO]: 0,
-            [ApiFields.QUOTA_IMAGE]: 0,
-            [ApiFields.QUOTA_VOICE]: 0,
-            [ApiFields.IS_UNLIMITED]: false
-        });
-        showToast(AdminMessages.CREATE_PLAN_SUCCESS, ToastType.SUCCESS);
-        loadPlans();
-    } catch (err) {
-        showToast(AdminMessages.CREATE_PLAN_ERROR + _.get(err, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
-    } finally {
-        setButtonLoading(addPlanBtn, false);
+window.openCreatePlanModal = function () {
+    window.editingPlanId = null;
+    el(DOMIds.PLAN_MODAL_TITLE).textContent = AdminMessages.PLAN_TITLE_CREATE;
+    el(DOMIds.PLAN_NAME_INPUT_MODAL).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.PLAN_VIDEO_INPUT_MODAL).value = AdminConstants.DEFAULT_QUOTA_STR;
+    el(DOMIds.PLAN_IMAGE_INPUT_MODAL).value = AdminConstants.DEFAULT_QUOTA_STR;
+    el(DOMIds.PLAN_VOICE_INPUT_MODAL).value = AdminConstants.DEFAULT_QUOTA_STR;
+
+    const unlimitChk = el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL);
+    unlimitChk.checked = false;
+
+    const label = el(DOMIds.PLAN_UNLIMITED_LABEL_MODAL);
+    if (label) label.textContent = AdminMessages.LIMIT_QUOTA_LABEL;
+
+    el(DOMIds.PLAN_VIDEO_INPUT_MODAL).disabled = false;
+    el(DOMIds.PLAN_IMAGE_INPUT_MODAL).disabled = false;
+    el(DOMIds.PLAN_VOICE_INPUT_MODAL).disabled = false;
+
+    el(DOMIds.PLAN_MODAL).classList.add(AdminClasses.ACTIVE);
+};
+
+window.openEditPlanModal = function (planId) {
+    const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+    const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), planId));
+    if (!plan) return;
+
+    window.editingPlanId = planId;
+    el(DOMIds.PLAN_MODAL_TITLE).textContent = AdminMessages.PLAN_TITLE_EDIT;
+    el(DOMIds.PLAN_NAME_INPUT_MODAL).value = _.get(plan, ApiFields.NAME, AdminConstants.EMPTY_STR);
+    el(DOMIds.PLAN_VIDEO_INPUT_MODAL).value = _.get(plan, ApiFields.QUOTA_VIDEO, AdminConstants.DEFAULT_QUOTA_STR);
+    el(DOMIds.PLAN_IMAGE_INPUT_MODAL).value = _.get(plan, ApiFields.QUOTA_IMAGE, AdminConstants.DEFAULT_QUOTA_STR);
+    el(DOMIds.PLAN_VOICE_INPUT_MODAL).value = _.get(plan, ApiFields.QUOTA_VOICE, AdminConstants.DEFAULT_QUOTA_STR);
+
+    const isUnlimited = _.get(plan, ApiFields.IS_UNLIMITED, false);
+    const unlimitChk = el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL);
+    unlimitChk.checked = isUnlimited;
+
+    const label = el(DOMIds.PLAN_UNLIMITED_LABEL_MODAL);
+    if (label) label.textContent = isUnlimited ? AdminMessages.UNLIMITED_LABEL : AdminMessages.LIMIT_QUOTA_LABEL;
+
+    el(DOMIds.PLAN_VIDEO_INPUT_MODAL).disabled = isUnlimited;
+    el(DOMIds.PLAN_IMAGE_INPUT_MODAL).disabled = isUnlimited;
+    el(DOMIds.PLAN_VOICE_INPUT_MODAL).disabled = isUnlimited;
+
+    el(DOMIds.PLAN_MODAL).classList.add(AdminClasses.ACTIVE);
+};
+
+window.handleSavePlan = async function () {
+    const btn = el(DOMIds.SAVE_PLAN_BTN);
+    const name = _.trim(el(DOMIds.PLAN_NAME_INPUT_MODAL).value);
+    const video = _.trim(el(DOMIds.PLAN_VIDEO_INPUT_MODAL).value);
+    const image = _.trim(el(DOMIds.PLAN_IMAGE_INPUT_MODAL).value);
+    const voice = _.trim(el(DOMIds.PLAN_VOICE_INPUT_MODAL).value);
+    const isUnlimited = el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL).checked;
+
+    if (!name) {
+        showToast(AdminMessages.PLAN_NAME_REQUIRED, ToastType.ERROR);
+        return;
     }
-}
 
-async function handleSaveConfig() {
-    const saveConfigBtn = el(DOMIds.SAVE_CONFIG_BTN);
-    setButtonLoading(saveConfigBtn, true, AdminMessages.SAVE_PROGRESS);
-    
+    const isEditing = !_.isNil(window.editingPlanId);
+    setButtonLoading(btn, true, isEditing ? AdminMessages.LOADING_UPDATE : AdminMessages.LOADING_ADD);
+
     try {
-        const container = el(DOMIds.PLANS_CONTAINER);
-        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        
-        for (const plan of plans) {
-            const pId = _.get(plan, ApiFields.ID);
-            const pName = container.querySelector(AdminSelectors.PLAN_NAME_INPUT_BY_ID(pId)).value;
-            const pVideo = container.querySelector(AdminSelectors.PLAN_VIDEO_INPUT_BY_ID(pId)).value;
-            const pImage = container.querySelector(AdminSelectors.PLAN_IMAGE_INPUT_BY_ID(pId)).value;
-            const pVoice = container.querySelector(AdminSelectors.PLAN_VOICE_INPUT_BY_ID(pId)).value;
-            const pUnlimited = container.querySelector(AdminSelectors.PLAN_UNLIMITED_INPUT_BY_ID(pId)).checked;
-            
-            await fetchAPI(AdminActions.UPDATE_PLAN, {
-                [ApiFields.ID]: pId,
-                [ApiFields.NAME]: pName,
-                [ApiFields.QUOTA_VIDEO]: _.toInteger(pVideo) || 0,
-                [ApiFields.QUOTA_IMAGE]: _.toInteger(pImage) || 0,
-                [ApiFields.QUOTA_VOICE]: _.toInteger(pVoice) || 0,
-                [ApiFields.IS_UNLIMITED]: pUnlimited
-            });
+        const payload = {
+            [ApiFields.NAME]: name,
+            [ApiFields.QUOTA_VIDEO]: _.toInteger(video) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.QUOTA_IMAGE]: _.toInteger(image) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.QUOTA_VOICE]: _.toInteger(voice) || AdminConstants.DEFAULT_QUOTA,
+            [ApiFields.IS_UNLIMITED]: isUnlimited
+        };
+
+        if (isEditing) {
+            payload[ApiFields.ID] = window.editingPlanId;
+            await fetchAPI(AdminActions.UPDATE_PLAN, payload);
+            showToast(AdminMessages.PLAN_SAVE_SUCCESS, ToastType.SUCCESS);
+        } else {
+            await fetchAPI(AdminActions.CREATE_PLAN, payload);
+            showToast(AdminMessages.PLAN_SAVE_SUCCESS, ToastType.SUCCESS);
         }
-        
-        showToast(AdminMessages.SAVE_SUCCESS, ToastType.SUCCESS);
+
+        closeModal(DOMIds.PLAN_MODAL);
         loadPlans();
     } catch (error) {
-        showToast(AdminMessages.SAVE_ERROR + _.get(error, ApiFields.MESSAGE, AdminConstants.EMPTY_STR), ToastType.ERROR);
+        Logger.error(error);
+        showToast(AdminMessages.SAVE_ERROR_USER, ToastType.ERROR);
     } finally {
-        setButtonLoading(saveConfigBtn, false);
+        setButtonLoading(btn, false);
     }
-}
+};
 
 function populatePlanSelects() {
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    
+
     const filterPlanSelect = el(DOMIds.FILTER_PLAN);
     if (filterPlanSelect) {
         filterPlanSelect.innerHTML = AdminTemplates.SELECT_OPTION(AdminConstants.FILTER_ALL, AdminConstants.PLAN_ALL_LABEL, true);
@@ -581,9 +567,9 @@ function populatePlanSelects() {
 
 function addOptionWithLabel(tsInstance, value) {
     if (!tsInstance || !value) return;
-    const trimmed = String(value).trim();
+    const trimmed = _.trim(_.toString(value));
     if (tsInstance.options[trimmed]) return;
-    
+
     let label = trimmed;
     if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) {
         label = AdminMessages.ASSIGN_ALL_LABEL;
@@ -607,9 +593,9 @@ function resetResourceForms() {
     window.editingKeyId = null;
     el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
-    if (tsExcludedInstance) tsExcludedInstance.clear();
+    if (tsExcludedModalInstance) tsExcludedModalInstance.clear();
     else el(DOMIds.KEYS_EXCLUDED_INPUT).value = AdminConstants.EMPTY_STR;
-    if (tsKeysInstance) tsKeysInstance.clear();
+    if (tsKeysModalInstance) tsKeysModalInstance.clear();
     else el(DOMIds.KEYS_ASSIGNEE_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.MODAL_SAVE_DEFAULT);
 
@@ -617,14 +603,15 @@ function resetResourceForms() {
     el(DOMIds.ACC_EMAIL_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.ACC_PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.ACC_RECOVERY_INPUT).value = AdminConstants.EMPTY_STR;
-    if (tsAccInstance) tsAccInstance.setValue(AdminConstants.ASSIGN_ALL);
+    el(DOMIds.ACC_STATUS_INPUT).value = AdminConstants.ACCOUNT_STATUS_ACTIVE;
+    if (tsAccModalInstance) tsAccModalInstance.setValue(AdminConstants.ASSIGN_ALL);
     else el(DOMIds.ACC_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
     el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD);
 }
 
 function closeModal(id) {
     el(id)?.classList.remove(AdminClasses.ACTIVE);
-    if (_.isEqual(id, DOMIds.RESOURCE_MODAL)) {
+    if (_.isEqual(id, DOMIds.KEY_MODAL) || _.isEqual(id, DOMIds.ACCOUNT_MODAL)) {
         resetResourceForms();
     }
 }
@@ -634,15 +621,15 @@ function handleOpenCreateModal() {
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_CREATE_TITLE;
     el(DOMIds.MODAL_USERNAME).value = AdminConstants.EMPTY_STR;
     el(DOMIds.MODAL_USERNAME).disabled = false;
-    
+
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     if (!_.isEmpty(plans)) el(DOMIds.MODAL_PLAN_TYPE).value = _.get(plans[0], ApiFields.ID);
-    
+
     el(DOMIds.MODAL_STATUS).value = AdminConstants.STATUS_ACTIVE;
     el(DOMIds.MODAL_STATUS).disabled = true;
     el(DOMIds.MODAL_QUOTA_TYPE).value = QuotaType.DAILY;
     el(DOMIds.MODAL_EXPIRES).value = AdminConstants.EMPTY_STR;
-    
+
     el(DOMIds.MODAL_EXPIRES_WRAPPER).style.display = AdminClasses.DISPLAY_FLEX;
     el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
 }
@@ -650,47 +637,47 @@ function handleOpenCreateModal() {
 function openEditModal(id) {
     const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), id));
     if (!user) return;
-    
+
     editingUserId = id;
     el(DOMIds.USER_MODAL_TITLE).textContent = AdminMessages.MODAL_EDIT_TITLE;
     el(DOMIds.MODAL_USERNAME).value = _.get(user, ApiFields.USERNAME);
     el(DOMIds.MODAL_USERNAME).disabled = true;
-    
+
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
     planSelect.value = _.get(user, ApiFields.PLAN_ID);
-    
+
     el(DOMIds.MODAL_STATUS).value = _.get(user, ApiFields.STATUS);
     el(DOMIds.MODAL_STATUS).disabled = false;
     el(DOMIds.MODAL_QUOTA_TYPE).value = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
-    
+
     if (!_.isEmpty(_.get(user, ApiFields.EXPIRES_AT))) {
-        el(DOMIds.MODAL_EXPIRES).value = new Date(_.get(user, ApiFields.EXPIRES_AT)).toISOString().split(AdminConstants.DATE_T_SPLIT)[AdminConstants.DATE_ISO_INDEX];
+        el(DOMIds.MODAL_EXPIRES).value = _.get(_.split(new Date(_.get(user, ApiFields.EXPIRES_AT)).toISOString(), AdminConstants.DATE_T_SPLIT), AdminConstants.DATE_ISO_INDEX, AdminConstants.EMPTY_STR);
     } else {
         el(DOMIds.MODAL_EXPIRES).value = AdminConstants.EMPTY_STR;
     }
-    
+
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
-    
+
     const planId = _.get(user, ApiFields.PLAN_ID);
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), planId));
-    
+
     if (plan && _.get(plan, ApiFields.IS_UNLIMITED)) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
     } else {
         wrapper.style.display = AdminClasses.DISPLAY_FLEX;
     }
-    
+
     el(DOMIds.USER_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 function handlePlanTypeChange(e) {
     const wrapper = el(DOMIds.MODAL_EXPIRES_WRAPPER);
     const selectedPlanId = _.get(e, AdminConstants.TARGET_VALUE_PATH) || el(DOMIds.MODAL_PLAN_TYPE).value;
-    
+
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
     const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), selectedPlanId));
-    
+
     if (plan && _.get(plan, ApiFields.IS_UNLIMITED) && _.isNil(editingUserId)) {
         wrapper.style.display = AdminClasses.DISPLAY_NONE;
     } else {
@@ -700,23 +687,23 @@ function handlePlanTypeChange(e) {
 
 async function handleSaveUser() {
     const btn = el(DOMIds.SAVE_USER_BTN);
-    const username = el(DOMIds.MODAL_USERNAME).value.trim();
+    const username = _.trim(el(DOMIds.MODAL_USERNAME).value);
     const planType = el(DOMIds.MODAL_PLAN_TYPE).value;
     const status = el(DOMIds.MODAL_STATUS).value;
     const quotaType = el(DOMIds.MODAL_QUOTA_TYPE).value;
     let expiresAt = el(DOMIds.MODAL_EXPIRES).value;
-    
+
     if (_.isNil(editingUserId) && _.isEmpty(username)) {
         showToast(AdminMessages.MODAL_MISSING_NAME, ToastType.ERROR);
         return;
     }
-    
+
     if (!_.isEmpty(expiresAt)) {
         expiresAt = new Date(expiresAt).toISOString();
     }
-    
+
     setButtonLoading(btn, true, AdminMessages.SAVE_USER_PROGRESS);
-    
+
     try {
         if (!_.isNil(editingUserId)) {
             await fetchAPI(AdminActions.UPDATE_KEY, { [ApiFields.ID]: editingUserId, [ApiFields.PLAN_ID]: planType, [ApiFields.STATUS]: status, [ApiFields.QUOTA_TYPE]: quotaType, [ApiFields.EXPIRES_AT]: expiresAt });
@@ -725,7 +712,7 @@ async function handleSaveUser() {
             const res = await fetchAPI(AdminActions.CREATE_KEY, { [ApiFields.USERNAME]: username, [ApiFields.PLAN_ID]: planType, [ApiFields.QUOTA_TYPE]: quotaType });
             showToast(AdminMessages.MODAL_CREATE_SUCCESS + _.get(res, ApiFields.LICENSE_KEY), ToastType.SUCCESS);
         }
-        
+
         setTimeout(() => {
             closeModal(DOMIds.USER_MODAL);
             loadUsers();
@@ -777,11 +764,11 @@ async function handleHardDelete() {
 
 async function handleResetDevice() {
     if (!resettingUserId) return;
-    
+
     const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), resettingUserId));
     const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
-    
-    const confirmMsg = AdminMessages.RESET_DEVICE_CONFIRM.replace('{0}', keyStr);
+
+    const confirmMsg = _.replace(AdminMessages.RESET_DEVICE_CONFIRM, '{0}', keyStr);
     if (!confirm(confirmMsg)) return;
 
     const btn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
@@ -790,7 +777,7 @@ async function handleResetDevice() {
     try {
         await fetchAPI(AdminActions.RESET_DEVICE, { [ApiFields.ID]: resettingUserId });
         showToast(AdminMessages.RESET_DEVICE_SUCCESS, ToastType.SUCCESS);
-        
+
         closeModal(DOMIds.DEVICE_MODAL);
         loadUsers();
     } catch (error) {
@@ -812,14 +799,14 @@ function copyToClipboard(text) {
 function openDeviceModal(id) {
     const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), u => _.isEqual(_.get(u, ApiFields.ID), id));
     if (!user) return;
-    
+
     const container = el(DOMIds.DEVICE_LIST_CONTAINER);
     let deviceIdStr = AdminTemplates.DEVICE_EMPTY(AdminMessages.EMPTY_DEVICE_MSG);
 
     try {
         const parsedDevices = JSON.parse(_.get(user, ApiFields.DEVICE_ID, AdminMessages.ARRAY_EMPTY_JSON));
         if (_.isArray(parsedDevices) && !_.isEmpty(parsedDevices)) {
-            deviceIdStr = _.map(parsedDevices, d => AdminTemplates.DEVICE_CARD(d, AdminMessages.DEVICE_CONNECTED)).join(AdminConstants.EMPTY_STR);
+            deviceIdStr = _.join(_.map(parsedDevices, d => AdminTemplates.DEVICE_CARD(d, AdminMessages.DEVICE_CONNECTED)), AdminConstants.EMPTY_STR);
         } else if (_.isString(parsedDevices) && !_.isEmpty(parsedDevices)) {
             deviceIdStr = AdminTemplates.DEVICE_CARD(parsedDevices, AdminMessages.DEVICE_CONNECTED);
         }
@@ -828,9 +815,9 @@ function openDeviceModal(id) {
             deviceIdStr = AdminTemplates.DEVICE_CARD(_.get(user, ApiFields.DEVICE_ID), AdminMessages.DEVICE_CONNECTED);
         }
     }
-    
+
     container.innerHTML = deviceIdStr;
-    
+
     const resetBtn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
     if (!_.isEmpty(_.get(user, ApiFields.DEVICE_ID))) {
         resetBtn.style.display = AdminClasses.DISPLAY_FLEX;
@@ -838,20 +825,20 @@ function openDeviceModal(id) {
     } else {
         resetBtn.style.display = AdminClasses.DISPLAY_NONE;
     }
-    
+
     el(DOMIds.DEVICE_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 async function handleSyncExpired() {
     const btn = el(DOMIds.SYNC_BTN);
     if (!btn) return;
-    
+
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SYNC);
-    
+
     try {
         const result = await fetchAPI(AdminActions.SYNC_EXPIRED);
         const count = _.get(result, ApiFields.COUNT, 0);
-        showToast(AdminMessages.SYNC_SUCCESS.replace('{0}', count), ToastType.SUCCESS);
+        showToast(_.replace(AdminMessages.SYNC_SUCCESS, '{0}', count), ToastType.SUCCESS);
         if (count > 0) {
             loadUsers();
         }
@@ -863,18 +850,18 @@ async function handleSyncExpired() {
 }
 
 function preventNonNumericInput() {
-    const numericInputs = document.querySelectorAll(AdminSelectors.NUMERIC_INPUT);
+    const numericInputs = document.querySelectorAll(`${AdminSelectors.NUMERIC_INPUT}, #${DOMIds.PLAN_VIDEO_INPUT_MODAL}, #${DOMIds.PLAN_IMAGE_INPUT_MODAL}, #${DOMIds.PLAN_VOICE_INPUT_MODAL}`);
     _.forEach(numericInputs, input => {
-        input.addEventListener(EventTypes.INPUT, function() {
-            this.value = this.value.replace(AdminRegex.NUMBERS_ONLY, AdminConstants.EMPTY_STR);
+        input.addEventListener(EventTypes.INPUT, function () {
+            this.value = _.replace(this.value, AdminRegex.NUMBERS_ONLY, AdminConstants.EMPTY_STR);
         });
     });
 }
 
 function delegateModalCloses() {
-    const closeBtns = document.querySelectorAll(AdminSelectors.MODAL_CLOSE_BTN);
+    const closeBtns = document.querySelectorAll(`${AdminSelectors.MODAL_CLOSE_BTN}, .modal-close-btn`);
     _.forEach(closeBtns, btn => {
-        btn.addEventListener(EventTypes.CLICK, function() {
+        btn.addEventListener(EventTypes.CLICK, function () {
             const modalId = this.getAttribute(DataAttributes.MODAL);
             if (modalId) closeModal(modalId);
         });
@@ -882,24 +869,31 @@ function delegateModalCloses() {
 }
 
 function delegateTableActions() {
-    document.addEventListener(EventTypes.CLICK, function(e) {
-        const target = e.target.closest(AdminSelectors.ACTION_BTNS);
+    document.addEventListener(EventTypes.CLICK, function (e) {
+        const target = e.target.closest(`${AdminSelectors.ACTION_BTNS}, [data-action]`);
         if (!target) return;
-        const action = target.getAttribute(DataAttributes.ACTION);
-        const key = target.getAttribute(DataAttributes.KEY);
-        const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID);
-        const uid = target.getAttribute(DataAttributes.ID);
-        
+        const action = target.getAttribute(DataAttributes.ACTION) || target.getAttribute('data-action');
+        const key = target.getAttribute(DataAttributes.KEY) || target.getAttribute('data-key');
+        const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID) || target.getAttribute('data-account-id');
+        const uid = target.getAttribute(DataAttributes.ID) || target.getAttribute('data-id');
+
         if (_.isEqual(action, AdminConstants.ACTION_EDIT) && uid) openEditModal(uid);
         if (_.isEqual(action, AdminConstants.ACTION_DEVICE) && uid) openDeviceModal(uid);
         if (_.isEqual(action, AdminConstants.ACTION_DELETE) && uid) openDeleteModal(uid, key);
         if (_.isEqual(action, AdminConstants.ACTION_COPY) && key) copyToClipboard(key);
         if (_.isEqual(action, AdminConstants.ACTION_EDIT_ACC) && accountId) editAccountAdmin(accountId);
         if (_.isEqual(action, AdminConstants.ACTION_DELETE_ACC) && accountId) deleteAccountAdmin(accountId);
-        
-        const keyId = target.getAttribute(DataAttributes.ID);
+
+        const keyId = target.getAttribute(DataAttributes.ID) || target.getAttribute('data-id');
         if (_.isEqual(action, AdminConstants.ACTION_DELETE_KEYS) && keyId) deleteApiKeysAdmin(keyId);
         if (_.isEqual(action, AdminConstants.ACTION_EDIT_KEYS) && keyId) editApiKeysAdmin(keyId);
+
+        if (_.isEqual(action, AdminConstants.ACTION_EDIT_PLAN) && uid) openEditPlanModal(uid);
+        if (_.isEqual(action, AdminConstants.ACTION_DELETE_PLAN) && uid) {
+            deletingResourceId = uid;
+            deletingResourceType = AdminConstants.TYPE_PLAN;
+            el(AdminConstants.RESOURCE_DELETE_MODAL_ID)?.classList.add(AdminClasses.ACTIVE);
+        }
     });
 }
 
@@ -907,26 +901,29 @@ function initEventListeners() {
     preventNonNumericInput();
     delegateModalCloses();
     delegateTableActions();
-    
+
     el(DOMIds.LOGIN_BTN)?.addEventListener(EventTypes.CLICK, handleLogin);
     el(DOMIds.LOGOUT_BTN)?.addEventListener(EventTypes.CLICK, handleLogout);
     el(DOMIds.SYNC_BTN)?.addEventListener(EventTypes.CLICK, handleSyncExpired);
-    
+
     el(DOMIds.BTN_CONFIRM_ACTION)?.addEventListener(EventTypes.CLICK, () => {
         if (_.isFunction(window.currentConfirmCallback)) window.currentConfirmCallback();
         closeModal(DOMIds.CONFIRM_MODAL);
     });
 
-    el(DOMIds.ADD_PLAN_BTN)?.addEventListener(EventTypes.CLICK, handleAddPlan);
-    el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, handleSaveConfig);
-    
-    el(DOMIds.SEARCH_INPUT)?.addEventListener(EventTypes.INPUT, applyFilters);
-    el(DOMIds.FILTER_PLAN)?.addEventListener(EventTypes.CHANGE, applyFilters);
-    el(DOMIds.FILTER_STATUS)?.addEventListener(EventTypes.CHANGE, applyFilters);
-    el(DOMIds.PAGE_SIZE)?.addEventListener(EventTypes.CHANGE, (e) => {
-        pageSize = _.toInteger(_.get(e, AdminConstants.TARGET_VALUE_PATH, AdminConstants.DEFAULT_PAGE_SIZE));
-        currentPage = AdminConstants.DEFAULT_PAGE;
-        renderTable();
+    el(DOMIds.OPEN_PLAN_CREATE_MODAL_BTN)?.addEventListener(EventTypes.CLICK, openCreatePlanModal);
+    el(DOMIds.SAVE_PLAN_BTN)?.addEventListener(EventTypes.CLICK, handleSavePlan);
+
+    el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL)?.addEventListener('change', function (e) {
+        const disabled = e.target.checked;
+        el(DOMIds.PLAN_VIDEO_INPUT_MODAL).disabled = disabled;
+        el(DOMIds.PLAN_IMAGE_INPUT_MODAL).disabled = disabled;
+        el(DOMIds.PLAN_VOICE_INPUT_MODAL).disabled = disabled;
+
+        const label = el(DOMIds.PLAN_UNLIMITED_LABEL_MODAL);
+        if (label) {
+            label.textContent = disabled ? AdminMessages.UNLIMITED_LABEL : AdminMessages.LIMIT_QUOTA_LABEL;
+        }
     });
 
     el(DOMIds.OPEN_CREATE_MODAL_BTN)?.addEventListener(EventTypes.CLICK, handleOpenCreateModal);
@@ -938,69 +935,35 @@ function initEventListeners() {
     el(DOMIds.BTN_RESOURCE_HARD_DELETE)?.addEventListener(EventTypes.CLICK, handleResourceHardDelete);
     el(DOMIds.MODAL_RESET_DEVICE_BTN)?.addEventListener(EventTypes.CLICK, handleResetDevice);
 
-    const configToggleBtn = el(DOMIds.CONFIG_TOGGLE_BTN);
-    const configDropdownMenu = el(DOMIds.CONFIG_DROPDOWN_MENU);
-
-    if (configToggleBtn && configDropdownMenu) {
-        configToggleBtn.addEventListener(EventTypes.CLICK, (e) => {
-            e.stopPropagation();
-            configDropdownMenu.style.display = _.isEqual(configDropdownMenu.style.display, AdminClasses.DISPLAY_NONE) ? AdminClasses.DISPLAY_BLOCK : AdminClasses.DISPLAY_NONE;
-        });
-
-        document.addEventListener(EventTypes.CLICK, (e) => {
-            if (!configToggleBtn.contains(e.target) && !configDropdownMenu.contains(e.target)) {
-                configDropdownMenu.style.display = AdminClasses.DISPLAY_NONE;
-            }
-        });
-
-        configDropdownMenu.addEventListener(EventTypes.CLICK, (e) => {
-            e.stopPropagation();
-        });
-        
-        el(DOMIds.SAVE_CONFIG_BTN)?.addEventListener(EventTypes.CLICK, () => {
-            configDropdownMenu.style.display = AdminClasses.DISPLAY_NONE;
-        });
-    }
-
-    const resourceToggleBtn = el(DOMIds.RESOURCE_TOGGLE_BTN);
-    const resourceModal = el(DOMIds.RESOURCE_MODAL);
-    
-    if (resourceToggleBtn) {
-        resourceToggleBtn.addEventListener(EventTypes.CLICK, () => {
-            resourceModal.classList.add(AdminClasses.ACTIVE);
-            loadApiKeysAdmin();
-        });
-    }
-
-    const tabKeysBtn = el(DOMIds.TAB_KEYS_BTN);
-    const tabAccountsBtn = el(DOMIds.TAB_ACCOUNTS_BTN);
-    const tabContentKeys = el(DOMIds.TAB_CONTENT_KEYS);
-    const tabContentAccounts = el(DOMIds.TAB_CONTENT_ACCOUNTS);
-
-    if (tabKeysBtn && tabAccountsBtn) {
-        tabKeysBtn.addEventListener(EventTypes.CLICK, () => {
-            tabKeysBtn.classList.add(AdminClasses.ACTIVE);
-            tabAccountsBtn.classList.remove(AdminClasses.ACTIVE);
-            
-            tabContentKeys.style.display = AdminClasses.DISPLAY_BLOCK;
-            tabContentAccounts.style.display = AdminClasses.DISPLAY_NONE;
-            loadApiKeysAdmin();
-        });
-
-        tabAccountsBtn.addEventListener(EventTypes.CLICK, () => {
-            tabAccountsBtn.classList.add(AdminClasses.ACTIVE);
-            tabKeysBtn.classList.remove(AdminClasses.ACTIVE);
-            
-            tabContentAccounts.style.display = AdminClasses.DISPLAY_BLOCK;
-            tabContentKeys.style.display = AdminClasses.DISPLAY_NONE;
-            loadAccountsAdmin();
-        });
-    }
-
     el(DOMIds.SAVE_KEYS_BTN)?.addEventListener(EventTypes.CLICK, handleSaveKeys);
     el(DOMIds.ADD_ACC_BTN)?.addEventListener(EventTypes.CLICK, handleSaveAccount);
-    
-    document.addEventListener(EventTypes.CHANGE, function(e) {
+
+    el(DOMIds.SEARCH_INPUT)?.addEventListener(EventTypes.INPUT, applyFilters);
+    el(DOMIds.FILTER_PLAN)?.addEventListener(EventTypes.CHANGE, applyFilters);
+    el(DOMIds.FILTER_STATUS)?.addEventListener(EventTypes.CHANGE, applyFilters);
+    el(DOMIds.PAGE_SIZE)?.addEventListener(EventTypes.CHANGE, (e) => {
+        pageSize = _.toInteger(_.get(e, AdminConstants.TARGET_VALUE_PATH, AdminConstants.DEFAULT_PAGE_SIZE));
+        currentPage = AdminConstants.DEFAULT_PAGE;
+        renderTable();
+    });
+
+    el('open-keys-modal-btn')?.addEventListener(EventTypes.CLICK, () => {
+        resetResourceForms();
+        window.editingKeyId = null;
+        el(DOMIds.KEY_MODAL_TITLE).textContent = AdminMessages.KEYS_TITLE_CREATE;
+        el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.BTN_SAVE_KEY);
+        el(DOMIds.KEY_MODAL).classList.add(AdminClasses.ACTIVE);
+    });
+
+    el('open-account-modal-btn')?.addEventListener(EventTypes.CLICK, () => {
+        resetResourceForms();
+        window.editingAccountId = null;
+        el(DOMIds.ACCOUNT_MODAL_TITLE).textContent = AdminMessages.ACC_TITLE_CREATE;
+        el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD_ACC);
+        el(DOMIds.ACCOUNT_MODAL).classList.add(AdminClasses.ACTIVE);
+    });
+
+    document.addEventListener(EventTypes.CHANGE, function (e) {
         if (e.target.classList.contains(AdminSelectors.ACC_STATUS_SELECT.substring(1))) {
             const accId = e.target.getAttribute(DataAttributes.ACCOUNT_ID);
             const status = e.target.value;
@@ -1012,15 +975,15 @@ function initEventListeners() {
 async function handleSaveKeys() {
     const btn = el(DOMIds.SAVE_KEYS_BTN);
     const getSelectValue = (tsInstance, defaultElId) => {
-        if (!tsInstance) return el(defaultElId).value.trim();
+        if (!tsInstance) return _.trim(el(defaultElId).value);
         const val = tsInstance.getValue();
-        return _.isArray(val) ? val.join(AdminConstants.COMMA_SPLIT) : String(val).trim();
+        return _.isArray(val) ? _.join(val, AdminConstants.COMMA_SPLIT) : _.trim(_.toString(val));
     };
-    const assignee = getSelectValue(tsKeysInstance, DOMIds.KEYS_ASSIGNEE_INPUT) || AdminConstants.ASSIGN_ALL;
-    const gemini = el(DOMIds.KEYS_GEMINI_INPUT).value.trim();
-    const ai33 = el(DOMIds.KEYS_AI33_INPUT).value.trim();
-    const excluded = getSelectValue(tsExcludedInstance, DOMIds.KEYS_EXCLUDED_INPUT);
-    
+    const assignee = getSelectValue(tsKeysModalInstance, DOMIds.KEYS_ASSIGNEE_INPUT) || AdminConstants.ASSIGN_ALL;
+    const gemini = _.trim(el(DOMIds.KEYS_GEMINI_INPUT).value);
+    const ai33 = _.trim(el(DOMIds.KEYS_AI33_INPUT).value);
+    const excluded = getSelectValue(tsExcludedModalInstance, DOMIds.KEYS_EXCLUDED_INPUT);
+
     if (!gemini && !ai33) {
         showToast(AdminMessages.VALIDATION_NEED_KEY, ToastType.ERROR);
         return;
@@ -1039,7 +1002,7 @@ async function handleSaveKeys() {
         }
         await fetchAPI(AdminActions.UPDATE_API_KEYS, payload);
         showToast(AdminMessages.KEYS_SAVE_SUCCESS, ToastType.SUCCESS);
-        resetResourceForms();
+        closeModal(DOMIds.KEY_MODAL);
         loadApiKeysAdmin();
     } catch (e) {
         showToast(AdminMessages.SAVE_ERROR + e.message, ToastType.ERROR);
@@ -1050,10 +1013,11 @@ async function handleSaveKeys() {
 
 async function handleSaveAccount() {
     const btn = el(DOMIds.ADD_ACC_BTN);
-    const email = el(DOMIds.ACC_EMAIL_INPUT).value.trim();
-    const pwd = el(DOMIds.ACC_PASSWORD_INPUT).value.trim();
-    const recovery = el(DOMIds.ACC_RECOVERY_INPUT).value.trim();
-    const assign = el(DOMIds.ACC_ASSIGNEE_INPUT).value.trim() || AdminConstants.ASSIGN_ALL;
+    const email = _.trim(el(DOMIds.ACC_EMAIL_INPUT).value);
+    const pwd = _.trim(el(DOMIds.ACC_PASSWORD_INPUT).value);
+    const recovery = _.trim(el(DOMIds.ACC_RECOVERY_INPUT).value);
+    const assign = _.trim(el(DOMIds.ACC_ASSIGNEE_INPUT).value) || AdminConstants.ASSIGN_ALL;
+    const status = el(DOMIds.ACC_STATUS_INPUT).value;
 
     if (!email) {
         showToast(AdminMessages.MISSING_ACC_INFO, ToastType.ERROR);
@@ -1064,27 +1028,20 @@ async function handleSaveAccount() {
     setButtonLoading(btn, true, isEditing ? AdminMessages.LOADING_UPDATE : AdminMessages.LOADING_ADD);
     try {
         if (isEditing) {
-            await fetchAPI(AdminActions.UPDATE_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.ID]: window.editingAccountId, [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.ASSIGNED_TO]: assign } });
+            await fetchAPI(AdminActions.UPDATE_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.ID]: window.editingAccountId, [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.STATUS]: status, [ApiFields.ASSIGNED_TO]: assign } });
             showToast(AdminMessages.ACCOUNT_UPDATE_SUCCESS, ToastType.SUCCESS);
             window.editingAccountId = null;
             btn.innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_ADD, AdminMessages.BTN_ADD);
         } else {
-            await fetchAPI(AdminActions.ADD_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.STATUS]: AdminConstants.ACCOUNT_STATUS_ACTIVE, [ApiFields.ASSIGNED_TO]: assign } });
+            await fetchAPI(AdminActions.ADD_ACCOUNT, { [ApiFields.ACCOUNT]: { [ApiFields.EMAIL]: email, [ApiFields.PASSWORD]: pwd, [ApiFields.RECOVERY_EMAIL]: recovery, [ApiFields.STATUS]: status, [ApiFields.ASSIGNED_TO]: assign } });
             showToast(AdminMessages.ACCS_SAVE_SUCCESS, ToastType.SUCCESS);
         }
-        
-        el(DOMIds.ACC_EMAIL_INPUT).value = AdminConstants.EMPTY_STR;
-        el(DOMIds.ACC_PASSWORD_INPUT).value = AdminConstants.EMPTY_STR;
-        el(DOMIds.ACC_RECOVERY_INPUT).value = AdminConstants.EMPTY_STR;
-        if (tsAccInstance) {
-            tsAccInstance.setValue(AdminConstants.ASSIGN_ALL);
-        } else {
-            el(DOMIds.ACC_ASSIGNEE_INPUT).value = AdminConstants.ASSIGN_ALL;
-        }
-        
+
+        closeModal(DOMIds.ACCOUNT_MODAL);
         loadAccountsAdmin();
     } catch (e) {
-        showToast(AdminMessages.SAVE_ERROR + e.message, ToastType.ERROR);
+        Logger.error(e);
+        showToast(AdminMessages.SAVE_ERROR_USER, ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
@@ -1092,12 +1049,12 @@ async function handleSaveAccount() {
 
 function populateAssignSelects() {
     const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-    
+
     let optionsHtml = AdminTemplates.SELECT_OPTION(AdminConstants.ASSIGN_ALL, AdminMessages.ASSIGN_ALL_LABEL);
     _.forEach(plans, p => {
         optionsHtml += AdminTemplates.SELECT_OPTION(p.id, formatPlanDisplayName(p.name));
     });
-    
+
     const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
     if (!_.isEmpty(users)) {
         let userOptions = AdminConstants.EMPTY_STR;
@@ -1108,27 +1065,27 @@ function populateAssignSelects() {
         });
         optionsHtml += AdminTemplates.OPTGROUP(AdminMessages.ASSIGN_SPECIFIC_LABEL, userOptions);
     }
-    
+
     const keysSelect = el(DOMIds.KEYS_ASSIGNEE_INPUT);
     const accSelect = el(DOMIds.ACC_ASSIGNEE_INPUT);
     const excludedSelect = el(DOMIds.KEYS_EXCLUDED_INPUT);
-    
-    if (tsKeysInstance) {
-        try { tsKeysInstance.destroy(); } catch(e){}
-        tsKeysInstance = null;
+
+    if (tsKeysModalInstance) {
+        try { tsKeysModalInstance.destroy(); } catch (e) { }
+        tsKeysModalInstance = null;
     }
-    if (tsAccInstance) {
-        try { tsAccInstance.destroy(); } catch(e){}
-        tsAccInstance = null;
+    if (tsAccModalInstance) {
+        try { tsAccModalInstance.destroy(); } catch (e) { }
+        tsAccModalInstance = null;
     }
-    if (tsExcludedInstance) {
-        try { tsExcludedInstance.destroy(); } catch(e){}
-        tsExcludedInstance = null;
+    if (tsExcludedModalInstance) {
+        try { tsExcludedModalInstance.destroy(); } catch (e) { }
+        tsExcludedModalInstance = null;
     }
-    
+
     if (keysSelect) {
         keysSelect.innerHTML = optionsHtml;
-        tsKeysInstance = new TomSelect(keysSelect, {
+        tsKeysModalInstance = new TomSelect(keysSelect, {
             create: true,
             maxItems: null,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
@@ -1138,7 +1095,7 @@ function populateAssignSelects() {
     }
     if (accSelect) {
         accSelect.innerHTML = optionsHtml;
-        tsAccInstance = new TomSelect(accSelect, {
+        tsAccModalInstance = new TomSelect(accSelect, {
             create: true,
             maxItems: AdminConstants.MAX_ITEMS_SELECT,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
@@ -1148,7 +1105,7 @@ function populateAssignSelects() {
     }
     if (excludedSelect) {
         excludedSelect.innerHTML = optionsHtml;
-        tsExcludedInstance = new TomSelect(excludedSelect, {
+        tsExcludedModalInstance = new TomSelect(excludedSelect, {
             create: true,
             maxItems: null,
             placeholder: AdminMessages.SEARCH_PLACEHOLDER,
@@ -1162,31 +1119,33 @@ function editApiKeysAdmin(keyId) {
     const keys = _.get(window, AdminConstants.GLOBAL_API_KEYS, []);
     const keyRecord = _.find(keys, k => _.isEqual(_.get(k, ApiFields.ID), keyId));
     if (!keyRecord) return;
-    
+
     const assignedTo = _.get(keyRecord, ApiFields.ASSIGNED_TO) || AdminConstants.EMPTY_STR;
-    const assignedArray = assignedTo ? _.map(assignedTo.split(AdminConstants.COMMA_SPLIT), s => s.trim()) : [];
-    if (tsKeysInstance) {
-        _.forEach(assignedArray, val => addOptionWithLabel(tsKeysInstance, val));
-        tsKeysInstance.setValue(assignedArray);
+    const assignedArray = assignedTo ? _.map(_.split(assignedTo, AdminConstants.COMMA_SPLIT), s => _.trim(s)) : [];
+    if (tsKeysModalInstance) {
+        _.forEach(assignedArray, val => addOptionWithLabel(tsKeysModalInstance, val));
+        tsKeysModalInstance.setValue(assignedArray);
     } else {
         el(DOMIds.KEYS_ASSIGNEE_INPUT).value = assignedTo;
     }
-    
+
     el(DOMIds.KEYS_GEMINI_INPUT).value = _.get(keyRecord, ApiFields.GEMINI_KEY) || AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = _.get(keyRecord, ApiFields.AI33_KEY) || AdminConstants.EMPTY_STR;
-    
+
     const excludedTo = _.get(keyRecord, ApiFields.EXCLUDED_TO) || AdminConstants.EMPTY_STR;
-    const excludedArray = excludedTo ? _.map(excludedTo.split(AdminConstants.COMMA_SPLIT), s => s.trim()) : [];
-    if (tsExcludedInstance) {
-        _.forEach(excludedArray, val => addOptionWithLabel(tsExcludedInstance, val));
-        tsExcludedInstance.setValue(excludedArray);
+    const excludedArray = excludedTo ? _.map(_.split(excludedTo, AdminConstants.COMMA_SPLIT), s => _.trim(s)) : [];
+    if (tsExcludedModalInstance) {
+        _.forEach(excludedArray, val => addOptionWithLabel(tsExcludedModalInstance, val));
+        tsExcludedModalInstance.setValue(excludedArray);
     } else {
         el(DOMIds.KEYS_EXCLUDED_INPUT).value = excludedTo;
     }
-    
+
     window.editingKeyId = keyId;
     el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
-    el(DOMIds.KEYS_GEMINI_INPUT).focus();
+
+    el(DOMIds.KEY_MODAL_TITLE).textContent = AdminMessages.KEYS_TITLE_EDIT;
+    el(DOMIds.KEY_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 function deleteApiKeysAdmin(keyId) {
@@ -1199,20 +1158,24 @@ function editAccountAdmin(id) {
     const accs = _.get(window, AdminConstants.GLOBAL_ACCOUNTS, []);
     const acc = _.find(accs, a => _.isEqual(_.get(a, ApiFields.ID), id));
     if (!acc) return;
-    
+
     el(DOMIds.ACC_EMAIL_INPUT).value = _.get(acc, ApiFields.EMAIL);
     el(DOMIds.ACC_PASSWORD_INPUT).value = _.get(acc, ApiFields.PASSWORD);
     el(DOMIds.ACC_RECOVERY_INPUT).value = _.get(acc, ApiFields.RECOVERY_EMAIL);
-    if (tsAccInstance) {
+    el(DOMIds.ACC_STATUS_INPUT).value = _.get(acc, ApiFields.STATUS) || AdminConstants.ACCOUNT_STATUS_ACTIVE;
+    if (tsAccModalInstance) {
         const assignVal = _.get(acc, ApiFields.ASSIGNED_TO);
-        addOptionWithLabel(tsAccInstance, assignVal);
-        tsAccInstance.setValue(assignVal);
+        addOptionWithLabel(tsAccModalInstance, assignVal);
+        tsAccModalInstance.setValue(assignVal);
     } else {
         el(DOMIds.ACC_ASSIGNEE_INPUT).value = _.get(acc, ApiFields.ASSIGNED_TO);
     }
-    
+
     window.editingAccountId = id;
     el(DOMIds.ADD_ACC_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_EDIT, AdminMessages.BTN_UPDATE);
+
+    el(DOMIds.ACCOUNT_MODAL_TITLE).textContent = AdminMessages.ACC_TITLE_EDIT;
+    el(DOMIds.ACCOUNT_MODAL).classList.add(AdminClasses.ACTIVE);
 }
 
 function deleteAccountAdmin(id) {
@@ -1225,17 +1188,17 @@ async function handleResourceSoftDelete() {
     const btn = el(DOMIds.BTN_RESOURCE_SOFT_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_SOFT_DELETE);
     try {
-        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
-                       (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS :
+            (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
         await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, [ApiFields.DELETE_TYPE]: AdminConstants.DELETE_TYPE_SOFT });
-        showToast(AppStrings.SOFT_DELETE_SUCCESS, ToastType.SUCCESS);
+        showToast(AdminMessages.SOFT_DELETE_SUCCESS, ToastType.SUCCESS);
         closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
-        
+
         if (_.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY)) loadApiKeysAdmin();
         else if (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN)) loadPlans();
         else loadAccountsAdmin();
     } catch (e) {
-        showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
+        showToast(AdminMessages.ERROR_PREFIX + e.message, ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
@@ -1245,17 +1208,17 @@ async function handleResourceHardDelete() {
     const btn = el(DOMIds.BTN_RESOURCE_HARD_DELETE);
     setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_HARD_DELETE);
     try {
-        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS : 
-                       (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
+        const action = _.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY) ? AdminActions.DELETE_API_KEYS :
+            (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN) ? AdminActions.DELETE_PLAN : AdminActions.DELETE_ACCOUNT);
         await fetchAPI(action, { [ApiFields.ID]: deletingResourceId, [ApiFields.DELETE_TYPE]: AdminConstants.DELETE_TYPE_HARD });
-        showToast(AppStrings.HARD_DELETE_SUCCESS, ToastType.SUCCESS);
+        showToast(AdminMessages.HARD_DELETE_SUCCESS, ToastType.SUCCESS);
         closeModal(AdminConstants.RESOURCE_DELETE_MODAL_ID);
-        
+
         if (_.isEqual(deletingResourceType, AdminConstants.TYPE_API_KEY)) loadApiKeysAdmin();
         else if (_.isEqual(deletingResourceType, AdminConstants.TYPE_PLAN)) loadPlans();
         else loadAccountsAdmin();
     } catch (e) {
-        showToast(AppStrings.ERROR_PREFIX + e.message, ToastType.ERROR);
+        showToast(AdminMessages.ERROR_PREFIX + e.message, ToastType.ERROR);
     } finally {
         setButtonLoading(btn, false);
     }
@@ -1264,97 +1227,7 @@ async function handleResourceHardDelete() {
 async function loadApiKeysAdmin() {
     const tbody = elq(DOMIds.KEYS_TBODY);
     tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_KEYS, AdminMessages.DATA_LOADING);
-    
-    const getAssignBadge = (assignee) => {
-        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminClasses.BADGE_FREE;
-        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-        const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), assignee));
-        if (plan) {
-            return (_.includes(_.toUpper(_.get(plan, ApiFields.NAME)), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
-        }
-        return AdminClasses.BADGE_PRO; 
-    };
-    
-    const getAssignName = (assignee) => {
-        if (!assignee) return AdminMessages.ASSIGN_ALL_LABEL;
-        const items = String(assignee).split(AdminConstants.COMMA_SPLIT);
-        const mapped = _.map(items, item => {
-            const trimmed = item.trim();
-            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
-            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-            const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), trimmed) || _.isEqual(_.get(p, ApiFields.NAME), trimmed));
-            if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
 
-            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
-            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
-            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, 5)}...)`;
-
-            return formatPlanDisplayName(trimmed);
-        });
-        return mapped.join(', ');
-    };
-
-    const formatExcludedDisplay = (excludedTo) => {
-        if (!excludedTo) return AdminMessages.NO_DATA;
-        const items = excludedTo.split(AdminConstants.COMMA_SPLIT);
-        const mapped = _.map(items, item => {
-            const trimmed = item.trim();
-            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
-            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
-            const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), trimmed));
-            if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
-            
-            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
-            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
-            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, 5)}...)`;
-            
-            return trimmed;
-        });
-        return mapped.join(', ');
-    };
-
-    try {
-        const res = await fetchAPI(AdminActions.GET_API_KEYS);
-        const keys = _.get(res, ApiFields.KEYS, []);
-        window[AdminConstants.GLOBAL_API_KEYS] = keys;
-        
-        tbody.innerHTML = _.map(keys, k => {
-            const assignee = _.get(k, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
-            const badgeClass = getAssignBadge(assignee);
-            const assigneeLabel = getAssignName(assignee);
-            const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
-            const ai33Value = _.get(k, ApiFields.AI33_KEY);
-            const excludedValue = formatExcludedDisplay(_.get(k, ApiFields.EXCLUDED_TO));
-            const keyId = _.get(k, ApiFields.ID);
-            
-            const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-4) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
-            const isRevoked = _.isEqual(_.get(k, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
-            const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
-            const statusBadge = isRevoked ? `<span class="badge badge-error" style="margin-left: 0.5rem; font-size: 0.65rem;">${AppStrings.REVOKED_BADGE}</span>` : '';
-            
-            return `
-            <tr style="${rowStyle}">
-                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
-                <td style="color: #9ca3af; font-family: monospace;">${formatValue(geminiValue)}</td>
-                <td style="color: #9ca3af; font-family: monospace;">${formatValue(ai33Value)}</td>
-                <td style="color: #9ca3af; font-family: monospace; font-size: 0.85rem;" class="text-center">${escapeHTML(excludedValue)}</td>
-                <td class="text-center">
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
-                    </div>
-                </td>
-            </tr>
-        `}).join(AdminConstants.EMPTY_STR);
-    } catch (e) {
-        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_KEYS, e.message);
-    }
-}
-
-async function loadAccountsAdmin() {
-    const tbody = elq(DOMIds.ACCS_TBODY);
-    tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_ACCOUNTS, AdminMessages.DATA_LOADING);
-    
     const getAssignBadge = (assignee) => {
         if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminClasses.BADGE_FREE;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
@@ -1364,7 +1237,97 @@ async function loadAccountsAdmin() {
         }
         return AdminClasses.BADGE_PRO;
     };
-    
+
+    const getAssignName = (assignee) => {
+        if (!assignee) return AdminMessages.ASSIGN_ALL_LABEL;
+        const items = _.split(_.toString(assignee), AdminConstants.COMMA_SPLIT);
+        const mapped = _.map(items, item => {
+            const trimmed = _.trim(item);
+            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
+            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+            const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), trimmed) || _.isEqual(_.get(p, ApiFields.NAME), trimmed));
+            if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
+
+            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
+            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
+            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}...)`;
+
+            return formatPlanDisplayName(trimmed);
+        });
+        return _.join(mapped, AdminConstants.COMMA_JOIN);
+    };
+
+    const formatExcludedDisplay = (excludedTo) => {
+        if (!excludedTo) return AdminMessages.NO_DATA;
+        const items = _.split(excludedTo, AdminConstants.COMMA_SPLIT);
+        const mapped = _.map(items, item => {
+            const trimmed = _.trim(item);
+            if (_.isEqual(trimmed, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
+            const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+            const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), trimmed));
+            if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
+
+            const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
+            const user = _.find(users, u => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
+            if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}...)`;
+
+            return trimmed;
+        });
+        return _.join(mapped, AdminConstants.COMMA_JOIN);
+    };
+
+    try {
+        const res = await fetchAPI(AdminActions.GET_API_KEYS);
+        const keys = _.get(res, ApiFields.KEYS, []);
+        window[AdminConstants.GLOBAL_API_KEYS] = keys;
+
+        tbody.innerHTML = _.join(_.map(keys, k => {
+            const assignee = _.get(k, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
+            const badgeClass = getAssignBadge(assignee);
+            const assigneeLabel = getAssignName(assignee);
+            const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
+            const ai33Value = _.get(k, ApiFields.AI33_KEY);
+            const excludedValue = formatExcludedDisplay(_.get(k, ApiFields.EXCLUDED_TO));
+            const keyId = _.get(k, ApiFields.ID);
+
+            const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-AdminConstants.KEY_MASK_SUFFIX_LENGTH) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
+            const isRevoked = _.isEqual(_.get(k, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
+            const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
+            const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem; font-size: 0.65rem;">${AdminMessages.REVOKED_BADGE}</span>` : '';
+
+            return `
+            <tr style="${rowStyle}">
+                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(geminiValue)}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(ai33Value)}</td>
+                <td style="color: var(--text-muted); font-family: monospace; font-size: 0.85rem;" class="text-center">${escapeHTML(excludedValue)}</td>
+                <td class="text-center">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
+                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
+                    </div>
+                </td>
+            </tr>
+        `}), AdminConstants.EMPTY_STR);
+    } catch (e) {
+        tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_KEYS, e.message);
+    }
+}
+
+async function loadAccountsAdmin() {
+    const tbody = elq(DOMIds.ACCS_TBODY);
+    tbody.innerHTML = AdminTemplates.TABLE_LOADING(AdminConstants.COLSPAN_ACCOUNTS, AdminMessages.DATA_LOADING);
+
+    const getAssignBadge = (assignee) => {
+        if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminClasses.BADGE_FREE;
+        const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
+        const plan = _.find(plans, p => _.isEqual(_.get(p, ApiFields.ID), assignee));
+        if (plan) {
+            return (_.includes(_.toUpper(_.get(plan, ApiFields.NAME)), AdminConstants.PLAN_FREE)) ? AdminClasses.BADGE_FREE : AdminClasses.BADGE_PRO;
+        }
+        return AdminClasses.BADGE_PRO;
+    };
+
     const getAssignName = (assignee) => {
         if (_.isEqual(assignee, AdminConstants.ASSIGN_ALL)) return AdminMessages.ASSIGN_ALL_LABEL;
         const plans = _.get(window, AdminConstants.GLOBAL_PLANS, []);
@@ -1377,38 +1340,41 @@ async function loadAccountsAdmin() {
         const res = await fetchAPI(AdminActions.GET_ACCOUNTS);
         const accs = _.get(res, ApiFields.ACCOUNTS, []);
         window[AdminConstants.GLOBAL_ACCOUNTS] = accs;
-        
-        tbody.innerHTML = _.map(accs, a => {
+
+        tbody.innerHTML = _.join(_.map(accs, a => {
             const assignee = _.get(a, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
             const badgeClass = getAssignBadge(assignee);
-            
-            const options = `
-                <option value="${AdminConstants.ACCOUNT_STATUS_ACTIVE}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.ACCOUNT_STATUS_ACTIVE) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ACTIVE}</option>
-                <option value="${AdminConstants.ACCOUNT_STATUS_ERROR}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.ACCOUNT_STATUS_ERROR) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AdminConstants.ACCOUNT_STATUS_ERROR}</option>
-                <option value="${AdminConstants.STATUS_REVOKED}" ${_.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.STATUS_REVOKED) ? AdminConstants.SELECTED : AdminConstants.EMPTY_STR}>${AppStrings.STATUS_REVOKED}</option>
-            `;
-            const isRevoked = _.isEqual(_.get(a, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
+
+            const status = _.get(a, ApiFields.STATUS);
+            let statusBadge = '';
+            if (_.isEqual(status, AdminConstants.ACCOUNT_STATUS_ACTIVE)) {
+                statusBadge = `<span class="badge active">${AdminMessages.STATUS_ACTIVE_LABEL}</span>`;
+            } else if (_.isEqual(status, AdminConstants.ACCOUNT_STATUS_ERROR)) {
+                statusBadge = `<span class="badge expired">${AdminConstants.ACCOUNT_STATUS_ERROR}</span>`;
+            } else {
+                statusBadge = `<span class="badge revoked">${AdminMessages.STATUS_REVOKED_LABEL}</span>`;
+            }
+
+            const isRevoked = _.isEqual(status, AdminConstants.STATUS_REVOKED);
             const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
 
             return `
             <tr style="${rowStyle}">
                 <td style="font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
-                <td style="color: #9ca3af;">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
+                <td style="color: var(--text-muted);">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
                 <td class="text-center">
-                    <select class="acc-status-select" data-account-id="${_.get(a, ApiFields.ID)}" style="background: var(--input-bg); color: white; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.2rem; outline:none; cursor: pointer;">
-                        ${options}
-                    </select>
+                    ${statusBadge}
                 </td>
                 <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}</span></td>
-                <td style="color: #9ca3af; font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
                 <td>
-                    <div class="actions-cell" style="justify-content: center;">
+                    <div class="actions-cell" style="justify-content: center; display:flex; gap:0.5rem;">
                         <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
                         <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
                     </div>
                 </td>
             </tr>
-        `}).join(AdminConstants.EMPTY_STR);
+        `}), AdminConstants.EMPTY_STR);
     } catch (e) {
         tbody.innerHTML = AdminTemplates.TABLE_ERROR(AdminConstants.COLSPAN_ACCOUNTS, e.message);
     }
@@ -1419,7 +1385,8 @@ async function updateAccStatus(id, status) {
         await fetchAPI(AdminActions.UPDATE_ACCOUNT_STATUS, { [ApiFields.ROW_INDEX]: id, [ApiFields.STATUS]: status });
         showToast(AdminMessages.UPDATE_STATUS_SUCCESS, ToastType.SUCCESS);
     } catch (e) {
-        showToast(AdminMessages.UPDATE_STATUS_ERROR + e.message, ToastType.ERROR);
+        Logger.error(e);
+        showToast(AdminMessages.SAVE_ERROR_USER, ToastType.ERROR);
     }
 }
 
