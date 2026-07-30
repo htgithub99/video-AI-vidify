@@ -275,6 +275,7 @@ const batchPagesConfigs = new WeakMap<Page, string>();
 
 let activeBrowserInstance: { context: any; page: Page; account: GoogleAccount } | null = null;
 let activeBrowserTimeout: NodeJS.Timeout | null = null;
+let activeBrowserHeadless: boolean | undefined = undefined;
 
 export async function closeActiveBrowser() {
   if (activeBrowserTimeout) {
@@ -288,6 +289,7 @@ export async function closeActiveBrowser() {
     } catch (e) {}
     activeBrowserInstance = null;
   }
+  activeBrowserHeadless = undefined;
 }
 
 export function scheduleGlobalBrowserCleanup() {
@@ -306,24 +308,33 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
     activeBrowserTimeout = null;
   }
 
+  const requestedHeadless = chromeHeadless !== false;
+
   if (activeBrowserInstance) {
-    try {
-      await activeBrowserInstance.page.url();
-      appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
-      return activeBrowserInstance;
-    } catch (e) {
-      appLog(ImageGenMessages.GLOBAL_CHROME_ERROR_REINIT);
+    if (activeBrowserHeadless !== requestedHeadless) {
+      appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
       await closeActiveBrowser();
+    } else {
+      try {
+        await activeBrowserInstance.page.url();
+        appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
+        return activeBrowserInstance;
+      } catch (e) {
+        appLog(ImageGenMessages.GLOBAL_CHROME_ERROR_REINIT);
+        await closeActiveBrowser();
+      }
     }
   }
 
   appLog(ImageGenMessages.LAUNCHING_GLOBAL_CHROME);
   activeBrowserInstance = await launchBrowserForAccount(chromeHeadless);
+  activeBrowserHeadless = requestedHeadless;
 
   try {
     activeBrowserInstance.context.on("close", () => {
       appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
       activeBrowserInstance = null;
+      activeBrowserHeadless = undefined;
     });
   } catch (err) {}
 

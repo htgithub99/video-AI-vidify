@@ -124,6 +124,8 @@ export class LicenseService {
     static async incrementUsage(licenseKey: string, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT): Promise<boolean> {
         if (_.isEmpty(licenseKey)) return false;
 
+        const deviceId = getHardwareId();
+
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: SecurityConstants.HTTP_POST,
@@ -132,6 +134,7 @@ export class LicenseService {
                     action: GasActions.UPDATE_USAGE,
                     admin_key: SecurityConstants.ADMIN_APP_KEY,
                     license_key: licenseKey,
+                    device_id: deviceId,
                     feature: feature,
                     amount: amount
                 })

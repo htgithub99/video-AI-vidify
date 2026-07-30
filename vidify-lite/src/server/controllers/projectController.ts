@@ -5,7 +5,7 @@ import { VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -70,7 +70,9 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
     if (matches) {
       const ext = _.eq(matches[1], COMMON_STRINGS.JPEG_EXT) ? COMMON_STRINGS.JPG_EXT : matches[1];
       const data = matches[2];
-      const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${scene.id}.${ext}`;
+      const sceneIdStr = String(scene.id);
+      const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
+      const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}${ext}`;
       const filePath = path.join(imageDir, fileName);
 
       try {
@@ -111,7 +113,9 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
   const hasBase64Audio = _.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD) && !_.some([COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX], (prefix) => _.startsWith(audioBase64, prefix));
 
   if (hasBase64Audio) {
-    const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${scene.id}${COMMON_STRINGS.WAV_EXT}`;
+    const sceneIdStr = String(scene.id);
+    const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
+    const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${COMMON_STRINGS.WAV_EXT}`;
     const filePath = path.join(audioDir, fileName);
     try {
       fs.writeFileSync(filePath, Buffer.from(audioBase64, COMMON_STRINGS.BASE64));
@@ -295,8 +299,10 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
     if (!newHasImage && fs.existsSync(imageDir)) {
       try {
         const files = fs.readdirSync(imageDir);
-        const prefix1 = `${COMMON_STRINGS.SCENE_PREFIX}${newScene.id}.`;
-        const prefix2 = `${COMMON_STRINGS.SCENE_PREFIX}${newScene.id}_`;
+        const newSceneIdStr = String(newScene.id);
+        const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : newSceneIdStr;
+        const prefix1 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
+        const prefix2 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}_`;
 
         _.forEach(files, (file) => {
           if (_.startsWith(file, prefix1) || _.startsWith(file, prefix2)) {
@@ -319,7 +325,9 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
     if (!newHasAudio && fs.existsSync(audioDir)) {
       try {
         const files = fs.readdirSync(audioDir);
-        const prefix = `${COMMON_STRINGS.SCENE_PREFIX}${newScene.id}.`;
+        const newSceneIdStr = String(newScene.id);
+        const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : newSceneIdStr;
+        const prefix = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
         _.forEach(files, (file) => {
           if (_.startsWith(file, prefix)) {
             const filePath = path.join(audioDir, file);

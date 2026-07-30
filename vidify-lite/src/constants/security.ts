@@ -360,6 +360,7 @@ export const ImageGenMessages = {
   LAUNCHING_GLOBAL_CHROME: 'Đang khởi chạy trình duyệt Chrome toàn cục...',
   GLOBAL_CHROME_CLOSED_EXTERNAL: 'Trình duyệt Chrome toàn cục đã bị đóng từ bên ngoài.',
   CONFIG_CHANGED_FORCE_NEW_ROOM: 'Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.',
+  CHROME_MODE_CHANGED: '[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...',
 };
 
 export const AppLogger = {

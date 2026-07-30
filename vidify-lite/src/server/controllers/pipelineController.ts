@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import _ from 'lodash';
-import crypto from "crypto";
 import { renderQueueService } from "../services/renderQueueService.js";
 import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/profileManagerService.js";
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
@@ -1584,31 +1583,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
 });
 router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
   try {
-    const { prompt, style, bypassCache, visualConfig, sandboxConfig } = req.body;
-
-    const imagesCacheDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, REFACTOR_CONSTANTS.CACHE_DIR_IMAGES);
-    if (!bypassCache && !fs.existsSync(imagesCacheDir)) {
-      fs.mkdirSync(imagesCacheDir, { recursive: true });
-    }
-
-    const engine = visualConfig?.imageGeneratorEngine || REFACTOR_CONSTANTS.DEFAULT_TTS_ENGINE;
-    const aspect = visualConfig?.aspectRatio || REFACTOR_CONSTANTS.DEFAULT_TTS_ASPECT;
-    const hashInput = `${prompt}_${style || ""}_${engine}_${aspect}`;
-    const md5Hash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(hashInput).digest(REFACTOR_CONSTANTS.ENCODING_HEX as crypto.BinaryToTextEncoding);
-    const cachedFileName = `${REFACTOR_CONSTANTS.CACHE_FILE_PREFIX_IMG}${md5Hash}${REFACTOR_CONSTANTS.CACHE_EXT_PNG}`;
-    const cachedFilePath = path.join(imagesCacheDir, cachedFileName);
-    const cachedFileUrl = `/${ASSETS_DIR_NAME}/${REFACTOR_CONSTANTS.CACHE_DIR_IMAGES}/${cachedFileName}`;
-
-    if (!bypassCache && fs.existsSync(cachedFilePath)) {
-      const buffer = fs.readFileSync(cachedFilePath);
-      const base64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-      return res.json({
-        success: true,
-        base64,
-        fallbackUrl: cachedFileUrl,
-        cached: true
-      });
-    }
+    const { prompt, style, visualConfig, sandboxConfig } = req.body;
 
     const result = await generateImageWithPlaywright({
       prompt,
@@ -1619,15 +1594,6 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
 
     if (result && result.success) {
       await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
-      if (result.base64 && !bypassCache) {
-        try {
-          const buffer = Buffer.from(result.base64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-          fs.writeFileSync(cachedFilePath, buffer);
-          result.fallbackUrl = cachedFileUrl;
-        } catch (cacheErr) {
-          logger.warn(REFACTOR_CONSTANTS.LOG_WARN_WRITE_IMG_CACHE, cacheErr);
-        }
-      }
     }
 
     return res.json(result);
@@ -1884,7 +1850,9 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               const startVal = align.start;
               const endVal = align.end;
               if (!_.isNil(startVal) && !_.isNil(endVal)) {
-                const fileName = `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${align.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+                const idStr = String(align.id);
+                const cleanId = _.startsWith(idStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? idStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : idStr;
+                const fileName = `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
                 const outPath = path.join(outputDir, fileName);
                 await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
                 if (fs.existsSync(outPath)) {
@@ -2180,8 +2148,11 @@ router.post("/export-zip", async (req: Request, res: Response) => {
           const startVal = _.get(sc, '_start');
           const endVal = _.get(sc, '_end');
           if (!_.isNil(startVal) && !_.isNil(endVal)) {
-            const outPath = path.join(voicesDir, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${sc.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`);
-            sc.audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/${EXPORT_ZIP_CONFIG.VOICES_DIR}/${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${sc.id}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
+            const scIdStr = String(sc.id);
+            const cleanId = _.startsWith(scIdStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? scIdStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : scIdStr;
+            const outPath = path.join(voicesDir, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`);
+            const slash = COMMON_STRINGS.SLASH_PREFIX;
+            sc.audioUrl = `${slash}${ASSETS_DIR_NAME}${slash}${PROJECTS_DIR_NAME}${slash}${projectId}${slash}${EXPORT_ZIP_CONFIG.VOICES_DIR}${slash}${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
             await cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
           }
         }
