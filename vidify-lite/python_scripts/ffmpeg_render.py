@@ -6,6 +6,7 @@ import subprocess
 import traceback
 import math
 import random
+from concurrent.futures import ThreadPoolExecutor
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
 class FFMPEG_CONSTANTS:
@@ -33,6 +34,25 @@ class FFMPEG_CONSTANTS:
     IMAGE_EXTENSION = ".jpg"
     VIDEO_EXTENSION = ".mp4"
     VIDEO_SCALE_FILTER = "scale={0}:{1}:force_original_aspect_ratio=increase,crop={0}:{1},fps={2},setsar=1"
+    DEFAULT_MAX_WORKERS = 1
+    INDEX_PADDING = 3
+    DEFAULT_SCENE_DURATION = 5
+    EMPTY_STRING = ""
+    BINARY_WRITE_MODE = "wb"
+    KEY_ASSET_TYPE = "assetType"
+    KEY_IMAGE_BASE64 = "imageBase64"
+    KEY_AUDIO_BASE64 = "audioBase64"
+    KEY_MEDIA_PATH = "mediaPath"
+    KEY_AUDIO_PATH = "audioPath"
+    KEY_DURATION = "duration"
+    KEY_TRANSITION = "transition"
+    KEY_CAMERA_MOTION = "cameraMotion"
+    KEY_EFFECTS = "effects"
+    KEY_MAX_SCENE_WORKERS = "maxSceneWorkers"
+    TEMP_MEDIA_TEMPLATE = "media_{0}{1}"
+    TEMP_AUDIO_TEMPLATE = "audio_{0}.mp3"
+    PART_FILE_TEMPLATE = "part_{0}.mp4"
+    PART_ERROR_TEMPLATE = "FFmpeg part generation failed with code {0}"
     
     ZOOM_IN = "zoom in"
     ZOOM_OUT = "zoom out"
@@ -640,40 +660,68 @@ def main():
         scene_audio_paths = []
         scene_durations = []
         scene_transitions = []
+        scene_media_owned = []
+        scene_audio_owned = []
         
         for i, scene in enumerate(scenes):
-            idx = str(i).zfill(3)
-            is_video = scene.get("assetType") == FFMPEG_CONSTANTS.ASSET_VIDEO
+            idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
+            is_video = scene.get(FFMPEG_CONSTANTS.KEY_ASSET_TYPE) == FFMPEG_CONSTANTS.ASSET_VIDEO
             media_extension = FFMPEG_CONSTANTS.VIDEO_EXTENSION if is_video else FFMPEG_CONSTANTS.IMAGE_EXTENSION
-            mediaPath = os.path.join(tempDir, f"media_{idx}{media_extension}")
-            audioPath = os.path.join(tempDir, f"audio_{idx}.mp3")
+            temp_media_path = os.path.join(
+                tempDir,
+                FFMPEG_CONSTANTS.TEMP_MEDIA_TEMPLATE.format(idx, media_extension),
+            )
+            temp_audio_path = os.path.join(
+                tempDir,
+                FFMPEG_CONSTANTS.TEMP_AUDIO_TEMPLATE.format(idx),
+            )
             
-            img_b64 = scene.get("imageBase64")
-            audio_b64 = scene.get("audioBase64")
-            duration = scene.get("duration", 5)
-            transition = scene.get("transition", "")
+            img_b64 = scene.get(FFMPEG_CONSTANTS.KEY_IMAGE_BASE64)
+            audio_b64 = scene.get(FFMPEG_CONSTANTS.KEY_AUDIO_BASE64)
+            source_media_path = scene.get(FFMPEG_CONSTANTS.KEY_MEDIA_PATH)
+            source_audio_path = scene.get(FFMPEG_CONSTANTS.KEY_AUDIO_PATH)
+            duration = scene.get(FFMPEG_CONSTANTS.KEY_DURATION, FFMPEG_CONSTANTS.DEFAULT_SCENE_DURATION)
+            transition = scene.get(FFMPEG_CONSTANTS.KEY_TRANSITION, FFMPEG_CONSTANTS.EMPTY_STRING)
             
-            if img_b64:
+            media_owned = False
+            if source_media_path and os.path.exists(source_media_path):
+                mediaPath = source_media_path
+            elif img_b64:
+                mediaPath = temp_media_path
                 img_data = clean_base64(img_b64)
-                with open(mediaPath, "wb") as f:
+                with open(mediaPath, FFMPEG_CONSTANTS.BINARY_WRITE_MODE) as f:
                     f.write(base64.b64decode(img_data))
+                media_owned = True
             else:
                 is_video = False
-                mediaPath = os.path.join(tempDir, f"media_{idx}{FFMPEG_CONSTANTS.IMAGE_EXTENSION}")
+                mediaPath = os.path.join(
+                    tempDir,
+                    FFMPEG_CONSTANTS.TEMP_MEDIA_TEMPLATE.format(idx, FFMPEG_CONSTANTS.IMAGE_EXTENSION),
+                )
                 Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), color=FFMPEG_CONSTANTS.BLACK_COLOR).save(mediaPath, FFMPEG_CONSTANTS.JPEG_FORMAT)
+                media_owned = True
             
             hasAudio = False
-            if audio_b64:
+            audio_owned = False
+            audioPath = None
+            if source_audio_path and os.path.exists(source_audio_path):
+                audioPath = source_audio_path
+                hasAudio = True
+            elif audio_b64:
+                audioPath = temp_audio_path
                 audio_data = clean_base64(audio_b64)
-                with open(audioPath, "wb") as f:
+                with open(audioPath, FFMPEG_CONSTANTS.BINARY_WRITE_MODE) as f:
                     f.write(base64.b64decode(audio_data))
                 hasAudio = True
+                audio_owned = True
             
             scene_media_paths.append(mediaPath)
             scene_is_video.append(is_video)
             scene_audio_paths.append(audioPath if hasAudio else None)
             scene_durations.append(duration)
             scene_transitions.append(transition)
+            scene_media_owned.append(media_owned)
+            scene_audio_owned.append(audio_owned)
 
         chosen_styles = []
         chosen_transitions = []
@@ -681,7 +729,7 @@ def main():
         prev_trans = None
 
         for i, scene in enumerate(scenes):
-            camera_motion = scene.get("cameraMotion", "")
+            camera_motion = scene.get(FFMPEG_CONSTANTS.KEY_CAMERA_MOTION, FFMPEG_CONSTANTS.EMPTY_STRING)
             style_idx = map_motion_to_style(camera_motion, i, prev_style, num_styles=12)
             chosen_styles.append(style_idx)
             if style_idx != 12:
@@ -694,9 +742,9 @@ def main():
             chosen_transitions.append(trans_type)
             prev_trans = trans_type
 
-        for i in range(len(scenes)):
-            idx = str(i).zfill(3)
-            outPath = os.path.join(tempDir, f"part_{idx}.mp4")
+        def render_scene(i):
+            idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
+            outPath = os.path.join(tempDir, FFMPEG_CONSTANTS.PART_FILE_TEMPLATE.format(idx))
             mediaPath = scene_media_paths[i]
             audioPath = scene_audio_paths[i]
             duration = scene_durations[i]
@@ -764,14 +812,14 @@ def main():
             else:
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-                write_ken_burns_frames_to_pipe(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get("effects", ""), proc)
+                write_ken_burns_frames_to_pipe(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), proc)
 
                 if transition_dur > 0 and i < len(scenes) - 1:
                     transition_type = chosen_transitions[i]
 
                     if transition_type != FFMPEG_CONSTANTS.TRANS_CUT:
-                        img_prev = get_last_frame_from_scene(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get("effects", ""))
-                        img_next = get_first_frame_from_scene(scene_media_paths[i + 1], width, height, chosen_styles[i + 1], scenes[i + 1].get("effects", ""))
+                        img_prev = get_last_frame_from_scene(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING))
+                        img_next = get_first_frame_from_scene(scene_media_paths[i + 1], width, height, chosen_styles[i + 1], scenes[i + 1].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING))
 
                         generate_crossfade_frames(
                             img_prev, img_next,
@@ -784,15 +832,28 @@ def main():
                 return_code = proc.returncode
 
             if return_code != 0:
-                raise Exception(f"FFmpeg part generation failed with code {return_code}")
-                
-            videoParts.append(FFMPEG_CONSTANTS.CONCAT_PREFIX.format(idx))
-            
-            try:
-                os.remove(mediaPath)
-            except:
-                pass
-            if audioPath:
+                raise Exception(FFMPEG_CONSTANTS.PART_ERROR_TEMPLATE.format(return_code))
+
+            return FFMPEG_CONSTANTS.CONCAT_PREFIX.format(idx)
+
+        max_workers = max(
+            FFMPEG_CONSTANTS.DEFAULT_MAX_WORKERS,
+            min(
+                int(config.get(FFMPEG_CONSTANTS.KEY_MAX_SCENE_WORKERS, FFMPEG_CONSTANTS.DEFAULT_MAX_WORKERS)),
+                len(scenes),
+            ),
+        )
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            videoParts = list(executor.map(render_scene, range(len(scenes))))
+
+        for i, mediaPath in enumerate(scene_media_paths):
+            if scene_media_owned[i]:
+                try:
+                    os.remove(mediaPath)
+                except:
+                    pass
+            audioPath = scene_audio_paths[i]
+            if audioPath and scene_audio_owned[i]:
                 try:
                     os.remove(audioPath)
                 except:

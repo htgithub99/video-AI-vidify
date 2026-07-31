@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { v4 as uuidv4 } from "uuid";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "./paths.js";
 import { logger } from "../../lib/logger.js";
@@ -8,10 +8,36 @@ import { promisify } from "util";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
 import { GenerateType } from "../../types.js";
-import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
+import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+const cleanupDirectory = (directoryPath: string): void => {
+  if (fs.existsSync(directoryPath)) {
+    fs.rmSync(directoryPath, { recursive: true, force: true });
+  }
+};
+
+const getFirstValue = <T>(values: Array<T | undefined>): T | undefined => (
+  _.find(values, (value) => !_.isNil(value))
+);
+
+const parsePythonResult = (stdout: string): Record<string, unknown> | undefined => (
+  _.findLast(
+    _.map(
+      _.split(_.trim(stdout), FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR),
+      (line) => {
+        const parsed = _.attempt(JSON.parse, line);
+        return _.isError(parsed) ? undefined : parsed;
+      },
+    ),
+    (result) => _.every([
+      !_.isNil(result),
+      _.has(result, FFMPEG_RENDER_KEYS.SUCCESS),
+    ], Boolean),
+  )
+);
 
 export interface FFmpegRenderOptions {
   scenes: Array<{
@@ -33,9 +59,9 @@ export interface FFmpegRenderOptions {
   projectId?: string;
 }
 
-const resolveLocalAssetBase64 = (assetUrl?: string): string | undefined => {
+const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   if (_.isEmpty(assetUrl) || _.startsWith(assetUrl, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX)) {
-    return assetUrl;
+    return undefined;
   }
   const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME);
   const cleanAssetUrl = _.first(_.split(assetUrl, SecurityConstants.QUERY_MARK));
@@ -53,16 +79,16 @@ const resolveLocalAssetBase64 = (assetUrl?: string): string | undefined => {
     _.startsWith(candidatePath, containedPathPrefix),
     fs.existsSync(candidatePath),
   ], Boolean)) {
-    return assetUrl;
+    return undefined;
   }
-  return fs.readFileSync(candidatePath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
+  return candidatePath;
 };
 
 export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<string> => {
-  const qualityVal = _.get(options, "quality", VideoQuality.LOW);
-  const aspectRatioVal = _.get(options, "aspectRatio");
-  const globalAudioUrlVal = _.get(options, "globalAudioUrl");
-  const scenesVal = _.get(options, "scenes");
+  const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.LOW);
+  const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
+  const globalAudioUrlVal = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_URL);
+  const scenesVal = _.get(options, FFMPEG_RENDER_KEYS.SCENES);
 
   if (_.isEmpty(scenesVal)) {
     throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_NO_SCENES);
@@ -76,10 +102,10 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
   const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
 
   const resolutionConfig = _.get(FFMPEG_RESOLUTIONS, qualityVal) || _.get(FFMPEG_RESOLUTIONS, VideoQuality.LOW);
-  const width = _.get(resolutionConfig, "width");
-  const height = _.get(resolutionConfig, "height");
-  const fps = _.get(resolutionConfig, "fps");
-  const bitrate = _.get(resolutionConfig, "bitrate");
+  const width = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.WIDTH);
+  const height = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.HEIGHT);
+  const fps = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.FPS);
+  const bitrate = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.BITRATE);
 
   let finalWidth = width;
   let finalHeight = height;
@@ -120,76 +146,71 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
     )
     : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
   
-  let globalAudioPath = SecurityConstants.EMPTY_STRING;
-  if (_.every([
-    !_.isEmpty(globalAudioUrlVal),
-    !_.startsWith(globalAudioUrlVal, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX),
-  ], Boolean)) {
-    const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME);
-    const cleanAudioUrl = _.first(_.split(globalAudioUrlVal, SecurityConstants.QUERY_MARK));
-    const relativeAudioPath = _.trimStart(cleanAudioUrl, REFACTOR_CONSTANTS.VD_SLASH);
-    const assetsPathPrefix = _.join(
-      [ASSETS_DIR_NAME, SecurityConstants.EMPTY_STRING],
-      REFACTOR_CONSTANTS.VD_SLASH,
-    );
-    const normalizedAudioPath = _.startsWith(relativeAudioPath, assetsPathPrefix)
-      ? _.slice(relativeAudioPath, _.size(assetsPathPrefix)).join(SecurityConstants.EMPTY_STRING)
-      : relativeAudioPath;
-    const candidatePath = path.resolve(assetsRoot, normalizedAudioPath);
-    const containedPathPrefix = _.join([assetsRoot, path.sep], SecurityConstants.EMPTY_STRING);
-    if (_.every([
-      _.startsWith(candidatePath, containedPathPrefix),
-      fs.existsSync(candidatePath),
-    ], Boolean)) {
-      globalAudioPath = candidatePath;
-    }
-  }
-  const renderScenes = _.map(scenesVal, (scene) => ({
-    ...scene,
-    imageBase64: resolveLocalAssetBase64(scene.imageBase64 || scene.imageUrl),
-  }));
+  const globalAudioPath = resolveLocalAssetPath(globalAudioUrlVal) || SecurityConstants.EMPTY_STRING;
+  const renderScenes = _.map(scenesVal, (scene) => {
+    const mediaSource = getFirstValue([scene.imageBase64, scene.imageUrl]);
+    const audioSource = getFirstValue([scene.audioBase64, scene.audioUrl]);
+    const mediaPath = resolveLocalAssetPath(mediaSource);
+    const audioPath = resolveLocalAssetPath(audioSource);
+    return {
+      ...scene,
+      [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : mediaSource,
+      [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : audioSource,
+      [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath,
+      [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
+    };
+  });
+  const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH)
+    ? SecurityConstants.DEFAULT_AMOUNT
+    : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;
 
   const config = {
-    tempDir,
-    ffmpegCmd: fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD,
-    width: finalWidth,
-    height: finalHeight,
-    fps,
-    bitrate,
-    finalOutputPath,
-    finalOutputUrl,
-    scenes: renderScenes,
-    globalAudioPath
+    [FFMPEG_RENDER_KEYS.TEMP_DIR]: tempDir,
+    [FFMPEG_RENDER_KEYS.FFMPEG_CMD]: fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD,
+    [FFMPEG_RENDER_KEYS.WIDTH]: finalWidth,
+    [FFMPEG_RENDER_KEYS.HEIGHT]: finalHeight,
+    [FFMPEG_RENDER_KEYS.FPS]: fps,
+    [FFMPEG_RENDER_KEYS.BITRATE]: bitrate,
+    [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_PATH]: finalOutputPath,
+    [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_URL]: finalOutputUrl,
+    [FFMPEG_RENDER_KEYS.SCENES]: renderScenes,
+    [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath,
+    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: _.min([maxSceneWorkers, _.size(renderScenes)]),
   };
 
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8);
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT),
+    FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8,
+  );
 
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.SCRIPT_PATH);
 
   try {
-    const { stdout } = await execAsync(`"${pyCmd}" "${scriptPath}" "${configPath}"`);
-    const outputLines = stdout.trim().split("\n");
-    let result = null;
-    for (let i = outputLines.length - 1; i >= 0; i--) {
-      try {
-        result = JSON.parse(outputLines[i]);
-        if (_.has(result, "success")) break;
-      } catch (e) {}
-    }
+    const { stdout } = await execFileAsync(
+      pyCmd,
+      [scriptPath, configPath],
+      {
+        windowsHide: true,
+        maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
+      },
+    );
+    const result = parsePythonResult(stdout);
 
-    if (result && _.get(result, "success")) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-      return _.get(result, "url");
-    } else {
-      throw new Error(result ? _.get(result, "error") : FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON);
+    if (_.every([result, _.get(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean)) {
+      cleanupDirectory(tempDir);
+      return _.toString(_.get(result, FFMPEG_RENDER_KEYS.URL));
     }
+    throw new Error(
+      result
+        ? _.toString(_.get(result, FFMPEG_RENDER_KEYS.ERROR))
+        : FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON,
+    );
   } catch (err: any) {
     logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER, err);
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }
+    cleanupDirectory(tempDir);
     throw err;
   }
 };

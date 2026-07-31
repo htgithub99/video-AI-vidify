@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -1030,6 +1030,44 @@ async function applyBatchDelay(visualConfig: any): Promise<number> {
   return ms;
 }
 
+const createGeminiBatchPage = async (context: any): Promise<Page> => {
+  const page = await context.newPage();
+  await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+    waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
+    timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+  });
+  await randomDelay(
+    GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
+    GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
+  );
+  return page;
+};
+
+const prepareGeminiBatchPage = async (page: Page, index: number): Promise<void> => {
+  const tabNumber = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
+  try {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace(
+      SecurityConstants.PLACEHOLDER_0,
+      _.toString(tabNumber),
+    ));
+    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+      waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
+      timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+    });
+    await randomDelay(
+      GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
+      GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
+    );
+    batchPagesErrors.set(page, SecurityConstants.ZERO);
+  } catch (error: any) {
+    appError(
+      BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR
+        .replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber))
+        .replace(SecurityConstants.PLACEHOLDER_1, error.message),
+    );
+  }
+};
+
 export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[], visualConfig: any, style?: string, onProgress?: (result: BatchImageResult) => void): Promise<BatchImageResult[]> {
   if (!items || items.length === 0) {
     return [];
@@ -1080,28 +1118,28 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     if (_.size(globalBatchPages) < maxTabs) {
       const needed = maxTabs - _.size(globalBatchPages);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
-      for (let i = 0; i < needed; i++) {
-        const newPage = await context.newPage();
-        await newPage.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
-        await randomDelay(2000, 4000);
-        globalBatchPages.push(newPage);
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT.replace("{0}", _.size(globalBatchPages).toString()).replace("{1}", maxTabs.toString()));
-      }
+      const newPages = await Promise.all(_.map(
+        _.range(needed),
+        async () => createGeminiBatchPage(context),
+      ));
+      const existingPageCount = _.size(globalBatchPages);
+      globalBatchPages.push(...newPages);
+      _.forEach(newPages, (_page, index) => {
+        const tabNumber = _.add(
+          _.add(existingPageCount, index),
+          SecurityConstants.DEFAULT_AMOUNT,
+        );
+        appLog(
+          BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT
+            .replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber))
+            .replace(SecurityConstants.PLACEHOLDER_1, _.toString(maxTabs)),
+        );
+      });
     }
 
     const activePages = globalBatchPages.slice(0, maxTabs);
 
-    for (let i = 0; i < activePages.length; i++) {
-      const page = activePages[i];
-      try {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace("{0}", (i + 1).toString()));
-        await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
-        await randomDelay(2000, 4000);
-        batchPagesErrors.set(page, 0);
-      } catch (err: any) {
-        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR.replace("{0}", (i + 1).toString()).replace("{1}", err.message));
-      }
-    }
+    await Promise.all(_.map(activePages, prepareGeminiBatchPage));
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
@@ -1635,7 +1673,6 @@ async function waitForGeminiFinished(page: Page, visualConfig: any, timeoutMs = 
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
   }
 
-  await page.waitForTimeout(3000);
 }
 
 async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<string | null> {

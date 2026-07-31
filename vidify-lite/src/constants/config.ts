@@ -56,9 +56,47 @@ export const FFMPEG_RENDER_CONSTANTS = {
   SCRIPT_PATH: "python_scripts/ffmpeg_render.py",
   ENCODING_UTF8: "utf-8",
   FFMPEG_FALLBACK_CMD: "ffmpeg",
+  MAX_SCENE_WORKERS: 2,
+  PARALLEL_RENDER_MAX_WIDTH: 1920,
+  PYTHON_MAX_BUFFER_BYTES: 1048576,
+  JSON_INDENT: 2,
+  OUTPUT_LINE_SEPARATOR: "\n",
   LOG_ERROR_RENDER: "FFMPEG Python Render Error",
   LOG_ERROR_RENDER_ROUTE: "FFMPEG Render Route Error",
   ERR_UNKNOWN_PYTHON: "Unknown error from Python script",
+} as const;
+
+export const FFMPEG_RENDER_KEYS = {
+  QUALITY: "quality",
+  ASPECT_RATIO: "aspectRatio",
+  GLOBAL_AUDIO_URL: "globalAudioUrl",
+  SCENES: "scenes",
+  WIDTH: "width",
+  HEIGHT: "height",
+  FPS: "fps",
+  BITRATE: "bitrate",
+  IMAGE_BASE64: "imageBase64",
+  IMAGE_URL: "imageUrl",
+  AUDIO_BASE64: "audioBase64",
+  AUDIO_URL: "audioUrl",
+  MEDIA_PATH: "mediaPath",
+  AUDIO_PATH: "audioPath",
+  TEMP_DIR: "tempDir",
+  FFMPEG_CMD: "ffmpegCmd",
+  FINAL_OUTPUT_PATH: "finalOutputPath",
+  FINAL_OUTPUT_URL: "finalOutputUrl",
+  GLOBAL_AUDIO_PATH: "globalAudioPath",
+  MAX_SCENE_WORKERS: "maxSceneWorkers",
+  SUCCESS: "success",
+  URL: "url",
+  ERROR: "error",
+} as const;
+
+export const GEMINI_BATCH_SETUP_CONFIG = {
+  WAIT_UNTIL: "commit" as const,
+  NAVIGATION_TIMEOUT_MS: 60000,
+  DELAY_MIN_MS: 2000,
+  DELAY_MAX_MS: 4000,
 } as const;
 
 export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {

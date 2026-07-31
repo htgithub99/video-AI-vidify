@@ -128,6 +128,12 @@ if (fs.existsSync(ffmpegBinary)) {
   ffmpeg.setFfmpegPath(ffmpegBinary);
 }
 
+const waitForNextTtsPoll = async (attempts: number): Promise<void> => {
+  if (_.lt(attempts, TTS_POLLING_CONFIG.MAX_ATTEMPTS)) {
+    await delayAsync(TTS_POLLING_CONFIG.INTERVAL_MS);
+  }
+};
+
 import { LicenseService } from "../services/licenseService.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
 import { FeatureType, SecurityConstants } from "../../constants/security.js";
@@ -1588,7 +1594,6 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     let audioUrl = null;
     let attempts = 0;
     while (attempts < TTS_POLLING_CONFIG.MAX_ATTEMPTS) {
-      await delayAsync(TTS_POLLING_CONFIG.INTERVAL_MS);
       let pollRes;
       try {
         pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
@@ -1600,6 +1605,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
       } catch (fetchErr: any) {
         logger.warn(getMessage("TTS_FETCH_POLLING_ERROR", undefined, fetchErr.message));
         attempts++;
+        await waitForNextTtsPoll(attempts);
         continue;
       }
 
@@ -1610,6 +1616,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
         }
         logger.warn(getMessage("TTS_POLLING_FAILED_RETRYING", undefined, `${pollRes.status} - ${errText}`));
         attempts++;
+        await waitForNextTtsPoll(attempts);
         continue;
       }
 
@@ -1622,6 +1629,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
         throw new Error(getMessage("TTS_TASK_ERROR_MSG", undefined, pollData.error_message));
       }
       attempts++;
+      await waitForNextTtsPoll(attempts);
     }
 
     if (!audioUrl) {
