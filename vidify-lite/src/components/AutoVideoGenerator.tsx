@@ -1849,7 +1849,7 @@ export default function AutoVideoGenerator({
                 </div>
 
                 {_.isEqual(generateType, GenerateType.Mixed) && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="max-w-xs">
                     <div className="space-y-1">
                       <span
                         className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block"

@@ -6,6 +6,7 @@ import subprocess
 import traceback
 import math
 import random
+import re
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
@@ -34,6 +35,24 @@ class FFMPEG_CONSTANTS:
     IMAGE_EXTENSION = ".jpg"
     VIDEO_EXTENSION = ".mp4"
     VIDEO_SCALE_FILTER = "scale={0}:{1}:force_original_aspect_ratio=increase,crop={0}:{1},fps={2},setsar=1"
+    VIDEO_TRIM_FILTER = "trim=start={0}:end={1},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={2}"
+    VIDEO_TRIM_START_FILTER = "trim=start={0},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={1}"
+    FFPROBE_NAME = "ffprobe"
+    FFPROBE_EXE_NAME = "ffprobe.exe"
+    WINDOWS_EXECUTABLE_EXTENSION = ".exe"
+    FFPROBE_LOG_LEVEL = "error"
+    FFPROBE_DURATION_ENTRY = "format=duration"
+    FFPROBE_OUTPUT_FORMAT = "default=noprint_wrappers=1:nokey=1"
+    PROBE_TIMEOUT_SECONDS = 15
+    DURATION_PATTERN = r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)"
+    DURATION_HOURS_GROUP = 1
+    DURATION_MINUTES_GROUP = 2
+    DURATION_SECONDS_GROUP = 3
+    MINUTES_PER_HOUR = 60
+    SECONDS_PER_MINUTE = 60
+    DEFAULT_TRIM_SECONDS = 0.25
+    MIN_USABLE_VIDEO_SECONDS = 0.5
+    ZERO_SECONDS = 0.0
     DEFAULT_MAX_WORKERS = 1
     INDEX_PADDING = 3
     DEFAULT_SCENE_DURATION = 5
@@ -49,6 +68,8 @@ class FFMPEG_CONSTANTS:
     KEY_CAMERA_MOTION = "cameraMotion"
     KEY_EFFECTS = "effects"
     KEY_MAX_SCENE_WORKERS = "maxSceneWorkers"
+    KEY_VIDEO_TRIM_START_SECONDS = "videoTrimStartSeconds"
+    KEY_VIDEO_TRIM_END_SECONDS = "videoTrimEndSeconds"
     TEMP_MEDIA_TEMPLATE = "media_{0}{1}"
     TEMP_AUDIO_TEMPLATE = "audio_{0}.mp3"
     PART_FILE_TEMPLATE = "part_{0}.mp4"
@@ -94,6 +115,87 @@ class FFMPEG_CONSTANTS:
     COLOR_COLD_TINT_RGB = (100, 140, 240)
     COLOR_WARM_TINT_RGB = (255, 200, 150)
     COLOR_GLOW_TINT_RGB = (255, 140, 0)
+
+def get_ffprobe_command(ffmpeg_cmd):
+    ffmpeg_directory = os.path.dirname(ffmpeg_cmd)
+    ffmpeg_name = os.path.basename(ffmpeg_cmd).lower()
+    ffprobe_name = (
+        FFMPEG_CONSTANTS.FFPROBE_EXE_NAME
+        if ffmpeg_name.endswith(FFMPEG_CONSTANTS.WINDOWS_EXECUTABLE_EXTENSION)
+        else FFMPEG_CONSTANTS.FFPROBE_NAME
+    )
+    sibling_path = os.path.join(ffmpeg_directory, ffprobe_name) if ffmpeg_directory else ffprobe_name
+    return sibling_path if os.path.exists(sibling_path) else ffprobe_name
+
+def get_media_duration(ffmpeg_cmd, media_path):
+    command = [
+        get_ffprobe_command(ffmpeg_cmd),
+        "-v",
+        FFMPEG_CONSTANTS.FFPROBE_LOG_LEVEL,
+        "-show_entries",
+        FFMPEG_CONSTANTS.FFPROBE_DURATION_ENTRY,
+        "-of",
+        FFMPEG_CONSTANTS.FFPROBE_OUTPUT_FORMAT,
+        media_path,
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=FFMPEG_CONSTANTS.PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+        duration = max(float(result.stdout.strip()), FFMPEG_CONSTANTS.ZERO_SECONDS)
+        if duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+            return duration
+    except (OSError, ValueError, subprocess.SubprocessError):
+        pass
+    try:
+        result = subprocess.run(
+            [ffmpeg_cmd, "-i", media_path],
+            capture_output=True,
+            text=True,
+            timeout=FFMPEG_CONSTANTS.PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+        match = re.search(FFMPEG_CONSTANTS.DURATION_PATTERN, result.stderr)
+        if not match:
+            return FFMPEG_CONSTANTS.ZERO_SECONDS
+        hours = float(match.group(FFMPEG_CONSTANTS.DURATION_HOURS_GROUP))
+        minutes = float(match.group(FFMPEG_CONSTANTS.DURATION_MINUTES_GROUP))
+        seconds = float(match.group(FFMPEG_CONSTANTS.DURATION_SECONDS_GROUP))
+        return (
+            hours
+            * FFMPEG_CONSTANTS.MINUTES_PER_HOUR
+            * FFMPEG_CONSTANTS.SECONDS_PER_MINUTE
+            + minutes * FFMPEG_CONSTANTS.SECONDS_PER_MINUTE
+            + seconds
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return FFMPEG_CONSTANTS.ZERO_SECONDS
+
+def get_video_trim_filter(ffmpeg_cmd, media_path, trim_start, trim_end, output_duration):
+    source_duration = get_media_duration(ffmpeg_cmd, media_path)
+    safe_start = max(float(trim_start), FFMPEG_CONSTANTS.ZERO_SECONDS)
+    safe_end = max(float(trim_end), FFMPEG_CONSTANTS.ZERO_SECONDS)
+    if source_duration <= FFMPEG_CONSTANTS.ZERO_SECONDS:
+        return FFMPEG_CONSTANTS.VIDEO_TRIM_START_FILTER.format(safe_start, output_duration)
+    maximum_trim = max(
+        source_duration - FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS,
+        FFMPEG_CONSTANTS.ZERO_SECONDS,
+    )
+    safe_start = min(safe_start, maximum_trim)
+    safe_end = min(safe_end, maximum_trim - safe_start)
+    end_position = max(
+        safe_start + FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS,
+        source_duration - safe_end,
+    )
+    return FFMPEG_CONSTANTS.VIDEO_TRIM_FILTER.format(
+        safe_start,
+        end_position,
+        output_duration,
+    )
 
 def ease_hermite(t):
     return t * t * (3.0 - 2.0 * t)
@@ -644,6 +746,14 @@ def main():
         finalOutputPath = config.get("finalOutputPath")
         finalOutputUrl = config.get("finalOutputUrl")
         scenes = config.get("scenes", [])
+        video_trim_start = config.get(
+            FFMPEG_CONSTANTS.KEY_VIDEO_TRIM_START_SECONDS,
+            FFMPEG_CONSTANTS.DEFAULT_TRIM_SECONDS,
+        )
+        video_trim_end = config.get(
+            FFMPEG_CONSTANTS.KEY_VIDEO_TRIM_END_SECONDS,
+            FFMPEG_CONSTANTS.DEFAULT_TRIM_SECONDS,
+        )
         
         if not os.path.exists(tempDir):
             os.makedirs(tempDir, exist_ok=True)
@@ -714,6 +824,11 @@ def main():
                     f.write(base64.b64decode(audio_data))
                 hasAudio = True
                 audio_owned = True
+
+            if hasAudio:
+                audio_duration = get_media_duration(ffmpegCmd, audioPath)
+                if audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                    duration = audio_duration
             
             scene_media_paths.append(mediaPath)
             scene_is_video.append(is_video)
@@ -760,7 +875,7 @@ def main():
             actual_duration = (total_frames + transition_frames) / fps
             
             if is_video:
-                cmd = [ffmpegCmd, "-y", "-stream_loop", "-1", "-i", mediaPath]
+                cmd = [ffmpegCmd, "-y", "-i", mediaPath]
             else:
                 cmd = [
                     ffmpegCmd, "-y",
@@ -788,6 +903,13 @@ def main():
             video_filter = vf_effect
             if is_video:
                 video_filter = ",".join([
+                    get_video_trim_filter(
+                        ffmpegCmd,
+                        mediaPath,
+                        video_trim_start,
+                        video_trim_end,
+                        actual_duration,
+                    ),
                     FFMPEG_CONSTANTS.VIDEO_SCALE_FILTER.format(width, height, fps),
                     vf_effect,
                 ])

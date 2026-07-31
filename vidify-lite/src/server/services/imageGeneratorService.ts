@@ -15,6 +15,7 @@ import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationM
 import { Locator, Page } from "playwright";
 import { delayAsync } from "../../lib/shared-utils.js";
 import _ from "lodash";
+import { removeVideoAudioTrack } from "../utils/videoAssetProcessor.js";
 
 export async function smoothMouseMove(page: Page, locator: Locator) {
   try {
@@ -1663,14 +1664,37 @@ async function waitForGeminiFinished(page: Page, visualConfig: any, timeoutMs = 
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_TIMEOUT);
   }
 
+  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  const mediaSelector = isVideoGeneration
+    ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO
+    : GEMINI_CHAT_MEDIA_SELECTORS.image;
+  const mediaContainer = latestResponse.locator(mediaSelector).first();
+
+  if (isVideoGeneration && !(await mediaContainer.isVisible())) {
+    const processingIndicator = latestResponse
+      .locator(GEMINI_CHAT_VIDEO_SELECTORS.PROCESSING)
+      .first();
+    try {
+      await processingIndicator.waitFor({
+        state: "attached",
+        timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.PROCESSING_APPEAR_TIMEOUT_MS,
+      });
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
+    } catch (error) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
+    }
+  }
+
   try {
-    const mediaSelector = _.isEqual(visualConfig?.generateType, GenerateType.Video)
-      ? GEMINI_CHAT_MEDIA_SELECTORS.video
-      : GEMINI_CHAT_MEDIA_SELECTORS.image;
-    const mediaContainer = latestResponse.locator(mediaSelector).first();
-    await mediaContainer.waitFor({ state: "attached", timeout: 45000 });
-  } catch (e) {
+    await mediaContainer.waitFor({
+      state: "visible",
+      timeout: isVideoGeneration
+        ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS
+        : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS,
+    });
+  } catch (error) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
+    throw error;
   }
 
 }
@@ -1680,12 +1704,16 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
     const tagName = await mediaElement.evaluate((el: HTMLElement) => el.tagName.toLowerCase());
 
     let src = "";
-    for (let i = 0; i < 30; i++) {
+    for (
+      let i = SecurityConstants.ZERO;
+      i < GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_SOURCE_POLL_ATTEMPTS;
+      i = _.add(i, SecurityConstants.DEFAULT_AMOUNT)
+    ) {
       src = await mediaElement.evaluate((el: any) => el.src || el.getAttribute("src") || "");
       if (src.startsWith("blob:") || src.startsWith("http") || src.startsWith("data:")) {
         break;
       }
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_SOURCE_POLL_MS);
     }
 
     if (!src) {
@@ -1784,13 +1812,19 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: any, initia
     }
   }
 
-  const mediaLoc = latestResponse.locator(GEMINI_CHAT_MEDIA_SELECTORS.all).first();
+  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  const mediaSelector = isVideoGeneration
+    ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO
+    : GEMINI_CHAT_MEDIA_SELECTORS.image;
+  const mediaLoc = latestResponse.locator(mediaSelector).first();
   await mediaLoc.waitFor({ state: "visible", timeout: 30000 });
 
   const base64 = await getBase64FromBlobUrl(page, mediaLoc);
   if (base64) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
-    return base64;
+    return isVideoGeneration
+      ? removeVideoAudioTrack(base64)
+      : base64;
   }
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);

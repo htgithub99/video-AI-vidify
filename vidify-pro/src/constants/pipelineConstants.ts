@@ -1,4 +1,4 @@
-// Constants for Pipeline components
+import { MEDIA_MIX_CONFIG } from "./loading";
 
 export const PipelineConstants = {
   DEFAULT_VOICE_CONFIG: {
@@ -43,6 +43,7 @@ export const PipelineConstants = {
     assetsMode: "mixed",
     imageGeneratorEngine: "veo3",
     generateType: "image",
+    maxVideoScenes: MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS,
     aspectRatio: "16:9",
     promptInputMethod: "paste",
     generateCount: 1,

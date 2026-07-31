@@ -59,6 +59,7 @@ export const FFMPEG_RENDER_CONSTANTS = {
   MAX_SCENE_WORKERS: 2,
   PARALLEL_RENDER_MAX_WIDTH: 1920,
   PYTHON_MAX_BUFFER_BYTES: 1048576,
+  MIN_USABLE_VIDEO_SECONDS: 0.5,
   JSON_INDENT: 2,
   OUTPUT_LINE_SEPARATOR: "\n",
   LOG_ERROR_RENDER: "FFMPEG Python Render Error",
@@ -87,6 +88,8 @@ export const FFMPEG_RENDER_KEYS = {
   FINAL_OUTPUT_URL: "finalOutputUrl",
   GLOBAL_AUDIO_PATH: "globalAudioPath",
   MAX_SCENE_WORKERS: "maxSceneWorkers",
+  VIDEO_TRIM_START_SECONDS: "videoTrimStartSeconds",
+  VIDEO_TRIM_END_SECONDS: "videoTrimEndSeconds",
   SUCCESS: "success",
   URL: "url",
   ERROR: "error",
@@ -111,12 +114,31 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   ASPECT_DELAY_MAX_MS: 900,
   UPLOAD_DELAY_MIN_MS: 1200,
   UPLOAD_DELAY_MAX_MS: 2000,
+  PROCESSING_APPEAR_TIMEOUT_MS: 15000,
+  MEDIA_READY_TIMEOUT_MS: 45000,
+  VIDEO_READY_TIMEOUT_MS: 600000,
+  VIDEO_SOURCE_POLL_MS: 500,
+  VIDEO_SOURCE_POLL_ATTEMPTS: 30,
 } as const;
 
 export const GEMINI_CHAT_VIDEO_SELECTORS = {
   ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
   ASPECT_OPTIONS: '[role="menuitemradio"]',
   REFERENCE_INPUT: 'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+  PROCESSING: "async-processing-chip",
+  GENERATED_VIDEO: "generated-video video[src]",
+} as const;
+
+export const GEMINI_VIDEO_PROCESS_CONFIG = {
+  TEMP_DIR_PREFIX: "gemini-video-",
+  INPUT_FILE_NAME: "source.mp4",
+  OUTPUT_FILE_NAME: "silent.mp4",
+  FFMPEG_BINARY_NAME: "ffmpeg.exe",
+  FFMPEG_FALLBACK_COMMAND: "ffmpeg",
+  FFMPEG_ARGS_BEFORE_INPUT: ["-y", "-i"],
+  FFMPEG_ARGS_AFTER_INPUT: ["-map", "0:v:0", "-c:v", "copy", "-an", "-movflags", "+faststart"],
+  MAX_BUFFER_BYTES: 1048576,
+  ERROR_REMOVE_AUDIO: "Không thể loại bỏ âm thanh video cảnh",
 } as const;
 
 export const GEMINI_CHAT_PACING_CONFIG = {

@@ -10,6 +10,7 @@ import { VideoQuality } from "../../constants/enums.js";
 import { GenerateType } from "../../types.js";
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
+import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -176,6 +177,8 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
     [FFMPEG_RENDER_KEYS.SCENES]: renderScenes,
     [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath,
     [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: _.min([maxSceneWorkers, _.size(renderScenes)]),
+    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
+    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
   };
 
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);

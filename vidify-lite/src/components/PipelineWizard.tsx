@@ -543,7 +543,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                       <select
                         value={project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS}
                         onChange={(event) => updateVisualConfig({ maxVideoScenes: _.toInteger(event.target.value) })}
-                        className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
+                        className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 px-2 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
                       >
                         {_.map(MEDIA_MIX_CONFIG.VIDEO_COUNT_OPTIONS, (count) => (
                           <option key={count} value={count} className="bg-slate-900 text-slate-200">{count}</option>

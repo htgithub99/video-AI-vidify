@@ -386,7 +386,7 @@ export enum GeminiChatSelector {
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
   image: '.attachment-container.generated-images, download-generated-image-button, img.loaded',
-  video: 'video',
+  video: 'generated-video video[src]',
   all: 'img, video',
 } as const;
 
