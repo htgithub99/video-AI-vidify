@@ -1883,8 +1883,27 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
-        const urlPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}`;
-        cmd += ` "${outputDir}" "${urlPrefix}"`;
+        _.forEach(
+          _.filter(
+            fs.readdirSync(outputDir),
+            (fileName) => {
+              if (!ALIGN_CONFIG.LEGACY_SEGMENT_FILE_REGEX.test(fileName)) return false;
+              const canonicalFileName = _.replace(
+                fileName,
+                ALIGN_CONFIG.LEGACY_SEGMENT_PREFIX,
+                REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              );
+              return fs.existsSync(path.join(outputDir, canonicalFileName));
+            },
+          ),
+          (fileName) => {
+            try {
+              fs.unlinkSync(path.join(outputDir, fileName));
+            } catch (error) {
+              logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, error);
+            }
+          },
+        );
       }
       logger.log(`Running voice aligner command: ${cmd}`);
 
@@ -1923,11 +1942,6 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           fs.unlinkSync(outputPath);
 
           if (segment && projectId && result.success && _.isArray(result.alignments)) {
-            const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
-            if (!fs.existsSync(outputDir)) {
-              fs.mkdirSync(outputDir, { recursive: true });
-            }
-
             const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
               return new Promise<void>((resolve) => {
                 const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
@@ -1948,13 +1962,13 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               if (!_.isNil(startVal) && !_.isNil(endVal)) {
                 const idStr = String(align.id);
                 const cleanId = _.startsWith(idStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? idStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : idStr;
-                const fileName = `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
-                const outPath = path.join(outputDir, fileName);
+                const fileName = `${ALIGN_CONFIG.SEGMENT_PREFIX}${sessionId}_${cleanId}${ALIGN_CONFIG.WAV_EXT}`;
+                const outPath = path.join(tempDir, fileName);
                 await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
                 if (fs.existsSync(outPath)) {
                   const slicedBuffer = fs.readFileSync(outPath);
                   align.audioBase64 = slicedBuffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-                  align.audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${ALIGN_CONFIG.VOICES_DIR}/${fileName}`;
+                  fs.unlinkSync(outPath);
                 }
               }
             }

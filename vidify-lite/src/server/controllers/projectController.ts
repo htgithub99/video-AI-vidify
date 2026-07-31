@@ -5,7 +5,7 @@ import { ProjectKind, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -282,6 +282,27 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
         voiceConfig = processed;
       }
     }
+
+    _.forEach(
+      _.filter(fs.readdirSync(audioDir), (fileName) => {
+        if (!ALIGN_CONFIG.LEGACY_SEGMENT_FILE_REGEX.test(fileName)) return false;
+        const canonicalFileName = _.replace(
+          fileName,
+          ALIGN_CONFIG.LEGACY_SEGMENT_PREFIX,
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        );
+        return fs.existsSync(path.join(audioDir, canonicalFileName));
+      }),
+      (fileName) => {
+        const legacyFilePath = path.join(audioDir, fileName);
+        try {
+          fs.unlinkSync(legacyFilePath);
+          appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${legacyFilePath}`);
+        } catch (error) {
+          appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${legacyFilePath}`, error);
+        }
+      },
+    );
 
     if (storyboardUpdated || thumbnailsUpdated || voiceConfigUpdated) {
       const updatedProject: VideoProject = { ...project, updatedAt: new Date().toISOString() };

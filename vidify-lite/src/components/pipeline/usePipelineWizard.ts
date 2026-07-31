@@ -26,7 +26,7 @@ import { CAPCUT_CONFIG } from "../../constants/capcut";
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
-import { createProjectImageUrl, generateProjectImages, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
+import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -1201,6 +1201,18 @@ export function usePipelineWizard(props: any) {
   const lastProjectIdRef = useRef<string | null>(null);
   const lastUpdatedAtRef = useRef<string | null>(null);
   const cancelBatchImageRef = useRef<boolean>(false);
+  const imageCheckpointQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+  const persistImageCheckpoint = useCallback((checkpointProject: VideoProject): void => {
+    const projectSnapshot = _.cloneDeep(checkpointProject);
+    imageCheckpointQueueRef.current = imageCheckpointQueueRef.current
+      .then(async () => {
+        await onSaveProject(projectSnapshot, true);
+      })
+      .catch((error) => {
+        logger.error(ERROR_MESSAGES.AUTO_SAVE_ERR, error);
+      });
+  }, [onSaveProject]);
 
   useEffect(() => {
     if (!initialProject) return;
@@ -2633,13 +2645,10 @@ export function usePipelineWizard(props: any) {
       return;
     }
 
-    let targetScenes = scenes.filter((s) => {
-      const urls = s.assetUrls || (s.assetUrl ? [s.assetUrl] : []);
-      return _.isEmpty(urls);
-    });
-
+    const targetScenes = _.filter(scenes, (scene) => !hasSceneAsset(scene));
     if (_.isEmpty(targetScenes)) {
-      targetScenes = [...scenes];
+      setInfoMsg(t.imagesAlreadyComplete);
+      return;
     }
 
     setIsBatchGenerating(true);
@@ -2657,7 +2666,7 @@ export function usePipelineWizard(props: any) {
     const existingVideoCount = _.size(_.filter(
       scenes,
       (scene) => _.isEqual(scene.assetType, GenerateType.Video)
-        && !_.isEmpty(scene.assetUrl),
+        && hasSceneAsset(scene),
     ));
     const remainingVideoSlots = _.max([
       _.subtract(
@@ -2709,9 +2718,7 @@ export function usePipelineWizard(props: any) {
               return sc;
             });
             const updatedProject = { ...prev, storyboard: updated };
-            setTimeout(() => {
-              onSaveProject(updatedProject, true);
-            }, SecurityConstants.ZERO);
+            persistImageCheckpoint(updatedProject);
             return updatedProject;
           });
           completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);

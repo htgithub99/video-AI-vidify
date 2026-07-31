@@ -70,8 +70,11 @@ export const ALIGN_CONFIG = {
   AUDIO_PREFIX: "audio_",
   SCENES_PREFIX: "scenes_",
   OUTPUT_PREFIX: "output_",
+  SEGMENT_PREFIX: "segment_",
+  LEGACY_SEGMENT_PREFIX: "scene_",
   WAV_EXT: ".wav",
   JSON_EXT: ".json",
+  LEGACY_SEGMENT_FILE_REGEX: /^scene_sc_.+\.wav$/,
 };
 
 export const EXPORT_ZIP_CONFIG = {

@@ -39,6 +39,13 @@ export interface ProjectImageGenerationSummary {
   cancelled: boolean;
 }
 
+export const hasSceneAsset = (scene: Pick<StoryboardScene, "assetUrl" | "assetUrls">): boolean => (
+  _.some(
+    [scene.assetUrl, ..._.castArray(scene.assetUrls || [])],
+    (assetUrl) => !_.isEmpty(assetUrl),
+  )
+);
+
 const hasImageResult = (result?: ProjectImageResult): boolean => (
   _.every([
     result?.success,

@@ -17,7 +17,7 @@ import { formatTimeHelper } from "../utils/helpers";
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import { safeSystemFetch, readFilesAsDataURL } from "../lib/shared-utils";
 import { blobToBase64 } from "../lib/fileUtils";
-import { createProjectImageUrl, generateProjectImages, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
+import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
 import {
   Zap,
   Sparkles,
@@ -978,7 +978,7 @@ export default function AutoVideoGenerator({
       };
 
       const targetScenesToGen = _.filter(realScenes, (sc) => {
-        if (resumeMode && (!_.isEmpty(sc.assetUrl) || !_.isEmpty(sc.assetUrls))) {
+        if (resumeMode && hasSceneAsset(sc)) {
           return false;
         }
         return true;
@@ -986,7 +986,7 @@ export default function AutoVideoGenerator({
       const existingVideoCount = _.size(_.filter(
         realScenes,
         (scene) => _.isEqual(scene.assetType, GenerateType.Video)
-          && !_.isEmpty(scene.assetUrl),
+          && hasSceneAsset(scene),
       ));
       const remainingVideoSlots = _.max([
         _.subtract(maxVideoScenes, existingVideoCount),
@@ -1000,11 +1000,23 @@ export default function AutoVideoGenerator({
 
       if (resumeMode) {
         realScenes.forEach((sc, idx) => {
-          if (!_.isEmpty(sc.assetUrl) || !_.isEmpty(sc.assetUrls)) {
+          if (hasSceneAsset(sc)) {
             appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length));
           }
         });
       }
+
+      let imageCheckpointQueue = Promise.resolve();
+      const persistImageCheckpoint = (): Promise<void> => {
+        const checkpointProject = {
+          ...voiceUpdatedProj,
+          storyboard: _.cloneDeep(realScenes),
+        };
+        imageCheckpointQueue = imageCheckpointQueue.then(
+          () => syncProject(checkpointProject),
+        );
+        return imageCheckpointQueue;
+      };
 
       if (targetScenesToGen.length > 0) {
 
@@ -1030,54 +1042,59 @@ export default function AutoVideoGenerator({
                 completedCount,
                 _.size(targetScenesToGen),
               ));
+              void persistImageCheckpoint();
             }
           };
 
-          await generateProjectImages({
-            items: batchItems,
-            visualConfig: visualConfigPayload,
-            style: currentStylePreset,
-            sandboxConfig: sandboxConfigPayload,
-            createFallbackPayload: (item) => ({
-              prompt: item.prompt,
+          try {
+            await generateProjectImages({
+              items: batchItems,
+              visualConfig: visualConfigPayload,
               style: currentStylePreset,
-              resolution: voiceUpdatedProj.visualConfig?.quality
-                || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-              bypassCache: false,
-              engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
               sandboxConfig: sandboxConfigPayload,
-              visualConfig: {
-                ...visualConfigPayload,
-                generateType: item.generateType,
+              createFallbackPayload: (item) => ({
+                prompt: item.prompt,
+                style: currentStylePreset,
+                resolution: voiceUpdatedProj.visualConfig?.quality
+                  || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                bypassCache: false,
+                engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+                sandboxConfig: sandboxConfigPayload,
+                visualConfig: {
+                  ...visualConfigPayload,
+                  generateType: item.generateType,
+                },
+              }),
+              onBatchResult: (result) => {
+                if (result.success) {
+                  applyResult(result);
+                  return;
+                }
+                appendLog(T.logBatchImageSceneError(
+                  result.sceneId || REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID,
+                  result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+                ));
               },
-            }),
-            onBatchResult: (result) => {
-              if (result.success) {
-                applyResult(result);
-                return;
-              }
-              appendLog(T.logBatchImageSceneError(
-                result.sceneId || REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID,
-                result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-              ));
-            },
-            onFallbackStart: (error) => appendLog(T.logBatchStreamErrorFallback(error.message)),
-            onFallbackItemStart: (_item, index, total) => appendLog(
-              AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
-                .replace(
-                  SecurityConstants.PLACEHOLDER_0,
-                  _.toString(_.add(index, SecurityConstants.DEFAULT_AMOUNT)),
-                )
-                .replace(SecurityConstants.PLACEHOLDER_1, _.toString(total)),
-            ),
-            onFallbackResult: (result) => {
-              if (result.success) {
-                applyResult(result);
-                return;
-              }
-              appendLog(T.logFallbackSceneError(result.sceneId));
-            },
-          });
+              onFallbackStart: (error) => appendLog(T.logBatchStreamErrorFallback(error.message)),
+              onFallbackItemStart: (_item, index, total) => appendLog(
+                AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
+                  .replace(
+                    SecurityConstants.PLACEHOLDER_0,
+                    _.toString(_.add(index, SecurityConstants.DEFAULT_AMOUNT)),
+                  )
+                  .replace(SecurityConstants.PLACEHOLDER_1, _.toString(total)),
+              ),
+              onFallbackResult: (result) => {
+                if (result.success) {
+                  applyResult(result);
+                  return;
+                }
+                appendLog(T.logFallbackSceneError(result.sceneId));
+              },
+            });
+          } finally {
+            await imageCheckpointQueue;
+          }
         } else {
           for (let i = 0; i < targetScenesToGen.length; i++) {
             const sc = targetScenesToGen[i];
@@ -1120,6 +1137,7 @@ export default function AutoVideoGenerator({
                   sc.assetUrls = [fallbackUrl];
                 }
                 sc.assetType = sceneGenerateType;
+                await persistImageCheckpoint();
               } else {
                 throw new Error(
                   imgRes.error
