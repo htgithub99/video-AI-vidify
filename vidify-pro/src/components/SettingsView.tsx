@@ -1,7 +1,7 @@
 import { cn } from "../lib/utils";
 import { useState, useEffect } from "react";
 import { Lang, translations } from "../lib/lang.js";
-import { STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, STORAGE_KEYS, CURL_AUTHORIZATION_BEARER_REGEX, CURL_AUTHORIZATION_JSON_REGEX, CURL_BEARER_TOKEN_REGEX, CURL_PROJECT_ID_BODY_REGEX, CURL_PROJECT_ID_URL_REGEX, CURL_CLIENT_SESSION_ID_REGEX, CURL_SESSION_ID_REGEX, CURL_RECAPTCHA_TOKEN_REGEX, CURL_AGENT_SESSION_ID_REGEX, COMMON_STRINGS, SETTINGS_TEXTS, CURL_KEYWORDS, REFACTOR_CONSTANTS } from "../constants";
 import { appError } from "../lib/logger.js";
 import { Key, Shield, Save, CheckCircle2, Server, Trash2, AlertTriangle, LogOut, KeyRound, Users, Plus, X } from "lucide-react";
 import { Button } from "./ui/Button";
@@ -88,7 +88,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
         }
 
         try {
-          const resAcc = await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS);
+          const resAcc = await fetch(API_ROUTES.PIPELINE_ACCOUNTS);
           const dataAcc = await resAcc.json();
           if (dataAcc.success) {
             setAccounts(dataAcc.accounts || []);
@@ -140,7 +140,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     setAccounts(updated);
 
     try {
-      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+      await fetch(API_ROUTES.PIPELINE_ACCOUNTS, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
         body: jsonUtils.safeStringify({ accounts: updated })
@@ -158,7 +158,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     setAccounts(updated);
 
     try {
-      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+      await fetch(API_ROUTES.PIPELINE_ACCOUNTS, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
         body: jsonUtils.safeStringify({ accounts: updated })

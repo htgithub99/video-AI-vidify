@@ -61,6 +61,35 @@ export const FFMPEG_RENDER_CONSTANTS = {
   ERR_UNKNOWN_PYTHON: "Unknown error from Python script",
 } as const;
 
+export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
+  MAX_REFERENCE_IMAGES: 3,
+  FILE_PREFIX: "gemini-reference-",
+  MIME_PREFIX: "image/",
+  EXTENSION_SEPARATOR: ".",
+  BASE64_CAPTURE_INDEX: 2,
+  ARIA_LABEL_ATTRIBUTE: "aria-label",
+  ESCAPE_KEY: "Escape",
+  ASPECT_DELAY_MIN_MS: 500,
+  ASPECT_DELAY_MAX_MS: 900,
+  UPLOAD_DELAY_MIN_MS: 1200,
+  UPLOAD_DELAY_MAX_MS: 2000,
+} as const;
+
+export const GEMINI_CHAT_VIDEO_SELECTORS = {
+  ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
+  ASPECT_OPTIONS: '[role="menuitemradio"]',
+  REFERENCE_INPUT: 'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+} as const;
+
+export const GEMINI_CHAT_PACING_CONFIG = {
+  MIN_REQUEST_INTERVAL_MS: 2500,
+  JITTER_MIN_MS: 400,
+  JITTER_MAX_MS: 1600,
+  RETRY_BACKOFF_BASE_MS: 1500,
+  RETRY_BACKOFF_MAX_MS: 8000,
+  BACKOFF_MULTIPLIER: 2,
+} as const;
+
 export const AUTO_GENERATOR_CONSTANTS = {
   ADVANCED_PANEL_CLASS: "advanced-config-panel overflow-hidden transition-colors",
   ADVANCED_PANEL_OPEN_CLASS: "is-open",

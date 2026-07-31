@@ -51,7 +51,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
         queryKey: [QUERY_KEY, licenseKey],
         queryFn: async () => {
             if (_.isEmpty(licenseKey)) return null;
-            const res = await fetch(`${API_ROUTES.BASE_API}${SecurityConstants.API_VALIDATE_PATH}`, {
+            const res = await fetch(API_ROUTES.LICENSE_VALIDATE, {
                 method: METHOD_POST,
                 headers: { [HEADER_CONTENT_TYPE]: VALUE_APPLICATION_JSON },
                 body: JSON.stringify({ [KEY_LICENSE_KEY]: licenseKey })
@@ -106,7 +106,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const activateLicense = async (key: string): Promise<boolean | string> => {
         try {
-            const res = await fetch(`${API_ROUTES.BASE_API}${SecurityConstants.API_VALIDATE_PATH}`, {
+            const res = await fetch(API_ROUTES.LICENSE_VALIDATE, {
                 method: METHOD_POST,
                 headers: { [HEADER_CONTENT_TYPE]: VALUE_APPLICATION_JSON },
                 body: JSON.stringify({ [KEY_LICENSE_KEY]: key })

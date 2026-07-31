@@ -35,6 +35,5 @@ export const CAPCUT_CONFIG = {
   TEMPLATE_TMP_FILENAME: "template-2.tmp",
   TIMELINE_LAYOUT_FILENAME: "timeline_layout.json",
   EXPORT_BUNDLE_SUFFIX: "_CapCut_Project_Bundle.zip",
-  EXPORT_ZIP_ROUTE: "/api/pipeline/export-zip",
   RESOURCES_IMAGES_DIR: "Resources/images",
 } as const;

@@ -75,6 +75,7 @@ export enum ImageGenerationMode {
 export enum GenerateType {
   Image = "image",
   Video = "video",
+  Mixed = "mixed",
 }
 
 export enum PromptInputMethod {
@@ -172,6 +173,7 @@ export interface VisualConfig {
   referenceImages?: string[];
   referencePrompt?: string;
   generateType?: GenerateType;
+  maxVideoScenes?: number;
   generateCount?: number;
   promptInputMethod?: PromptInputMethod;
   characterImages?: string[];
@@ -381,6 +383,12 @@ export enum GeminiChatSelector {
   PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper',
   SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
 }
+
+export const GEMINI_CHAT_MEDIA_SELECTORS = {
+  image: '.attachment-container.generated-images, download-generated-image-button, img.loaded',
+  video: 'video',
+  all: 'img, video',
+} as const;
 
 export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",

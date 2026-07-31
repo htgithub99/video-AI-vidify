@@ -3,8 +3,8 @@ import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
 import { AppTab, VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS } from "../constants";
-import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
+import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS, MEDIA_MIX_CONFIG } from "../constants";
+import { AUTO_GENERATOR_PANEL_TEXTS, MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
@@ -17,7 +17,7 @@ import { formatTimeHelper } from "../utils/helpers";
 import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import { safeSystemFetch, readFilesAsDataURL } from "../lib/shared-utils";
 import { blobToBase64 } from "../lib/fileUtils";
-import { createProjectImageUrl, generateProjectImages, type ProjectImageResult } from "../services/projectImageGenerationService";
+import { createProjectImageUrl, generateProjectImages, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
 import {
   Zap,
   Sparkles,
@@ -104,7 +104,7 @@ const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): 
       { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
     ];
   }
-  if (_.isEqual(genType, GenerateType.Video)) {
+  if (_.includes([GenerateType.Video, GenerateType.Mixed], genType)) {
     return [
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
       { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
@@ -127,6 +127,7 @@ export default function AutoVideoGenerator({
   onUpdateProject,
 }: AutoVideoGeneratorProps) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
 
   const processingRef = useRef(false);
   const boundSelectedProjectIdRef = useRef<string | null>(null);
@@ -160,6 +161,7 @@ export default function AutoVideoGenerator({
   const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
   const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
   const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
+  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
@@ -198,6 +200,7 @@ export default function AutoVideoGenerator({
         if (parsed.generationMode) setGenerationMode(parsed.generationMode);
         if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
         if (parsed.generateType) setGenerateType(parsed.generateType);
+        if (!_.isUndefined(parsed.maxVideoScenes)) setMaxVideoScenes(parsed.maxVideoScenes);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
         if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
@@ -226,6 +229,7 @@ export default function AutoVideoGenerator({
             if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
             if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
             if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+            if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
             if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
             if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
             if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
@@ -269,6 +273,7 @@ export default function AutoVideoGenerator({
       generationMode,
       imageGeneratorEngine,
       generateType,
+      maxVideoScenes,
       aspectRatio,
       stylePreset,
       thumbnailCount,
@@ -285,7 +290,7 @@ export default function AutoVideoGenerator({
     selectedProjectId,
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
-    generateType, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
+    generateType, maxVideoScenes, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
     projectName, referenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless
   ]);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
@@ -330,6 +335,7 @@ export default function AutoVideoGenerator({
               if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
               if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
               if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+              if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
               if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
               if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
               if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
@@ -382,6 +388,7 @@ export default function AutoVideoGenerator({
           if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
           if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
           if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
+          if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
           if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
           if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
           if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
@@ -418,6 +425,7 @@ export default function AutoVideoGenerator({
         [REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY]: voiceName,
         [REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY]: generationMode,
         [REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY]: generateType,
+        [REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY]: maxVideoScenes,
         [REFACTOR_CONSTANTS.AVG_IMAGE_GENERATOR_ENGINE_KEY]: imageGeneratorEngine,
         [REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY]: aspectRatio,
         [REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY]: stylePreset,
@@ -462,6 +470,10 @@ export default function AutoVideoGenerator({
     if (aspectRatioVal) setAspectRatio(aspectRatioVal);
     const genModeVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY);
     if (genModeVal) setGenerationMode(genModeVal);
+    const generateTypeVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY);
+    if (generateTypeVal) setGenerateType(generateTypeVal);
+    const maxVideoScenesVal = _.get(c, REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY);
+    if (!_.isUndefined(maxVideoScenesVal)) setMaxVideoScenes(maxVideoScenesVal);
     const stylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY);
     if (stylePresetVal) setStylePreset(stylePresetVal);
     const thumbCountVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY);
@@ -628,6 +640,7 @@ export default function AutoVideoGenerator({
             assetsMode: REFACTOR_CONSTANTS.AVG_ASSETS_MODE_MIXED as any,
             imageGeneratorEngine,
             generateType,
+            maxVideoScenes,
             aspectRatio,
             promptInputMethod,
             generateCount: sampleCount,
@@ -955,6 +968,7 @@ export default function AutoVideoGenerator({
         imageGeneratorEngine,
         aspectRatio,
         generateType,
+        maxVideoScenes,
         chromeHeadless,
         geminiChatSpeed,
         style: currentStylePreset,
@@ -969,6 +983,20 @@ export default function AutoVideoGenerator({
         }
         return true;
       });
+      const existingVideoCount = _.size(_.filter(
+        realScenes,
+        (scene) => _.isEqual(scene.assetType, GenerateType.Video)
+          && !_.isEmpty(scene.assetUrl),
+      ));
+      const remainingVideoSlots = _.max([
+        _.subtract(maxVideoScenes, existingVideoCount),
+        SecurityConstants.ZERO,
+      ])!;
+      const videoSceneIds = await selectVideoSceneIds(
+        targetScenesToGen,
+        generateType,
+        remainingVideoSlots,
+      );
 
       if (resumeMode) {
         realScenes.forEach((sc, idx) => {
@@ -986,6 +1014,7 @@ export default function AutoVideoGenerator({
             sceneId: scene.id,
             prompt: _.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY)
               || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+            generateType: resolveSceneGenerateType(scene.id, generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
           const applyResult = (result: ProjectImageResult) => {
@@ -994,6 +1023,7 @@ export default function AutoVideoGenerator({
             if (_.every([scene, !_.isEmpty(imageUrl)], Boolean)) {
               scene!.assetUrl = imageUrl;
               scene!.assetUrls = [imageUrl];
+              scene!.assetType = result.assetType || GenerateType.Image;
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
               appendLog(T.logBatchImageSceneSuccess(
                 result.sceneId,
@@ -1016,7 +1046,10 @@ export default function AutoVideoGenerator({
               bypassCache: false,
               engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
               sandboxConfig: sandboxConfigPayload,
-              visualConfig: visualConfigPayload,
+              visualConfig: {
+                ...visualConfigPayload,
+                generateType: item.generateType,
+              },
             }),
             onBatchResult: (result) => {
               if (result.success) {
@@ -1048,6 +1081,7 @@ export default function AutoVideoGenerator({
         } else {
           for (let i = 0; i < targetScenesToGen.length; i++) {
             const sc = targetScenesToGen[i];
+            const sceneGenerateType = resolveSceneGenerateType(sc.id, generateType, videoSceneIds);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
@@ -1058,18 +1092,40 @@ export default function AutoVideoGenerator({
                 engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
                 sandboxConfig: sandboxConfigPayload,
                 visualConfig: visualConfigPayload
+                  ? { ...visualConfigPayload, generateType: sceneGenerateType }
+                  : visualConfigPayload,
               });
-              if (imgRes.success && imgRes.data) {
+              const hasImageFallback = _.every([
+                _.isEqual(sceneGenerateType, GenerateType.Image),
+                !_.isEmpty(imgRes.data?.fallbackUrl),
+              ], Boolean);
+              if (_.every([
+                imgRes.success,
+                imgRes.data,
+                _.some([imgRes.data?.success, hasImageFallback], Boolean),
+              ], Boolean)) {
                 const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
                 const fallbackUrl = _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
                 if (base64Val) {
-                  const dataUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, base64Val], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                  const dataUrl = _.join([
+                    _.isEqual(sceneGenerateType, GenerateType.Video)
+                      ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
+                      : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
+                    base64Val,
+                  ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
                   sc.assetUrl = dataUrl;
                   sc.assetUrls = [dataUrl];
                 } else if (fallbackUrl) {
                   sc.assetUrl = fallbackUrl;
                   sc.assetUrls = [fallbackUrl];
                 }
+                sc.assetType = sceneGenerateType;
+              } else {
+                throw new Error(
+                  imgRes.error
+                    || imgRes.data?.warning
+                    || REFACTOR_CONSTANTS.ERR_UNKNOWN,
+                );
               }
             } catch (e) {
               appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
@@ -1273,7 +1329,11 @@ export default function AutoVideoGenerator({
           imageBase64: _.get(sc, "assetUrl"),
           imageUrl: _.get(sc, "assetUrl"),
           audioBase64: _.get(sc, "audioBase64"),
-          text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)
+          text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+          assetType: _.get(sc, REFACTOR_CONSTANTS.AVG_ASSET_TYPE_KEY, GenerateType.Image),
+          cameraMotion: _.get(sc, "cameraMotion"),
+          effects: _.get(sc, "effects"),
+          transition: _.get(sc, "transition")
         })),
         quality: ffmpegQuality,
         globalAudioUrl: globalAudioUrl || undefined,
@@ -1297,7 +1357,7 @@ export default function AutoVideoGenerator({
         let lastLoggedProgress: number | null = null;
         let renderPending = true;
         while (renderPending) {
-          const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
+          const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS}${jobId}`, {
             headers: {
               [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
             }
@@ -1781,11 +1841,40 @@ export default function AutoVideoGenerator({
                       >
                         <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
                         <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
+                        <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{mediaMixTexts.mixed}</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                     </div>
                   </div>
                 </div>
+
+                {_.isEqual(generateType, GenerateType.Mixed) && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="space-y-1">
+                      <span
+                        className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block"
+                        title={mediaMixTexts.maxVideosTooltip}
+                      >
+                        {mediaMixTexts.maxVideos}
+                      </span>
+                      <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                        <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                        <select
+                          value={maxVideoScenes}
+                          onChange={(event) => setMaxVideoScenes(_.toInteger(event.target.value))}
+                          className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                        >
+                          {_.map(MEDIA_MIX_CONFIG.VIDEO_COUNT_OPTIONS, (count) => (
+                            <option key={count} value={count} className="bg-slate-955 text-slate-300">
+                              {count}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className={cn(
                   AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS,

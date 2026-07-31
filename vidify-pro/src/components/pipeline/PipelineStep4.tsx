@@ -5,7 +5,7 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
-import { WizardStep } from "../../types";
+import { GenerateType, WizardStep } from "../../types";
 import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { OFFLINE_RENDER_ID } from "../../constants/enums";
@@ -156,7 +156,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 <>
                   {getSceneImageUrl(simActiveScene) ? (
                     <div className="w-full h-full relative bg-slate-900">
-                      <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={cn(`w-full h-full object-cover transition-transform duration-1000 ${getZoomClass(simActiveScene.cameraMotion)}`)} />
+                      {_.isEqual(simActiveScene.assetType, GenerateType.Video) ? (
+                        <video src={getSceneImageUrl(simActiveScene)} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                      ) : (
+                        <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={cn(`w-full h-full object-cover transition-transform duration-1000 ${getZoomClass(simActiveScene.cameraMotion)}`)} />
+                      )}
                       {!simActiveScene.assetUrl && <div className="absolute top-4 right-4 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20">{t.Default_Timeline_Image}</div>}
                     </div>
                   ) : (

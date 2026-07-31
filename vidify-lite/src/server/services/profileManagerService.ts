@@ -5,6 +5,7 @@ import stealthPlugin from "puppeteer-extra-plugin-stealth";
 import { getDataDirectory } from "../utils/paths.js";
 import _ from "lodash";
 import { logger } from "../../lib/logger.js";
+import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 
 chromium.use(stealthPlugin());
 
@@ -61,7 +62,7 @@ export async function launchLoginBrowser(profileId: string): Promise<void> {
   });
 
   const page = context.pages()[0] || (await context.newPage());
-  await page.goto("https://accounts.google.com");
+  await page.goto(EXTERNAL_URLS.GOOGLE_ACCOUNTS);
 
   return new Promise<void>((resolve) => {
     context.on("close", () => {

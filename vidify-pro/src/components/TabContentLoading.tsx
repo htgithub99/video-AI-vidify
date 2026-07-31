@@ -1,46 +1,48 @@
 import _ from "lodash";
-import { TAB_CONTENT_LOADING_CONFIG } from "../constants";
+import {
+  TAB_CONTENT_LOADING_CLASSES,
+  TAB_CONTENT_LOADING_CONFIG,
+} from "../constants";
 
 export default function TabContentLoading() {
+  const classes = TAB_CONTENT_LOADING_CLASSES;
+
   return (
-    <div
-      aria-busy
-      className="h-full w-full overflow-hidden bg-slate-955 p-4 sm:p-6 lg:p-8 animate-pulse"
-    >
-      <div className="mx-auto grid h-full max-w-[1800px] grid-cols-1 gap-6 xl:grid-cols-12">
-        <div className="space-y-5 xl:col-span-8">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <div className="mb-6 h-5 w-44 rounded bg-slate-800" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="h-20 rounded-xl bg-slate-800/70" />
-              <div className="h-20 rounded-xl bg-slate-800/50" />
+    <div aria-busy className={classes.ROOT}>
+      <div className={classes.GRID}>
+        <div className={classes.MAIN_COLUMN}>
+          <div className={classes.MAIN_CARD}>
+            <div className={classes.MAIN_TITLE} />
+            <div className={classes.MAIN_OPTIONS}>
+              <div className={classes.MAIN_OPTION_PRIMARY} />
+              <div className={classes.MAIN_OPTION_SECONDARY} />
             </div>
-            <div className="mt-5 h-44 rounded-xl bg-slate-800/60" />
+            <div className={classes.MAIN_BODY} />
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <div className="mb-5 h-4 w-36 rounded bg-slate-800" />
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className={classes.FOOTER_CARD}>
+            <div className={classes.FOOTER_TITLE} />
+            <div className={classes.FOOTER_GRID}>
               {_.map(TAB_CONTENT_LOADING_CONFIG.ROWS, (row) => (
-                <div key={row} className="h-12 rounded-xl bg-slate-800/60" />
+                <div key={row} className={classes.FOOTER_ITEM} />
               ))}
             </div>
           </div>
         </div>
 
-        <div className="space-y-5 xl:col-span-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <div className="mx-auto mb-6 h-5 w-40 rounded bg-slate-800" />
-            <div className="h-12 rounded-xl bg-slate-800/70" />
+        <div className={classes.SIDE_COLUMN}>
+          <div className={classes.SIDE_HEADER_CARD}>
+            <div className={classes.SIDE_HEADER_TITLE} />
+            <div className={classes.SIDE_HEADER_BODY} />
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <div className="mb-6 h-4 w-32 rounded bg-slate-800" />
-            <div className="space-y-4">
+          <div className={classes.SIDE_BODY_CARD}>
+            <div className={classes.SIDE_BODY_TITLE} />
+            <div className={classes.SIDE_BODY_GRID}>
               {_.map(TAB_CONTENT_LOADING_CONFIG.ROWS, (row) => (
-                <div key={row} className="space-y-2">
-                  <div className="h-3 w-1/3 rounded bg-slate-800" />
-                  <div className="h-10 rounded-xl bg-slate-800/60" />
+                <div key={row} className={classes.SIDE_BODY_ROW}>
+                  <div className={classes.SIDE_BODY_LABEL} />
+                  <div className={classes.SIDE_BODY_VALUE} />
                 </div>
               ))}
             </div>

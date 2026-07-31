@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import _ from 'lodash';
@@ -43,6 +43,7 @@ import {
   getSceneDetailBatchPrompt,
   getDetailedPromptBuilderPrompt,
   getGlobalVisualBiblePrompt,
+  getVideoSceneSelectionPrompt,
   getCharacterAnalysisPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
@@ -110,7 +111,7 @@ import { SecurityMessages } from "../../constants/security.js";
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 
-import { AspectRatio, ProjectLanguage } from "../../types.js";
+import { AspectRatio, GenerateType, ProjectLanguage } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 
 import ffmpeg from "fluent-ffmpeg";
@@ -145,6 +146,33 @@ async function incrementFeatureUsage(req: Request, feature: FeatureType, amount:
     }
   }
 }
+
+const requireBatchVisualLicense = async (req: Request, res: Response, next: NextFunction) => {
+  const items = _.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH, []);
+  const hasVideoItems = _.some(items, (item) => _.isEqual(item.generateType, GenerateType.Video));
+  const hasImageItems = _.some(items, (item) => !_.isEqual(item.generateType, GenerateType.Video));
+  const features = _.compact([
+    hasImageItems ? FeatureType.IMAGE : undefined,
+    hasVideoItems ? FeatureType.VIDEO : undefined,
+  ]);
+  const validateFeature = (index: number): void => {
+    const feature = _.nth(features, index);
+    if (_.isUndefined(feature)) {
+      next();
+      return;
+    }
+    requireLicense(feature)(req, res, () => validateFeature(_.add(index, SecurityConstants.DEFAULT_AMOUNT)));
+  };
+  validateFeature(SecurityConstants.ZERO);
+};
+
+const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunction) => {
+  const generateType = _.get(req.body, REFACTOR_CONSTANTS.AVG_VISUAL_CONFIG_GENERATE_TYPE_PATH);
+  const feature = _.isEqual(generateType, GenerateType.Video)
+    ? FeatureType.VIDEO
+    : FeatureType.IMAGE;
+  requireLicense(feature)(req, res, next);
+};
 
 function parseBase64Image(imgBase64: string): { data: string; mimeType: string } {
   let base64Data = imgBase64;
@@ -1012,6 +1040,44 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
   }
 });
 
+router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response) => {
+  const scenes = _.get(req.body, REFACTOR_CONSTANTS.AVG_STORYBOARD_KEY, []);
+  const requestedMax = _.toInteger(_.get(
+    req.body,
+    REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY,
+    SecurityConstants.DEFAULT_AMOUNT,
+  ));
+  const maxVideos = _.clamp(
+    requestedMax,
+    SecurityConstants.DEFAULT_AMOUNT,
+    _.max([_.size(scenes), SecurityConstants.DEFAULT_AMOUNT])!,
+  );
+
+  if (!_.isArray(scenes) || _.isEmpty(scenes)) {
+    return res.json({ videoSceneIds: [] });
+  }
+
+  try {
+    const response = await generateContentWithRetry({
+      contents: getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos),
+      config: { responseMimeType: CONTENT_TYPES.JSON },
+    });
+    const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
+    const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
+    const videoSceneIds = _.take(
+      _.uniq(_.filter(
+        _.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, []),
+        (sceneId) => _.includes(validSceneIds, sceneId),
+      )),
+      maxVideos,
+    );
+    return res.json({ videoSceneIds });
+  } catch (error: any) {
+    logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
+    return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
+  }
+});
+
 router.post("/storyboard", async (req: Request, res: Response) => {
   const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, visualDensity, bypassCache, voiceDuration } = req.body;
 
@@ -1590,7 +1656,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     });
   }
 });
-router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
+router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
   try {
     const { prompt, style, visualConfig, sandboxConfig } = req.body;
 
@@ -1602,7 +1668,10 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
     });
 
     if (result && result.success) {
-      await incrementFeatureUsage(req, FeatureType.IMAGE, SecurityConstants.DEFAULT_AMOUNT);
+      const feature = _.isEqual(visualConfig?.generateType, GenerateType.Video)
+        ? FeatureType.VIDEO
+        : FeatureType.IMAGE;
+      await incrementFeatureUsage(req, feature, SecurityConstants.DEFAULT_AMOUNT);
     }
 
     return res.json(result);
@@ -1617,7 +1686,7 @@ router.post("/generate-image", requireLicense(FeatureType.IMAGE), async (req: Re
   }
 });
 
-router.post("/generate-batch-images", requireLicense(FeatureType.IMAGE), async (req: Request, res: Response) => {
+router.post("/generate-batch-images", requireBatchVisualLicense, async (req: Request, res: Response) => {
   try {
     const { items, visualConfig, style } = req.body;
 
@@ -1629,15 +1698,23 @@ router.post("/generate-batch-images", requireLicense(FeatureType.IMAGE), async (
     res.setHeader("Transfer-Encoding", "chunked");
 
     let successfulImageCount = SecurityConstants.ZERO;
+    let successfulVideoCount = SecurityConstants.ZERO;
     await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
       if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
-        successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
+        if (_.isEqual(progressResult.assetType, GenerateType.Video)) {
+          successfulVideoCount = _.add(successfulVideoCount, SecurityConstants.DEFAULT_AMOUNT);
+        } else {
+          successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
+        }
       }
       res.write(jsonUtils.safeStringify(progressResult) + "\n");
     });
 
     if (_.gt(successfulImageCount, SecurityConstants.ZERO)) {
       await incrementFeatureUsage(req, FeatureType.IMAGE, successfulImageCount);
+    }
+    if (_.gt(successfulVideoCount, SecurityConstants.ZERO)) {
+      await incrementFeatureUsage(req, FeatureType.VIDEO, successfulVideoCount);
     }
     res.end();
   } catch (error: any) {

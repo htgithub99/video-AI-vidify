@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Lang, translations } from "../lib/lang.js";
-import { STORAGE_KEYS, SETTINGS_VIEW_TEXTS, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, STORAGE_KEYS, SETTINGS_VIEW_TEXTS, REFACTOR_CONSTANTS } from "../constants";
 import { Key, Users, Save, Plus, X, LogOut, KeyRound } from "lucide-react";
 import { Button } from "./ui/Button";
 import { getStoredApiKey } from "../lib/shared-utils.js";
@@ -29,7 +29,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   useEffect(() => {
     const loadAccounts = async () => {
       try {
-        const res = await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS);
+        const res = await fetch(API_ROUTES.PIPELINE_ACCOUNTS);
         const data = await res.json();
         if (data.success) {
           setAccounts(data.accounts || []);
@@ -69,7 +69,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     setAccounts(updated);
 
     try {
-      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+      await fetch(API_ROUTES.PIPELINE_ACCOUNTS, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
         body: jsonUtils.safeStringify({ accounts: updated })
@@ -87,7 +87,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     setAccounts(updated);
 
     try {
-      await fetch(REFACTOR_CONSTANTS.API_ACCOUNTS, {
+      await fetch(API_ROUTES.PIPELINE_ACCOUNTS, {
         method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
         headers: { [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON },
         body: jsonUtils.safeStringify({ accounts: updated })

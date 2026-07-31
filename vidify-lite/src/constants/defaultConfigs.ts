@@ -1,4 +1,5 @@
 import { VoicePresetId, SceneDensity } from "./enums";
+import { EXTERNAL_URLS } from "./apiRoutes";
 
 export const SCENE_DENSITY_MAP = {
   [SceneDensity.THEO_TU]: { maxChars: 65, label: "Word-based (Ultra-dense)" },
@@ -20,7 +21,7 @@ export const FALLBACK_VOICES = [
     voiceId: "cgSgspJ2msm6clMCkdW9",
     provider: "elevenlabs",
     gender: "female",
-    previewUrl: "https://elevenlabs.io/api/v1/projects",
+    previewUrl: EXTERNAL_URLS.ELEVENLABS_PROJECTS,
     language: "vi",
   },
   { id: VoicePresetId.PRESET_VI_BAC_FEMALE, name: "Hoài My (Nữ Bắc)", provider: "ttsfree", gender: "female", voiceId: "vi-VN-Standard-A", language: "vi" },
@@ -142,6 +143,5 @@ export const NEWLINE_CHAR = "\n";
 export const SPACE_CHAR = " ";
 export const SINGLE_WHITESPACE_REGEX = /\s/;
 export const MULTIPLE_NEWLINES_REGEX = /\n+/;
-
 
 

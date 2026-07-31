@@ -141,7 +141,6 @@ export const SecurityConstants = {
   DOT: '.',
   LIMITS_PREFIX_LOWER: 'limits',
   EMPTY_STRING: '',
-  API_VALIDATE_PATH: '/license/validate',
   SUCCESS_KEY: 'success',
   DATA_KEY: 'data',
   DATA_STATUS_PATH: 'data.status',
@@ -163,7 +162,6 @@ export const SecurityConstants = {
   SESSION_TOKEN_KEY: 'internal_token',
   QUERY_MARK: '?',
   HTML_ROOT_ID: 'root',
-  API_LICENSE_ROUTE: '/api/license',
   WILDCARD_ROUTE: '*',
   LOG_SERVER_RUNNING: 'SERVER_RUNNING',
   LOG_SERVER_START_ERROR: 'SERVER_START_ERROR',
@@ -292,8 +290,6 @@ export const SecurityMessages = {
 
 export const AutoLoginConstants = {
   URLS: {
-    SIGN_IN: 'https://accounts.google.com/ServiceLogin?hl=en',
-    LOGOUT: 'https://accounts.google.com/Logout',
     SIGN_IN_KEYWORD: 'signin',
   },
   SELECTORS: {

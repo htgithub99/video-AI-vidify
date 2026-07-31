@@ -1,77 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Video Factory</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=Montserrat:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <script>
-      (function() {
-        const theme = localStorage.getItem('app_theme') || 'light';
-        if (theme === 'light') {
-          document.documentElement.classList.add('light');
-          document.documentElement.classList.remove('dark');
-        } else {
-          document.documentElement.classList.add('dark');
-          document.documentElement.classList.remove('light');
-        }
-      })();
-    </script>
-    <style>
-      #app-loading {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #1F1F1F;
-        z-index: 99999;
-        transition: opacity 0.4s ease, visibility 0.4s ease;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Video Factory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=Montserrat:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=Montserrat:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet">
+  </noscript>
+  <script>
+    (function () {
+      const theme = localStorage.getItem('app_theme') || 'light';
+      if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
       }
-      html.light #app-loading {
-        background-color: #F8F9FA;
+    })();
+  </script>
+  <style>
+    #app-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #1F1F1F;
+      z-index: 99999;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    html.light #app-loading {
+      background-color: #F8F9FA;
+    }
+
+    #app-loading.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loader-circle {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #3b82f6, #a855f7, #ec4899, #3b82f6);
+      animation: loading-spin 1s linear infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px rgba(168, 85, 247, 0.35);
+    }
+
+    .loader-circle::after {
+      content: '';
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      background-color: #1F1F1F;
+      border-radius: 50%;
+      transition: background-color 0.3s;
+    }
+
+    html.light .loader-circle::after {
+      background-color: #F8F9FA;
+    }
+
+    @keyframes loading-spin {
+      to {
+        transform: rotate(360deg);
       }
-      #app-loading.fade-out {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-      }
-      .loader-circle {
-        position: relative;
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        background: conic-gradient(from 0deg, #3b82f6, #a855f7, #ec4899, #3b82f6);
-        animation: loading-spin 1s linear infinite;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 24px rgba(168, 85, 247, 0.35);
-      }
-      .loader-circle::after {
-        content: '';
-        position: absolute;
-        width: 44px;
-        height: 44px;
-        background-color: #1F1F1F;
-        border-radius: 50%;
-        transition: background-color 0.3s;
-      }
-      html.light .loader-circle::after {
-        background-color: #F8F9FA;
-      }
-      @keyframes loading-spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app-loading">
-      <div class="loader-circle"></div>
-    </div>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app-loading">
+    <div class="loader-circle"></div>
+  </div>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

@@ -9,7 +9,7 @@ import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
 import PipelineStep6 from "./pipeline/PipelineStep6";
 import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
-import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage, VOICE_PROVIDER_MAPPINGS, VOICE_DESCRIPTION_KEYS } from "../constants";
+import { APP_TEXTS, GEMINI_CHAT_SPEED_OPTIONS, BATCH_DELAY_OPTIONS, COMMON_STRINGS, APP_CONFIG, AppLanguage, VOICE_PROVIDER_MAPPINGS, VOICE_DESCRIPTION_KEYS, MEDIA_MIX_CONFIG, MEDIA_MIX_TEXTS } from "../constants";
 import { VOICE_MODIFIERS } from "../constants/defaultConfigs";
 import _ from "lodash";
 
@@ -75,6 +75,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     handleDeleteFavoriteVoice,
     handleSaveEditVoice,
   } = wizard;
+  const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang];
 
   const logsEndRef = React.useRef<HTMLDivElement>(null);
   const [showGenSettings, setShowGenSettings] = React.useState(false);
@@ -254,14 +255,32 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Generate_Type}</div>
                     <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
-                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType !== GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Image })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${!project.visualConfig.generateType || project.visualConfig.generateType === GenerateType.Image ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <ImageIcon className="w-3.5 h-3.5" /> {t.Image}
                       </Button>
                       <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Video })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Video ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
                         <Video className="w-3.5 h-3.5" /> {t.Video}
                       </Button>
+                      <Button variant="unstyled" type="button" onClick={() => updateVisualConfig({ generateType: GenerateType.Mixed })} className={cn(`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-[11px] font-bold transition-all shadow-sm h-auto ${project.visualConfig.generateType === GenerateType.Mixed ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}>
+                        <LucideIcons.Film className="w-3.5 h-3.5" /> {mediaMixTexts.mixed}
+                      </Button>
                     </div>
                   </div>
+
+                  {project.visualConfig.generateType === GenerateType.Mixed && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1" title={mediaMixTexts.maxVideosTooltip}>{mediaMixTexts.maxVideos}</div>
+                      <select
+                        value={project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS}
+                        onChange={(event) => updateVisualConfig({ maxVideoScenes: _.toInteger(event.target.value) })}
+                        className="w-full appearance-none bg-slate-950 border border-slate-800/50 rounded-lg py-2 pl-3 pr-8 text-[11px] text-slate-200 font-semibold focus:outline-none focus:border-rose-500/50 transition-colors cursor-pointer shadow-inner"
+                      >
+                        {_.map(MEDIA_MIX_CONFIG.VIDEO_COUNT_OPTIONS, (count) => (
+                          <option key={count} value={count} className="bg-slate-900 text-slate-200">{count}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Aspect_Ratio}</div>
@@ -297,7 +316,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                     </div>
                   </div>
 
-                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow && project.visualConfig.generateType === GenerateType.Video && (
+                  {project.visualConfig.generationMode === ImageGenerationMode.LabsFlow && _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType) && (
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest px-1">{t.Video_Duration}</div>
                       <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner">
@@ -370,7 +389,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                           <option key="gemini-pro" value={ImageGeneratorEngine.Imagen} className="bg-slate-900 text-slate-200">{t.Gemini_Pro}</option>,
                           <option key="gemini-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">{t.Gemini_Flash}</option>,
                           <option key="gemini-flash-lite" value={ImageGeneratorEngine.LabsSandbox} className="bg-slate-900 text-slate-200">{t.Gemini_Flash_Lite}</option>
-                        ] : project.visualConfig.generateType === GenerateType.Video ? [
+                        ] : _.includes([GenerateType.Video, GenerateType.Mixed], project.visualConfig.generateType) ? [
                           <option key="omni-flash" value={ImageGeneratorEngine.Veo3} className="bg-slate-900 text-slate-200">🎬 Omni Flash</option>,
                           <option key="veo-lite" value={ImageGeneratorEngine.Veo3Lite} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Lite</option>,
                           <option key="veo-fast" value={ImageGeneratorEngine.Veo3Fast} className="bg-slate-900 text-slate-200">🎥 Veo 3.1 - Fast</option>,

@@ -11,12 +11,12 @@ import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG } from "../../constants";
 import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
 import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, AudioType, Gender } from "../../types";
+import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
@@ -26,7 +26,7 @@ import { CAPCUT_CONFIG } from "../../constants/capcut";
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
-import { createProjectImageUrl, generateProjectImages, type ProjectImageResult } from "../../services/projectImageGenerationService";
+import { createProjectImageUrl, generateProjectImages, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -248,7 +248,7 @@ export function usePipelineWizard(props: any) {
     return (initialProject as any).currentStep !== undefined ? (initialProject as any).currentStep : WizardStep.SourceInput;
   });
 
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(true);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(false);
 
   const [rightSidebarOpen, setRightSidebarOpen] = useState<boolean>(false);
 
@@ -1543,7 +1543,13 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleRenderSceneImage = async (sceneId: string, customPrompt: string, force = false, isBatch = false) => {
+  const handleRenderSceneImage = async (
+    sceneId: string,
+    customPrompt: string,
+    force = false,
+    isBatch = false,
+    requestedGenerateType?: GenerateType.Image | GenerateType.Video,
+  ) => {
     logAction("handleRenderSceneImage");
     const isForce = force === true;
     if (!isBatch) {
@@ -1555,6 +1561,10 @@ export function usePipelineWizard(props: any) {
       setErrorMsg("");
     }
     try {
+      const sceneGenerateType = requestedGenerateType
+        || (_.isEqual(project.visualConfig.generateType, GenerateType.Video)
+          ? GenerateType.Video
+          : GenerateType.Image);
       const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
         prompt: customPrompt,
         style: project.visualConfig.style,
@@ -1562,7 +1572,10 @@ export function usePipelineWizard(props: any) {
         bypassCache: isForce,
         engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
         sandboxConfig: sandboxConfig,
-        visualConfig: project.visualConfig,
+        visualConfig: {
+          ...project.visualConfig,
+          generateType: sceneGenerateType,
+        },
       });
       const data = await safeResponseJson(response, {});
 
@@ -1580,14 +1593,21 @@ export function usePipelineWizard(props: any) {
 
       let imageUrl = "";
       if (data.success && data.base64) {
-        imageUrl = `data:image/jpeg;base64,${data.base64}`;
+        imageUrl = _.join([
+          _.isEqual(sceneGenerateType, GenerateType.Video)
+            ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
+            : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
+          data.base64,
+        ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         trackOperationCost(40, 0.03);
-      } else if (data.fallbackUrl) {
+      } else if (_.every([
+        data.fallbackUrl,
+        _.isEqual(sceneGenerateType, GenerateType.Image),
+      ], Boolean)) {
         imageUrl = data.fallbackUrl;
         trackOperationCost(5, 0.0002);
       } else {
-        imageUrl = `${EXTERNAL_URLS.PLACEHOLD_CO}/800x450/g/png?text=${encodeURIComponent(project.visualConfig.style)}&bg=gradient`;
-        trackOperationCost(2, 0.0001);
+        throw new Error(data.warning || REFACTOR_CONSTANTS.ERR_UNKNOWN);
       }
 
       setProject((prev) => {
@@ -1599,6 +1619,7 @@ export function usePipelineWizard(props: any) {
               assetUrl: imageUrl,
               assetUrls: [imageUrl],
               isGenerated: true,
+              assetType: sceneGenerateType,
             };
           }
           return sc;
@@ -2632,6 +2653,24 @@ export function usePipelineWizard(props: any) {
 
     const isGeminiChat = project.visualConfig.generationMode === ImageGenerationMode.GeminiChat;
     const concurrency = SecurityConstants.DEFAULT_AMOUNT;
+    const configuredGenerateType = project.visualConfig.generateType || GenerateType.Image;
+    const existingVideoCount = _.size(_.filter(
+      scenes,
+      (scene) => _.isEqual(scene.assetType, GenerateType.Video)
+        && !_.isEmpty(scene.assetUrl),
+    ));
+    const remainingVideoSlots = _.max([
+      _.subtract(
+        project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS,
+        existingVideoCount,
+      ),
+      SecurityConstants.ZERO,
+    ])!;
+    const videoSceneIds = await selectVideoSceneIds(
+      targetScenes,
+      configuredGenerateType,
+      remainingVideoSlots,
+    );
 
     try {
       if (isGeminiChat) {
@@ -2645,6 +2684,11 @@ export function usePipelineWizard(props: any) {
         const batchItems = _.map(targetScenes, (s) => ({
           sceneId: s.id,
           prompt: s.prompt,
+          generateType: resolveSceneGenerateType(
+            s.id,
+            configuredGenerateType,
+            videoSceneIds,
+          ),
         }));
         const applyResult = (result: ProjectImageResult) => {
           const imageUrl = createProjectImageUrl(result);
@@ -2659,6 +2703,7 @@ export function usePipelineWizard(props: any) {
                   assetUrl: imageUrl,
                   assetUrls: [imageUrl],
                   isGenerated: true,
+                  assetType: result.assetType || GenerateType.Image,
                 };
               }
               return sc;
@@ -2685,7 +2730,10 @@ export function usePipelineWizard(props: any) {
             bypassCache: false,
             engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
             sandboxConfig,
-            visualConfig: project.visualConfig,
+            visualConfig: {
+              ...project.visualConfig,
+              generateType: item.generateType,
+            },
           }),
           onBatchResult: (result) => {
             setLoadingStates((prev) => ({
@@ -2760,7 +2808,17 @@ export function usePipelineWizard(props: any) {
 
           const scene = batchScenes[0];
           try {
-            await handleRenderSceneImage(scene.id, scene.prompt, false, true);
+            await handleRenderSceneImage(
+              scene.id,
+              scene.prompt,
+              false,
+              true,
+              resolveSceneGenerateType(
+                scene.id,
+                configuredGenerateType,
+                videoSceneIds,
+              ),
+            );
             completedCount++;
           } catch (err: any) {
             logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
@@ -3887,7 +3945,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       setInfoMsg(t.waitExportProcess || "Đang chuẩn bị gói dự án...");
-      const response = await fetch(CAPCUT_CONFIG.EXPORT_ZIP_ROUTE, {
+      const response = await fetch(API_ROUTES.PIPELINE_EXPORT_ZIP, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: jsonUtils.safeStringify({ projectId: project.id }),

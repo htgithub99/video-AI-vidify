@@ -1,12 +1,10 @@
 import { ErrorMessage } from "./constants";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import Header from "./components/Header.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import ProjectList from "./components/ProjectList.tsx";
-import PipelineWizard from "./components/PipelineWizard.tsx";
 import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
-import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
 import TabContentLoading from "./components/TabContentLoading.tsx";
 
 import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
@@ -21,6 +19,8 @@ import { storageUtils } from "./lib/storage";
 
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 const PROJECT_WORKSPACE_TABS = [AppTab.AUTO_GENERATOR, AppTab.STUDIO];
+const PipelineWizard = lazy(() => import("./components/PipelineWizard.tsx"));
+const AutoVideoGenerator = lazy(() => import("./components/AutoVideoGenerator.tsx"));
 
 const isProjectWorkspaceTab = (tab: string): boolean => (
   _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab)
@@ -76,6 +76,7 @@ export default function App() {
   const [projects, setProjects] = useState<VideoProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isSwitchingWorkspaceTab, setIsSwitchingWorkspaceTab] = useState(false);
+  const workspaceTabLoadingStartedAtRef = useRef<number | null>(null);
   const pendingSavesRef = useRef<Record<string, NodeJS.Timeout>>({});
   const projectsRef = useRef<VideoProject[]>([]);
   const creatingChildRef = useRef<Record<string, boolean>>({});
@@ -257,8 +258,25 @@ export default function App() {
     if (!isProjectReadyForTab(activeWorkspaceProject, activeTab)) {
       return;
     }
-    const frameId = requestAnimationFrame(() => setIsSwitchingWorkspaceTab(false));
-    return () => cancelAnimationFrame(frameId);
+    const startedAt = workspaceTabLoadingStartedAtRef.current || Date.now();
+    const elapsedMs = _.subtract(Date.now(), startedAt);
+    const remainingMs = _.max([
+      _.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs),
+      REFACTOR_CONSTANTS.ZERO_FLOAT,
+    ]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
+    let frameId: number | undefined;
+    const timeoutId = setTimeout(() => {
+      frameId = requestAnimationFrame(() => {
+        workspaceTabLoadingStartedAtRef.current = null;
+        setIsSwitchingWorkspaceTab(false);
+      });
+    }, remainingMs);
+    return () => {
+      clearTimeout(timeoutId);
+      if (!_.isUndefined(frameId)) {
+        cancelAnimationFrame(frameId);
+      }
+    };
   }, [activeTab, isSwitchingWorkspaceTab, projects, selectedProjectId]);
 
   useEffect(() => {
@@ -266,7 +284,10 @@ export default function App() {
       return;
     }
     const timeoutId = setTimeout(
-      () => setIsSwitchingWorkspaceTab(false),
+      () => {
+        workspaceTabLoadingStartedAtRef.current = null;
+        setIsSwitchingWorkspaceTab(false);
+      },
       TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS,
     );
     return () => clearTimeout(timeoutId);
@@ -535,6 +556,7 @@ export default function App() {
       [activeTab, tab],
       isProjectWorkspaceTab,
     );
+    workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
     setIsSwitchingWorkspaceTab(shouldShowLoading);
 
     if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
@@ -598,56 +620,58 @@ export default function App() {
         />
 
         <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
-          {isSwitchingWorkspaceTab ? (
-            <TabContentLoading />
-          ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
-            <PipelineWizard
-              key={selectedProjectId}
-              theme={theme as any}
-              currentLang={currentLang}
-              project={activeProject}
-              onSaveProject={handleUpdateProject}
-              setProject={handleUpdateProject}
-              onBackToDashboard={() => handleSelectProject(null)}
-              costTracker={costTracker}
-              setCostTracker={setCostTracker}
-              credits={credits}
-              setCredits={() => {}}
-            />
-          ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
-            <AutoVideoGenerator
-              currentLang={currentLang}
-              projects={projects}
-              selectedProjectId={selectedProjectId}
-              onSelectProject={handleSelectProject}
-              onCreateProject={handleCreateProject}
-              onUpdateProject={handleUpdateProject}
-              theme={theme as any}
-            />
-          ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
-            <SettingsView currentLang={currentLang} />
-          ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
-            <DashboardView
-              currentLang={currentLang}
-              credits={credits}
-              costTracker={costTracker}
-              projects={projects}
-              onSelectProject={handleSelectProject}
-              onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
-            />
-          ) : (
-            <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
-               <ProjectList
+          <Suspense fallback={<TabContentLoading />}>
+            {isSwitchingWorkspaceTab ? (
+              <TabContentLoading />
+            ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
+              <PipelineWizard
+                key={selectedProjectId}
+                theme={theme as any}
+                currentLang={currentLang}
+                project={activeProject}
+                onSaveProject={handleUpdateProject}
+                setProject={handleUpdateProject}
+                onBackToDashboard={() => handleSelectProject(null)}
+                costTracker={costTracker}
+                setCostTracker={setCostTracker}
+                credits={credits}
+                setCredits={() => {}}
+              />
+            ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
+              <AutoVideoGenerator
                 currentLang={currentLang}
                 projects={projects}
-                isLoading={isLoadingProjects}
-                onSelectProject={(p) => handleSelectProject(p.id)}
+                selectedProjectId={selectedProjectId}
+                onSelectProject={handleSelectProject}
                 onCreateProject={handleCreateProject}
-                onUpdateProject={handleUpdateProjectDetails}
-                onDeleteProject={handleDeleteProject}
+                onUpdateProject={handleUpdateProject}
+                theme={theme as any}
               />
-            </div>
-          )}
+            ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
+              <SettingsView currentLang={currentLang} />
+            ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
+              <DashboardView
+                currentLang={currentLang}
+                credits={credits}
+                costTracker={costTracker}
+                projects={projects}
+                onSelectProject={handleSelectProject}
+                onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
+              />
+            ) : (
+              <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
+                <ProjectList
+                  currentLang={currentLang}
+                  projects={projects}
+                  isLoading={isLoadingProjects}
+                  onSelectProject={(p) => handleSelectProject(p.id)}
+                  onCreateProject={handleCreateProject}
+                  onUpdateProject={handleUpdateProjectDetails}
+                  onDeleteProject={handleDeleteProject}
+                />
+              </div>
+            )}
+          </Suspense>
         </main>
       </div>
     </div>

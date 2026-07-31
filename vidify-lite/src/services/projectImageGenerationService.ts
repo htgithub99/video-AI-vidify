@@ -1,10 +1,12 @@
 import _ from "lodash";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
+import { GenerateType, StoryboardScene } from "../types";
 
 export interface ProjectImageItem {
   sceneId: string;
   prompt: string;
+  generateType?: GenerateType;
 }
 
 export interface ProjectImageResult {
@@ -13,6 +15,7 @@ export interface ProjectImageResult {
   base64?: string;
   fallbackUrl?: string;
   warning?: string;
+  assetType?: GenerateType.Image | GenerateType.Video;
 }
 
 type FallbackPayloadFactory = (item: ProjectImageItem) => object;
@@ -70,28 +73,91 @@ const generateFallbackImage = async (
   const base64 = _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY)
     || _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+  const generationSucceeded = _.get(
+    response.data,
+    REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
+    response.success,
+  );
 
   return {
     sceneId: item.sceneId,
     success: _.every([
       response.success,
+      _.some([
+        generationSucceeded,
+        _.isEqual(item.generateType, GenerateType.Image),
+      ], Boolean),
       _.some([base64, fallbackUrl], Boolean),
     ], Boolean),
     base64,
     fallbackUrl,
     warning: response.error,
+    assetType: item.generateType === GenerateType.Video
+      ? GenerateType.Video
+      : GenerateType.Image,
   };
 };
 
 export const createProjectImageUrl = (result: ProjectImageResult): string => {
   if (!_.isEmpty(result.base64)) {
     return _.join(
-      [REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, result.base64],
+      [
+        _.isEqual(result.assetType, GenerateType.Video)
+          ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
+          : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
+        result.base64,
+      ],
       REFACTOR_CONSTANTS.VD_EMPTY_STRING,
     );
   }
   return result.fallbackUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
+
+export const selectVideoSceneIds = async (
+  scenes: StoryboardScene[],
+  generateType: GenerateType,
+  maxVideoScenes: number,
+): Promise<string[]> => {
+  if (_.isEqual(generateType, GenerateType.Video)) {
+    return _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
+  }
+  if (!_.isEqual(generateType, GenerateType.Mixed)) {
+    return [];
+  }
+  if (!_.gt(maxVideoScenes, SecurityConstants.ZERO)) {
+    return [];
+  }
+
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_VIDEO_SCENES, {
+    storyboard: _.map(scenes, (scene) => ({
+      id: scene.id,
+      script: scene.script,
+      prompt: scene.prompt,
+      cameraMotion: scene.cameraMotion,
+    })),
+    maxVideoScenes,
+  });
+  return _.take(
+    _.uniq(_.get(response.data, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, [])),
+    maxVideoScenes,
+  );
+};
+
+export const resolveSceneGenerateType = (
+  sceneId: string,
+  generateType: GenerateType,
+  videoSceneIds: string[],
+): GenerateType.Image | GenerateType.Video => (
+  _.some([
+    _.isEqual(generateType, GenerateType.Video),
+    _.every([
+      _.isEqual(generateType, GenerateType.Mixed),
+      _.includes(videoSceneIds, sceneId),
+    ], Boolean),
+  ], Boolean)
+    ? GenerateType.Video
+    : GenerateType.Image
+);
 
 export const generateProjectImages = async ({
   items,

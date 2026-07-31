@@ -78,8 +78,12 @@ export default function PipelineStep4(props: PipelineWizardState) {
         scenes: _.map(props.project.storyboard, sc => ({
             id: sc.id,
             duration: sc.duration,
-            imageBase64: getSceneImageUrl(sc), 
-            audioBase64: sc.audioBase64 
+            imageBase64: getSceneImageUrl(sc),
+            audioBase64: sc.audioBase64,
+            assetType: sc.assetType,
+            cameraMotion: sc.cameraMotion,
+            effects: sc.effects,
+            transition: sc.transition
         })),
         globalAudioUrl: props.project?.voiceConfig?.audioUrl,
         quality: ffmpegQuality
@@ -99,7 +103,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
          let renderPending = true;
          while (renderPending) {
            try {
-             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER}${REFACTOR_CONSTANTS.PATH_STATUS}${jobId}`, {
+             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS}${jobId}`, {
                headers: {
                  [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY)
                }

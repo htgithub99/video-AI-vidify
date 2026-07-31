@@ -5,7 +5,7 @@ import { ProjectKind, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -46,7 +46,7 @@ export function getSafeFolderName(name: string): string {
 }
 
 
-function processSceneAssets(scene: any, imageDir: string, audioDir: string, folderName: string): any {
+function processSceneAssets(scene: any, imageDir: string, audioDir: string, videoDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
   if (imgBase64 && !_.get(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY)) {
     _.set(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY, imgBase64);
@@ -65,7 +65,24 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
     return _.replace(u, ASSET_PROJECT_PATH_REGEX, `${COMMON_STRINGS.REGEX_REPLACE_GROUP_1}${folderName}${COMMON_STRINGS.SLASH_PREFIX}`);
   };
 
-  if (_.includes(assetUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX)) {
+  if (_.includes(assetUrl, COMMON_STRINGS.BASE64_VIDEO_PREFIX)) {
+    const matches = assetUrl.match(BASE64_VIDEO_MIME_REGEX);
+    if (matches) {
+      const data = matches[2];
+      const sceneIdStr = String(scene.id);
+      const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
+      const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}${COMMON_STRINGS.MP4_EXT}`;
+      const filePath = path.join(videoDir, fileName);
+
+      try {
+        fs.writeFileSync(filePath, Buffer.from(data, COMMON_STRINGS.BASE64));
+        assetUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${VIDEOS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
+        sceneUpdated = true;
+      } catch (err) {
+        appError(`${ERROR_MESSAGES.WRITE_SCENE_VIDEO_ERR}${scene.id}`, err);
+      }
+    }
+  } else if (_.includes(assetUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX)) {
     const matches = assetUrl.match(BASE64_IMAGE_MIME_REGEX);
     if (matches) {
       const ext = _.eq(matches[1], COMMON_STRINGS.JPEG_EXT) ? COMMON_STRINGS.JPG_EXT : matches[1];
@@ -85,13 +102,19 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, fold
     }
   }
 
-  if (_.some(assetUrls, (url) => _.includes(url, COMMON_STRINGS.BASE64_IMAGE_PREFIX))) {
+  if (_.some(assetUrls, (url) => _.some(
+    [COMMON_STRINGS.BASE64_IMAGE_PREFIX, COMMON_STRINGS.BASE64_VIDEO_PREFIX],
+    (prefix) => _.includes(url, prefix),
+  ))) {
     assetUrls = assetUrl ? [assetUrl] : [];
     sceneUpdated = true;
   }
 
   if (assetUrl) {
-    const isNotBase64 = !_.includes(assetUrl, COMMON_STRINGS.BASE64_IMAGE_PREFIX);
+    const isNotBase64 = _.every(
+      [COMMON_STRINGS.BASE64_IMAGE_PREFIX, COMMON_STRINGS.BASE64_VIDEO_PREFIX],
+      (prefix) => !_.includes(assetUrl, prefix),
+    );
     if (isNotBase64) {
       const fixedUrl = enforceCorrectFolder(assetUrl);
       if (!_.eq(fixedUrl, assetUrl)) {
@@ -227,7 +250,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     let storyboard = project.storyboard;
     if (_.isArray(storyboard)) {
       storyboard = _.map(storyboard, (scene) => {
-        const processed = processSceneAssets(scene, imageDir, audioDir, folderName);
+        const processed = processSceneAssets(scene, imageDir, audioDir, videoDir, folderName);
         if (processed.isUpdated) {
           storyboardUpdated = true;
           delete processed.isUpdated;

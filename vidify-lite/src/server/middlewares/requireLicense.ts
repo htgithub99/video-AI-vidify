@@ -6,18 +6,32 @@ import { REFACTOR_CONSTANTS } from '../../constants/index.js';
 import { SecurityConstants, SecurityMessages, LocalizationConstants, FeatureType, LicenseStatus } from '../../constants/security.js';
 import { requestContext } from '../utils/requestContext.js';
 import { getResolvedLicenseKey } from '../services/apiKeyResolver.js';
+import { GenerateType } from '../../types.js';
 
 const getRequestedUsageAmount = (req: Request, featureType: FeatureType): number => {
     const requestedItems = _.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
+    const requestedVisualItems = _.isArray(requestedItems)
+        ? _.filter(requestedItems, (item) => (
+            _.isEqual(featureType, FeatureType.VIDEO)
+                ? _.isEqual(item.generateType, GenerateType.Video)
+                : !_.isEqual(item.generateType, GenerateType.Video)
+        ))
+        : requestedItems;
     const requestedAmountByFeature: Record<FeatureType, number> = {
         [FeatureType.VIDEO]: SecurityConstants.DEFAULT_AMOUNT,
-        [FeatureType.IMAGE]: _.isArray(requestedItems)
-            ? _.size(requestedItems)
+        [FeatureType.IMAGE]: _.isArray(requestedVisualItems)
+            ? _.size(requestedVisualItems)
             : SecurityConstants.DEFAULT_AMOUNT,
         [FeatureType.VOICE]: _.size(
             _.toString(_.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))
         ),
     };
+    if (_.every([
+        _.includes([FeatureType.IMAGE, FeatureType.VIDEO], featureType),
+        _.isArray(requestedVisualItems),
+    ], Boolean)) {
+        return _.size(requestedVisualItems);
+    }
 
     return _.max([
         _.get(requestedAmountByFeature, featureType, SecurityConstants.DEFAULT_AMOUNT),

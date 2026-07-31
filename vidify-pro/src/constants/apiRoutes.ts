@@ -4,6 +4,10 @@ export const API_ROUTES = {
   VOICES: "/api/voices",
   PROJECTS: "/api/projects",
   PRESETS: "/api/presets",
+  LICENSE: "/api/license",
+  LICENSE_VALIDATE: "/api/license/validate",
+  PIPELINE_ACCOUNTS: "/api/pipeline/accounts",
+  PIPELINE_EXPORT_ZIP: "/api/pipeline/export-zip",
   PIPELINE_EXTRACT_STYLE: "/api/pipeline/extract-style",
   PIPELINE_REWRITE_PROMPTS: "/api/pipeline/rewrite-prompts",
   PIPELINE_ANALYZE_CHARACTER: "/api/pipeline/analyze-character",
@@ -19,6 +23,7 @@ export const API_ROUTES = {
   PIPELINE_THUMBNAILS: "/api/pipeline/thumbnails",
   PIPELINE_GENERATE_IMAGE: "/api/pipeline/generate-image",
   PIPELINE_GENERATE_BATCH_IMAGES: "/api/pipeline/generate-batch-images",
+  PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
   PIPELINE_DETAILED_PROMPT: "/api/pipeline/detailed-prompt",
   PIPELINE_VOICE: "/api/pipeline/voice",
@@ -29,7 +34,7 @@ export const API_ROUTES = {
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
   PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
   PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
-};
+} as const;
 
 export const EXTERNAL_URLS = {
   FFMPEG_URL: "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z",
@@ -39,7 +44,13 @@ export const EXTERNAL_URLS = {
   GOOGLE_TRANSLATE_REFERER: "https://translate.google.com/",
   PLAYWRIGHT_CDP: "http://127.0.0.1:9222",
   GOOGLE_LABS: "https://labs.google/",
+  GOOGLE_LABS_FLOW_HOME: "https://labs.google/fx/vi/tools/flow",
   GOOGLE_LABS_FLOW: "https://labs.google/fx/vi/tools/flow/project",
+  GOOGLE_ACCOUNTS: "https://accounts.google.com",
+  GOOGLE_SIGN_IN: "https://accounts.google.com/ServiceLogin?hl=en",
+  GOOGLE_LOGOUT: "https://accounts.google.com/Logout",
+  GOOGLE_MY_ACCOUNT: "https://myaccount.google.com/?hl=vi",
+  GOOGLE_ACCOUNT_ABOUT: "https://www.google.com/account/about",
   GEMINI_CHAT: "https://gemini.google.com/app",
   GEMINI_CHAT_BASE: "https://gemini.google.com",
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
@@ -47,7 +58,8 @@ export const EXTERNAL_URLS = {
   AI33_TASK: "https://api.ai33.pro/v1/task",
   LOREM_FLICKR: "https://loremflickr.com",
   PLACEHOLD_CO: "https://placehold.co",
-};
+  ELEVENLABS_PROJECTS: "https://elevenlabs.io/api/v1/projects",
+} as const;
 
 export const ALIGN_CONFIG = {
   TEMP_DIR: "temp_align",

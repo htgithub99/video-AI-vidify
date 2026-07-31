@@ -27,6 +27,7 @@ import {
   ImageGenerationMode,
   ImageGeneratorEngine,
   ImageModelLabel,
+  GenerateType,
 } from "../../types";
 
 import * as LucideIcons from "lucide-react";
@@ -2608,13 +2609,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       onClick={() => openSceneModal(scene)}
                       className="group relative aspect-[16/9] bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer hover:scale-[1.03] hover:-translate-y-1"
                     >
-                      <img
-                        referrerPolicy="no-referrer"
-                        src={displayUrl}
-                        loading="lazy"
-                        alt={scene.assetName || `Scene ${scene.id}`}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+                      {_.isEqual(scene.assetType, GenerateType.Video) ? (
+                        <video src={displayUrl} muted loop playsInline preload="metadata" className="w-full h-full object-cover" />
+                      ) : (
+                        <img
+                          referrerPolicy="no-referrer"
+                          src={displayUrl}
+                          loading="lazy"
+                          alt={scene.assetName || `Scene ${scene.id}`}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      )}
 
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-slate-950/30 opacity-90 group-hover:opacity-100 transition-opacity" />
 
@@ -2768,15 +2773,19 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                         <div className="aspect-[16/9] bg-slate-955 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center shadow-inner">
                           {hasAsset && (
-                            <img
-                              referrerPolicy="no-referrer"
-                              src={displayUrl}
-                              alt={
-                                activeScene.assetName ||
-                                `Scene ${activeScene.id}`
-                              }
-                              className="w-full h-full object-cover"
-                            />
+                            _.isEqual(activeScene.assetType, GenerateType.Video) ? (
+                              <video src={displayUrl} controls autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                            ) : (
+                              <img
+                                referrerPolicy="no-referrer"
+                                src={displayUrl}
+                                alt={
+                                  activeScene.assetName ||
+                                  `Scene ${activeScene.id}`
+                                }
+                                className="w-full h-full object-cover"
+                              />
+                            )
                           )}
 
                           {!hasAsset && (

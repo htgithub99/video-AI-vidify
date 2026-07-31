@@ -82,7 +82,7 @@ app.use((req, res, next) => {
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
-app.use(SecurityConstants.API_LICENSE_ROUTE, licenseRouter);
+app.use(API_ROUTES.LICENSE, licenseRouter);
 
 app.use(API_ROUTES.BASE_API, requireLicense(), mainRouter);
 app.use(API_ROUTES.PIPELINE, requireLicense(), pipelineRouter);

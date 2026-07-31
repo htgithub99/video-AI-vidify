@@ -4,6 +4,7 @@ import { delayAsync } from "../../lib/shared-utils.js";
 import _ from "lodash";
 import { AutoLoginConstants, SecurityConstants } from "../../constants/security.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
+import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 
 export async function autoLoginGoogle(page: Page, account: any): Promise<boolean> {
   const email = _.get(account, SecurityConstants.PROP_EMAIL, SecurityConstants.EMPTY_STRING);
@@ -14,13 +15,13 @@ export async function autoLoginGoogle(page: Page, account: any): Promise<boolean
 
   try {
     appLog(AutoLoginConstants.LOGS.NAVIGATING_SIGN_IN);
-    await page.goto(AutoLoginConstants.URLS.SIGN_IN, { waitUntil: "load", timeout: 25000 }).catch(() => {});
+    await page.goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, { waitUntil: "load", timeout: 25000 }).catch(() => {});
     await page.waitForLoadState("networkidle").catch(() => {});
     await delayAsync(3000);
 
     const handleAboutRedirect = async (p: Page) => {
       const currentUrl = p.url();
-      if (_.includes(currentUrl, "/about") || _.includes(currentUrl, "google.com/account/about")) {
+      if (_.includes(currentUrl, "/about") || _.includes(currentUrl, EXTERNAL_URLS.GOOGLE_ACCOUNT_ABOUT)) {
         appLog(AutoLoginConstants.LOGS.REDIRECT_ABOUT);
         const signInButton = p.locator(AutoLoginConstants.SELECTORS.ABOUT_SIGN_IN_BTN).first();
         if (await signInButton.isVisible()) {
@@ -30,7 +31,7 @@ export async function autoLoginGoogle(page: Page, account: any): Promise<boolean
           appLog(AutoLoginConstants.LOGS.CLICKED_ABOUT_SIGN_IN.replace("{0}", p.url()));
         } else {
           appLog(AutoLoginConstants.LOGS.ABOUT_SIGN_IN_NOT_FOUND);
-          await p.goto(AutoLoginConstants.URLS.SIGN_IN, { waitUntil: "networkidle", timeout: 20000 }).catch(() => {});
+          await p.goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, { waitUntil: "networkidle", timeout: 20000 }).catch(() => {});
         }
       }
     };
@@ -40,12 +41,12 @@ export async function autoLoginGoogle(page: Page, account: any): Promise<boolean
     let url = page.url();
     appLog(AutoLoginConstants.LOGS.CURRENT_BROWSER_URL.replace("{0}", url));
 
-    if (!_.includes(url, AutoLoginConstants.URLS.SIGN_IN_KEYWORD) && !_.includes(url, "accounts.google.com")) {
+    if (!_.includes(url, AutoLoginConstants.URLS.SIGN_IN_KEYWORD) && !_.includes(url, EXTERNAL_URLS.GOOGLE_ACCOUNTS)) {
       appLog(AutoLoginConstants.LOGS.SESSION_EXISTS);
-      await page.goto(AutoLoginConstants.URLS.LOGOUT, { waitUntil: "load", timeout: 15000 }).catch(() => {});
+      await page.goto(EXTERNAL_URLS.GOOGLE_LOGOUT, { waitUntil: "load", timeout: 15000 }).catch(() => {});
       await page.waitForLoadState("networkidle").catch(() => {});
       await delayAsync(2000);
-      await page.goto(AutoLoginConstants.URLS.SIGN_IN, { waitUntil: "load", timeout: 25000 }).catch(() => {});
+      await page.goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, { waitUntil: "load", timeout: 25000 }).catch(() => {});
       await page.waitForLoadState("networkidle").catch(() => {});
       await delayAsync(3000);
       await handleAboutRedirect(page);
@@ -138,14 +139,14 @@ export async function autoLoginGoogle(page: Page, account: any): Promise<boolean
     let loginOk = false;
     for (let i = 0; i < 30; i++) {
       const currentUrl = page.url();
-      if (_.includes(currentUrl, REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT) || _.includes(currentUrl, "gemini.google.com")) {
+      if (_.includes(currentUrl, REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT) || _.includes(currentUrl, EXTERNAL_URLS.GEMINI_CHAT_BASE)) {
         loginOk = true;
         break;
       }
       
       if (i % 3 === 0 && i > 0) {
         try {
-          await page.goto(REFACTOR_CONSTANTS.URL_MY_ACCOUNT, { waitUntil: "commit", timeout: 8000 }).catch(() => {});
+          await page.goto(EXTERNAL_URLS.GOOGLE_MY_ACCOUNT, { waitUntil: "commit", timeout: 8000 }).catch(() => {});
           await page.waitForTimeout(1000);
           if (_.includes(page.url(), REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT)) {
             loginOk = true;

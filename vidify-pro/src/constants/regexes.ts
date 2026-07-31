@@ -33,6 +33,8 @@ export const CURL_AGENT_SESSION_ID_REGEX = /"agentSessionId"\s*:\s*"([^"]+)"/i;
 
 export const BASE64_IMAGE_MIME_REGEX =
   /^data:image\/([a-zA-Z0-9+]+);base64,([\s\S]+)$/;
+export const BASE64_VIDEO_MIME_REGEX =
+  /^data:video\/([a-zA-Z0-9+]+);base64,([\s\S]+)$/;
 
 export const BASE64_DATA_URL_REGEX = /^data:([^;]+);base64,([\s\S]+)$/;
 

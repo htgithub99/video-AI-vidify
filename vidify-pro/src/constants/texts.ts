@@ -181,6 +181,7 @@ export const COMMON_STRINGS = {
   EN: "en",
   VI: "vi",
   BASE64_IMAGE_PREFIX: "data:image/",
+  BASE64_VIDEO_PREFIX: "data:video/",
   PROJECT_DEFAULT_NAME: "PROJECT",
   JPEG_EXT: "jpeg",
   JPG_EXT: "jpg",
@@ -224,6 +225,7 @@ export const ERROR_MESSAGES = {
   PROJECT_WRITE_ERR: "PROJECT_WRITE_ERR",
   PROJECT_NOT_FOUND: "PROJECT_NOT_FOUND",
   WRITE_SCENE_IMAGE_ERR: "Lỗi ghi file ảnh scene: ",
+  WRITE_SCENE_VIDEO_ERR: "Lỗi ghi file video scene: ",
   WRITE_SCENE_AUDIO_ERR: "Lỗi ghi file âm thanh scene: ",
   WRITE_THUMB_IMAGE_ERR: "Lỗi ghi file ảnh thumbnail: ",
   WRITE_UNIFIED_AUDIO_ERR: "Lỗi ghi file âm thanh hợp nhất dự án ",
@@ -809,6 +811,21 @@ export const AUTO_GENERATE_TEXTS = {
   BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
   ERR_CODE: "AUTO_GENERATE_ERROR",
   POSITION_TOP: "top",
+} as const;
+
+export const MEDIA_MIX_TEXTS = {
+  vi: {
+    mixed: "Ảnh + video",
+    maxVideos: "Video tối đa",
+    maxVideosTooltip: "Số cảnh video tối đa do AI lựa chọn",
+    selecting: "AI chọn cảnh",
+  },
+  en: {
+    mixed: "Image + video",
+    maxVideos: "Max videos",
+    maxVideosTooltip: "Maximum video scenes selected by AI",
+    selecting: "AI selects scenes",
+  },
 } as const;
 
 export const AUTO_GENERATOR_PANEL_TEXTS = {

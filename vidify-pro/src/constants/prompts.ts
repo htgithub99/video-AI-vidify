@@ -447,6 +447,20 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "tags": ["tag1", "tag2"]
 }`;
 
+export const getVideoSceneSelectionPrompt = (
+  scenesJson: string,
+  maxVideos: number,
+): string => `You are a cinematic editor. Select at most ${maxVideos} storyboard scenes that benefit most from real motion.
+
+Prioritize visible action, travel, transformation, environmental movement, reveals, and emotional peaks. Distribute selections across the story.
+Avoid static portraits, exposition, text-heavy scenes, repeated settings, and adjacent selections unless both are essential.
+
+Return only valid JSON:
+{"videoSceneIds":["scene_id"]}
+
+Storyboard:
+${scenesJson}`;
+
 export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) above. Inspect their color palette, textures, lighting, character details, and visual atmosphere. Incorporate these elements deeply into the character specs, color palette, and lighting mood you return.";
 
 export const THUMBNAIL_REFERENCE_PROMPT = (refImgStr: string) => `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${refImgStr}". Deeply integrate these aesthetic keywords into the thumbnail prompt.`;

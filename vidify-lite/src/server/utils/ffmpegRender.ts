@@ -7,6 +7,7 @@ import { logger } from "../../lib/logger.js";
 import { promisify } from "util";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
+import { GenerateType } from "../../types.js";
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 
@@ -21,12 +22,41 @@ export interface FFmpegRenderOptions {
     audioUrl?: string;
     duration: number;
     text?: string;
+    assetType?: GenerateType.Image | GenerateType.Video;
+    cameraMotion?: string;
+    effects?: string;
+    transition?: string;
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;
   aspectRatio?: string;
   projectId?: string;
 }
+
+const resolveLocalAssetBase64 = (assetUrl?: string): string | undefined => {
+  if (_.isEmpty(assetUrl) || _.startsWith(assetUrl, REFACTOR_CONSTANTS.FFMPEG_DATA_URL_PREFIX)) {
+    return assetUrl;
+  }
+  const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME);
+  const cleanAssetUrl = _.first(_.split(assetUrl, SecurityConstants.QUERY_MARK));
+  const relativeAssetPath = _.trimStart(cleanAssetUrl, REFACTOR_CONSTANTS.VD_SLASH);
+  const assetsPathPrefix = _.join(
+    [ASSETS_DIR_NAME, SecurityConstants.EMPTY_STRING],
+    REFACTOR_CONSTANTS.VD_SLASH,
+  );
+  const normalizedAssetPath = _.startsWith(relativeAssetPath, assetsPathPrefix)
+    ? _.slice(relativeAssetPath, _.size(assetsPathPrefix)).join(SecurityConstants.EMPTY_STRING)
+    : relativeAssetPath;
+  const candidatePath = path.resolve(assetsRoot, normalizedAssetPath);
+  const containedPathPrefix = _.join([assetsRoot, path.sep], SecurityConstants.EMPTY_STRING);
+  if (!_.every([
+    _.startsWith(candidatePath, containedPathPrefix),
+    fs.existsSync(candidatePath),
+  ], Boolean)) {
+    return assetUrl;
+  }
+  return fs.readFileSync(candidatePath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
+};
 
 export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<string> => {
   const qualityVal = _.get(options, "quality", VideoQuality.LOW);
@@ -114,6 +144,10 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
       globalAudioPath = candidatePath;
     }
   }
+  const renderScenes = _.map(scenesVal, (scene) => ({
+    ...scene,
+    imageBase64: resolveLocalAssetBase64(scene.imageBase64 || scene.imageUrl),
+  }));
 
   const config = {
     tempDir,
@@ -124,7 +158,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
     bitrate,
     finalOutputPath,
     finalOutputUrl,
-    scenes: scenesVal,
+    scenes: renderScenes,
     globalAudioPath
   };
 
