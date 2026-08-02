@@ -258,7 +258,19 @@ export function useAutoVideoPipeline(
 
       if (config.resumeMode && existingTargetProj) {
         newProjectId = existingTargetProj.id;
-        newProj = { ...existingTargetProj, status: REFACTOR_CONSTANTS.STATUS_GENERATING };
+        newProj = {
+          ...existingTargetProj,
+          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+          visualConfig: {
+            ...existingTargetProj.visualConfig,
+            generationMode: config.generationMode,
+            imageGeneratorEngine: config.imageGeneratorEngine,
+            generateType: config.generateType,
+            maxVideoScenes: config.maxVideoScenes,
+            aspectRatio: config.aspectRatio,
+            chromeHeadless: config.chromeHeadless,
+          },
+        };
         setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {

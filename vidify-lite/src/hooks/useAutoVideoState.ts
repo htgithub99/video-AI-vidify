@@ -13,7 +13,7 @@ import {
   AspectRatio,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { REFACTOR_CONSTANTS, STORAGE_KEYS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
+import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, STORAGE_KEYS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -22,6 +22,7 @@ import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 
 interface CachedGeneratorConfig {
+  version?: number;
   inputType?: ProjectInputType;
   scriptContent?: string;
   genre?: string;
@@ -212,7 +213,7 @@ export function useAutoVideoState(
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless, setChromeHeadless] = useState<boolean>(true);
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
@@ -226,7 +227,7 @@ export function useAutoVideoState(
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
 
   const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
-  const [resumeMode, setResumeMode] = useState<boolean>(true);
+  const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
   const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
@@ -264,6 +265,7 @@ export function useAutoVideoState(
       const saved = await storageUtils.getAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${id}`);
       const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
       if (parsed) {
+        const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
         if (parsed.inputType) setInputType(parsed.inputType);
         if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
         if (parsed.genre) setGenre(parsed.genre);
@@ -285,8 +287,12 @@ export function useAutoVideoState(
         if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
         if (parsed.sceneReferenceImages) setSceneReferenceImages(parsed.sceneReferenceImages);
         if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
-        if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
-        if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
+        setResumeMode(usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
+          ? parsed.resumeMode
+          : AUTO_VIDEO_DEFAULTS.RESUME_MODE);
+        setChromeHeadless(usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
+          ? parsed.chromeHeadless
+          : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
       } else {
         const foundProj = _.find(projects, { id });
         if (foundProj) {
@@ -315,6 +321,7 @@ export function useAutoVideoState(
   useEffect(() => {
     if (!isConfigLoaded || !selectedProjectId) return;
     const config: CachedGeneratorConfig = {
+      version: AUTO_VIDEO_DEFAULTS.CONFIG_VERSION,
       inputType,
       scriptContent,
       genre,

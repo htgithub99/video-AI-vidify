@@ -75,6 +75,12 @@ export const defaultVisualConfig = {
   colorPalette: "",
 };
 
+export const AUTO_VIDEO_DEFAULTS = {
+  CONFIG_VERSION: 2,
+  CHROME_HEADLESS: false,
+  RESUME_MODE: true,
+} as const;
+
 export const VOICE_MODIFIERS: Record<string, { speed: number; pitch: number }> = {
   [VoicePresetId.PRESET_VI_BAC_FEMALE]: { speed: 1.0, pitch: 1.04 },
   [VoicePresetId.PRESET_VI_BAC_MALE]: { speed: 0.95, pitch: 0.9 },

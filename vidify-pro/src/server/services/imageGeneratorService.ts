@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -1096,8 +1096,6 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Normal;
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
-  // Keep the configured number of independent Gemini rooms visible even when
-  // the queue is temporarily shorter. Idle tabs remain ready for the next job.
   const maxTabs = concurrency;
 
   if (maxTabs === 1) {
@@ -1399,10 +1397,13 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig, forceSetting: boolean) {
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   let targetModelText = GeminiChatModelName.Pro;
+  let targetModelRegex = GEMINI_MODEL_PRO_REGEX;
   if (engine === ImageGeneratorEngine.LabsSandbox) {
     targetModelText = GeminiChatModelName.FlashLite;
+    targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
   } else if (engine === ImageGeneratorEngine.Veo3) {
     targetModelText = GeminiChatModelName.Flash;
+    targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
   }
 
   const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
@@ -1416,14 +1417,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     const currentText = await modelPickerBtn.textContent();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
 
-     let isCorrect = false;
-     if (targetModelText === GeminiChatModelName.FlashLite && _.includes(currentText, "Lite")) {
-       isCorrect = true;
-     } else if (targetModelText === GeminiChatModelName.Flash && _.includes(currentText, "Flash") && !_.includes(currentText, "Lite")) {
-       isCorrect = true;
-     } else if (targetModelText === GeminiChatModelName.Pro && _.includes(currentText, "Pro")) {
-       isCorrect = true;
-     }
+    const isCorrect = targetModelRegex.test(currentText || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
     if (isCorrect) {
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
@@ -1436,7 +1430,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
 
     const optionBtn = page
       .locator(GeminiChatSelector.MenuOptions)
-      .filter({ hasText: new RegExp(targetModelText, "i") })
+      .filter({ hasText: targetModelRegex })
       .first();
     if (await optionBtn.isVisible()) {
       await randomDelay(500, 1000);
