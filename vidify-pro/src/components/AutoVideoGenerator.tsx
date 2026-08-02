@@ -786,7 +786,7 @@ export default function AutoVideoGenerator({
                 size={REFACTOR_CONSTANTS.SIZE_LG}
                 onClick={() => handleStartAutoGenerate()}
                 disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
-                isLoading={isProcessing}
+                isLoading={isProcessing && !isCancelling}
                 className="flex-1 py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                 title={T.startBtnTooltip}
               >
@@ -800,6 +800,7 @@ export default function AutoVideoGenerator({
                   size={REFACTOR_CONSTANTS.SIZE_LG}
                   onClick={cancelPipeline}
                   disabled={isCancelling}
+                  isLoading={isCancelling}
                   className="flex-1 py-4 text-sm font-bold border border-red-500/30 bg-red-950/20 hover:bg-red-950/40 text-red-400 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
                   title={T.cancelBtnTooltip}
                 >
@@ -898,9 +899,39 @@ export default function AutoVideoGenerator({
             )}
             {activeCreatedProject && (
               <div className="grid grid-cols-3 gap-2 pt-1">
-                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.VOICE)} title={regenerationTexts.voice}><Mic className="w-4 h-4" />{regenerationTexts.voice}</Button>
-                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.IMAGES)} title={regenerationTexts.images}><ImageIcon className="w-4 h-4" />{regenerationTexts.images}</Button>
-                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.RENDER)} title={regenerationTexts.render}><RefreshCw className="w-4 h-4" />{regenerationTexts.render}</Button>
+                <Button 
+                  size={REFACTOR_CONSTANTS.SIZE_SM} 
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} 
+                  disabled={isProcessing} 
+                  onClick={() => void handleRegenerate(REGENERATION_TARGET.VOICE)} 
+                  title={regenerationTexts.voice}
+                  className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-blue-400/30 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/20 active:scale-95"
+                >
+                  <Mic className="w-4 h-4 text-cyan-100" />
+                  <span className="truncate">{regenerationTexts.voice}</span>
+                </Button>
+                <Button 
+                  size={REFACTOR_CONSTANTS.SIZE_SM} 
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} 
+                  disabled={isProcessing} 
+                  onClick={() => void handleRegenerate(REGENERATION_TARGET.IMAGES)} 
+                  title={regenerationTexts.images}
+                  className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-purple-400/30 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-purple-500/20 active:scale-95"
+                >
+                  <ImageIcon className="w-4 h-4 text-pink-100" />
+                  <span className="truncate">{regenerationTexts.images}</span>
+                </Button>
+                <Button 
+                  size={REFACTOR_CONSTANTS.SIZE_SM} 
+                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} 
+                  disabled={isProcessing} 
+                  onClick={() => void handleRegenerate(REGENERATION_TARGET.RENDER)} 
+                  title={regenerationTexts.render}
+                  className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-emerald-400/30 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-95"
+                >
+                  <RefreshCw className="w-4 h-4 text-teal-100" />
+                  <span className="truncate">{regenerationTexts.render}</span>
+                </Button>
               </div>
             )}
           </div>
