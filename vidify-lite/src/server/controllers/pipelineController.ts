@@ -14,7 +14,7 @@ import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -2629,6 +2629,30 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
+  }
+});
+
+router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), (req: Request, res: Response) => {
+  const { projectId, group } = req.params;
+  const allowedGroups = _.values(PROJECT_ASSET_GROUP);
+  if (!_.includes(allowedGroups, group)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+
+  const projectsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
+  const projectRoot = path.resolve(projectsRoot, projectId);
+  const assetDirectory = path.resolve(projectRoot, group);
+  if (!_.isEqual(path.dirname(projectRoot), projectsRoot) || !_.isEqual(path.dirname(assetDirectory), projectRoot)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+
+  try {
+    fs.rmSync(assetDirectory, { recursive: true, force: true });
+    fs.mkdirSync(assetDirectory, { recursive: true });
+    return res.json({ success: true });
+  } catch (error: any) {
+    logger.error(getBackendMsg("SQLITE_DELETE_ERR", true), error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("SQLITE_DELETE_ERR", true) });
   }
 });
 

@@ -64,6 +64,24 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
   ],
 } as const;
 
+export const PROJECT_ASSET_GROUP = {
+  VOICES: "voices",
+  IMAGES: "images",
+  VIDEOS: "videos",
+} as const;
+export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
+export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
+
+export const REGENERATION_TARGET = {
+  VOICE: "voice",
+  IMAGES: "images",
+  RENDER: "render",
+} as const;
+export const REGENERATION_TEXTS = {
+  vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
+  en: { voice: "Redo voice", images: "Redo images", render: "Render again", failed: "Could not remove old assets. Please try again." },
+} as const;
+
 export const FFMPEG_RESOLUTIONS = {
   low: { width: 854, height: 480, fps: 24, bitrate: "1000k" },
   high: { width: 1280, height: 720, fps: 30, bitrate: "2500k" },

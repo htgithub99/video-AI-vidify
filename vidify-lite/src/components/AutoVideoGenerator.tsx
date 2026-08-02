@@ -26,9 +26,11 @@ import {
   REFACTOR_CONSTANTS,
   genreLabels,
   MEDIA_MIX_CONFIG,
+  API_HEADERS,
+  STORAGE_KEYS,
 } from "../constants";
 import { MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG, PROJECT_ASSET_GROUP, REGENERATION_TARGET, REGENERATION_TEXTS } from "../constants/config";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
@@ -220,7 +222,7 @@ export default function AutoVideoGenerator({
   const handleSceneReferenceFilesUpload = createImageUploadHandler(setSceneReferenceImages, T.logSceneReferenceUploaded);
   const handleThumbnailStyleFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbUploaded);
 
-  const handleStartAutoGenerate = () => {
+  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}) => {
     startPipeline({
       scriptContent, inputType, genre, language, duration, rewriteLevel,
       similarityReduction, creativityLevel, factCheck, audience, writingStyle,
@@ -231,9 +233,38 @@ export default function AutoVideoGenerator({
       chromeHeadless, geminiChatSpeed, batchDelay, stylePreset,
       referenceImages, sceneReferenceImages, characterImages,
       thumbnailCount, thumbnailStylePreset, thumbnailReferenceImages,
-      projectName, resumeMode, ffmpegQuality, selectedProjectId,
+      projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
+      forceRegenerateVoice: overrides.forceRegenerateVoice,
+      forceRegenerateScenes: overrides.forceRegenerateScenes,
     });
   };
+
+  const regenerationTexts = REGENERATION_TEXTS[currentLang as "vi" | "en"] || REGENERATION_TEXTS.vi;
+  const handleRegenerate = async (target: string) => {
+    const project = activeCreatedProject;
+    if (!project) return;
+    if (isProcessing) return;
+    const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
+      ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
+      : _.isEqual(target, REGENERATION_TARGET.IMAGES)
+        ? [PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS]
+        : [PROJECT_ASSET_GROUP.VIDEOS];
+    const responses = await Promise.all(_.map(groups, (group) => fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
+      method: HTTP_METHODS.DELETE,
+      headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
+    })));
+    if (_.some(responses, (response) => !response.ok)) {
+      alert(regenerationTexts.failed);
+      return;
+    }
+    pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+    handleStartAutoGenerate({
+      resumeMode: true,
+      forceRegenerateVoice: _.isEqual(target, REGENERATION_TARGET.VOICE),
+      forceRegenerateScenes: _.isEqual(target, REGENERATION_TARGET.IMAGES),
+    });
+  };
+
 
   const voiceDialogPersistenceScope = _.join(
     [AppTab.AUTO_GENERATOR, _.defaultTo(activeCreatedProject?.id, _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE))],
@@ -753,7 +784,7 @@ export default function AutoVideoGenerator({
               <Button
                 variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
                 size={REFACTOR_CONSTANTS.SIZE_LG}
-                onClick={handleStartAutoGenerate}
+                onClick={() => handleStartAutoGenerate()}
                 disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
                 isLoading={isProcessing}
                 className="flex-1 py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -863,6 +894,13 @@ export default function AutoVideoGenerator({
                     <Sliders className="w-4 h-4 text-rose-400" /> {T.openStudioBtn}
                   </Button>
                 )}
+              </div>
+            )}
+            {activeCreatedProject && (
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.VOICE)} title={regenerationTexts.voice}><Mic className="w-4 h-4" />{regenerationTexts.voice}</Button>
+                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.IMAGES)} title={regenerationTexts.images}><ImageIcon className="w-4 h-4" />{regenerationTexts.images}</Button>
+                <Button size={REFACTOR_CONSTANTS.SIZE_SM} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} disabled={isProcessing} onClick={() => void handleRegenerate(REGENERATION_TARGET.RENDER)} title={regenerationTexts.render}><RefreshCw className="w-4 h-4" />{regenerationTexts.render}</Button>
               </div>
             )}
           </div>

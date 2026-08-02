@@ -98,6 +98,8 @@ export interface PipelineConfig {
   resumeMode: boolean;
   ffmpegQuality: VideoQuality;
   selectedProjectId?: string | null;
+  forceRegenerateVoice?: boolean;
+  forceRegenerateScenes?: boolean;
 }
 
 export interface PipelineState {
@@ -506,7 +508,7 @@ export function useAutoVideoPipeline(
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let isVoiceCached = false;
 
-      if (config.resumeMode && !invalidationState.regenerateVoice) {
+      if (config.resumeMode && !config.forceRegenerateVoice && !invalidationState.regenerateVoice) {
         const cachedVoiceAudio = await fetchCachedVoiceAudio(newProj.voiceConfig);
         if (cachedVoiceAudio.isCached) {
           globalAudioBase64 = cachedVoiceAudio.audioBase64;
@@ -574,7 +576,7 @@ export function useAutoVideoPipeline(
         };
       }
 
-      const hasCachedAlignment = config.resumeMode && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
+      const hasCachedAlignment = config.resumeMode && !config.forceRegenerateVoice && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
       const alignmentRequest = globalAudioBase64 && !hasCachedAlignment
         ? (() => {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
@@ -733,6 +735,7 @@ export function useAutoVideoPipeline(
         })();
 
       const targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
+        if (config.forceRegenerateScenes) return true;
         if (config.resumeMode && !shouldRegenerateSceneAssets && hasSceneAsset(sc)) return false;
         return true;
       });
