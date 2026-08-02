@@ -2065,13 +2065,16 @@ export default function AutoVideoGenerator({
                 ))}
               </div>
 
-              <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.CARD_CLASS}>
+              <div className="space-y-4">
                 <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_CLASS}>
-                  <Target className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_ICON_CLASS} />
-                  <div>
-                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.TITLE_CLASS}>{T.sceneReferenceTitle}</div>
-                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DESCRIPTION_CLASS}>{T.sceneReferenceDescription}</div>
+                  <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0">
+                    <Target className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_ICON_CLASS} />
                   </div>
+                  <Tooltip content={T.sceneReferenceDescription} position="top">
+                    <div className={cn(AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.TITLE_CLASS, "cursor-help underline decoration-dotted decoration-slate-400 dark:decoration-slate-700 decoration-1 underline-offset-4")}>
+                      {T.sceneReferenceTitle}
+                    </div>
+                  </Tooltip>
                 </div>
                 <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.GRID_CLASS}>
                   <div
@@ -2267,37 +2270,23 @@ export default function AutoVideoGenerator({
             ) : null}
           </div>
 
-          <div className={cn(
-            "rounded-3xl p-5 space-y-3 flex-1 flex flex-col min-h-[260px]",
-            _.isEqual(theme, "light") ? "bg-white text-slate-950" : "bg-slate-900 text-slate-100",
-          )}>
-            <div className={cn(
-              "flex items-center justify-between border-b pb-3",
-              _.isEqual(theme, "light") ? "border-slate-200" : "border-slate-800",
-            )}>
+          <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col min-h-[260px]">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <span
-                className="font-bold flex items-center gap-2 text-sm"
-                style={{ color: _.isEqual(theme, "light") ? "#111827" : "#f8fafc" }}
+                className="font-bold flex items-center gap-2 text-sm text-slate-100"
                 title={T.logHeaderTooltip}
               >
-                <span className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center",
-                  _.isEqual(theme, "light") ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300",
-                )}>
+                <span className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-400 dark:text-amber-300 flex items-center justify-center">
                   <Activity className="w-4 h-4" />
                 </span>
                 {T.logHeaderTitle}
               </span>
-              <span className={cn(
-                "text-[10px] font-semibold px-2.5 py-1 rounded-full",
-                _.isEqual(theme, "light") ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300",
-              )}>{T.logEventsCount(logs.length)}</span>
+              <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">
+                {T.logEventsCount(logs.length)}
+              </span>
             </div>
 
-            <div className={cn(
-              "flex-1 rounded-2xl p-3 overflow-y-auto space-y-2 leading-relaxed flex flex-col min-h-[180px] max-h-[420px]",
-              _.isEqual(theme, "light") ? "bg-slate-50" : "bg-slate-950/70",
-            )}>
+            <div className="flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-none">
               {_.isEmpty(logs) ? (
                 <div className={cn(
                   "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
