@@ -161,29 +161,29 @@ export const imageGenMutex = new SimpleMutex();
 const geminiRequestPacingMutex = new SimpleMutex();
 let nextGeminiRequestAt = SecurityConstants.ZERO;
 
-const getNonNegativeNumber = (value: number): number => (
-  _.max([value, SecurityConstants.ZERO]) || SecurityConstants.ZERO
+const sanitizeNonNegativeInteger = (value: number | undefined): number => (
+  _.defaultTo(_.max([value, SecurityConstants.ZERO]), SecurityConstants.ZERO)
 );
 
 const getGeminiRetryBackoff = (attempt: number): number => {
-  const retryIndex = getNonNegativeNumber(
+  const retryIndex = sanitizeNonNegativeInteger(
     _.subtract(attempt, SecurityConstants.DEFAULT_AMOUNT),
   );
   if (!_.gt(retryIndex, SecurityConstants.ZERO)) {
     return SecurityConstants.ZERO;
   }
-  return _.min([
+  return _.defaultTo(_.min([
     _.multiply(
       GEMINI_CHAT_PACING_CONFIG.RETRY_BACKOFF_BASE_MS,
       GEMINI_CHAT_PACING_CONFIG.BACKOFF_MULTIPLIER ** retryIndex,
     ),
     GEMINI_CHAT_PACING_CONFIG.RETRY_BACKOFF_MAX_MS,
-  ]) || SecurityConstants.ZERO;
+  ]), SecurityConstants.ZERO);
 };
 
 const getGeminiRequestWait = (attempt: number, now: number): number => (
   _.sum([
-    getNonNegativeNumber(_.subtract(nextGeminiRequestAt, now)),
+    sanitizeNonNegativeInteger(_.subtract(nextGeminiRequestAt, now)),
     getGeminiRetryBackoff(attempt),
     _.random(
       GEMINI_CHAT_PACING_CONFIG.JITTER_MIN_MS,
@@ -425,14 +425,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
   const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
-  let finalPrompt = prompt || "";
+  let finalPrompt = _.defaultTo(prompt, "");
   if (isStickman) {
     const stickmanStyleModifiers = STICKMAN_STYLE_MODIFIERS;
     finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
   }
 
   const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
+  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(_.defaultTo(kws, "cinematic,landscape"))}`;
 
   const projectId = sandboxConfig.projectId;
   let cleanProjectId = projectId;
@@ -537,7 +537,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           }
         }
 
-        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
+        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
 
         const inputEl = await activePage.waitForSelector(SELECTOR_INPUT, {
           timeout: 30000,
@@ -546,10 +546,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         try {
           const currentConfigState = jsonUtils.safeStringify({
-            generateType: visualConfig?.generateType || GenerateType.Image,
-            aspectRatio: visualConfig?.aspectRatio || AspectRatio.SixteenNine,
-            generateCount: visualConfig?.generateCount || 1,
-            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+            generateType: _.defaultTo(visualConfig?.generateType, GenerateType.Image),
+            aspectRatio: _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine),
+            generateCount: _.defaultTo(visualConfig?.generateCount, 1),
+            imageGeneratorEngine: _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
           });
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
@@ -573,14 +573,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                 const typeBtn = dropdown.locator('[role="tab"]').filter({ hasText: targetTypeText }).first();
                 if (await typeBtn.isVisible()) await typeBtn.click();
 
-                const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
+                const targetRatio = _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine);
                 const ratioBtn = dropdown
                   .locator('[role="tab"]')
                   .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
                   .first();
                 if (await ratioBtn.isVisible()) await ratioBtn.click();
 
-                const targetCount = visualConfig?.generateCount || 1;
+                const targetCount = _.defaultTo(visualConfig?.generateCount, 1);
                 const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
                 const countBtn = dropdown
                   .locator('[role="tab"]')
@@ -596,7 +596,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   if (await durationBtn.isVisible()) await durationBtn.click();
                 }
 
-                const targetEngineKey = (visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3).toLowerCase();
+                const targetEngineKey = (_.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3)).toLowerCase();
 
                 let exactEngineRegex: RegExp;
                 let fallbackEngineRegex: RegExp;
@@ -1733,7 +1733,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
         .first();
       if (await unexpectedImage.isVisible().catch(() => false)) {
         await captureGeminiDomState(page, "video_unexpected_image");
-        throw new Error("Gemini trﬂ¶˙ vﬂ+¸ ﬂ¶˙nh trong khi y+¨u cﬂ¶∫u tﬂ¶Ìo video; chﬂ¶+ -Êﬂ+÷ Tﬂ¶Ìo video ch¶¶a -Ê¶¶ﬂ+˙c +Ìp dﬂ+—ng.");
+        throw new Error("Gemini tr·∫£ v·ªÅ ·∫£nh trong khi y√™u c·∫ßu t·∫°o video; ch·∫ø ƒë·ªô T·∫°o video ch∆∞a ƒë∆∞·ª£c √°p d·ª•ng.");
       }
     }
 
@@ -1742,7 +1742,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
     if (matchedError) {
       generationError = _.truncate(_.trim(responseText), { length: GEMINI_MEDIA_EXTRACTION_CONFIG.MAX_ERROR_TEXT_LENGTH });
       await captureGeminiDomState(page, isVideoGeneration ? "video_error" : "image_error");
-      throw new Error(`Gemini tﬂ+Ω chﬂ+Êi tﬂ¶Ìo nﬂ+÷i dung: ${generationError}`);
+      throw new Error(`Gemini t·ª´ ch·ªëi t·∫°o n·ªôi dung: ${generationError}`);
     }
     await page.waitForTimeout(1000);
   }
@@ -1750,7 +1750,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   if (!(await mediaContainer.isVisible().catch(() => false))) {
     await captureGeminiDomState(page, isVideoGeneration ? "video_timeout" : "image_timeout");
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
-    throw new Error(`Gemini kh+¶ng trﬂ¶˙ vﬂ+¸ ${isVideoGeneration ? "video" : "ﬂ¶˙nh"} tr¶¶ﬂ+¢c khi hﬂ¶+t thﬂ+•i gian chﬂ+•.`);
+    throw new Error(`Gemini kh√¥ng tr·∫£ v·ªÅ ${isVideoGeneration ? "video" : "·∫£nh"} tr∆∞·ªõc khi h·∫øt th·ªùi gian ch·ªù.`);
   }
   await captureGeminiDomState(page, isVideoGeneration ? "video_ready" : "image_ready");
 

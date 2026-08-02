@@ -425,42 +425,42 @@ migrateJsonToSqlite().catch((error) => {
   appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
 });
 
-export const getAllProjects = async (req: Request, res: Response) => {
+export const getAllProjects = async (request: Request, response: Response) => {
   try {
     const list = await getProjectsListFromDb();
-    res.json(list);
+    response.json(list);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_LIST_ERR") });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")) });
   }
 };
 
-export const getProjectById = async (req: Request, res: Response) => {
-  const { id } = req.params;
+export const getProjectById = async (request: Request, response: Response) => {
+  const { id } = request.params;
   try {
     const project = await getProjectDetail(id);
     if (project) {
-      res.json(project);
+      response.json(project);
     } else {
-      res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
+      response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_DETAIL_ERR") });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_DETAIL_ERR")) });
   }
 };
 
-export const createProject = async (req: Request, res: Response) => {
+export const createProject = async (request: Request, response: Response) => {
   const now = new Date().toISOString();
   const newProject: VideoProject = {
-    ...req.body,
-    id: req.body.id || randomUUID(),
-    createdAt: req.body.createdAt || now,
-    updatedAt: req.body.updatedAt || now,
+    ...request.body,
+    id: _.defaultTo(request.body.id, randomUUID()),
+    createdAt: _.defaultTo(request.body.createdAt, now),
+    updatedAt: _.defaultTo(request.body.updatedAt, now),
   };
   try {
     const savedProject = await saveProjectDetail(newProject);
-    res.status(201).json(savedProject);
+    response.status(201).json(savedProject);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_WRITE_ERR") });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")) });
   }
 };
 
@@ -488,13 +488,13 @@ function renameProjectAssetsDir(oldDir: string, newDir: string, newProject: any,
   }
 }
 
-export const updateProject = async (req: Request, res: Response) => {
-  const { id } = req.params;
+export const updateProject = async (request: Request, response: Response) => {
+  const { id } = request.params;
   try {
     const oldProject = await getProjectDetail(id);
 
     if (oldProject) {
-      let newProject = req.body;
+      let newProject = request.body;
 
       if (newProject.name && oldProject.name && !_.eq(newProject.name, oldProject.name)) {
         const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
@@ -532,26 +532,26 @@ export const updateProject = async (req: Request, res: Response) => {
       let updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
 
       const savedProject = await saveProjectDetail(updatedProject);
-      res.json(savedProject);
+      response.json(savedProject);
     } else {
       const now = new Date().toISOString();
       const newProject: VideoProject = {
-        ...req.body,
+        ...request.body,
         id: id,
-        createdAt: req.body.createdAt || now,
-        updatedAt: req.body.updatedAt || now,
+        createdAt: _.defaultTo(request.body.createdAt, now),
+        updatedAt: _.defaultTo(request.body.updatedAt, now),
       };
       const savedProject = await saveProjectDetail(newProject);
-      res.json(savedProject);
+      response.json(savedProject);
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_WRITE_ERR") });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")) });
   }
 };
 
-export const deleteProject = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const isVi = !_.eq(req.query.lang, COMMON_STRINGS.EN);
+export const deleteProject = async (request: Request, response: Response) => {
+  const { id } = request.params;
+  const isVi = !_.eq(request.query.lang, COMMON_STRINGS.EN);
 
   try {
     const project = await getProjectDetail(id);
@@ -577,11 +577,11 @@ export const deleteProject = async (req: Request, res: Response) => {
           } catch (err) { }
         }
       }
-      res.json({ success: true });
+      response.json({ success: true });
     } else {
-      res.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
+      response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message || getBackendMsg("SQLITE_DELETE_ERR") });
+    response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_DELETE_ERR")) });
   }
 };

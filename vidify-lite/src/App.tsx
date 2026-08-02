@@ -22,29 +22,9 @@ const PROJECT_WORKSPACE_TABS = [AppTab.AUTO_GENERATOR, AppTab.STUDIO];
 const PipelineWizard = lazy(() => import("./components/PipelineWizard.tsx"));
 const AutoVideoGenerator = lazy(() => import("./components/AutoVideoGenerator.tsx"));
 
-const isProjectWorkspaceTab = (tab: string): boolean => (
-  _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab)
-);
+const isProjectWorkspaceTab = (tab: string): boolean => _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab);
 
-const isProjectReadyForTab = (
-  project: VideoProject | undefined,
-  tab: string,
-): boolean => _.some([
-  _.every([
-    _.isEqual(tab, AppTab.AUTO_GENERATOR),
-    _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Auto),
-      _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-  _.every([
-    _.isEqual(tab, AppTab.STUDIO),
-    _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Studio),
-      _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-], Boolean);
+const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([_.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(project?.projectKind, ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(project?.projectKind, ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean)], Boolean);
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -96,7 +76,7 @@ export default function App() {
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: jsonUtils.safeStringify(proj),
             keepalive: true,
-          }).catch((e) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, e));
+          }).catch((error) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error));
         }
       });
     };
@@ -664,7 +644,7 @@ export default function App() {
                   currentLang={currentLang}
                   projects={projects}
                   isLoading={isLoadingProjects}
-                  onSelectProject={(p) => handleSelectProject(p.id)}
+                  onSelectProject={(project) => handleSelectProject(project.id)}
                   onCreateProject={handleCreateProject}
                   onUpdateProject={handleUpdateProjectDetails}
                   onDeleteProject={handleDeleteProject}

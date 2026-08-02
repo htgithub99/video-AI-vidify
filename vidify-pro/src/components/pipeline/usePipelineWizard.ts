@@ -129,11 +129,11 @@ export function usePipelineWizard(props: any) {
     if (!initialProject) return initialProject;
     return {
       ...initialProject,
-      voiceConfig: initialProject.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG,
-      input: initialProject.input || PipelineConstants.DEFAULT_PROJECT_INPUT,
-      config: initialProject.config || PipelineConstants.DEFAULT_PROJECT_CONFIG,
-      hookConfig: initialProject.hookConfig || PipelineConstants.DEFAULT_HOOK_CONFIG,
-      visualConfig: initialProject.visualConfig || PipelineConstants.DEFAULT_VISUAL_CONFIG,
+      voiceConfig: _.defaultTo(initialProject.voiceConfig, PipelineConstants.DEFAULT_VOICE_CONFIG),
+      input: _.defaultTo(initialProject.input, PipelineConstants.DEFAULT_PROJECT_INPUT),
+      config: _.defaultTo(initialProject.config, PipelineConstants.DEFAULT_PROJECT_CONFIG),
+      hookConfig: _.defaultTo(initialProject.hookConfig, PipelineConstants.DEFAULT_HOOK_CONFIG),
+      visualConfig: _.defaultTo(initialProject.visualConfig, PipelineConstants.DEFAULT_VISUAL_CONFIG),
     };
   }, [initialProject]);
 
@@ -150,30 +150,30 @@ export function usePipelineWizard(props: any) {
         }
         const isTimingLogChanged = _.some([prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog], Boolean);
 
-        let mergedStoryboard = prev.storyboard || [];
+        let mergedStoryboard = _.defaultTo(prev.storyboard, []);
         if (_.some([isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)], Boolean)) {
-          mergedStoryboard = normalizedInitialProject.storyboard || [];
+          mergedStoryboard = _.defaultTo(normalizedInitialProject.storyboard, []);
         } else if (isTimingLogChanged) {
           mergedStoryboard = prev.storyboard;
         } else {
-          mergedStoryboard = (prev.storyboard || []).map((localScene) => {
+          mergedStoryboard = _.defaultTo(prev.storyboard, []).map((localScene) => {
             if (localScene.assetUrl === REFACTOR_CONSTANTS.VD_EMPTY_STRING) return localScene;
             const serverScene = _.find(normalizedInitialProject.storyboard, (s) => _.isEqual(s.id, localScene.id));
             return serverScene?.assetUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH)
               ? {
                 ...localScene,
                 assetUrl: serverScene.assetUrl,
-                assetUrls: serverScene.assetUrls || [serverScene.assetUrl],
+                assetUrls: _.defaultTo(serverScene.assetUrls, [serverScene.assetUrl]),
               }
               : localScene;
           });
         }
 
-        let mergedThumbnails = prev.thumbnails || [];
+        let mergedThumbnails = _.defaultTo(prev.thumbnails, []);
         if (_.some([isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)], Boolean)) {
-          mergedThumbnails = normalizedInitialProject.thumbnails || [];
+          mergedThumbnails = _.defaultTo(normalizedInitialProject.thumbnails, []);
         } else {
-          mergedThumbnails = (prev.thumbnails || []).map((localThumb) => {
+          mergedThumbnails = _.defaultTo(prev.thumbnails, []).map((localThumb) => {
             const serverThumb = _.find(normalizedInitialProject.thumbnails, (t) => _.isEqual(t.id, localThumb.id));
             return serverThumb?.imageUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH) ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
           });
@@ -185,17 +185,17 @@ export function usePipelineWizard(props: any) {
           const serverVal = normalizedInitialProject[key];
           const localVal = prev[key];
           const isEmpty = checkEmptyArray ? !(localVal as any)?.length : !localVal;
-          return isServerUpdate || isEmpty ? (serverVal ?? fallback) : localVal;
+          return isServerUpdate || isEmpty ? _.defaultTo(serverVal, fallback) : localVal;
         };
 
         const voiceConfig = isServerUpdate
-          ? normalizedInitialProject.voiceConfig || prev.voiceConfig
+          ? _.defaultTo(normalizedInitialProject.voiceConfig, prev.voiceConfig)
           : _.every([!isTimingLogChanged, shouldUpdateVoiceConfig, !!normalizedInitialProject.voiceConfig], Boolean)
             ? {
-              ...(prev.voiceConfig || {}),
+              ...(_.defaultTo(prev.voiceConfig, {})),
               audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
               audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
-              timingLog: normalizedInitialProject.voiceConfig.timingLog || prev.voiceConfig?.timingLog,
+              timingLog: _.defaultTo(normalizedInitialProject.voiceConfig.timingLog, prev.voiceConfig?.timingLog),
             }
             : prev.voiceConfig;
 

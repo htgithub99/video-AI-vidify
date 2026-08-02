@@ -117,7 +117,7 @@ export class LicenseService {
                 throw error;
             }
             appError(SecurityMessages.FAILED_TO_CONNECT, error);
-            throw new Error(error.message || SecurityMessages.FAILED_TO_CONNECT);
+            throw new Error(_.defaultTo(error.message, SecurityMessages.FAILED_TO_CONNECT));
         }
     }
 

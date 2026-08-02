@@ -41,7 +41,7 @@ export interface ProjectImageGenerationSummary {
 
 export const hasSceneAsset = (scene: Pick<StoryboardScene, "assetUrl" | "assetUrls">): boolean => (
   _.some(
-    [scene.assetUrl, ..._.castArray(scene.assetUrls || [])],
+    [scene.assetUrl, ..._.castArray(_.defaultTo(scene.assetUrls, []))],
     (assetUrl) => !_.isEmpty(assetUrl),
   )
 );
@@ -77,8 +77,10 @@ const generateFallbackImage = async (
     API_ROUTES.PIPELINE_GENERATE_IMAGE,
     createPayload(item),
   );
-  const base64 = _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY)
-    || _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
+  const base64 = _.defaultTo(
+    _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
+    _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
+  );
   const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
   const generationSucceeded = _.get(
     response.data,
@@ -117,7 +119,7 @@ export const createProjectImageUrl = (result: ProjectImageResult): string => {
       REFACTOR_CONSTANTS.VD_EMPTY_STRING,
     );
   }
-  return result.fallbackUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  return _.defaultTo(result.fallbackUrl, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 };
 
 export const selectVideoSceneIds = async (
@@ -219,10 +221,10 @@ export const generateProjectImages = async ({
     );
 
     if (!_.isEmpty(fallbackItems)) {
-      const fallbackReason = batchError || createCountError(
+      const fallbackReason = _.defaultTo(batchError, createCountError(
         REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_INCOMPLETE,
         _.size(fallbackItems),
-      );
+      ));
       onFallbackStart?.(fallbackReason, fallbackItems);
 
       for (const [index, item] of fallbackItems.entries()) {

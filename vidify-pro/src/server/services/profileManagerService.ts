@@ -60,7 +60,10 @@ export async function launchLoginBrowser(profileId: string): Promise<void> {
     ],
   });
 
-  const page = context.pages()[0] || (await context.newPage());
+  let page = _.first(context.pages());
+  if (!page) {
+    page = await context.newPage();
+  }
   await page.goto(EXTERNAL_URLS.GOOGLE_ACCOUNTS);
 
   return new Promise<void>((resolve) => {

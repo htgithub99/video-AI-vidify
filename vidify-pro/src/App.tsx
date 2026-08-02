@@ -96,7 +96,7 @@ export default function App() {
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: jsonUtils.safeStringify(proj),
             keepalive: true,
-          }).catch((e) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, e));
+          }).catch((error) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error));
         }
       });
     };
@@ -664,7 +664,7 @@ export default function App() {
                   currentLang={currentLang}
                   projects={projects}
                   isLoading={isLoadingProjects}
-                  onSelectProject={(p) => handleSelectProject(p.id)}
+                  onSelectProject={(project) => handleSelectProject(project.id)}
                   onCreateProject={handleCreateProject}
                   onUpdateProject={handleUpdateProjectDetails}
                   onDeleteProject={handleDeleteProject}

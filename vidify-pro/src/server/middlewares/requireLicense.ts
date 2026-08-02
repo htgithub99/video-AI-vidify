@@ -8,8 +8,8 @@ import { requestContext } from '../utils/requestContext.js';
 import { getResolvedLicenseKey } from '../services/apiKeyResolver.js';
 import { GenerateType } from '../../types.js';
 
-const getRequestedUsageAmount = (req: Request, featureType: FeatureType): number => {
-    const requestedItems = _.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
+const getRequestedUsageAmount = (request: Request, featureType: FeatureType): number => {
+    const requestedItems = _.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
     const requestedVisualItems = _.isArray(requestedItems)
         ? _.filter(requestedItems, (item) => (
             _.isEqual(featureType, FeatureType.VIDEO)
@@ -23,7 +23,7 @@ const getRequestedUsageAmount = (req: Request, featureType: FeatureType): number
             ? _.size(requestedVisualItems)
             : SecurityConstants.DEFAULT_AMOUNT,
         [FeatureType.VOICE]: _.size(
-            _.toString(_.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))
+            _.toString(_.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))
         ),
     };
     if (_.every([
@@ -33,19 +33,19 @@ const getRequestedUsageAmount = (req: Request, featureType: FeatureType): number
         return _.size(requestedVisualItems);
     }
 
-    return _.max([
+    return _.defaultTo(_.max([
         _.get(requestedAmountByFeature, featureType, SecurityConstants.DEFAULT_AMOUNT),
         SecurityConstants.DEFAULT_AMOUNT,
-    ]) ?? SecurityConstants.DEFAULT_AMOUNT;
+    ]), SecurityConstants.DEFAULT_AMOUNT);
 };
 
 export const requireLicense = (featureType?: FeatureType) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (request: Request, response: Response, next: NextFunction) => {
         try {
-            const licenseKey = getResolvedLicenseKey(req);
+            const licenseKey = getResolvedLicenseKey(request);
 
             if (_.isEmpty(licenseKey)) {
-                return res.status(SecurityConstants.HTTP_UNAUTHORIZED).json({
+                return response.status(SecurityConstants.HTTP_UNAUTHORIZED).json({
                     error: SecurityMessages.MISSING_LICENSE_KEY,
                     code: SecurityConstants.LICENSE_MISSING_CODE
                 });
@@ -54,7 +54,7 @@ export const requireLicense = (featureType?: FeatureType) => {
             const license = await LicenseService.validateKey(licenseKey);
 
             if (_.isNil(license)) {
-                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
                     code: SecurityConstants.LICENSE_INVALID_CODE
                 });
@@ -62,7 +62,7 @@ export const requireLicense = (featureType?: FeatureType) => {
 
             const status = _.get(license, SecurityConstants.PROP_STATUS);
             if (!_.isEqual(status, LicenseStatus.ACTIVE)) {
-                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
                     code: SecurityConstants.LICENSE_INACTIVE_CODE
                 });
@@ -72,14 +72,14 @@ export const requireLicense = (featureType?: FeatureType) => {
             if (!_.isNil(expiresAt)) {
                 const expiresTime = new Date(expiresAt).getTime();
                 if (!isNaN(expiresTime) && _.lt(expiresTime, Date.now())) {
-                    return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                    return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
                         error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
                         code: SecurityConstants.LICENSE_INACTIVE_CODE
                     });
                 }
             }
 
-            _.set(req, SecurityConstants.LICENSE_INFO_KEY, license);
+            _.set(request, SecurityConstants.LICENSE_INFO_KEY, license);
 
             const store = requestContext.getStore();
             if (store) {
@@ -97,7 +97,7 @@ export const requireLicense = (featureType?: FeatureType) => {
 
             const currentUsage = _.get(license, _.join([SecurityConstants.USAGE_PREFIX, featureType], SecurityConstants.EMPTY_STRING), SecurityConstants.ZERO);
             const maxLimit = _.get(license, _.join([SecurityConstants.LIMITS_PREFIX_LOWER, featureType], SecurityConstants.DOT), SecurityConstants.ZERO);
-            const requestedAmount = getRequestedUsageAmount(req, featureType);
+            const requestedAmount = getRequestedUsageAmount(request, featureType);
             const projectedUsage = _.add(currentUsage, requestedAmount);
 
             if (_.gt(projectedUsage, maxLimit)) {
@@ -115,7 +115,7 @@ export const requireLicense = (featureType?: FeatureType) => {
                     errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
                 }
 
-                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: errorMsg,
                     code: SecurityConstants.QUOTA_EXCEEDED_CODE
                 });
@@ -124,13 +124,13 @@ export const requireLicense = (featureType?: FeatureType) => {
             next();
         } catch (error) {
             if (error instanceof LicenseValidationError) {
-                return res.status(SecurityConstants.HTTP_FORBIDDEN).json({
+                return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
                     error: error.message,
                     code: SecurityConstants.LICENSE_INVALID_CODE
                 });
             }
             appError(SecurityConstants.REQUIRE_LICENSE_ERROR_LOG, error);
-            res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
+            response.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });
         }
     };
 };

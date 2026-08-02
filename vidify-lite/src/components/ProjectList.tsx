@@ -38,10 +38,7 @@ export default function ProjectList({
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
   const { licenseInfo, refetchLicense } = useLicense();
-  const limitVideo = licenseInfo?.limits?.video ?? 0;
-  const limitImage = licenseInfo?.limits?.image ?? 0;
-  const limitVoice = licenseInfo?.limits?.voice ?? 0;
-  const isUnlimited = licenseInfo?.limits?.unlimited ?? false;
+  const limitVideo = _.defaultTo(licenseInfo?.limits?.video, 0); const limitImage = _.defaultTo(licenseInfo?.limits?.image, 0); const limitVoice = _.defaultTo(licenseInfo?.limits?.voice, 0); const isUnlimited = _.defaultTo(licenseInfo?.limits?.unlimited, false);
 
   const [showModal, setShowModal] = useState(false);
   const [expandedParentIds, setExpandedParentIds] = useState<Record<string, boolean>>({});
@@ -151,12 +148,7 @@ export default function ProjectList({
     setCurrentPage(validCurrentPage);
   }
 
-  const paginatedProjects = _.slice(
-    filteredProjects,
-    (validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE,
-    validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE
-  );
-
+  const paginatedProjects = _.slice(filteredProjects, (validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE);
   const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, 'config.genre'), Boolean)))];
 
   return (
@@ -179,24 +171,8 @@ export default function ProjectList({
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900 border border-slate-800/80 p-4 rounded-xl">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL)
-              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-              }`)}
-          >
-            {localT.allLangs}
-          </button>
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI)
-              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-              }`)}
-          >
-            {localT.viBtn}
-          </button>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>{localT.allLangs}</button>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>{localT.viBtn}</button>
           <button
             onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
             className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)

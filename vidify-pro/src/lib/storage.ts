@@ -69,9 +69,7 @@ export const storageUtils = {
         const tx = db.transaction(REFACTOR_CONSTANTS.DB_STORE_NAME, REFACTOR_CONSTANTS.DB_MODE_READONLY as IDBTransactionMode);
         const store = tx.objectStore(REFACTOR_CONSTANTS.DB_STORE_NAME);
         const req = store.get(key);
-        req.onsuccess = () => {
-          resolve(req.result ?? null);
-        };
+        req.onsuccess = () => resolve(_.defaultTo(req.result, null));
         req.onerror = () => {
           reject(req.error);
         };

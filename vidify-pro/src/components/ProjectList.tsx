@@ -38,10 +38,7 @@ export default function ProjectList({
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
   const { licenseInfo, refetchLicense } = useLicense();
-  const limitVideo = licenseInfo?.limits?.video ?? 0;
-  const limitImage = licenseInfo?.limits?.image ?? 0;
-  const limitVoice = licenseInfo?.limits?.voice ?? 0;
-  const isUnlimited = licenseInfo?.limits?.unlimited ?? false;
+  const limitVideo = _.defaultTo(licenseInfo?.limits?.video, 0); const limitImage = _.defaultTo(licenseInfo?.limits?.image, 0); const limitVoice = _.defaultTo(licenseInfo?.limits?.voice, 0); const isUnlimited = _.defaultTo(licenseInfo?.limits?.unlimited, false);
 
   const [showModal, setShowModal] = useState(false);
   const [expandedParentIds, setExpandedParentIds] = useState<Record<string, boolean>>({});

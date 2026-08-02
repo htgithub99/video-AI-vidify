@@ -161,29 +161,29 @@ export const imageGenMutex = new SimpleMutex();
 const geminiRequestPacingMutex = new SimpleMutex();
 let nextGeminiRequestAt = SecurityConstants.ZERO;
 
-const getNonNegativeNumber = (value: number): number => (
-  _.max([value, SecurityConstants.ZERO]) || SecurityConstants.ZERO
+const sanitizeNonNegativeInteger = (value: number | undefined): number => (
+  _.defaultTo(_.max([value, SecurityConstants.ZERO]), SecurityConstants.ZERO)
 );
 
 const getGeminiRetryBackoff = (attempt: number): number => {
-  const retryIndex = getNonNegativeNumber(
+  const retryIndex = sanitizeNonNegativeInteger(
     _.subtract(attempt, SecurityConstants.DEFAULT_AMOUNT),
   );
   if (!_.gt(retryIndex, SecurityConstants.ZERO)) {
     return SecurityConstants.ZERO;
   }
-  return _.min([
+  return _.defaultTo(_.min([
     _.multiply(
       GEMINI_CHAT_PACING_CONFIG.RETRY_BACKOFF_BASE_MS,
       GEMINI_CHAT_PACING_CONFIG.BACKOFF_MULTIPLIER ** retryIndex,
     ),
     GEMINI_CHAT_PACING_CONFIG.RETRY_BACKOFF_MAX_MS,
-  ]) || SecurityConstants.ZERO;
+  ]), SecurityConstants.ZERO);
 };
 
 const getGeminiRequestWait = (attempt: number, now: number): number => (
   _.sum([
-    getNonNegativeNumber(_.subtract(nextGeminiRequestAt, now)),
+    sanitizeNonNegativeInteger(_.subtract(nextGeminiRequestAt, now)),
     getGeminiRetryBackoff(attempt),
     _.random(
       GEMINI_CHAT_PACING_CONFIG.JITTER_MIN_MS,
@@ -425,14 +425,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
   const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
-  let finalPrompt = prompt || "";
+  let finalPrompt = _.defaultTo(prompt, "");
   if (isStickman) {
     const stickmanStyleModifiers = STICKMAN_STYLE_MODIFIERS;
     finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
   }
 
   const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
+  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(_.defaultTo(kws, "cinematic,landscape"))}`;
 
   const projectId = sandboxConfig.projectId;
   let cleanProjectId = projectId;
@@ -537,7 +537,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           }
         }
 
-        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${finalPrompt || prompt}"`);
+        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
 
         const inputEl = await activePage.waitForSelector(SELECTOR_INPUT, {
           timeout: 30000,
@@ -546,10 +546,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         try {
           const currentConfigState = jsonUtils.safeStringify({
-            generateType: visualConfig?.generateType || GenerateType.Image,
-            aspectRatio: visualConfig?.aspectRatio || AspectRatio.SixteenNine,
-            generateCount: visualConfig?.generateCount || 1,
-            imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+            generateType: _.defaultTo(visualConfig?.generateType, GenerateType.Image),
+            aspectRatio: _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine),
+            generateCount: _.defaultTo(visualConfig?.generateCount, 1),
+            imageGeneratorEngine: _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
           });
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
@@ -573,14 +573,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                 const typeBtn = dropdown.locator('[role="tab"]').filter({ hasText: targetTypeText }).first();
                 if (await typeBtn.isVisible()) await typeBtn.click();
 
-                const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
+                const targetRatio = _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine);
                 const ratioBtn = dropdown
                   .locator('[role="tab"]')
                   .filter({ hasText: new RegExp(`^${targetRatio}$`, "i") })
                   .first();
                 if (await ratioBtn.isVisible()) await ratioBtn.click();
 
-                const targetCount = visualConfig?.generateCount || 1;
+                const targetCount = _.defaultTo(visualConfig?.generateCount, 1);
                 const countLabel = targetCount === 1 ? "1x" : `x${targetCount}`;
                 const countBtn = dropdown
                   .locator('[role="tab"]')
@@ -596,7 +596,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   if (await durationBtn.isVisible()) await durationBtn.click();
                 }
 
-                const targetEngineKey = (visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3).toLowerCase();
+                const targetEngineKey = (_.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3)).toLowerCase();
 
                 let exactEngineRegex: RegExp;
                 let fallbackEngineRegex: RegExp;
@@ -1096,8 +1096,6 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Normal;
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
-  // Keep the configured number of independent Gemini rooms visible even when
-  // the queue is temporarily shorter. Idle tabs remain ready for the next job.
   const maxTabs = concurrency;
 
   if (maxTabs === 1) {

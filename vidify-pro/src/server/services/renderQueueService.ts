@@ -107,7 +107,7 @@ class RenderQueueService {
         clearInterval(progressTimer);
       }
       job.status = JobStatus.FAILED;
-      job.error = error?.message || REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT;
+      job.error = _.defaultTo(error?.message, REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT);
       job.completedAt = new Date();
       
       logger.error(

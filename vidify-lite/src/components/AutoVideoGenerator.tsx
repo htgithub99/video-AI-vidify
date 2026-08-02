@@ -123,15 +123,15 @@ const getCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoic
   };
 };
 
-const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
-  if (_.isEqual(genMode, ImageGenerationMode.GeminiChat)) {
+const getEngineOptions = (generationMode: ImageGenerationMode, generationType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
+  if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
     return [
       { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
       { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
     ];
   }
-  if (_.includes([GenerateType.Video, GenerateType.Mixed], genType)) {
+  if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
     return [
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
       { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
@@ -599,57 +599,31 @@ export default function AutoVideoGenerator({
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
-      const directlySelectedProj = selectedProjectId
-        ? _.find(projects, { id: selectedProjectId }) || null
-        : null;
-      const selectedAutoProj = directlySelectedProj
-        ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
-            ? directlySelectedProj
-            : (_.find(projects, (project) => {
-                const targetParentId = directlySelectedProj.parentId || directlySelectedProj.id;
-                return _.isEqual(project.parentId, targetParentId)
-                  && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX);
-              }) || directlySelectedProj))
-        : null;
-
-      let existingTargetProj = selectedAutoProj
-        || (!selectedProjectId ? activeCreatedProject : null);
-      if (!existingTargetProj && !_.isEmpty(projectName)) {
-        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))) || null;
-      }
-      if (!existingTargetProj && !_.isEmpty(scriptContent)) {
-        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(_.get(p, 'input.content', '')), _.trim(scriptContent))) || null;
-      }
-      if (!existingTargetProj && !_.isEmpty(projects)) {
-        existingTargetProj = _.first(projects) || null;
-      }
+      const directlySelectedProj = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
+      const selectedAutoProj = directlySelectedProj ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX) ? directlySelectedProj : _.defaultTo(_.find(projects, (project) => _.isEqual(project.parentId, _.defaultTo(directlySelectedProj.parentId, directlySelectedProj.id)) && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)), directlySelectedProj)) : null;
+      let existingTargetProj = _.defaultTo(selectedAutoProj, (!selectedProjectId ? activeCreatedProject : null));
+      if (!existingTargetProj && !_.isEmpty(projectName)) { existingTargetProj = _.defaultTo(_.find(projects, (projectItem) => _.isEqual(_.trim(projectItem.name), _.trim(projectName))), null); }
+      if (!existingTargetProj && !_.isEmpty(scriptContent)) { existingTargetProj = _.defaultTo(_.find(projects, (projectItem) => _.isEqual(_.trim(_.get(projectItem, 'input.content', '')), _.trim(scriptContent))), null); }
+      if (!existingTargetProj && !_.isEmpty(projects)) { existingTargetProj = _.defaultTo(_.first(projects), null); }
 
       if (resumeMode && existingTargetProj) {
         newProjectId = existingTargetProj.id;
-        newProj = {
-          ...existingTargetProj,
-          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
-        };
+        newProj = { ...existingTargetProj, status: REFACTOR_CONSTANTS.STATUS_GENERATING };
         setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {
         const selectedProj = selectedAutoProj;
         const isChildProject = selectedProj && selectedProj.parentId;
 
-        newProjectId = selectedProj
-          ? selectedProj.id
-          : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-        const defaultName = selectedProj
-          ? selectedProj.name
-          : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+        newProjectId = selectedProj ? selectedProj.id : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        const defaultName = selectedProj ? selectedProj.name : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
         newProj = {
           id: newProjectId,
           parentId: isChildProject ? selectedProj.parentId : undefined,
           name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          createdAt: selectedProj?.createdAt || new Date().toISOString(),
+          createdAt: _.defaultTo(selectedProj?.createdAt, new Date().toISOString()),
           updatedAt: new Date().toISOString(),
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           input: {
@@ -755,20 +729,9 @@ export default function AutoVideoGenerator({
       let isScriptCached = false;
       let isStoryboardCached = false;
 
-      if (resumeMode && !_.isEmpty(newProj.scriptRewritten)) {
-        realScript = newProj.scriptRewritten;
-        chapters = newProj.chapters || [];
-        factCheckNotes = newProj.factCheckNotes || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-        isScriptCached = true;
-        appendLog(T.logResumeScript);
-        setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
-      }
+      if (resumeMode && !_.isEmpty(newProj.scriptRewritten)) { realScript = newProj.scriptRewritten; chapters = _.defaultTo(newProj.chapters, []); factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING); isScriptCached = true; appendLog(T.logResumeScript); setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE); }
 
-      if (resumeMode && !_.isEmpty(newProj.storyboard)) {
-        realScenes = _.cloneDeep(newProj.storyboard);
-        isStoryboardCached = true;
-        setStepProgress(30);
-      }
+      if (resumeMode && !_.isEmpty(newProj.storyboard)) { realScenes = _.cloneDeep(newProj.storyboard); isStoryboardCached = true; setStepProgress(30); }
 
       if (!isScriptCached) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_WRITE);
@@ -1220,12 +1183,10 @@ export default function AutoVideoGenerator({
                 await persistImageCheckpoint();
               } else {
                 throw new Error(
-                  imgRes.error
-                    || imgRes.data?.warning
-                    || REFACTOR_CONSTANTS.ERR_UNKNOWN,
+                  _.defaultTo(imgRes.error, _.defaultTo(imgRes.data?.warning, REFACTOR_CONSTANTS.ERR_UNKNOWN)),
                 );
               }
-            } catch (e) {
+            } catch (error) {
               appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
             }
           }
@@ -1516,9 +1477,10 @@ export default function AutoVideoGenerator({
   const voiceDialogPersistenceScope = _.join(
     [
       AppTab.AUTO_GENERATOR,
-      activeCreatedProject?.id
-        || selectedProjectId
-        || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
+      _.defaultTo(
+        activeCreatedProject?.id,
+        _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE),
+      ),
     ],
     REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
   );

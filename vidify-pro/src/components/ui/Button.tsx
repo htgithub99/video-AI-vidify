@@ -43,7 +43,7 @@ export const Button: React.FC<IBaseButtonProps> = ({
   };
 
   const sizeStyles = variant === "unstyled" ? "" : (sizes[size] || sizes.md);
-  const variantStyles = variants[variant] ?? variants.primary;
+  const variantStyles = _.defaultTo(variants[variant], variants.primary);
   const finalBaseStyles = variant === "unstyled" ? "" : baseStyles;
 
   const cleanText = getChildrenText(children).trim();

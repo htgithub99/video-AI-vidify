@@ -151,11 +151,11 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
       [
         project.id,
         project.name,
-        project.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-        project.createdAt || new Date().toISOString(),
-        project.updatedAt || new Date().toISOString(),
-        project.currentStep || 0,
-        project.creditsUsed || 0,
+        _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+        _.defaultTo(project.createdAt, new Date().toISOString()),
+        _.defaultTo(project.updatedAt, new Date().toISOString()),
+        _.defaultTo(project.currentStep, 0),
+        _.defaultTo(project.creditsUsed, 0),
         jsonUtils.safeStringify(project)
       ],
     );
@@ -203,8 +203,8 @@ export async function migrateJsonToSqlite(): Promise<void> {
 
     await db.exec(SQL_STATEMENTS.BEGIN_TRANSACTION);
 
-    for (const meta of metadataList) {
-      const id = meta.id;
+    for (const projectMeta of metadataList) {
+      const id = projectMeta.id;
       if (_.isEmpty(id)) {
         continue;
       }
@@ -219,26 +219,26 @@ export async function migrateJsonToSqlite(): Promise<void> {
       if (_.isNil(projectDetail)) {
         projectDetail = {
           id,
-          name: meta.name || MIGRATION_DEFAULTS.MIGRATE_PROJECT_NAME,
-          description: meta.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-          createdAt: meta.createdAt || new Date().toISOString(),
-          updatedAt: meta.updatedAt || new Date().toISOString(),
-          currentStep: meta.currentStep || 0,
-          creditsUsed: meta.creditsUsed || 0,
-          input: meta.input || { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-          config: meta.config || { 
+          name: _.defaultTo(projectMeta.name, MIGRATION_DEFAULTS.MIGRATE_PROJECT_NAME),
+          description: _.defaultTo(projectMeta.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          createdAt: _.defaultTo(projectMeta.createdAt, new Date().toISOString()),
+          updatedAt: _.defaultTo(projectMeta.updatedAt, new Date().toISOString()),
+          currentStep: _.defaultTo(projectMeta.currentStep, 0),
+          creditsUsed: _.defaultTo(projectMeta.creditsUsed, 0),
+          input: _.defaultTo(projectMeta.input, { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING }),
+          config: _.defaultTo(projectMeta.config, { 
             genre: MIGRATION_DEFAULTS.GENRE, 
             language: MIGRATION_DEFAULTS.LANGUAGE, 
             duration: MIGRATION_DEFAULTS.DURATION 
-          },
-          hookConfig: meta.hookConfig || { 
+          }),
+          hookConfig: _.defaultTo(projectMeta.hookConfig, { 
             type: MIGRATION_DEFAULTS.HOOK_TYPE, 
             duration: MIGRATION_DEFAULTS.HOOK_DURATION, 
             count: MIGRATION_DEFAULTS.HOOK_COUNT, 
             positions: MIGRATION_DEFAULTS.HOOK_POSITIONS, 
             versions: [] 
-          },
-          voiceConfig: meta.voiceConfig || { 
+          }),
+          voiceConfig: _.defaultTo(projectMeta.voiceConfig, { 
             provider: MIGRATION_DEFAULTS.VOICE_PROVIDER, 
             audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE, 
             gender: MIGRATION_DEFAULTS.VOICE_GENDER, 
@@ -248,8 +248,8 @@ export async function migrateJsonToSqlite(): Promise<void> {
             pitch: MIGRATION_DEFAULTS.VOICE_PITCH, 
             volume: MIGRATION_DEFAULTS.VOICE_VOLUME, 
             voiceURI: MIGRATION_DEFAULTS.VOICE_URI 
-          },
-          visualConfig: meta.visualConfig || { 
+          }),
+          visualConfig: _.defaultTo(projectMeta.visualConfig, { 
             source: MIGRATION_DEFAULTS.VISUAL_SOURCE, 
             style: MIGRATION_DEFAULTS.VISUAL_STYLE, 
             quality: MIGRATION_DEFAULTS.VISUAL_QUALITY, 
@@ -261,7 +261,7 @@ export async function migrateJsonToSqlite(): Promise<void> {
             aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO, 
             promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT, 
             generateCount: 1 
-          },
+          }),
         } as any;
       }
 
@@ -270,11 +270,11 @@ export async function migrateJsonToSqlite(): Promise<void> {
         [
           projectDetail!.id,
           projectDetail!.name,
-          projectDetail!.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-          projectDetail!.createdAt || new Date().toISOString(),
-          projectDetail!.updatedAt || new Date().toISOString(),
-          projectDetail!.currentStep || 0,
-          projectDetail!.creditsUsed || 0,
+          _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          _.defaultTo(projectDetail!.createdAt, new Date().toISOString()),
+          _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()),
+          _.defaultTo(projectDetail!.currentStep, 0),
+          _.defaultTo(projectDetail!.creditsUsed, 0),
           jsonUtils.safeStringify(projectDetail)
         ],
       );

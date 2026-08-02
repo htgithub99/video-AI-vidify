@@ -599,29 +599,26 @@ export default function AutoVideoGenerator({
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
-      const directlySelectedProj = selectedProjectId
-        ? _.find(projects, { id: selectedProjectId }) || null
-        : null;
+      const directlySelectedProj = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
       const selectedAutoProj = directlySelectedProj
         ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
             ? directlySelectedProj
-            : (_.find(projects, (project) => {
-                const targetParentId = directlySelectedProj.parentId || directlySelectedProj.id;
+            : _.defaultTo(_.find(projects, (project) => {
+                const targetParentId = _.defaultTo(directlySelectedProj.parentId, directlySelectedProj.id);
                 return _.isEqual(project.parentId, targetParentId)
                   && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX);
-              }) || directlySelectedProj))
+              }), directlySelectedProj))
         : null;
 
-      let existingTargetProj = selectedAutoProj
-        || (!selectedProjectId ? activeCreatedProject : null);
+      let existingTargetProj = _.defaultTo(selectedAutoProj, (!selectedProjectId ? activeCreatedProject : null));
       if (!existingTargetProj && !_.isEmpty(projectName)) {
-        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))) || null;
+        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))), null);
       }
       if (!existingTargetProj && !_.isEmpty(scriptContent)) {
-        existingTargetProj = _.find(projects, (p) => _.isEqual(_.trim(_.get(p, 'input.content', '')), _.trim(scriptContent))) || null;
+        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(_.get(p, 'input.content', '')), _.trim(scriptContent))), null);
       }
       if (!existingTargetProj && !_.isEmpty(projects)) {
-        existingTargetProj = _.first(projects) || null;
+        existingTargetProj = _.defaultTo(_.first(projects), null);
       }
 
       if (resumeMode && existingTargetProj) {
@@ -649,7 +646,7 @@ export default function AutoVideoGenerator({
           parentId: isChildProject ? selectedProj.parentId : undefined,
           name: defaultName,
           description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          createdAt: selectedProj?.createdAt || new Date().toISOString(),
+          createdAt: _.defaultTo(selectedProj?.createdAt, new Date().toISOString()),
           updatedAt: new Date().toISOString(),
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           input: {
@@ -757,8 +754,8 @@ export default function AutoVideoGenerator({
 
       if (resumeMode && !_.isEmpty(newProj.scriptRewritten)) {
         realScript = newProj.scriptRewritten;
-        chapters = newProj.chapters || [];
-        factCheckNotes = newProj.factCheckNotes || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+        chapters = _.defaultTo(newProj.chapters, []);
+        factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         isScriptCached = true;
         appendLog(T.logResumeScript);
         setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
@@ -1516,9 +1513,10 @@ export default function AutoVideoGenerator({
   const voiceDialogPersistenceScope = _.join(
     [
       AppTab.AUTO_GENERATOR,
-      activeCreatedProject?.id
-        || selectedProjectId
-        || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
+      _.defaultTo(
+        activeCreatedProject?.id,
+        _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE),
+      ),
     ],
     REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
   );

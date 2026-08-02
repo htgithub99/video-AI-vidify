@@ -780,7 +780,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
         <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-800 z-50">
           {(() => {
             let idx = _.indexOf(PipelineConstants.FLOW_STEPS, currentStep);
-            if (idx === -1) idx = 0; // fallback if IndependentGenerator etc
+            if (idx === -1) idx = 0;
             const progressPercent = ((idx + 1) / _.size(PipelineConstants.FLOW_STEPS)) * 100;
             return (
               <div

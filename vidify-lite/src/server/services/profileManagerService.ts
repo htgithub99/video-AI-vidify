@@ -34,7 +34,6 @@ export function getProfiles(): GoogleProfile[] {
   for (let i = 1; i <= DEFAULT_PROFILE_COUNT; i++) {
     const id = `g_profile_${i}`;
     const profilePath = path.join(profilesDir, id);
-    // Google Chrome/Chromium persistent context thường tạo thư mục "Default" để lưu profile dữ liệu
     const isLinked = fs.existsSync(profilePath) && fs.existsSync(path.join(profilePath, "Default"));
     profiles.push({
       id,
@@ -61,7 +60,10 @@ export async function launchLoginBrowser(profileId: string): Promise<void> {
     ],
   });
 
-  const page = context.pages()[0] || (await context.newPage());
+  let page = _.first(context.pages());
+  if (!page) {
+    page = await context.newPage();
+  }
   await page.goto(EXTERNAL_URLS.GOOGLE_ACCOUNTS);
 
   return new Promise<void>((resolve) => {

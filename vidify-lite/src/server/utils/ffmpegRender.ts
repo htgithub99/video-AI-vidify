@@ -102,7 +102,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
 
   const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
 
-  const resolutionConfig = _.get(FFMPEG_RESOLUTIONS, qualityVal) || _.get(FFMPEG_RESOLUTIONS, VideoQuality.LOW);
+  const resolutionConfig = _.defaultTo(_.get(FFMPEG_RESOLUTIONS, qualityVal), _.get(FFMPEG_RESOLUTIONS, VideoQuality.LOW));
   const width = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.WIDTH);
   const height = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.HEIGHT);
   const fps = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.FPS);
@@ -147,7 +147,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
     )
     : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
   
-  const globalAudioPath = resolveLocalAssetPath(globalAudioUrlVal) || SecurityConstants.EMPTY_STRING;
+  const globalAudioPath = _.defaultTo(resolveLocalAssetPath(globalAudioUrlVal), SecurityConstants.EMPTY_STRING);
   const renderScenes = _.map(scenesVal, (scene) => {
     const mediaSource = getFirstValue([scene.imageBase64, scene.imageUrl]);
     const audioSource = getFirstValue([scene.audioBase64, scene.audioUrl]);
