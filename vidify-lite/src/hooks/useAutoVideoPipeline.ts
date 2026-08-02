@@ -49,6 +49,7 @@ import {
   calculateSceneDuration,
   fetchCachedVoiceAudio,
   getReferenceChangeState,
+  getPipelineInvalidationState,
   hasCompleteSceneAlignment,
   resolveTargetProject,
 } from "./autoVideoPipelineUtils";
@@ -227,6 +228,7 @@ export function useAutoVideoPipeline(
     };
 
     const pipelineStartedAt = Date.now();
+    let currentProject: VideoProject | null = activeCreatedProject;
     appendLog(T.logPipelineStart);
     appendLog(T.logConfigSummary(
       config.genre,
@@ -249,18 +251,45 @@ export function useAutoVideoPipeline(
         config.projectName,
         config.scriptContent,
       );
-      const { hasVisualOverrides, shouldRegenerateSceneAssets } = getReferenceChangeState(
+      const referenceChangeState = getReferenceChangeState(
         existingTargetProj,
         config.referenceImages,
+        config.sceneReferenceImages,
         config.thumbnailReferenceImages,
         config.characterImages,
       );
+      const invalidationState = getPipelineInvalidationState(existingTargetProj, config, referenceChangeState);
+      const { hasVisualOverrides } = referenceChangeState;
+      const shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets;
 
       if (config.resumeMode && existingTargetProj) {
         newProjectId = existingTargetProj.id;
         newProj = {
           ...existingTargetProj,
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+          input: { type: config.inputType, content: config.scriptContent },
+          config: {
+            ...existingTargetProj.config,
+            genre: config.genre,
+            language: config.language,
+            duration: config.duration,
+            rewriteLevel: config.rewriteLevel,
+            similarityReduction: config.similarityReduction,
+            creativityLevel: config.creativityLevel,
+            factCheck: config.factCheck,
+            audience: config.audience,
+            writingStyle: config.writingStyle,
+            splitStrategy: config.splitStrategy,
+          },
+          voiceConfig: {
+            ...existingTargetProj.voiceConfig,
+            provider: config.voiceProvider,
+            voiceURI: config.voiceURI,
+            voiceName: config.voiceName,
+            speed: config.voiceSpeed,
+            pitch: config.voicePitch,
+            volume: config.voiceVolume,
+          },
           visualConfig: {
             ...existingTargetProj.visualConfig,
             generationMode: config.generationMode,
@@ -366,9 +395,11 @@ export function useAutoVideoPipeline(
 
       await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
       setActiveCreatedProject(newProj);
+      currentProject = newProj;
 
       const syncProject = async (proj: VideoProject) => {
         const finalProj = { ...proj, generationLogs: _.clone(currentLogs), updatedAt: new Date().toISOString() };
+        currentProject = finalProj;
         setActiveCreatedProject(finalProj);
         await onUpdateProject(finalProj, true);
       };
@@ -385,7 +416,7 @@ export function useAutoVideoPipeline(
       let isScriptCached = false;
       let isStoryboardCached = false;
 
-      if (config.resumeMode && !_.isEmpty(newProj.scriptRewritten)) {
+      if (config.resumeMode && !invalidationState.regenerateScript && !_.isEmpty(newProj.scriptRewritten)) {
         realScript = newProj.scriptRewritten!;
         chapters = (_.defaultTo(newProj.chapters, []) as Chapter[]);
         factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -395,7 +426,7 @@ export function useAutoVideoPipeline(
         setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
       }
 
-      if (config.resumeMode && !_.isEmpty(newProj.storyboard)) {
+      if (config.resumeMode && !invalidationState.regenerateStoryboard && !_.isEmpty(newProj.storyboard)) {
         realScenes = _.cloneDeep(newProj.storyboard!) as StoryboardScene[];
         isStoryboardCached = true;
         appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
@@ -475,7 +506,7 @@ export function useAutoVideoPipeline(
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let isVoiceCached = false;
 
-      if (config.resumeMode) {
+      if (config.resumeMode && !invalidationState.regenerateVoice) {
         const cachedVoiceAudio = await fetchCachedVoiceAudio(newProj.voiceConfig);
         if (cachedVoiceAudio.isCached) {
           globalAudioBase64 = cachedVoiceAudio.audioBase64;
@@ -833,7 +864,7 @@ export function useAutoVideoPipeline(
 
       let seoData: unknown = null;
       let isSeoCached = false;
-      if (config.resumeMode && newProj.seo) {
+      if (config.resumeMode && !invalidationState.regenerateSeo && newProj.seo) {
         seoData = newProj.seo;
         isSeoCached = true;
         appendLog(T.logResumeSeo);
@@ -859,7 +890,7 @@ export function useAutoVideoPipeline(
 
       let thumbnailsList: ThumbnailItem[] = [];
       let isThumbsCached = false;
-      if (config.resumeMode && !_.isEmpty(newProj.thumbnails)) {
+      if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
         const cachedThumbs = newProj.thumbnails!;
         if (_.every(cachedThumbs, (t) => !_.isEmpty(t.imageUrl))) {
           thumbnailsList = cachedThumbs;
@@ -1106,10 +1137,13 @@ export function useAutoVideoPipeline(
       appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
       appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
       const failedProj = {
-        ...(activeCreatedProject || {}),
-        id: activeCreatedProject ? activeCreatedProject.id : REFACTOR_CONSTANTS.STATUS_FAILED,
+        ...(currentProject || {}),
+        id: currentProject?.id || REFACTOR_CONSTANTS.STATUS_FAILED,
         status: REFACTOR_CONSTANTS.STATUS_FAILED,
+        generationLogs: _.clone(currentLogs),
+        updatedAt: new Date().toISOString(),
       } as VideoProject;
+      setActiveCreatedProject(failedProj);
       await onUpdateProject(failedProj, true);
     } finally {
       setIsProcessing(false);

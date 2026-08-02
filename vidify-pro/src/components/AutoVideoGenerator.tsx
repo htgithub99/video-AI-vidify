@@ -103,7 +103,7 @@ export default function AutoVideoGenerator({
   }, [selectedProjectId, projects]);
 
   useEffect(() => {
-    if (!selectedProjectId || !isConfigLoaded) return;
+    if (!selectedProjectId || !isConfigLoaded || isProcessing) return;
     const foundProj = _.find(projects, { id: selectedProjectId });
     if (foundProj) {
       setActiveCreatedProject(foundProj);
@@ -111,7 +111,7 @@ export default function AutoVideoGenerator({
       pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       pipelineActions.setLogs(foundProj.generationLogs || []);
     }
-  }, [selectedProjectId, projects, isConfigLoaded]);
+  }, [selectedProjectId, projects, isConfigLoaded, isProcessing]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];

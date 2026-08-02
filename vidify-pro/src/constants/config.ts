@@ -51,6 +51,17 @@ export const AUTO_VIDEO_PIPELINE_PROGRESS = {
 
 export const AUTO_VIDEO_PIPELINE_CONFIG = {
   GENERATED_MEDIA_LANGUAGE_MARKER: "CRITICAL GENERATED-MEDIA LANGUAGE RULE",
+  SCRIPT_CONFIG_KEYS: [
+    "genre", "language", "duration", "rewriteLevel", "similarityReduction",
+    "creativityLevel", "factCheck", "audience", "writingStyle",
+  ],
+  STORYBOARD_CONFIG_KEYS: ["splitStrategy"],
+  STORYBOARD_VISUAL_CONFIG_KEYS: ["aspectRatio", "style"],
+  VOICE_CONFIG_KEYS: ["provider", "voiceURI", "voiceName", "speed", "pitch", "volume"],
+  VISUAL_CONFIG_KEYS: [
+    "generationMode", "imageGeneratorEngine", "generateType", "maxVideoScenes",
+    "aspectRatio", "style", "chromeHeadless", "videoDuration",
+  ],
 } as const;
 
 export const FFMPEG_RESOLUTIONS = {

@@ -4,6 +4,7 @@ import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
+import type { PipelineConfig } from "./useAutoVideoPipeline";
 
 export interface CachedVoiceAudio {
   audioBase64: string;
@@ -14,6 +15,15 @@ export interface CachedVoiceAudio {
 export interface ReferenceChangeState {
   hasVisualOverrides: boolean;
   shouldRegenerateSceneAssets: boolean;
+}
+
+export interface PipelineInvalidationState {
+  regenerateScript: boolean;
+  regenerateStoryboard: boolean;
+  regenerateVoice: boolean;
+  regenerateSceneAssets: boolean;
+  regenerateSeo: boolean;
+  regenerateThumbnails: boolean;
 }
 
 export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
@@ -79,16 +89,104 @@ export const resolveTargetProject = (
 export const getReferenceChangeState = (
   project: VideoProject | null,
   styleImages: string[],
+  sceneImages: string[],
   thumbnailImages: string[],
   characterImages: string[],
 ): ReferenceChangeState => {
   const styleChanged = !_.isEqual(styleImages, _.defaultTo(project?.visualConfig?.styleReferenceImages, []));
+  const sceneChanged = !_.isEqual(sceneImages, _.defaultTo(project?.visualConfig?.sceneReferenceImages, []));
   const thumbnailChanged = !_.isEqual(thumbnailImages, _.defaultTo(project?.visualConfig?.thumbnailReferenceImages, []));
   const characterChanged = !_.isEqual(characterImages, _.defaultTo(project?.visualConfig?.characters?.[0]?.images, []));
 
   return {
     hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]),
-    shouldRegenerateSceneAssets: styleChanged || characterChanged,
+    shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged,
+  };
+};
+
+export const getPipelineInvalidationState = (
+  project: VideoProject | null,
+  config: PipelineConfig,
+  references: ReferenceChangeState,
+): PipelineInvalidationState => {
+  if (!project) {
+    return {
+      regenerateScript: true,
+      regenerateStoryboard: true,
+      regenerateVoice: true,
+      regenerateSceneAssets: true,
+      regenerateSeo: true,
+      regenerateThumbnails: true,
+    };
+  }
+
+  const currentProjectConfig = {
+    genre: config.genre,
+    language: config.language,
+    duration: config.duration,
+    rewriteLevel: config.rewriteLevel,
+    similarityReduction: config.similarityReduction,
+    creativityLevel: config.creativityLevel,
+    factCheck: config.factCheck,
+    audience: config.audience,
+    writingStyle: config.writingStyle,
+    splitStrategy: config.splitStrategy,
+  };
+  const currentVoiceConfig = {
+    provider: config.voiceProvider,
+    voiceURI: config.voiceURI,
+    voiceName: config.voiceName,
+    speed: config.voiceSpeed,
+    pitch: config.voicePitch,
+    volume: config.voiceVolume,
+  };
+  const currentVisualConfig = {
+    generationMode: config.generationMode,
+    imageGeneratorEngine: config.imageGeneratorEngine,
+    generateType: config.generateType,
+    maxVideoScenes: config.maxVideoScenes,
+    aspectRatio: config.aspectRatio,
+    style: config.stylePreset,
+    chromeHeadless: config.chromeHeadless,
+    videoDuration: config.videoDuration,
+  };
+  const inputChanged = !_.isEqual(project.input?.type, config.inputType)
+    || !_.isEqual(_.trim(project.input?.content), _.trim(config.scriptContent));
+  const scriptConfigChanged = !_.isEqual(
+    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
+    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.SCRIPT_CONFIG_KEYS),
+  );
+  const storyboardConfigChanged = !_.isEqual(
+    _.pick(project.config, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
+    _.pick(currentProjectConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_CONFIG_KEYS),
+  );
+  const storyboardVisualConfigChanged = !_.isEqual(
+    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
+    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.STORYBOARD_VISUAL_CONFIG_KEYS),
+  );
+  const voiceConfigChanged = !_.isEqual(
+    _.pick(project.voiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
+    _.pick(currentVoiceConfig, AUTO_VIDEO_PIPELINE_CONFIG.VOICE_CONFIG_KEYS),
+  );
+  const visualConfigChanged = !_.isEqual(
+    _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
+    _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
+  );
+  const regenerateScript = inputChanged || scriptConfigChanged;
+  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged;
+  const regenerateVoice = regenerateScript || voiceConfigChanged;
+  const regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
+
+  return {
+    regenerateScript,
+    regenerateStoryboard,
+    regenerateVoice,
+    regenerateSceneAssets,
+    regenerateSeo: regenerateScript,
+    regenerateThumbnails: regenerateScript
+      || references.hasVisualOverrides
+      || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount)
+      || !_.isEqual(project.visualConfig?.thumbnailReferencePrompt, config.thumbnailStylePreset),
   };
 };
 
