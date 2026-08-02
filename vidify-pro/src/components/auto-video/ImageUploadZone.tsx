@@ -14,6 +14,7 @@ export interface ImageUploadZoneProps {
   iconClass?: string;
   titleClass?: string;
   subtitleClass?: string;
+  hideSubtitle?: boolean;
 }
 
 export function ImageUploadZone({
@@ -28,6 +29,7 @@ export function ImageUploadZone({
   iconClass,
   titleClass,
   subtitleClass,
+  hideSubtitle,
 }: ImageUploadZoneProps) {
   const defaultUploadClass = `bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
 
@@ -63,7 +65,9 @@ export function ImageUploadZone({
           <Upload className={iconClass || `w-4 h-4 text-slate-400 group-hover:text-${hoverColor}-400 transition-colors`} />
         </div>
         <span className={titleClass || `text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-${hoverColor}-400 transition-colors`}>{title}</span>
-        <span className={subtitleClass || "text-[8px] text-slate-505 leading-tight block truncate max-w-full"}>{subtitle}</span>
+        {!hideSubtitle && (
+          <span className={subtitleClass || "text-[8px] text-slate-505 leading-tight block truncate max-w-full"}>{subtitle}</span>
+        )}
       </div>
     </div>
   );

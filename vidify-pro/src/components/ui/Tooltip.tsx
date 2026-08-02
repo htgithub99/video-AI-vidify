@@ -15,11 +15,12 @@ const TOOLTIP_CONFIG = {
   ALIGN_END: "end",
 } as const;
 
-export const Tooltip: React.FC<ITooltipProps & { align?: 'start' | 'center' | 'end' }> = ({
+export const Tooltip: React.FC<ITooltipProps & { align?: 'start' | 'center' | 'end'; className?: string }> = ({
   content,
   children,
   position = TOOLTIP_CONFIG.POS_TOP,
-  align = "center"
+  align = "center",
+  className,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -103,7 +104,7 @@ export const Tooltip: React.FC<ITooltipProps & { align?: 'start' | 'center' | 'e
   return (
     <div
       ref={triggerRef}
-      className="relative inline-flex items-center justify-center group"
+      className={cn("relative inline-flex items-center justify-center group", className)}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
