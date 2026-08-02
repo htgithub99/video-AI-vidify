@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
-import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS } from "../constants";
+import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
@@ -111,4 +111,10 @@ export const applyGeneratedMediaLanguage = (prompt: string, directive: string): 
 export const calculateSceneDuration = (scenes: StoryboardScene[]): number => _.sumBy(
   scenes,
   (scene) => _.toNumber(scene.duration) || 0,
+);
+
+export const getAutoVideoConfigStorageKey = (projectId?: string | null): string => (
+  projectId
+    ? _.join([STORAGE_KEYS.AUTO_GENERATOR_CONFIG, projectId], REFACTOR_CONSTANTS.VD_UNDERSCORE)
+    : STORAGE_KEYS.AUTO_GENERATOR_CONFIG
 );

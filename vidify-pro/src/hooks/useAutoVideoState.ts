@@ -13,13 +13,14 @@ import {
   AspectRatio,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, STORAGE_KEYS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
+import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
+import { getAutoVideoConfigStorageKey } from "./autoVideoPipelineUtils";
 
 interface CachedGeneratorConfig {
   version?: number;
@@ -260,9 +261,9 @@ export function useAutoVideoState(
     setShowAdvancedImageSettings,
   };
 
-  const loadConfigForProject = async (id: string) => {
+  const loadConfig = async (projectId?: string | null) => {
     try {
-      const saved = await storageUtils.getAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${id}`);
+      const saved = await storageUtils.getAsync(getAutoVideoConfigStorageKey(projectId));
       const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
       if (parsed) {
         const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
@@ -294,7 +295,7 @@ export function useAutoVideoState(
           ? parsed.chromeHeadless
           : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
       } else {
-        const foundProj = _.find(projects, { id });
+        const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
         if (foundProj) {
           applyProjectToState(foundProj, actions);
           setProjectName(foundProj.name);
@@ -306,20 +307,16 @@ export function useAutoVideoState(
   };
 
   useEffect(() => {
-    if (!selectedProjectId) {
-      setIsConfigLoaded(true);
-      return;
-    }
-    const loadConfig = async () => {
+    const loadSelectedConfig = async () => {
       setIsConfigLoaded(false);
-      await loadConfigForProject(selectedProjectId);
+      await loadConfig(selectedProjectId);
       setIsConfigLoaded(true);
     };
-    loadConfig();
+    loadSelectedConfig();
   }, [selectedProjectId]);
 
   useEffect(() => {
-    if (!isConfigLoaded || !selectedProjectId) return;
+    if (!isConfigLoaded) return;
     const config: CachedGeneratorConfig = {
       version: AUTO_VIDEO_DEFAULTS.CONFIG_VERSION,
       inputType,
@@ -347,7 +344,7 @@ export function useAutoVideoState(
       chromeHeadless,
     };
     storageUtils.setAsync(
-      `${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${selectedProjectId}`,
+      getAutoVideoConfigStorageKey(selectedProjectId),
       jsonUtils.safeStringify(config),
     );
   }, [
