@@ -9,7 +9,7 @@ export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | ty
   return storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 
-export const safeSystemFetch = async (url: string, payload: any) => {
+export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal) => {
   try {
     const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
     const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
@@ -24,6 +24,7 @@ export const safeSystemFetch = async (url: string, payload: any) => {
         [API_HEADERS.LICENSE_KEY]: licenseKey,
       },
       body: jsonUtils.safeStringify(payload),
+      signal,
     });
 
     const data = await response.json().catch(() => null);

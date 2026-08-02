@@ -4,6 +4,10 @@ import { SplitStrategy } from "./enums.js";
 
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
+export const getGeneratedMediaLanguageDirective = (isVi: boolean): string => isVi
+  ? `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Keep the technical image/video prompt in English, but every human-readable word rendered inside the scene (signs, screens, labels, documents, captions, UI, posters) MUST be natural Vietnamese with correct diacritics. If generated media contains speech, dialogue, narration, singing, lip-sync, or any audible human voice, it MUST be spoken exclusively in Vietnamese with natural Vietnamese pronunciation. Never render or speak English unless the scene script explicitly quotes an English term. Do not invent visible text or dialogue when the script does not require it.`
+  : `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Every human-readable word rendered inside the scene and every spoken or lip-synced line in generated media MUST be in natural English. Do not invent visible text or dialogue when the script does not require it.`;
+
 export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To translate narration/storyline into visual prompts):
 1. NARRATION ALIGNMENT PIPELINE (CRITICAL):
    To ensure the generated image perfectly matches the narration, you MUST follow this three-step pipeline:
@@ -87,7 +91,7 @@ ${NO_FRAME_RULE}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
-export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an elite AI Image Prompt Designer.
+export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false): string => `You are an elite AI Image Prompt Designer.
 Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -104,6 +108,7 @@ STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural fo
 - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
 ${NO_FRAME_RULE}
+${getGeneratedMediaLanguageDirective(isVi)}
 - ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}"). Every prompt in the JSON array must strictly end with this parameter.
 IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
 
@@ -112,7 +117,7 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes:
 ${chunkJson}`;
 
-export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string): string => `You are an elite AI Image Prompt Designer.
+export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string, isVi: boolean = false): string => `You are an elite AI Image Prompt Designer.
 Your task is to analyze, rewrite, and optimize a list of image generation prompts for a video storyboard. You must review the current prompts, correct any style conflicts or formatting issues, clean up redundant keywords, and upgrade them to look highly detailed, cinematic, and visually consistent.
 
 [STYLE & REFERENCE SPECIFICATIONS]
@@ -153,6 +158,7 @@ ${charactersJson ? `- Character Reference Specs:\n${charactersJson}\n` : ""}
 7. NO METAPHORICAL OR ABSTRACT CONCEPTS: Translate all emotions, abstract concepts, or symbols into tangible, physically renderable actions, expressions, and objects.
 
 ${NO_FRAME_RULE}
+${getGeneratedMediaLanguageDirective(isVi)}
 
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
 
@@ -353,6 +359,7 @@ Requirements:
 ${customSplitRules ? "4. CUSTOM USER RULE: " + customSplitRules : ""}
 
 Language: ${isVi ? "Vietnamese" : "English"}.
+${getGeneratedMediaLanguageDirective(isVi)}
 
 Output must comply EXACTLY with this JSON schema (return only raw JSON, no markdown enclosing code blocks):
 {
@@ -529,6 +536,7 @@ The generated "prompt" field for each scene MUST strictly follow this exact stru
 - If the scene has a character: [Art style/Medium] of [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - If the scene does NOT have a character: [Art style/Medium of Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - Every prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original script.
+- ${getGeneratedMediaLanguageDirective(isVi)}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
 
 [DYNAMIC MOTION, EFFECTS & TRANSITIONS]

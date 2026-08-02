@@ -1,10 +1,34 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
-import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem, HookPosition, AudioType, AssetsMode } from "../types";
-import { AppTab, AppTheme, VideoQuality } from "../constants/enums";
-import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS, MEDIA_MIX_CONFIG } from "../constants";
+import { useAutoVideoState } from "../hooks/useAutoVideoState";
+import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
+import {
+  VideoProject,
+  ProjectInputType,
+  ProjectLanguage,
+  AspectRatio,
+  ImageGenerationMode,
+  ImageGeneratorEngine,
+  GenerateType,
+  VoiceConfig,
+} from "../types";
+import { AppTab, AppTheme } from "../constants/enums";
+import {
+  GENRE_OPTIONS,
+  DURATION_OPTIONS,
+  PROJECT_LANGUAGE_OPTIONS,
+  SPLIT_STRATEGY_OPTIONS,
+  API_ROUTES,
+  HTTP_METHODS,
+  CONTENT_TYPES,
+  CONTENT_TYPE_HEADER,
+  REFACTOR_CONSTANTS,
+  genreLabels,
+  MEDIA_MIX_CONFIG,
+} from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG } from "../constants/config";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
@@ -14,124 +38,36 @@ import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
-import { formatTimeHelper } from "../utils/helpers";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
-import { safeSystemFetch, readFilesAsDataURL, generateRandomString } from "../lib/shared-utils";
-import { blobToBase64 } from "../lib/fileUtils";
-import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
+import { readFilesAsDataURL } from "../lib/shared-utils";
 import {
-  Zap,
-  Sparkles,
-  Mic,
-  Video,
-  Download,
-  ChevronDown,
-  Save,
-  Trash,
-  Sliders,
-  Eye,
-  FileText,
-  Layers,
-  Check,
-  Clock,
-  Layout,
-  Wand2,
-  Globe,
-  Film,
-  Upload,
-  X,
-  ImageIcon,
-  Target,
-  Copy,
-  RefreshCw,
-  Activity,
+  Zap, Sparkles, Mic, Video, Download, ChevronDown, Save, Trash, Sliders,
+  Eye, FileText, Layers, Check, Clock, Layout, Wand2, Globe, Film, Upload,
+  X, ImageIcon, Target, Copy, RefreshCw, Activity,
 } from "lucide-react";
 
-interface AutoVideoGeneratorProps {
-  currentLang: Lang;
-  projects: VideoProject[];
-  selectedProjectId?: string | null;
-  onSelectProject: (id: string) => void;
-  onCreateProject: (name: string, desc: string) => Promise<void>;
-  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
-  theme?: AppTheme;
-}
+const SPLIT_LABEL_MAP = (T: ReturnType<typeof getTexts>) => ({
+  word: T.splitWord,
+  short_sentence: T.splitShort,
+  long_sentence: T.splitLong,
+  mixed_sentences: T.splitMixed,
+  paragraph: T.splitParagraph,
+});
 
-interface CachedVoiceAudio {
-  audioBase64: string;
-  audioUrl: string;
-  isCached: boolean;
-}
+const getTexts = (currentLang: Lang) =>
+  AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
-interface CachedGeneratorConfig {
-  inputType?: ProjectInputType;
-  scriptContent?: string;
-  genre?: string;
-  language?: ProjectLanguage;
-  duration?: string;
-  splitStrategy?: string;
-  voiceProvider?: string;
-  voiceURI?: string;
-  voiceName?: string;
-  generationMode?: ImageGenerationMode;
-  imageGeneratorEngine?: ImageGeneratorEngine;
-  generateType?: GenerateType;
-  maxVideoScenes?: number;
-  aspectRatio?: AspectRatio;
-  stylePreset?: string;
-  thumbnailCount?: number;
-  thumbnailStylePreset?: string;
-  projectName?: string;
-  referenceImages?: string[];
-  sceneReferenceImages?: string[];
-  thumbnailReferenceImages?: string[];
-  resumeMode?: boolean;
-  chromeHeadless?: boolean;
-}
-
-const getCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
-  const audioUrl = _.get(
-    voiceConfig,
-    AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY,
-    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  );
-  let audioBase64 = _.get(
-    voiceConfig,
-    AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH,
-    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  );
-
-  if (_.every([
-    _.isEmpty(audioBase64),
-    !_.isEmpty(audioUrl),
-  ], Boolean)) {
-    try {
-      const audioResponse = await fetch(audioUrl);
-      if (!audioResponse.ok) {
-        throw new Error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR);
-      }
-      audioBase64 = await blobToBase64(await audioResponse.blob());
-    } catch (error) {
-      logger.error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR, error);
-    }
-  }
-
-  return {
-    audioBase64,
-    audioUrl,
-    isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)),
-  };
-};
-
-const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
-  if (_.isEqual(genMode, ImageGenerationMode.GeminiChat)) {
+const getEngineOptions = (
+  generationMode: ImageGenerationMode,
+  generationType: GenerateType,
+): { value: ImageGeneratorEngine; label: string }[] => {
+  if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
     return [
       { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
       { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
     ];
   }
-  if (_.includes([GenerateType.Video, GenerateType.Mixed], genType)) {
+  if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
     return [
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
       { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
@@ -146,6 +82,23 @@ const getEngineOptions = (genMode: ImageGenerationMode, genType: GenerateType): 
   ];
 };
 
+const truncateByWords = (text: string, maxWords: number): string => {
+  const words = _.words(text);
+  return words.length > maxWords
+    ? _.join(_.take(words, maxWords), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS
+    : text;
+};
+
+interface AutoVideoGeneratorProps {
+  currentLang: Lang;
+  projects: VideoProject[];
+  selectedProjectId?: string | null;
+  onSelectProject: (id: string) => void;
+  onCreateProject: (name: string, desc: string) => Promise<void>;
+  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
+  theme?: AppTheme;
+}
+
 export default function AutoVideoGenerator({
   currentLang,
   projects,
@@ -154,311 +107,68 @@ export default function AutoVideoGenerator({
   onUpdateProject,
   theme = AppTheme.DARK,
 }: AutoVideoGeneratorProps) {
-  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const T = getTexts(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
+  const splitLabelMap = SPLIT_LABEL_MAP(T);
 
-  const processingRef = useRef(false);
-  const boundSelectedProjectIdRef = useRef<string | null>(null);
-  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const { state, actions, applyProjectToState } = useAutoVideoState(selectedProjectId, projects, currentLang);
+  const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
-  const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
-  const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
-  const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
-  const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
-  const [rewriteLevel] = useState<number>(3);
-  const [similarityReduction] = useState<number>(3);
-  const [creativityLevel] = useState<number>(3);
-  const [factCheck] = useState<boolean>(true);
-  const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
-  const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [splitStrategy, setSplitStrategy] = useState<string>(REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
-
-  const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
-  const [hookDuration] = useState<number>(10);
-  const [hookPosition] = useState<string>(REFACTOR_CONSTANTS.AVG_START_POS);
-
-  const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
-  const [voiceSpeed] = useState<number>(1.0);
-  const [voicePitch] = useState<number>(1.0);
-  const [voiceVolume] = useState<number>(1.0);
-  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
-  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
-
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
-  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
-  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
-  const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
-  const [sampleCount] = useState<number>(1);
-  const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless, setChromeHeadless] = useState<boolean>(true);
-  const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
-  const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
-
-  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>([]);
-
-  const [characterImages] = useState<string[]>([]);
-
-  const [thumbnailCount, setThumbnailCount] = useState<number>(2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
-  const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
-
-  const [projectName, setProjectName] = useState<string>(() => _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-  const [resumeMode, setResumeMode] = useState<boolean>(true);
-  const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
-
-  const loadConfigForProject = async (id: string) => {
-    try {
-      const saved = await storageUtils.getAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${id}`);
-      const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
-      if (parsed) {
-        if (parsed.inputType) setInputType(parsed.inputType);
-        if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
-        if (parsed.genre) setGenre(parsed.genre);
-        if (parsed.language) setLanguage(parsed.language);
-        if (parsed.duration) setDuration(parsed.duration);
-        if (parsed.splitStrategy) setSplitStrategy(parsed.splitStrategy);
-        if (parsed.voiceProvider) setVoiceProvider(parsed.voiceProvider);
-        if (parsed.voiceURI) setVoiceURI(parsed.voiceURI);
-        if (parsed.voiceName) setVoiceName(parsed.voiceName);
-        if (parsed.generationMode) setGenerationMode(parsed.generationMode);
-        if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
-        if (parsed.generateType) setGenerateType(parsed.generateType);
-        if (!_.isUndefined(parsed.maxVideoScenes)) setMaxVideoScenes(parsed.maxVideoScenes);
-        if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
-        if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
-        if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
-        if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
-        if (parsed.projectName) setProjectName(parsed.projectName);
-        if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
-        if (parsed.sceneReferenceImages) setSceneReferenceImages(parsed.sceneReferenceImages);
-        if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
-        if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
-        if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
-      } else {
-        const foundProj = _.find(projects, { id });
-        if (foundProj) {
-          if (foundProj.input?.content) setScriptContent(foundProj.input.content);
-          if (foundProj.config) {
-            if (foundProj.config.genre) setGenre(foundProj.config.genre);
-            if (foundProj.config.language) setLanguage(foundProj.config.language);
-            if (foundProj.config.duration) setDuration(foundProj.config.duration);
-            if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
-          }
-          if (foundProj.voiceConfig) {
-            if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
-            if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
-            if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
-          }
-          if (foundProj.visualConfig) {
-            if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
-            if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
-            if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
-            if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
-            if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
-            if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
-            if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
-            if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
-            setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
-              _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
-                ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
-                : []
-            )));
-            setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
-          }
-          setProjectName(foundProj.name);
-          setReferenceImages([]);
-          setThumbnailReferenceImages([]);
-        }
-      }
-    } catch (e) {
-      logger.error(T.errLoadConfig, e);
-    }
-  };
-
-  useEffect(() => {
-    if (!selectedProjectId) {
-      setIsConfigLoaded(true);
-      return;
-    }
-    const loadConfig = async () => {
-      setIsConfigLoaded(false);
-      await loadConfigForProject(selectedProjectId);
-      setIsConfigLoaded(true);
-    };
-    loadConfig();
-  }, [selectedProjectId]);
-
-  useEffect(() => {
-    if (!isConfigLoaded || !selectedProjectId) return;
-    const config = {
-      inputType,
-      scriptContent,
-      genre,
-      language,
-      duration,
-      splitStrategy,
-      voiceProvider,
-      voiceURI,
-      voiceName,
-      generationMode,
-      imageGeneratorEngine,
-      generateType,
-      maxVideoScenes,
-      aspectRatio,
-      stylePreset,
-      thumbnailCount,
-      thumbnailStylePreset,
-      projectName,
-      referenceImages,
-      sceneReferenceImages,
-      thumbnailReferenceImages,
-      resumeMode,
-      chromeHeadless,
-    };
-    storageUtils.setAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${selectedProjectId}`, jsonUtils.safeStringify(config));
-  }, [
-    isConfigLoaded,
-    selectedProjectId,
+  const {
     inputType, scriptContent, genre, language, duration, splitStrategy,
-    voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
-    generateType, maxVideoScenes, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
-    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless
-  ]);
-  const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
+    voiceProvider, voiceURI, voiceName, isVoiceDialogOpen,
+    generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
+    aspectRatio, chromeHeadless, stylePreset, referenceImages, sceneReferenceImages,
+    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailReferenceImages,
+    projectName, resumeMode, showAdvancedImageSettings,
+    rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
+    hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
+    promptInputMethod, sampleCount, videoDuration, geminiChatSpeed, batchDelay,
+    ffmpegQuality, isConfigLoaded,
+  } = state;
 
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
-  const [stepProgress, setStepProgress] = useState<number>(0);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
+  const {
+    setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy,
+    setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
+    setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
+    setAspectRatio, setChromeHeadless, setStylePreset,
+    setReferenceImages, setSceneReferenceImages,
+    setThumbnailCount, setThumbnailStylePreset, setThumbnailReferenceImages,
+    setProjectName, setResumeMode, setShowAdvancedImageSettings,
+  } = actions;
 
-  useEffect(() => {
-    const restoreAutoProject = async () => {
-      if (processingRef.current) return;
-      try {
-        const savedId = await storageUtils.getAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT);
-        if (savedId && !activeCreatedProject) {
-          const foundProj = _.find(projects, { id: savedId });
-          if (foundProj) {
-            setActiveCreatedProject(foundProj);
-            if (foundProj.renderedVideoUrl) {
-              setRenderedVideoUrl(foundProj.renderedVideoUrl);
-            }
-            if (foundProj.generationLogs) {
-              setLogs(foundProj.generationLogs);
-            }
-            if (foundProj.input?.content) {
-              setScriptContent(foundProj.input.content);
-            }
-            if (foundProj.config) {
-              if (foundProj.config.genre) setGenre(foundProj.config.genre);
-              if (foundProj.config.language) setLanguage(foundProj.config.language);
-              if (foundProj.config.duration) setDuration(foundProj.config.duration);
-              if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
-            }
-            if (foundProj.voiceConfig) {
-              if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
-              if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
-              if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
-            }
-            if (foundProj.visualConfig) {
-              if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
-              if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
-              if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
-              if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
-              if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
-              if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
-              if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
-              if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
-              setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
-                _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
-                  ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
-                  : []
-              )));
-              setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
-            }
-          }
-        }
-      } catch (e) {
-        logger.error(REFACTOR_CONSTANTS.ERR_RESTORE, e);
-      }
-    };
-    restoreAutoProject();
-  }, [projects, activeCreatedProject]);
+  const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
+  const { startPipeline, cancelPipeline, setActiveCreatedProject } = pipelineActions;
 
   useEffect(() => {
-    if (processingRef.current) return;
-    if (selectedProjectId) {
-      const selectionChanged = !_.isEqual(boundSelectedProjectIdRef.current, selectedProjectId);
-      if (!selectionChanged && activeCreatedProject) return;
-      boundSelectedProjectIdRef.current = selectedProjectId;
-      const foundProj = _.find(projects, { id: selectedProjectId });
-      if (foundProj) {
-        setActiveCreatedProject(foundProj);
-        storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
-        if (foundProj.renderedVideoUrl) {
-          setRenderedVideoUrl(foundProj.renderedVideoUrl);
-        } else {
-          setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        }
-        if (foundProj.generationLogs) {
-          setLogs(foundProj.generationLogs);
-        } else {
-          setLogs([]);
-        }
-        if (foundProj.input?.content) {
-          setScriptContent(foundProj.input.content);
-        }
-        if (foundProj.config) {
-          if (foundProj.config.genre) setGenre(foundProj.config.genre);
-          if (foundProj.config.language) setLanguage(foundProj.config.language);
-          if (foundProj.config.duration) setDuration(foundProj.config.duration);
-          if (foundProj.config.splitStrategy) setSplitStrategy(foundProj.config.splitStrategy);
-        }
-        if (foundProj.voiceConfig) {
-          if (foundProj.voiceConfig.provider) setVoiceProvider(foundProj.voiceConfig.provider);
-          if (foundProj.voiceConfig.voiceURI) setVoiceURI(foundProj.voiceConfig.voiceURI);
-          if (foundProj.voiceConfig.voiceName) setVoiceName(foundProj.voiceConfig.voiceName);
-        }
-        if (foundProj.visualConfig) {
-          if (foundProj.visualConfig.generationMode) setGenerationMode(foundProj.visualConfig.generationMode);
-          if (foundProj.visualConfig.imageGeneratorEngine) setImageGeneratorEngine(foundProj.visualConfig.imageGeneratorEngine);
-          if (foundProj.visualConfig.generateType) setGenerateType(foundProj.visualConfig.generateType);
-          if (!_.isUndefined(foundProj.visualConfig.maxVideoScenes)) setMaxVideoScenes(foundProj.visualConfig.maxVideoScenes);
-          if (foundProj.visualConfig.aspectRatio) setAspectRatio(foundProj.visualConfig.aspectRatio as AspectRatio);
-          if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
-          if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
-          if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
-          setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
-            _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
-              ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
-              : []
-          )));
-          setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
-        }
-      }
+    syncSelectedProject(selectedProjectId);
+  }, [selectedProjectId, projects]);
+
+  useEffect(() => {
+    if (!selectedProjectId || !isConfigLoaded) return;
+    const foundProj = _.find(projects, { id: selectedProjectId });
+    if (foundProj) {
+      setActiveCreatedProject(foundProj);
+      storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
+      pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      pipelineActions.setLogs(foundProj.generationLogs || []);
+      applyProjectToState(foundProj, actions);
     }
-  }, [selectedProjectId, projects, activeCreatedProject]);
+  }, [selectedProjectId, projects, isConfigLoaded]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
-  const [presetNameInput, setPresetNameInput] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+
+  const [_presetNameInputState, setPresetNameInputState] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [selectedPresetId, setSelectedPresetId] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs((prev) => [...prev, _.join([`[${timestamp}]`, msg], REFACTOR_CONSTANTS.AVG_BLANK)]);
+    pipelineActions.setLogs((prev) => [...prev, _.join([`[${timestamp}]`, msg], REFACTOR_CONSTANTS.AVG_BLANK)]);
   };
 
   const handleSavePreset = async () => {
-    const trimmedName = _.trim(presetNameInput);
+    const trimmedName = _.trim(_presetNameInputState);
     if (_.isEmpty(trimmedName)) return;
     const newPresetData = {
       id: _.join([PRESET_CONSTANTS.ID_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
@@ -491,7 +201,7 @@ export default function AutoVideoGenerator({
       const saved = await res.json();
       if (saved && saved.id) {
         refetchPresets();
-        setPresetNameInput(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        setPresetNameInputState(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         addLog(T.logSavedPreset(saved.name));
       }
     } catch (err) {
@@ -503,32 +213,23 @@ export default function AutoVideoGenerator({
     const preset = _.find(presets, { id: presetId });
     if (!preset) return;
     const c = _.get(preset, "config", {});
-    const genreVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENRE_KEY);
-    if (genreVal) setGenre(genreVal);
-    const langVal = _.get(c, REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY);
-    if (langVal) setLanguage(langVal);
-    const durationVal = _.get(c, REFACTOR_CONSTANTS.AVG_DURATION_KEY);
-    if (durationVal) setDuration(durationVal);
-    const splitStrategyVal = _.get(c, REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY);
-    if (splitStrategyVal) setSplitStrategy(splitStrategyVal);
-    const voiceURIVal = _.get(c, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY);
-    if (voiceURIVal) setVoiceURI(voiceURIVal);
-    const voiceNameVal = _.get(c, REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY);
-    if (voiceNameVal) setVoiceName(voiceNameVal);
-    const aspectRatioVal = _.get(c, REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY);
-    if (aspectRatioVal) setAspectRatio(aspectRatioVal);
-    const genModeVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY);
-    if (genModeVal) setGenerationMode(genModeVal);
-    const generateTypeVal = _.get(c, REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY);
-    if (generateTypeVal) setGenerateType(generateTypeVal);
-    const maxVideoScenesVal = _.get(c, REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY);
-    if (!_.isUndefined(maxVideoScenesVal)) setMaxVideoScenes(maxVideoScenesVal);
-    const stylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY);
-    if (stylePresetVal) setStylePreset(stylePresetVal);
-    const thumbCountVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY);
-    if (thumbCountVal) setThumbnailCount(thumbCountVal);
-    const thumbStylePresetVal = _.get(c, REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY);
-    if (thumbStylePresetVal) setThumbnailStylePreset(thumbStylePresetVal);
+    const applyIfExists = (key: string, setter: (v: unknown) => void) => {
+      const val = _.get(c, key);
+      if (!_.isUndefined(val)) setter(val);
+    };
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENRE_KEY, (v) => setGenre(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY, (v) => setLanguage(v as ProjectLanguage));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_DURATION_KEY, (v) => setDuration(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY, (v) => setSplitStrategy(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY, (v) => setVoiceURI(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY, (v) => setVoiceName(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY, (v) => setAspectRatio(v as AspectRatio));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY, (v) => setGenerationMode(v as ImageGenerationMode));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) => setGenerateType(v as GenerateType));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) => setStylePreset(v as string));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) => setMaxVideoScenes(v as number));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
   };
@@ -548,978 +249,69 @@ export default function AutoVideoGenerator({
     }
   };
 
-  const handleStyleFilesUpload = (files: FileList) => {
+  const createImageUploadHandler = (
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    logMessage: (count: number) => string,
+  ) => (files: FileList) => {
     readFilesAsDataURL(files, (result) => {
-      setReferenceImages((prev) => [...prev, result]);
+      setter((prev) => [...prev, result]);
     });
-    addLog(T.logStyleUploaded(files.length));
+    addLog(logMessage(files.length));
   };
 
-  const handleSceneReferenceFilesUpload = (files: FileList) => {
-    readFilesAsDataURL(files, (result) => {
-      setSceneReferenceImages((prev) => [...prev, result]);
+  const handleStyleFilesUpload = createImageUploadHandler(setReferenceImages, T.logStyleUploaded);
+  const handleSceneReferenceFilesUpload = createImageUploadHandler(setSceneReferenceImages, T.logSceneReferenceUploaded);
+  const handleThumbnailStyleFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbUploaded);
+
+  const handleStartAutoGenerate = () => {
+    startPipeline({
+      scriptContent, inputType, genre, language, duration, rewriteLevel,
+      similarityReduction, creativityLevel, factCheck, audience, writingStyle,
+      splitStrategy, hookStrategy, hookDuration, hookPosition,
+      voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
+      generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
+      aspectRatio, promptInputMethod, sampleCount, videoDuration,
+      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset,
+      referenceImages, sceneReferenceImages, characterImages,
+      thumbnailCount, thumbnailStylePreset, thumbnailReferenceImages,
+      projectName, resumeMode, ffmpegQuality, selectedProjectId,
     });
-    addLog(T.logSceneReferenceUploaded(files.length));
-  };
-
-  const handleThumbnailStyleFilesUpload = (files: FileList) => {
-    readFilesAsDataURL(files, (result) => {
-      setThumbnailReferenceImages((prev) => [...prev, result]);
-    });
-    addLog(T.logThumbUploaded(files.length));
-  };
-
-
-  const handleStartAutoGenerate = async () => {
-    if (processingRef.current) return;
-    if (_.isEmpty(_.trim(scriptContent))) {
-      alert(T.alertEmptyScript);
-      return;
-    }
-
-    processingRef.current = true;
-    setIsProcessing(true);
-    setStepProgress(5);
-    setCurrentStepIndex(1);
-    setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-    let currentLogs: string[] = resumeMode ? _.clone(logs) : [];
-    setLogs(_.clone(currentLogs));
-    const appendLog = (msg: string) => {
-      const timestamp = new Date().toLocaleTimeString();
-      const formatted = `[${timestamp}] ${msg}`;
-      currentLogs = _.concat(currentLogs, formatted);
-      setLogs(_.clone(currentLogs));
-    };
-
-    appendLog(T.logPipelineStart);
-
-    try {
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
-      let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let newProj: VideoProject;
-
-      const directlySelectedProj = _.defaultTo(_.find(projects, { id: selectedProjectId }), null);
-      const selectedAutoProj = directlySelectedProj
-        ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
-            ? directlySelectedProj
-            : _.defaultTo(_.find(projects, (project) => {
-                const targetParentId = _.defaultTo(directlySelectedProj.parentId, directlySelectedProj.id);
-                return _.isEqual(project.parentId, targetParentId)
-                  && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX);
-              }), directlySelectedProj))
-        : null;
-
-      let existingTargetProj = _.defaultTo(selectedAutoProj, (!selectedProjectId ? activeCreatedProject : null));
-      if (!existingTargetProj && !_.isEmpty(projectName)) {
-        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(projectName))), null);
-      }
-      if (!existingTargetProj && !_.isEmpty(scriptContent)) {
-        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(_.get(p, 'input.content', '')), _.trim(scriptContent))), null);
-      }
-      if (!existingTargetProj && !_.isEmpty(projects)) {
-        existingTargetProj = _.defaultTo(_.first(projects), null);
-      }
-
-      if (resumeMode && existingTargetProj) {
-        newProjectId = existingTargetProj.id;
-        newProj = {
-          ...existingTargetProj,
-          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
-        };
-        setActiveCreatedProject(newProj);
-        appendLog(T.logResumeProject(newProj.name));
-      } else {
-        const selectedProj = selectedAutoProj;
-        const isChildProject = selectedProj && selectedProj.parentId;
-
-        newProjectId = selectedProj
-          ? selectedProj.id
-          : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, generateRandomString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-        const defaultName = selectedProj
-          ? selectedProj.name
-          : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-
-        newProj = {
-          id: newProjectId,
-          parentId: isChildProject ? selectedProj.parentId : undefined,
-          name: defaultName,
-          description: _.join([REFACTOR_CONSTANTS.AVG_AUTO_DESC_PREFIX, new Date().toLocaleString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          createdAt: _.defaultTo(selectedProj?.createdAt, new Date().toISOString()),
-          updatedAt: new Date().toISOString(),
-          status: REFACTOR_CONSTANTS.STATUS_GENERATING,
-          input: {
-            type: inputType,
-            content: scriptContent,
-          },
-          config: {
-            genre,
-            language,
-            duration,
-            rewriteLevel,
-            similarityReduction,
-            creativityLevel,
-            factCheck,
-            audience,
-            writingStyle,
-            splitStrategy,
-          },
-          hookConfig: {
-            type: hookStrategy,
-            duration: hookDuration,
-            count: 3,
-            positions: hookPosition as HookPosition,
-            versions: [],
-          },
-          voiceConfig: {
-            provider: voiceProvider,
-            audioType: AudioType.TTS,
-            gender: Gender.Male,
-            age: AgeGroup.Adult,
-            emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
-            speed: voiceSpeed,
-            pitch: voicePitch,
-            volume: voiceVolume,
-            voiceURI,
-            voiceName,
-          },
-          visualConfig: {
-            source: REFACTOR_CONSTANTS.AVG_VISUAL_SOURCE_AUTO,
-            style: stylePreset,
-            quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-            density: 5,
-            characterConsistency: true,
-            assetsMode: AssetsMode.Mixed,
-            imageGeneratorEngine,
-            generateType,
-            maxVideoScenes,
-            aspectRatio,
-            promptInputMethod,
-            generateCount: sampleCount,
-            chromeHeadless,
-            generationMode,
-            geminiChatSpeed,
-            batchDelay,
-            videoDuration,
-            thumbnailCount,
-            thumbnailReferenceImages,
-            thumbnailReferencePrompt: thumbnailStylePreset,
-            styleReferenceImages: referenceImages,
-            sceneReferenceImages,
-            referenceImages: sceneReferenceImages,
-            referencePrompt: stylePreset,
-            characters: [
-              {
-                id: REFACTOR_CONSTANTS.AVG_CHARACTER_ID_DEFAULT,
-                name: PRESET_CONSTANTS.CHARACTER_NAME,
-                description: PRESET_CONSTANTS.CHARACTER_BIO,
-                images: characterImages,
-              },
-            ],
-          },
-          seoConfig: {
-            numTitles: 3,
-            numDescriptions: 1,
-            numHashtags: 5,
-            numTags: 10,
-          },
-          creditsUsed: 0,
-        };
-      }
-
-      await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
-      setActiveCreatedProject(newProj);
-
-      const syncProject = async (proj: VideoProject) => {
-        const finalProj = {
-          ...proj,
-          generationLogs: _.clone(currentLogs),
-          updatedAt: new Date().toISOString()
-        };
-        setActiveCreatedProject(finalProj);
-        await onUpdateProject(finalProj, true);
-      };
-
-      await syncProject(newProj);
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
-      setStepProgress(10);
-
-      let realScript: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let chapters = [];
-      let factCheckNotes: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let realScenes = [];
-      let isScriptCached = false;
-      let isStoryboardCached = false;
-
-      if (resumeMode && !_.isEmpty(newProj.scriptRewritten)) {
-        realScript = newProj.scriptRewritten;
-        chapters = _.defaultTo(newProj.chapters, []);
-        factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        isScriptCached = true;
-        appendLog(T.logResumeScript);
-        setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
-      }
-
-      if (resumeMode && !_.isEmpty(newProj.storyboard)) {
-        realScenes = _.cloneDeep(newProj.storyboard);
-        isStoryboardCached = true;
-        setStepProgress(30);
-      }
-
-      if (!isScriptCached) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_WRITE);
-        const scriptPayload = {
-          originalInput: scriptContent,
-          inputType: inputType,
-          config: {
-            ...newProj.config,
-            hookConfig: newProj.hookConfig,
-          },
-          selectedHookText: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-          bypassCache: true,
-        };
-
-        const scriptRes = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, scriptPayload);
-        if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
-          throw new Error(scriptRes.error || scriptRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_SCRIPT_REWRITE);
-        }
-
-        realScript = scriptRes.data.rewrittenScript || scriptContent;
-        chapters = scriptRes.data.chapters || [];
-        factCheckNotes = scriptRes.data.factCheckNotes || "";
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
-        setStepProgress(20);
-
-        const scriptUpdatedProj = {
-          ...newProj,
-          scriptRewritten: realScript,
-          factCheckNotes,
-          chapters,
-        };
-        await syncProject(scriptUpdatedProj);
-        newProj = scriptUpdatedProj;
-      }
-
-      if (!isStoryboardCached) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
-        const storyboardPayload = {
-          rewrittenScript: realScript,
-          chapters: chapters,
-          config: {
-            ...newProj.config,
-            ...newProj.voiceConfig,
-            visualStylePreset: newProj.visualConfig.style,
-            aspectRatio: newProj.visualConfig.aspectRatio,
-            imageQuality: newProj.visualConfig.quality,
-          },
-          visualStyle: newProj.visualConfig.style || "Cinematic",
-          referenceImages: _.defaultTo(newProj.visualConfig.styleReferenceImages, referenceImages),
-          referenceStyle: newProj.visualConfig.referencePrompt,
-          visualDensity: 5,
-          bypassCache: true,
-        };
-
-        const storyboardRes = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, storyboardPayload);
-        if (!storyboardRes.success || !storyboardRes.data || storyboardRes.data.error) {
-          throw new Error(storyboardRes.error || storyboardRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_STORYBOARD_SPLIT);
-        }
-
-        realScenes = storyboardRes.data.scenes || [];
-        if (_.isEmpty(realScenes)) {
-          throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
-        }
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
-        setStepProgress(30);
-
-        const scriptUpdatedProj = {
-          ...newProj,
-          scriptRewritten: realScript,
-          factCheckNotes,
-          chapters,
-          storyboard: realScenes
-        };
-        await syncProject(scriptUpdatedProj);
-        newProj = scriptUpdatedProj;
-      }
-
-      let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let isVoiceCached = false;
-
-      if (resumeMode) {
-        const cachedVoiceAudio = await getCachedVoiceAudio(newProj.voiceConfig);
-        if (cachedVoiceAudio.isCached) {
-          globalAudioBase64 = cachedVoiceAudio.audioBase64;
-          globalAudioUrl = cachedVoiceAudio.audioUrl;
-          isVoiceCached = true;
-          appendLog(T.logResumeVoice);
-          setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_VOICE_COMPLETE);
-        }
-      }
-
-      let voiceUpdatedProj = newProj;
-      if (!isVoiceCached) {
-        setStepProgress(35);
-        setCurrentStepIndex(2);
-
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, voiceName || "Mặc định"));
-        const voicePayload = {
-          text: realScript,
-          voiceURI: voiceURI,
-          voice_id: voiceURI,
-          provider: voiceProvider,
-          speed: voiceSpeed,
-          pitch: voicePitch,
-          volume: voiceVolume,
-          gender: Gender.Male,
-          age: AgeGroup.Adult,
-          emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
-        };
-
-        const ttsRes = await safeSystemFetch(API_ROUTES.PIPELINE_VOICE, voicePayload);
-        if (!ttsRes.success || !ttsRes.data || !ttsRes.data.success || !ttsRes.data.audioBase64) {
-          throw new Error(ttsRes.error || ttsRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED);
-        }
-
-        globalAudioBase64 = ttsRes.data.audioBase64;
-        globalAudioUrl = ttsRes.data.audioUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_TTS_SUCCESS);
-        setStepProgress(50);
-
-        voiceUpdatedProj = {
-          ...newProj,
-          storyboard: realScenes,
-          voiceConfig: {
-            ...newProj.voiceConfig,
-            audioType: AudioType.TTS,
-            provider: voiceProvider,
-            audioBase64: globalAudioBase64,
-            audioUrl: globalAudioUrl
-          } as VoiceConfig
-        };
-        await syncProject(voiceUpdatedProj);
-      } else {
-        voiceUpdatedProj = {
-          ...newProj,
-          storyboard: realScenes,
-          voiceConfig: {
-            ...newProj.voiceConfig,
-            audioBase64: globalAudioBase64,
-            audioUrl: globalAudioUrl
-          } as VoiceConfig
-        };
-      }
-
-      let currentStylePreset = stylePreset;
-      let currentThumbnailStyle = thumbnailStylePreset;
-
-      if (!isStoryboardCached) {
-        if (!_.isEmpty(referenceImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-          const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: referenceImages });
-          if (extractStyleRes.success && extractStyleRes.data?.style) {
-            const extractedStyle = extractStyleRes.data.style;
-            currentStylePreset = extractedStyle;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(
-              SecurityConstants.PLACEHOLDER_0,
-              _.join([
-                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE,
-                _.truncate(extractedStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }),
-                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE
-              ], REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-            ));
-            setStylePreset(extractedStyle);
-
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY);
-            const rewriteStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, {
-              storyboard: realScenes,
-              newStyle: extractedStyle,
-              aspectRatio: aspectRatio,
-            });
-            if (rewriteStyleRes.success && rewriteStyleRes.data?.storyboard) {
-              realScenes = rewriteStyleRes.data.storyboard;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY_SUCCESS);
-            }
-          }
-        }
-
-        if (!_.isEmpty(thumbnailReferenceImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
-          const extractThumbStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: thumbnailReferenceImages });
-          if (extractThumbStyleRes.success && extractThumbStyleRes.data?.style) {
-            currentThumbnailStyle = extractThumbStyleRes.data.style;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
-              SecurityConstants.PLACEHOLDER_0,
-              _.join([
-                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE,
-                _.truncate(currentThumbnailStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }),
-                REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE
-              ], REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-            ));
-            setThumbnailStylePreset(currentThumbnailStyle);
-          }
-        }
-
-        voiceUpdatedProj = {
-          ...voiceUpdatedProj,
-          visualConfig: {
-            ...voiceUpdatedProj.visualConfig,
-            style: currentStylePreset,
-            styleReferenceImages: referenceImages,
-            sceneReferenceImages,
-            referenceImages: sceneReferenceImages,
-            referencePrompt: currentStylePreset,
-            thumbnailReferencePrompt: currentThumbnailStyle,
-          }
-        };
-        await syncProject(voiceUpdatedProj);
-
-        if (!_.isEmpty(characterImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
-          const extractCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, {
-            images: characterImages,
-            characterDescription: PRESET_CONSTANTS.CHARACTER_BIO,
-          });
-          if (extractCharRes.success && extractCharRes.data?.characterPrompt) {
-            const characterPrompt = extractCharRes.data.characterPrompt;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT_SUCCESS);
-
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
-            const rewriteCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
-              storyboard: realScenes,
-              characters: [{ name: PRESET_CONSTANTS.CHARACTER_NAME, prompt: characterPrompt }],
-              aspectRatio: aspectRatio,
-            });
-            if (rewriteCharRes.success && rewriteCharRes.data?.storyboard) {
-              realScenes = rewriteCharRes.data.storyboard;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
-            }
-          }
-        }
-
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
-        const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
-          storyboard: realScenes,
-          visualConfig: voiceUpdatedProj.visualConfig,
-          aspectRatio: aspectRatio,
-          language: language,
-        });
-        if (optimizeRes.success && optimizeRes.data?.storyboard) {
-          realScenes = optimizeRes.data.storyboard;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
-        }
-      } else {
-        currentStylePreset = voiceUpdatedProj.visualConfig?.style || stylePreset;
-        currentThumbnailStyle = voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt || thumbnailStylePreset;
-      }
-      setStepProgress(60);
-
-      setStepProgress(65);
-      setCurrentStepIndex(3);
-      const modeName = _.isEqual(generationMode, ImageGenerationMode.GeminiChat) ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
-
-      const visualConfigPayload = {
-        ...(voiceUpdatedProj.visualConfig || {}),
-        generationMode,
-        imageGeneratorEngine,
-        aspectRatio,
-        generateType,
-        maxVideoScenes,
-        chromeHeadless,
-        geminiChatSpeed,
-        style: currentStylePreset,
-        sceneReferenceImages,
-        referenceImages: sceneReferenceImages,
-      };
-      const sandboxConfigPayload = {
-        projectId: voiceUpdatedProj.id
-      };
-
-      const targetScenesToGen = _.filter(realScenes, (sc) => {
-        if (resumeMode && hasSceneAsset(sc)) {
-          return false;
-        }
-        return true;
-      });
-      const existingVideoCount = _.size(_.filter(
-        realScenes,
-        (scene) => _.isEqual(scene.assetType, GenerateType.Video)
-          && hasSceneAsset(scene),
-      ));
-      const remainingVideoSlots = _.max([
-        _.subtract(maxVideoScenes, existingVideoCount),
-        SecurityConstants.ZERO,
-      ])!;
-      const videoSceneIds = await selectVideoSceneIds(
-        targetScenesToGen,
-        generateType,
-        remainingVideoSlots,
-      );
-
-      if (resumeMode) {
-        realScenes.forEach((sc, idx) => {
-          if (hasSceneAsset(sc)) {
-            appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length));
-          }
-        });
-      }
-
-      let imageCheckpointQueue = Promise.resolve();
-      const persistImageCheckpoint = (): Promise<void> => {
-        const checkpointProject = {
-          ...voiceUpdatedProj,
-          storyboard: _.cloneDeep(realScenes),
-        };
-        imageCheckpointQueue = imageCheckpointQueue.then(
-          () => syncProject(checkpointProject),
-        );
-        return imageCheckpointQueue;
-      };
-
-      if (targetScenesToGen.length > 0) {
-
-        if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
-          appendLog(T.logBatchImageStreamStart);
-          const batchItems = _.map(targetScenesToGen, (scene) => ({
-            sceneId: scene.id,
-            prompt: _.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY)
-              || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-            generateType: resolveSceneGenerateType(scene.id, generateType, videoSceneIds),
-          }));
-          let completedCount = SecurityConstants.ZERO;
-          let batchFailureCount = SecurityConstants.ZERO;
-          let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-          let fallbackFailureCount = SecurityConstants.ZERO;
-          const applyResult = (result: ProjectImageResult) => {
-            const imageUrl = createProjectImageUrl(result);
-            const scene = _.find(realScenes, (item) => _.isEqual(item.id, result.sceneId));
-            if (_.every([scene, !_.isEmpty(imageUrl)], Boolean)) {
-              scene!.assetUrl = imageUrl;
-              scene!.assetUrls = [imageUrl];
-              scene!.assetType = result.assetType || GenerateType.Image;
-              completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
-              const totalScenes = _.size(targetScenesToGen);
-              if (_.some([
-                _.isEqual(completedCount, SecurityConstants.DEFAULT_AMOUNT),
-                _.isEqual(completedCount, totalScenes),
-                _.isEqual(completedCount % 5, SecurityConstants.ZERO),
-              ])) {
-                appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
-              }
-              void persistImageCheckpoint();
-            }
-          };
-
-          try {
-            await generateProjectImages({
-              items: batchItems,
-              visualConfig: visualConfigPayload,
-              style: currentStylePreset,
-              sandboxConfig: sandboxConfigPayload,
-              createFallbackPayload: (item) => ({
-                prompt: item.prompt,
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig?.quality
-                  || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-                bypassCache: false,
-                engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-                sandboxConfig: sandboxConfigPayload,
-                visualConfig: {
-                  ...visualConfigPayload,
-                  generateType: item.generateType,
-                },
-              }),
-              onBatchResult: (result) => {
-                if (result.success) {
-                  applyResult(result);
-                  return;
-                }
-                batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
-                if (_.isEmpty(batchFailureReason)) {
-                  batchFailureReason = _.find([result.warning, REFACTOR_CONSTANTS.UNKNOWN_WARNING], (value) => !_.isEmpty(value)) as string;
-                }
-              },
-              onFallbackStart: (error) => appendLog(T.logBatchFailuresSummary(
-                batchFailureCount,
-                _.size(targetScenesToGen),
-                _.find([batchFailureReason, error.message], (value) => !_.isEmpty(value)) as string,
-              )),
-              onFallbackItemStart: (_item, index, total) => {
-                const current = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
-                if (_.some([
-                  _.isEqual(current, SecurityConstants.DEFAULT_AMOUNT),
-                  _.isEqual(current, total),
-                  _.isEqual(current % 5, SecurityConstants.ZERO),
-                ])) {
-                  appendLog(T.logFallbackProgress(current, total));
-                }
-              },
-              onFallbackResult: (result) => {
-                if (result.success) {
-                  applyResult(result);
-                  return;
-                }
-                fallbackFailureCount = _.add(fallbackFailureCount, SecurityConstants.DEFAULT_AMOUNT);
-              },
-            });
-            appendLog(T.logImageGenerationSummary(
-              completedCount,
-              fallbackFailureCount,
-              _.size(targetScenesToGen),
-            ));
-          } finally {
-            await imageCheckpointQueue;
-          }
-        } else {
-          for (let i = 0; i < targetScenesToGen.length; i++) {
-            const sc = targetScenesToGen[i];
-            const sceneGenerateType = resolveSceneGenerateType(sc.id, generateType, videoSceneIds);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)).replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
-            try {
-              const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: _.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
-                bypassCache: false,
-                engine: imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-                sandboxConfig: sandboxConfigPayload,
-                visualConfig: visualConfigPayload
-                  ? { ...visualConfigPayload, generateType: sceneGenerateType }
-                  : visualConfigPayload,
-              });
-              const hasImageFallback = _.every([
-                _.isEqual(sceneGenerateType, GenerateType.Image),
-                !_.isEmpty(imgRes.data?.fallbackUrl),
-              ], Boolean);
-              if (_.every([
-                imgRes.success,
-                imgRes.data,
-                _.some([imgRes.data?.success, hasImageFallback], Boolean),
-              ], Boolean)) {
-                const base64Val = imgRes.data.base64 || _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
-                const fallbackUrl = _.get(imgRes.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
-                if (base64Val) {
-                  const dataUrl = _.join([
-                    _.isEqual(sceneGenerateType, GenerateType.Video)
-                      ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
-                      : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
-                    base64Val,
-                  ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-                  sc.assetUrl = dataUrl;
-                  sc.assetUrls = [dataUrl];
-                } else if (fallbackUrl) {
-                  sc.assetUrl = fallbackUrl;
-                  sc.assetUrls = [fallbackUrl];
-                }
-                sc.assetType = sceneGenerateType;
-                await persistImageCheckpoint();
-              } else {
-                throw new Error(
-                  imgRes.error
-                    || imgRes.data?.warning
-                    || REFACTOR_CONSTANTS.ERR_UNKNOWN,
-                );
-              }
-            } catch (e) {
-              appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
-            }
-          }
-        }
-      }
-      appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
-      setStepProgress(75);
-
-      const imageUpdatedProj = {
-        ...voiceUpdatedProj,
-        storyboard: realScenes
-      };
-      await syncProject(imageUpdatedProj);
-
-      let seoData = null;
-      let isSeoCached = false;
-      if (resumeMode && newProj.seo) {
-        seoData = newProj.seo;
-        isSeoCached = true;
-        appendLog(T.logResumeSeo);
-      }
-
-      if (!isSeoCached) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_OPTIMIZE);
-        const seoPayload = {
-          originalInput: scriptContent,
-          config: imageUpdatedProj.config,
-          seoConfig: imageUpdatedProj.seoConfig,
-          rewrittenScript: realScript,
-          bypassCache: true,
-        };
-        const seoRes = await safeSystemFetch(API_ROUTES.PIPELINE_SEO, seoPayload);
-        if (seoRes.success && seoRes.data) {
-          seoData = seoRes.data;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_SUCCESS);
-        } else {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_FAILED);
-        }
-      }
-
-      let thumbnailsList: ThumbnailItem[] = [];
-      let isThumbsCached = false;
-      if (resumeMode && !_.isEmpty(newProj.thumbnails)) {
-        const cachedThumbs = newProj.thumbnails;
-        if (_.every(cachedThumbs, (t) => !_.isEmpty(t.imageUrl))) {
-          thumbnailsList = cachedThumbs;
-          isThumbsCached = true;
-          appendLog(T.logResumeThumbnails);
-        }
-      }
-
-      if (!isThumbsCached) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_GEN);
-        const thumbPayload = {
-          rewrittenScript: realScript,
-          config: imageUpdatedProj.config,
-          visualConfig: {
-            ...imageUpdatedProj.visualConfig,
-            thumbnailReferencePrompt: currentThumbnailStyle,
-          },
-          bypassCache: true,
-        };
-        const thumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, thumbPayload);
-        if (thumbRes.success && thumbRes.data?.thumbnails) {
-          let parsedThumbs = thumbRes.data.thumbnails;
-
-          if (currentThumbnailStyle) {
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY);
-            const rewriteThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS, {
-              thumbnails: parsedThumbs,
-              newStyle: currentThumbnailStyle,
-              aspectRatio: aspectRatio,
-            });
-            if (rewriteThumbRes.success && rewriteThumbRes.data?.thumbnails) {
-              parsedThumbs = rewriteThumbRes.data.thumbnails;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY_SUCCESS);
-            }
-          }
-
-          appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED, SecurityConstants.PLACEHOLDER_0, _.toString(parsedThumbs.length)));
-          for (let tIdx = 0; tIdx < parsedThumbs.length; tIdx++) {
-            const thumb = parsedThumbs[tIdx];
-            appendLog(_.replace(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN, SecurityConstants.PLACEHOLDER_0, _.toString(tIdx + 1)), SecurityConstants.PLACEHOLDER_1, _.toString(parsedThumbs.length)));
-            let cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-            const thumbPrompt = _.replace(
-              _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
-              SecurityConstants.PLACEHOLDER_1,
-              _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)))
-            );
-            const finalThumbPrompt = _.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-            const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-              prompt: finalThumbPrompt,
-              style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
-              resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-              bypassCache: true,
-              engine: _.defaultTo(imageGeneratorEngine, ImageGeneratorEngine.Veo3),
-              sandboxConfig: sandboxConfigPayload,
-              visualConfig: {
-                ...visualConfigPayload,
-                style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
-              }
-            });
-            let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-            if (renderThumbRes.success && renderThumbRes.data?.base64) {
-              imgUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, renderThumbRes.data.base64], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-            } else if (renderThumbRes.data?.fallbackUrl) {
-              imgUrl = renderThumbRes.data.fallbackUrl;
-            }
-            thumbnailsList.push({
-              ...thumb,
-              imageUrl: imgUrl,
-            });
-          }
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
-        } else {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
-        }
-      }
-      setStepProgress(85);
-
-      let slicedUpdatedProj: VideoProject = {
-        ...imageUpdatedProj,
-        seo: seoData,
-        thumbnails: thumbnailsList,
-      };
-      if (globalAudioBase64) {
-        const isAligned = resumeMode && _.every(realScenes, (sc) => !_.isEmpty(sc.startTime) && !_.isEmpty(sc.endTime) && !_.isUndefined(sc.duration));
-        if (isAligned) {
-          appendLog(T.logResumeAlignment);
-          slicedUpdatedProj = {
-            ...imageUpdatedProj,
-            seo: seoData,
-            thumbnails: thumbnailsList,
-            storyboard: realScenes
-          };
-          await syncProject(slicedUpdatedProj);
-        } else {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
-          try {
-            const alignPayload = {
-              audioBase64: globalAudioBase64,
-              scenes: _.map(realScenes, (sc) => ({
-                id: sc.id,
-                script: sc.script || sc.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-              })),
-              segment: true,
-              projectId: newProj?.id,
-              projectName: newProj?.name
-            };
-
-            const alignRes = await safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, alignPayload);
-            if (!alignRes.success || !alignRes.data || !alignRes.data.success || !_.isArray(alignRes.data.alignments)) {
-              throw new Error(alignRes.error || alignRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED);
-            }
-
-            const alignments = alignRes.data.alignments;
-            realScenes = _.map(realScenes, (sc) => {
-              const align = _.find(alignments, (a) => _.isEqual(a.id, sc.id));
-              if (align) {
-                return {
-                  ...sc,
-                  duration: align.duration,
-                  startTime: formatTimeHelper(align.start),
-                  endTime: formatTimeHelper(align.end),
-                  _start: align.start,
-                  _end: align.end,
-                  audioBase64: align.audioBase64,
-                  audioUrl: align.audioUrl
-                };
-              }
-              return sc;
-            });
-
-            slicedUpdatedProj = {
-              ...imageUpdatedProj,
-              seo: seoData,
-              thumbnails: thumbnailsList,
-              storyboard: realScenes
-            };
-            await syncProject(slicedUpdatedProj);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_SUCCESS);
-          } catch (audioError: unknown) {
-            logger.error(T.errAudioAlignBackend, audioError);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioError instanceof Error ? audioError.message : REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-          }
-        }
-      }
-      setStepProgress(90);
-
-      setCurrentStepIndex(4);
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
-
-      const renderPayload = {
-        projectId: newProj.id,
-        scenes: _.map(realScenes, (sc) => ({
-          id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
-          duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
-          imageBase64: _.get(sc, "assetUrl"),
-          imageUrl: _.get(sc, "assetUrl"),
-          audioBase64: _.get(sc, "audioBase64"),
-          text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-          assetType: _.get(sc, REFACTOR_CONSTANTS.AVG_ASSET_TYPE_KEY, GenerateType.Image),
-          cameraMotion: _.get(sc, "cameraMotion"),
-          effects: _.get(sc, "effects"),
-          transition: _.get(sc, "transition")
-        })),
-        quality: ffmpegQuality,
-        globalAudioUrl: globalAudioUrl || undefined,
-        aspectRatio: _.isEqual(aspectRatio, AspectRatio.NineSixteen) ? FFMPEG_RENDER_CONSTANTS.ASPECT_RATIO_9_16 : REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_16_9
-      };
-
-      const renderRes = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
-        method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-        headers: {
-          [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-          [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-        },
-        body: jsonUtils.safeStringify(renderPayload)
-      });
-
-      const renderText = await renderRes.text();
-      const renderData = jsonUtils.safeParse<{ success: boolean; jobId?: string; error?: string }>(renderText, { success: false });
-
-      if (renderData.success && renderData.jobId) {
-        const jobId = renderData.jobId;
-        let lastLoggedProgress: number | null = null;
-        let renderPending = true;
-        while (renderPending) {
-          const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS}${jobId}`, {
-            headers: {
-              [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING
-            }
-          });
-          const statusData = await statusRes.json();
-          if (!statusData.success) {
-            throw new Error(REFACTOR_CONSTANTS.ERR_STATUS_FAILED);
-          }
-          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
-            renderPending = false;
-            setRenderedVideoUrl(statusData.url);
-            appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
-
-            const renderCompletedProj = {
-              ...slicedUpdatedProj,
-              seo: _.defaultTo(seoData, undefined),
-              thumbnails: _.defaultTo(thumbnailsList, undefined),
-              renderedVideoUrl: statusData.url,
-              status: REFACTOR_CONSTANTS.STATUS_COMPLETED
-            };
-            await syncProject(renderCompletedProj);
-            continue;
-          }
-          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
-            throw new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED);
-          }
-          const currentProgress = _.defaultTo(statusData.progress, SecurityConstants.ZERO);
-          if (!_.isEqual(currentProgress, lastLoggedProgress)) {
-            lastLoggedProgress = currentProgress;
-            appendLog(`${REFACTOR_CONSTANTS.MSG_RENDER_PREFIX}${currentProgress}${REFACTOR_CONSTANTS.MSG_PERCENT}`);
-          }
-          if (renderPending) {
-            await new Promise((pollDelayResolve) => {
-              window.setTimeout(pollDelayResolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
-            });
-          }
-        }
-      } else {
-        throw new Error(renderData.error || REFACTOR_CONSTANTS.ERR_RENDER_QUEUE);
-      }
-
-      setStepProgress(100);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_RENDER_FAILED;
-      appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
-      const failedProj = {
-        ...(activeCreatedProject || {}),
-        id: activeCreatedProject ? activeCreatedProject.id : REFACTOR_CONSTANTS.STATUS_FAILED,
-        status: REFACTOR_CONSTANTS.STATUS_FAILED,
-      } as VideoProject;
-      await onUpdateProject(failedProj, true);
-    } finally {
-      setIsProcessing(false);
-      processingRef.current = false;
-    }
   };
 
   const voiceDialogPersistenceScope = _.join(
-    [
-      AppTab.AUTO_GENERATOR,
-      _.defaultTo(
-        activeCreatedProject?.id,
-        _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE),
-      ),
-    ],
+    [AppTab.AUTO_GENERATOR, _.defaultTo(activeCreatedProject?.id, _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE))],
     REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
   );
+
+  const handleVoiceSelect = (v: CatalogVoice) => {
+    const selectedVoiceURI = _.find([
+      _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+      _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
+      _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
+    ], (value) => !_.isEmpty(value));
+    const selectedVoiceName = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, selectedVoiceURI);
+    const selectedVoiceProvider = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH, voiceProvider);
+
+    setVoiceURI(_.toString(selectedVoiceURI));
+    setVoiceName(_.toString(selectedVoiceName));
+    setVoiceProvider(_.toString(selectedVoiceProvider));
+
+    const targetProject = activeCreatedProject || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
+    if (targetProject) {
+      const updatedProject = {
+        ...targetProject,
+        voiceConfig: {
+          ...(targetProject.voiceConfig || {} as VoiceConfig),
+          voiceURI: selectedVoiceURI,
+          voiceName: selectedVoiceName,
+          provider: selectedVoiceProvider,
+        } as VoiceConfig,
+      };
+      setActiveCreatedProject(updatedProject);
+      void onUpdateProject(updatedProject, true);
+    }
+    setIsVoiceDialogOpen(false);
+  };
 
   return (
     <div className="flex-1 h-full w-full bg-slate-955 text-slate-100 flex flex-col min-h-0 overflow-hidden font-sans select-none">
@@ -1548,20 +340,11 @@ export default function AutoVideoGenerator({
               className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none"
             >
               <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{T.presetDefaultOption}</option>
-              {_.map(presets, (p) => {
-                const formattedName = (() => {
-                  const words = _.words(p.name);
-                  if (words.length > 4) {
-                    return _.join(_.take(words, 4), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS;
-                  }
-                  return p.name;
-                })();
-                return (
-                  <option key={p.id} value={p.id} className="bg-slate-955 text-slate-300" title={p.name}>
-                    {formattedName}
-                  </option>
-                );
-              })}
+              {_.map(presets, (p) => (
+                <option key={p.id} value={p.id} className="bg-slate-955 text-slate-300" title={p.name}>
+                  {truncateByWords(p.name, 4)}
+                </option>
+              ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
           </div>
@@ -1570,13 +353,14 @@ export default function AutoVideoGenerator({
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
               placeholder={T.presetNamePlaceholder}
-              value={presetNameInput}
-              onChange={(e) => setPresetNameInput(e.target.value)}
+              value={_presetNameInputState}
+              onChange={(e) => setPresetNameInputState(e.target.value)}
               className="bg-slate-955 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 w-28 focus:outline-none focus:border-rose-500"
             />
             <Button variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={handleSavePreset} title={T.savePresetTooltip}>
               <Save className="w-3.5 h-3.5 text-rose-400" /> {T.savePresetBtn}
             </Button>
+
             {selectedPresetId && (
               <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} size={REFACTOR_CONSTANTS.SIZE_XS} onClick={() => handleDeletePreset(selectedPresetId)} title={T.deletePresetTooltip}>
                 <Trash className="w-3.5 h-3.5 text-slate-500 hover:text-rose-500" />
@@ -1610,52 +394,34 @@ export default function AutoVideoGenerator({
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">
-                  1
-                </span>
+                <span className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">1</span>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec1TitleTooltip}>
                   <FileText className="w-3.5 h-3.5 text-emerald-400" /> {T.sec1Title}
                 </h3>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Button
-                  type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                  onClick={() => setInputType(ProjectInputType.Script)}
-                  className={cn(
-                    "p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between",
-                    _.isEqual(inputType, ProjectInputType.Script)
-                      ? "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/20 font-bold"
-                      : "bg-slate-955/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                  )}
-                  title={T.inputTypeScriptTooltip}
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-rose-500" />
-                    <span className="text-xs">{T.inputTypeScript}</span>
-                  </div>
-                  {_.isEqual(inputType, ProjectInputType.Script) && <Check className="w-4 h-4 text-rose-500" />}
-                </Button>
-
-                <Button
-                  type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                  variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                  onClick={() => setInputType(ProjectInputType.Idea)}
-                  className={cn(
-                    "p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between",
-                    _.isEqual(inputType, ProjectInputType.Idea)
-                      ? "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/20 font-bold"
-                      : "bg-slate-955/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                  )}
-                  title={T.inputTypeIdeaTooltip}
-                >
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-rose-500" />
-                    <span className="text-xs">{T.inputTypeIdea}</span>
-                  </div>
-                  {_.isEqual(inputType, ProjectInputType.Idea) && <Check className="w-4 h-4 text-rose-500" />}
-                </Button>
+                {([
+                  { type: ProjectInputType.Script, icon: <FileText className="w-4 h-4 text-rose-500" />, label: T.inputTypeScript, tooltip: T.inputTypeScriptTooltip },
+                  { type: ProjectInputType.Idea, icon: <Sparkles className="w-4 h-4 text-rose-500" />, label: T.inputTypeIdea, tooltip: T.inputTypeIdeaTooltip },
+                ] as const).map(({ type, icon, label, tooltip }) => (
+                  <Button
+                    key={type}
+                    type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                    variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                    onClick={() => setInputType(type)}
+                    className={cn(
+                      "p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between",
+                      _.isEqual(inputType, type)
+                        ? "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/20 font-bold"
+                        : "bg-slate-955/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200",
+                    )}
+                    title={tooltip}
+                  >
+                    <div className="flex items-center gap-2">{icon}<span className="text-xs">{label}</span></div>
+                    {_.isEqual(inputType, type) && <Check className="w-4 h-4 text-rose-500" />}
+                  </Button>
+                ))}
               </div>
 
               <textarea
@@ -1667,92 +433,23 @@ export default function AutoVideoGenerator({
               />
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenre}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
-                    <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={genre}
-                      onChange={(e) => setGenre(e.target.value)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      {_.map(GENRE_OPTIONS, (g) => (
-                        <option key={g} value={g} className="bg-slate-955 text-slate-300">
-                          {genreLabels[g as keyof typeof genreLabels] || g}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                {[
+                  { label: T.lblGenre, icon: <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: genre, onChange: setGenre, options: _.map(GENRE_OPTIONS, (g) => ({ value: g, label: genreLabels[g as keyof typeof genreLabels] || g })) },
+                  { label: T.lblLanguage, icon: <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: language, onChange: (v: string) => setLanguage(v as ProjectLanguage), options: _.map(PROJECT_LANGUAGE_OPTIONS, (l) => ({ value: l.value, label: _.isEqual(l.value, "vi") ? T.langVi : T.langEn })) },
+                  { label: T.lblDuration, icon: <Clock className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: duration, onChange: setDuration, options: _.map(DURATION_OPTIONS, (d) => ({ value: d.val, label: d.label })) },
+                  { label: T.lblSplitStrategy, icon: <Sliders className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: splitStrategy, onChange: setSplitStrategy, options: _.map(SPLIT_STRATEGY_OPTIONS, (s) => ({ value: s.value, label: _.get(splitLabelMap, s.value, s.value) })) },
+                ].map(({ label, icon, value, onChange, options }) => (
+                  <div key={label} className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{label}</span>
+                    <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
+                      {icon}
+                      <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                        {_.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                    </div>
                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblLanguage}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
-                    <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value as ProjectLanguage)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      {_.map(PROJECT_LANGUAGE_OPTIONS, (l) => (
-                        <option key={l.value} value={l.value} className="bg-slate-955 text-slate-300">
-                          {_.isEqual(l.value, "vi") ? T.langVi : T.langEn}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblDuration}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
-                    <Clock className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      {_.map(DURATION_OPTIONS, (d) => (
-                        <option key={d.val} value={d.val} className="bg-slate-955 text-slate-300">
-                          {d.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblSplitStrategy}</span>
-                  <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
-                    <Sliders className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                    <select
-                      value={splitStrategy}
-                      onChange={(e) => setSplitStrategy(e.target.value)}
-                      className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                    >
-                      {_.map(SPLIT_STRATEGY_OPTIONS, (s) => {
-                        const val = s.value;
-                        const SPLIT_LABEL_MAP: Record<string, string> = {
-                          word: T.splitWord,
-                          short_sentence: T.splitShort,
-                          long_sentence: T.splitLong,
-                          mixed_sentences: T.splitMixed,
-                          paragraph: T.splitParagraph,
-                        };
-                        const displayLabel = _.get(SPLIT_LABEL_MAP, val, val);
-                        return (
-                          <option key={val} value={val} className="bg-slate-955 text-slate-300">
-                            {displayLabel}
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -1760,9 +457,7 @@ export default function AutoVideoGenerator({
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">
-                  2
-                </span>
+                <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">2</span>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
                   <Mic className="w-3.5 h-3.5 text-rose-500" /> {T.sec2Title}
                 </h3>
@@ -1781,18 +476,11 @@ export default function AutoVideoGenerator({
                       <Mic className="w-5 h-5" />
                     </div>
                     <div className="flex items-center gap-2">
-                      {(() => {
-                        const rawName = voiceName || voiceURI;
-                        const words = _.words(rawName);
-                        const displayVoiceName = words.length > 4 ? _.join(_.take(words, 4), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS : rawName;
-                        return (
-                          <Tooltip content={rawName} position="top">
-                            <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
-                              {displayVoiceName}
-                            </span>
-                          </Tooltip>
-                        );
-                      })()}
+                      <Tooltip content={voiceName || voiceURI} position="top">
+                        <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
+                          {truncateByWords(voiceName || voiceURI, 4)}
+                        </span>
+                      </Tooltip>
                       <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>
                     </div>
                   </div>
@@ -1800,62 +488,26 @@ export default function AutoVideoGenerator({
                 </Button>
               </div>
 
-              {isVoiceDialogOpen && <VoiceSelectionDialog
-                key={voiceDialogPersistenceScope}
-                isOpen={isVoiceDialogOpen}
-                onClose={() => setIsVoiceDialogOpen(false)}
-                currentLang={currentLang}
-                selectedVoiceId={voiceURI}
-                favoriteVoices={[]}
-                onToggleFavoriteVoice={() => { }}
-                persistenceScope={voiceDialogPersistenceScope}
-                onSelectVoice={(v: CatalogVoice) => {
-                  const selectedVoiceURI = _.find([
-                    _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
-                    _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
-                    _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
-                  ], (value) => !_.isEmpty(value));
-                  const selectedVoiceName = _.get(
-                    v,
-                    REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH,
-                    selectedVoiceURI,
-                  );
-                  const selectedVoiceProvider = _.get(
-                    v,
-                    REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
-                    voiceProvider,
-                  );
-                  setVoiceURI(_.toString(selectedVoiceURI));
-                  setVoiceName(_.toString(selectedVoiceName));
-                  setVoiceProvider(_.toString(selectedVoiceProvider));
-
-                  const targetProject = activeCreatedProject
-                    || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
-                  if (targetProject) {
-                    const updatedProject = {
-                      ...targetProject,
-                      voiceConfig: {
-                        ...(targetProject.voiceConfig || {} as VoiceConfig),
-                        voiceURI: selectedVoiceURI,
-                        voiceName: selectedVoiceName,
-                        provider: selectedVoiceProvider,
-                      } as VoiceConfig,
-                    };
-                    setActiveCreatedProject(updatedProject);
-                    void onUpdateProject(updatedProject, true);
-                  }
-                  setIsVoiceDialogOpen(false);
-                }}
-              />}
+              {isVoiceDialogOpen && (
+                <VoiceSelectionDialog
+                  key={voiceDialogPersistenceScope}
+                  isOpen={isVoiceDialogOpen}
+                  onClose={() => setIsVoiceDialogOpen(false)}
+                  currentLang={currentLang}
+                  selectedVoiceId={voiceURI}
+                  favoriteVoices={[]}
+                  onToggleFavoriteVoice={() => {}}
+                  persistenceScope={voiceDialogPersistenceScope}
+                  onSelectVoice={handleVoiceSelect}
+                />
+              )}
             </div>
 
             <div className="border-t border-slate-800/80 my-2" />
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-mono font-bold text-xs">
-                  3
-                </span>
+                <span className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center font-mono font-bold text-xs">3</span>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec3TitleTooltip}>
                   <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {T.sec3Title}
                 </h3>
@@ -1870,13 +522,8 @@ export default function AutoVideoGenerator({
                       <select
                         value={generationMode}
                         onChange={(e) => {
-                          const mode = e.target.value as ImageGenerationMode;
-                          setGenerationMode(mode);
-                          if (mode === ImageGenerationMode.GeminiChat) {
-                            setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
-                          } else {
-                            setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
-                          }
+                          setGenerationMode(e.target.value as ImageGenerationMode);
+                          setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
                         }}
                         className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                       >
@@ -1891,15 +538,9 @@ export default function AutoVideoGenerator({
                     <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblEngine}</span>
                     <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                       <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                      <select
-                        value={imageGeneratorEngine}
-                        onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)}
-                        className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                      >
+                      <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                         {_.map(getEngineOptions(generationMode, generateType), (opt) => (
-                          <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">
-                            {opt.label}
-                          </option>
+                          <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">{opt.label}</option>
                         ))}
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
@@ -1928,8 +569,7 @@ export default function AutoVideoGenerator({
                       <select
                         value={generateType}
                         onChange={(e) => {
-                          const type = e.target.value as GenerateType;
-                          setGenerateType(type);
+                          setGenerateType(e.target.value as GenerateType);
                           if (generationMode !== ImageGenerationMode.GeminiChat) {
                             setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
                           }
@@ -1948,23 +588,14 @@ export default function AutoVideoGenerator({
                 {_.isEqual(generateType, GenerateType.Mixed) && (
                   <div className="max-w-xs">
                     <div className="space-y-1">
-                      <span
-                        className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block"
-                        title={mediaMixTexts.maxVideosTooltip}
-                      >
+                      <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={mediaMixTexts.maxVideosTooltip}>
                         {mediaMixTexts.maxVideos}
                       </span>
                       <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                         <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                        <select
-                          value={maxVideoScenes}
-                          onChange={(event) => setMaxVideoScenes(_.toInteger(event.target.value))}
-                          className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                        >
+                        <select value={maxVideoScenes} onChange={(event) => setMaxVideoScenes(_.toInteger(event.target.value))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                           {_.map(MEDIA_MIX_CONFIG.VIDEO_COUNT_OPTIONS, (count) => (
-                            <option key={count} value={count} className="bg-slate-955 text-slate-300">
-                              {count}
-                            </option>
+                            <option key={count} value={count} className="bg-slate-955 text-slate-300">{count}</option>
                           ))}
                         </select>
                         <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
@@ -1973,10 +604,7 @@ export default function AutoVideoGenerator({
                   </div>
                 )}
 
-                <div className={cn(
-                  AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS,
-                  showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS,
-                )}>
+                <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
                   <Button
                     type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                     variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
@@ -1985,185 +613,114 @@ export default function AutoVideoGenerator({
                     className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}
                   >
                     <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_LAYOUT_CLASS}>
-                      <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS}>
-                        <Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} />
-                      </span>
+                      <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_WRAP_CLASS}><Sliders className={AUTO_GENERATOR_CONSTANTS.ADVANCED_ICON_CLASS} /></span>
                       <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TEXT_WRAP_CLASS}>
                         <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TITLE_CLASS}>{T.advancedConfig}</span>
-                        <span
-                          className={AUTO_GENERATOR_CONSTANTS.ADVANCED_HINT_CLASS}
-                          title={T.advancedConfigTooltip}
-                        >
-                          {T.advancedConfigHint}
-                        </span>
+                        <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_HINT_CLASS} title={T.advancedConfigTooltip}>{T.advancedConfigHint}</span>
                       </span>
                     </span>
                     <span className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_WRAP_CLASS}>
-                      <ChevronDown className={cn(
-                        AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_CLASS,
-                        showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_OPEN_CLASS,
-                      )} />
+                      <ChevronDown className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_CHEVRON_OPEN_CLASS)} />
                     </span>
                   </Button>
                   {showAdvancedImageSettings && (
                     <div className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS}>
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblChromeHeadlessTooltip}>{T.lblChromeHeadless}</span>
-                        <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblChromeHeadlessTooltip}>
-                          <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                          <select
-                            value={chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED}
-                            onChange={(e) => setChromeHeadless(e.target.value === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS)}
-                            className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                          >
-                            <option value={REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
-                            <option value={REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                      {[
+                        {
+                          label: T.lblChromeHeadless,
+                          tooltip: T.lblChromeHeadlessTooltip,
+                          icon: <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />,
+                          value: chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED,
+                          onChange: (v: string) => setChromeHeadless(v === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS),
+                          options: [
+                            { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: T.optionHeadless },
+                            { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: T.optionWindowed },
+                          ] as { value: string; label: string }[],
+                        },
+                        {
+                          label: T.lblResumeMode,
+                          tooltip: T.lblResumeModeTooltip,
+                          icon: <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />,
+                          value: resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW,
+                          onChange: (v: string) => setResumeMode(v === REFACTOR_CONSTANTS.RESUME_MODE_RESUME),
+                          options: [
+                            { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: T.optionResume },
+                            { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: T.optionNew },
+                          ] as { value: string; label: string }[],
+                        },
+                      ].map(({ label, tooltip, icon, value, onChange, options }) => (
+                        <div key={label} className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={tooltip}>{label}</span>
+                          <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={tooltip}>
+                            {icon}
+                            <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                              {_.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={T.lblResumeModeTooltip}>{T.lblResumeMode}</span>
-                        <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors" title={T.lblResumeModeTooltip}>
-                          <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                          <select
-                            value={resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW}
-                            onChange={(e) => setResumeMode(e.target.value === REFACTOR_CONSTANTS.RESUME_MODE_RESUME)}
-                            className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                          >
-                            <option value={REFACTOR_CONSTANTS.RESUME_MODE_RESUME} className="bg-slate-955 text-slate-300">{T.optionResume}</option>
-                            <option value={REFACTOR_CONSTANTS.RESUME_MODE_NEW} className="bg-slate-955 text-slate-300">{T.optionNew}</option>
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                <div
-                  className="bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-emerald-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (e.dataTransfer.files) {
-                      handleStyleFilesUpload(e.dataTransfer.files);
-                    }
-                  }}
-                >
-                  <input
-                    type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
-                    multiple
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        handleStyleFilesUpload(e.target.files);
-                        e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  <ImageUploadZone
+                    onUpload={handleStyleFilesUpload}
+                    hoverColor="emerald"
+                    title={T.styleUploadTitle}
+                    subtitle={T.styleUploadSub}
                   />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
-                    <div className="p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-emerald-500/30 transition-all duration-300 mb-1.5 shadow-lg">
-                      <Upload className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-emerald-400 transition-colors">
-                      {T.styleUploadTitle}
-                    </span>
-                    <span className="text-[8px] text-slate-505 leading-tight block truncate max-w-full">
-                      {T.styleUploadSub}
-                    </span>
-                  </div>
-                </div>
-
-                {_.map(referenceImages, (imgBase64, idx) => (
-                  <div key={idx} className="relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-rose-500/30 transition-colors">
-                    <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.STYLE_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                      <Button
-                        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                        onClick={() => setReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
-                        title={T.deleteStyleImgTooltip}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-4">
-                <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_CLASS}>
-                  <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0">
-                    <Target className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_ICON_CLASS} />
-                  </div>
-                  <Tooltip content={T.sceneReferenceDescription} position="top">
-                    <div className={cn(AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.TITLE_CLASS, "cursor-help underline decoration-dotted decoration-slate-400 dark:decoration-slate-700 decoration-1 underline-offset-4")}>
-                      {T.sceneReferenceTitle}
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.GRID_CLASS}>
-                  <div
-                    className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CLASS}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (e.dataTransfer.files) {
-                        handleSceneReferenceFilesUpload(e.dataTransfer.files);
-                      }
-                    }}
-                  >
-                    <input
-                      type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-                      accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
-                      multiple
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          handleSceneReferenceFilesUpload(e.target.files);
-                          e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-                        }
-                      }}
-                      className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.INPUT_CLASS}
-                    />
-                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CONTENT_CLASS}>
-                      <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_BOX_CLASS}>
-                        <Upload className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_CLASS} />
-                      </div>
-                      <span className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_TITLE_CLASS}>{T.sceneReferenceUploadTitle}</span>
-                      <span className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_SUBTITLE_CLASS}>{T.sceneReferenceUploadSub}</span>
-                    </div>
-                  </div>
-
-                  {_.map(sceneReferenceImages, (imgBase64, idx) => (
-                    <div key={idx} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CARD_CLASS}>
-                      <img src={imgBase64} alt={`${T.sceneReferenceAlt} ${_.add(idx, SecurityConstants.DEFAULT_AMOUNT)}`} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CLASS} />
-                      <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_OVERLAY_CLASS}>
-                        <Button
-                          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                          variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                          onClick={() => setSceneReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                          className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_BUTTON_CLASS}
-                          title={T.deleteSceneReferenceTooltip}
-                        >
-                          <X className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_ICON_CLASS} />
-                        </Button>
-                      </div>
+                  {_.map(referenceImages, (imgBase64, idx) => (
+                    <div key={idx} className="relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-rose-500/30 transition-colors">
+                      <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.STYLE_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
+                      <ImageDeleteOverlay onDelete={() => setReferenceImages((prev) => _.filter(prev, (_v, i) => !_.isEqual(i, idx)))} tooltip={T.deleteStyleImgTooltip} />
                     </div>
                   ))}
+                </div>
+
+                <div className="space-y-4">
+                  <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_CLASS}>
+                    <div className="w-8 h-8 rounded-xl bg-sky-500/10 flex items-center justify-center shrink-0">
+                      <Target className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_ICON_CLASS} />
+                    </div>
+                    <Tooltip content={T.sceneReferenceDescription} position="top">
+                      <div className={cn(AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.TITLE_CLASS, "cursor-help underline decoration-dotted decoration-slate-400 dark:decoration-slate-700 decoration-1 underline-offset-4")}>
+                        {T.sceneReferenceTitle}
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.GRID_CLASS}>
+                    <ImageUploadZone
+                      onUpload={handleSceneReferenceFilesUpload}
+                      hoverColor="sky"
+                      title={T.sceneReferenceUploadTitle}
+                      subtitle={T.sceneReferenceUploadSub}
+                      uploadClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CLASS}
+                      inputClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.INPUT_CLASS}
+                      contentClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CONTENT_CLASS}
+                      iconBoxClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_BOX_CLASS}
+                      iconClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_CLASS}
+                      titleClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_TITLE_CLASS}
+                      subtitleClass={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_SUBTITLE_CLASS}
+                    />
+                    {_.map(sceneReferenceImages, (imgBase64, idx) => (
+                      <div key={idx} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CARD_CLASS}>
+                        <img src={imgBase64} alt={`${T.sceneReferenceAlt} ${idx + 1}`} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CLASS} />
+                        <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_OVERLAY_CLASS}>
+                          <Button
+                            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                            onClick={() => setSceneReferenceImages((prev) => _.filter(prev, (_v, i) => !_.isEqual(i, idx)))}
+                            className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_BUTTON_CLASS}
+                            title={T.deleteSceneReferenceTooltip}
+                          >
+                            <X className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_ICON_CLASS} />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2172,9 +729,7 @@ export default function AutoVideoGenerator({
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
-                  4
-                </span>
+                <span className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">4</span>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec4TitleTooltip}>
                   <ImageIcon className="w-3.5 h-3.5 text-purple-400" /> {T.sec4Title}
                 </h3>
@@ -2197,10 +752,7 @@ export default function AutoVideoGenerator({
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2">
                     <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select value={thumbnailCount} onChange={(e) => setThumbnailCount(Number(e.target.value))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                      <option value={1} className="bg-slate-955 text-slate-300">{T.thumbCountOption(1)}</option>
-                      <option value={2} className="bg-slate-955 text-slate-300">{T.thumbCountOption(2)}</option>
-                      <option value={3} className="bg-slate-955 text-slate-300">{T.thumbCountOption(3)}</option>
-                      <option value={4} className="bg-slate-955 text-slate-300">{T.thumbCountOption(4)}</option>
+                      {[1, 2, 3, 4].map((n) => <option key={n} value={n} className="bg-slate-955 text-slate-300">{T.thumbCountOption(n)}</option>)}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                   </div>
@@ -2208,59 +760,16 @@ export default function AutoVideoGenerator({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                <div
-                  className="bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-purple-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (e.dataTransfer.files) {
-                      handleThumbnailStyleFilesUpload(e.dataTransfer.files);
-                    }
-                  }}
-                >
-                  <input
-                    type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-                    accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
-                    multiple
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        handleThumbnailStyleFilesUpload(e.target.files);
-                        e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center">
-                    <div className="p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-purple-500/30 transition-all duration-300 mb-1.5 shadow-lg">
-                      <Upload className="w-4 h-4 text-slate-400 group-hover:text-purple-400 transition-colors" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-purple-400 transition-colors">
-                      {T.thumbUploadTitle}
-                    </span>
-                    <span className="text-[8px] text-slate-505 leading-tight block truncate max-w-full">
-                      {T.thumbUploadSub}
-                    </span>
-                  </div>
-                </div>
-
+                <ImageUploadZone
+                  onUpload={handleThumbnailStyleFilesUpload}
+                  hoverColor="purple"
+                  title={T.thumbUploadTitle}
+                  subtitle={T.thumbUploadSub}
+                />
                 {_.map(thumbnailReferenceImages, (imgBase64, idx) => (
                   <div key={idx} className="relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-rose-500/30 transition-colors">
                     <img src={imgBase64} alt={`${REFACTOR_CONSTANTS.THUMB_REF_PREFIX}${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                      <Button
-                        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                        onClick={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
-                        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
-                        title={T.deleteThumbImgTooltip}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <ImageDeleteOverlay onDelete={() => setThumbnailReferenceImages((prev) => _.filter(prev, (_v, i) => !_.isEqual(i, idx)))} tooltip={T.deleteThumbImgTooltip} />
                   </div>
                 ))}
               </div>
@@ -2280,20 +789,36 @@ export default function AutoVideoGenerator({
               <p className="text-[11px] text-slate-400 leading-relaxed">{T.rightActionSub}</p>
             </div>
 
-            <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-              size={REFACTOR_CONSTANTS.SIZE_LG}
-              onClick={handleStartAutoGenerate}
-              disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
-              isLoading={isProcessing}
-              className="w-full py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all"
-              title={T.startBtnTooltip}
-            >
-              <Zap className="w-5 h-5 text-amber-300 fill-amber-300" />
-              <span>{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
-            </Button>
+            <div className="flex items-center gap-3 w-full">
+              <Button
+                variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
+                size={REFACTOR_CONSTANTS.SIZE_LG}
+                onClick={handleStartAutoGenerate}
+                disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
+                isLoading={isProcessing}
+                className="flex-1 py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                title={T.startBtnTooltip}
+              >
+                <Zap className="w-5 h-5 text-amber-300 fill-amber-300 shrink-0" />
+                <span className="truncate">{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+              </Button>
 
-            {isProcessing || _.gt(stepProgress, 0) ? (
+              {isProcessing && (
+                <Button
+                  variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+                  size={REFACTOR_CONSTANTS.SIZE_LG}
+                  onClick={cancelPipeline}
+                  disabled={isCancelling}
+                  className="flex-1 py-4 text-sm font-bold border border-red-500/30 bg-red-950/20 hover:bg-red-950/40 text-red-400 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+                  title={T.cancelBtnTooltip}
+                >
+                  <X className="w-4 h-4 text-red-500 shrink-0" />
+                  <span className="truncate">{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
+                </Button>
+              )}
+            </div>
+
+            {(isProcessing || _.gt(stepProgress, 0)) && (
               <div className="space-y-2 pt-2 text-left">
                 <div className="flex justify-between items-center text-[10px] font-mono font-bold">
                   <span className="text-rose-400">{T.progressNodeLabel} [{currentStepIndex}/4]</span>
@@ -2303,15 +828,12 @@ export default function AutoVideoGenerator({
                   <div className="bg-gradient-to-r from-rose-600 to-amber-500 h-full transition-all duration-300" style={{ width: `${stepProgress}%` }} />
                 </div>
               </div>
-            ) : null}
+            )}
           </div>
 
           <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col min-h-[260px]">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span
-                className="font-bold flex items-center gap-2 text-sm text-slate-100"
-                title={T.logHeaderTooltip}
-              >
+              <span className="font-bold flex items-center gap-2 text-sm text-slate-100" title={T.logHeaderTooltip}>
                 <span className="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 text-amber-400 dark:text-amber-300 flex items-center justify-center">
                   <Activity className="w-4 h-4" />
                 </span>
@@ -2348,9 +870,7 @@ export default function AutoVideoGenerator({
               ) : (
                 <div className="absolute inset-0 text-center p-6 text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-3">
                   <Video className="w-10 h-10 text-slate-600" />
-                  <span className="text-slate-400 leading-relaxed max-w-xs block">
-                    {T.previewEmpty}
-                  </span>
+                  <span className="text-slate-400 leading-relaxed max-w-xs block">{T.previewEmpty}</span>
                 </div>
               )}
             </div>
@@ -2405,10 +925,7 @@ export default function AutoVideoGenerator({
                           <Button
                             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                             variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                            onClick={() => {
-                              navigator.clipboard.writeText(title.text);
-                              alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TITLE);
-                            }}
+                            onClick={() => { navigator.clipboard.writeText(title.text); alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TITLE); }}
                             className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto"
                             title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TITLE_TOOLTIP}
                           >
@@ -2416,42 +933,22 @@ export default function AutoVideoGenerator({
                           </Button>
                         </div>
                         <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-900 text-[9px] font-mono">
-                          <div>
-                            <div className="flex justify-between mb-0.5 text-slate-400">
-                              <span>{AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEARCH}</span>
-                              <span className="text-rose-450 font-bold">{title.searchScore}%</span>
+                          {[
+                            { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEARCH, score: title.searchScore },
+                            { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_CTR, score: title.ctrScore },
+                            { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_COMPET, score: title.compScore },
+                            { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEO, score: title.seoScore },
+                          ].map(({ label, score }) => (
+                            <div key={label}>
+                              <div className="flex justify-between mb-0.5 text-slate-400">
+                                <span>{label}</span>
+                                <span className="text-rose-450 font-bold">{score}%</span>
+                              </div>
+                              <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
+                                <div className="bg-rose-500 h-full" style={{ width: `${score}%` }} />
+                              </div>
                             </div>
-                            <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                              <div className="bg-rose-500 h-full" style={{ width: `${title.searchScore}%` }}></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex justify-between mb-0.5 text-slate-400">
-                              <span>{AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_CTR}</span>
-                              <span className="text-rose-450 font-bold">{title.ctrScore}%</span>
-                            </div>
-                            <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                              <div className="bg-rose-500 h-full" style={{ width: `${title.ctrScore}%` }}></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex justify-between mb-0.5 text-slate-400">
-                              <span>{AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_COMPET}</span>
-                              <span className="text-rose-450 font-bold">{title.compScore}%</span>
-                            </div>
-                            <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                              <div className="bg-rose-500 h-full" style={{ width: `${title.compScore}%` }}></div>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="flex justify-between mb-0.5 text-slate-400">
-                              <span>{AUTO_GENERATOR_CONSTANTS.UI_SEO_METRIC_SEO}</span>
-                              <span className="text-rose-450 font-bold">{title.seoScore}%</span>
-                            </div>
-                            <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                              <div className="bg-rose-500 h-full" style={{ width: `${title.seoScore}%` }}></div>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     ))}
@@ -2469,10 +966,7 @@ export default function AutoVideoGenerator({
                         <Button
                           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
                           variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-                          onClick={() => {
-                            navigator.clipboard.writeText(desc.text);
-                            alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_DESC);
-                          }}
+                          onClick={() => { navigator.clipboard.writeText(desc.text); alert(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_DESC); }}
                           className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto"
                           title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_DESC_TOOLTIP}
                         >
@@ -2484,26 +978,21 @@ export default function AutoVideoGenerator({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">{AUTO_GENERATOR_CONSTANTS.UI_SEO_HASHTAGS}</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {_.map(activeCreatedProject.seo.hashtags || [], (tag, i) => (
-                        <span key={i} className="bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[10px] px-2 py-1 rounded-lg">
-                          #{tag.replace(/^#+/, REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
-                        </span>
-                      ))}
+                  {[
+                    { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_HASHTAGS, items: activeCreatedProject.seo.hashtags || [], isHashtag: true },
+                    { label: AUTO_GENERATOR_CONSTANTS.UI_SEO_TAGS, items: activeCreatedProject.seo.tags || [], isHashtag: false },
+                  ].map(({ label, items, isHashtag }) => (
+                    <div key={label} className="space-y-1.5">
+                      <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">{label}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {_.map(items, (tag, i) => (
+                          <span key={i} className={isHashtag ? "bg-slate-950/60 border border-slate-800 text-rose-400 font-mono text-[10px] px-2 py-1 rounded-lg" : "bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[10px] px-2 py-1 rounded-lg"}>
+                            {isHashtag ? `#${tag.replace(/^#+/, REFACTOR_CONSTANTS.VD_EMPTY_STRING)}` : tag}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold">{AUTO_GENERATOR_CONSTANTS.UI_SEO_TAGS}</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {_.map(activeCreatedProject.seo.tags || [], (tag, i) => (
-                        <span key={i} className="bg-slate-950/60 border border-slate-800 text-slate-300 font-sans text-[10px] px-2 py-1 rounded-lg">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -2534,9 +1023,7 @@ export default function AutoVideoGenerator({
                     <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                       <div>
                         {thumb.hasText && thumb.textText && (
-                          <h4 className="text-amber-400 font-black text-xs uppercase mb-1 line-clamp-1">
-                            "{thumb.textText}"
-                          </h4>
+                          <h4 className="text-amber-400 font-black text-xs uppercase mb-1 line-clamp-1">"{thumb.textText}"</h4>
                         )}
                         <p className="text-[10px] text-slate-400 italic line-clamp-2 leading-relaxed">"{thumb.prompt}"</p>
                       </div>
@@ -2566,6 +1053,70 @@ export default function AutoVideoGenerator({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+interface ImageUploadZoneProps {
+  onUpload: (files: FileList) => void;
+  hoverColor: string;
+  title: string;
+  subtitle: string;
+  uploadClass?: string;
+  inputClass?: string;
+  contentClass?: string;
+  iconBoxClass?: string;
+  iconClass?: string;
+  titleClass?: string;
+  subtitleClass?: string;
+}
+
+function ImageUploadZone({
+  onUpload, hoverColor, title, subtitle,
+  uploadClass, inputClass, contentClass, iconBoxClass, iconClass, titleClass, subtitleClass,
+}: ImageUploadZoneProps) {
+  const defaultUploadClass = `bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
+  return (
+    <div
+      className={uploadClass || defaultUploadClass}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files) onUpload(e.dataTransfer.files); }}
+    >
+      <input
+        type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
+        accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
+        multiple
+        onChange={(e) => { if (e.target.files) { onUpload(e.target.files); e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING; } }}
+        className={inputClass || "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"}
+      />
+      <div className={contentClass || "absolute inset-0 flex flex-col items-center justify-center p-2 text-center"}>
+        <div className={iconBoxClass || `p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-${hoverColor}-500/30 transition-all duration-300 mb-1.5 shadow-lg`}>
+          <Upload className={iconClass || `w-4 h-4 text-slate-400 group-hover:text-${hoverColor}-400 transition-colors`} />
+        </div>
+        <span className={titleClass || `text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-${hoverColor}-400 transition-colors`}>{title}</span>
+        <span className={subtitleClass || "text-[8px] text-slate-505 leading-tight block truncate max-w-full"}>{subtitle}</span>
+      </div>
+    </div>
+  );
+}
+
+interface ImageDeleteOverlayProps {
+  onDelete: () => void;
+  tooltip: string;
+}
+
+function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProps) {
+  return (
+    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+      <Button
+        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+        onClick={onDelete}
+        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
+        title={tooltip}
+      >
+        <X className="w-4 h-4" />
+      </Button>
     </div>
   );
 }
