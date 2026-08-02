@@ -57,6 +57,12 @@ export const REFACTOR_CONSTANTS = {
 
   VD_NORMALIZE_FORM: 'NFD',
   VD_NORMALIZE_REGEX: /[\u0300-\u036f]/g,
+  VD_SLUG_CHAR_REGEX: /[đĐ]/g,
+  VD_SLUG_CLEAN_REGEX: /([^a-z0-9\s-]|_)/g,
+  VD_SLUG_SPACE_REGEX: /\s+/g,
+  VD_SLUG_HYPHEN_REGEX: /-+/g,
+  VD_SLUG_LIMIT: 20,
+  VD_LETTER_D: 'd',
   VD_HYPHEN: '-',
   VD_REGION_TYPE: 'region',
   VD_LANG_TYPE: 'language',

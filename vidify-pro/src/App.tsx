@@ -26,6 +26,18 @@ const isProjectWorkspaceTab = (tab: string): boolean => (
   _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab)
 );
 
+const convertToSlug = (text: string): string => {
+  return _.trim(
+    _.toLower(text)
+      .normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM)
+      .replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
+      .replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
+  ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
+};
+
 const isProjectReadyForTab = (
   project: VideoProject | undefined,
   tab: string,
@@ -216,7 +228,9 @@ export default function App() {
             if (creatingChildRef.current[activeProj.id]) return;
             creatingChildRef.current[activeProj.id] = true;
 
-            const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+            const randomStr = Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr}`;
             const childProject: VideoProject = {
               ...activeProj,
               id: childId,
@@ -306,7 +320,9 @@ export default function App() {
             if (creatingChildRef.current[childKey]) return;
             creatingChildRef.current[childKey] = true;
 
-            const childId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+            const randomStr = Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_auto_${randomStr}`;
             const childProject: VideoProject = {
               ...activeProj,
               id: childId,
@@ -376,7 +392,10 @@ export default function App() {
   }, []);
 
   const handleCreateProject = async (name: string, desc: string) => {
-    const parentId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const projectSlug = convertToSlug(name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+    const randomStr = () => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    
+    const parentId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_parent_${randomStr()}`;
     const parentProject: VideoProject = {
       id: parentId,
       projectKind: ProjectKind.Container,
@@ -433,7 +452,7 @@ export default function App() {
       creditsUsed: 0,
     };
 
-    const studioChildId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const studioChildId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr()}`;
     const studioChildProject: VideoProject = {
       ...parentProject,
       id: studioChildId,
@@ -444,7 +463,7 @@ export default function App() {
       updatedAt: new Date().toISOString(),
     };
 
-    const autoChildId = COMMON_STRINGS.PROJECT_PREFIX + Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const autoChildId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_auto_${randomStr()}`;
     const autoChildProject: VideoProject = {
       ...parentProject,
       id: autoChildId,
