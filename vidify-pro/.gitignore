@@ -72,3 +72,11 @@ package-lock.json
 templates/capcut/*.json
 templates/
 ultra_opts_*.json
+# Yarn
+.yarn/*
+!.yarn/cache
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

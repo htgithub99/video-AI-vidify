@@ -169,6 +169,8 @@ export interface VisualConfig {
   thumbnailReferenceImage?: string;
   thumbnailReferenceImages?: string[];
   thumbnailReferencePrompt?: string;
+  styleReferenceImages?: string[];
+  sceneReferenceImages?: string[];
   referenceImage?: string;
   referenceImages?: string[];
   referencePrompt?: string;
@@ -316,10 +318,10 @@ export interface PipelineWizardProps {
   setProject: (p: VideoProject) => void;
   onSaveProject: (p: VideoProject) => Promise<void> | void;
   onBackToDashboard: () => void;
-  costTracker?: any;
-  setCostTracker?: any;
-  credits?: any;
-  setCredits?: any;
+  costTracker?: unknown;
+  setCostTracker?: unknown;
+  credits?: unknown;
+  setCredits?: unknown;
 }
 
 export interface IBaseModalProps {
@@ -349,7 +351,7 @@ export interface Voice {
   localService: boolean;
   default: boolean;
   gender?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export enum GeminiChatSpeed {
@@ -362,7 +364,7 @@ export enum GeminiChatSpeed {
 
 export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
   [GeminiChatSpeed.Slow]: 1,
-  [GeminiChatSpeed.Normal]: 3,
+  [GeminiChatSpeed.Normal]: 4,
   [GeminiChatSpeed.Fast]: 5,
   [GeminiChatSpeed.SuperFast]: 7,
   [GeminiChatSpeed.HyperFast]: 10,
@@ -385,8 +387,8 @@ export enum GeminiChatSelector {
 }
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image: '.attachment-container.generated-images, download-generated-image-button, img.loaded',
-  video: 'generated-video video[src]',
+  image: 'download-generated-image-button img, .attachment-container.generated-images img, model-response img.loaded, model-response img[src]',
+  video: 'generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]',
   all: 'img, video',
 } as const;
 

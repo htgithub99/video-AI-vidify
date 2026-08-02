@@ -341,6 +341,26 @@ export const AutoLoginConstants = {
   }
 };
 
+export const DEFAULT_DOM_CONFIG = {
+  TIMEOUTS: {
+    SHORT: 5000,
+    MEDIUM: 15000,
+    LONG: 30000,
+  },
+  DELAYS: {
+    TYPING_MIN_MS: 30,
+    TYPING_MAX_MS: 150,
+    EMAIL_DELAY_MIN_MS: 500,
+    EMAIL_DELAY_MAX_MS: 1100,
+    EMAIL_NEXT_DELAY_MIN_MS: 400,
+    EMAIL_NEXT_DELAY_MAX_MS: 900,
+    PASSWORD_DELAY_MIN_MS: 600,
+    PASSWORD_DELAY_MAX_MS: 1300,
+    PASSWORD_NEXT_DELAY_MIN_MS: 500,
+    PASSWORD_NEXT_DELAY_MAX_MS: 1000,
+  },
+};
+
 export const ImageGenMessages = {
   LABS_NO_PROJECT: '[Google Labs] Không có projectId, đang truy cập để tạo dự án mới...',
   LABS_CREATED_PROJECT: '[Google Labs] Đã tạo dự án mới thành công: ',
@@ -358,11 +378,6 @@ export const ImageGenMessages = {
   GLOBAL_CHROME_CLOSED_EXTERNAL: 'Trình duyệt Chrome toàn cục đã bị đóng từ bên ngoài.',
   CONFIG_CHANGED_FORCE_NEW_ROOM: 'Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.',
   CHROME_MODE_CHANGED: '[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...',
-};
-
-export const AppLogger = {
-  info: (...args: any[]) => console.log('[INFO]', ...args),
-  error: (...args: any[]) => console.error('[ERROR]', ...args),
 };
 
 export const UIConstants = {

@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
-import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem } from "../types";
-import { AppTab, VideoQuality } from "../constants/enums";
+import { VideoProject, ProjectInputType, ProjectLanguage, Gender, AgeGroup, AspectRatio, ImageGenerationMode, ImageGeneratorEngine, GenerateType, BatchDelayOption, GeminiChatSpeed, PromptInputMethod, VoiceConfig, ThumbnailItem, HookPosition, AudioType, AssetsMode } from "../types";
+import { AppTab, AppTheme, VideoQuality } from "../constants/enums";
 import { GENRE_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, API_ROUTES, HTTP_METHODS, CONTENT_TYPES, CONTENT_TYPE_HEADER, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, genreLabels, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS, API_HEADERS, COMMON_STRINGS, MEDIA_MIX_CONFIG } from "../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
-import { VoiceSelectionDialog } from "./VoiceSelectionDialog";
+import { VoiceSelectionDialog, type Voice as CatalogVoice } from "./VoiceSelectionDialog";
+import { ProgressLogTimeline } from "./ProgressLogTimeline";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { formatTimeHelper } from "../utils/helpers";
-import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import { safeSystemFetch, readFilesAsDataURL } from "../lib/shared-utils";
 import { blobToBase64 } from "../lib/fileUtils";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
@@ -28,7 +29,6 @@ import {
   Save,
   Trash,
   Sliders,
-  Terminal,
   Eye,
   FileText,
   Layers,
@@ -44,6 +44,7 @@ import {
   Target,
   Copy,
   RefreshCw,
+  Activity,
 } from "lucide-react";
 
 interface AutoVideoGeneratorProps {
@@ -53,13 +54,39 @@ interface AutoVideoGeneratorProps {
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string, desc: string) => Promise<void>;
   onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
-  theme?: "dark" | "light";
+  theme?: AppTheme;
 }
 
 interface CachedVoiceAudio {
   audioBase64: string;
   audioUrl: string;
   isCached: boolean;
+}
+
+interface CachedGeneratorConfig {
+  inputType?: ProjectInputType;
+  scriptContent?: string;
+  genre?: string;
+  language?: ProjectLanguage;
+  duration?: string;
+  splitStrategy?: string;
+  voiceProvider?: string;
+  voiceURI?: string;
+  voiceName?: string;
+  generationMode?: ImageGenerationMode;
+  imageGeneratorEngine?: ImageGeneratorEngine;
+  generateType?: GenerateType;
+  maxVideoScenes?: number;
+  aspectRatio?: AspectRatio;
+  stylePreset?: string;
+  thumbnailCount?: number;
+  thumbnailStylePreset?: string;
+  projectName?: string;
+  referenceImages?: string[];
+  sceneReferenceImages?: string[];
+  thumbnailReferenceImages?: string[];
+  resumeMode?: boolean;
+  chromeHeadless?: boolean;
 }
 
 const getCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
@@ -125,6 +152,7 @@ export default function AutoVideoGenerator({
   selectedProjectId,
   onSelectProject,
   onUpdateProject,
+  theme = AppTheme.DARK,
 }: AutoVideoGeneratorProps) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
@@ -172,6 +200,7 @@ export default function AutoVideoGenerator({
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>([]);
 
   const [characterImages] = useState<string[]>([]);
 
@@ -186,7 +215,7 @@ export default function AutoVideoGenerator({
   const loadConfigForProject = async (id: string) => {
     try {
       const saved = await storageUtils.getAsync(`${STORAGE_KEYS.AUTO_GENERATOR_CONFIG}_${id}`);
-      const parsed = jsonUtils.safeParse<any>(saved, null);
+      const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
       if (parsed) {
         if (parsed.inputType) setInputType(parsed.inputType);
         if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
@@ -207,6 +236,7 @@ export default function AutoVideoGenerator({
         if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
         if (parsed.projectName) setProjectName(parsed.projectName);
         if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
+        if (parsed.sceneReferenceImages) setSceneReferenceImages(parsed.sceneReferenceImages);
         if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
         if (parsed.resumeMode !== undefined) setResumeMode(parsed.resumeMode);
         if (parsed.chromeHeadless !== undefined) setChromeHeadless(parsed.chromeHeadless);
@@ -234,6 +264,12 @@ export default function AutoVideoGenerator({
             if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
             if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
             if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+            setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
+              _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
+                ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
+                : []
+            )));
+            setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
           }
           setProjectName(foundProj.name);
           setReferenceImages([]);
@@ -280,6 +316,7 @@ export default function AutoVideoGenerator({
       thumbnailStylePreset,
       projectName,
       referenceImages,
+      sceneReferenceImages,
       thumbnailReferenceImages,
       resumeMode,
       chromeHeadless,
@@ -291,7 +328,7 @@ export default function AutoVideoGenerator({
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, maxVideoScenes, aspectRatio, stylePreset, thumbnailCount, thumbnailStylePreset,
-    projectName, referenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless
+    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless
   ]);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
 
@@ -340,6 +377,12 @@ export default function AutoVideoGenerator({
               if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
               if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
               if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+              setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
+                _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
+                  ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
+                  : []
+              )));
+              setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
             }
           }
         }
@@ -393,6 +436,12 @@ export default function AutoVideoGenerator({
           if (foundProj.visualConfig.stylePreset) setStylePreset(foundProj.visualConfig.stylePreset);
           if (!_.isUndefined(foundProj.visualConfig.thumbnailCount)) setThumbnailCount(foundProj.visualConfig.thumbnailCount);
           if (foundProj.visualConfig.thumbnailReferencePrompt) setThumbnailStylePreset(foundProj.visualConfig.thumbnailReferencePrompt);
+          setReferenceImages(_.defaultTo(foundProj.visualConfig.styleReferenceImages, (
+            _.isEmpty(foundProj.visualConfig.sceneReferenceImages)
+              ? _.defaultTo(foundProj.visualConfig.referenceImages, [])
+              : []
+          )));
+          setSceneReferenceImages(_.defaultTo(foundProj.visualConfig.sceneReferenceImages, []));
         }
       }
     }
@@ -411,7 +460,7 @@ export default function AutoVideoGenerator({
   const handleSavePreset = async () => {
     const trimmedName = _.trim(presetNameInput);
     if (_.isEmpty(trimmedName)) return;
-    const newPresetData: any = {
+    const newPresetData = {
       id: _.join([PRESET_CONSTANTS.ID_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
       name: trimmedName,
       config: {
@@ -504,6 +553,13 @@ export default function AutoVideoGenerator({
       setReferenceImages((prev) => [...prev, result]);
     });
     addLog(T.logStyleUploaded(files.length));
+  };
+
+  const handleSceneReferenceFilesUpload = (files: FileList) => {
+    readFilesAsDataURL(files, (result) => {
+      setSceneReferenceImages((prev) => [...prev, result]);
+    });
+    addLog(T.logSceneReferenceUploaded(files.length));
   };
 
   const handleThumbnailStyleFilesUpload = (files: FileList) => {
@@ -616,12 +672,12 @@ export default function AutoVideoGenerator({
             type: hookStrategy,
             duration: hookDuration,
             count: 3,
-            positions: hookPosition as any,
+            positions: hookPosition as HookPosition,
             versions: [],
           },
           voiceConfig: {
             provider: voiceProvider,
-            audioType: REFACTOR_CONSTANTS.AVG_AUDIO_TYPE_TTS as any,
+            audioType: AudioType.TTS,
             gender: Gender.Male,
             age: AgeGroup.Adult,
             emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
@@ -637,7 +693,7 @@ export default function AutoVideoGenerator({
             quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
             density: 5,
             characterConsistency: true,
-            assetsMode: REFACTOR_CONSTANTS.AVG_ASSETS_MODE_MIXED as any,
+            assetsMode: AssetsMode.Mixed,
             imageGeneratorEngine,
             generateType,
             maxVideoScenes,
@@ -652,7 +708,9 @@ export default function AutoVideoGenerator({
             thumbnailCount,
             thumbnailReferenceImages,
             thumbnailReferencePrompt: thumbnailStylePreset,
-            referenceImages,
+            styleReferenceImages: referenceImages,
+            sceneReferenceImages,
+            referenceImages: sceneReferenceImages,
             referencePrompt: stylePreset,
             characters: [
               {
@@ -759,7 +817,7 @@ export default function AutoVideoGenerator({
             imageQuality: newProj.visualConfig.quality,
           },
           visualStyle: newProj.visualConfig.style || "Cinematic",
-          referenceImages: newProj.visualConfig.referenceImages || [],
+          referenceImages: _.defaultTo(newProj.visualConfig.styleReferenceImages, referenceImages),
           referenceStyle: newProj.visualConfig.referencePrompt,
           visualDensity: 5,
           bypassCache: true,
@@ -836,8 +894,8 @@ export default function AutoVideoGenerator({
           ...newProj,
           storyboard: realScenes,
           voiceConfig: {
-            ...(newProj.voiceConfig || {} as any),
-            audioType: AUTO_GENERATOR_CONSTANTS.AUDIO_TYPE_TTS as any,
+            ...newProj.voiceConfig,
+            audioType: AudioType.TTS,
             provider: voiceProvider,
             audioBase64: globalAudioBase64,
             audioUrl: globalAudioUrl
@@ -849,7 +907,7 @@ export default function AutoVideoGenerator({
           ...newProj,
           storyboard: realScenes,
           voiceConfig: {
-            ...(newProj.voiceConfig || {} as any),
+            ...newProj.voiceConfig,
             audioBase64: globalAudioBase64,
             audioUrl: globalAudioUrl
           } as VoiceConfig
@@ -909,8 +967,11 @@ export default function AutoVideoGenerator({
         voiceUpdatedProj = {
           ...voiceUpdatedProj,
           visualConfig: {
-            ...(voiceUpdatedProj.visualConfig || {} as any),
+            ...voiceUpdatedProj.visualConfig,
             style: currentStylePreset,
+            styleReferenceImages: referenceImages,
+            sceneReferenceImages,
+            referenceImages: sceneReferenceImages,
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
           }
@@ -972,6 +1033,8 @@ export default function AutoVideoGenerator({
         chromeHeadless,
         geminiChatSpeed,
         style: currentStylePreset,
+        sceneReferenceImages,
+        referenceImages: sceneReferenceImages,
       };
       const sandboxConfigPayload = {
         projectId: voiceUpdatedProj.id
@@ -1029,6 +1092,9 @@ export default function AutoVideoGenerator({
             generateType: resolveSceneGenerateType(scene.id, generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
+          let batchFailureCount = SecurityConstants.ZERO;
+          let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+          let fallbackFailureCount = SecurityConstants.ZERO;
           const applyResult = (result: ProjectImageResult) => {
             const imageUrl = createProjectImageUrl(result);
             const scene = _.find(realScenes, (item) => _.isEqual(item.id, result.sceneId));
@@ -1037,11 +1103,14 @@ export default function AutoVideoGenerator({
               scene!.assetUrls = [imageUrl];
               scene!.assetType = result.assetType || GenerateType.Image;
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
-              appendLog(T.logBatchImageSceneSuccess(
-                result.sceneId,
-                completedCount,
-                _.size(targetScenesToGen),
-              ));
+              const totalScenes = _.size(targetScenesToGen);
+              if (_.some([
+                _.isEqual(completedCount, SecurityConstants.DEFAULT_AMOUNT),
+                _.isEqual(completedCount, totalScenes),
+                _.isEqual(completedCount % 5, SecurityConstants.ZERO),
+              ])) {
+                appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
+              }
               void persistImageCheckpoint();
             }
           };
@@ -1070,28 +1139,39 @@ export default function AutoVideoGenerator({
                   applyResult(result);
                   return;
                 }
-                appendLog(T.logBatchImageSceneError(
-                  result.sceneId || REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID,
-                  result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-                ));
+                batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
+                if (_.isEmpty(batchFailureReason)) {
+                  batchFailureReason = _.find([result.warning, REFACTOR_CONSTANTS.UNKNOWN_WARNING], (value) => !_.isEmpty(value)) as string;
+                }
               },
-              onFallbackStart: (error) => appendLog(T.logBatchStreamErrorFallback(error.message)),
-              onFallbackItemStart: (_item, index, total) => appendLog(
-                AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
-                  .replace(
-                    SecurityConstants.PLACEHOLDER_0,
-                    _.toString(_.add(index, SecurityConstants.DEFAULT_AMOUNT)),
-                  )
-                  .replace(SecurityConstants.PLACEHOLDER_1, _.toString(total)),
-              ),
+              onFallbackStart: (error) => appendLog(T.logBatchFailuresSummary(
+                batchFailureCount,
+                _.size(targetScenesToGen),
+                _.find([batchFailureReason, error.message], (value) => !_.isEmpty(value)) as string,
+              )),
+              onFallbackItemStart: (_item, index, total) => {
+                const current = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
+                if (_.some([
+                  _.isEqual(current, SecurityConstants.DEFAULT_AMOUNT),
+                  _.isEqual(current, total),
+                  _.isEqual(current % 5, SecurityConstants.ZERO),
+                ])) {
+                  appendLog(T.logFallbackProgress(current, total));
+                }
+              },
               onFallbackResult: (result) => {
                 if (result.success) {
                   applyResult(result);
                   return;
                 }
-                appendLog(T.logFallbackSceneError(result.sceneId));
+                fallbackFailureCount = _.add(fallbackFailureCount, SecurityConstants.DEFAULT_AMOUNT);
               },
             });
+            appendLog(T.logImageGenerationSummary(
+              completedCount,
+              fallbackFailureCount,
+              _.size(targetScenesToGen),
+            ));
           } finally {
             await imageCheckpointQueue;
           }
@@ -1328,9 +1408,9 @@ export default function AutoVideoGenerator({
             };
             await syncProject(slicedUpdatedProj);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_SUCCESS);
-          } catch (audioErr: any) {
-            logger.error(T.errAudioAlignBackend, audioErr);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioErr.message || REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+          } catch (audioError: unknown) {
+            logger.error(T.errAudioAlignBackend, audioError);
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioError instanceof Error ? audioError.message : REFACTOR_CONSTANTS.VD_EMPTY_STRING));
           }
         }
       }
@@ -1418,8 +1498,9 @@ export default function AutoVideoGenerator({
       }
 
       setStepProgress(100);
-    } catch (err: any) {
-      appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, err.message || REFACTOR_CONSTANTS.ERR_RENDER_FAILED));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_RENDER_FAILED;
+      appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
       const failedProj = {
         ...(activeCreatedProject || {}),
         id: activeCreatedProject ? activeCreatedProject.id : REFACTOR_CONSTANTS.STATUS_FAILED,
@@ -1613,7 +1694,7 @@ export default function AutoVideoGenerator({
                     <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                     <select
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value as any)}
+                      onChange={(e) => setLanguage(e.target.value as ProjectLanguage)}
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
                       {_.map(PROJECT_LANGUAGE_OPTIONS, (l) => (
@@ -1654,7 +1735,7 @@ export default function AutoVideoGenerator({
                       onChange={(e) => setSplitStrategy(e.target.value)}
                       className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                     >
-                      {_.map(SPLIT_STRATEGY_OPTIONS, (s: any) => {
+                      {_.map(SPLIT_STRATEGY_OPTIONS, (s) => {
                         const val = s.value;
                         const SPLIT_LABEL_MAP: Record<string, string> = {
                           word: T.splitWord,
@@ -1730,7 +1811,7 @@ export default function AutoVideoGenerator({
                 favoriteVoices={[]}
                 onToggleFavoriteVoice={() => { }}
                 persistenceScope={voiceDialogPersistenceScope}
-                onSelectVoice={(v: any) => {
+                onSelectVoice={(v: CatalogVoice) => {
                   const selectedVoiceURI = _.find([
                     _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
                     _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
@@ -1746,9 +1827,9 @@ export default function AutoVideoGenerator({
                     REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
                     voiceProvider,
                   );
-                  setVoiceURI(selectedVoiceURI);
-                  setVoiceName(selectedVoiceName);
-                  setVoiceProvider(selectedVoiceProvider);
+                  setVoiceURI(_.toString(selectedVoiceURI));
+                  setVoiceName(_.toString(selectedVoiceName));
+                  setVoiceProvider(_.toString(selectedVoiceProvider));
 
                   const targetProject = activeCreatedProject
                     || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
@@ -1791,7 +1872,7 @@ export default function AutoVideoGenerator({
                       <select
                         value={generationMode}
                         onChange={(e) => {
-                          const mode = e.target.value as any;
+                          const mode = e.target.value as ImageGenerationMode;
                           setGenerationMode(mode);
                           if (mode === ImageGenerationMode.GeminiChat) {
                             setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
@@ -1801,8 +1882,8 @@ export default function AutoVideoGenerator({
                         }}
                         className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                       >
-                        <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_LABS_FLOW}</option>
-                        <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{REFACTOR_CONSTANTS.MODE_GEMINI_ROOM}</option>
+                        <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{T.optionFlowMode}</option>
+                        <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{T.optionAssistantMode}</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                     </div>
@@ -1814,7 +1895,7 @@ export default function AutoVideoGenerator({
                       <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                       <select
                         value={imageGeneratorEngine}
-                        onChange={(e) => setImageGeneratorEngine(e.target.value as any)}
+                        onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)}
                         className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
                       >
                         {_.map(getEngineOptions(generationMode, generateType), (opt) => (
@@ -1831,7 +1912,7 @@ export default function AutoVideoGenerator({
                     <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAspectRatio}</span>
                     <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                       <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                      <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                      <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                         {_.map(_.values(AspectRatio), (r) => (
                           <option key={r} value={r} className="bg-slate-955 text-slate-300">
                             {r} {_.isEqual(r, AspectRatio.NineSixteen) ? REFACTOR_CONSTANTS.RATIO_TIKTOK_SUFFIX : _.isEqual(r, AspectRatio.SixteenNine) ? REFACTOR_CONSTANTS.RATIO_YOUTUBE_SUFFIX : REFACTOR_CONSTANTS.VD_EMPTY_STRING}
@@ -1849,7 +1930,7 @@ export default function AutoVideoGenerator({
                       <select
                         value={generateType}
                         onChange={(e) => {
-                          const type = e.target.value as any;
+                          const type = e.target.value as GenerateType;
                           setGenerateType(type);
                           if (generationMode !== ImageGenerationMode.GeminiChat) {
                             setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
@@ -1859,7 +1940,7 @@ export default function AutoVideoGenerator({
                       >
                         <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage}</option>
                         <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo}</option>
-                        <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{mediaMixTexts.mixed}</option>
+                        <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed}</option>
                       </select>
                       <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
                     </div>
@@ -2021,6 +2102,69 @@ export default function AutoVideoGenerator({
                   </div>
                 ))}
               </div>
+
+              <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.CARD_CLASS}>
+                <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_CLASS}>
+                  <Target className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.HEADER_ICON_CLASS} />
+                  <div>
+                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.TITLE_CLASS}>{T.sceneReferenceTitle}</div>
+                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DESCRIPTION_CLASS}>{T.sceneReferenceDescription}</div>
+                  </div>
+                </div>
+                <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.GRID_CLASS}>
+                  <div
+                    className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CLASS}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (e.dataTransfer.files) {
+                        handleSceneReferenceFilesUpload(e.dataTransfer.files);
+                      }
+                    }}
+                  >
+                    <input
+                      type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
+                      accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleSceneReferenceFilesUpload(e.target.files);
+                          e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+                        }
+                      }}
+                      className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.INPUT_CLASS}
+                    />
+                    <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_CONTENT_CLASS}>
+                      <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_BOX_CLASS}>
+                        <Upload className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_ICON_CLASS} />
+                      </div>
+                      <span className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_TITLE_CLASS}>{T.sceneReferenceUploadTitle}</span>
+                      <span className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.UPLOAD_SUBTITLE_CLASS}>{T.sceneReferenceUploadSub}</span>
+                    </div>
+                  </div>
+
+                  {_.map(sceneReferenceImages, (imgBase64, idx) => (
+                    <div key={idx} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CARD_CLASS}>
+                      <img src={imgBase64} alt={`${T.sceneReferenceAlt} ${_.add(idx, SecurityConstants.DEFAULT_AMOUNT)}`} className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_CLASS} />
+                      <div className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.IMAGE_OVERLAY_CLASS}>
+                        <Button
+                          type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+                          variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+                          onClick={() => setSceneReferenceImages((prev) => _.filter(prev, (_val: string, i: number) => !_.isEqual(i, idx)))}
+                          className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_BUTTON_CLASS}
+                          title={T.deleteSceneReferenceTooltip}
+                        >
+                          <X className={AUTO_GENERATOR_SCENE_REFERENCE_CONFIG.DELETE_ICON_CLASS} />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="border-t border-slate-800/80 my-2" />
@@ -2161,27 +2305,46 @@ export default function AutoVideoGenerator({
             ) : null}
           </div>
 
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 flex-1 flex flex-col min-h-[200px] shadow-xl font-mono text-[11px]">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <span className="text-slate-200 font-bold flex items-center gap-2 uppercase text-xs" title={T.logHeaderTooltip}>
-                <Terminal className="w-4 h-4 text-amber-400" /> {T.logHeaderTitle}
+          <div className={cn(
+            "rounded-3xl p-5 space-y-3 flex-1 flex flex-col min-h-[260px]",
+            _.isEqual(theme, "light") ? "bg-white text-slate-950" : "bg-slate-900 text-slate-100",
+          )}>
+            <div className={cn(
+              "flex items-center justify-between border-b pb-3",
+              _.isEqual(theme, "light") ? "border-slate-200" : "border-slate-800",
+            )}>
+              <span
+                className="font-bold flex items-center gap-2 text-sm"
+                style={{ color: _.isEqual(theme, "light") ? "#111827" : "#f8fafc" }}
+                title={T.logHeaderTooltip}
+              >
+                <span className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center",
+                  _.isEqual(theme, "light") ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300",
+                )}>
+                  <Activity className="w-4 h-4" />
+                </span>
+                {T.logHeaderTitle}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">{T.logEventsCount(logs.length)}</span>
+              <span className={cn(
+                "text-[10px] font-semibold px-2.5 py-1 rounded-full",
+                _.isEqual(theme, "light") ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300",
+              )}>{T.logEventsCount(logs.length)}</span>
             </div>
 
-            <div className="flex-1 bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto space-y-1 text-slate-300 leading-relaxed scrollbar-none flex flex-col min-h-[140px]">
+            <div className={cn(
+              "flex-1 rounded-2xl p-3 overflow-y-auto space-y-2 leading-relaxed flex flex-col min-h-[180px] max-h-[420px]",
+              _.isEqual(theme, "light") ? "bg-slate-50" : "bg-slate-950/70",
+            )}>
               {_.isEmpty(logs) ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 italic text-center text-xs p-6 w-full h-full my-auto gap-2">
-                  <Terminal className="w-8 h-8 text-slate-700/80 mb-1" />
+                <div className={cn(
+                  "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
+                  _.isEqual(theme, "light") ? "text-slate-500" : "text-slate-400",
+                )}>
+                  <Activity className="w-8 h-8 mb-1 opacity-50" />
                   <span>{T.logEmpty}</span>
                 </div>
-              ) : (
-                _.map(logs, (log, idx) => (
-                  <div key={idx} className={cn("py-0.5", _.includes(log, REFACTOR_CONSTANTS.SYMBOL_SUCCESS) ? "text-emerald-400" : _.includes(log, REFACTOR_CONSTANTS.SYMBOL_STEP) ? "text-rose-400" : _.includes(log, REFACTOR_CONSTANTS.SYMBOL_FINISH) ? "text-amber-300 font-bold" : "text-slate-300")}>
-                    {log}
-                  </div>
-                ))
-              )}
+              ) : <ProgressLogTimeline logs={logs} theme={theme} />}
             </div>
           </div>
 
