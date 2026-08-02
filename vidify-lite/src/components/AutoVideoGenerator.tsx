@@ -27,13 +27,15 @@ import {
   genreLabels,
   MEDIA_MIX_CONFIG,
 } from "../constants";
-import { AUTO_GENERATOR_PANEL_TEXTS, MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
+import { MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG } from "../constants/config";
 import { Lang } from "../lib/lang";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { VoiceSelectionDialog, type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { ProgressLogTimeline } from "./ProgressLogTimeline";
+import { ImageDeleteOverlay, ImageUploadZone } from "./auto-video/ImageUploadZone";
+import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords } from "./auto-video/autoVideoGeneratorUtils";
 import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -41,53 +43,9 @@ import { logger } from "../utils/logger";
 import { readFilesAsDataURL } from "../lib/shared-utils";
 import {
   Zap, Sparkles, Mic, Video, Download, ChevronDown, Save, Trash, Sliders,
-  Eye, FileText, Layers, Check, Clock, Layout, Wand2, Globe, Film, Upload,
+  Eye, FileText, Layers, Check, Clock, Layout, Wand2, Globe, Film,
   X, ImageIcon, Target, Copy, RefreshCw, Activity,
 } from "lucide-react";
-
-const SPLIT_LABEL_MAP = (T: ReturnType<typeof getTexts>) => ({
-  word: T.splitWord,
-  short_sentence: T.splitShort,
-  long_sentence: T.splitLong,
-  mixed_sentences: T.splitMixed,
-  paragraph: T.splitParagraph,
-});
-
-const getTexts = (currentLang: Lang) =>
-  AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
-
-const getEngineOptions = (
-  generationMode: ImageGenerationMode,
-  generationType: GenerateType,
-): { value: ImageGeneratorEngine; label: string }[] => {
-  if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
-    return [
-      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
-      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
-      { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
-    ];
-  }
-  if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
-    return [
-      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
-      { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
-      { value: ImageGeneratorEngine.Veo3Fast, label: REFACTOR_CONSTANTS.ENGINE_VEO3_FAST },
-      { value: ImageGeneratorEngine.Veo3Quality, label: REFACTOR_CONSTANTS.ENGINE_VEO3_QUALITY },
-    ];
-  }
-  return [
-    { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN_3_BATCH },
-    { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO_3_0_FLUID },
-    { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX_STILL },
-  ];
-};
-
-const truncateByWords = (text: string, maxWords: number): string => {
-  const words = _.words(text);
-  return words.length > maxWords
-    ? _.join(_.take(words, maxWords), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS
-    : text;
-};
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -107,9 +65,9 @@ export default function AutoVideoGenerator({
   onUpdateProject,
   theme = AppTheme.DARK,
 }: AutoVideoGeneratorProps) {
-  const T = getTexts(currentLang);
+  const T = getAutoVideoTexts(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
-  const splitLabelMap = SPLIT_LABEL_MAP(T);
+  const splitLabelMap = getSplitLabels(T);
 
   const { state, actions, applyProjectToState } = useAutoVideoState(selectedProjectId, projects, currentLang);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
@@ -342,7 +300,7 @@ export default function AutoVideoGenerator({
               <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{T.presetDefaultOption}</option>
               {_.map(presets, (p) => (
                 <option key={p.id} value={p.id} className="bg-slate-955 text-slate-300" title={p.name}>
-                  {truncateByWords(p.name, 4)}
+                  {truncateWords(p.name, 4)}
                 </option>
               ))}
             </select>
@@ -478,7 +436,7 @@ export default function AutoVideoGenerator({
                     <div className="flex items-center gap-2">
                       <Tooltip content={voiceName || voiceURI} position="top">
                         <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
-                          {truncateByWords(voiceName || voiceURI, 4)}
+                          {truncateWords(voiceName || voiceURI, 4)}
                         </span>
                       </Tooltip>
                       <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>
@@ -539,7 +497,7 @@ export default function AutoVideoGenerator({
                     <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
                       <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                       <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                        {_.map(getEngineOptions(generationMode, generateType), (opt) => (
+                        {_.map(getImageEngineOptions(generationMode, generateType), (opt) => (
                           <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">{opt.label}</option>
                         ))}
                       </select>
@@ -1053,70 +1011,6 @@ export default function AutoVideoGenerator({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-interface ImageUploadZoneProps {
-  onUpload: (files: FileList) => void;
-  hoverColor: string;
-  title: string;
-  subtitle: string;
-  uploadClass?: string;
-  inputClass?: string;
-  contentClass?: string;
-  iconBoxClass?: string;
-  iconClass?: string;
-  titleClass?: string;
-  subtitleClass?: string;
-}
-
-function ImageUploadZone({
-  onUpload, hoverColor, title, subtitle,
-  uploadClass, inputClass, contentClass, iconBoxClass, iconClass, titleClass, subtitleClass,
-}: ImageUploadZoneProps) {
-  const defaultUploadClass = `bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
-  return (
-    <div
-      className={uploadClass || defaultUploadClass}
-      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files) onUpload(e.dataTransfer.files); }}
-    >
-      <input
-        type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-        accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
-        multiple
-        onChange={(e) => { if (e.target.files) { onUpload(e.target.files); e.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING; } }}
-        className={inputClass || "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"}
-      />
-      <div className={contentClass || "absolute inset-0 flex flex-col items-center justify-center p-2 text-center"}>
-        <div className={iconBoxClass || `p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-${hoverColor}-500/30 transition-all duration-300 mb-1.5 shadow-lg`}>
-          <Upload className={iconClass || `w-4 h-4 text-slate-400 group-hover:text-${hoverColor}-400 transition-colors`} />
-        </div>
-        <span className={titleClass || `text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-${hoverColor}-400 transition-colors`}>{title}</span>
-        <span className={subtitleClass || "text-[8px] text-slate-505 leading-tight block truncate max-w-full"}>{subtitle}</span>
-      </div>
-    </div>
-  );
-}
-
-interface ImageDeleteOverlayProps {
-  onDelete: () => void;
-  tooltip: string;
-}
-
-function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProps) {
-  return (
-    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-      <Button
-        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-        onClick={onDelete}
-        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
-        title={tooltip}
-      >
-        <X className="w-4 h-4" />
-      </Button>
     </div>
   );
 }

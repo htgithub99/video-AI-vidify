@@ -24,17 +24,16 @@ import {
 import { VideoQuality } from "../constants/enums";
 import {
   API_ROUTES, CONTENT_TYPES, CONTENT_TYPE_HEADER,
-  ERROR_MESSAGES, REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS,
-  API_HEADERS, COMMON_STRINGS, getGeneratedMediaLanguageDirective,
+  REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS,
+  API_HEADERS, getGeneratedMediaLanguageDirective,
 } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
-import { AUTO_GENERATOR_CONSTANTS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { formatTimeHelper } from "../utils/helpers";
 import { safeSystemFetch, generateRandomString } from "../lib/shared-utils";
-import { blobToBase64 } from "../lib/fileUtils";
 import {
   createProjectImageUrl,
   generateProjectImages,
@@ -45,46 +44,14 @@ import {
 } from "../services/projectImageGenerationService";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
-
-const PIPELINE_PROGRESS = {
-  START: 5,
-  PROJECT_DONE: 10,
-  SCRIPT_DONE: 20,
-  STORYBOARD_DONE: 30,
-  VOICE_START: 35,
-  VOICE_DONE: 50,
-  IMAGE_DONE: 75,
-  SEO_THUMB_DONE: 85,
-  ALIGN_DONE: 90,
-  COMPLETE: 100,
-} as const;
-
-interface CachedVoiceAudio {
-  audioBase64: string;
-  audioUrl: string;
-  isCached: boolean;
-}
-
-const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
-  const audioUrl = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  let audioBase64 = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-  if (_.every([_.isEmpty(audioBase64), !_.isEmpty(audioUrl)], Boolean)) {
-    try {
-      const audioResponse = await fetch(audioUrl);
-      if (!audioResponse.ok) throw new Error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR);
-      audioBase64 = await blobToBase64(await audioResponse.blob());
-    } catch (error) {
-      logger.error(ERROR_MESSAGES.FETCH_AUDIO_URL_FOR_ALIGN_ERR, error);
-    }
-  }
-
-  return {
-    audioBase64,
-    audioUrl,
-    isCached: _.some([audioBase64, audioUrl], (value) => !_.isEmpty(value)),
-  };
-};
+import {
+  applyGeneratedMediaLanguage,
+  calculateSceneDuration,
+  fetchCachedVoiceAudio,
+  getReferenceChangeState,
+  hasCompleteSceneAlignment,
+  resolveTargetProject,
+} from "./autoVideoPipelineUtils";
 
 export interface PipelineConfig {
   scriptContent: string;
@@ -245,7 +212,7 @@ export function useAutoVideoPipeline(
     };
 
     setIsProcessing(true);
-    setStepProgress(PIPELINE_PROGRESS.START);
+    setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.START);
     setCurrentStepIndex(1);
     setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
@@ -259,7 +226,15 @@ export function useAutoVideoPipeline(
       setLogs(_.clone(currentLogs));
     };
 
+    const pipelineStartedAt = Date.now();
     appendLog(T.logPipelineStart);
+    appendLog(T.logConfigSummary(
+      config.genre,
+      config.language,
+      config.duration,
+      config.generationMode,
+      config.resumeMode,
+    ));
 
     try {
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
@@ -267,29 +242,19 @@ export function useAutoVideoPipeline(
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
 
-      const directlySelectedProj = _.defaultTo(_.find(projects, { id: config.selectedProjectId }), null);
-      const selectedAutoProj = directlySelectedProj
-        ? (_.endsWith(directlySelectedProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
-          ? directlySelectedProj
-          : _.defaultTo(
-            _.find(projects, (project) => {
-              const targetParentId = _.defaultTo(directlySelectedProj.parentId, directlySelectedProj.id);
-              return _.isEqual(project.parentId, targetParentId) && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX);
-            }),
-            directlySelectedProj,
-          ))
-        : null;
-
-      let existingTargetProj = _.defaultTo(selectedAutoProj, (!config.selectedProjectId ? activeCreatedProject : null));
-      if (!existingTargetProj && !_.isEmpty(config.projectName)) {
-        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(p.name), _.trim(config.projectName))), null);
-      }
-      if (!existingTargetProj && !_.isEmpty(config.scriptContent)) {
-        existingTargetProj = _.defaultTo(_.find(projects, (p) => _.isEqual(_.trim(_.get(p, "input.content", "")), _.trim(config.scriptContent))), null);
-      }
-      if (!existingTargetProj && !_.isEmpty(projects)) {
-        existingTargetProj = _.defaultTo(_.first(projects), null);
-      }
+      const { selectedAutoProject: selectedAutoProj, existingTargetProject: existingTargetProj } = resolveTargetProject(
+        projects,
+        config.selectedProjectId,
+        activeCreatedProject,
+        config.projectName,
+        config.scriptContent,
+      );
+      const { hasVisualOverrides, shouldRegenerateSceneAssets } = getReferenceChangeState(
+        existingTargetProj,
+        config.referenceImages,
+        config.thumbnailReferenceImages,
+        config.characterImages,
+      );
 
       if (config.resumeMode && existingTargetProj) {
         newProjectId = existingTargetProj.id;
@@ -397,8 +362,9 @@ export function useAutoVideoPipeline(
       };
 
       await syncProject(newProj);
+      appendLog(T.logProjectResolved(newProjectId, Boolean(config.resumeMode && existingTargetProj)));
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, _.get(newProj, REFACTOR_CONSTANTS.AVG_NAME_KEY)));
-      setStepProgress(PIPELINE_PROGRESS.PROJECT_DONE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.PROJECT_DONE);
 
       let realScript: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let chapters: Chapter[] = [];
@@ -413,17 +379,20 @@ export function useAutoVideoPipeline(
         factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         isScriptCached = true;
         appendLog(T.logResumeScript);
+        appendLog(T.logScriptResultDetail(_.size(_.words(realScript)), _.size(chapters)));
         setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
       }
 
       if (config.resumeMode && !_.isEmpty(newProj.storyboard)) {
         realScenes = _.cloneDeep(newProj.storyboard!) as StoryboardScene[];
         isStoryboardCached = true;
-        setStepProgress(PIPELINE_PROGRESS.STORYBOARD_DONE);
+        appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
+        setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.STORYBOARD_DONE);
       }
 
       if (!isScriptCached) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_WRITE);
+        appendLog(T.logScriptRequestDetail(_.size(config.scriptContent), config.inputType));
         const scriptPayload = {
           originalInput: config.scriptContent,
           inputType: config.inputType,
@@ -442,7 +411,11 @@ export function useAutoVideoPipeline(
         chapters = (scriptRes.data.chapters || []) as Chapter[];
         factCheckNotes = scriptRes.data.factCheckNotes || "";
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SCRIPT_REWRITE_SUCCESS);
-        setStepProgress(PIPELINE_PROGRESS.SCRIPT_DONE);
+        appendLog(T.logScriptResultDetail(
+          _.size(_.words(realScript)),
+          _.size(chapters),
+        ));
+        setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.SCRIPT_DONE);
 
         const scriptUpdatedProj = { ...newProj, scriptRewritten: realScript, factCheckNotes, chapters };
         await syncProject(scriptUpdatedProj);
@@ -451,6 +424,7 @@ export function useAutoVideoPipeline(
 
       if (!isStoryboardCached) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
+        appendLog(T.logStoryboardRequestDetail(config.splitStrategy, !_.isEmpty(config.referenceImages)));
         const storyboardPayload = {
           rewrittenScript: realScript,
           chapters,
@@ -477,7 +451,8 @@ export function useAutoVideoPipeline(
         realScenes = (storyboardRes.data.scenes || []) as StoryboardScene[];
         if (_.isEmpty(realScenes)) throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
-        setStepProgress(PIPELINE_PROGRESS.STORYBOARD_DONE);
+        appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
+        setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.STORYBOARD_DONE);
 
         const storyboardUpdatedProj = { ...newProj, scriptRewritten: realScript, factCheckNotes, chapters, storyboard: realScenes as VideoProject["storyboard"] };
         await syncProject(storyboardUpdatedProj);
@@ -495,16 +470,18 @@ export function useAutoVideoPipeline(
           globalAudioUrl = cachedVoiceAudio.audioUrl;
           isVoiceCached = true;
           appendLog(T.logResumeVoice);
+          appendLog(T.logVoiceResultDetail(!_.isEmpty(globalAudioUrl) ? "audio URL" : "base64"));
           setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_VOICE_COMPLETE);
         }
       }
 
       let voiceUpdatedProj = newProj;
       if (!isVoiceCached) {
-        setStepProgress(PIPELINE_PROGRESS.VOICE_START);
+        setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.VOICE_START);
         setCurrentStepIndex(2);
 
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_GEN_TTS.replace(SecurityConstants.PLACEHOLDER_0, config.voiceName || "Mặc định"));
+        appendLog(T.logVoiceRequestDetail(config.voiceProvider, config.voiceName, _.size(realScript)));
         const voicePayload = {
           text: realScript,
           voiceURI: config.voiceURI,
@@ -527,7 +504,8 @@ export function useAutoVideoPipeline(
         globalAudioBase64 = ttsRes.data.audioBase64;
         globalAudioUrl = ttsRes.data.audioUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_VOICE_TTS_SUCCESS);
-        setStepProgress(PIPELINE_PROGRESS.VOICE_DONE);
+        appendLog(T.logVoiceResultDetail(!_.isEmpty(globalAudioUrl) ? "audio URL" : "base64"));
+        setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.VOICE_DONE);
 
         voiceUpdatedProj = {
           ...newProj,
@@ -555,8 +533,13 @@ export function useAutoVideoPipeline(
 
       let currentStylePreset = config.stylePreset;
       let currentThumbnailStyle = config.thumbnailStylePreset;
+      appendLog(T.logReferenceSummary(
+        _.size(config.referenceImages),
+        _.size(config.sceneReferenceImages),
+        _.size(config.characterImages),
+      ));
 
-      if (!isStoryboardCached) {
+      if (!isStoryboardCached || hasVisualOverrides) {
         if (!_.isEmpty(config.referenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
           const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages }, requestSignal);
@@ -670,17 +653,18 @@ export function useAutoVideoPipeline(
       };
 
       const generatedMediaLanguageDirective = getGeneratedMediaLanguageDirective(_.isEqual(config.language, ProjectLanguage.VI));
-      const applyGeneratedMediaLanguage = (prompt: string): string =>
-        _.includes(prompt, "CRITICAL GENERATED-MEDIA LANGUAGE RULE")
-          ? prompt
-          : _.join([prompt, generatedMediaLanguageDirective], " ");
 
       const sandboxConfigPayload = { projectId: voiceUpdatedProj.id };
 
       const targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
-        if (config.resumeMode && hasSceneAsset(sc)) return false;
+        if (config.resumeMode && !shouldRegenerateSceneAssets && hasSceneAsset(sc)) return false;
         return true;
       });
+      appendLog(T.logMediaPlan(
+        _.size(targetScenesToGen),
+        _.subtract(_.size(realScenes), _.size(targetScenesToGen)),
+        config.generateType,
+      ));
       const existingVideoCount = _.size(_.filter(
         realScenes as VideoProject["storyboard"],
         (scene) => _.isEqual(scene.assetType, GenerateType.Video) && hasSceneAsset(scene),
@@ -688,7 +672,7 @@ export function useAutoVideoPipeline(
       const remainingVideoSlots = _.max([_.subtract(config.maxVideoScenes, existingVideoCount), SecurityConstants.ZERO])!;
       const videoSceneIds = await selectVideoSceneIds(targetScenesToGen, config.generateType, remainingVideoSlots);
 
-      if (config.resumeMode) {
+      if (config.resumeMode && !shouldRegenerateSceneAssets) {
         (realScenes as VideoProject["storyboard"])!.forEach((sc, idx) => {
           if (hasSceneAsset(sc)) {
             appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length));
@@ -708,7 +692,7 @@ export function useAutoVideoPipeline(
           appendLog(T.logBatchImageStreamStart);
           const batchItems = _.map(targetScenesToGen, (scene) => ({
             sceneId: scene.id,
-            prompt: applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)),
+            prompt: applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective),
             generateType: resolveSceneGenerateType(scene.id, config.generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
@@ -792,7 +776,7 @@ export function useAutoVideoPipeline(
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY)),
+                prompt: applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective),
                 style: currentStylePreset,
                 resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
                 bypassCache: false,
@@ -830,7 +814,7 @@ export function useAutoVideoPipeline(
         }
       }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
-      setStepProgress(PIPELINE_PROGRESS.IMAGE_DONE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
 
       const imageUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
       await syncProject(imageUpdatedProj);
@@ -936,20 +920,22 @@ export function useAutoVideoPipeline(
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
         }
       }
-      setStepProgress(PIPELINE_PROGRESS.SEO_THUMB_DONE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.SEO_THUMB_DONE);
+      appendLog(T.logSeoResultDetail(
+        _.size(_.get(seoData, "titles", [])),
+        _.size(thumbnailsList),
+      ));
 
       let slicedUpdatedProj: VideoProject = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList };
       if (globalAudioBase64) {
-        const isAligned = config.resumeMode && _.every(
-          realScenes as VideoProject["storyboard"],
-          (sc) => !_.isEmpty(sc.startTime) && !_.isEmpty(sc.endTime) && !_.isUndefined(sc.duration),
-        );
+        const isAligned = config.resumeMode && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
         if (isAligned) {
           appendLog(T.logResumeAlignment);
           slicedUpdatedProj = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList, storyboard: realScenes as VideoProject["storyboard"] };
           await syncProject(slicedUpdatedProj);
         } else {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
+          appendLog(T.logAlignmentPlan(_.size(realScenes)));
           try {
             const alignPayload = {
               audioBase64: globalAudioBase64,
@@ -993,16 +979,27 @@ export function useAutoVideoPipeline(
             };
             await syncProject(slicedUpdatedProj);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_SUCCESS);
+            appendLog(T.logAlignmentResultDetail(
+              _.size(alignments),
+              _.max(_.map(alignments, (alignment) => _.toNumber(alignment.end))) || 0,
+            ));
           } catch (audioError: unknown) {
             logger.error(T.errAudioAlignBackend, audioError);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_ERROR + (audioError instanceof Error ? audioError.message : REFACTOR_CONSTANTS.VD_EMPTY_STRING));
           }
         }
       }
-      setStepProgress(PIPELINE_PROGRESS.ALIGN_DONE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.ALIGN_DONE);
 
       setCurrentStepIndex(4);
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
+
+      const expectedRenderDuration = calculateSceneDuration(realScenes as StoryboardScene[]);
+      appendLog(T.logRenderPlan(
+        _.size(realScenes),
+        expectedRenderDuration,
+        !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl),
+      ));
 
       const renderPayload = {
         projectId: newProj.id,
@@ -1020,6 +1017,7 @@ export function useAutoVideoPipeline(
         })),
         quality: config.ffmpegQuality,
         globalAudioUrl: globalAudioUrl || undefined,
+        globalAudioBase64: globalAudioBase64 || undefined,
         aspectRatio: _.isEqual(config.aspectRatio, AspectRatio.NineSixteen)
           ? FFMPEG_RENDER_CONSTANTS.ASPECT_RATIO_9_16
           : REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_16_9,
@@ -1041,6 +1039,7 @@ export function useAutoVideoPipeline(
 
       if (renderData.success && renderData.jobId) {
         const jobId = renderData.jobId;
+        appendLog(T.logRenderJob(jobId));
         let lastLoggedProgress: number | null = null;
         let renderPending = true;
         while (renderPending) {
@@ -1056,6 +1055,7 @@ export function useAutoVideoPipeline(
             renderPending = false;
             setRenderedVideoUrl(statusData.url);
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
+            appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
             const renderCompletedProj = {
               ...slicedUpdatedProj,
               seo: _.defaultTo(seoData as VideoProject["seo"], undefined),
@@ -1081,16 +1081,18 @@ export function useAutoVideoPipeline(
         throw new Error(renderData.error || REFACTOR_CONSTANTS.ERR_RENDER_QUEUE);
       }
 
-      setStepProgress(PIPELINE_PROGRESS.COMPLETE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.COMPLETE);
     } catch (error: unknown) {
       if (cancellationRef.current || (error instanceof DOMException && _.isEqual(error.name, "AbortError"))) {
         appendLog(T.logCancelled);
+        appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
         setStepProgress(0);
         setCurrentStepIndex(0);
         return;
       }
       const errorMessage = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_RENDER_FAILED;
       appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
+      appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
       const failedProj = {
         ...(activeCreatedProject || {}),
         id: activeCreatedProject ? activeCreatedProject.id : REFACTOR_CONSTANTS.STATUS_FAILED,

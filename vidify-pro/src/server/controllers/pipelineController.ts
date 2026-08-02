@@ -2634,7 +2634,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const { scenes, globalAudioUrl, quality, aspectRatio, projectId } = req.body;
+    const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId } = req.body;
     const jobId = randomUUID();
 
     const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
@@ -2644,6 +2644,7 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
       {
         scenes,
         globalAudioUrl,
+        globalAudioBase64,
         quality: quality as VideoQuality,
         aspectRatio: aspectRatio as string,
         projectId: projectId as string

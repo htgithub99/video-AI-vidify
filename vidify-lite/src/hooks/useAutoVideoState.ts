@@ -292,8 +292,6 @@ export function useAutoVideoState(
         if (foundProj) {
           applyProjectToState(foundProj, actions);
           setProjectName(foundProj.name);
-          setReferenceImages([]);
-          setThumbnailReferenceImages([]);
         }
       }
     } catch (e) {

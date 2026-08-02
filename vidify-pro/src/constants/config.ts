@@ -36,6 +36,23 @@ export const PIPELINE_CONFIG = {
   ],
 };
 
+export const AUTO_VIDEO_PIPELINE_PROGRESS = {
+  START: 5,
+  PROJECT_DONE: 10,
+  SCRIPT_DONE: 20,
+  STORYBOARD_DONE: 30,
+  VOICE_START: 35,
+  VOICE_DONE: 50,
+  IMAGE_DONE: 75,
+  SEO_THUMB_DONE: 85,
+  ALIGN_DONE: 90,
+  COMPLETE: 100,
+} as const;
+
+export const AUTO_VIDEO_PIPELINE_CONFIG = {
+  GENERATED_MEDIA_LANGUAGE_MARKER: "CRITICAL GENERATED-MEDIA LANGUAGE RULE",
+} as const;
+
 export const FFMPEG_RESOLUTIONS = {
   low: { width: 854, height: 480, fps: 24, bitrate: "1000k" },
   high: { width: 1280, height: 720, fps: 30, bitrate: "2500k" },
@@ -54,6 +71,7 @@ export const FFMPEG_RENDER_CONSTANTS = {
   ASSETS_URL_PREFIX: "/assets/",
   CONFIG_FILE_NAME: "render_config.json",
   SCRIPT_PATH: "python_scripts/ffmpeg_render.py",
+  GLOBAL_AUDIO_FILE_NAME: "global_voice.mp3",
   ENCODING_UTF8: "utf-8",
   FFMPEG_FALLBACK_CMD: "ffmpeg",
   MAX_SCENE_WORKERS: 2,
@@ -71,6 +89,7 @@ export const FFMPEG_RENDER_KEYS = {
   QUALITY: "quality",
   ASPECT_RATIO: "aspectRatio",
   GLOBAL_AUDIO_URL: "globalAudioUrl",
+  GLOBAL_AUDIO_BASE64: "globalAudioBase64",
   SCENES: "scenes",
   WIDTH: "width",
   HEIGHT: "height",

@@ -56,6 +56,7 @@ export interface FFmpegRenderOptions {
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;
+  globalAudioBase64?: string;
   aspectRatio?: string;
   projectId?: string;
 }
@@ -89,6 +90,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
   const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.LOW);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
   const globalAudioUrlVal = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_URL);
+  const globalAudioBase64Val = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_BASE64);
   const scenesVal = _.get(options, FFMPEG_RENDER_KEYS.SCENES);
 
   if (_.isEmpty(scenesVal)) {
@@ -147,7 +149,12 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
     )
     : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
   
-  const globalAudioPath = _.defaultTo(resolveLocalAssetPath(globalAudioUrlVal), SecurityConstants.EMPTY_STRING);
+  let globalAudioPath = _.defaultTo(resolveLocalAssetPath(globalAudioUrlVal), SecurityConstants.EMPTY_STRING);
+  if (_.isEmpty(globalAudioPath) && _.isString(globalAudioBase64Val) && !_.isEmpty(globalAudioBase64Val)) {
+    const globalAudioData = _.last(_.split(globalAudioBase64Val, "base64,")) || globalAudioBase64Val;
+    globalAudioPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.GLOBAL_AUDIO_FILE_NAME);
+    fs.writeFileSync(globalAudioPath, Buffer.from(globalAudioData, "base64"));
+  }
   const renderScenes = _.map(scenesVal, (scene) => {
     const mediaSource = getFirstValue([scene.imageBase64, scene.imageUrl]);
     const audioSource = getFirstValue([scene.audioBase64, scene.audioUrl]);
