@@ -69,7 +69,7 @@ export default function AutoVideoGenerator({
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
   const splitLabelMap = getSplitLabels(T);
 
-  const { state, actions, applyProjectToState } = useAutoVideoState(selectedProjectId, projects, currentLang);
+  const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
   const {
@@ -110,7 +110,6 @@ export default function AutoVideoGenerator({
       storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
       pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       pipelineActions.setLogs(foundProj.generationLogs || []);
-      applyProjectToState(foundProj, actions);
     }
   }, [selectedProjectId, projects, isConfigLoaded]);
 

@@ -368,5 +368,5 @@ export function useAutoVideoState(
     projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded,
   };
 
-  return { state, actions, applyProjectToState };
+  return { state, actions };
 }
