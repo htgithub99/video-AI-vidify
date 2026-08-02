@@ -594,7 +594,7 @@ export default function AutoVideoGenerator({
 
     appendLog(T.logPipelineStart);
 
-      try {
+    try {
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROJECT_INIT);
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;

@@ -17,6 +17,8 @@ dist-ssr/
 .env.production.local
 
 # Debug logs and diagnostics
+gemini_dom_diagnostics.jsonl
+google_login_dom_diagnostics.jsonl
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -72,11 +74,3 @@ package-lock.json
 templates/capcut/*.json
 templates/
 ultra_opts_*.json
-# Yarn
-.yarn/*
-!.yarn/cache
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions

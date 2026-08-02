@@ -30,6 +30,6 @@
     "dist-desktop",
     "builds",
     "electron-dist",
-    "electron-dist-v2",`n    "dist"
+    "electron-dist-v2"
   ]
 }
