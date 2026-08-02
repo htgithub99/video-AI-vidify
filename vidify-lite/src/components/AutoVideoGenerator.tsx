@@ -16,7 +16,7 @@ import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { formatTimeHelper } from "../utils/helpers";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_GENERATOR_SCENE_REFERENCE_CONFIG, FFMPEG_RENDER_CONSTANTS } from "../constants/config";
-import { safeSystemFetch, readFilesAsDataURL } from "../lib/shared-utils";
+import { safeSystemFetch, readFilesAsDataURL, generateRandomString } from "../lib/shared-utils";
 import { blobToBase64 } from "../lib/fileUtils";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../services/projectImageGenerationService";
 import {
@@ -615,7 +615,7 @@ export default function AutoVideoGenerator({
         const selectedProj = selectedAutoProj;
         const isChildProject = selectedProj && selectedProj.parentId;
 
-        newProjectId = selectedProj ? selectedProj.id : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END)], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        newProjectId = selectedProj ? selectedProj.id : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, generateRandomString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         const defaultName = selectedProj ? selectedProj.name : (_.trim(projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
         newProj = {

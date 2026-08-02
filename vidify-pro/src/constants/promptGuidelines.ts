@@ -1,4 +1,17 @@
+import { VideoGenre } from "./enums";
+
 export const VI_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.NARRATIVE_EXPLAINER]: `Narrative Explainer / Video Essay Genre: Write an evidence-led explanatory video as an unfolding story for a general Vietnamese audience.
+- Open with a concrete everyday situation, surprising consequence, paradox, or unresolved question. Do not begin with a dictionary definition, generic greeting, or broad history lesson.
+- Choose one clear narrative spine and preserve it throughout: follow a person, object, transaction, question, or process from cause to consequence. Do not write a disconnected list of facts.
+- Progress through repeated discovery beats: what people commonly assume -> what actually happens -> evidence or a concrete example -> why it matters -> the next unanswered question. Use transitions such as "nhưng đó mới chỉ là một nửa câu chuyện" naturally and sparingly.
+- Explain difficult mechanisms in plain spoken Vietnamese with accurate, memorable everyday analogies. An analogy must clarify the mechanism, not replace the factual explanation.
+- Use evidence responsibly: combine a human-scale example, a relevant statistic, and an intuitive comparison. State the source or attribution, scope, timeframe, uncertainty, and distinguish estimates from measured facts. Never invent studies, quotations, people, events, or numbers. If reliable evidence is unavailable, stay qualitative and avoid fabricated precision.
+- Escalate stakes or scale in every major section. Around 60-75% of the script, introduce one fair counterargument or perspective shift that complicates the initial assumption; do not stack arbitrary shock twists.
+- Narrate conversationally as an intelligent, curious peer: natural Vietnamese, controlled humor, light irony, rhetorical questions, varied sentence rhythm, and occasional first-person observations. Avoid excessive filler words, forced slang, repetitive jokes, melodrama, lecturing, and imitating any identifiable creator's catchphrases.
+- End by resolving the opening question and extracting one larger human, economic, technological, or social insight. Do not merely summarize the preceding sections.
+- Keep sponsorship or product examples clearly separated and brief; never let them substitute for proof of the central thesis.
+Output only original Vietnamese narration suitable for voice-over.`,
   Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs. Output the narration text entirely in Vietnamese.",
   History: "History Genre: Emphasize historical accuracy, timelines, historical figures, and cause-effect analysis. Maintain an epic, majestic, and deep narrative tone. Output the narration text entirely in Vietnamese.",
   Documentary: "Documentary Genre: Authentic and objective yet engaging. Combine realistic narration with actual source materials and expert analysis. Output the narration text entirely in Vietnamese.",
@@ -32,6 +45,7 @@ export const VI_AUDIENCE_GUIDELINES: Record<string, string> = {
 };
 
 export const EN_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.NARRATIVE_EXPLAINER]: `Narrative Explainer / Video Essay Genre: Turn a complex topic into an evidence-led unfolding story for a general audience. Open with a concrete paradox, consequence, or unresolved question; follow one person, object, process, or question as the narrative spine; and advance through assumption -> reality -> evidence/example -> consequence -> next question. Explain mechanisms with accurate everyday analogies, cite the scope and uncertainty of evidence, and never invent facts or false precision. Escalate the stakes, introduce one fair counterargument or perspective shift around 60-75%, and resolve the opening question with a broader insight. Use an intelligent conversational voice with controlled humor, varied rhythm, and no imitation of an identifiable creator. Avoid list-like exposition, excessive filler, stacked shock twists, and unsupported claims.`,
   Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs.",
   History: "History Genre: Emphasize historical accuracy, timelines, historical figures, and cause-effect analysis. Maintain an epic, majestic, and deep narrative tone.",
   Documentary: "Documentary Genre: Authentic and objective yet engaging. Combine realistic narration with actual source materials and expert analysis.",

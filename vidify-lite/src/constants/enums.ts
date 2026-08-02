@@ -130,6 +130,7 @@ export enum SplitStrategy {
 }
 
 export enum VideoGenre {
+  NARRATIVE_EXPLAINER = "Narrative Explainer",
   HISTORY = "History",
   TRUE_CRIME = "True Crime",
   SCIENCE = "Science",

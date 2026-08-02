@@ -322,6 +322,12 @@ export const EXTERNAL_AUDIO_TEXTS = {
 } as const;
 
 export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
+  [VideoGenre.NARRATIVE_EXPLAINER]: `CRITICAL VISUAL DIRECTIVE - NARRATIVE EXPLAINER / VIDEO ESSAY GENRE:
+- Follow the script's central person, object, process, or question visually so the video feels like one continuous investigation rather than unrelated stock images.
+- Alternate concrete real-world scenes, human-scale consequences, accurate process visualizations, maps/charts when numbers matter, and simple visual analogies when concepts are abstract.
+- Prefer documentary realism, editorial composition, legible cause-and-effect imagery, and recurring visual motifs. Preserve factual details, scale, geography, period, technology, and character continuity.
+- Do not fabricate visual evidence, fake documents, fake quotations, fake news screenshots, or portray an analogy as literal fact. Clearly frame conceptual imagery as symbolic.
+- Build visual escalation with the narration: familiar daily-life hook -> hidden mechanism -> growing scale/stakes -> counterpoint -> reflective resolution.`,
   [VideoGenre.HISTORY]: `CRITICAL VISUAL DIRECTIVE - HISTORY GENRE:
 - Strict Historical Accuracy: Image prompts must precisely reflect the historical period mentioned in the scene text. Describe historically accurate clothing (e.g., armor, robes, wool tunics), architecture (e.g., wooden huts, stone castles, roman pillars), and technology of the era.
 - Historical Context Enrichment: For every scene under a historical theme, the prompt must explicitly specify the historical context, such as the name of the battle or war, the specific era or year (if available), the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures involved. This ensures the AI accurately generates period-specific clothing, weapons, flags/banners, insignia, vehicles, and distinct characteristics of the era, preventing confusion between different wars or military forces.

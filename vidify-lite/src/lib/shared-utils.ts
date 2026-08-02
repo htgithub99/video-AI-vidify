@@ -157,3 +157,9 @@ export const readFilesAsDataURL = (files: FileList, callback: (result: string) =
   });
 };
 
+export const generateRandomString = (): string => {
+  return Math.random()
+    .toString(REFACTOR_CONSTANTS.RADIX_36)
+    .substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+};
+

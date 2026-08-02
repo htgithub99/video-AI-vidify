@@ -13,7 +13,7 @@ import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS } from "./constants";
 import { AppTab } from "./constants/enums";
 import _ from "lodash";
-import { delayAsync } from "./lib/shared-utils.js";
+import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
 import { storageUtils } from "./lib/storage";
 
@@ -229,7 +229,7 @@ export default function App() {
             creatingChildRef.current[activeProj.id] = true;
 
             const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
-            const randomStr = Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const randomStr = generateRandomString();
             const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr}`;
             const childProject: VideoProject = {
               ...activeProj,
@@ -321,7 +321,7 @@ export default function App() {
             creatingChildRef.current[childKey] = true;
 
             const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
-            const randomStr = Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+            const randomStr = generateRandomString();
             const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_auto_${randomStr}`;
             const childProject: VideoProject = {
               ...activeProj,
@@ -393,7 +393,7 @@ export default function App() {
 
   const handleCreateProject = async (name: string, desc: string) => {
     const projectSlug = convertToSlug(name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
-    const randomStr = () => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
+    const randomStr = () => generateRandomString();
     
     const parentId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_parent_${randomStr()}`;
     const parentProject: VideoProject = {

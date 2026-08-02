@@ -1,4 +1,4 @@
-import { SplitStrategy } from "./enums";
+import { SplitStrategy, VideoGenre } from "./enums";
 
 export interface PipelineNode {
   id: string;
@@ -40,6 +40,7 @@ export const pipelineNodes = [
 ] as const;
 
 export const genreLabels = {
+  [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay kể chuyện",
   Storytelling: "Kể chuyện",
   History: "Lịch sử",
   Documentary: "Phim tài liệu",
@@ -143,7 +144,7 @@ export const GEMINI_QUOTA_STATUSES = ["RESOURCE_EXHAUSTED", 429, "429"] as const
 
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
 
-export const GENRE_OPTIONS = ["Storytelling", "History", "Documentary", "Explanation", "Review", "Education", "News", "Top List", "True Crime", "Science", "Psychology", "Philosophy"] as const;
+export const GENRE_OPTIONS = ["Storytelling", VideoGenre.NARRATIVE_EXPLAINER, "History", "Documentary", "Explanation", "Review", "Education", "News", "Top List", "True Crime", "Science", "Psychology", "Philosophy"] as const;
 
 export const AUDIENCE_OPTIONS = ["General Audience", "Kids", "Teenagers", "Adults", "Seniors"] as const;
 
