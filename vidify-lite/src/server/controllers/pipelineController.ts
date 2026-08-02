@@ -14,7 +14,7 @@ import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -218,7 +218,12 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     }
 
     parts.push({
-      text: STYLE_EXTRACTION_PROMPT,
+      text: _.join([
+        STYLE_EXTRACTION_PROMPT,
+        BACKGROUND_MODE_CONFIG.EXTRACTION_PREFIX,
+        _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, req.body.backgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
+        BACKGROUND_MODE_CONFIG.EXTRACTION_SUFFIX,
+      ], REFACTOR_CONSTANTS.VD_BLANK),
     });
 
     const response = await generateContentWithRetry({

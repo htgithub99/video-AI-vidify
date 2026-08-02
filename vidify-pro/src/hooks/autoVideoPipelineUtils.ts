@@ -1,10 +1,14 @@
 import _ from "lodash";
-import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
+import { BackgroundMode, VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG, BACKGROUND_MODE_CONFIG } from "../constants/config";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
+
+export const applyBackgroundMode = (prompt: string, mode: BackgroundMode): string => (
+  _.join([prompt, BACKGROUND_MODE_CONFIG.DIRECTIVES[mode]], REFACTOR_CONSTANTS.AVG_BLANK)
+);
 
 export interface CachedVoiceAudio {
   audioBase64: string;
@@ -149,6 +153,8 @@ export const getPipelineInvalidationState = (
     style: config.stylePreset,
     chromeHeadless: config.chromeHeadless,
     videoDuration: config.videoDuration,
+    styleBackgroundMode: config.styleBackgroundMode,
+    thumbnailBackgroundMode: config.thumbnailBackgroundMode,
   };
   const inputChanged = !_.isEqual(project.input?.type, config.inputType)
     || !_.isEqual(_.trim(project.input?.content), _.trim(config.scriptContent));
@@ -186,6 +192,7 @@ export const getPipelineInvalidationState = (
     regenerateThumbnails: regenerateScript
       || references.hasVisualOverrides
       || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount)
+      || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode)
       || !_.isEqual(project.visualConfig?.thumbnailReferencePrompt, config.thumbnailStylePreset),
   };
 };

@@ -4,6 +4,9 @@ import { Button } from "../ui/Button";
 import { cn } from "../../lib/utils";
 import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
 import { REFACTOR_CONSTANTS } from "../../constants";
+import { BackgroundMode } from "../../types";
+import { BackgroundModeSelect } from "./BackgroundModeSelect";
+import { AppLanguage } from "../../constants/enums";
 
 interface AdvancedImageSettingsSectionProps {
   showAdvancedImageSettings: boolean;
@@ -12,6 +15,9 @@ interface AdvancedImageSettingsSectionProps {
   setChromeHeadless: (val: boolean) => void;
   resumeMode: boolean;
   setResumeMode: (val: boolean) => void;
+  backgroundMode: BackgroundMode;
+  setBackgroundMode: (value: BackgroundMode) => void;
+  language: AppLanguage;
   T: any;
 }
 
@@ -22,6 +28,9 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   setChromeHeadless,
   resumeMode,
   setResumeMode,
+  backgroundMode,
+  setBackgroundMode,
+  language,
   T,
 }) => {
   return (
@@ -45,7 +54,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
         </span>
       </Button>
       {showAdvancedImageSettings && (
-        <div className={AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS}>
+        <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "sm:grid-cols-3")}>
+          <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.styleBgModeLabel} />
           {[
             {
               label: T.lblChromeHeadless,

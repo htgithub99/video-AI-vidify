@@ -5,6 +5,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { VoiceSelectionDialog, type Voice as CatalogVoice } from "../VoiceSelectionDialog";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Lang } from "../../lib/lang";
+import { PIPELINE_STEPS } from "../../constants/enums";
 
 interface VoiceSelectionSectionProps {
   voiceName: string;
@@ -34,7 +35,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">2</span>
+        <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">{PIPELINE_STEPS.STEP_2}</span>
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
           <Mic className="w-3.5 h-3.5 text-rose-500" /> {T.sec2Title}
         </h3>

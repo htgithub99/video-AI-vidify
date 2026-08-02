@@ -160,6 +160,8 @@ export interface VisualConfig {
   characterConsistency: boolean;
   assetsMode: AssetsMode;
   stylePreset?: string;
+  styleBackgroundMode?: BackgroundMode;
+  thumbnailBackgroundMode?: BackgroundMode;
   aspectRatio?: string;
   imageQuality?: string;
   characterConsistencyLevel?: string;
@@ -353,6 +355,17 @@ export interface Voice {
   default: boolean;
   gender?: string;
   [key: string]: unknown;
+}
+
+export enum BackgroundMode {
+  Auto = "auto",
+  Preserve = "preserve",
+  Transparent = "transparent",
+  Solid = "solid",
+  Contextual = "contextual",
+  Blurred = "blurred",
+  Gradient = "gradient",
+  Studio = "studio",
 }
 
 export enum GeminiChatSpeed {

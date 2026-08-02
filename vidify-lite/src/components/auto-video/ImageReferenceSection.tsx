@@ -5,7 +5,6 @@ import { Tooltip } from "../ui/Tooltip";
 import { ImageDeleteOverlay, ImageUploadZone } from "./ImageUploadZone";
 import { AUTO_GENERATOR_SCENE_REFERENCE_CONFIG } from "../../constants/config";
 import { REFACTOR_CONSTANTS } from "../../constants";
-
 interface ImageReferenceSectionProps {
   referenceImages: string[];
   setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;

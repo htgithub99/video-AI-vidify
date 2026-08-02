@@ -32,10 +32,16 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
     setLoadingTarget(target);
     try {
       await handleRegenerate(target);
-    } finally {
+    } catch {
       setLoadingTarget(null);
     }
   };
+
+  React.useEffect(() => {
+    if (!isProcessing) {
+      setLoadingTarget(null);
+    }
+  }, [isProcessing]);
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col justify-between">

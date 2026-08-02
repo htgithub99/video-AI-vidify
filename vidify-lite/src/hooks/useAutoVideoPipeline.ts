@@ -20,6 +20,7 @@ import {
   AssetsMode,
   Chapter,
   StoryboardScene,
+  BackgroundMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -46,6 +47,7 @@ import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
   applyGeneratedMediaLanguage,
+  applyBackgroundMode,
   calculateSceneDuration,
   fetchCachedVoiceAudio,
   getReferenceChangeState,
@@ -88,11 +90,13 @@ export interface PipelineConfig {
   geminiChatSpeed: GeminiChatSpeed;
   batchDelay: BatchDelayOption;
   stylePreset: string;
+  styleBackgroundMode: BackgroundMode;
   referenceImages: string[];
   sceneReferenceImages: string[];
   characterImages: string[];
   thumbnailCount: number;
   thumbnailStylePreset: string;
+  thumbnailBackgroundMode: BackgroundMode;
   thumbnailReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
@@ -300,6 +304,8 @@ export function useAutoVideoPipeline(
             maxVideoScenes: config.maxVideoScenes,
             aspectRatio: config.aspectRatio,
             chromeHeadless: config.chromeHeadless,
+            styleBackgroundMode: config.styleBackgroundMode,
+            thumbnailBackgroundMode: config.thumbnailBackgroundMode,
           },
         };
         setActiveCreatedProject(newProj);
@@ -359,6 +365,8 @@ export function useAutoVideoPipeline(
           visualConfig: {
             source: REFACTOR_CONSTANTS.AVG_VISUAL_SOURCE_AUTO,
             style: config.stylePreset,
+            styleBackgroundMode: config.styleBackgroundMode,
+            thumbnailBackgroundMode: config.thumbnailBackgroundMode,
             quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
             density: 5,
             characterConsistency: true,
@@ -605,7 +613,7 @@ export function useAutoVideoPipeline(
       if (!isStoryboardCached || hasVisualOverrides) {
         if (!_.isEmpty(config.referenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-          const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages }, requestSignal);
+          const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages, backgroundMode: config.styleBackgroundMode }, requestSignal);
           if (extractStyleRes.success && extractStyleRes.data?.style) {
             const extractedStyle = extractStyleRes.data.style;
             currentStylePreset = extractedStyle;
@@ -630,7 +638,7 @@ export function useAutoVideoPipeline(
 
         if (!_.isEmpty(config.thumbnailReferenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
-          const extractThumbStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.thumbnailReferenceImages }, requestSignal);
+          const extractThumbStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.thumbnailReferenceImages, backgroundMode: config.thumbnailBackgroundMode }, requestSignal);
           if (extractThumbStyleRes.success && extractThumbStyleRes.data?.style) {
             currentThumbnailStyle = extractThumbStyleRes.data.style;
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
@@ -650,6 +658,8 @@ export function useAutoVideoPipeline(
             referenceImages: config.sceneReferenceImages,
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
+            styleBackgroundMode: config.styleBackgroundMode,
+            thumbnailBackgroundMode: config.thumbnailBackgroundMode,
           },
         };
         await syncProject(voiceUpdatedProj);
@@ -771,7 +781,7 @@ export function useAutoVideoPipeline(
           appendLog(T.logBatchImageStreamStart);
           const batchItems = _.map(targetScenesToGen, (scene) => ({
             sceneId: scene.id,
-            prompt: applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective),
+            prompt: applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode),
             generateType: resolveSceneGenerateType(scene.id, config.generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
@@ -855,7 +865,7 @@ export function useAutoVideoPipeline(
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective),
+                prompt: applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode),
                 style: currentStylePreset,
                 resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
                 bypassCache: false,
@@ -963,7 +973,7 @@ export function useAutoVideoPipeline(
               SecurityConstants.PLACEHOLDER_1,
               _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
             );
-            const finalThumbPrompt = _.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            const finalThumbPrompt = applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode);
 
             const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
               prompt: finalThumbPrompt,
