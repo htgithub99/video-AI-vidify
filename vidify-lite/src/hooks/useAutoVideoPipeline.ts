@@ -716,6 +716,21 @@ export function useAutoVideoPipeline(
       const generatedMediaLanguageDirective = getGeneratedMediaLanguageDirective(_.isEqual(config.language, ProjectLanguage.VI));
 
       const sandboxConfigPayload = { projectId: voiceUpdatedProj.id };
+      const cachedSeoData = config.resumeMode && !invalidationState.regenerateSeo && newProj.seo
+        ? newProj.seo
+        : null;
+      const seoRequest = cachedSeoData
+        ? null
+        : (() => {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_OPTIMIZE);
+          return safeSystemFetch(API_ROUTES.PIPELINE_SEO, {
+            originalInput: config.scriptContent,
+            config: voiceUpdatedProj.config,
+            seoConfig: voiceUpdatedProj.seoConfig,
+            rewrittenScript: realScript,
+            bypassCache: true,
+          }, requestSignal);
+        })();
 
       const targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
         if (config.resumeMode && !shouldRegenerateSceneAssets && hasSceneAsset(sc)) return false;
@@ -880,24 +895,13 @@ export function useAutoVideoPipeline(
       const imageUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
       await syncProject(imageUpdatedProj);
 
-      let seoData: unknown = null;
-      let isSeoCached = false;
-      if (config.resumeMode && !invalidationState.regenerateSeo && newProj.seo) {
-        seoData = newProj.seo;
-        isSeoCached = true;
+      let seoData: unknown = cachedSeoData;
+      if (cachedSeoData) {
         appendLog(T.logResumeSeo);
       }
 
-      if (!isSeoCached) {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_OPTIMIZE);
-        const seoPayload = {
-          originalInput: config.scriptContent,
-          config: imageUpdatedProj.config,
-          seoConfig: imageUpdatedProj.seoConfig,
-          rewrittenScript: realScript,
-          bypassCache: true,
-        };
-        const seoRes = await safeSystemFetch(API_ROUTES.PIPELINE_SEO, seoPayload, requestSignal);
+      if (!cachedSeoData) {
+        const seoRes = await seoRequest;
         if (seoRes.success && seoRes.data) {
           seoData = seoRes.data;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_SEO_SUCCESS);

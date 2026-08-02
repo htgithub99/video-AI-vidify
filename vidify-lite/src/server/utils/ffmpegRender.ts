@@ -4,15 +4,12 @@ import { execFile } from "child_process";
 import { v4 as uuidv4 } from "uuid";
 import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "./paths.js";
 import { logger } from "../../lib/logger.js";
-import { promisify } from "util";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
 import { GenerateType } from "../../types.js";
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
-
-const execFileAsync = promisify(execFile);
 
 const cleanupDirectory = (directoryPath: string): void => {
   if (fs.existsSync(directoryPath)) {
@@ -86,7 +83,10 @@ const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   return candidatePath;
 };
 
-export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<string> => {
+export const renderFFmpegVideo = async (
+  options: FFmpegRenderOptions,
+  onProgress?: (progress: number) => void,
+): Promise<string> => {
   const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.LOW);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
   const globalAudioUrlVal = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_URL);
@@ -199,14 +199,31 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions): Promise<s
   const scriptPath = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.SCRIPT_PATH);
 
   try {
-    const { stdout } = await execFileAsync(
-      pyCmd,
-      [scriptPath, configPath],
-      {
-        windowsHide: true,
-        maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
-      },
-    );
+    const renderer = execFile(pyCmd, [scriptPath, configPath], {
+      windowsHide: true,
+      maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
+    });
+    let stdout = SecurityConstants.EMPTY_STRING;
+    let progressBuffer = SecurityConstants.EMPTY_STRING;
+    renderer.stdout?.on("data", (chunk: Buffer | string) => {
+      const output = _.toString(chunk);
+      stdout += output;
+      const lines = _.split(progressBuffer + output, FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR);
+      progressBuffer = lines.pop() || SecurityConstants.EMPTY_STRING;
+      _.forEach(lines, (line) => {
+        const parsed = _.attempt(JSON.parse, _.trim(line));
+        if (!_.isError(parsed) && _.has(parsed, FFMPEG_RENDER_KEYS.PROGRESS)) {
+          onProgress?.(_.toNumber(_.get(parsed, FFMPEG_RENDER_KEYS.PROGRESS)));
+        }
+      });
+    });
+    await new Promise<void>((resolve, reject) => {
+      renderer.once("error", reject);
+      renderer.once("exit", (code) => {
+        if (_.isEqual(code, SecurityConstants.ZERO)) resolve();
+        else reject(new Error(FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON));
+      });
+    });
     const result = parsePythonResult(stdout);
 
     if (_.every([result, _.get(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean)) {

@@ -121,6 +121,7 @@ export const FFMPEG_RENDER_KEYS = {
   VIDEO_TRIM_START_SECONDS: "videoTrimStartSeconds",
   VIDEO_TRIM_END_SECONDS: "videoTrimEndSeconds",
   SUCCESS: "success",
+  PROGRESS: "progress",
   URL: "url",
   ERROR: "error",
 } as const;

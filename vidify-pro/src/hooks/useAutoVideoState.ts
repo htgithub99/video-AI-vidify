@@ -215,7 +215,7 @@ export function useAutoVideoState(
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
   const [chromeHeadless, setChromeHeadless] = useState<boolean>(AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
-  const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Normal);
+  const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Fast);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);

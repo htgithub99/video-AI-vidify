@@ -69,19 +69,10 @@ class RenderQueueService {
         .replace(SecurityConstants.PLACEHOLDER_0, job.id)
     );
 
-    let progressTimer: NodeJS.Timeout | null = null;
     try {
-      progressTimer = setInterval(() => {
-        if (_.eq(job.status, JobStatus.PROCESSING) && _.lt(job.progress, REFACTOR_CONSTANTS.RENDER_PROGRESS_MAX)) {
-          job.progress = _.add(job.progress, REFACTOR_CONSTANTS.RENDER_PROGRESS_STEP);
-        }
-      }, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
-
-      const url = await renderFFmpegVideo(job.payload);
-      
-      if (progressTimer) {
-        clearInterval(progressTimer);
-      }
+      const url = await renderFFmpegVideo(job.payload, (progress) => {
+        job.progress = progress;
+      });
 
       job.url = url;
 
@@ -103,9 +94,6 @@ class RenderQueueService {
           .replace(SecurityConstants.PLACEHOLDER_1, url)
       );
     } catch (error: any) {
-      if (progressTimer) {
-        clearInterval(progressTimer);
-      }
       job.status = JobStatus.FAILED;
       job.error = _.defaultTo(error?.message, REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT);
       job.completedAt = new Date();

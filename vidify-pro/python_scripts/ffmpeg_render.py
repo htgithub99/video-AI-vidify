@@ -7,6 +7,7 @@ import traceback
 import math
 import random
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
@@ -857,6 +858,12 @@ def main():
             chosen_transitions.append(trans_type)
             prev_trans = trans_type
 
+        completed_scene_count = 0
+        progress_lock = threading.Lock()
+
+        def emit_progress(progress):
+            print(json.dumps({"progress": progress}), flush=True)
+
         def render_scene(i):
             idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
             outPath = os.path.join(tempDir, FFMPEG_CONSTANTS.PART_FILE_TEMPLATE.format(idx))
@@ -957,6 +964,11 @@ def main():
             if return_code != 0:
                 raise Exception(FFMPEG_CONSTANTS.PART_ERROR_TEMPLATE.format(return_code))
 
+            nonlocal completed_scene_count
+            with progress_lock:
+                completed_scene_count += 1
+                emit_progress(max(1, round(completed_scene_count * 90 / len(scenes))))
+
             return FFMPEG_CONSTANTS.CONCAT_PREFIX.format(idx)
 
         max_workers = max(
@@ -993,6 +1005,7 @@ def main():
         tempFinalPath = os.path.join(tempDir, "temp_final.mp4")
         concatCmd = [ffmpegCmd, "-y", "-f", FFMPEG_CONSTANTS.CONCAT_FORMAT, "-safe", "0", "-i", listPath, "-c", FFMPEG_CONSTANTS.COPY_CODEC, tempFinalPath]
         subprocess.run(concatCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        emit_progress(94)
         
         globalAudioPath = config.get("globalAudioPath")
         if globalAudioPath and os.path.exists(globalAudioPath):
@@ -1010,7 +1023,7 @@ def main():
             if os.path.exists(finalOutputPath):
                 os.remove(finalOutputPath)
             os.rename(tempFinalPath, finalOutputPath)
-        
+        emit_progress(99)
         print(json.dumps({FFMPEG_CONSTANTS.OUTPUT_SUCCESS: True, "url": finalOutputUrl}))
         
     except Exception as e:
