@@ -73,7 +73,7 @@ export const BACKGROUND_MODE_CONFIG = {
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
-    white: "CRITICAL BACKGROUND OVERRIDE: Use a clean pure white background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
+    white: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, pure white background (#FFFFFF), no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
     blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
     gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
