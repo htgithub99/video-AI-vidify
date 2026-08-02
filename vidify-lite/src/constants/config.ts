@@ -67,20 +67,21 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
 
 export const BACKGROUND_MODE_CONFIG = {
   DEFAULT: "auto",
-  OPTIONS: ["auto", "preserve", "transparent", "solid", "contextual", "blurred", "gradient", "studio"],
+  OPTIONS: ["auto", "preserve", "transparent", "solid", "white", "contextual", "blurred", "gradient", "studio"],
   DIRECTIVES: {
     auto: "Choose the background naturally from the content and composition.",
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
+    white: "CRITICAL BACKGROUND OVERRIDE: Use a clean pure white background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
     contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
     blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
     gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
     studio: "CRITICAL BACKGROUND OVERRIDE: Use a minimal professional studio backdrop with controlled soft lighting and no environmental scenery.",
   },
   LABELS: {
-    vi: { auto: "Tự động", preserve: "Giữ nền mẫu", transparent: "Không nền", solid: "Nền đơn sắc", contextual: "Tạo bối cảnh", blurred: "Nền mờ", gradient: "Nền gradient", studio: "Nền studio" },
-    en: { auto: "Automatic", preserve: "Keep sample", transparent: "No background", solid: "Solid color", contextual: "Create context", blurred: "Blurred", gradient: "Gradient", studio: "Studio" },
+    vi: { auto: "Tự động", preserve: "Giữ nền mẫu", transparent: "Không nền", solid: "Nền đơn sắc", white: "Nền trắng", contextual: "Tạo bối cảnh", blurred: "Nền mờ", gradient: "Nền gradient", studio: "Nền studio" },
+    en: { auto: "Automatic", preserve: "Keep sample", transparent: "No background", solid: "Solid color", white: "White", contextual: "Create context", blurred: "Blurred", gradient: "Gradient", studio: "Studio" },
   },
   EXTRACTION_PREFIX: "Background treatment requirement:",
   EXTRACTION_SUFFIX: "Include the observed background treatment in the extracted style when the requirement asks to preserve it.",

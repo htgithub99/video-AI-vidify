@@ -362,6 +362,7 @@ export enum BackgroundMode {
   Preserve = "preserve",
   Transparent = "transparent",
   Solid = "solid",
+  White = "white",
   Contextual = "contextual",
   Blurred = "blurred",
   Gradient = "gradient",
