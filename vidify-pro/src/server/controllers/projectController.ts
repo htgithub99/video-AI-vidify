@@ -45,6 +45,33 @@ export function getSafeFolderName(name: string): string {
   return safeName || COMMON_STRINGS.PROJECT_DEFAULT_NAME;
 }
 
+const getProjectTree = (projects: VideoProject[], rootId: string): VideoProject[] => {
+  const projectIds = new Set<string>([rootId]);
+  let descendantsAdded = true;
+
+  while (descendantsAdded) {
+    descendantsAdded = false;
+    _.forEach(projects, (project) => {
+      if (project.parentId && projectIds.has(project.parentId) && !projectIds.has(project.id)) {
+        projectIds.add(project.id);
+        descendantsAdded = true;
+      }
+    });
+  }
+
+  return _.filter(projects, (project) => projectIds.has(project.id));
+};
+
+const deleteProjectAssetDirectory = (assetsRoot: string, folderName: string): void => {
+  const projectDir = path.resolve(assetsRoot, folderName);
+  if (!_.isEqual(path.dirname(projectDir), assetsRoot) || !fs.existsSync(projectDir)) return;
+  try {
+    fs.rmSync(projectDir, { recursive: true, force: true });
+  } catch (error) {
+    appError(ERROR_MESSAGES.DELETE_PROJECT_ASSETS_ERR, error);
+  }
+};
+
 
 function processSceneAssets(scene: any, imageDir: string, audioDir: string, videoDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
@@ -554,29 +581,20 @@ export const deleteProject = async (request: Request, response: Response) => {
   const isVi = !_.eq(request.query.lang, COMMON_STRINGS.EN);
 
   try {
-    const project = await getProjectDetail(id);
-    const deleted = await deleteProjectFromDb(id);
+    const projects = await getProjectsListFromDb() as VideoProject[];
+    const projectTree = getProjectTree(projects, id);
+    const projectsToDelete = _.isEmpty(projectTree)
+      ? _.compact([await getProjectDetail(id)])
+      : projectTree;
+    const deletionResults = await Promise.all(_.map(projectsToDelete, (project) => deleteProjectFromDb(project.id)));
+    const deleted = _.some(deletionResults);
 
     if (deleted) {
-      if (project?.id) {
-        const projectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, project.id);
-        if (fs.existsSync(projectDir)) {
-          try {
-            fs.rmSync(projectDir, { recursive: true, force: true });
-          } catch (err) {
-            appError(ERROR_MESSAGES.DELETE_PROJECT_ASSETS_ERR, err);
-          }
-        }
-      }
-      if (project?.name) {
-        const folderName = getSafeFolderName(project.name);
-        const oldProjectDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName);
-        if (fs.existsSync(oldProjectDir)) {
-          try {
-            fs.rmSync(oldProjectDir, { recursive: true, force: true });
-          } catch (err) { }
-        }
-      }
+      const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
+      _.forEach(projectsToDelete, (project) => {
+        deleteProjectAssetDirectory(assetsRoot, project.id);
+        deleteProjectAssetDirectory(assetsRoot, getSafeFolderName(project.name));
+      });
       response.json({ success: true });
     } else {
       response.status(404).json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
