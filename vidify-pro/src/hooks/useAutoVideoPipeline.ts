@@ -574,6 +574,24 @@ export function useAutoVideoPipeline(
         };
       }
 
+      const hasCachedAlignment = config.resumeMode && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
+      const alignmentRequest = globalAudioBase64 && !hasCachedAlignment
+        ? (() => {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
+          appendLog(T.logAlignmentPlan(_.size(realScenes)));
+          return safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, {
+            audioBase64: globalAudioBase64,
+            scenes: _.map(realScenes as VideoProject["storyboard"], (scene) => ({
+              id: scene.id,
+              script: scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+            })),
+            segment: true,
+            projectId: newProj?.id,
+            projectName: newProj?.name,
+          }, requestSignal);
+        })()
+        : null;
+
       let currentStylePreset = config.stylePreset;
       let currentThumbnailStyle = config.thumbnailStylePreset;
       appendLog(T.logReferenceSummary(
@@ -926,14 +944,13 @@ export function useAutoVideoPipeline(
           }
 
           appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED, SecurityConstants.PLACEHOLDER_0, _.toString(parsedThumbs.length)));
-          for (let tIdx = 0; tIdx < parsedThumbs.length; tIdx++) {
-            const thumb = parsedThumbs[tIdx];
+          thumbnailsList = await Promise.all(_.map(parsedThumbs, async (thumb, tIdx) => {
             appendLog(_.replace(
               _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN, SecurityConstants.PLACEHOLDER_0, _.toString(tIdx + 1)),
               SecurityConstants.PLACEHOLDER_1,
               _.toString(parsedThumbs.length),
             ));
-            let cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
             const thumbPrompt = _.replace(
               _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
               SecurityConstants.PLACEHOLDER_1,
@@ -956,8 +973,8 @@ export function useAutoVideoPipeline(
             } else if (renderThumbRes.data?.fallbackUrl) {
               imgUrl = renderThumbRes.data.fallbackUrl;
             }
-            thumbnailsList.push({ ...thumb, imageUrl: imgUrl });
-          }
+            return { ...thumb, imageUrl: imgUrl };
+          }));
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
         } else {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
@@ -971,27 +988,13 @@ export function useAutoVideoPipeline(
 
       let slicedUpdatedProj: VideoProject = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList };
       if (globalAudioBase64) {
-        const isAligned = config.resumeMode && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
-        if (isAligned) {
+        if (hasCachedAlignment) {
           appendLog(T.logResumeAlignment);
           slicedUpdatedProj = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList, storyboard: realScenes as VideoProject["storyboard"] };
           await syncProject(slicedUpdatedProj);
         } else {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_ALIGN_BACKEND_START);
-          appendLog(T.logAlignmentPlan(_.size(realScenes)));
           try {
-            const alignPayload = {
-              audioBase64: globalAudioBase64,
-              scenes: _.map(realScenes as VideoProject["storyboard"], (sc) => ({
-                id: sc.id,
-                script: sc.script || sc.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-              })),
-              segment: true,
-              projectId: newProj?.id,
-              projectName: newProj?.name,
-            };
-
-            const alignRes = await safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, alignPayload, requestSignal);
+            const alignRes = await alignmentRequest;
             if (!alignRes.success || !alignRes.data || !alignRes.data.success || !_.isArray(alignRes.data.alignments)) {
               throw new Error(alignRes.error || alignRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_ALIGN_FAILED);
             }

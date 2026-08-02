@@ -462,7 +462,7 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
     y1 = y0 + h_crop
     return x0, y0, x1, y1
 
-def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, style_index, effects_str, proc):
+def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, style_index, effects_str, proc, frame_count=None):
     try:
         img = Image.open(image_path)
     except Exception:
@@ -476,7 +476,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
     h_new = float(h_orig * scale_factor)
     
     img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
-    total_frames = int(duration * fps)
+    total_frames = frame_count if frame_count is not None else math.ceil(duration * fps)
     style = style_index % 13
     
     if style == 12:
@@ -870,9 +870,10 @@ def main():
             
             transition_dur = min(0.5, duration / 4.0) if i < len(scenes) - 1 else 0
             
-            total_frames = int(duration * fps)
+            total_frames = math.ceil(duration * fps)
             transition_frames = max(int(transition_dur * fps), 2) if (transition_dur > 0 and i < len(scenes) - 1 and chosen_transitions[i] != FFMPEG_CONSTANTS.TRANS_CUT) else 0
-            actual_duration = (total_frames + transition_frames) / fps
+            content_frames = max(total_frames - transition_frames, 1)
+            actual_duration = total_frames / fps
             
             if is_video:
                 cmd = [ffmpegCmd, "-y", "-i", mediaPath]
@@ -934,7 +935,7 @@ def main():
             else:
                 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-                write_ken_burns_frames_to_pipe(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), proc)
+                write_ken_burns_frames_to_pipe(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), proc, content_frames)
 
                 if transition_dur > 0 and i < len(scenes) - 1:
                     transition_type = chosen_transitions[i]
@@ -995,11 +996,15 @@ def main():
         
         globalAudioPath = config.get("globalAudioPath")
         if globalAudioPath and os.path.exists(globalAudioPath):
+            global_audio_duration = get_media_duration(ffmpegCmd, globalAudioPath)
             mergeAudioCmd = [
                 ffmpegCmd, "-y", "-i", tempFinalPath, "-i", globalAudioPath,
                 "-map", "0:v:0", "-map", "1:a:0",
-                "-c:v", FFMPEG_CONSTANTS.COPY_CODEC, "-c:a", FFMPEG_CONSTANTS.AAC, "-shortest", finalOutputPath
+                "-c:v", FFMPEG_CONSTANTS.COPY_CODEC, "-c:a", FFMPEG_CONSTANTS.AAC,
             ]
+            if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                mergeAudioCmd.extend(["-t", str(global_audio_duration)])
+            mergeAudioCmd.extend(["-shortest", finalOutputPath])
             subprocess.run(mergeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             if os.path.exists(finalOutputPath):
