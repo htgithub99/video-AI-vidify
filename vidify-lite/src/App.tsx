@@ -1,5 +1,6 @@
 import { ErrorMessage } from "./constants";
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { Toaster } from "sonner";
 import Header from "./components/Header.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import ProjectList from "./components/ProjectList.tsx";
@@ -605,6 +606,8 @@ export default function App() {
         theme={theme as any}
         toggleTheme={toggleTheme}
       />
+      
+      <Toaster position="top-right" theme={theme as any} richColors />
 
       <div className="flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955">
         <Sidebar

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import _ from "lodash";
+import { toast } from "sonner";
 import {
   VideoProject,
   ProjectInputType,
@@ -198,7 +199,7 @@ export function useAutoVideoPipeline(
   const startPipeline = async (config: PipelineConfig) => {
     if (processingRef.current) return;
     if (_.isEmpty(_.trim(config.scriptContent))) {
-      alert(T.alertEmptyScript);
+      toast.error(T.alertEmptyScript);
       return;
     }
 
