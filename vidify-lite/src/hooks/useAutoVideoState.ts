@@ -155,15 +155,18 @@ const buildInitialProjectName = () =>
 const applyProjectToState = (
   proj: VideoProject,
   actions: Pick<AutoVideoFormActions,
-    | "setScriptContent" | "setGenre" | "setLanguage" | "setDuration" | "setSplitStrategy"
+    | "setInputType" | "setScriptContent" | "setGenre" | "setLanguage" | "setDuration" | "setSplitStrategy"
     | "setVoiceProvider" | "setVoiceURI" | "setVoiceName"
     | "setGenerationMode" | "setImageGeneratorEngine" | "setGenerateType"
     | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode" | "setStyleTextInImageMode" | "setImageFocusMode" | "setThumbnailImageFocusMode"
     | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode" | "setThumbnailTextInImageMode"
-    | "setReferenceImages" | "setSceneReferenceImages" | "setProjectName"
+    | "setReferenceImages" | "setSceneReferenceImages" | "setThumbnailReferenceImages" | "setProjectName"
   >,
 ) => {
-  if (proj.input?.content) actions.setScriptContent(proj.input.content);
+  if (proj.input) {
+    if (proj.input.type) actions.setInputType(proj.input.type);
+    actions.setScriptContent(_.defaultTo(proj.input.content, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+  }
   if (proj.config) {
     if (proj.config.genre) actions.setGenre(proj.config.genre);
     if (proj.config.language) actions.setLanguage(proj.config.language);
@@ -198,6 +201,7 @@ const applyProjectToState = (
       )),
     );
     actions.setSceneReferenceImages(_.defaultTo(proj.visualConfig.sceneReferenceImages, []));
+    actions.setThumbnailReferenceImages(_.defaultTo(proj.visualConfig.thumbnailReferenceImages, []));
   }
 };
 
@@ -304,10 +308,16 @@ export function useAutoVideoState(
     try {
       const saved = await storageUtils.getAsync(getAutoVideoConfigStorageKey(projectId));
       const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
+      const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
+      const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
+      const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
+      const projectThumbnailReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailReferenceImages, []);
       if (parsed) {
         const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
-        if (parsed.inputType) setInputType(parsed.inputType);
-        if (parsed.scriptContent) setScriptContent(parsed.scriptContent);
+        if (foundProj?.input?.type) setInputType(foundProj.input.type);
+        else if (parsed.inputType) setInputType(parsed.inputType);
+        if (!_.isUndefined(foundProj?.input?.content)) setScriptContent(foundProj.input.content);
+        else if (!_.isUndefined(parsed.scriptContent)) setScriptContent(parsed.scriptContent);
         if (parsed.genre) setGenre(parsed.genre);
         if (parsed.language) setLanguage(parsed.language);
         if (parsed.duration) setDuration(parsed.duration);
@@ -330,9 +340,15 @@ export function useAutoVideoState(
         if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
         if (parsed.thumbnailTextInImageMode) setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
         if (parsed.projectName) setProjectName(parsed.projectName);
-        if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
-        if (parsed.sceneReferenceImages) setSceneReferenceImages(parsed.sceneReferenceImages);
-        if (parsed.thumbnailReferenceImages) setThumbnailReferenceImages(parsed.thumbnailReferenceImages);
+        setReferenceImages(!_.isEmpty(projectStyleReferenceImages)
+          ? projectStyleReferenceImages
+          : _.defaultTo(parsed.referenceImages, []));
+        setSceneReferenceImages(!_.isEmpty(projectSceneReferenceImages)
+          ? projectSceneReferenceImages
+          : _.defaultTo(parsed.sceneReferenceImages, []));
+        setThumbnailReferenceImages(!_.isEmpty(projectThumbnailReferenceImages)
+          ? projectThumbnailReferenceImages
+          : _.defaultTo(parsed.thumbnailReferenceImages, []));
         setResumeMode(usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
           ? parsed.resumeMode
           : AUTO_VIDEO_DEFAULTS.RESUME_MODE);
@@ -340,7 +356,6 @@ export function useAutoVideoState(
           ? parsed.chromeHeadless
           : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
       } else {
-        const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
         if (foundProj) {
           applyProjectToState(foundProj, actions);
           setProjectName(foundProj.name);

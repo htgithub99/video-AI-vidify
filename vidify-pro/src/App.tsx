@@ -11,7 +11,7 @@ import TabContentLoading from "./components/TabContentLoading.tsx";
 import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS } from "./constants";
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS } from "./constants";
 import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
@@ -58,6 +58,19 @@ const isProjectReadyForTab = (
     ]),
   ], Boolean),
 ], Boolean);
+
+const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
+  const response = await fetch(API_ROUTES.PROJECTS, {
+    method: HTTP_METHODS.POST,
+    headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+    body: jsonUtils.safeStringify(project),
+    signal: AbortSignal.timeout(PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
+  const savedProject = jsonUtils.safeParse<VideoProject>(await response.text(), null);
+  if (!savedProject) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
+  return savedProject;
+};
 
 export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
@@ -113,6 +126,7 @@ export default function App() {
         }
       });
     };
+
   }, []);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
@@ -476,36 +490,15 @@ export default function App() {
     };
 
     try {
-      const [resParent, resStudio, resAuto] = await Promise.all([
-        fetch(API_ROUTES.PROJECTS, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(parentProject),
-        }),
-        fetch(API_ROUTES.PROJECTS, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(studioChildProject),
-        }),
-        fetch(API_ROUTES.PROJECTS, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(autoChildProject),
-        })
-      ]);
+      const parentData = await createProjectRecord(parentProject);
+      const studioData = await createProjectRecord(studioChildProject);
+      const autoData = await createProjectRecord(autoChildProject);
 
-      if (resParent.ok && resStudio.ok && resAuto.ok) {
-        const parentData = jsonUtils.safeParse<VideoProject>(await resParent.text(), null);
-        const studioData = jsonUtils.safeParse<VideoProject>(await resStudio.text(), null);
-        const autoData = jsonUtils.safeParse<VideoProject>(await resAuto.text(), null);
-
-        if (parentData && studioData && autoData) {
-          setProjects((prev) => [...prev, parentData, studioData, autoData]);
-          setSelectedProjectId(parentData.id);
-        }
-      }
+      setProjects((prev) => [...prev, parentData, studioData, autoData]);
+      setSelectedProjectId(parentData.id);
     } catch (e) {
       appError(ERROR_MESSAGES.CREATING_PROJECT, e);
+      throw e;
     }
   };
 

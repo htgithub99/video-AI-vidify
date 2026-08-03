@@ -453,12 +453,12 @@ migrateJsonToSqlite().catch((error) => {
 });
 
 const repairOrphanedAutoProjects = async (projects: VideoProject[]): Promise<boolean> => {
+  let repaired = false;
+
   const rootProjectsByName = _.keyBy(
     _.filter(projects, (project) => _.isEmpty(project.parentId) && !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)),
     (project) => _.trim(project.name),
   );
-  let repaired = false;
-
   for (const project of projects) {
     if (!_.isEmpty(project.parentId) || !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) continue;
 
