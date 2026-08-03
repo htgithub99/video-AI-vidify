@@ -263,7 +263,7 @@ export function useAutoVideoState(
   const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
   const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
   const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
-  const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
+  const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   const actions: AutoVideoFormActions = {

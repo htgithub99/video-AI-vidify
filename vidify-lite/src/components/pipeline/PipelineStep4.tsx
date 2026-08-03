@@ -25,7 +25,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewVideoUrl, setPreviewVideoUrl] = useState("");
-  const [ffmpegQuality, setFfmpegQuality] = useState<VideoQuality>(VideoQuality.HIGH);
+  const [ffmpegQuality, setFfmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
   const [projectName, setProjectName] = useState(props.project?.name || "");
   const [inputMode, setInputMode] = useState<ResourceSourceMode>(ResourceSourceMode.CURRENT);
   const [parentFolder, setParentFolder] = useState("");

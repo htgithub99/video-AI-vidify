@@ -88,7 +88,7 @@ export const renderFFmpegVideo = async (
   options: FFmpegRenderOptions,
   onProgress?: (progress: number) => void,
 ): Promise<string> => {
-  const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.LOW);
+  const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.HIGHEST);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
   const globalAudioUrlVal = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_URL);
   const globalAudioBase64Val = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_BASE64);
@@ -105,7 +105,7 @@ export const renderFFmpegVideo = async (
 
   const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
 
-  const resolutionConfig = _.defaultTo(_.get(FFMPEG_RESOLUTIONS, qualityVal), _.get(FFMPEG_RESOLUTIONS, VideoQuality.LOW));
+  const resolutionConfig = _.defaultTo(_.get(FFMPEG_RESOLUTIONS, qualityVal), _.get(FFMPEG_RESOLUTIONS, VideoQuality.HIGHEST));
   const width = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.WIDTH);
   const height = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.HEIGHT);
   const fps = _.get(resolutionConfig, FFMPEG_RENDER_KEYS.FPS);

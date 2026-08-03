@@ -57,6 +57,10 @@ class FFMPEG_CONSTANTS:
     DEFAULT_MAX_WORKERS = 1
     INDEX_PADDING = 3
     DEFAULT_SCENE_DURATION = 5
+    DEFAULT_OUTPUT_WIDTH = 1920
+    DEFAULT_OUTPUT_HEIGHT = 1080
+    DEFAULT_OUTPUT_FPS = 30
+    DEFAULT_OUTPUT_BITRATE = "5000k"
     EMPTY_STRING = ""
     BINARY_WRITE_MODE = "wb"
     KEY_ASSET_TYPE = "assetType"
@@ -937,10 +941,10 @@ def main():
             
         tempDir = config.get("tempDir")
         ffmpegCmd = config.get("ffmpegCmd", "ffmpeg")
-        width = config.get("width", 1280)
-        height = config.get("height", 720)
-        fps = config.get("fps", 30)
-        bitrate = config.get("bitrate", "2500k")
+        width = config.get("width", FFMPEG_CONSTANTS.DEFAULT_OUTPUT_WIDTH)
+        height = config.get("height", FFMPEG_CONSTANTS.DEFAULT_OUTPUT_HEIGHT)
+        fps = config.get("fps", FFMPEG_CONSTANTS.DEFAULT_OUTPUT_FPS)
+        bitrate = config.get("bitrate", FFMPEG_CONSTANTS.DEFAULT_OUTPUT_BITRATE)
         finalOutputPath = config.get("finalOutputPath")
         finalOutputUrl = config.get("finalOutputUrl")
         scenes = config.get("scenes", [])
