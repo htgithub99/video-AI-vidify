@@ -11,6 +11,8 @@ import {
   GenerateType,
   VoiceConfig,
   BackgroundMode,
+  TextInImageMode,
+  ImageFocusMode,
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTab, AppTheme, AppLanguage } from "../constants/enums";
@@ -76,8 +78,8 @@ export default function AutoVideoGenerator({
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, isVoiceDialogOpen,
     generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
-    aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, referenceImages, sceneReferenceImages,
-    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
+    aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages,
+    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
     projectName, resumeMode, showAdvancedImageSettings,
     rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
     hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
@@ -89,9 +91,9 @@ export default function AutoVideoGenerator({
     setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy,
     setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
     setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
-    setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode,
+    setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode,
     setReferenceImages, setSceneReferenceImages,
-    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailReferenceImages,
+    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setThumbnailReferenceImages,
     setProjectName, setResumeMode, setShowAdvancedImageSettings,
   } = actions;
 
@@ -146,9 +148,13 @@ export default function AutoVideoGenerator({
         [REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY]: aspectRatio,
         [REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY]: stylePreset,
         [REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY]: styleBackgroundMode,
+        [REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY]: styleTextInImageMode,
+        [REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY]: imageFocusMode,
         [REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY]: thumbnailCount,
         [REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY]: thumbnailStylePreset,
         [REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY]: thumbnailBackgroundMode,
+        [REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY]: thumbnailTextInImageMode,
+        [REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY]: thumbnailImageFocusMode,
       },
     };
     try {
@@ -187,10 +193,14 @@ export default function AutoVideoGenerator({
     applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) => setGenerateType(v as GenerateType));
     applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) => setStylePreset(v as string));
     applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) => setStyleBackgroundMode(v as BackgroundMode));
+    applyIfExists(REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY, (v) => setStyleTextInImageMode(v as TextInImageMode));
+    applyIfExists(REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY, (v) => setImageFocusMode(v as ImageFocusMode));
     applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) => setMaxVideoScenes(v as number));
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
     applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(v as BackgroundMode));
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(v as TextInImageMode));
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) => setThumbnailImageFocusMode(v as ImageFocusMode));
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
   };
@@ -232,9 +242,9 @@ export default function AutoVideoGenerator({
       voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
       generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
       aspectRatio, promptInputMethod, sampleCount, videoDuration,
-      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode,
+      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode,
       referenceImages, sceneReferenceImages, characterImages,
-      thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
+      thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
       projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
@@ -251,14 +261,42 @@ export default function AutoVideoGenerator({
       : _.isEqual(target, REGENERATION_TARGET.IMAGES)
         ? [PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS]
         : [PROJECT_ASSET_GROUP.VIDEOS];
+
     const responses = await Promise.all(_.map(groups, (group) => fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
       method: HTTP_METHODS.DELETE,
       headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
     })));
+
     if (_.some(responses, (response) => !response.ok)) {
       toast.error(regenerationTexts.failed);
       return;
     }
+
+    const updatedProject = _.cloneDeep(project);
+    let changed = false;
+    const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
+    const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
+    const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
+
+    if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
+      _.set(updatedProject.voiceConfig, "audioBase64", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      _.set(updatedProject.voiceConfig, "audioUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      changed = true;
+    } else if ((isImages || isVideos) && !_.isEmpty(updatedProject.storyboard)) {
+      _.forEach(updatedProject.storyboard, (scene) => {
+        const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
+        if ((isImages && !isVideoScene) || (isVideos && isVideoScene)) {
+          _.set(scene, "assetUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+          changed = true;
+        }
+      });
+    }
+
+    if (changed) {
+      pipelineActions.setActiveCreatedProject(updatedProject);
+      await onUpdateProject(updatedProject, true);
+    }
+
     pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     handleStartAutoGenerate({
       resumeMode: true,
@@ -418,6 +456,8 @@ export default function AutoVideoGenerator({
                 setBackgroundMode={setStyleBackgroundMode}
                 textInImageMode={styleTextInImageMode}
                 setTextInImageMode={setStyleTextInImageMode}
+                imageFocusMode={imageFocusMode}
+                setImageFocusMode={setImageFocusMode}
                 language={currentLang as AppLanguage}
                 T={T}
               />
@@ -447,6 +487,8 @@ export default function AutoVideoGenerator({
               setBackgroundMode={setThumbnailBackgroundMode}
               textInImageMode={thumbnailTextInImageMode}
               setTextInImageMode={setThumbnailTextInImageMode}
+              imageFocusMode={thumbnailImageFocusMode}
+              setImageFocusMode={setThumbnailImageFocusMode}
               language={currentLang as AppLanguage}
               T={T}
             />

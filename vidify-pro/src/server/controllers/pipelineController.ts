@@ -9,12 +9,13 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
-import { getProjectDetailFromDb } from "../utils/db.js";
+import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
+import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -80,6 +81,7 @@ import {
   UltraStreamLogType,
   DEFAULT_SCENE_CAMERA_MOTION,
   DEFAULT_SCENE_EFFECTS,
+  DEFAULT_SCENE_LIGHTING_EFFECT,
   DEFAULT_SCENE_TRANSITION,
   DEFAULT_SCENE_PROMPT_PREFIX,
   stylePresetsKeywords,
@@ -253,7 +255,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
 
 router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { storyboard, newStyle, aspectRatio } = req.body;
+  const { storyboard, newStyle, aspectRatio, visualConfig } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
@@ -285,7 +287,10 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, isVi);
+      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
+      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
+      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
+      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
 
       try {
         const response = await generateContentWithRetry({
@@ -363,7 +368,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi);
+      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
+      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
+      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
+      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi, backgroundDirective, textDirective, focusDirective);
 
       try {
         const response = await generateContentWithRetry({
@@ -407,7 +415,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
 
 router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { thumbnails, newStyle, aspectRatio } = req.body;
+  const { thumbnails, newStyle, aspectRatio, visualConfig } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
@@ -425,7 +433,10 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi);
+      const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
+      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
+      const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
+      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
 
       try {
         const response = await generateContentWithRetry({
@@ -460,7 +471,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
 });
 router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { thumbnails, characters, aspectRatio } = req.body;
+  const { thumbnails, characters, aspectRatio, visualConfig } = req.body;
   if (!thumbnails || !_.isArray(thumbnails)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
   }
@@ -480,7 +491,10 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
 
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
-      const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine);
+      const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
+      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
+      const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
+      const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
 
       try {
         const response = await generateContentWithRetry({
@@ -601,7 +615,7 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
 
 router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { storyboard, characterPrompt, characters, aspectRatio } = req.body;
+  const { storyboard, characterPrompt, characters, aspectRatio, visualConfig } = req.body;
   if (!storyboard || !_.isArray(storyboard)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
   }
@@ -639,7 +653,10 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
-      const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine);
+      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
+      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
+      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
+      const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
 
       try {
         const response = await generateContentWithRetry({
@@ -1264,7 +1281,10 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           isVi,
           genre,
           genreVisualGuideline,
-          config?.aspectRatio || AspectRatio.SixteenNine
+          config?.aspectRatio || AspectRatio.SixteenNine,
+          config?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[config.styleBackgroundMode] : undefined,
+          config?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[config.styleTextInImageMode] : undefined,
+          config?.imageFocusMode ? resolveImageFocusDirective(config.imageFocusMode, config.styleBackgroundMode) : undefined,
         );
 
         try {
@@ -1305,6 +1325,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           prompt: details.prompt || `${DEFAULT_SCENE_PROMPT_PREFIX}${scene.script}. --ar ${config?.aspectRatio || AspectRatio.SixteenNine}`,
           cameraMotion: details.cameraMotion || DEFAULT_SCENE_CAMERA_MOTION,
           effects: details.effects || DEFAULT_SCENE_EFFECTS,
+          lightingEffect: details.lightingEffect || DEFAULT_SCENE_LIGHTING_EFFECT,
           transition: details.transition || DEFAULT_SCENE_TRANSITION,
         };
       });
@@ -2637,7 +2658,7 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   }
 });
 
-router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), (req: Request, res: Response) => {
+router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   const { projectId, group } = req.params;
   const allowedGroups = _.values(PROJECT_ASSET_GROUP);
   if (!_.includes(allowedGroups, group)) {
@@ -2654,6 +2675,31 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), (req: Requ
   try {
     fs.rmSync(assetDirectory, { recursive: true, force: true });
     fs.mkdirSync(assetDirectory, { recursive: true });
+
+    const project = await getProjectDetailFromDb(projectId);
+    if (project) {
+      let changed = false;
+      const isImagesOrVideos = _.includes([PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS], group);
+
+      if (isImagesOrVideos && !_.isEmpty(project.storyboard)) {
+        _.forEach(project.storyboard, (scene) => {
+          const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
+          if ((_.isEqual(group, PROJECT_ASSET_GROUP.IMAGES) && !isVideoScene) || (_.isEqual(group, PROJECT_ASSET_GROUP.VIDEOS) && isVideoScene)) {
+            _.set(scene, "assetUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            changed = true;
+          }
+        });
+      } else if (_.isEqual(group, PROJECT_ASSET_GROUP.VOICES) && !_.isEmpty(project.voiceConfig)) {
+        _.set(project.voiceConfig, "audioBase64", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        _.set(project.voiceConfig, "audioUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        changed = true;
+      }
+
+      if (changed) {
+        await saveProjectDetailToDb(project);
+      }
+    }
+
     return res.json({ success: true });
   } catch (error: any) {
     logger.error(getBackendMsg("SQLITE_DELETE_ERR", true), error);

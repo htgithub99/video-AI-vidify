@@ -49,6 +49,7 @@ export interface FFmpegRenderOptions {
     assetType?: GenerateType.Image | GenerateType.Video;
     cameraMotion?: string;
     effects?: string;
+    lightingEffect?: string;
     transition?: string;
   }>;
   quality?: VideoQuality;

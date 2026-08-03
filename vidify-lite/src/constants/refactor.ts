@@ -176,6 +176,8 @@ export const REFACTOR_CONSTANTS = {
   AVG_STYLE_PRESET_KEY: 'stylePreset',
   STYLE_BACKGROUND_MODE_KEY: 'styleBackgroundMode',
   STYLE_TEXT_IN_IMAGE_MODE_KEY: 'styleTextInImageMode',
+  IMAGE_FOCUS_MODE_KEY: 'imageFocusMode',
+  THUMBNAIL_IMAGE_FOCUS_MODE_KEY: 'thumbnailImageFocusMode',
   AVG_STYLE_KEY: 'style',
   AVG_THUMBNAIL_COUNT_KEY: 'thumbnailCount',
   AVG_THUMBNAIL_STYLE_PRESET_KEY: 'thumbnailStylePreset',

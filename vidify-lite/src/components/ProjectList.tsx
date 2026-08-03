@@ -310,9 +310,9 @@ export default function ProjectList({
                     voiceCount += _.sumBy(sb, (scene) => (scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING).length);
                   });
 
-                  const usedVideos = _.max([_.get(licenseInfo, 'usage.video', 0), videosCount]) as number;
-                  const usedImages = _.max([_.get(licenseInfo, 'usage.image', 0), imagesCount]) as number;
-                  const usedVoice = _.max([_.get(licenseInfo, 'usage.voice', 0), voiceCount]) as number;
+                  const usedVideos = videosCount;
+                  const usedImages = imagesCount;
+                  const usedVoice = voiceCount;
 
                   return (
                     <React.Fragment key={project.id}>
@@ -322,7 +322,8 @@ export default function ProjectList({
                       >
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-4">
-                            {hasChildren && (
+                            <div className="w-6 shrink-0 flex items-center justify-center">
+                              {hasChildren && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -336,7 +337,8 @@ export default function ProjectList({
                                   <ChevronRight className="w-4 h-4 text-slate-400" />
                                 )}
                               </button>
-                            )}
+                              )}
+                            </div>
                             <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
                               <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
                               {project.config.genre && (

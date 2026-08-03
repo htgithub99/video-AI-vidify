@@ -1,19 +1,12 @@
 import _ from "lodash";
-import { BackgroundMode, TextInImageMode, VideoProject, StoryboardScene, VoiceConfig } from "../types";
+import { VideoProject, StoryboardScene, VoiceConfig } from "../types";
 import { COMMON_STRINGS, ERROR_MESSAGES, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../constants";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constants/config";
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
 
-export const applyBackgroundMode = (prompt: string, mode: BackgroundMode): string => (
-  _.join([prompt, BACKGROUND_MODE_CONFIG.DIRECTIVES[mode]], REFACTOR_CONSTANTS.AVG_BLANK)
-);
-
-export const applyTextInImageMode = (prompt: string, mode: TextInImageMode): string => {
-  const directive = TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES[mode];
-  return _.isEmpty(directive) ? prompt : _.join([prompt, directive], REFACTOR_CONSTANTS.AVG_BLANK);
-};
+export { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../lib/imagePromptDirectives";
 
 export interface CachedVoiceAudio {
   audioBase64: string;
@@ -162,6 +155,7 @@ export const getPipelineInvalidationState = (
     styleTextInImageMode: config.styleTextInImageMode,
     thumbnailBackgroundMode: config.thumbnailBackgroundMode,
     thumbnailTextInImageMode: config.thumbnailTextInImageMode,
+    thumbnailImageFocusMode: config.thumbnailImageFocusMode,
   };
   const inputChanged = !_.isEqual(project.input?.type, config.inputType)
     || !_.isEqual(_.trim(project.input?.content), _.trim(config.scriptContent));
@@ -201,6 +195,7 @@ export const getPipelineInvalidationState = (
       || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount)
       || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode)
       || !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode)
+      || !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode)
       || !_.isEqual(project.visualConfig?.thumbnailReferencePrompt, config.thumbnailStylePreset),
   };
 };

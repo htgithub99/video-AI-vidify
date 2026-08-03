@@ -61,7 +61,7 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
   VISUAL_CONFIG_KEYS: [
     "generationMode", "imageGeneratorEngine", "generateType", "maxVideoScenes",
     "aspectRatio", "style", "chromeHeadless", "videoDuration",
-    "styleBackgroundMode", "styleTextInImageMode",
+    "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode",
   ],
 } as const;
 
@@ -100,6 +100,27 @@ export const TEXT_IN_IMAGE_MODE_CONFIG = {
   LABELS: {
     vi: { auto: "Tự động", no_text: "Không có chữ", minimal: "Ít chữ", moderate: "Chữ vừa", abundant: "Nhiều chữ" },
     en: { auto: "Auto", no_text: "No text", minimal: "Minimal text", moderate: "Moderate text", abundant: "Abundant text" },
+  },
+} as const;
+
+export const IMAGE_FOCUS_MODE_CONFIG = {
+  DEFAULT: "default",
+  OPTIONS: ["default", "portrait", "action", "landscape", "conceptual"],
+  DIRECTIVES: {
+    default: "",
+    portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot with clear facial features and natural separation from the supporting background.",
+    action: "COMPOSITION PRIORITY: Show exactly one primary subject performing one clear action in one direction. Use a dynamic but readable pose while preserving anatomy and identity.",
+    landscape: "CRITICAL OVERRIDE: Use a wide-angle, epic cinematic shot. Emphasize the environment, scenery, and grand scale over specific subjects.",
+    conceptual: "COMPOSITION PRIORITY: Use artistic composition, mood, lighting, and physically visible symbolic objects. Express the concept through tangible, renderable elements rather than invisible or abstract ideas.",
+  },
+  BACKGROUND_CONSTRAINED_MODES: ["preserve", "transparent", "solid", "white", "gradient", "studio"],
+  BACKGROUND_CONSTRAINED_DIRECTIVES: {
+    portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot while strictly preserving the separately requested background treatment. Do not introduce blur, scenery, or environmental depth that conflicts with it.",
+    landscape: "COMPOSITION PRIORITY: Use a wide, balanced composition while strictly preserving the separately requested background treatment. Emphasize spatial arrangement without inventing scenery or environmental objects.",
+  },
+  LABELS: {
+    vi: { default: "Tự động", portrait: "Chủ thể nổi bật", action: "Hành động", landscape: "Toàn cảnh", conceptual: "Nghệ thuật" },
+    en: { default: "Auto", portrait: "Subject Focus", action: "Action", landscape: "Wide Scene", conceptual: "Artistic" },
   },
 } as const;
 
@@ -463,6 +484,11 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_THUMB_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách ảnh bìa thành công: {0}",
   LOG_THUMB_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả ảnh bìa...",
   LOG_THUMB_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách ảnh bìa thành công.",
+  LOG_THUMBNAILS_BATCH_START: "Khởi tạo tiến trình tạo ảnh bìa hàng loạt (Batch Thumbnails)...",
+  LOG_THUMBNAILS_BATCH_SUCCESS: "Hoàn thành ảnh bìa: {0}/{1}",
+  LOG_THUMBNAILS_BATCH_FALLBACK_START: "Cảnh báo: Tạo ảnh bìa batch lỗi, chuyển sang fallback: {0}",
+  LOG_THUMBNAILS_BATCH_FALLBACK_ITEM: "Đang xử lý lại ảnh bìa {0}/{1}...",
+  LOG_THUMBNAILS_WARNING_SINGLE: "Cảnh báo: Lỗi khi tạo ảnh bìa thứ {0}",
 } as const;
 
 export const RENDER_LOGIC_CONSTANTS = {

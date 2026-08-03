@@ -7,7 +7,9 @@ import { REFACTOR_CONSTANTS } from "../../constants";
 import { BackgroundMode, TextInImageMode } from "../../types";
 import { BackgroundModeSelect } from "./BackgroundModeSelect";
 import { TextInImageModeSelect } from "./TextInImageModeSelect";
+import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage } from "../../constants/enums";
+import { ImageFocusMode } from "../../types";
 
 interface AdvancedImageSettingsSectionProps {
   showAdvancedImageSettings: boolean;
@@ -20,6 +22,8 @@ interface AdvancedImageSettingsSectionProps {
   setBackgroundMode: (value: BackgroundMode) => void;
   textInImageMode: TextInImageMode;
   setTextInImageMode: (value: TextInImageMode) => void;
+  imageFocusMode: ImageFocusMode;
+  setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
   T: any;
 }
@@ -35,6 +39,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   setBackgroundMode,
   textInImageMode,
   setTextInImageMode,
+  imageFocusMode,
+  setImageFocusMode,
   language,
   T,
 }) => {
@@ -59,9 +65,10 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
         </span>
       </Button>
       {showAdvancedImageSettings && (
-        <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "sm:grid-cols-4")}>
+        <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "sm:grid-cols-5")}>
           <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.styleBgModeLabel} />
           <TextInImageModeSelect value={textInImageMode} onChange={setTextInImageMode} language={language} label={T.styleTextModeLabel} />
+          <ImageFocusModeSelect value={imageFocusMode} onChange={setImageFocusMode} language={language} label={T.imageFocusModeLabel} />
           {[
             {
               label: T.lblChromeHeadless,

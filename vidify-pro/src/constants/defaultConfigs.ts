@@ -100,6 +100,7 @@ export const VOICE_MODIFIERS: Record<string, { speed: number; pitch: number }> =
 
 export const DEFAULT_SCENE_CAMERA_MOTION = "Zoom In";
 export const DEFAULT_SCENE_EFFECTS = "Soft natural lighting";
+export const DEFAULT_SCENE_LIGHTING_EFFECT = "natural_light";
 export const DEFAULT_SCENE_TRANSITION = "None";
 export const DEFAULT_SCENE_PROMPT_PREFIX = "A clean cinematic visual illustrating: ";
 

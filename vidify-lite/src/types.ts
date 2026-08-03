@@ -163,6 +163,8 @@ export interface VisualConfig {
   thumbnailBackgroundMode?: BackgroundMode;
   styleTextInImageMode?: TextInImageMode;
   thumbnailTextInImageMode?: TextInImageMode;
+  imageFocusMode?: ImageFocusMode;
+  thumbnailImageFocusMode?: ImageFocusMode;
   aspectRatio?: string;
   imageQuality?: string;
   characterConsistencyLevel?: string;
@@ -226,6 +228,7 @@ export interface StoryboardScene {
   audioBase64?: string;
   cameraMotion: string;
   effects?: string;
+  lightingEffect?: string;
   transition?: string;
 }
 
@@ -376,6 +379,14 @@ export enum TextInImageMode {
   Minimal = "minimal",
   Moderate = "moderate",
   Abundant = "abundant",
+}
+
+export enum ImageFocusMode {
+  Default = "default",
+  Portrait = "portrait",
+  Action = "action",
+  Landscape = "landscape",
+  Conceptual = "conceptual",
 }
 
 export enum GeminiChatSpeed {

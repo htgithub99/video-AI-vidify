@@ -1,4 +1,4 @@
-import { ErrorMessage, supportedTypes, RENDER_LOGIC_CONSTANTS } from "../constants/index.js";
+import { AI_MOTION_EFFECT_IDS, ErrorMessage, supportedTypes, RENDER_LOGIC_CONSTANTS } from "../constants/index.js";
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
@@ -8,8 +8,6 @@ const easeCubicInOut = (t: number): number => {
   if (t < 0.5) return 4.0 * t * t * t;
   return 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
 };
-
-const easeQuartOut = (t: number): number => 1.0 - Math.pow(1.0 - t, 4);
 
 const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
 
@@ -21,27 +19,27 @@ type MotionResult = { scale: number; dx: number; dy: number };
 const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
   [RENDER_LOGIC_CONSTANTS.ZOOM_IN]: (p) => {
     const t = easeCubicInOut(p);
-    return { scale: 1.0 + 0.20 * t, dx: 0, dy: 0 };
+    return { scale: 1.0 + 0.06 * t, dx: 0, dy: 0 };
   },
   [RENDER_LOGIC_CONSTANTS.ZOOM_OUT]: (p) => {
-    const t = easeQuartOut(p);
-    return { scale: 1.20 - 0.20 * t, dx: 0, dy: 0 };
+    const t = easeSineInOut(p);
+    return { scale: 1.06 - 0.06 * t, dx: 0, dy: 0 };
   },
   [RENDER_LOGIC_CONSTANTS.PAN_LEFT]: (p) => {
     const t = easeSineInOut(p);
-    return { scale: 1.08, dx: -80 * t, dy: 0 };
+    return { scale: 1.08, dx: 25.6 - 51.2 * t, dy: 0 };
   },
   [RENDER_LOGIC_CONSTANTS.PAN_RIGHT]: (p) => {
     const t = easeSineInOut(p);
-    return { scale: 1.08, dx: 80 * t, dy: 0 };
+    return { scale: 1.08, dx: -25.6 + 51.2 * t, dy: 0 };
   },
   [RENDER_LOGIC_CONSTANTS.PAN_UP]: (p) => {
     const t = easeCubicInOut(p);
-    return { scale: 1.08, dx: 0, dy: -60 * t };
+    return { scale: 1.08, dx: 0, dy: 14.4 - 28.8 * t };
   },
   [RENDER_LOGIC_CONSTANTS.PAN_DOWN]: (p) => {
     const t = easeCubicInOut(p);
-    return { scale: 1.08, dx: 0, dy: 60 * t };
+    return { scale: 1.08, dx: 0, dy: -14.4 + 28.8 * t };
   },
   [RENDER_LOGIC_CONSTANTS.DRIFT]: (p) => {
     const t = easeSineInOut(p);
@@ -62,24 +60,75 @@ const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
   [RENDER_LOGIC_CONSTANTS.PUSH_IN]: (p) => {
     const t = easeExpoOut(p);
     return {
-      scale: 1.0 + 0.28 * t,
-      dx: 20 * t,
-      dy: -15 * t,
+      scale: 1.0 + 0.08 * t,
+      dx: 12 * t,
+      dy: -8 * t,
     };
   },
   [RENDER_LOGIC_CONSTANTS.SLOW_REVEAL]: (p) => {
     const t = easeCubicInOut(p);
     return {
-      scale: 1.18 - 0.14 * t,
-      dx: -30 * t,
-      dy: 40 * t,
+      scale: 1.08 - 0.06 * t,
+      dx: -18 * t,
+      dy: 20 * t,
     };
   },
   [RENDER_LOGIC_CONSTANTS.MOTION_STATIC]: () => ({ scale: 1.0, dx: 0, dy: 0 }),
+  [AI_MOTION_EFFECT_IDS[6]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.07, dx: 22 - 44 * t, dy: 12 - 24 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[7]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.07, dx: -22 + 44 * t, dy: 12 - 24 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[8]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.07, dx: 22 - 44 * t, dy: -12 + 24 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[9]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.07, dx: -22 + 44 * t, dy: -12 + 24 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[13]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.06 - 0.045 * t, dx: 6 - 6 * t, dy: -4 + 4 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[15]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.045 + 0.012 * Math.sin(t * Math.PI), dx: 12 * Math.sin(t * Math.PI * 1.2), dy: 7 * Math.cos(t * Math.PI) };
+  },
+  [AI_MOTION_EFFECT_IDS[16]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.055, dx: 8 * Math.sin(t * Math.PI * 2), dy: 5 * Math.sin(t * Math.PI * 1.5) };
+  },
+  [AI_MOTION_EFFECT_IDS[17]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.055, dx: 19 - 38 * t, dy: -6 + 12 * t };
+  },
+  [AI_MOTION_EFFECT_IDS[18]]: (p) => {
+    const t = easeSineInOut(p);
+    return { scale: 1.055, dx: -19 + 38 * t, dy: -6 + 12 * t };
+  },
+};
+
+const MOTION_ID_ALIASES: Record<string, string> = {
+  [AI_MOTION_EFFECT_IDS[0]]: RENDER_LOGIC_CONSTANTS.ZOOM_IN,
+  [AI_MOTION_EFFECT_IDS[1]]: RENDER_LOGIC_CONSTANTS.ZOOM_OUT,
+  [AI_MOTION_EFFECT_IDS[2]]: RENDER_LOGIC_CONSTANTS.PAN_LEFT,
+  [AI_MOTION_EFFECT_IDS[3]]: RENDER_LOGIC_CONSTANTS.PAN_RIGHT,
+  [AI_MOTION_EFFECT_IDS[4]]: RENDER_LOGIC_CONSTANTS.PAN_UP,
+  [AI_MOTION_EFFECT_IDS[5]]: RENDER_LOGIC_CONSTANTS.PAN_DOWN,
+  [AI_MOTION_EFFECT_IDS[10]]: RENDER_LOGIC_CONSTANTS.DRIFT,
+  [AI_MOTION_EFFECT_IDS[11]]: RENDER_LOGIC_CONSTANTS.CINEMATIC_ARC,
+  [AI_MOTION_EFFECT_IDS[12]]: RENDER_LOGIC_CONSTANTS.PUSH_IN,
+  [AI_MOTION_EFFECT_IDS[14]]: RENDER_LOGIC_CONSTANTS.SLOW_REVEAL,
+  [AI_MOTION_EFFECT_IDS[19]]: RENDER_LOGIC_CONSTANTS.MOTION_STATIC,
 };
 
 const getMotionForScene = (cameraMotion: string, progress: number): MotionResult => {
-  const motionFn = MOTION_STYLES[cameraMotion];
+  const motionKey = _.defaultTo(_.get(MOTION_ID_ALIASES, cameraMotion), cameraMotion);
+  const motionFn = _.get(MOTION_STYLES, motionKey);
   if (motionFn) return motionFn(progress);
   return MOTION_STYLES[RENDER_LOGIC_CONSTANTS.MOTION_STATIC](progress);
 };
@@ -136,7 +185,10 @@ export const drawSceneFrameToContext = (
   const progress =
     _.min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
 
-  const motion = getMotionForScene(sc.cameraMotion || RENDER_LOGIC_CONSTANTS.MOTION_STATIC, progress);
+  const comfortableMotion = _.lt(totalSceneDuration, 2.5)
+    ? RENDER_LOGIC_CONSTANTS.MOTION_STATIC
+    : _.defaultTo(sc.cameraMotion, RENDER_LOGIC_CONSTANTS.MOTION_STATIC);
+  const motion = getMotionForScene(comfortableMotion, progress);
   const { scale, dx, dy } = motion;
 
   ctx.save();

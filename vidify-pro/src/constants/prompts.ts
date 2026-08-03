@@ -1,12 +1,45 @@
+import _ from "lodash";
 import { AspectRatio } from "../types.js";
 import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy } from "./enums.js";
+import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
 
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Explicitly append the keywords "borderless, no frame, no borders" at the very end of every image prompt you generate.`;
 
 export const getGeneratedMediaLanguageDirective = (isVi: boolean): string => isVi
   ? `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Keep the technical image/video prompt in English, but every human-readable word rendered inside the scene (signs, screens, labels, documents, captions, UI, posters) MUST be natural Vietnamese with correct diacritics. If generated media contains speech, dialogue, narration, singing, lip-sync, or any audible human voice, it MUST be spoken exclusively in Vietnamese with natural Vietnamese pronunciation. Never render or speak English unless the scene script explicitly quotes an English term. Do not invent visible text or dialogue when the script does not require it.`
   : `CRITICAL GENERATED-MEDIA LANGUAGE RULE: Every human-readable word rendered inside the scene and every spoken or lip-synced line in generated media MUST be in natural English. Do not invent visible text or dialogue when the script does not require it.`;
+
+const PROMPT_DIRECTIVE_LABELS = {
+  background: "BACKGROUND POLICY",
+  text: "TEXT-IN-IMAGE POLICY",
+  focus: "IMAGE FOCUS & COMPOSITION POLICY",
+} as const;
+
+const PROMPT_DIRECTIVE_INTEGRATION_RULES = `[DIRECTIVE PRIORITY & INTEGRATION RULES]
+1. Preserve the literal scene meaning, subject identity and count, required action, and continuity before adding visual embellishment.
+2. The BACKGROUND POLICY controls whether scenery, environmental detail, background blur, or depth-of-field separation may exist.
+3. The TEXT-IN-IMAGE POLICY exclusively controls visible typography. Never invent visible text when it is not required.
+4. The IMAGE FOCUS & COMPOSITION POLICY controls subject prominence, shot size, balance, and action readability only. It must not invent scenery, extra subjects, extra actions, or invisible/abstract content.
+5. Style, camera, lens, lighting, and atmosphere are lower priority and must adapt to every active policy above.
+6. Remove or rewrite any wording from the source prompt that conflicts with a higher-priority active policy. Integrate each active policy naturally and exactly once; do not paste or repeat directive text verbatim.
+7. Normalize the final image prompt to contain exactly one aspect-ratio parameter, and place that --ar parameter at the absolute end.`;
+
+const getPromptDirectiveSection = (
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
+): string => {
+  const directives = _.compact([
+    backgroundDirective && `[${PROMPT_DIRECTIVE_LABELS.background}]\n${backgroundDirective}`,
+    textDirective && `[${PROMPT_DIRECTIVE_LABELS.text}]\n${textDirective}`,
+    focusDirective && `[${PROMPT_DIRECTIVE_LABELS.focus}]\n${focusDirective}`,
+  ]);
+
+  return _.isEmpty(directives)
+    ? ""
+    : `${_.join(directives, "\n")}\n${PROMPT_DIRECTIVE_INTEGRATION_RULES}`;
+};
 
 export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To translate narration/storyline into visual prompts):
 1. NARRATION ALIGNMENT PIPELINE (CRITICAL):
@@ -51,7 +84,7 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
  8. NO FRAMES OR BORDERS: The prompt must yield full-bleed images.
  9. CHARACTER DIVERSITY (MANDATORY): Characters within the same scene must not look identical. Create reasonable distinctions in face, age, body build, hair, facial hair, clothing, and gear (appropriate to the context) while remaining context-appropriate.
  10. CLEARLY DEFINE COMBATANTS IN CONFLICT SCENES (MANDATORY): When a scene involves battle, combat, or conflict, you MUST clearly define the opposing sides so that the image generator creates the correct characters, clothing, uniforms, armor, weapons, formations, and settings for each respective side.
- 11. MANDATORY LANDSCAPE EXTRACTION & ENVIRONMENT DETAIL (100% REQUIREMENT): Every single image prompt must strictly incorporate landscape extraction, ensuring the environment, terrain, background, weather, lighting, and overall setting are fully described in detail, even for close-ups. Never omit the environmental context.
+ 11. CONDITIONAL ENVIRONMENT DETAIL: Describe the environment, terrain, weather, lighting, and overall setting fully only when the active background policy permits scenery. For transparent, white, solid, studio, gradient, or preserved-background policies, obey that policy and do not invent or restore environmental scenery, blur, or depth of field.
  12. HISTORICAL CONTEXT ENRICHMENT & ACCURACY (MANDATORY): For historical themes, you MUST explicitly specify the historical context, such as the conflict/war, the era or specific year, the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures. Costumes, weapons, flags, insignia, vehicles, architecture, and cultural details must strictly adhere to the historical facts of the specified context, with absolutely no mixing of periods or countries.
  13. CHARACTER REFERENCE & CONSISTENCY (MANDATORY): Every single scene containing a character MUST include their detailed character description and strictly apply Character Reference. If a character has appeared in previous scenes, you MUST maintain consistent identifying features including face, age, gender, body build, hair style, clothing, accessories, and other key identifying traits. Only modify these traits when explicitly required by the narrative progression or a clear scene transition.
  14. SCENE-TO-SCENE VISUAL CONTINUITY & PROGRESSION: Successive scenes must maintain consistency in characters, environment, time of day, weather, lighting, clothing, environmental damage, and key props. Only change these elements during explicit scene transitions or logical narrative progression.
@@ -69,7 +102,7 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
  26. CROWD ANATOMY DEFECT PREVENTION (LARGE-SCALE SCENES): In massive scene battles or large crowds (e.g., "hundreds of soldiers clashing", "thousands of tents"), establish a clear foreground focus on 1 to 3 distinct, well-drawn characters or key objects. Describe the vast crowd/army in the background using terms like "silhouettes in the distant hazy dust", "indistinct figures obscured by gunpowder smoke", or "soft-focus background" to prevent mutated limbs or facial distortions.
  27. AVOID COMPLEX DIVERGENT OR MULTI-DIRECTIONAL ACTIONS (CRITICAL): Do not ask the image generator to depict multiple characters or groups performing different or opposite actions simultaneously (e.g., "two groups of soldiers riding away from each other in opposite directions"). AI generators struggle with dual-subject focus and will merge the directions. Instead, focus the prompt on one primary direction of movement or a single focal group's perspective (e.g., "A group of soldiers riding away down a ravine, seen from the perspective of another group stationary on a hill").`;
 
-export const getSceneStyleRewritePrompt = (promptText: string, newStyle: string, isThumbnail: boolean = false, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an elite AI Image Prompt Designer.
+export const getSceneStyleRewritePrompt = (promptText: string, newStyle: string, isThumbnail: boolean = false, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
 Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it to perfectly align with the new visual style, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -87,11 +120,12 @@ STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural for
 - If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 ${NO_FRAME_RULE}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
-export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false): string => `You are an elite AI Image Prompt Designer.
+export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
 Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
@@ -107,6 +141,7 @@ STRUCTURE MANDATE: The rewritten prompts MUST strictly follow this structural fo
 - If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${CINEMATIC_PROMPT_RULES}
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 ${NO_FRAME_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
 - ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}"). Every prompt in the JSON array must strictly end with this parameter.
@@ -117,7 +152,7 @@ Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prom
 Input scenes:
 ${chunkJson}`;
 
-export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string, isVi: boolean = false): string => `You are an elite AI Image Prompt Designer.
+export const getOptimizePromptsBatchPrompt = (visualStyle: string, referenceStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, charactersJson?: string, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
 Your task is to analyze, rewrite, and optimize a list of image generation prompts for a video storyboard. You must review the current prompts, correct any style conflicts or formatting issues, clean up redundant keywords, and upgrade them to look highly detailed, cinematic, and visually consistent.
 
 [STYLE & REFERENCE SPECIFICATIONS]
@@ -136,7 +171,7 @@ ${charactersJson ? `- Character Reference Specs:\n${charactersJson}\n` : ""}
 2. STYLE INTEGRITY & RESOLUTION OF CONFLICTS (CRITICAL):
    - You MUST seamlessly apply the target visual style ("${visualStyle}") and reference style/palette ("${referenceStyle}") to every rewritten prompt.
    - RESOLVE STYLE CONFLICTS: Detect and remove any contradictory visual styles. For example, if the overall visual style is an "oil painting" or "watercolor", you MUST NOT use photorealistic buzzwords (e.g. "photorealistic", "hyperrealistic", "realistic 8k photo", "shot on 35mm lens") because painting mediums and photography styles are mutually exclusive. Instead, use artistic descriptors (e.g. "thick impasto texture", "expressive brushstrokes", "rich oil pigments", "textured canvas").
-   - IF the style is "Cinematic" or "Photorealistic", you may use photography specs (e.g., "shot on 35mm lens, photorealistic 8k, shallow depth of field").
+   - IF the style is "Cinematic" or "Photorealistic", you may use compatible photography specs (e.g., "shot on 35mm lens, photorealistic 8k"). Add depth of field only when the active background policy permits it.
 
 3. PROMPT CLEANUP & REDUNDANCY ELIMINATION:
    - Remove any general instruction phrases or duplicate tags.
@@ -156,6 +191,8 @@ ${charactersJson ? `- Character Reference Specs:\n${charactersJson}\n` : ""}
    - If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 
 7. NO METAPHORICAL OR ABSTRACT CONCEPTS: Translate all emotions, abstract concepts, or symbols into tangible, physically renderable actions, expressions, and objects.
+
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
 ${NO_FRAME_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
@@ -286,6 +323,9 @@ export const getVideoDirectorSceneSplitPrompt = (
   aspectRatio: string = AspectRatio.SixteenNine,
   characterSpecs?: string,
   landscapeSpecs?: string,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
 ): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes and design high-quality, consistent image prompts.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
@@ -354,8 +394,9 @@ Requirements:
     - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
     - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
     - MAP TO CHAPTERS (CRITICAL): Each generated scene must be mapped to a chapter ID from the "Chapters structure context". Set the "chapterId" field of the scene to the corresponding chapter's ID. If a scene represents introductory text (such as the hook, intro, or prologue) before Chapter 1, strictly assign it to the ID of the first chapter in the list.
+    ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
     - ${NO_FRAME_RULE}
-3. Dynamic Motion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static), video effects, and transitions.
+3. Dynamic Motion: Select exact IDs from this catalog. Motion: ${AI_MOTION_EFFECT_IDS.join(", ")}. Visual: ${AI_VISUAL_EFFECT_IDS.join(", ")}. Lighting: ${AI_LIGHTING_EFFECT_IDS.join(", ")}. Transition: ${AI_TRANSITION_EFFECT_IDS.join(", ")}. Prefer gentle motion; use static for scenes shorter than 2.5 seconds or emotionally sensitive scenes.
 ${customSplitRules ? "4. CUSTOM USER RULE: " + customSplitRules : ""}
 
 Language: ${isVi ? "Vietnamese" : "English"}.
@@ -373,9 +414,10 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "script": "The exact single sentence from the rewritten script.",
       "subtitle": "The exact single sentence from the rewritten script.",
       "prompt": "Highly detailed image prompt strictly following the blueprint. If character exists: '[Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. If no character exists: '[Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. Example of non-character prompt: 'An oil painting of an ancient massive redwood tree standing in the center of a dense misty forest, sunbeams filtering through the foliage, damp moss-covered ground, cinematic wide shot, photorealistic 8k. --ar ${aspectRatio}' THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH.",
-      "cameraMotion": "Zoom In",
-      "effects": "Lighting details matching style and mood",
-      "transition": "Fade out to black"
+      "cameraMotion": "zoom_in",
+      "effects": "dreamy",
+      "lightingEffect": "natural_light",
+      "transition": "cross_dissolve"
     }
   ]
 }
@@ -499,7 +541,10 @@ export const getSceneDetailBatchPrompt = (
   isVi: boolean,
   genre: string,
   genreVisualGuideline: string,
-  aspectRatio: string
+  aspectRatio: string,
+  backgroundDirective?: string,
+  textDirective?: string,
+  focusDirective?: string,
 ): string => {
   return `You are an elite AI Video Director and Visual Designer.
 Your task is to take a batch of storyboard scenes (which already have their script text) and generate high-quality, detailed visual prompts and camera directions for each of them.
@@ -537,33 +582,16 @@ The generated "prompt" field for each scene MUST strictly follow this exact stru
 - If the scene does NOT have a character: [Art style/Medium of Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - Every prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original script.
 - ${getGeneratedMediaLanguageDirective(isVi)}
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
 
 [DYNAMIC MOTION, EFFECTS & TRANSITIONS]
 For each scene, analyze its context, emotional tone, and narrative pacing to specify:
-- cameraMotion: Specify camera motion (options: Zoom In, Zoom Out, Pan Left, Pan Right, Static).
-- effects: Visual image filter/effect matching the scene's emotional tone. Select the most appropriate one from:
-  - "sad": For sad, gloomy, dark, melancholic scenes.
-  - "vintage": For historical, retro, old photo, sepia, memories.
-  - "dreamy": For magical, ethereal, glow, bloom, mystery, fantasy scenes.
-  - "glitch": For cyberpunk, intense action, high energy, shaking, digital distortion.
-  - "warm": For golden hour, sunny, bright, romantic, happy scenes.
-  - "cold": For winter, cold, snow, frosty, blue mood, calm scenes.
-  - "noir": For high contrast black and white, dramatic mystery, crime scenes.
-  - "horror": For spooky, scary, ghostly, foggy, misty horror scenes.
-  - "vhs": For vintage tv, analog noise, home video feel with scanline distortion.
-  - "neon": For neon lights, vibrant colors, cyberpunk, energetic glow.
-  - "none": If no special visual effect enhancement is needed.
-- transition: The transition to be applied at the end of this scene. Select from:
-  - "fade_black": Fade out to black. Good for transition to next segment, dramatic pause, ending.
-  - "fade_white": Fade out to white (bright flash). Good for dream sequence, flashback, explosion, shock.
-  - "cross_dissolve": Smooth fade dissolve. Good for slow-paced transitions.
-  - "blur_dissolve": Blurry smooth dissolve. Good for fantasy, memory transitions.
-  - "brightness_fade": High brightness transition. Good for daytime scenes.
-  - "zoom_transition": Dynamic zoom in/out transition. Good for fast-paced action.
-  - "slide_left": Horizontal wipe. Good for shifting locations.
-  - "slide_up": Vertical wipe.
-  - "cut": Direct instant cut. Good for fast pacing.
+- cameraMotion: Choose exactly one of: ${AI_MOTION_EFFECT_IDS.join(", ")}.
+- effects: Choose exactly one visual treatment based on mood: ${AI_VISUAL_EFFECT_IDS.join(", ")}.
+- lightingEffect: Choose exactly one lighting treatment based on the physically visible light in the scene: ${AI_LIGHTING_EFFECT_IDS.join(", ")}.
+- transition: Choose exactly one transition based on pacing: ${AI_TRANSITION_EFFECT_IDS.join(", ")}.
+- COMFORT RULE: Avoid handheld_soft, whip, flash, glitch, or strobe on calm, sad, documentary, or short scenes. Never repeat an intense effect in adjacent scenes. Prefer cross_dissolve, cut, static, natural_light, and subtle treatments for narration-heavy content.
 
 Output must comply EXACTLY with this JSON schema (return only raw JSON, no markdown enclosing code blocks):
 {
@@ -572,6 +600,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "id": "scene_id_matching_input",
       "prompt": "Highly detailed image prompt in English (35-50 words) ending with --ar ${aspectRatio}.",
       "cameraMotion": "Zoom In",
+      "lightingEffect": "natural_light",
       "effects": "dreamy",
       "transition": "cross_dissolve"
     }
@@ -633,7 +662,7 @@ Your process MUST complete all steps internally:
    - POSITIONING SAFETY: To prevent UI labels or status overlays from covering the text, specify the text to be placed with a safe margin from the top edge, preferably positioned slightly lower in the upper-center or lower-center areas.
    - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow, safely positioned with a top padding to avoid edges...".
    - If there are choices or secondary labels, describe them as physical, in-world rustic objects: "...at the bottom, two physical choice markers represented by weathered items on a table with short text labels 'OPTION A' and 'OPTION B' written clearly beside them...". Avoid flat digital banners or game UI overlays.
-   - The overall image style must be highly cinematic, dramatic lighting, high contrast, sharp details, shallow depth of field, with strong color contrast (e.g. warm sunset/dust tones vs. cold shadows).
+   - The overall image style must be highly cinematic, with dramatic lighting, high contrast, sharp details, and strong color contrast (e.g. warm sunset/dust tones vs. cold shadows). Use subject separation or depth of field only when permitted by the active background policy.
    - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single thumbnail. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, no markdown code wraps or backticks:
@@ -1009,7 +1038,7 @@ Extract a highly detailed character design prompt in English that describes this
 
 Keep the output as a set of keywords or descriptive phrases separated by commas, max 30 words in total. Only return the English character prompt keywords, with no introductory text or markdown.`;
 
-export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
+export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Character Visual Blueprints:
@@ -1031,13 +1060,14 @@ RULES:
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint (ONLY if the character is present).
 3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
-5. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
-6. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
+8. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+9. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input scenes:
 ${chunkJson}`;
 
-export const getCharacterRewriteThumbnailsBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
+export const getCharacterRewriteThumbnailsBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Character Visual Blueprints:
@@ -1061,8 +1091,9 @@ RULES:
    ${CINEMATIC_PROMPT_RULES}
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the prompt.
 3. ${NO_FRAME_RULE}
-4. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
-5. Output ONLY a valid JSON array matching the structure: [{"id": "thumbnail_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
+7. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+8. Output ONLY a valid JSON array matching the structure: [{"id": "thumbnail_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input thumbnails:
 ${chunkJson}`;

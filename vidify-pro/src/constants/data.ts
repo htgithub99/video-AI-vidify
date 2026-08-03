@@ -186,17 +186,16 @@ export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Righ
 
 // Easing helpers cho camera motion
 const easeCubicInOut = (t: number): number => t < 0.5 ? 4.0 * t * t * t : 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
-const easeQuartOut = (t: number): number => 1.0 - Math.pow(1.0 - t, 4);
 const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
 const easeExpoOut = (t: number): number => t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);
 
 export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale: number; dx: number; dy: number }> = {
-  "Zoom In": (p) => { const t = easeCubicInOut(p); return { scale: 1.0 + 0.20 * t, dx: 0, dy: 0 }; },
-  "Zoom Out": (p) => { const t = easeQuartOut(p); return { scale: 1.20 - 0.20 * t, dx: 0, dy: 0 }; },
-  "Pan Left": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: -80 * t, dy: 0 }; },
-  "Pan Right": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: 80 * t, dy: 0 }; },
-  "Pan Up": (p) => { const t = easeCubicInOut(p); return { scale: 1.08, dx: 0, dy: -60 * t }; },
-  "Pan Down": (p) => { const t = easeCubicInOut(p); return { scale: 1.08, dx: 0, dy: 60 * t }; },
+  "Zoom In": (p) => { const t = easeCubicInOut(p); return { scale: 1.0 + 0.06 * t, dx: 0, dy: 0 }; },
+  "Zoom Out": (p) => { const t = easeSineInOut(p); return { scale: 1.06 - 0.06 * t, dx: 0, dy: 0 }; },
+  "Pan Left": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: 25.6 - 51.2 * t, dy: 0 }; },
+  "Pan Right": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: -25.6 + 51.2 * t, dy: 0 }; },
+  "Pan Up": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: 0, dy: 14.4 - 28.8 * t }; },
+  "Pan Down": (p) => { const t = easeSineInOut(p); return { scale: 1.08, dx: 0, dy: -14.4 + 28.8 * t }; },
   "Drift": (p) => { const t = easeSineInOut(p); return { scale: 1.06 + 0.04 * Math.sin(t * Math.PI), dx: 30 * Math.sin(t * Math.PI * 1.5), dy: 20 * Math.cos(t * Math.PI * 1.2) }; },
   "Cinematic Arc": (p) => { const t = easeCubicInOut(p); return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * Math.sin(t * Math.PI) }; },
   "Push In": (p) => { const t = easeExpoOut(p); return { scale: 1.0 + 0.28 * t, dx: 20 * t, dy: -15 * t }; },
@@ -205,6 +204,11 @@ export const CAMERA_MOTION_EFFECTS: Record<string, (progress: number) => { scale
 };
 
 export const SCENE_SPLIT_TRANSITIONS = ["Cross Dissolve", "Blur Dissolve", "Brightness Fade", "Fade out to black", "Slide", "Zoom transition", "Cut"] as const;
+
+export const AI_MOTION_EFFECT_IDS = ["zoom_in", "zoom_out", "pan_left", "pan_right", "pan_up", "pan_down", "diagonal_up_left", "diagonal_up_right", "diagonal_down_left", "diagonal_down_right", "drift", "cinematic_arc", "push_in", "pull_out", "slow_reveal", "floating_camera", "handheld_soft", "parallax_left", "parallax_right", "static"] as const;
+export const AI_TRANSITION_EFFECT_IDS = ["cut", "cross_dissolve", "blur_dissolve", "brightness_fade", "fade_black", "fade_white", "slide_left", "slide_right", "slide_up", "slide_down", "wipe_left", "wipe_right", "wipe_up", "wipe_down", "zoom_transition", "flash", "whip_left", "whip_right", "glitch_transition", "film_burn"] as const;
+export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitch", "warm", "cold", "noir", "horror_fog", "vhs", "neon", "film_grain", "sharpen", "chromatic_aberration", "pixelate", "soft_focus"] as const;
+export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 
 export const AVAILABLE_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"] as const;
 

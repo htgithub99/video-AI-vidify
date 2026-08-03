@@ -23,6 +23,7 @@ import {
   StoryboardScene,
   BackgroundMode,
   TextInImageMode,
+  ImageFocusMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -51,6 +52,7 @@ import {
   applyGeneratedMediaLanguage,
   applyBackgroundMode,
   applyTextInImageMode,
+  applyImageFocusMode,
   calculateSceneDuration,
   fetchCachedVoiceAudio,
   getReferenceChangeState,
@@ -95,6 +97,7 @@ export interface PipelineConfig {
   stylePreset: string;
   styleBackgroundMode: BackgroundMode;
   styleTextInImageMode: TextInImageMode;
+  imageFocusMode: ImageFocusMode;
   referenceImages: string[];
   sceneReferenceImages: string[];
   characterImages: string[];
@@ -102,6 +105,7 @@ export interface PipelineConfig {
   thumbnailStylePreset: string;
   thumbnailBackgroundMode: BackgroundMode;
   thumbnailTextInImageMode: TextInImageMode;
+  thumbnailImageFocusMode: ImageFocusMode;
   thumbnailReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
@@ -310,7 +314,11 @@ export function useAutoVideoPipeline(
             aspectRatio: config.aspectRatio,
             chromeHeadless: config.chromeHeadless,
             styleBackgroundMode: config.styleBackgroundMode,
+            styleTextInImageMode: config.styleTextInImageMode,
+            imageFocusMode: config.imageFocusMode,
             thumbnailBackgroundMode: config.thumbnailBackgroundMode,
+            thumbnailTextInImageMode: config.thumbnailTextInImageMode,
+            thumbnailImageFocusMode: config.thumbnailImageFocusMode,
           },
         };
         setActiveCreatedProject(newProj);
@@ -371,7 +379,11 @@ export function useAutoVideoPipeline(
             source: REFACTOR_CONSTANTS.AVG_VISUAL_SOURCE_AUTO,
             style: config.stylePreset,
             styleBackgroundMode: config.styleBackgroundMode,
+            styleTextInImageMode: config.styleTextInImageMode,
+            imageFocusMode: config.imageFocusMode,
             thumbnailBackgroundMode: config.thumbnailBackgroundMode,
+            thumbnailTextInImageMode: config.thumbnailTextInImageMode,
+            thumbnailImageFocusMode: config.thumbnailImageFocusMode,
             quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
             density: 5,
             characterConsistency: true,
@@ -615,7 +627,7 @@ export function useAutoVideoPipeline(
         _.size(config.characterImages),
       ));
 
-      if (!isStoryboardCached || hasVisualOverrides) {
+      if (!isStoryboardCached || hasVisualOverrides || config.forceRegenerateScenes) {
         if (!_.isEmpty(config.referenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
           const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages, backgroundMode: config.styleBackgroundMode }, requestSignal);
@@ -633,6 +645,11 @@ export function useAutoVideoPipeline(
               newStyle: extractedStyle,
               aspectRatio: config.aspectRatio,
               language: config.language,
+              visualConfig: {
+                styleBackgroundMode: config.styleBackgroundMode,
+                styleTextInImageMode: config.styleTextInImageMode,
+                imageFocusMode: config.imageFocusMode,
+              },
             }, requestSignal);
             if (rewriteStyleRes.success && rewriteStyleRes.data?.storyboard) {
               realScenes = rewriteStyleRes.data.storyboard;
@@ -665,6 +682,10 @@ export function useAutoVideoPipeline(
             thumbnailReferencePrompt: currentThumbnailStyle,
             styleBackgroundMode: config.styleBackgroundMode,
             thumbnailBackgroundMode: config.thumbnailBackgroundMode,
+            styleTextInImageMode: config.styleTextInImageMode,
+            thumbnailTextInImageMode: config.thumbnailTextInImageMode,
+            imageFocusMode: config.imageFocusMode,
+            thumbnailImageFocusMode: config.thumbnailImageFocusMode,
           },
         };
         await syncProject(voiceUpdatedProj);
@@ -683,6 +704,7 @@ export function useAutoVideoPipeline(
               storyboard: realScenes,
               characters: [{ name: PRESET_CONSTANTS.CHARACTER_NAME, prompt: characterPrompt }],
               aspectRatio: config.aspectRatio,
+              visualConfig: voiceUpdatedProj.visualConfig,
             }, requestSignal);
             if (rewriteCharRes.success && rewriteCharRes.data?.storyboard) {
               realScenes = rewriteCharRes.data.storyboard;
@@ -786,7 +808,7 @@ export function useAutoVideoPipeline(
           appendLog(T.logBatchImageStreamStart);
           const batchItems = _.map(targetScenesToGen, (scene) => ({
             sceneId: scene.id,
-            prompt: applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode),
+            prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode), config.imageFocusMode, config.styleBackgroundMode),
             generateType: resolveSceneGenerateType(scene.id, config.generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
@@ -870,7 +892,7 @@ export function useAutoVideoPipeline(
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode),
+                prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode), config.imageFocusMode, config.styleBackgroundMode),
                 style: currentStylePreset,
                 resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
                 bypassCache: false,
@@ -949,7 +971,7 @@ export function useAutoVideoPipeline(
         };
         const thumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, thumbPayload, requestSignal);
         if (thumbRes.success && thumbRes.data?.thumbnails) {
-          let parsedThumbs = thumbRes.data.thumbnails;
+          let parsedThumbs = thumbRes.data.thumbnails as ThumbnailItem[];
 
           if (currentThumbnailStyle) {
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY);
@@ -958,6 +980,7 @@ export function useAutoVideoPipeline(
               newStyle: currentThumbnailStyle,
               aspectRatio: config.aspectRatio,
               language: config.language,
+              visualConfig: imageUpdatedProj.visualConfig,
             }, requestSignal);
             if (rewriteThumbRes.success && rewriteThumbRes.data?.thumbnails) {
               parsedThumbs = rewriteThumbRes.data.thumbnails;
@@ -965,38 +988,141 @@ export function useAutoVideoPipeline(
             }
           }
 
-          appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED, SecurityConstants.PLACEHOLDER_0, _.toString(parsedThumbs.length)));
-          thumbnailsList = await Promise.all(_.map(parsedThumbs, async (thumb, tIdx) => {
-            appendLog(_.replace(
-              _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN, SecurityConstants.PLACEHOLDER_0, _.toString(tIdx + 1)),
-              SecurityConstants.PLACEHOLDER_1,
-              _.toString(parsedThumbs.length),
-            ));
-            const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-            const thumbPrompt = _.replace(
-              _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
-              SecurityConstants.PLACEHOLDER_1,
-              _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
-            );
-            const finalThumbPrompt = applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode);
+          const targetThumbsToGen = _.filter(parsedThumbs, (thumb) => {
+            if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
+            return true;
+          });
 
-            const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-              prompt: finalThumbPrompt,
-              style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
-              resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-              bypassCache: true,
-              engine: _.defaultTo(config.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
-              sandboxConfig: sandboxConfigPayload,
-              visualConfig: { ...visualConfigPayload, style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)) },
-            }, requestSignal);
-            let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-            if (renderThumbRes.success && renderThumbRes.data?.base64) {
-              imgUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, renderThumbRes.data.base64], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-            } else if (renderThumbRes.data?.fallbackUrl) {
-              imgUrl = renderThumbRes.data.fallbackUrl;
+          if (config.resumeMode && !invalidationState.regenerateThumbnails) {
+            _.forEach(parsedThumbs, (thumb, idx) => {
+              if (!_.isEmpty(thumb.imageUrl)) {
+                appendLog(T.logResumeSceneSkip(idx + 1, parsedThumbs.length));
+              }
+            });
+          }
+
+          if (!_.isEmpty(targetThumbsToGen)) {
+            if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_START);
+
+              const batchThumbItems = _.map(targetThumbsToGen, (thumb) => {
+                const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                const thumbPrompt = _.replace(
+                  _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
+                  SecurityConstants.PLACEHOLDER_1,
+                  _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
+                );
+                return {
+                  sceneId: thumb.id,
+                  prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode),
+                  generateType: GenerateType.Image,
+                };
+              });
+
+              let completedCount = SecurityConstants.ZERO;
+              let batchFailureCount = SecurityConstants.ZERO;
+              let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+              let fallbackFailureCount = SecurityConstants.ZERO;
+
+              const applyThumbResult = (result: ProjectImageResult) => {
+                const imageUrl = createProjectImageUrl(result);
+                const thumb = _.find(parsedThumbs, (item) => _.isEqual(item.id, result.sceneId));
+                if (thumb && !_.isEmpty(imageUrl)) {
+                  thumb.imageUrl = imageUrl;
+                  completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
+                  appendLog(
+                    _.replace(
+                      _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_SUCCESS, SecurityConstants.PLACEHOLDER_0, _.toString(completedCount)),
+                      SecurityConstants.PLACEHOLDER_1,
+                      _.toString(targetThumbsToGen.length)
+                    )
+                  );
+                }
+              };
+
+              await generateProjectImages({
+                items: batchThumbItems,
+                visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset },
+                style: currentThumbnailStyle || currentStylePreset,
+                sandboxConfig: sandboxConfigPayload,
+                cancelRef: cancellationRef,
+                createFallbackPayload: (item) => ({
+                  prompt: item.prompt,
+                  style: currentThumbnailStyle || currentStylePreset,
+                  resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                  bypassCache: false,
+                  engine: config.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+                  sandboxConfig: sandboxConfigPayload,
+                  visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, generateType: item.generateType },
+                }),
+                onBatchResult: (result) => {
+                  if (result.success) { applyThumbResult(result); return; }
+                  batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
+                  if (_.isEmpty(batchFailureReason)) {
+                    batchFailureReason = result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING;
+                  }
+                },
+                onFallbackStart: (error) => appendLog(
+                  _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_FALLBACK_START, SecurityConstants.PLACEHOLDER_0, error.message)
+                ),
+                onFallbackItemStart: (_item, index, total) => {
+                  appendLog(
+                    _.replace(
+                      _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_FALLBACK_ITEM, SecurityConstants.PLACEHOLDER_0, _.toString(index + 1)),
+                      SecurityConstants.PLACEHOLDER_1,
+                      _.toString(total)
+                    )
+                  );
+                },
+                onFallbackResult: (result) => {
+                  if (result.success) { applyThumbResult(result); return; }
+                  fallbackFailureCount = _.add(fallbackFailureCount, SecurityConstants.DEFAULT_AMOUNT);
+                },
+              });
+            } else {
+              for (let i = 0; i < targetThumbsToGen.length; i++) {
+                const thumb = targetThumbsToGen[i];
+                appendLog(_.replace(
+                  _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SCENE_GEN, SecurityConstants.PLACEHOLDER_0, _.toString(i + 1)),
+                  SecurityConstants.PLACEHOLDER_1,
+                  _.toString(targetThumbsToGen.length),
+                ));
+                const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                const thumbPrompt = _.replace(
+                  _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
+                  SecurityConstants.PLACEHOLDER_1,
+                  _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
+                );
+                const finalThumbPrompt = applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode);
+
+                try {
+                  const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+                    prompt: finalThumbPrompt,
+                    style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)),
+                    resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                    bypassCache: true,
+                    engine: _.defaultTo(config.imageGeneratorEngine, ImageGeneratorEngine.Veo3),
+                    sandboxConfig: sandboxConfigPayload,
+                    visualConfig: { ...visualConfigPayload, style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)) },
+                  }, requestSignal);
+                  let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+                  if (renderThumbRes.success && renderThumbRes.data?.base64) {
+                    imgUrl = _.join([REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX, renderThumbRes.data.base64], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                  } else if (renderThumbRes.data?.fallbackUrl) {
+                    imgUrl = renderThumbRes.data.fallbackUrl;
+                  }
+
+                  const targetThumb = _.find(parsedThumbs, { id: thumb.id });
+                  if (targetThumb) targetThumb.imageUrl = imgUrl;
+                } catch {
+                  appendLog(
+                    _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_WARNING_SINGLE, SecurityConstants.PLACEHOLDER_0, _.toString(i + 1))
+                  );
+                }
+              }
             }
-            return { ...thumb, imageUrl: imgUrl };
-          }));
+          }
+          thumbnailsList = parsedThumbs;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
         } else {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
@@ -1081,6 +1207,7 @@ export function useAutoVideoPipeline(
           assetType: _.get(sc, REFACTOR_CONSTANTS.AVG_ASSET_TYPE_KEY, GenerateType.Image),
           cameraMotion: _.get(sc, "cameraMotion"),
           effects: _.get(sc, "effects"),
+          lightingEffect: _.get(sc, "lightingEffect"),
           transition: _.get(sc, "transition"),
         })),
         quality: config.ffmpegQuality,
