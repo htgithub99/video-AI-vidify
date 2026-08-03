@@ -324,7 +324,9 @@ export function useAutoVideoPipeline(
         setActiveCreatedProject(newProj);
         appendLog(T.logResumeProject(newProj.name));
       } else {
-        const selectedProj = selectedAutoProj;
+        // Keep using the active auto workspace when the selected ID is briefly unavailable
+        // during tab/project synchronization. Otherwise an orphan root project is created.
+        const selectedProj = _.defaultTo(selectedAutoProj, activeCreatedProject);
         const isChildProject = selectedProj && selectedProj.parentId;
 
         newProjectId = selectedProj

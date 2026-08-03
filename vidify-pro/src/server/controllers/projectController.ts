@@ -452,10 +452,39 @@ migrateJsonToSqlite().catch((error) => {
   appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
 });
 
+const repairOrphanedAutoProjects = async (projects: VideoProject[]): Promise<boolean> => {
+  const rootProjectsByName = _.keyBy(
+    _.filter(projects, (project) => _.isEmpty(project.parentId) && !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)),
+    (project) => _.trim(project.name),
+  );
+  let repaired = false;
+
+  for (const project of projects) {
+    if (!_.isEmpty(project.parentId) || !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) continue;
+
+    const parentName = _.trim(project.name.slice(0, -COMMON_STRINGS.AUTO_CHILD_SUFFIX.length));
+    const parentProject = rootProjectsByName[parentName];
+    if (!parentProject || _.isEqual(parentProject.id, project.id)) continue;
+
+    const detail = await getProjectDetail(project.id);
+    if (!detail) continue;
+
+    await saveProjectDetailToDb({
+      ...detail,
+      parentId: parentProject.id,
+      projectKind: ProjectKind.Auto,
+    });
+    repaired = true;
+  }
+
+  return repaired;
+};
+
 export const getAllProjects = async (request: Request, response: Response) => {
   try {
     const list = await getProjectsListFromDb();
-    response.json(list);
+    const repaired = await repairOrphanedAutoProjects(list);
+    response.json(repaired ? await getProjectsListFromDb() : list);
   } catch (error: any) {
     response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")) });
   }
