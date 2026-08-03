@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_ROUTES } from '../constants/apiRoutes';
 import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS } from '../constants';
 import _ from 'lodash';
+import { clearBrowserLicenseSession } from '../lib/licenseSession';
 
 export interface LicenseInfo {
     status: LicenseStatus;
@@ -47,6 +48,17 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
         localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY)
     );
 
+    const clearInvalidLicenseState = React.useCallback(() => {
+        clearBrowserLicenseSession();
+        setLicenseKeyState(null);
+        queryClient.clear();
+    }, [queryClient]);
+
+    React.useEffect(() => {
+        window.addEventListener(SecurityConstants.LICENSE_INVALIDATED_EVENT, clearInvalidLicenseState);
+        return () => window.removeEventListener(SecurityConstants.LICENSE_INVALIDATED_EVENT, clearInvalidLicenseState);
+    }, [clearInvalidLicenseState]);
+
     const { data: licenseInfo, isLoading: isQueryLoading, refetch } = useQuery<LicenseInfo | null>({
         queryKey: [QUERY_KEY, licenseKey],
         queryFn: async () => {
@@ -59,18 +71,18 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             const data = await res.json();
             
             if (!data.success) {
-                localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-                setLicenseKeyState(null);
+                if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], res.status)) {
+                    clearInvalidLicenseState();
+                }
                 throw new Error(data.error || ERR_INVALID_LICENSE);
             }
 
             const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
-            if (_.includes([LicenseStatus.ACTIVE, LicenseStatus.REVOKED, LicenseStatus.EXPIRED], status)) {
+            if (_.isEqual(status, LicenseStatus.ACTIVE)) {
                 return _.get(data, SecurityConstants.DATA_KEY);
             }
             
-            localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-            setLicenseKeyState(null);
+            clearInvalidLicenseState();
             throw new Error(ERR_INVALID_LICENSE_STATUS);
         },
         initialData: () => {
@@ -114,16 +126,20 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
             const data = await res.json();
             
             if (!data.success) {
+                if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], res.status)) {
+                    clearInvalidLicenseState();
+                }
                 return data.error || false;
             }
 
             const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
-            if (_.includes([LicenseStatus.ACTIVE, LicenseStatus.REVOKED, LicenseStatus.EXPIRED], status)) {
+            if (_.isEqual(status, LicenseStatus.ACTIVE)) {
                 localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
                 setLicenseKeyState(key);
                 queryClient.setQueryData([QUERY_KEY, key], _.get(data, SecurityConstants.DATA_KEY));
                 return true;
             }
+            clearInvalidLicenseState();
             return false;
         } catch (e: any) {
             return e.message || false;

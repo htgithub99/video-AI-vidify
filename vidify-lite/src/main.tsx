@@ -6,6 +6,7 @@ import { LicenseProvider } from "./contexts/LicenseContext.tsx";
 import { LicenseActivation } from "./components/LicenseActivation.tsx";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "./constants";
 import _ from "lodash";
+import { invalidateBrowserLicenseSession, isLicenseFailureCode } from "./lib/licenseSession";
 
 const urlParams = new URLSearchParams(window.location.search);
 const tokenFromUrl = urlParams.get(SecurityConstants.QUERY_TOKEN_KEY);
@@ -31,6 +32,15 @@ const usageTrackedRoutes = [
 
 const dispatchUsageUpdated = () => {
   window.dispatchEvent(new CustomEvent(SecurityConstants.USAGE_UPDATED_EVENT));
+};
+
+const handleLicenseFailureResponse = async (response: Response): Promise<void> => {
+  if (!_.includes([SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) return;
+
+  const data = await response.clone().json().catch(() => null);
+  if (isLicenseFailureCode(_.get(data, SecurityConstants.CODE_KEY))) {
+    invalidateBrowserLicenseSession();
+  }
 };
 
 const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: Response) => {
@@ -87,6 +97,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
 
   requestInit.headers = headers;
   const response = await originalFetch(input, requestInit);
+  await handleLicenseFailureResponse(response);
   notifyUsageAfterSuccessfulResponse(input, response);
   return response;
 };
