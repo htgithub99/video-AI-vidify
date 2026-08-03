@@ -3,8 +3,9 @@ import { ChevronDown, ImageIcon, Layout } from "lucide-react";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageDeleteOverlay, ImageUploadZone } from "./ImageUploadZone";
 import { REFACTOR_CONSTANTS } from "../../constants";
-import { BackgroundMode } from "../../types";
+import { BackgroundMode, TextInImageMode } from "../../types";
 import { BackgroundModeSelect } from "./BackgroundModeSelect";
+import { TextInImageModeSelect } from "./TextInImageModeSelect";
 import { AppLanguage, PIPELINE_STEPS } from "../../constants/enums";
 
 interface ProjectSettingsSectionProps {
@@ -17,6 +18,8 @@ interface ProjectSettingsSectionProps {
   handleThumbnailStyleFilesUpload: (files: FileList) => void;
   backgroundMode: BackgroundMode;
   setBackgroundMode: (value: BackgroundMode) => void;
+  textInImageMode: TextInImageMode;
+  setTextInImageMode: (value: TextInImageMode) => void;
   language: AppLanguage;
   T: any;
 }
@@ -31,6 +34,8 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   handleThumbnailStyleFilesUpload,
   backgroundMode,
   setBackgroundMode,
+  textInImageMode,
+  setTextInImageMode,
   language,
   T,
 }) => {
@@ -43,7 +48,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
         <div className="space-y-1">
           <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblProjectName}</span>
           <input
@@ -56,6 +61,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </div>
 
         <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.thumbnailBgModeLabel} />
+        <TextInImageModeSelect value={textInImageMode} onChange={setTextInImageMode} language={language} label={T.thumbnailTextModeLabel} />
 
         <div className="space-y-1">
           <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblThumbCount}</span>

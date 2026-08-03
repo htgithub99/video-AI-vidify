@@ -161,6 +161,8 @@ export interface VisualConfig {
   stylePreset?: string;
   styleBackgroundMode?: BackgroundMode;
   thumbnailBackgroundMode?: BackgroundMode;
+  styleTextInImageMode?: TextInImageMode;
+  thumbnailTextInImageMode?: TextInImageMode;
   aspectRatio?: string;
   imageQuality?: string;
   characterConsistencyLevel?: string;
@@ -366,6 +368,14 @@ export enum BackgroundMode {
   Blurred = "blurred",
   Gradient = "gradient",
   Studio = "studio",
+}
+
+export enum TextInImageMode {
+  Auto = "auto",
+  NoText = "no_text",
+  Minimal = "minimal",
+  Moderate = "moderate",
+  Abundant = "abundant",
 }
 
 export enum GeminiChatSpeed {

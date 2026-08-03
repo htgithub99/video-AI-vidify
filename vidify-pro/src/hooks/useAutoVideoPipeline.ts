@@ -22,6 +22,7 @@ import {
   Chapter,
   StoryboardScene,
   BackgroundMode,
+  TextInImageMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -49,6 +50,7 @@ import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
   applyGeneratedMediaLanguage,
   applyBackgroundMode,
+  applyTextInImageMode,
   calculateSceneDuration,
   fetchCachedVoiceAudio,
   getReferenceChangeState,
@@ -92,12 +94,14 @@ export interface PipelineConfig {
   batchDelay: BatchDelayOption;
   stylePreset: string;
   styleBackgroundMode: BackgroundMode;
+  styleTextInImageMode: TextInImageMode;
   referenceImages: string[];
   sceneReferenceImages: string[];
   characterImages: string[];
   thumbnailCount: number;
   thumbnailStylePreset: string;
   thumbnailBackgroundMode: BackgroundMode;
+  thumbnailTextInImageMode: TextInImageMode;
   thumbnailReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
@@ -782,7 +786,7 @@ export function useAutoVideoPipeline(
           appendLog(T.logBatchImageStreamStart);
           const batchItems = _.map(targetScenesToGen, (scene) => ({
             sceneId: scene.id,
-            prompt: applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode),
+            prompt: applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode),
             generateType: resolveSceneGenerateType(scene.id, config.generateType, videoSceneIds),
           }));
           let completedCount = SecurityConstants.ZERO;
@@ -866,7 +870,7 @@ export function useAutoVideoPipeline(
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode),
+                prompt: applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), config.styleBackgroundMode), config.styleTextInImageMode),
                 style: currentStylePreset,
                 resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
                 bypassCache: false,
@@ -974,7 +978,7 @@ export function useAutoVideoPipeline(
               SecurityConstants.PLACEHOLDER_1,
               _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
             );
-            const finalThumbPrompt = applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode);
+            const finalThumbPrompt = applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode);
 
             const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
               prompt: finalThumbPrompt,

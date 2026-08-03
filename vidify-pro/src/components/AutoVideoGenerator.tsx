@@ -76,8 +76,8 @@ export default function AutoVideoGenerator({
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, isVoiceDialogOpen,
     generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
-    aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, referenceImages, sceneReferenceImages,
-    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailReferenceImages,
+    aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, referenceImages, sceneReferenceImages,
+    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
     projectName, resumeMode, showAdvancedImageSettings,
     rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
     hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
@@ -89,9 +89,9 @@ export default function AutoVideoGenerator({
     setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy,
     setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
     setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
-    setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode,
+    setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode,
     setReferenceImages, setSceneReferenceImages,
-    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailReferenceImages,
+    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailReferenceImages,
     setProjectName, setResumeMode, setShowAdvancedImageSettings,
   } = actions;
 
@@ -232,9 +232,9 @@ export default function AutoVideoGenerator({
       voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
       generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
       aspectRatio, promptInputMethod, sampleCount, videoDuration,
-      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode,
+      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode,
       referenceImages, sceneReferenceImages, characterImages,
-      thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailReferenceImages,
+      thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
       projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
@@ -416,6 +416,8 @@ export default function AutoVideoGenerator({
                 setResumeMode={setResumeMode}
                 backgroundMode={styleBackgroundMode}
                 setBackgroundMode={setStyleBackgroundMode}
+                textInImageMode={styleTextInImageMode}
+                setTextInImageMode={setStyleTextInImageMode}
                 language={currentLang as AppLanguage}
                 T={T}
               />
@@ -443,6 +445,8 @@ export default function AutoVideoGenerator({
               handleThumbnailStyleFilesUpload={handleThumbnailStyleFilesUpload}
               backgroundMode={thumbnailBackgroundMode}
               setBackgroundMode={setThumbnailBackgroundMode}
+              textInImageMode={thumbnailTextInImageMode}
+              setTextInImageMode={setThumbnailTextInImageMode}
               language={currentLang as AppLanguage}
               T={T}
             />

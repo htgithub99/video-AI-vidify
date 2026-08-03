@@ -61,7 +61,7 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
   VISUAL_CONFIG_KEYS: [
     "generationMode", "imageGeneratorEngine", "generateType", "maxVideoScenes",
     "aspectRatio", "style", "chromeHeadless", "videoDuration",
-    "styleBackgroundMode",
+    "styleBackgroundMode", "styleTextInImageMode",
   ],
 } as const;
 
@@ -85,6 +85,22 @@ export const BACKGROUND_MODE_CONFIG = {
   },
   EXTRACTION_PREFIX: "Background treatment requirement:",
   EXTRACTION_SUFFIX: "Include the observed background treatment in the extracted style when the requirement asks to preserve it.",
+} as const;
+
+export const TEXT_IN_IMAGE_MODE_CONFIG = {
+  DEFAULT: "auto",
+  OPTIONS: ["auto", "no_text", "minimal", "moderate", "abundant"],
+  DIRECTIVES: {
+    auto: "",
+    no_text: "CRITICAL OVERRIDE: STRICTLY enforce absolutely NO text, NO typography, NO letters, NO numbers, NO watermarks, NO signatures, NO logos anywhere in the image. The image must be completely text-free.",
+    minimal: "CRITICAL OVERRIDE: Allow only minimal text. Keep typography sparse and unobtrusive.",
+    moderate: "CRITICAL OVERRIDE: Include a moderate amount of text and typography, integrated naturally into the image.",
+    abundant: "CRITICAL OVERRIDE: The image MUST feature abundant text, highly visible typography, or many words seamlessly integrated.",
+  },
+  LABELS: {
+    vi: { auto: "Tự động", no_text: "Không có chữ", minimal: "Ít chữ", moderate: "Chữ vừa", abundant: "Nhiều chữ" },
+    en: { auto: "Auto", no_text: "No text", minimal: "Minimal text", moderate: "Moderate text", abundant: "Abundant text" },
+  },
 } as const;
 
 export const PROJECT_ASSET_GROUP = {

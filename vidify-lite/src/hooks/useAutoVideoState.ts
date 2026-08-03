@@ -12,6 +12,7 @@ import {
   PromptInputMethod,
   AspectRatio,
   BackgroundMode,
+  TextInImageMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
@@ -41,9 +42,11 @@ interface CachedGeneratorConfig {
   aspectRatio?: AspectRatio;
   stylePreset?: string;
   styleBackgroundMode?: BackgroundMode;
+  styleTextInImageMode?: TextInImageMode;
   thumbnailCount?: number;
   thumbnailStylePreset?: string;
   thumbnailBackgroundMode?: BackgroundMode;
+  thumbnailTextInImageMode?: TextInImageMode;
   projectName?: string;
   referenceImages?: string[];
   sceneReferenceImages?: string[];
@@ -88,12 +91,14 @@ export interface AutoVideoFormState {
   batchDelay: BatchDelayOption;
   stylePreset: string;
   styleBackgroundMode: BackgroundMode;
+  styleTextInImageMode: TextInImageMode;
   referenceImages: string[];
   sceneReferenceImages: string[];
   characterImages: string[];
   thumbnailCount: number;
   thumbnailStylePreset: string;
   thumbnailBackgroundMode: BackgroundMode;
+  thumbnailTextInImageMode: TextInImageMode;
   thumbnailReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
@@ -121,11 +126,13 @@ export interface AutoVideoFormActions {
   setChromeHeadless: (v: boolean) => void;
   setStylePreset: (v: string) => void;
   setStyleBackgroundMode: (v: BackgroundMode) => void;
+  setStyleTextInImageMode: (v: TextInImageMode) => void;
   setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   setSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   setThumbnailCount: (v: number) => void;
   setThumbnailStylePreset: (v: string) => void;
   setThumbnailBackgroundMode: (v: BackgroundMode) => void;
+  setThumbnailTextInImageMode: (v: TextInImageMode) => void;
   setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   setProjectName: (v: string) => void;
   setResumeMode: (v: boolean) => void;
@@ -144,8 +151,8 @@ const applyProjectToState = (
     | "setScriptContent" | "setGenre" | "setLanguage" | "setDuration" | "setSplitStrategy"
     | "setVoiceProvider" | "setVoiceURI" | "setVoiceName"
     | "setGenerationMode" | "setImageGeneratorEngine" | "setGenerateType"
-    | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode"
-    | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode"
+    | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode" | "setStyleTextInImageMode"
+    | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode" | "setThumbnailTextInImageMode"
     | "setReferenceImages" | "setSceneReferenceImages" | "setProjectName"
   >,
 ) => {
@@ -169,9 +176,11 @@ const applyProjectToState = (
     if (proj.visualConfig.aspectRatio) actions.setAspectRatio(proj.visualConfig.aspectRatio as AspectRatio);
     if (proj.visualConfig.stylePreset) actions.setStylePreset(proj.visualConfig.stylePreset);
     if (proj.visualConfig.styleBackgroundMode) actions.setStyleBackgroundMode(proj.visualConfig.styleBackgroundMode);
+    if (proj.visualConfig.styleTextInImageMode) actions.setStyleTextInImageMode(proj.visualConfig.styleTextInImageMode);
     if (!_.isUndefined(proj.visualConfig.thumbnailCount)) actions.setThumbnailCount(proj.visualConfig.thumbnailCount);
     if (proj.visualConfig.thumbnailReferencePrompt) actions.setThumbnailStylePreset(proj.visualConfig.thumbnailReferencePrompt);
     if (proj.visualConfig.thumbnailBackgroundMode) actions.setThumbnailBackgroundMode(proj.visualConfig.thumbnailBackgroundMode);
+    if (proj.visualConfig.thumbnailTextInImageMode) actions.setThumbnailTextInImageMode(proj.visualConfig.thumbnailTextInImageMode);
     actions.setReferenceImages(
       _.defaultTo(proj.visualConfig.styleReferenceImages, (
         _.isEmpty(proj.visualConfig.sceneReferenceImages)
@@ -229,6 +238,7 @@ export function useAutoVideoState(
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
+  const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>([]);
   const [characterImages] = useState<string[]>([]);
@@ -236,6 +246,7 @@ export function useAutoVideoState(
   const [thumbnailCount, setThumbnailCount] = useState<number>(2);
   const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
+  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
 
   const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
@@ -263,11 +274,13 @@ export function useAutoVideoState(
     setChromeHeadless,
     setStylePreset,
     setStyleBackgroundMode,
+    setStyleTextInImageMode,
     setReferenceImages,
     setSceneReferenceImages,
     setThumbnailCount,
     setThumbnailStylePreset,
     setThumbnailBackgroundMode,
+    setThumbnailTextInImageMode,
     setThumbnailReferenceImages,
     setProjectName,
     setResumeMode,
@@ -296,9 +309,11 @@ export function useAutoVideoState(
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
         if (parsed.styleBackgroundMode) setStyleBackgroundMode(parsed.styleBackgroundMode);
+        if (parsed.styleTextInImageMode) setStyleTextInImageMode(parsed.styleTextInImageMode);
         if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
         if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
         if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
+        if (parsed.thumbnailTextInImageMode) setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
         if (parsed.projectName) setProjectName(parsed.projectName);
         if (parsed.referenceImages) setReferenceImages(parsed.referenceImages);
         if (parsed.sceneReferenceImages) setSceneReferenceImages(parsed.sceneReferenceImages);
@@ -350,9 +365,11 @@ export function useAutoVideoState(
       aspectRatio,
       stylePreset,
       styleBackgroundMode,
+      styleTextInImageMode,
       thumbnailCount,
       thumbnailStylePreset,
       thumbnailBackgroundMode,
+      thumbnailTextInImageMode,
       projectName,
       referenceImages,
       sceneReferenceImages,
@@ -368,7 +385,7 @@ export function useAutoVideoState(
     isConfigLoaded, selectedProjectId,
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
-    generateType, maxVideoScenes, aspectRatio, stylePreset, styleBackgroundMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode,
+    generateType, maxVideoScenes, aspectRatio, stylePreset, styleBackgroundMode, styleTextInImageMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode,
     projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless,
   ]);
 
@@ -379,9 +396,9 @@ export function useAutoVideoState(
     voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
     isVoiceDialogOpen, generationMode, imageGeneratorEngine, generateType,
     maxVideoScenes, aspectRatio, promptInputMethod, sampleCount, videoDuration,
-    chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode,
+    chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode,
     referenceImages, sceneReferenceImages, characterImages,
-    thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailReferenceImages,
+    thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
     projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded,
   };
 
