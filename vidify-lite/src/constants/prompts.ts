@@ -180,10 +180,15 @@ ${charactersJson ? `- Character Reference Specs:\n${charactersJson}\n` : ""}
 
 4. VISUAL RICHNESS & STORYBOARD PROGRESSION:
    - Ensure each prompt is rich, highly detailed (35-50 words), describing the subject, precise setting, dynamic action/expression, lighting, and camera composition.
-   - Vary the shot sizes (e.g. close-up shot, medium shot, wide cinematic shot) between adjacent scenes to create a compelling visual progression and avoid visual monotony.
+   - Vary camera angle, blocking, subject placement, action, scale, and visual rhythm between adjacent scenes. The active composition/focus directive below has absolute priority: never introduce a close-up or portrait when it requires a wide scene.
+   - Treat every result as a complete video frame, not a character sheet, sticker, isolated pose, stock icon, or disconnected object study.
+   - Prefer visually causal storytelling: show who is doing what, where it happens, what changes, and how other people or physical elements react.
+   - Do not make the recurring protagonist the only or dominant subject in every scene. When supported by the narration, use establishing context, meaningful interaction, secondary characters, consequences, or environment-led compositions.
 
-5. CHARACTER & ENVIRONMENT CONSISTENCY (SOFT ALIGNMENT):
-   - If characters are specified, weave their visual traits (e.g. hair style/color, key clothing details) into scenes where they appear, adjusting their pose, action, and facial expression to match the narration.
+5. CHARACTER IDENTITY & ENVIRONMENT CONSISTENCY (HARD IDENTITY LOCK):
+   - If a specified character appears, repeat all immutable identity anchors from that character blueprint: exact age range, gender presentation, ethnicity/skin tone, face shape, eyes, nose, hair, body build, signature clothing colors, and distinguishing accessories.
+   - Never paraphrase, shorten, merge, age-shift, gender-swap, recolor, or transfer those identity anchors to another person. Only pose, action, expression, camera placement, and explicitly narrated temporary state may change.
+   - Recurring supporting characters require the same identity lock as the protagonist. A crowd or generic background extra must never replace a named character.
    - Maintain the environmental backdrop and time of day, but feel free to vary the lighting or camera angles to match the dramatic mood.
 
 6. STRUCTURE MANDATE (THE BLUEPRINT): Every optimized prompt MUST follow this exact structural format from left to right:
@@ -349,6 +354,14 @@ You MUST apply these alignment rules to ensure visual consistency without restri
    ${genreVisualGuideline}
 
 [STRICT NARRATIVE RELEVANCY & ANCHORING (CRITICAL TO PREVENT DRIFT & OUTLIERS)]
+[VIDEO STORYBOARD DIRECTING RULES]
+- The active background, text, and composition directives below are hard constraints and override generic shot-variety advice.
+- If the active focus requests a wide scene, EVERY output must remain a true wide establishing/master shot; vary angle, blocking, depth, and action without switching to close-up, portrait, headshot, hand detail, or isolated object framing.
+- Design each prompt as a complete 16:9 storytelling frame. When the narration permits, include at least two meaningful visual elements (character plus action/context, interacting characters, cause plus consequence, or environment plus story evidence).
+- Do not repeatedly center the protagonist alone. Use rule-of-thirds placement, foreground/midground/background relationships, supporting characters, relevant props, reaction, and negative space deliberately.
+- A recurring character may remain present without dominating the frame. Preserve their canonical identity while changing only action, expression, pose, and spatial position.
+- Adjacent scenes must advance visible story information and use materially different blocking; never output a sequence of interchangeable standing, walking, sitting, or sad poses on an empty canvas.
+
 - You MUST only describe settings, landscapes, and objects that are directly mentioned or logically required by the current scene's script segment.
 - NEVER invent random fantasy settings, primeval forests, ancient moss-covered ruins, or abstract celestial reliefs if they are not explicitly written in the script segment. Every visual detail MUST serve as an exact, relevant representation of the narration.
 
@@ -510,7 +523,7 @@ Return only valid JSON:
 Storyboard:
 ${scenesJson}`;
 
-export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) above. Inspect their color palette, textures, lighting, character details, and visual atmosphere. Incorporate these elements deeply into the character specs, color palette, and lighting mood you return.";
+export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE-ONLY REFERENCE DIRECTIVE:\nThe supplied image(s) are visual-style samples only, never character references. Extract and apply only art medium, line quality, rendering technique, color palette, contrast, texture, and lighting. Completely ignore all depicted people, faces, bodies, clothing, poses, objects, locations, composition, and narrative content. Never copy or mention a person from a style sample in characterSpecs. Character identity must come exclusively from the script and the separate Character Reference Specs.";
 
 export const THUMBNAIL_REFERENCE_PROMPT = (refImgStr: string) => `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${refImgStr}". Deeply integrate these aesthetic keywords into the thumbnail prompt.`;
 
@@ -570,6 +583,14 @@ Use the following visual specifications as your core style and identity referenc
    ${genreVisualGuideline}
 
 [STRICT NARRATIVE RELEVANCY & ANCHORING]
+[VIDEO STORYBOARD DIRECTING RULES]
+- The active background, text, and composition directives below are hard constraints and override generic shot-variety advice.
+- If the active focus requests a wide scene, EVERY output must remain a true wide establishing/master shot; vary angle, blocking, depth, and action without switching to close-up, portrait, headshot, hand detail, or isolated object framing.
+- Design each prompt as a complete 16:9 storytelling frame. When the narration permits, include at least two meaningful visual elements (character plus action/context, interacting characters, cause plus consequence, or environment plus story evidence).
+- Do not repeatedly center the protagonist alone. Use rule-of-thirds placement, foreground/midground/background relationships, supporting characters, relevant props, reaction, and negative space deliberately.
+- A recurring character may remain present without dominating the frame. Preserve their canonical identity while changing only action, expression, pose, and spatial position.
+- Adjacent scenes must advance visible story information and use materially different blocking; never output a sequence of interchangeable standing, walking, sitting, or sad poses on an empty canvas.
+
 - You MUST only describe settings, landscapes, and objects that are directly mentioned or logically required by the scene's script segment. Do NOT invent random unrelated elements.
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
@@ -866,7 +887,7 @@ Genre: "${genre}"`;
 
   prompt += `\n\nEstablish:
 1. Color Palette: A harmonious color palette (e.g., "dark obsidian tones with accents of electric amber").
-2. Character/Subject Appearance: Specific, detailed, consistent descriptions of key characters, objects, or subjects mentioned (e.g. "an old man with thick silver hair, a weathered brown leather vest, round spectacles").
+2. Character/Subject Appearance: A separate canonical identity profile for each recurring character, preserving their exact name or stable descriptive label and immutable age, gender presentation, ethnicity/skin tone, face geometry, eyes, nose, hair, body build, signature outfit colors, and accessories. Never merge characters into one generic profile.
 3. Landscape & Environment: Specific, detailed descriptions of key locations, backgrounds, or settings mentioned in the script (e.g., "a misty dense pine forest with towering trees", "a futuristic cyberpunk street with glowing signs").
 4. Environment & Lighting: Unified lighting style (e.g., "dramatic chiaroscuro lighting, soft volumetric dust particles").
 Output a raw JSON object matching this schema (no markdown wrapping):
@@ -1013,13 +1034,15 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
 ]`;
 
 export const getCharacterAnalysisPrompt = (script: string): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance).
-For each character, identify their name, gender, age group, appearance details mentioned (like hair color, clothing style, facial features), write a concise description in English, and extract/generate a detailed character design prompt in English consisting of keywords and descriptive phrases (max 30 words in total, separated by commas) that can be used directly for AI image generators.
+For each character, identify their name, narrative role, gender presentation, exact approximate age range, ethnicity/skin tone, body build, face shape, eyes, nose, hair, signature clothing with stable colors, and distinguishing accessories. Write a concise English description and a canonical character design prompt in English (45-70 words) that can be repeated verbatim in every relevant image prompt.
 
 STRICT LANGUAGE AND IDENTITY RULES:
 - Write every "description" and "prompt" value entirely in natural English, regardless of the script language.
 - Preserve a real proper name in its original form. For an unnamed character, create a short descriptive English label such as "Former Prisoner" or "Hiring Manager"; never return a generic localized label.
 - Classify only recurring, visually representable people. Do not treat the narrator, audience, society, crowds, or briefly mentioned people as characters unless they physically recur in the story.
 - Keep immutable identity traits stable: approximate age, gender presentation, face shape, skin tone, hair, body build, signature clothing, accessories, and color palette.
+- Invent concrete, visually distinctive but story-appropriate identity anchors when the script omits them. Do not use vague traits such as "ordinary man", "casual clothes", or "average face".
+- Make every recurring character visually distinguishable from all other profiles. Never reuse the same face, hair, outfit silhouette, or signature color combination.
 - Separate permanent identity traits from scene-specific pose, action, expression, camera angle, and temporary costume changes.
 - Return characters in importance order: primary character first, then supporting characters.
 
@@ -1052,20 +1075,22 @@ export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson
 - Character Visual Blueprints:
 ${charactersJson}
 
-[SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
-1. Character Visual Continuity (Soft Alignment):
-   For each scene, identify which characters are present (by their names or descriptions in the scene text/script). If a character is present, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the rewritten prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression to match the scene's action.
+[HARD CHARACTER IDENTITY LOCK]
+1. Character Visual Continuity:
+   For each scene, identify which named or recurring characters are physically present from the script and current prompt. For every present character, copy the complete canonical character blueprint into the rewritten prompt without omitting or paraphrasing any immutable trait. Change only pose, action, facial expression, camera placement, or an explicitly narrated temporary condition.
    CRITICAL DIRECTIVE: When a character is present in the scene, you MUST explicitly include the character's exact name at the beginning of their visual description in the rewritten prompt (e.g., "portraying George Armstrong Custer, a male, Caucasian, 50s with..." rather than just "portraying a male, Caucasian, 50s..."). Never omit the character's name.
+   Never change apparent age, face geometry, skin tone, hairstyle, body build, signature outfit design/color, or accessories between scenes. Never replace a named supporting character with a generic person or transfer one character's traits to another.
 2. Character Exclusion Rule:
    If a scene does not contain any characters, do NOT force or incorporate any character description; instead, rewrite it to focus purely on the scene's environment, object, or action.
 3. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
+4. Video Frame Integrity: Preserve a complete narrative composition. Never turn a scene into an isolated character sheet, centered standing pose, headshot, hand-only detail, or disconnected object unless the script and active focus directive explicitly require that composition.
 
 RULES:
 1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right:
    - If the scene has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
    - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
    ${CINEMATIC_PROMPT_RULES}
-2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the blueprint (ONLY if the character is present).
+2. SEAMLESS INTEGRATION RULE: Weave the complete canonical character blueprint directly into the [Main Subject] and [Action] sections (ONLY if the character is present), preserving its immutable wording and values while keeping the sentence natural.
 3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}

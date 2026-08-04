@@ -56,7 +56,9 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
     "creativityLevel", "factCheck", "audience", "writingStyle",
   ],
   STORYBOARD_CONFIG_KEYS: ["splitStrategy"],
-  STORYBOARD_VISUAL_CONFIG_KEYS: ["aspectRatio", "style"],
+  STORYBOARD_VISUAL_CONFIG_KEYS: [
+    "aspectRatio", "style", "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode",
+  ],
   VOICE_CONFIG_KEYS: ["provider", "voiceURI", "voiceName", "speed", "pitch", "volume"],
   VISUAL_CONFIG_KEYS: [
     "generationMode", "imageGeneratorEngine", "generateType", "maxVideoScenes",
@@ -73,7 +75,7 @@ export const BACKGROUND_MODE_CONFIG = {
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
-    white: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, pure white background (#FFFFFF), no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
+    white: "CRITICAL BACKGROUND OVERRIDE: Use a pure white (#FFFFFF) seamless canvas while preserving every narrative subject, supporting character, prop, and spatial relationship required by the scene. Build a complete editorial composition on the white canvas with subtle contact shadows for grounding. Do not reduce the scene to a single isolated cutout unless the narration explicitly requires one subject only. No environmental scenery or colored backdrop.",
     contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
     blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
     gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
@@ -110,13 +112,13 @@ export const IMAGE_FOCUS_MODE_CONFIG = {
     default: "",
     portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot with clear facial features and natural separation from the supporting background.",
     action: "COMPOSITION PRIORITY: Show exactly one primary subject performing one clear action in one direction. Use a dynamic but readable pose while preserving anatomy and identity.",
-    landscape: "CRITICAL OVERRIDE: Use a wide-angle, epic cinematic shot. Emphasize the environment, scenery, and grand scale over specific subjects.",
+    landscape: "CRITICAL COMPOSITION OVERRIDE: Create a true wide establishing or wide master shot, never a portrait, close-up, headshot, detail shot, isolated object, or single-character cutout. Show the complete narrative situation through multiple spatially separated elements: full-body characters when present, relevant supporting people or props, foreground/midground/background depth, and ample context. The principal character must occupy no more than roughly one third of the frame. Preserve identity and readable action without making one face dominate the image.",
     conceptual: "COMPOSITION PRIORITY: Use artistic composition, mood, lighting, and physically visible symbolic objects. Express the concept through tangible, renderable elements rather than invisible or abstract ideas.",
   },
   BACKGROUND_CONSTRAINED_MODES: ["preserve", "transparent", "solid", "white", "gradient", "studio"],
   BACKGROUND_CONSTRAINED_DIRECTIVES: {
     portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot while strictly preserving the separately requested background treatment. Do not introduce blur, scenery, or environmental depth that conflicts with it.",
-    landscape: "COMPOSITION PRIORITY: Use a wide, balanced composition while strictly preserving the separately requested background treatment. Emphasize spatial arrangement without inventing scenery or environmental objects.",
+    landscape: "CRITICAL COMPOSITION OVERRIDE: Create a true wide master composition on the requested constrained background. Never use a portrait, close-up, headshot, detail shot, isolated object, or lone centered character. Arrange all narration-relevant full-body characters, supporting people, props, and symbolic elements across foreground, midground, and background-like depth using scale, overlap, and subtle contact shadows. Keep the principal character at no more than roughly one third of the frame and do not invent unrelated scenery.",
   },
   LABELS: {
     vi: { default: "Tự động", portrait: "Chủ thể nổi bật", action: "Hành động", landscape: "Toàn cảnh", conceptual: "Nghệ thuật" },

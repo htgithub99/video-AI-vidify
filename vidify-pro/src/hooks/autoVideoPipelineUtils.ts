@@ -17,6 +17,7 @@ export interface CachedVoiceAudio {
 export interface ReferenceChangeState {
   hasVisualOverrides: boolean;
   shouldRegenerateSceneAssets: boolean;
+  shouldRegenerateStoryboard: boolean;
 }
 
 export interface PipelineInvalidationState {
@@ -101,6 +102,7 @@ export const getReferenceChangeState = (
   const characterChanged = !_.isEqual(characterImages, _.defaultTo(project?.visualConfig?.characters?.[0]?.images, []));
 
   return {
+    shouldRegenerateStoryboard: styleChanged || characterChanged,
     hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]),
     shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged,
   };
@@ -147,6 +149,7 @@ export const getPipelineInvalidationState = (
     imageGeneratorEngine: config.imageGeneratorEngine,
     generateType: config.generateType,
     maxVideoScenes: config.maxVideoScenes,
+    imageFocusMode: config.imageFocusMode,
     aspectRatio: config.aspectRatio,
     style: config.stylePreset,
     chromeHeadless: config.chromeHeadless,
@@ -180,7 +183,7 @@ export const getPipelineInvalidationState = (
     _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
   );
   const regenerateScript = inputChanged || scriptConfigChanged;
-  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged;
+  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard;
   const regenerateVoice = regenerateScript || voiceConfigChanged;
   const regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
 

@@ -275,7 +275,6 @@ export function useAutoVideoPipeline(
         config.characterImages,
       );
       const invalidationState = getPipelineInvalidationState(existingTargetProj, config, referenceChangeState);
-      const { hasVisualOverrides } = referenceChangeState;
       const shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets;
 
       if (config.resumeMode && existingTargetProj) {
@@ -663,47 +662,40 @@ export function useAutoVideoPipeline(
         _.size(config.characterImages),
       ));
 
-      if (!isStoryboardCached || hasVisualOverrides || config.forceRegenerateScenes || didAnalyzeCharacters) {
-        if (!_.isEmpty(config.referenceImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-          const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages, backgroundMode: config.styleBackgroundMode }, requestSignal);
-          if (extractStyleRes.success && extractStyleRes.data?.style) {
-            const extractedStyle = extractStyleRes.data.style;
-            currentStylePreset = extractedStyle;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(
-              SecurityConstants.PLACEHOLDER_0,
-              _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(extractedStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-            ));
+      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters) {
+        if (!_.isEmpty(config.referenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
+        if (!_.isEmpty(config.thumbnailReferenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
 
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY);
-            const rewriteStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, {
-              storyboard: realScenes,
-              newStyle: extractedStyle,
-              aspectRatio: config.aspectRatio,
-              language: config.language,
-              visualConfig: {
-                styleBackgroundMode: config.styleBackgroundMode,
-                styleTextInImageMode: config.styleTextInImageMode,
-                imageFocusMode: config.imageFocusMode,
-              },
-            }, requestSignal);
-            if (rewriteStyleRes.success && rewriteStyleRes.data?.storyboard) {
-              realScenes = rewriteStyleRes.data.storyboard;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_APPLY_SUCCESS);
-            }
-          }
+        const [extractStyleRes, extractThumbStyleRes] = await Promise.all([
+          !_.isEmpty(config.referenceImages)
+            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+              images: config.referenceImages,
+              backgroundMode: config.styleBackgroundMode,
+            }, requestSignal)
+            : Promise.resolve(null),
+          !_.isEmpty(config.thumbnailReferenceImages)
+            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+              images: config.thumbnailReferenceImages,
+              backgroundMode: config.thumbnailBackgroundMode,
+            }, requestSignal)
+            : Promise.resolve(null),
+        ]);
+        throwIfCancelled();
+
+        if (extractStyleRes?.success && extractStyleRes.data?.style) {
+          currentStylePreset = extractStyleRes.data.style;
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(
+            SecurityConstants.PLACEHOLDER_0,
+            _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(currentStylePreset, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          ));
         }
 
-        if (!_.isEmpty(config.thumbnailReferenceImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
-          const extractThumbStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.thumbnailReferenceImages, backgroundMode: config.thumbnailBackgroundMode }, requestSignal);
-          if (extractThumbStyleRes.success && extractThumbStyleRes.data?.style) {
-            currentThumbnailStyle = extractThumbStyleRes.data.style;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
-              SecurityConstants.PLACEHOLDER_0,
-              _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(currentThumbnailStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-            ));
-          }
+        if (extractThumbStyleRes?.success && extractThumbStyleRes.data?.style) {
+          currentThumbnailStyle = extractThumbStyleRes.data.style;
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
+            SecurityConstants.PLACEHOLDER_0,
+            _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(currentThumbnailStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          ));
         }
 
         voiceUpdatedProj = {
@@ -726,47 +718,44 @@ export function useAutoVideoPipeline(
         };
         await syncProject(voiceUpdatedProj);
 
-        const automaticCharacters = _.filter(
-          _.defaultTo(voiceUpdatedProj.visualConfig.characters, analyzedCharacters),
-          (character) => !_.isEmpty(character.prompt) || !_.isEmpty(character.description),
-        );
-        if (_.isEmpty(config.characterImages) && !_.isEmpty(automaticCharacters)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
-          const rewriteAutomaticCharactersRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
-            storyboard: realScenes,
-            characters: _.map(automaticCharacters, (character) => ({
-              name: character.name,
-              prompt: character.prompt || character.description,
-            })),
-            aspectRatio: config.aspectRatio,
-            visualConfig: voiceUpdatedProj.visualConfig,
-          }, requestSignal);
-          if (rewriteAutomaticCharactersRes.success && rewriteAutomaticCharactersRes.data?.storyboard) {
-            realScenes = rewriteAutomaticCharactersRes.data.storyboard;
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
-          }
-        }
-
         if (!_.isEmpty(config.characterImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
           const extractCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, {
             images: config.characterImages,
-            characterDescription: PRESET_CONSTANTS.CHARACTER_BIO,
+            characterDescription: _.get(_.first(analyzedCharacters), "description", PRESET_CONSTANTS.CHARACTER_BIO),
           }, requestSignal);
           if (extractCharRes.success && extractCharRes.data?.characterPrompt) {
             const characterPrompt = extractCharRes.data.characterPrompt;
+            const primaryCharacter = _.defaultTo(_.first(analyzedCharacters), {
+              id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, SecurityConstants.DEFAULT_AMOUNT], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+              name: PRESET_CONSTANTS.CHARACTER_NAME,
+              description: characterPrompt,
+              prompt: characterPrompt,
+              images: [],
+              extracted: false,
+            } as CharacterConfig);
+            analyzedCharacters = [
+              {
+                ...primaryCharacter,
+                description: primaryCharacter.description || characterPrompt,
+                prompt: characterPrompt,
+                images: config.characterImages,
+                extracted: true,
+              },
+              ..._.tail(analyzedCharacters),
+            ];
+            voiceUpdatedProj = {
+              ...voiceUpdatedProj,
+              visualConfig: {
+                ...voiceUpdatedProj.visualConfig,
+                characters: analyzedCharacters,
+                characterPrompt,
+                characterImages: config.characterImages,
+                characterExtracted: true,
+              },
+            };
+            await syncProject(voiceUpdatedProj);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT_SUCCESS);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
-            const rewriteCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
-              storyboard: realScenes,
-              characters: [{ name: PRESET_CONSTANTS.CHARACTER_NAME, prompt: characterPrompt }],
-              aspectRatio: config.aspectRatio,
-              visualConfig: voiceUpdatedProj.visualConfig,
-            }, requestSignal);
-            if (rewriteCharRes.success && rewriteCharRes.data?.storyboard) {
-              realScenes = rewriteCharRes.data.storyboard;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
-            }
           }
         }
 
