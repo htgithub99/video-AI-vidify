@@ -489,7 +489,11 @@ export function useAutoVideoPipeline(
 
       let analyzedCharacters = _.defaultTo(newProj.visualConfig.characters, [] as CharacterConfig[]);
       let didAnalyzeCharacters = false;
-      if (!isScriptCached || _.isEmpty(analyzedCharacters)) {
+      const hasLegacyCharacterProfile = _.some(analyzedCharacters, (character) => _.some([
+        _.isEqual(character.name, PRESET_CONSTANTS.CHARACTER_NAME),
+        _.isEqual(character.description, PRESET_CONSTANTS.CHARACTER_BIO),
+      ]));
+      if (!isScriptCached || _.isEmpty(analyzedCharacters) || hasLegacyCharacterProfile) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_ANALYZE);
         const analyzeCharacterRes = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script: realScript }, requestSignal);
         throwIfCancelled();

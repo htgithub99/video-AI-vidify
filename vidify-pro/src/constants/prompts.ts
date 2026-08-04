@@ -1015,6 +1015,14 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
 export const getCharacterAnalysisPrompt = (script: string): string => `Analyze the following script and identify the main characters (maximum 3 characters, ordered by importance).
 For each character, identify their name, gender, age group, appearance details mentioned (like hair color, clothing style, facial features), write a concise description in English, and extract/generate a detailed character design prompt in English consisting of keywords and descriptive phrases (max 30 words in total, separated by commas) that can be used directly for AI image generators.
 
+STRICT LANGUAGE AND IDENTITY RULES:
+- Write every "description" and "prompt" value entirely in natural English, regardless of the script language.
+- Preserve a real proper name in its original form. For an unnamed character, create a short descriptive English label such as "Former Prisoner" or "Hiring Manager"; never return a generic localized label.
+- Classify only recurring, visually representable people. Do not treat the narrator, audience, society, crowds, or briefly mentioned people as characters unless they physically recur in the story.
+- Keep immutable identity traits stable: approximate age, gender presentation, face shape, skin tone, hair, body build, signature clothing, accessories, and color palette.
+- Separate permanent identity traits from scene-specific pose, action, expression, camera angle, and temporary costume changes.
+- Return characters in importance order: primary character first, then supporting characters.
+
 Output ONLY a valid JSON array matching the structure: 
 [
   {
