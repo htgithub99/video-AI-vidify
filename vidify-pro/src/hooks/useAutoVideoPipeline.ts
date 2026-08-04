@@ -24,6 +24,7 @@ import {
   BackgroundMode,
   TextInImageMode,
   ImageFocusMode,
+  CharacterConfig,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -408,14 +409,7 @@ export function useAutoVideoPipeline(
             sceneReferenceImages: config.sceneReferenceImages,
             referenceImages: config.sceneReferenceImages,
             referencePrompt: config.stylePreset,
-            characters: [
-              {
-                id: REFACTOR_CONSTANTS.AVG_CHARACTER_ID_DEFAULT,
-                name: PRESET_CONSTANTS.CHARACTER_NAME,
-                description: PRESET_CONSTANTS.CHARACTER_BIO,
-                images: config.characterImages,
-              },
-            ],
+            characters: [],
           },
           seoConfig: { numTitles: 3, numDescriptions: 1, numHashtags: 5, numTags: 10 },
           creditsUsed: 0,
@@ -494,6 +488,38 @@ export function useAutoVideoPipeline(
         newProj = scriptUpdatedProj;
       }
 
+      let analyzedCharacters = _.defaultTo(newProj.visualConfig.characters, [] as CharacterConfig[]);
+      let didAnalyzeCharacters = false;
+      if (!isScriptCached || _.isEmpty(analyzedCharacters)) {
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_ANALYZE);
+        const analyzeCharacterRes = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script: realScript }, requestSignal);
+        throwIfCancelled();
+        if (analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)) {
+          analyzedCharacters = _.map(_.take(analyzeCharacterRes.data.characters, REFACTOR_CONSTANTS.HOOK_COUNT), (character: any, index: number): CharacterConfig => ({
+            id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, _.add(index, 1)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+            name: character.name,
+            description: character.description,
+            prompt: character.prompt || character.description,
+            images: _.isEqual(index, 0) ? config.characterImages : [],
+            extracted: false,
+          }));
+          didAnalyzeCharacters = true;
+          newProj = {
+            ...newProj,
+            visualConfig: {
+              ...newProj.visualConfig,
+              characters: analyzedCharacters,
+              characterAnalysis: _.join(_.map(analyzedCharacters, (character) => _.join([character.name, character.description], REFACTOR_CONSTANTS.VD_BLANK)), "\n"),
+              characterPrompt: _.get(_.first(analyzedCharacters), "prompt", REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+              characterImages: config.characterImages,
+              characterExtracted: false,
+            },
+          };
+          await syncProject(newProj);
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_ANALYZE_SUCCESS);
+        }
+      }
+
       if (!isStoryboardCached) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
         appendLog(T.logStoryboardRequestDetail(config.splitStrategy, !_.isEmpty(config.referenceImages)));
@@ -510,6 +536,10 @@ export function useAutoVideoPipeline(
           visualStyle: newProj.visualConfig.style || "Cinematic",
           referenceImages: _.defaultTo(newProj.visualConfig.styleReferenceImages, config.referenceImages),
           referenceStyle: newProj.visualConfig.referencePrompt,
+          referenceCharacters: jsonUtils.safeStringify(_.map(analyzedCharacters, (character) => ({
+            name: character.name,
+            description: character.prompt || character.description,
+          }))),
           visualDensity: 5,
           bypassCache: true,
         };
@@ -629,7 +659,7 @@ export function useAutoVideoPipeline(
         _.size(config.characterImages),
       ));
 
-      if (!isStoryboardCached || hasVisualOverrides || config.forceRegenerateScenes) {
+      if (!isStoryboardCached || hasVisualOverrides || config.forceRegenerateScenes || didAnalyzeCharacters) {
         if (!_.isEmpty(config.referenceImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
           const extractStyleRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages, backgroundMode: config.styleBackgroundMode }, requestSignal);
@@ -691,6 +721,27 @@ export function useAutoVideoPipeline(
           },
         };
         await syncProject(voiceUpdatedProj);
+
+        const automaticCharacters = _.filter(
+          _.defaultTo(voiceUpdatedProj.visualConfig.characters, analyzedCharacters),
+          (character) => !_.isEmpty(character.prompt) || !_.isEmpty(character.description),
+        );
+        if (_.isEmpty(config.characterImages) && !_.isEmpty(automaticCharacters)) {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE);
+          const rewriteAutomaticCharactersRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, {
+            storyboard: realScenes,
+            characters: _.map(automaticCharacters, (character) => ({
+              name: character.name,
+              prompt: character.prompt || character.description,
+            })),
+            aspectRatio: config.aspectRatio,
+            visualConfig: voiceUpdatedProj.visualConfig,
+          }, requestSignal);
+          if (rewriteAutomaticCharactersRes.success && rewriteAutomaticCharactersRes.data?.storyboard) {
+            realScenes = rewriteAutomaticCharactersRes.data.storyboard;
+            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_REWRITE_SUCCESS);
+          }
+        }
 
         if (!_.isEmpty(config.characterImages)) {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
@@ -990,6 +1041,21 @@ export function useAutoVideoPipeline(
             }
           }
 
+          const thumbnailCharacters = _.take(_.filter(_.defaultTo(imageUpdatedProj.visualConfig.characters, []), (character) => !_.isEmpty(character.prompt) || !_.isEmpty(character.description)), 1);
+          if (!_.isEmpty(thumbnailCharacters)) {
+            const rewriteCharacterThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS_CHARACTER, {
+              thumbnails: parsedThumbs,
+              characters: _.map(thumbnailCharacters, (character) => ({
+                name: character.name,
+                prompt: character.prompt || character.description,
+              })),
+              aspectRatio: config.aspectRatio,
+              visualConfig: imageUpdatedProj.visualConfig,
+            }, requestSignal);
+            if (rewriteCharacterThumbRes.success && rewriteCharacterThumbRes.data?.thumbnails) {
+              parsedThumbs = rewriteCharacterThumbRes.data.thumbnails;
+            }
+          }
           const targetThumbsToGen = _.filter(parsedThumbs, (thumb) => {
             if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
             return true;
