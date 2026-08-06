@@ -4,7 +4,8 @@ import { PipelineWizardState } from "./usePipelineWizard";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { appError } from "../../lib/logger.js";
-import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS, PIPELINE_STEP2_TEXTS } from "../../constants";
+import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS, PIPELINE_STEP2_TEXTS, REFACTOR_CONSTANTS, UI_MESSAGE_DURATION } from "../../constants";
+import { setTemporaryState } from "./pipeline-utils";
 
 import * as LucideIcons from "lucide-react";
 
@@ -399,8 +400,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   type="button"
                                   onClick={() => {
                                     navigator.clipboard.writeText(`${char.name}: ${char.description}`);
-                                    setInfoMsg(t.charDescCopied);
-                                    setTimeout(() => setInfoMsg(""), 3000);
+                                    setTemporaryState(setInfoMsg, t.charDescCopied, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
                                   }}
                                   title={t.charCopyDesc}
                                   className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
@@ -513,8 +513,7 @@ export default function PipelineStep2(props: PipelineWizardState) {
                                   type="button"
                                   onClick={() => {
                                     navigator.clipboard.writeText(char.prompt || "");
-                                    setInfoMsg(t.charCopied);
-                                    setTimeout(() => setInfoMsg(""), 3000);
+                                    setTemporaryState(setInfoMsg, t.charCopied, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
                                   }}
                                   className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto"
                                   title={t.Copy || "Sao chép"}

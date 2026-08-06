@@ -1,12 +1,13 @@
 import _ from "lodash";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
-import { GenerateType, StoryboardScene } from "../types";
+import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
 export interface ProjectImageItem {
   sceneId: string;
   prompt: string;
   generateType?: GenerateType;
+  idempotencyKey?: string;
 }
 
 export interface ProjectImageResult {
@@ -39,12 +40,41 @@ export interface ProjectImageGenerationSummary {
   cancelled: boolean;
 }
 
+export interface SceneAssetSummary {
+  total: number;
+  completed: number;
+  missingSceneIds: string[];
+  rejectedSceneIds: string[];
+  complete: boolean;
+}
+
 export const hasSceneAsset = (scene: Pick<StoryboardScene, "assetUrl" | "assetUrls">): boolean => (
   _.some(
     [scene.assetUrl, ..._.castArray(_.defaultTo(scene.assetUrls, []))],
     (assetUrl) => !_.isEmpty(assetUrl),
   )
 );
+
+export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSummary => {
+  const missingSceneIds = _.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY);
+  const rejectedSceneIds = _.map(
+    _.filter(scenes, (scene) => _.includes(
+      [SceneAssetStatus.Rejected, SceneAssetStatus.Failed],
+      scene.assetStatus,
+    )),
+    REFACTOR_CONSTANTS.AVG_ID_KEY,
+  );
+  const total = _.size(scenes);
+  const completed = _.subtract(total, _.size(missingSceneIds));
+
+  return {
+    total,
+    completed,
+    missingSceneIds,
+    rejectedSceneIds,
+    complete: _.every([_.isEqual(completed, total), _.isEmpty(rejectedSceneIds)], Boolean),
+  };
+};
 
 const hasImageResult = (result?: ProjectImageResult): boolean => (
   _.every([
@@ -56,6 +86,7 @@ const hasImageResult = (result?: ProjectImageResult): boolean => (
 const isGenerationCancelled = (cancelRef?: { current: boolean }): boolean => (
   _.includes([true], Boolean(cancelRef?.current))
 );
+const ADAPTIVE_CONCURRENCY = { INITIAL: 3, MIN: 1, THROTTLE_PATTERN: /429|quota|timeout|rate.?limit/i } as const;
 
 const createCountError = (template: string, count: number): Error => new Error(
   _.replace(
@@ -180,6 +211,7 @@ export const generateProjectImages = async ({
   onFallbackItemStart,
   onFallbackResult,
 }: ProjectImageGenerationConfig): Promise<ProjectImageGenerationSummary> => {
+  const uniqueItems = _.uniqBy(items, item => item.idempotencyKey || item.sceneId);
   const resultsBySceneId = new Map<string, ProjectImageResult>();
   let batchError: Error | undefined;
 
@@ -188,7 +220,7 @@ export const generateProjectImages = async ({
       await safeSystemFetchStream(
         API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
         {
-          items,
+          items: uniqueItems,
           visualConfig,
           style,
           sandboxConfig,
@@ -208,15 +240,19 @@ export const generateProjectImages = async ({
     }
 
     if (isGenerationCancelled(cancelRef)) {
+      const completedSceneIds = _.map(
+        _.filter(uniqueItems, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
+        (item) => item.sceneId,
+      );
       return {
-        completedSceneIds: [],
-        failedSceneIds: [],
+        completedSceneIds,
+        failedSceneIds: _.difference(_.map(uniqueItems, "sceneId"), completedSceneIds),
         cancelled: true,
       };
     }
 
     const fallbackItems = _.filter(
-      items,
+      uniqueItems,
       (item) => !hasImageResult(resultsBySceneId.get(item.sceneId)),
     );
 
@@ -227,35 +263,37 @@ export const generateProjectImages = async ({
       ));
       onFallbackStart?.(fallbackReason, fallbackItems);
 
-      for (const [index, item] of fallbackItems.entries()) {
-        if (isGenerationCancelled(cancelRef)) {
-          break;
+      let nextIndex = 0;
+      let targetConcurrency = _.min([ADAPTIVE_CONCURRENCY.INITIAL, _.size(fallbackItems)]);
+      const worker = async (workerIndex: number): Promise<void> => {
+        while (!isGenerationCancelled(cancelRef) && workerIndex < targetConcurrency) {
+          const index = nextIndex++;
+          if (index >= _.size(fallbackItems)) return;
+          const item = fallbackItems[index];
+          onFallbackItemStart?.(item, index, _.size(fallbackItems));
+          try {
+            const result = await generateFallbackImage(item, createFallbackPayload);
+            resultsBySceneId.set(item.sceneId, result);
+            onFallbackResult?.(result);
+            if (!result.success && ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(result.warning || "")) targetConcurrency = _.max([ADAPTIVE_CONCURRENCY.MIN, targetConcurrency - 1])!;
+          } catch (error) {
+            const warning = error instanceof Error ? error.message : REFACTOR_CONSTANTS.UNKNOWN_WARNING;
+            if (ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(warning)) targetConcurrency = _.max([ADAPTIVE_CONCURRENCY.MIN, targetConcurrency - 1])!;
+            const failedResult: ProjectImageResult = { sceneId: item.sceneId, success: false, warning };
+            resultsBySceneId.set(item.sceneId, failedResult);
+            onFallbackResult?.(failedResult);
+          }
         }
-        onFallbackItemStart?.(item, index, _.size(fallbackItems));
-        try {
-          const result = await generateFallbackImage(item, createFallbackPayload);
-          resultsBySceneId.set(item.sceneId, result);
-          onFallbackResult?.(result);
-        } catch (error) {
-          const failedResult: ProjectImageResult = {
-            sceneId: item.sceneId,
-            success: false,
-            warning: error instanceof Error
-              ? error.message
-              : REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-          };
-          resultsBySceneId.set(item.sceneId, failedResult);
-          onFallbackResult?.(failedResult);
-        }
-      }
+      };
+      await Promise.all(_.map(_.range(targetConcurrency), worker));
     }
 
     const completedSceneIds = _.map(
-      _.filter(items, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
+      _.filter(uniqueItems, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
       (item) => item.sceneId,
     );
     const failedSceneIds = _.map(
-      _.filter(items, (item) => !hasImageResult(resultsBySceneId.get(item.sceneId))),
+      _.filter(uniqueItems, (item) => !hasImageResult(resultsBySceneId.get(item.sceneId))),
       (item) => item.sceneId,
     );
 

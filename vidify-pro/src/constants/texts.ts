@@ -322,6 +322,13 @@ export const EXTERNAL_AUDIO_TEXTS = {
 } as const;
 
 export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `CRITICAL VISUAL DIRECTIVE - STORY-DRIVEN VIDEO ESSAY:
+- Follow one central character and preserve character, costume, signature props, screen direction, geography, time, and emotional continuity.
+- Visualize concrete actions and human-scale consequences before abstract explanation. Alternate establishing, medium, close-up, insert, reaction, environment, and symbolic shots; avoid repetitive centered figures on empty backgrounds.
+- Treat recurring objects and locations as deliberate motifs. Reintroduce them only when their meaning evolves or pays off.
+- Build visual escalation from an intimate cold open through progressive compromise, mechanism reveal, reversal, climax, moral reckoning, and reflective resolution.
+- For illustrated styles, preserve documentary logic and causal clarity without forcing photorealism. Do not fabricate visual evidence, documents, quotations, news screenshots, logos, or readable text.
+- Every prompt must specify exact subject count, visible action, shot size, camera angle, composition, emotional state, continuity requirements, and forbidden anatomy/duplicate/text artifacts.`,
   [VideoGenre.NARRATIVE_EXPLAINER]: `CRITICAL VISUAL DIRECTIVE - NARRATIVE EXPLAINER / VIDEO ESSAY GENRE:
 - Follow the script's central person, object, process, or question visually so the video feels like one continuous investigation rather than unrelated stock images.
 - Alternate concrete real-world scenes, human-scale consequences, accurate process visualizations, maps/charts when numbers matter, and simple visual analogies when concepts are abstract.

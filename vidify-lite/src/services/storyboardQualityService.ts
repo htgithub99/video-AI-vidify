@@ -1,0 +1,4 @@
+import _ from "lodash";
+import { StoryboardQualityReport } from "../types";
+const MIN_SCORE = 85;
+export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityReport>): StoryboardQualityReport => { const score=(input:unknown)=>_.clamp(_.toNumber(input),0,100); const report={continuityScore:score(value.continuityScore),shotDiversityScore:score(value.shotDiversityScore),visibleActionScore:score(value.visibleActionScore),editabilityScore:score(value.editabilityScore),blockingErrors:_.uniq(_.compact(_.castArray(value.blockingErrors))),warnings:_.uniq(_.compact(_.castArray(value.warnings))),passed:false}; report.passed=_.isEmpty(report.blockingErrors)&&_.every([report.continuityScore,report.shotDiversityScore,report.visibleActionScore,report.editabilityScore],item=>item>=MIN_SCORE); return report; };

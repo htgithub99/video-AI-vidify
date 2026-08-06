@@ -131,6 +131,20 @@ export const PROJECT_ASSET_GROUP = {
   IMAGES: "images",
   VIDEOS: "videos",
 } as const;
+
+export const UI_MESSAGE_DURATION = {
+  STANDARD_MS: 3000,
+  EXTENDED_MS: 4000,
+  OBJECT_URL_REVOKE_MS: 100,
+} as const;
+
+export const JSON_UTILS_CONFIG = {
+  PREVIEW_LENGTH: 100,
+  EMPTY_FALLBACK: "",
+  PARSE_ERROR_EVENT: "ERROR_PARSING_JSON",
+  STRINGIFY_ERROR_EVENT: "ERROR_STRINGIFYING_JSON",
+} as const;
+export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
 

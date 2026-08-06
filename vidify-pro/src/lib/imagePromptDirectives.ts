@@ -7,7 +7,10 @@ const appendDirectiveBeforeAspectRatio = (prompt: string, directive: string): st
   if (_.isEmpty(directive)) return prompt;
   const aspectRatio = _.head(prompt.match(REFACTOR_CONSTANTS.AVG_AR_REGEX) || []);
   const promptWithoutAspectRatio = _.trim(_.replace(prompt, REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-  return _.join(_.compact([promptWithoutAspectRatio, directive, aspectRatio]), REFACTOR_CONSTANTS.AVG_BLANK);
+  const promptWithDirective = _.includes(_.toLower(promptWithoutAspectRatio), _.toLower(_.trim(directive)))
+    ? promptWithoutAspectRatio
+    : _.join(_.compact([promptWithoutAspectRatio, directive]), REFACTOR_CONSTANTS.AVG_BLANK);
+  return _.join(_.compact([promptWithDirective, aspectRatio]), REFACTOR_CONSTANTS.AVG_BLANK);
 };
 
 export const resolveImageFocusDirective = (mode: ImageFocusMode, backgroundMode: BackgroundMode): string => {

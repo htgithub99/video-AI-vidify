@@ -133,10 +133,6 @@ const getMotionForScene = (cameraMotion: string, progress: number): MotionResult
   return MOTION_STYLES[RENDER_LOGIC_CONSTANTS.MOTION_STATIC](progress);
 };
 
-// ═══════════════════════════════════════════════════════
-// SCENE TIME RANGES
-// ═══════════════════════════════════════════════════════
-
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
   return _.map(storyboard, (sc) => {

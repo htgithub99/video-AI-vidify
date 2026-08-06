@@ -30,9 +30,22 @@ export const PIPELINE_CONFIG = {
   DEFAULT_TARGET_DURATION_SECONDS: 15,
   SCENES_PER_PAGE: 12,
   PROJECT_COMPARE_KEYS: [
-    "name", "description", "input", "config", "hookConfig", "voiceConfig",
-    "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig",
-    "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"
+    "name",
+    "description",
+    "input",
+    "config",
+    "hookConfig",
+    "voiceConfig",
+    "visualConfig",
+    "storyboard",
+    "thumbnails",
+    "chapters",
+    "seoConfig",
+    "seo",
+    "assets",
+    "currentStep",
+    "creditsUsed",
+    "storyboardSourceMode",
   ],
 };
 
@@ -52,41 +65,106 @@ export const AUTO_VIDEO_PIPELINE_PROGRESS = {
 export const AUTO_VIDEO_PIPELINE_CONFIG = {
   GENERATED_MEDIA_LANGUAGE_MARKER: "CRITICAL GENERATED-MEDIA LANGUAGE RULE",
   SCRIPT_CONFIG_KEYS: [
-    "genre", "language", "duration", "rewriteLevel", "similarityReduction",
-    "creativityLevel", "factCheck", "audience", "writingStyle",
+    "genre",
+    "language",
+    "duration",
+    "rewriteLevel",
+    "similarityReduction",
+    "creativityLevel",
+    "factCheck",
+    "audience",
+    "writingStyle",
   ],
   STORYBOARD_CONFIG_KEYS: ["splitStrategy"],
   STORYBOARD_VISUAL_CONFIG_KEYS: [
-    "aspectRatio", "style", "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode",
+    "aspectRatio",
+    "style",
+    "styleBackgroundMode",
+    "styleTextInImageMode",
+    "imageFocusMode",
   ],
-  VOICE_CONFIG_KEYS: ["provider", "voiceURI", "voiceName", "speed", "pitch", "volume"],
+  VOICE_CONFIG_KEYS: [
+    "provider",
+    "voiceURI",
+    "voiceName",
+    "speed",
+    "pitch",
+    "volume",
+  ],
   VISUAL_CONFIG_KEYS: [
-    "generationMode", "imageGeneratorEngine", "generateType", "maxVideoScenes",
-    "aspectRatio", "style", "chromeHeadless", "videoDuration",
-    "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode",
+    "generationMode",
+    "imageGeneratorEngine",
+    "generateType",
+    "maxVideoScenes",
+    "aspectRatio",
+    "style",
+    "chromeHeadless",
+    "videoDuration",
+    "styleBackgroundMode",
+    "styleTextInImageMode",
+    "imageFocusMode",
   ],
 } as const;
 
 export const BACKGROUND_MODE_CONFIG = {
   DEFAULT: "auto",
-  OPTIONS: ["auto", "preserve", "transparent", "solid", "white", "contextual", "blurred", "gradient", "studio"],
+  OPTIONS: [
+    "auto",
+    "preserve",
+    "transparent",
+    "solid",
+    "white",
+    "contextual",
+    "blurred",
+    "gradient",
+    "studio",
+  ],
   DIRECTIVES: {
     auto: "Choose the background naturally from the content and composition.",
-    preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
-    transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
-    solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
-    white: "CRITICAL BACKGROUND OVERRIDE: Use a pure white (#FFFFFF) seamless canvas while preserving every narrative subject, supporting character, prop, and spatial relationship required by the scene. Build a complete editorial composition on the white canvas with subtle contact shadows for grounding. Do not reduce the scene to a single isolated cutout unless the narration explicitly requires one subject only. No environmental scenery or colored backdrop.",
-    contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
-    blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
-    gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
-    studio: "CRITICAL BACKGROUND OVERRIDE: Use a minimal professional studio backdrop with controlled soft lighting and no environmental scenery.",
+    preserve:
+      "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
+    transparent:
+      "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
+    solid:
+      "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
+    white:
+      "CRITICAL BACKGROUND OVERRIDE: Use a pure white (#FFFFFF) seamless canvas while preserving every narrative subject, supporting character, prop, and spatial relationship required by the scene. Build a complete editorial composition on the white canvas with subtle contact shadows for grounding. Do not reduce the scene to a single isolated cutout unless the narration explicitly requires one subject only. No environmental scenery or colored backdrop.",
+    contextual:
+      "Create a detailed contextual environment that supports the scene narrative and subject.",
+    blurred:
+      "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
+    gradient:
+      "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
+    studio:
+      "CRITICAL BACKGROUND OVERRIDE: Use a minimal professional studio backdrop with controlled soft lighting and no environmental scenery.",
   },
   LABELS: {
-    vi: { auto: "Tự động", preserve: "Giữ nền mẫu", transparent: "Không nền", solid: "Nền đơn sắc", white: "Nền trắng", contextual: "Tạo bối cảnh", blurred: "Nền mờ", gradient: "Nền gradient", studio: "Nền studio" },
-    en: { auto: "Automatic", preserve: "Keep sample", transparent: "No background", solid: "Solid color", white: "White", contextual: "Create context", blurred: "Blurred", gradient: "Gradient", studio: "Studio" },
+    vi: {
+      auto: "Tự động",
+      preserve: "Giữ nền mẫu",
+      transparent: "Không nền",
+      solid: "Nền đơn sắc",
+      white: "Nền trắng",
+      contextual: "Tạo bối cảnh",
+      blurred: "Nền mờ",
+      gradient: "Nền gradient",
+      studio: "Nền studio",
+    },
+    en: {
+      auto: "Automatic",
+      preserve: "Keep sample",
+      transparent: "No background",
+      solid: "Solid color",
+      white: "White",
+      contextual: "Create context",
+      blurred: "Blurred",
+      gradient: "Gradient",
+      studio: "Studio",
+    },
   },
   EXTRACTION_PREFIX: "Background treatment requirement:",
-  EXTRACTION_SUFFIX: "Include the observed background treatment in the extracted style when the requirement asks to preserve it.",
+  EXTRACTION_SUFFIX:
+    "Include the observed background treatment in the extracted style when the requirement asks to preserve it.",
 } as const;
 
 export const TEXT_IN_IMAGE_MODE_CONFIG = {
@@ -94,14 +172,30 @@ export const TEXT_IN_IMAGE_MODE_CONFIG = {
   OPTIONS: ["auto", "no_text", "minimal", "moderate", "abundant"],
   DIRECTIVES: {
     auto: "",
-    no_text: "CRITICAL OVERRIDE: STRICTLY enforce absolutely NO text, NO typography, NO letters, NO numbers, NO watermarks, NO signatures, NO logos anywhere in the image. The image must be completely text-free.",
-    minimal: "CRITICAL OVERRIDE: Allow only minimal text. Keep typography sparse and unobtrusive.",
-    moderate: "CRITICAL OVERRIDE: Include a moderate amount of text and typography, integrated naturally into the image.",
-    abundant: "CRITICAL OVERRIDE: The image MUST feature abundant text, highly visible typography, or many words seamlessly integrated.",
+    no_text:
+      "CRITICAL OVERRIDE: STRICTLY enforce absolutely NO text, NO typography, NO letters, NO numbers, NO watermarks, NO signatures, NO logos anywhere in the image. The image must be completely text-free.",
+    minimal:
+      "CRITICAL OVERRIDE: Allow only minimal text. Keep typography sparse and unobtrusive.",
+    moderate:
+      "CRITICAL OVERRIDE: Include a moderate amount of text and typography, integrated naturally into the image.",
+    abundant:
+      "CRITICAL OVERRIDE: The image MUST feature abundant text, highly visible typography, or many words seamlessly integrated.",
   },
   LABELS: {
-    vi: { auto: "Tự động", no_text: "Không có chữ", minimal: "Ít chữ", moderate: "Chữ vừa", abundant: "Nhiều chữ" },
-    en: { auto: "Auto", no_text: "No text", minimal: "Minimal text", moderate: "Moderate text", abundant: "Abundant text" },
+    vi: {
+      auto: "Tự động",
+      no_text: "Không có chữ",
+      minimal: "Ít chữ",
+      moderate: "Chữ vừa",
+      abundant: "Nhiều chữ",
+    },
+    en: {
+      auto: "Auto",
+      no_text: "No text",
+      minimal: "Minimal text",
+      moderate: "Moderate text",
+      abundant: "Abundant text",
+    },
   },
 } as const;
 
@@ -110,19 +204,44 @@ export const IMAGE_FOCUS_MODE_CONFIG = {
   OPTIONS: ["default", "portrait", "action", "landscape", "conceptual"],
   DIRECTIVES: {
     default: "",
-    portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot with clear facial features and natural separation from the supporting background.",
-    action: "COMPOSITION PRIORITY: Show exactly one primary subject performing one clear action in one direction. Use a dynamic but readable pose while preserving anatomy and identity.",
-    landscape: "CRITICAL COMPOSITION OVERRIDE: Create a true wide establishing or wide master shot, never a portrait, close-up, headshot, detail shot, isolated object, or single-character cutout. Show the complete narrative situation through multiple spatially separated elements: full-body characters when present, relevant supporting people or props, foreground/midground/background depth, and ample context. The principal character must occupy no more than roughly one third of the frame. Preserve identity and readable action without making one face dominate the image.",
-    conceptual: "COMPOSITION PRIORITY: Use artistic composition, mood, lighting, and physically visible symbolic objects. Express the concept through tangible, renderable elements rather than invisible or abstract ideas.",
+    portrait:
+      "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot with clear facial features and natural separation from the supporting background.",
+    action:
+      "COMPOSITION PRIORITY: Show exactly one primary subject performing one clear action in one direction. Use a dynamic but readable pose while preserving anatomy and identity.",
+    landscape:
+      "CRITICAL COMPOSITION OVERRIDE: Create a true wide establishing or wide master shot, never a portrait, close-up, headshot, detail shot, isolated object, or single-character cutout. Show the complete narrative situation through multiple spatially separated elements: full-body characters when present, relevant supporting people or props, foreground/midground/background depth, and ample context. The principal character must occupy no more than roughly one third of the frame. Preserve identity and readable action without making one face dominate the image.",
+    conceptual:
+      "COMPOSITION PRIORITY: Use artistic composition, mood, lighting, and physically visible symbolic objects. Express the concept through tangible, renderable elements rather than invisible or abstract ideas.",
   },
-  BACKGROUND_CONSTRAINED_MODES: ["preserve", "transparent", "solid", "white", "gradient", "studio"],
+  BACKGROUND_CONSTRAINED_MODES: [
+    "preserve",
+    "transparent",
+    "solid",
+    "white",
+    "gradient",
+    "studio",
+  ],
   BACKGROUND_CONSTRAINED_DIRECTIVES: {
-    portrait: "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot while strictly preserving the separately requested background treatment. Do not introduce blur, scenery, or environmental depth that conflicts with it.",
-    landscape: "CRITICAL COMPOSITION OVERRIDE: Create a true wide master composition on the requested constrained background. Never use a portrait, close-up, headshot, detail shot, isolated object, or lone centered character. Arrange all narration-relevant full-body characters, supporting people, props, and symbolic elements across foreground, midground, and background-like depth using scale, overlap, and subtle contact shadows. Keep the principal character at no more than roughly one third of the frame and do not invent unrelated scenery.",
+    portrait:
+      "COMPOSITION PRIORITY: Make one primary subject visually dominant in a close-up or medium shot while strictly preserving the separately requested background treatment. Do not introduce blur, scenery, or environmental depth that conflicts with it.",
+    landscape:
+      "CRITICAL COMPOSITION OVERRIDE: Create a true wide master composition on the requested constrained background. Never use a portrait, close-up, headshot, detail shot, isolated object, or lone centered character. Arrange all narration-relevant full-body characters, supporting people, props, and symbolic elements across foreground, midground, and background-like depth using scale, overlap, and subtle contact shadows. Keep the principal character at no more than roughly one third of the frame and do not invent unrelated scenery.",
   },
   LABELS: {
-    vi: { default: "Tự động", portrait: "Chủ thể nổi bật", action: "Hành động", landscape: "Toàn cảnh", conceptual: "Nghệ thuật" },
-    en: { default: "Auto", portrait: "Subject Focus", action: "Action", landscape: "Wide Scene", conceptual: "Artistic" },
+    vi: {
+      default: "Tự động",
+      portrait: "Chủ thể nổi bật",
+      action: "Hành động",
+      landscape: "Toàn cảnh",
+      conceptual: "Nghệ thuật",
+    },
+    en: {
+      default: "Auto",
+      portrait: "Subject Focus",
+      action: "Action",
+      landscape: "Wide Scene",
+      conceptual: "Artistic",
+    },
   },
 } as const;
 
@@ -130,6 +249,25 @@ export const PROJECT_ASSET_GROUP = {
   VOICES: "voices",
   IMAGES: "images",
   VIDEOS: "videos",
+} as const;
+
+export const UI_MESSAGE_DURATION = {
+  STANDARD_MS: 3000,
+  EXTENDED_MS: 4000,
+  OBJECT_URL_REVOKE_MS: 100,
+} as const;
+export const JSON_UTILS_CONFIG = {
+  PREVIEW_LENGTH: 100,
+  EMPTY_FALLBACK: "",
+  PARSE_ERROR_EVENT: "ERROR_PARSING_JSON",
+  STRINGIFY_ERROR_EVENT: "ERROR_STRINGIFYING_JSON",
+} as const;
+export const REFERENCE_ASSET_GROUP = {
+  STYLE: "style",
+  SCENE: "scene",
+  THUMBNAIL: "thumbnail",
+  CHARACTER: "character",
+  UPSCALED: "upscaled",
 } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
@@ -140,8 +278,18 @@ export const REGENERATION_TARGET = {
   RENDER: "render",
 } as const;
 export const REGENERATION_TEXTS = {
-  vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
-  en: { voice: "Redo voice", images: "Redo images", render: "Render again", failed: "Could not remove old assets. Please try again." },
+  vi: {
+    voice: "Tạo lại voice",
+    images: "Tạo lại ảnh",
+    render: "Ghép lại",
+    failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại.",
+  },
+  en: {
+    voice: "Redo voice",
+    images: "Redo images",
+    render: "Render again",
+    failed: "Could not remove old assets. Please try again.",
+  },
 } as const;
 
 export const FFMPEG_RESOLUTIONS = {
@@ -233,11 +381,14 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
 } as const;
 
 export const GEMINI_CHAT_VIDEO_SELECTORS = {
-  ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
+  ASPECT_BUTTON:
+    'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
   ASPECT_OPTIONS: '[role="menuitemradio"]',
-  REFERENCE_INPUT: 'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+  REFERENCE_INPUT:
+    'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
   PROCESSING: "async-processing-chip",
-  GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
+  GENERATED_VIDEO:
+    "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
 } as const;
 
 export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
@@ -263,7 +414,7 @@ export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
   PRIORITY_SELECTOR: [
     "model-response:nth-last-of-type(-n+2)",
     "model-response:nth-last-of-type(-n+2) thinking-overlay",
-    'model-response:nth-last-of-type(-n+2) [aria-busy]',
+    "model-response:nth-last-of-type(-n+2) [aria-busy]",
     "model-response:nth-last-of-type(-n+2) download-generated-image-button",
     'model-response:nth-last-of-type(-n+2) gem-icon-button[data-test-id="download-generated-image-button"]',
     "model-response:nth-last-of-type(-n+2) generated-video",
@@ -299,14 +450,17 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
     VIDEO_SUCCESS: "video_extract_success",
   },
   SOURCE_SELECTOR: "source[src]",
-  UNEXPECTED_IMAGE_SELECTOR: ".attachment-container.generated-images img, generated-image img, download-generated-image-button img",
+  UNEXPECTED_IMAGE_SELECTOR:
+    ".attachment-container.generated-images img, generated-image img, download-generated-image-button img",
   ERROR_PREFIX: "ERROR:",
   HTTP_ERROR_TEMPLATE: "HTTP {0}",
   EMPTY_SOURCE_ERROR: "Không tìm thấy URL media trong phản hồi Gemini.",
-  VIDEO_UNEXPECTED_IMAGE_ERROR: "Gemini trả về ảnh thay vì video. Hãy thử tạo lại cảnh.",
+  VIDEO_UNEXPECTED_IMAGE_ERROR:
+    "Gemini trả về ảnh thay vì video. Hãy thử tạo lại cảnh.",
   VIDEO_TIMEOUT_ERROR: "Gemini chưa trả về video. Hãy thử lại sau.",
   IMAGE_TIMEOUT_ERROR: "Gemini chưa trả về ảnh. Hãy thử lại sau.",
-  GENERATION_REJECTED_ERROR: "Gemini không thể tạo nội dung này. Hãy điều chỉnh mô tả và thử lại.",
+  GENERATION_REJECTED_ERROR:
+    "Gemini không thể tạo nội dung này. Hãy điều chỉnh mô tả và thử lại.",
   GENERATION_ERROR_PATTERNS: [
     "i'm unable to create images",
     "i am unable to create images",
@@ -323,20 +477,31 @@ export const AUTO_GENERATOR_SCENE_REFERENCE_CONFIG = {
   CARD_CLASS: "space-y-4",
   HEADER_CLASS: "flex items-center gap-3",
   HEADER_ICON_CLASS: "w-4 h-4 text-sky-500 dark:text-sky-400 shrink-0",
-  TITLE_CLASS: "text-[11px] font-bold uppercase tracking-wider text-slate-250 dark:text-slate-100 font-mono",
-  DESCRIPTION_CLASS: "text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5",
+  TITLE_CLASS:
+    "text-[11px] font-bold uppercase tracking-wider text-slate-250 dark:text-slate-100 font-mono",
+  DESCRIPTION_CLASS:
+    "text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed mt-0.5",
   GRID_CLASS: "grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3",
-  UPLOAD_CLASS: "bg-slate-950/20 dark:bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-sky-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden",
+  UPLOAD_CLASS:
+    "bg-slate-950/20 dark:bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-sky-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden",
   INPUT_CLASS: "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10",
-  UPLOAD_CONTENT_CLASS: "absolute inset-0 flex flex-col items-center justify-center p-2 text-center",
-  UPLOAD_ICON_BOX_CLASS: "p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-sky-500/30 transition-all duration-300 mb-1.5 shadow-lg",
-  UPLOAD_ICON_CLASS: "w-4 h-4 text-slate-400 group-hover:text-sky-400 transition-colors",
-  UPLOAD_TITLE_CLASS: "text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-sky-400 transition-colors",
-  UPLOAD_SUBTITLE_CLASS: "text-[8px] text-slate-500 leading-tight block truncate max-w-full",
-  IMAGE_CARD_CLASS: "relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-sky-500/30 transition-colors",
+  UPLOAD_CONTENT_CLASS:
+    "absolute inset-0 flex flex-col items-center justify-center p-2 text-center",
+  UPLOAD_ICON_BOX_CLASS:
+    "p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-sky-500/30 transition-all duration-300 mb-1.5 shadow-lg",
+  UPLOAD_ICON_CLASS:
+    "w-4 h-4 text-slate-400 group-hover:text-sky-400 transition-colors",
+  UPLOAD_TITLE_CLASS:
+    "text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-sky-400 transition-colors",
+  UPLOAD_SUBTITLE_CLASS:
+    "text-[8px] text-slate-500 leading-tight block truncate max-w-full",
+  IMAGE_CARD_CLASS:
+    "relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-sky-500/30 transition-colors",
   IMAGE_CLASS: "w-full h-full object-cover rounded-xl",
-  IMAGE_OVERLAY_CLASS: "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center",
-  DELETE_BUTTON_CLASS: "w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0",
+  IMAGE_OVERLAY_CLASS:
+    "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center",
+  DELETE_BUTTON_CLASS:
+    "w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0",
   DELETE_ICON_CLASS: "w-4 h-4",
 } as const;
 
@@ -347,7 +512,15 @@ export const GEMINI_VIDEO_PROCESS_CONFIG = {
   FFMPEG_BINARY_NAME: "ffmpeg.exe",
   FFMPEG_FALLBACK_COMMAND: "ffmpeg",
   FFMPEG_ARGS_BEFORE_INPUT: ["-y", "-i"],
-  FFMPEG_ARGS_AFTER_INPUT: ["-map", "0:v:0", "-c:v", "copy", "-an", "-movflags", "+faststart"],
+  FFMPEG_ARGS_AFTER_INPUT: [
+    "-map",
+    "0:v:0",
+    "-c:v",
+    "copy",
+    "-an",
+    "-movflags",
+    "+faststart",
+  ],
   MAX_BUFFER_BYTES: 1048576,
   ERROR_REMOVE_AUDIO: "Không thể loại bỏ âm thanh video cảnh",
 } as const;
@@ -362,19 +535,24 @@ export const GEMINI_CHAT_PACING_CONFIG = {
 } as const;
 
 export const AUTO_GENERATOR_CONSTANTS = {
-  ADVANCED_PANEL_CLASS: "advanced-config-panel overflow-hidden transition-colors",
+  ADVANCED_PANEL_CLASS:
+    "advanced-config-panel overflow-hidden transition-colors",
   ADVANCED_PANEL_OPEN_CLASS: "is-open",
-  ADVANCED_TRIGGER_CLASS: "advanced-config-trigger w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left transition-colors h-auto",
+  ADVANCED_TRIGGER_CLASS:
+    "advanced-config-trigger w-full flex items-center justify-between gap-4 px-4 py-3.5 text-left transition-colors h-auto",
   ADVANCED_LAYOUT_CLASS: "flex items-center gap-3 min-w-0",
-  ADVANCED_ICON_WRAP_CLASS: "advanced-config-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+  ADVANCED_ICON_WRAP_CLASS:
+    "advanced-config-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
   ADVANCED_ICON_CLASS: "w-4 h-4 text-blue-400",
   ADVANCED_TEXT_WRAP_CLASS: "min-w-0",
   ADVANCED_TITLE_CLASS: "advanced-config-title block text-xs font-bold",
   ADVANCED_HINT_CLASS: "advanced-config-hint block text-[10px] mt-0.5 truncate",
-  ADVANCED_CHEVRON_WRAP_CLASS: "advanced-config-chevron w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+  ADVANCED_CHEVRON_WRAP_CLASS:
+    "advanced-config-chevron w-8 h-8 rounded-full flex items-center justify-center shrink-0",
   ADVANCED_CHEVRON_CLASS: "w-4 h-4 transition-transform duration-250",
   ADVANCED_CHEVRON_OPEN_CLASS: "rotate-180",
-  ADVANCED_CONTENT_CLASS: "advanced-config-content px-4 pb-4 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn",
+  ADVANCED_CONTENT_CLASS:
+    "advanced-config-content px-4 pb-4 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn",
   HOOK_POSITION_START: "start",
   AUDIO_TYPE_TTS: "tts",
   EMOTION_NORMAL: "Normal",
@@ -384,7 +562,8 @@ export const AUTO_GENERATOR_CONSTANTS = {
   VISUAL_QUALITY_STANDARD: "Standard",
   CAMERA_MOTION_DEFAULT: "default",
   TRANSITION_DEFAULT: "default",
-  DEFAULT_SCENE_PROMPT: "Cinematic 8k photorealistic vietnamese urban youth, {0}, vertical 9:16 orientation",
+  DEFAULT_SCENE_PROMPT:
+    "Cinematic 8k photorealistic vietnamese urban youth, {0}, vertical 9:16 orientation",
   MODE_NAME_GEMINI_ROOM: "Vẽ ảnh Nghệ thuật",
   MODE_NAME_FLOW_VEO3: "Vẽ ảnh Sáng tạo",
   LANG_CODE_VI: "vi",
@@ -395,18 +574,24 @@ export const AUTO_GENERATOR_CONSTANTS = {
   IMAGE_ACCEPT: "image/*",
   PROJECT_NAME_PREFIX: "Video_Auto_",
   EXPORT_SUFFIX: "_Export.mp4",
-  API_GEN_FALLBACK_WARN: "⚠️ Cảnh {0} chuyển sang chế độ dự phòng do có sự cố vẽ ảnh.",
-  API_SCRIPT_SUCCESS: "✅ Đã xây dựng kịch bản & phân chia thành {0} phân cảnh!",
+  API_GEN_FALLBACK_WARN:
+    "⚠️ Cảnh {0} chuyển sang chế độ dự phòng do có sự cố vẽ ảnh.",
+  API_SCRIPT_SUCCESS:
+    "✅ Đã xây dựng kịch bản & phân chia thành {0} phân cảnh!",
   API_VOICE_SUCCESS: "✅ Đã hoàn tất tạo giọng đọc cho tất cả các phân cảnh!",
   API_IMAGE_SUCCESS: "✅ Đã hoàn tất vẽ toàn bộ hình ảnh minh họa cho video!",
   LOG_PROJECT_INIT: "📌 Đang chuẩn bị dự án...",
-  LOG_PROJECT_SUCCESS: "✅ Đã chuẩn bị dự án \"{0}\" thành công!",
-  LOG_SCRIPT_GEN: "📌 [Bước 1/4] Trí tuệ nhân tạo (AI) đang phân tích và biên soạn kịch bản chi tiết...",
+  LOG_PROJECT_SUCCESS: '✅ Đã chuẩn bị dự án "{0}" thành công!',
+  LOG_SCRIPT_GEN:
+    "📌 [Bước 1/4] Trí tuệ nhân tạo (AI) đang phân tích và biên soạn kịch bản chi tiết...",
   LOG_VOICE_GEN: "📌 [Bước 2/4] Đang tạo giọng thuyết minh ({0})...",
-  LOG_IMAGE_GEN: "📌 [Bước 3/4] Đang vẽ tranh minh họa bằng công nghệ AI ({0})...",
+  LOG_IMAGE_GEN:
+    "📌 [Bước 3/4] Đang vẽ tranh minh họa bằng công nghệ AI ({0})...",
   LOG_IMAGE_SCENE_GEN: "🎨 Đang vẽ hình minh họa cho phân cảnh {0}/{1}...",
-  LOG_RENDER_GEN: "📌 [Bước 4/4] Đang ghép nối hình ảnh, âm thanh và hoàn thiện video chất lượng cao...",
-  LOG_RENDER_SUCCESS: "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
+  LOG_RENDER_GEN:
+    "📌 [Bước 4/4] Đang ghép nối hình ảnh, âm thanh và hoàn thiện video chất lượng cao...",
+  LOG_RENDER_SUCCESS:
+    "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
   ERR_RENDER_NO_URL: "Không tìm thấy tệp video sau khi hoàn tất xuất bản",
   ERR_AUTO_GEN_FAILED: "❌ Quy trình tạo video gặp sự cố: {0}",
   CHARACTER_ID_DEFAULT: "char_1",
@@ -415,7 +600,8 @@ export const AUTO_GENERATOR_CONSTANTS = {
   VOICE_CONFIG_AUDIO_URL_PATH: "voiceConfig.audioUrl",
   VOICE_CONFIG_AUDIO_BASE64_PATH: "audioBase64",
   ERR_VOICE_GEN_FAILED: "Không thể tạo giọng đọc. Vui lòng thử lại.",
-  ERR_VOICE_ALIGN_FAILED: "Không thể phân chia giọng theo phân cảnh. Sẽ tiếp tục mà không căn chỉnh.",
+  ERR_VOICE_ALIGN_FAILED:
+    "Không thể phân chia giọng theo phân cảnh. Sẽ tiếp tục mà không căn chỉnh.",
   AVG_ALIGNMENTS_KEY: "alignments",
   ERR_BATCH_INCOMPLETE: "Batch ảnh còn thiếu {0} phân cảnh.",
   ERR_BATCH_SCENES_FAILED: "Không thể tạo {0} ảnh phân cảnh.",
@@ -426,8 +612,10 @@ export const AUTO_GENERATOR_CONSTANTS = {
   VOICE_AGE_PATH: "voiceConfig.age",
   VOICE_EMOTION_PATH: "voiceConfig.emotion",
   LOG_VOICE_TTS_SUCCESS: "✓ Sinh giọng nói tổng thành công.",
-  LOG_ALIGN_BACKEND_START: "Bước 9: Đang chạy Whisper căn khớp thời gian và cắt nhỏ giọng đọc theo từng phân cảnh trên backend...",
-  LOG_ALIGN_BACKEND_SUCCESS: "✓ Căn khớp và tách nhỏ âm thanh trên backend thành công.",
+  LOG_ALIGN_BACKEND_START:
+    "Bước 9: Đang chạy Whisper căn khớp thời gian và cắt nhỏ giọng đọc theo từng phân cảnh trên backend...",
+  LOG_ALIGN_BACKEND_SUCCESS:
+    "✓ Căn khớp và tách nhỏ âm thanh trên backend thành công.",
   LOG_ALIGN_BACKEND_ERROR: "⚠️ Lỗi cắt nhỏ âm thanh trên backend: ",
   UI_SEO_TITLE_SHORT: "Tối ưu SEO",
   UI_SEO_TITLE_TOOLTIP: "Tối ưu hóa tiêu đề, mô tả và từ khóa SEO Boost",
@@ -455,20 +643,29 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_SCRIPT_WRITE: "Bước 1: Đang tiến hành viết lại kịch bản nâng cao...",
   LOG_SCRIPT_REWRITE_SUCCESS: "✓ Viết lại kịch bản thành công.",
   LOG_STORYBOARD_SPLIT: "Đang phân tích kịch bản và chia phân cảnh...",
-  LOG_STYLE_EXTRACT: "Bước 3: Phát hiện ảnh mẫu phong cách. Đang học hỏi phong cách nghệ thuật...",
-  LOG_STYLE_EXTRACT_SKIP: "Bước 3: Không có ảnh mẫu phong cách, bỏ qua bước học hỏi nghệ thuật.",
-  LOG_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả phân cảnh...",
-  LOG_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách hình ảnh vào kịch bản thành công.",
-  LOG_CHAR_EXTRACT: "Bước 4: Phát hiện ảnh mẫu nhân vật. Đang phân tích đặc điểm nhân vật...",
-  LOG_CHAR_ANALYZE: "Đang phân tích nhân vật chính và nhân vật phụ từ kịch bản...",
+  LOG_STYLE_EXTRACT:
+    "Bước 3: Phát hiện ảnh mẫu phong cách. Đang học hỏi phong cách nghệ thuật...",
+  LOG_STYLE_EXTRACT_SKIP:
+    "Bước 3: Không có ảnh mẫu phong cách, bỏ qua bước học hỏi nghệ thuật.",
+  LOG_STYLE_APPLY:
+    "Đang áp dụng phong cách thiết kế và viết lại mô tả phân cảnh...",
+  LOG_STYLE_APPLY_SUCCESS:
+    "✓ Áp dụng phong cách hình ảnh vào kịch bản thành công.",
+  LOG_CHAR_EXTRACT:
+    "Bước 4: Phát hiện ảnh mẫu nhân vật. Đang phân tích đặc điểm nhân vật...",
+  LOG_CHAR_ANALYZE:
+    "Đang phân tích nhân vật chính và nhân vật phụ từ kịch bản...",
   LOG_CHAR_ANALYZE_SUCCESS: "Đã tạo hồ sơ nhận diện nhân vật thành công.",
   CHARACTER_ID_PREFIX: "char_",
-  LOG_CHAR_EXTRACT_SKIP: "Bước 4: Không có ảnh mẫu nhân vật, bỏ qua phân tích nhân vật.",
+  LOG_CHAR_EXTRACT_SKIP:
+    "Bước 4: Không có ảnh mẫu nhân vật, bỏ qua phân tích nhân vật.",
   LOG_CHAR_REWRITE: "Đang viết lại mô tả phân cảnh đồng nhất nhân vật chính...",
-  LOG_CHAR_REWRITE_SUCCESS: "✓ Viết lại mô tả đồng nhất nhân vật chính thành công.",
+  LOG_CHAR_REWRITE_SUCCESS:
+    "✓ Viết lại mô tả đồng nhất nhân vật chính thành công.",
   LOG_PROMPT_OPTIMIZE: "Bước 5: Đang thực hiện tối ưu hóa câu lệnh tạo ảnh...",
   LOG_PROMPT_OPTIMIZE_SUCCESS: "✓ Tối ưu hóa câu lệnh hoàn tất.",
-  LOG_SEO_OPTIMIZE: "Bước 7: Đang tối ưu hóa tiêu đề, mô tả và từ khóa tìm kiếm...",
+  LOG_SEO_OPTIMIZE:
+    "Bước 7: Đang tối ưu hóa tiêu đề, mô tả và từ khóa tìm kiếm...",
   LOG_SEO_SUCCESS: "✓ Dữ liệu chuẩn SEO đã được tạo thành công.",
   LOG_SEO_FAILED: "⚠️ Không thể sinh dữ liệu SEO.",
   LOG_THUMBNAILS_GEN: "Bước 8: Đang tạo ý tưởng thiết kế ảnh bìa...",
@@ -478,20 +675,28 @@ export const AUTO_GENERATOR_CONSTANTS = {
   ERR_STORYBOARD_SPLIT: "Lỗi trong quá trình phân tách phân cảnh.",
   ERR_NO_SCENES_CREATED: "Không có phân cảnh nào được tạo từ kịch bản.",
   ERR_VOICE_TTS_FAILED: "Lỗi khi gọi API sinh giọng nói TTS.",
-  LOG_STORYBOARD_SUCCESS: "✓ Tạo kịch bản phân cảnh thành công với {0} phân cảnh.",
+  LOG_STORYBOARD_SUCCESS:
+    "✓ Tạo kịch bản phân cảnh thành công với {0} phân cảnh.",
   LOG_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách thành công: {0}",
   LOG_CHAR_EXTRACT_SUCCESS: "✓ Trích xuất visual nhân vật thành công.",
-  LOG_THUMBNAILS_IDEAS_CREATED: "✓ Tạo {0} ý tưởng ảnh bìa. Bắt đầu vẽ ảnh bìa hàng loạt...",
+  LOG_THUMBNAILS_IDEAS_CREATED:
+    "✓ Tạo {0} ý tưởng ảnh bìa. Bắt đầu vẽ ảnh bìa hàng loạt...",
   LOG_THUMBNAILS_SCENE_GEN: "Đang vẽ ảnh bìa {0}/{1}...",
-  LOG_VOICE_GEN_TTS: "Đang tạo giọng đọc AI (TTS) với giọng đọc \"{0}\"...",
-  LOG_THUMB_STYLE_EXTRACT: "Bước 3.5: Phát hiện ảnh mẫu ảnh bìa. Đang học hỏi phong cách ảnh bìa...",
-  LOG_THUMB_STYLE_EXTRACT_SKIP: "Bước 3.5: Không có ảnh mẫu ảnh bìa, bỏ qua bước học hỏi ảnh bìa.",
-  LOG_THUMB_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách ảnh bìa thành công: {0}",
-  LOG_THUMB_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả ảnh bìa...",
+  LOG_VOICE_GEN_TTS: 'Đang tạo giọng đọc AI (TTS) với giọng đọc "{0}"...',
+  LOG_THUMB_STYLE_EXTRACT:
+    "Bước 3.5: Phát hiện ảnh mẫu ảnh bìa. Đang học hỏi phong cách ảnh bìa...",
+  LOG_THUMB_STYLE_EXTRACT_SKIP:
+    "Bước 3.5: Không có ảnh mẫu ảnh bìa, bỏ qua bước học hỏi ảnh bìa.",
+  LOG_THUMB_STYLE_EXTRACT_SUCCESS:
+    "✓ Trích xuất phong cách ảnh bìa thành công: {0}",
+  LOG_THUMB_STYLE_APPLY:
+    "Đang áp dụng phong cách thiết kế và viết lại mô tả ảnh bìa...",
   LOG_THUMB_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách ảnh bìa thành công.",
-  LOG_THUMBNAILS_BATCH_START: "Khởi tạo tiến trình tạo ảnh bìa hàng loạt (Batch Thumbnails)...",
+  LOG_THUMBNAILS_BATCH_START:
+    "Khởi tạo tiến trình tạo ảnh bìa hàng loạt (Batch Thumbnails)...",
   LOG_THUMBNAILS_BATCH_SUCCESS: "Hoàn thành ảnh bìa: {0}/{1}",
-  LOG_THUMBNAILS_BATCH_FALLBACK_START: "Cảnh báo: Tạo ảnh bìa batch lỗi, chuyển sang fallback: {0}",
+  LOG_THUMBNAILS_BATCH_FALLBACK_START:
+    "Cảnh báo: Tạo ảnh bìa batch lỗi, chuyển sang fallback: {0}",
   LOG_THUMBNAILS_BATCH_FALLBACK_ITEM: "Đang xử lý lại ảnh bìa {0}/{1}...",
   LOG_THUMBNAILS_WARNING_SINGLE: "Cảnh báo: Lỗi khi tạo ảnh bìa thứ {0}",
 } as const;

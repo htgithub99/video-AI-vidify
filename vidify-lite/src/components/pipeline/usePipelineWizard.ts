@@ -7,115 +7,36 @@ import { storageUtils } from '../../lib/storage';
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import _ from 'lodash';
 
-import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, API_HEADERS, STORAGE_KEYS, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION } from "../../constants";
+import { setTemporaryState } from "./pipeline-utils";
+import { fetchSystemApi, formatRoundedTime, getTargetDurationSeconds, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
 import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, HTTP_METHODS, CONTENT_TYPES, HTTP_HEADERS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
-import { safeSystemFetch, logSystemAction, getStoredApiKey, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
+import { safeSystemFetch, logSystemAction, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
 import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
-import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
-const getVoiceGender = (voice: any) => voice?.gender?.toLowerCase() || "neutral";
-const isPremiumVoice = (voice: any) => voice?.name?.includes("Premium") || false;
-const getVoiceModifiers = (voiceURI: string, baseSpeed: number = 1.0, basePitch: number = 1.0) => {
-  let finalSpeed = baseSpeed;
-  let finalPitch = basePitch;
-
-  if (!voiceURI) return { finalSpeed, finalPitch };
-
-  const modifiers = VOICE_MODIFIERS[voiceURI] || (voiceURI.includes("child") ? VOICE_MODIFIERS["preset-vi-kid"] : null);
-  if (modifiers) {
-    finalSpeed = modifiers.speed;
-    finalPitch = modifiers.pitch;
-  }
-
-  return { finalSpeed, finalPitch };
-};
-
-const safeResponseJson = async (r: any, f: any) => {
-  try {
-    return await r.json();
-  } catch (e) {
-    return f;
-  }
-};
 const fallbackImageCache = new Map<string, string>();
-const getTargetDurationSeconds = (d: any) => 15;
-const fetchSystemApi = async (url: string, payload?: object | null, customHeaders?: object): Promise<Response> => {
-  const finalHeaders = _.assign(
-    {
-      [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
-      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY),
-      [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
-      [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
-    },
-    customHeaders || {}
-  );
-
-  const options: RequestInit = {
-    method: _.isNil(payload) ? HTTP_METHODS.GET : HTTP_METHODS.POST,
-    headers: finalHeaders,
-  };
-
-  if (!_.isNil(payload)) {
-    options.body = jsonUtils.safeStringify(payload);
-  }
-
-  return fetch(url, options);
-};
-
-const safeFetchJsonWithAuth = async (url: string, payload?: object | null, fallback: any = {}): Promise<any> => {
-  try {
-    const response = await fetchSystemApi(url, payload);
-    return await response.json();
-  } catch (error) {
-    logger.error(`API Error at ${url}`, error);
-    return fallback;
-  }
-};
-
-const formatRoundedTime = (timeStr: string): string => {
-  if (!timeStr) return "00:00";
-  const secs = parseTimeToSeconds(timeStr);
-  if (secs === null) return timeStr;
-  const rounded = Math.round(secs);
-  const mins = Math.floor(rounded / 60);
-  const s = rounded % 60;
-  return `${mins.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-};
 let handleNextStep = () => { };
 let handlePrevStep = () => { };
 let audioRef: any = null;
 let videoRef: any = null;
 let simVideoRef: any = null;
 let workspaceRef: any = null;
-
-const isProjectContentEqual = (p1: any, p2: any) => {
-  if (!p1 || !p2) return p1 === p2;
-  const keysToCompare = ["name", "description", "input", "config", "hookConfig", "voiceConfig", "visualConfig", "storyboard", "thumbnails", "chapters", "seoConfig", "seo", "assets", "currentStep", "creditsUsed", "storyboardSourceMode"];
-  const isEmpty = (v: any) => _.includes([undefined, null, REFACTOR_CONSTANTS.VD_EMPTY_STRING], v) || (_.isArray(v) && _.isEmpty(v)) || (typeof v === "object" && _.keys(v).length === 0);
-  return _.every(keysToCompare, (key) => {
-    const val1 = p1[key];
-    const val2 = p2[key];
-    if (_.isEqual(val1, val2) || (isEmpty(val1) && isEmpty(val2))) return true;
-    return _.isEqual(val1, val2);
-  });
-};
 
 export function usePipelineWizard(props: any) {
   const { theme, currentLang, project: initialProject, onSaveProject, costTracker, setCostTracker, credits, setCredits } = props;
@@ -406,8 +327,7 @@ export function usePipelineWizard(props: any) {
         prompt: promptText.trim(),
       },
     ]);
-    setInfoMsg(t.saveStyleSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.saveStyleSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const handleDeleteFavoriteStyle = (id: string, e: React.MouseEvent) => {
@@ -418,16 +338,14 @@ export function usePipelineWizard(props: any) {
   const handleSaveEditStyle = (id: string, name: string, promptText: string) => {
     if (!name.trim() || !promptText.trim()) return;
     saveFavoriteStyles(favoriteStyles.map((item) => (item.id === id ? { ...item, name: name.trim(), prompt: promptText.trim() } : item)));
-    setInfoMsg(t.updateStyleSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.updateStyleSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const handleSaveCurrentStyle = () => {
     const curStyle = project.visualConfig?.referencePrompt;
     if (!curStyle) return;
     if (_.some(favoriteStyles, (s) => _.isEqual(s.prompt, curStyle))) {
-      setInfoMsg(t.saveStyleSuccess);
-      setTimeout(() => setInfoMsg(""), 3000);
+      setTemporaryState(setInfoMsg, t.saveStyleSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
       return;
     }
     saveFavoriteStyles([
@@ -438,8 +356,7 @@ export function usePipelineWizard(props: any) {
         prompt: curStyle,
       },
     ]);
-    setInfoMsg(t.saveStyleSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.saveStyleSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const handleApplyFavoriteStyle = (promptText: string) => {
@@ -447,8 +364,7 @@ export function usePipelineWizard(props: any) {
       ...prev,
       visualConfig: { ...prev.visualConfig, referencePrompt: promptText },
     }));
-    setInfoMsg(t.applyStyleSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.applyStyleSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const [favoriteVoices, setFavoriteVoices] = useState<any[]>([]);
@@ -488,8 +404,7 @@ export function usePipelineWizard(props: any) {
         channelName: channelName?.trim() || "Custom",
       },
     ]);
-    setInfoMsg(t.saveVoiceSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.saveVoiceSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const handleDeleteFavoriteVoice = (id: string, e?: React.MouseEvent) => {
@@ -511,8 +426,7 @@ export function usePipelineWizard(props: any) {
           : item,
       ),
     );
-    setInfoMsg(t.updateVoiceSuccess);
-    setTimeout(() => setInfoMsg(""), 3000);
+    setTemporaryState(setInfoMsg, t.updateVoiceSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
   };
 
   const handleToggleFavoriteVoice = (voiceId: string, name: string, providerName?: string) => {
@@ -529,8 +443,7 @@ export function usePipelineWizard(props: any) {
           channelName: providerName || "Custom",
         },
       ]);
-      setInfoMsg(t.saveVoiceSuccess);
-      setTimeout(() => setInfoMsg(""), 3000);
+      setTemporaryState(setInfoMsg, t.saveVoiceSuccess, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.STANDARD_MS);
     }
   };
 
@@ -864,7 +777,7 @@ export function usePipelineWizard(props: any) {
         audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       };
     } else if (ttsAudioUrl && ([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
-      const estimatedDuration = getTargetDurationSeconds(project.config.duration);
+      const estimatedDuration = getTargetDurationSeconds();
       setVoiceAudioDuration(estimatedDuration);
     } else {
       setVoiceAudioDuration(null);
@@ -1700,9 +1613,8 @@ export function usePipelineWizard(props: any) {
     logAction("handleCopyPrompt");
     navigator.clipboard.writeText(promptText);
     const successMsg = t.Scene_visual_prompt_copie || "Đã sao chép prompt.";
-    setInfoMsg(successMsg);
+    setTemporaryState(setInfoMsg, successMsg, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.EXTENDED_MS);
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
-    setTimeout(() => setInfoMsg(""), 4000);
   };
 
   const handleGenerateHooks = async (force = false) => {
@@ -1749,9 +1661,8 @@ export function usePipelineWizard(props: any) {
     logAction("handleCopyHook");
     navigator.clipboard.writeText(hookText);
     const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
-    setInfoMsg(successMsg);
+    setTemporaryState(setInfoMsg, successMsg, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.EXTENDED_MS);
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
-    setTimeout(() => setInfoMsg(""), 4000);
   };
 
   const handleCopyAllPrompts = () => {
@@ -1771,8 +1682,7 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard
       .writeText(textBlock)
       .then(() => {
-        setCopiedAll(true);
-        setTimeout(() => setCopiedAll(false), 3000);
+        setTemporaryState(setCopiedAll, true, false, UI_MESSAGE_DURATION.STANDARD_MS);
         const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
         setInfoMsg(successMsg);
         logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
@@ -1846,9 +1756,8 @@ export function usePipelineWizard(props: any) {
 
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
       const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
-      setInfoMsg(successMsg);
+      setTemporaryState(setInfoMsg, successMsg, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.EXTENDED_MS);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
-      setTimeout(() => setInfoMsg(""), 4000);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
       setErrorMsg(t.styleExtractionError.replace("{error}", e.message));
@@ -2914,14 +2823,12 @@ export function usePipelineWizard(props: any) {
           return { ...prev, storyboard: updated };
         });
         const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
-        setInfoMsg(successMsg);
+        setTemporaryState(setInfoMsg, successMsg, REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.EXTENDED_MS);
         logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
-        setTimeout(() => setInfoMsg(""), 4000);
       }
     } catch (err: any) {
       logger.error("ERROR_GEN_DETAILED_PROMPT", err);
-      setErrorMsg(t.promptGenError.replace("{error}", err.message));
-      setTimeout(() => setErrorMsg(""), 4000);
+      setTemporaryState(setErrorMsg, t.promptGenError.replace("{error}", err.message), REFACTOR_CONSTANTS.VD_EMPTY_STRING, UI_MESSAGE_DURATION.EXTENDED_MS);
     } finally {
       setIsGeneratingDetailedPrompt(false);
     }
@@ -3970,7 +3877,7 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("download", fileName);
       dlAnchorElem.click();
 
-      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+      window.setTimeout(() => window.URL.revokeObjectURL(url), UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS);
 
       const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
       setInfoMsg(successMsg);

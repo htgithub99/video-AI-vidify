@@ -5,13 +5,15 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
-import { WizardStep } from "../../types";
+import { ManualReviewStatus, SceneAssetStatus, WizardStep } from "../../types";
 import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
 import { safeSystemFetch, getStoredApiKey } from "../../lib/shared-utils";
 import _ from "lodash";
+import { resolveManualReview } from "../../services/manualReviewService";
+import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
 
 const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
@@ -32,6 +34,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const [imagesDir, setImagesDir] = useState("");
   const [voicesDir, setVoicesDir] = useState("");
   const [isRenderLoading, setIsRenderLoading] = useState(false);
+  const handleReview = (id: string, status: ManualReviewStatus) => props.setProject(resolveManualReview(props.project, id, status));
+  const handleRollback = (sceneId: string) => { const scene=_.find(props.project.storyboard,{id:sceneId});const revision=_.findLast(scene?.assetRevisions,{status:SceneAssetStatus.Approved});if(scene&&revision)props.setProject({...props.project,storyboard:_.map(props.project.storyboard,item=>item.id===sceneId?rollbackSceneAssetRevision(item,revision.id):item)}); };
 
   const handleSelectFolder = async (type: string) => {
     try {
@@ -58,6 +62,15 @@ export default function PipelineStep4(props: PipelineWizardState) {
     const missingImages = _.some(props.project.storyboard, sc => !getSceneImageUrl(sc));
     if (missingImages) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_IMAGES);
+      return false;
+    }
+    if (_.some(props.project.storyboard, scene => scene.assetStatus !== SceneAssetStatus.Approved)
+      || _.some(props.project.thumbnails, thumbnail => !thumbnail.approved)
+      || !props.project.voiceConfig.audioQa?.passed
+      || !props.project.subtitleQa?.passed
+      || !props.project.editorQa?.passed
+      || _.some(props.project.manualReviewItems, { status: ManualReviewStatus.Pending })) {
+      props.setInfoMsg("Quality review is incomplete. Resolve every blocking QA/manual-review item before rendering.");
       return false;
     }
     const hasVoice = !!props.project?.voiceConfig?.audioBase64 || _.some(props.project.storyboard, sc => !!sc.audioBase64);
@@ -208,6 +221,12 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   return (
     <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-visible">
+      {!_.isEmpty(props.project.manualReviewItems) && (
+        <div className="rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200">
+          <div className="font-bold mb-2">Manual review</div>
+          {_.map(props.project.manualReviewItems, item => <div key={item.id} className="flex items-center gap-2"><span>{item.scope}: {item.targetId || "project"} - {item.reason} [{item.status}]</span>{item.status === ManualReviewStatus.Pending && <><Button size="xs" variant="secondary" onClick={() => handleReview(item.id, ManualReviewStatus.Approved)}>Approve</Button><Button size="xs" variant="danger" onClick={() => handleReview(item.id, ManualReviewStatus.Rejected)}>Reject</Button>{item.scope === "scene" && item.targetId && <Button size="xs" variant="ghost" onClick={() => handleRollback(item.targetId!)}>Restore approved revision</Button>}</>}</div>)}
+        </div>
+      )}
       <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[inherit]">
         <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
       </div>

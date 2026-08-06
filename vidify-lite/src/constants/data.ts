@@ -40,7 +40,8 @@ export const pipelineNodes = [
 ] as const;
 
 export const genreLabels = {
-  [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay kể chuyện",
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Video essay kể chuyện",
+  [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay giải thích",
   Storytelling: "Kể chuyện",
   History: "Lịch sử",
   Documentary: "Phim tài liệu",
@@ -144,7 +145,7 @@ export const GEMINI_QUOTA_STATUSES = ["RESOURCE_EXHAUSTED", 429, "429"] as const
 
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
 
-export const GENRE_OPTIONS = ["Storytelling", VideoGenre.NARRATIVE_EXPLAINER, "History", "Documentary", "Explanation", "Review", "Education", "News", "Top List", "True Crime", "Science", "Psychology", "Philosophy"] as const;
+export const GENRE_OPTIONS = ["Storytelling", VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER, "History", "Documentary", "Explanation", "Review", "Education", "News", "Top List", "True Crime", "Science", "Psychology", "Philosophy"] as const;
 
 export const AUDIENCE_OPTIONS = ["General Audience", "Kids", "Teenagers", "Adults", "Seniors"] as const;
 
@@ -184,7 +185,6 @@ export const CONJUNCTIONS = ["và", "nhưng", "hoặc", "vì", "nên", "để", 
 
 export const SCENE_SPLIT_MOTIONS = ["Zoom In", "Zoom Out", "Pan Left", "Pan Right", "Pan Up", "Pan Down", "Drift", "Cinematic Arc", "Push In", "Slow Reveal", "Static"] as const;
 
-// Easing helpers cho camera motion
 const easeCubicInOut = (t: number): number => t < 0.5 ? 4.0 * t * t * t : 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
 const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
 const easeExpoOut = (t: number): number => t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);

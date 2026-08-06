@@ -1,4 +1,5 @@
 import { LogLang, getFriendlyActionName, LOG_DICTIONARY, LogKey } from "../constants";
+import { logger as systemLogger } from "../utils/logger";
 
 let currentLang: LogLang = "vi";
 
@@ -56,39 +57,39 @@ export const getBilingualMessage = (key: LogKey | string, ...args: any[]): strin
 export const logger = {
   log: (key: LogKey | string, ...args: any[]) => {
     if (typeof window === "undefined") {
-      console.log(getBilingualMessage(key, ...args));
+      systemLogger.log(getBilingualMessage(key, ...args));
     } else {
-      console.log(getMessage(key, undefined, ...args));
+      systemLogger.log(getMessage(key, undefined, ...args));
     }
   },
   info: (key: LogKey | string, ...args: any[]) => {
     if (typeof window === "undefined") {
-      console.info(getBilingualMessage(key, ...args));
+      systemLogger.info(getBilingualMessage(key, ...args));
     } else {
-      console.info(getMessage(key, undefined, ...args));
+      systemLogger.info(getMessage(key, undefined, ...args));
     }
   },
   warn: (key: LogKey | string, ...args: any[]) => {
     if (typeof window === "undefined") {
-      console.warn(getBilingualMessage(key, ...args));
+      systemLogger.warn(getBilingualMessage(key, ...args));
     } else {
-      console.warn(getMessage(key, undefined, ...args));
+      systemLogger.warn(getMessage(key, undefined, ...args));
     }
   },
   error: (key: LogKey | string, ...args: any[]) => {
     if (typeof window === "undefined") {
-      console.error(getBilingualMessage(key, ...args));
+      systemLogger.error(getBilingualMessage(key, ...args));
     } else {
-      console.error(getMessage(key, undefined, ...args));
+      systemLogger.error(getMessage(key, undefined, ...args));
     }
   },
 
   logVi: (key: LogKey | string, ...args: any[]) => {
-    console.log(getMessage(key, "vi", ...args));
+    systemLogger.log(getMessage(key, "vi", ...args));
   },
 
   logEn: (key: LogKey | string, ...args: any[]) => {
-    console.log(getMessage(key, "en", ...args));
+    systemLogger.log(getMessage(key, "en", ...args));
   },
 };
 

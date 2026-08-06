@@ -1,6 +1,19 @@
 import { VideoGenre } from "./enums";
 
 export const VI_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `VIDEO ESSAY KỂ CHUYỆN / STORY-DRIVEN VIDEO ESSAY:
+- Mở giữa một cảnh cụ thể có căng thẳng, hậu quả hoặc sự bất thường. Trong 15 giây đầu phải tạo ít nhất một câu hỏi chưa được giải đáp. Không mở bằng lời chào, định nghĩa, lịch sử tổng quát hoặc danh sách nội dung.
+- Chọn một nhân vật trung tâm làm trục xuyên suốt. Ưu tiên ngôi thứ hai “bạn” để tạo nhập vai; dùng ngôi thứ ba gần nếu chủ đề nhạy cảm hoặc ngôi thứ hai gây cảm giác quy kết.
+- Nhân vật phải có thiếu hụt cảm xúc, mong muốn, niềm tin chưa đầy đủ, mối quan hệ gây ảnh hưởng và chuỗi lựa chọn nhỏ dẫn tới hậu quả lớn. Không giải thích sai lầm chỉ bằng việc nhân vật “ngu ngốc”.
+- Xây nguyên nhân theo chuỗi: thiếu hụt -> cơ hội/con người có vẻ giải quyết thiếu hụt -> ranh giới nhỏ bị bước qua -> phần thưởng ngắn hạn -> tự biện minh -> phụ thuộc sâu hơn -> tổn hại -> dấu hiệu đảo chiều -> hậu quả -> nhận thức.
+- Kể bằng cảnh trước, giải thích sau. Mỗi beat quan trọng phải có địa điểm, hành động nhìn thấy được, chi tiết cảm giác, vật thể có ý nghĩa, phản ứng và thay đổi quyền lực hoặc cảm xúc.
+- Khi giải thích một cơ chế xã hội, tâm lý, kinh tế hoặc đạo đức, hãy cho người xem chứng kiến các vai trò hoạt động trong cảnh thực tế rồi mới lùi lại giải thích tổng thể.
+- Duy trì nhịp: cảnh cụ thể -> nhận xét ngắn -> cơ chế -> hậu quả với nhân vật -> câu hỏi mới. Cứ 30–60 giây phải có quyết định, thông tin mới, biến chứng, thay đổi quyền lực, open loop hoặc payoff.
+- Không tạo twist ngẫu nhiên. Gieo dấu hiệu trước cao trào và để cao trào trở thành hậu quả của chuỗi lựa chọn trước đó.
+- Viết tiếng Việt nói tự nhiên, gần gũi, quan sát sắc và có nhịp câu đa dạng. Có thể dùng hài hước hoặc mỉa mai có kiểm soát nhưng không chế giễu nạn nhân, lạm dụng tục, giảng đạo hoặc bắt chước dấu ấn của creator cụ thể.
+- Với câu chuyện thật, không bịa suy nghĩ, đối thoại hoặc chi tiết riêng tư. Nếu là nhân vật tổng hợp, tái dựng hoặc hư cấu, phải ghi rõ. Không bịa nguồn, nghiên cứu, số liệu hoặc false precision.
+- Kết bằng thay đổi nhận thức, hậu quả không thể đảo ngược hoặc motif quay lại. Không kết bằng danh sách bài học hay tóm tắt máy móc.
+When writing narration, use original Vietnamese suitable for natural voice-over.`,
   [VideoGenre.NARRATIVE_EXPLAINER]: `Narrative Explainer / Video Essay Genre: Write an evidence-led explanatory video as an unfolding story for a general Vietnamese audience.
 - Open with a concrete everyday situation, surprising consequence, paradox, or unresolved question. Do not begin with a dictionary definition, generic greeting, or broad history lesson.
 - Choose one clear narrative spine and preserve it throughout: follow a person, object, transaction, question, or process from cause to consequence. Do not write a disconnected list of facts.
@@ -11,19 +24,19 @@ export const VI_GENRE_GUIDELINES: Record<string, string> = {
 - Narrate conversationally as an intelligent, curious peer: natural Vietnamese, controlled humor, light irony, rhetorical questions, varied sentence rhythm, and occasional first-person observations. Avoid excessive filler words, forced slang, repetitive jokes, melodrama, lecturing, and imitating any identifiable creator's catchphrases.
 - End by resolving the opening question and extracting one larger human, economic, technological, or social insight. Do not merely summarize the preceding sections.
 - Keep sponsorship or product examples clearly separated and brief; never let them substitute for proof of the central thesis.
-Output only original Vietnamese narration suitable for voice-over.`,
-  Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs. Output the narration text entirely in Vietnamese.",
-  History: "History Genre: Emphasize historical accuracy, timelines, historical figures, and cause-effect analysis. Maintain an epic, majestic, and deep narrative tone. Output the narration text entirely in Vietnamese.",
-  Documentary: "Documentary Genre: Authentic and objective yet engaging. Combine realistic narration with actual source materials and expert analysis. Output the narration text entirely in Vietnamese.",
-  Explanation: "Explanation Genre: Explain complex concepts intuitively and comprehensibly using practical examples, vivid analogies, and step-by-step analysis. Output the narration text entirely in Vietnamese.",
-  Review: "Review Genre: Analyze pros and cons fairly, provide real-world experiences, present clear comparative arguments, and deliver convincing conclusions. Output the narration text entirely in Vietnamese.",
-  Education: "Education Genre: Clear, pedagogical but engaging, encouraging critical thinking, and presenting knowledge scientifically with high instructional value. Output the narration text entirely in Vietnamese.",
-  News: "News Genre: Fast-paced, up-to-date, direct, and objective. Deliver core information in the first few seconds and analyze broader impacts. Output the narration text entirely in Vietnamese.",
-  "Top List": "Top List Genre: Clear ordered structure, highly comparative, building curiosity towards top positions, and convincingly explaining the rankings. Output the narration text entirely in Vietnamese.",
-  "True Crime": "True Crime Genre: Create a dark, suspenseful, and thrilling atmosphere. Focus on case details, clues, investigation processes, and criminal psychology. Output the narration text entirely in Vietnamese.",
-  Science: "Science Genre: Use precise scientific terminology, empirical evidence, and strict logic while remaining fascinating and inspiring curiosity about the universe, tech, or nature. Output the narration text entirely in Vietnamese.",
-  Psychology: "Psychology Genre: Delve into human behavior, cognitive mechanisms, and real-life psychological effects. Analyze causes through a scientific lens with relatable examples. Output the narration text entirely in Vietnamese.",
-  Philosophy: "Philosophy Genre: Contemplative, profound, and highly reflective. Provoke existential questions, analyze great thinkers, and connect to real-life applications. Output the narration text entirely in Vietnamese.",
+When writing narration, use original Vietnamese suitable for natural voice-over.`,
+  Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs. Write narration content in Vietnamese.",
+  History: "History Genre: Emphasize historical accuracy, timelines, historical figures, and cause-effect analysis. Maintain an epic, majestic, and deep narrative tone. Write narration content in Vietnamese.",
+  Documentary: "Documentary Genre: Authentic and objective yet engaging. Combine realistic narration with actual source materials and expert analysis. Write narration content in Vietnamese.",
+  Explanation: "Explanation Genre: Explain complex concepts intuitively and comprehensibly using practical examples, vivid analogies, and step-by-step analysis. Write narration content in Vietnamese.",
+  Review: "Review Genre: Analyze pros and cons fairly, provide real-world experiences, present clear comparative arguments, and deliver convincing conclusions. Write narration content in Vietnamese.",
+  Education: "Education Genre: Clear, pedagogical but engaging, encouraging critical thinking, and presenting knowledge scientifically with high instructional value. Write narration content in Vietnamese.",
+  News: "News Genre: Fast-paced, up-to-date, direct, and objective. Deliver core information in the first few seconds and analyze broader impacts. Write narration content in Vietnamese.",
+  "Top List": "Top List Genre: Clear ordered structure, highly comparative, building curiosity towards top positions, and convincingly explaining the rankings. Write narration content in Vietnamese.",
+  "True Crime": "True Crime Genre: Create a dark, suspenseful, and thrilling atmosphere. Focus on case details, clues, investigation processes, and criminal psychology. Write narration content in Vietnamese.",
+  Science: "Science Genre: Use precise scientific terminology, empirical evidence, and strict logic while remaining fascinating and inspiring curiosity about the universe, tech, or nature. Write narration content in Vietnamese.",
+  Psychology: "Psychology Genre: Delve into human behavior, cognitive mechanisms, and real-life psychological effects. Analyze causes through a scientific lens with relatable examples. Write narration content in Vietnamese.",
+  Philosophy: "Philosophy Genre: Contemplative, profound, and highly reflective. Provoke existential questions, analyze great thinkers, and connect to real-life applications. Write narration content in Vietnamese.",
 };
 
 export const VI_STYLE_GUIDELINES: Record<string, string> = {
@@ -45,6 +58,7 @@ export const VI_AUDIENCE_GUIDELINES: Record<string, string> = {
 };
 
 export const EN_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `Story-driven Video Essay: Open inside a concrete moment of tension, consequence, or abnormality and establish an unresolved question within 15 seconds. Follow one central character through a causal chain of emotional need, opportunity, small boundary crossings, short-term rewards, self-justification, deeper dependence, harm, reversal, consequence, and moral reckoning. Show concrete scenes before explaining the mechanism behind them. Introduce a meaningful decision, revelation, complication, power shift, open loop, or payoff every 30–60 seconds. Foreshadow reversals; never stack arbitrary twists. Use an intimate, intelligent conversational voice with varied rhythm and restrained humor, without imitating an identifiable creator. Distinguish sourced true cases from composites, reconstructions, and fiction. End with changed understanding, irreversible consequence, or a recurring visual motif rather than a list of lessons.`,
   [VideoGenre.NARRATIVE_EXPLAINER]: `Narrative Explainer / Video Essay Genre: Turn a complex topic into an evidence-led unfolding story for a general audience. Open with a concrete paradox, consequence, or unresolved question; follow one person, object, process, or question as the narrative spine; and advance through assumption -> reality -> evidence/example -> consequence -> next question. Explain mechanisms with accurate everyday analogies, cite the scope and uncertainty of evidence, and never invent facts or false precision. Escalate the stakes, introduce one fair counterargument or perspective shift around 60-75%, and resolve the opening question with a broader insight. Use an intelligent conversational voice with controlled humor, varied rhythm, and no imitation of an identifiable creator. Avoid list-like exposition, excessive filler, stacked shock twists, and unsupported claims.`,
   Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs.",
   History: "History Genre: Emphasize historical accuracy, timelines, historical figures, and cause-effect analysis. Maintain an epic, majestic, and deep narrative tone.",

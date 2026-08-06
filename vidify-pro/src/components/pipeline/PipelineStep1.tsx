@@ -1,4 +1,5 @@
-import { AppTab, REFACTOR_CONSTANTS, StoryboardSourceMode } from "../../constants";
+import { AppTab, REFACTOR_CONSTANTS, StoryboardSourceMode, UI_MESSAGE_DURATION } from "../../constants";
+import { setTemporaryState } from "./pipeline-utils";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
 import { VoiceSelectionDialog } from "../../components/VoiceSelectionDialog";
@@ -2064,8 +2065,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         navigator.clipboard.writeText(
                                           `${char.name}: ${char.description}`,
                                         );
-                                        setInfoMsg(t.charDescCopied);
-                                        setTimeout(() => setInfoMsg(""), 3000);
+                                        setTemporaryState(setInfoMsg,t.charDescCopied,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
                                       }}
                                       title={t.charCopyDesc}
                                       className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
@@ -2213,8 +2213,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         navigator.clipboard.writeText(
                                           char.prompt || "",
                                         );
-                                        setInfoMsg(t.charCopied);
-                                        setTimeout(() => setInfoMsg(""), 3000);
+                                        setTemporaryState(setInfoMsg,t.charCopied,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
                                       }}
                                       className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto"
                                     >
@@ -2963,8 +2962,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(sceneEditScript);
-                                setInfoMsg(t.copiedScript);
-                                setTimeout(() => setInfoMsg(""), 3000);
+                                setTemporaryState(setInfoMsg,t.copiedScript,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
                               }}
                               title={t.copyNarration}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
@@ -2995,8 +2993,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 navigator.clipboard.writeText(
                                   sceneEditSubtitle,
                                 );
-                                setInfoMsg(t.copiedSubtitle);
-                                setTimeout(() => setInfoMsg(""), 3000);
+                                setTemporaryState(setInfoMsg,t.copiedSubtitle,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
                               }}
                               title={t.copySubtitle}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
@@ -3174,8 +3171,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   navigator.clipboard.writeText(
                                     sceneEditPrompt,
                                   );
-                                  setInfoMsg(t.copiedPrompt);
-                                  setTimeout(() => setInfoMsg(""), 3000);
+                                  setTemporaryState(setInfoMsg,t.copiedPrompt,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
                                 }}
                                 title={t.copyAiImagePrompt}
                                 className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"

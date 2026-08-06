@@ -51,6 +51,9 @@ export const subscribeToLogs = (listener: LogListener): (() => void) => {
 };
 
 export const logger = {
+  log: (...args: unknown[]) => {
+    console.log(...args);
+  },
   info: (...args: unknown[]) => {
     console.log(REFACTOR_CONSTANTS.LOGGER_INFO_PREFIX, ...args);
   },

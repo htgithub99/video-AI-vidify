@@ -10,6 +10,7 @@
         "start": "node dist/server.cjs",
         "preview": "vite preview",
         "lint": "eslint . --ext .ts,.tsx",
+        "test:baseline": "tsx scripts/verify-baseline.ts && tsx scripts/verify-advanced.ts && tsx scripts/verify-shadow.ts && tsx scripts/verify-prompt-config.ts && tsx scripts/verify-response-contract.ts && tsx scripts/verify-upscale.ts && tsx scripts/verify-utf8.ts && tsx scripts/verify-clean-code.ts",
         "electron:dev": "cross-env NODE_ENV=development electron .",
         "electron:build": "powershell -ExecutionPolicy Bypass -File ./clean-build.ps1"
     },

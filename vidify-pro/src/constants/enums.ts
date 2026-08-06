@@ -33,6 +33,7 @@ export enum LogEvent {
   AUDIO_PLAYBACK_FAILED = "AUDIO_PLAYBACK_FAILED",
   COVER_IMAGE_CANVAS_CAPTURE_FAILED = "COVER_IMAGE_CANVAS_CAPTURE_FAILED",
   FAILED_FETCH_SCENE_IMAGE = "FAILED_FETCH_SCENE_IMAGE",
+  VISUAL_QA_ERROR = "VISUAL_QA_ERROR",
   FAILED_FETCH_NARRATION = "FAILED_FETCH_NARRATION",
   FAILED_DECODE_NARRATION_SLICE = "FAILED_DECODE_NARRATION_SLICE",
   FAILED_TO_CALL_AI_VOICE_ALIGN = "FAILED_TO_CALL_AI_VOICE_ALIGN",
@@ -130,6 +131,7 @@ export enum SplitStrategy {
 }
 
 export enum VideoGenre {
+  STORY_DRIVEN_VIDEO_ESSAY = "Story-driven Video Essay",
   NARRATIVE_EXPLAINER = "Narrative Explainer",
   HISTORY = "History",
   TRUE_CRIME = "True Crime",
@@ -143,6 +145,7 @@ export enum MimeType {
   WAV = "audio/wav",
   MPEG = "audio/mpeg",
   JPEG = "image/jpeg",
+  PNG = "image/png",
 }
 
 export enum UltraStreamLogType {

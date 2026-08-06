@@ -8,6 +8,7 @@ import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorS
 
 import { jsonUtils } from "../../lib/json.js";
 import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
+import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
@@ -15,7 +16,7 @@ import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config.js";
 
 import {
   EXTERNAL_URLS,
@@ -45,6 +46,7 @@ import {
   getDetailedPromptBuilderPrompt,
   getGlobalVisualBiblePrompt,
   getVideoSceneSelectionPrompt,
+  getSceneImageQualityPrompt,
   getCharacterAnalysisPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
@@ -53,6 +55,11 @@ import {
   STICKMAN_STYLE_MODIFIERS,
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
+  getScriptEditorQaPrompt,
+  getAudioQualityPrompt,
+  getStoryboardDirectorQaPrompt,
+  getFinalVideoQualityPrompt,
+  getContentSafetyPrompt,
   STICKMAN_KEYWORDS,
   MARKDOWN_REGEX,
   EMOJI_REGEX,
@@ -105,6 +112,14 @@ import {
   COMMON_STRINGS,
   ROUTER_PATHS,
   REFACTOR_CONSTANTS,
+  CONTENT_SAFETY_RESPONSE_SCHEMA,
+  HOOK_RESPONSE_SCHEMA,
+  SCRIPT_PLAN_RESPONSE_SCHEMA,
+  CHAPTER_RESPONSE_SCHEMA,
+  SCRIPT_QA_RESPONSE_SCHEMA,
+  VISUAL_QA_RESPONSE_SCHEMA,
+  STORYBOARD_QA_RESPONSE_SCHEMA,
+  FINAL_VIDEO_QA_RESPONSE_SCHEMA,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
@@ -113,11 +128,15 @@ import { SecurityMessages } from "../../constants/security.js";
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 
-import { AspectRatio, GenerateType, ProjectLanguage } from "../../types.js";
+import { AspectRatio, GenerateType, HookVersion, ProjectLanguage } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
+import { AiTaskCapability } from "../services/taskRouterService.js";
+import { normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
+import { normalizeContentSafety } from "../../services/contentSafetyService.js";
+import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
 
 import ffmpeg from "fluent-ffmpeg";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import os from "os";
 import { exec, spawn } from "child_process";
 import { StepLogger } from "../../lib/stepLogger.js";
@@ -753,12 +772,13 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
     if (_.isArray(versions)) {
-      versions = _.map(versions, (v: any, idx: number) => ({
+      versions = rankHookVersions(_.map(versions, (v: any, idx: number): HookVersion => ({
         id: v.id || `hk_${idx + 1}`,
         content: v.content || "",
         type: v.type || hookType || "StyleName",
         selected: idx === 0,
-      }));
+        score: v.score,
+      })));
     }
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
@@ -778,7 +798,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
 });
 
 router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
-  const { originalInput, config = {}, selectedHookText, bypassCache } = req.body;
+  const { originalInput, inputType = "idea", config = {}, selectedHookText, bypassCache } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
   if (cached) {
@@ -798,6 +818,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   }
 
   let activeHookText = selectedHookText || "";
+  let generatedHookVersions: any[] = [];
 
   try {
     const isVi = config.language === ProjectLanguage.VI;
@@ -825,6 +846,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     }
 
     const multiStepLogs: string[] = [];
+    const aiMetrics: any[] = [];
+    const safetyResponse=await generateContentWithRetry({contents:getContentSafetyPrompt(originalInput),config:{responseMimeType:CONTENT_TYPES.JSON,responseJsonSchema:CONTENT_SAFETY_RESPONSE_SCHEMA,maxOutputTokens:1024},task:{capability:AiTaskCapability.FactualReview}});
+    const contentSafety=normalizeContentSafety(safeParseJSON(safetyResponse.text,{}));
+    if(safetyResponse.aiMetadata)aiMetrics.push(safetyResponse.aiMetadata);
+    if(!contentSafety.allowed)throw new Error(_.join(contentSafety.blockingErrors,", ")||"Content safety review rejected this production.");
     const logStep = (msg: string) => {
       appLogStep(msg, multiStepLogs);
     };
@@ -835,14 +861,30 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       try {
         const hookType = config.hookConfig.type || "Auto";
         const hookDuration = config.hookConfig.duration || 10;
-        const hookPrompt = getMultiStepHookPrompt(originalInput, config.genre || "Storytelling", hookType, hookDuration, isVi ? "vi" : "en", 1);
+        const hookCount = _.clamp(_.toInteger(config.hookConfig.count) || REFACTOR_CONSTANTS.HOOK_COUNT, 1, 5);
+        const hookPrompt = getMultiStepHookPrompt(originalInput, config.genre || "Storytelling", hookType, hookDuration, isVi ? "vi" : "en", hookCount);
         const hookResponse = await generateContentWithRetry({
           contents: hookPrompt,
-          config: { responseMimeType: "application/json" },
+          config: { responseMimeType: "application/json", responseJsonSchema: HOOK_RESPONSE_SCHEMA },
+          task: { capability: AiTaskCapability.TextPlanning },
         });
         const hookResult = safeParseJSON(hookResponse.text, { versions: [] });
+        assertResponseContract(hookResult, ResponseContractName.Hook);
+        if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          activeHookText = hookResult.versions[0].content || "";
+          generatedHookVersions = rankHookVersions(_.map(
+            _.take(hookResult.versions, hookCount),
+            (version: any, index: number): HookVersion => ({
+              id: version.id || `hk_${index + 1}`,
+              content: version.content || "",
+              type: version.type || hookType,
+              selected: false,
+              score: version.score,
+            }),
+          ));
+          const selectedHook = _.find(generatedHookVersions, "selected");
+          if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
+          activeHookText = selectedHook.content;
           logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
         }
       } catch (hookErr: any) {
@@ -854,14 +896,23 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
     const targetChapterCount = _.max([3, _.floor(targetWordCountMin / 100)]) || 3;
 
-    const combinedScriptPrompt = getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig);
+    const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
+    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${contentControlDirective}`;
 
+    const groundedResearchResponse = config.factCheck
+      ? await generateContentWithRetry({contents:`Research this topic for a source-backed video essay. Return concise findings with source titles, direct URLs, publication dates, jurisdictions, disputed points, and safe scope. Never invent a citation. Topic: ${originalInput}`,config:{tools:[{googleSearch:{}}],maxOutputTokens:2048},task:{capability:AiTaskCapability.FactualReview}})
+      : null;
+    if(groundedResearchResponse?.aiMetadata)aiMetrics.push(groundedResearchResponse.aiMetadata);
     const combinedResponse = await generateContentWithRetry({
-      contents: combinedScriptPrompt,
+      contents: groundedResearchResponse
+        ? `${combinedScriptPrompt}\n\n[Grounded research evidence]:\n${groundedResearchResponse.text}`
+        : `${combinedScriptPrompt}\n\n[Fact-check mode]: Disabled by the user. Do not invent sources, quotations, studies, or precise factual claims. Mark unverifiable claims unsupported and use cautious qualitative wording.`,
       config: {
         responseMimeType: "application/json",
+        responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
         maxOutputTokens: 2048,
       },
+      task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
     });
 
     const scriptResult = safeParseJSON(combinedResponse.text, {
@@ -871,7 +922,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       factCheckNotes: "",
       chapters: [],
     });
+    assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
 
+    if (combinedResponse.aiMetadata) aiMetrics.push(combinedResponse.aiMetadata);
     logStep(`${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`);
     if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
 
@@ -906,17 +959,21 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       );
 
       const chapterResponse = await generateContentWithRetry({
-        contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\nChapter Prompt:\n${chapterPrompt}`,
+        contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`,
         config: {
           responseMimeType: "application/json",
+          responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
           maxOutputTokens: 2048,
         },
+        task: { capability: AiTaskCapability.ScriptWriting },
       });
 
       const chapterData = safeParseJSON(chapterResponse.text, {
         scriptSegment: "",
       });
+      assertResponseContract(chapterData, ResponseContractName.Chapter);
 
+      if (chapterResponse.aiMetadata) aiMetrics.push(chapterResponse.aiMetadata);
       let cleanedSegment = chapterData.scriptSegment || "";
       cleanedSegment = cleanedSegment.replace(MARKDOWN_REGEX, "").replace(EMOJI_REGEX, "");
 
@@ -935,11 +992,38 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
     const finalCleanScript = fullScript.trim();
 
+    const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
+    const qaResponse = await generateContentWithRetry({
+      contents: getScriptEditorQaPrompt(
+        finalCleanScript,
+        activeHookText,
+        jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
+        jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
+        targetDurationSeconds,
+        isVi,
+      ),
+      config: { responseMimeType: "application/json", responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA, maxOutputTokens: 2048 },
+      task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
+    });
+    const scriptQa = normalizeScriptQualityReport(
+      safeParseJSON(qaResponse.text, {}),
+      _.size(_.words(finalCleanScript)),
+      targetDurationSeconds,
+    );
+    if (qaResponse.rotationLogs) multiStepLogs.push(...qaResponse.rotationLogs);
+    if (qaResponse.aiMetadata) aiMetrics.push(qaResponse.aiMetadata);
+
     const parsedData = {
       rewrittenScript: finalCleanScript,
       factCheckNotes: scriptResult.factCheckNotes || "✓ Verified: Content is consistent.",
+      creativeBrief: scriptResult.creativeBrief || {},
+      factPack: scriptResult.factPack || { claims: [] },
+      scriptQa,
       chapters: completedChapters,
+      hookVersions: generatedHookVersions,
       rotationLogs: multiStepLogs,
+      aiMetrics,
+      contentSafety,
     };
     setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
@@ -1103,6 +1187,62 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
   } catch (error: any) {
     logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
     return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
+  }
+});
+
+router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Response) => {
+  const assetUrl = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY));
+  const sceneId = _.toString(_.get(req.body, "sceneId", REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID));
+  const sceneScript = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY));
+  const imagePrompt = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY));
+  const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
+
+  if (_.isEmpty(assetUrl)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
+  }
+
+  try {
+    let mimeType: MimeType = MimeType.JPEG;
+    let imageBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+    const dataUrlMatch = assetUrl.match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);
+
+    if (dataUrlMatch) {
+      mimeType = dataUrlMatch[1] as MimeType;
+      imageBase64 = dataUrlMatch[2];
+    } else {
+      const relativeAssetPath = _.trimStart(_.first(_.split(assetUrl, "?")) || assetUrl, "/\\");
+      const dataRoot = path.resolve(getDataDirectory());
+      const assetPath = path.resolve(dataRoot, relativeAssetPath);
+      const normalizedRoot = _.toLower(_.join([dataRoot, path.sep], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+      const isInsideDataRoot = _.startsWith(_.toLower(assetPath), normalizedRoot);
+
+      if (!isInsideDataRoot || !fs.existsSync(assetPath)) {
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
+      }
+
+      mimeType = _.isEqual(_.toLower(path.extname(assetPath)), ".png") ? MimeType.PNG : MimeType.JPEG;
+      imageBase64 = fs.readFileSync(assetPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+    }
+
+    const response = await generateContentWithRetry({
+      contents: [{
+        role: "user",
+        parts: [
+          { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount) },
+          { inlineData: { mimeType, data: imageBase64 } },
+        ],
+      }],
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA },
+      task: { capability: AiTaskCapability.VisualQa },
+    });
+    const quality = safeParseJSON(response.text, {});
+    return res.json({ success: true, quality, rotationLogs: response.rotationLogs });
+  } catch (error: any) {
+    logger.error(LogEvent.VISUAL_QA_ERROR, error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+      error: error.message,
+      rotationLogs: error.rotationLogs,
+    });
   }
 });
 
@@ -1345,7 +1485,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
-    let data: any = { scenes: allScenes, rotationLogs: storyboardLogs };
+    let data: any = { scenes: allScenes, visualBible, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || _.isEmpty(data.scenes)) {
       appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
@@ -1384,6 +1524,14 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         scenes[i].endTime = formatTime(endSecs);
       }
     }
+
+    const directorQaResponse = await generateContentWithRetry({
+      contents: getStoryboardDirectorQaPrompt(jsonUtils.safeStringify(data.scenes), jsonUtils.safeStringify(visualBible)),
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: STORYBOARD_QA_RESPONSE_SCHEMA, maxOutputTokens: 1024 },
+      task: { capability: AiTaskCapability.VisualQa },
+    });
+    data.storyboardQa = normalizeStoryboardQuality(safeParseJSON(directorQaResponse.text, {}));
+    if (directorQaResponse.rotationLogs) data.rotationLogs.push(...directorQaResponse.rotationLogs);
 
     setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
@@ -1837,6 +1985,55 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   } catch (err: any) {
     logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, err);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
+  }
+});
+
+router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Response) => {
+  const videoUrl = _.toString(req.body?.videoUrl);
+  const relativePath = _.trimStart(_.first(_.split(videoUrl, "?")) || videoUrl, "/\\");
+  const dataRoot = path.resolve(getDataDirectory());
+  const videoPath = path.resolve(dataRoot, relativePath);
+  const isInsideDataRoot = _.startsWith(_.toLower(videoPath), _.toLower(_.join([dataRoot, path.sep], "")));
+  if (!isInsideDataRoot || !fs.existsSync(videoPath)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Rendered video is outside the Vidify data root or missing." });
+  const tempDir = path.join(dataRoot, `final-qc-${randomUUID()}`);
+  fs.mkdirSync(tempDir, { recursive: true });
+  try {
+    const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : "ffmpeg";
+    await new Promise<void>((resolve, reject) => {
+      const process = spawn(executable, ["-y", "-i", videoPath, "-vf", "fps=1/15,scale=640:-2", "-frames:v", "12", path.join(tempDir, "frame_%02d.jpg")], { windowsHide: true, stdio: "ignore" });
+      process.once("error", reject);
+      process.once("exit", code => code === 0 ? resolve() : reject(new Error(`Final QC frame extraction failed (${code}).`)));
+    });
+    const frameFiles = _.take(_.sortBy(_.filter(fs.readdirSync(tempDir), file => _.endsWith(file, ".jpg"))), 12);
+    if (_.isEmpty(frameFiles)) throw new Error("Final QC could not extract representative frames.");
+    const parts:any[]=[{text:getFinalVideoQualityPrompt(_.toString(req.body?.script),_.toString(req.body?.viewerPromise))}];
+    _.forEach(frameFiles,file=>parts.push({inlineData:{mimeType:"image/jpeg",data:fs.readFileSync(path.join(tempDir,file)).toString("base64")}}));
+    const response=await generateContentWithRetry({contents:[{role:"user",parts}],config:{responseMimeType:CONTENT_TYPES.JSON,responseJsonSchema:FINAL_VIDEO_QA_RESPONSE_SCHEMA,maxOutputTokens:1024},task:{capability:AiTaskCapability.VisualQa}});
+    return res.json({success:true,quality:safeParseJSON(response.text,{}),aiMetadata:response.aiMetadata,rotationLogs:response.rotationLogs});
+  } catch(error:any) {
+    logger.error(LogEvent.VISUAL_QA_ERROR,error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({error:error.message});
+  } finally {
+    if (fs.existsSync(tempDir)) fs.rmSync(tempDir,{recursive:true,force:true});
+  }
+});
+
+router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => {
+  const audioBase64 = _.toString(req.body?.audioBase64);
+  if (_.isEmpty(audioBase64)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Audio is required for quality validation." });
+  try {
+    const response = await generateContentWithRetry({
+      contents: [{ role: "user", parts: [
+        { text: getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds)) },
+        { inlineData: { mimeType: "audio/mpeg", data: audioBase64 } },
+      ] }],
+      config: { responseMimeType: CONTENT_TYPES.JSON },
+      task: { capability: AiTaskCapability.AudioQa },
+    });
+    return res.json({ success: true, quality: safeParseJSON(response.text, {}), rotationLogs: response.rotationLogs });
+  } catch (error: any) {
+    logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, error);
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
@@ -2656,6 +2853,15 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
     logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
   }
+});
+
+router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) => {
+  const projectId=path.basename(_.toString(req.params.projectId));const group=_.toString(req.params.group);const allowed=_.values(REFERENCE_ASSET_GROUP);
+  if(!_.includes(allowed,group)||_.isEmpty(projectId))return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:PROJECT_ASSET_INVALID_REQUEST});
+  const directory=path.resolve(getDataDirectory(),ASSETS_DIR_NAME,PROJECTS_DIR_NAME,projectId,"references",group);const projectRoot=path.resolve(getDataDirectory(),ASSETS_DIR_NAME,PROJECTS_DIR_NAME,projectId);
+  if(!_.startsWith(_.toLower(directory),_.toLower(_.join([projectRoot,path.sep],""))))return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:PROJECT_ASSET_INVALID_REQUEST});
+  fs.mkdirSync(directory,{recursive:true});const assets:string[]=[];
+  try{_.forEach(_.take(_.castArray(req.body?.images),10),(image,index)=>{const match=_.toString(image).match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);if(!match){if(_.startsWith(_.toString(image),`/${ASSETS_DIR_NAME}/`))assets.push(_.toString(image));return}const extension=_.includes(match[1],"png")?"png":_.includes(match[1],"webp")?"webp":"jpg";const filename=`ref_${index+1}_${createHash("sha256").update(match[2]).digest("hex").slice(0,12)}.${extension}`;const filePath=path.join(directory,filename);if(!fs.existsSync(filePath))fs.writeFileSync(filePath,Buffer.from(match[2],"base64"));assets.push(`/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/references/${group}/${filename}`)});return res.json({success:true,assets})}catch(error:any){return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({error:error.message})}
 });
 
 router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
