@@ -7,7 +7,8 @@ import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/prof
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
-import { generateContentWithRetry, isGeminiApiKeyAvailable } from "../services/geminiService.js";
+import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
+import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
@@ -56,6 +57,7 @@ import {
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
   getScriptEditorQaPrompt,
+  getScriptCorrectivePrompt,
   getAudioQualityPrompt,
   getStoryboardDirectorQaPrompt,
   getFinalVideoQualityPrompt,
@@ -67,8 +69,6 @@ import {
   LogEvent,
   ErrorMessage,
   getDummyHooks,
-  getDummyScript,
-  getDummyHookTitle,
   getDurationText,
   getDummySeoData,
   getThumbnailLayoutPrompt,
@@ -134,6 +134,7 @@ import { AiTaskCapability } from "../services/taskRouterService.js";
 import { normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { normalizeContentSafety } from "../../services/contentSafetyService.js";
 import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
+import { createSafeFallbackHook, resolveUsableHooks } from "../../services/hookResilienceService.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { createHash, randomUUID } from "crypto";
@@ -223,7 +224,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
-    if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
       return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
@@ -282,7 +283,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({ storyboard });
   }
 
@@ -358,7 +359,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({ storyboard });
   }
 
@@ -442,7 +443,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({ thumbnails });
   }
 
@@ -500,7 +501,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({ thumbnails });
   }
 
@@ -553,7 +554,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
     }
 
-    if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
       return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
@@ -585,7 +586,7 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
-    if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
       return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
@@ -648,7 +649,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
     }
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({ storyboard });
   }
 
@@ -734,7 +735,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     return res.json({ ...cached, cached: true });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({
       versions: getDummyHooks(language === ProjectLanguage.VI, false, hookType),
     });
@@ -782,7 +783,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     }
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
-    const output = { versions, rotationLogs: multiStepLogs };
+    const output = { versions: resolveUsableHooks(versions, originalInput, language, hookType, count), rotationLogs: multiStepLogs };
     setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
     res.json(output);
   } catch (error: any) {
@@ -805,17 +806,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     return res.json({ ...cached, cached: true });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
-    const isVi = config.language === ProjectLanguage.VI;
-    let fallbackHook = selectedHookText || "";
-    if (!fallbackHook && config.hookConfig) {
-      const type = config.hookConfig.type || "Auto";
-      fallbackHook = getDummyHookTitle(isVi, type, false);
-    }
-    return res.json({
-      ...getDummyScript(isVi, fallbackHook, config, false),
-    });
-  }
+  if (!(await isAiProviderAvailable())) {const isVi=config.language===ProjectLanguage.VI;return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:getBackendMsg("GEMINI_NOT_INIT",isVi)})}
 
   let activeHookText = selectedHookText || "";
   let generatedHookVersions: any[] = [];
@@ -889,6 +880,10 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         }
       } catch (hookErr: any) {
         logger.error(LogEvent.AUTO_HOOK_GENERATION_FAILED_FALLING_BACK, hookErr);
+        const fallbackHook = createSafeFallbackHook(originalInput, isVi ? ProjectLanguage.VI : ProjectLanguage.EN, config.hookConfig.type);
+        generatedHookVersions = [fallbackHook];
+        activeHookText = fallbackHook.content;
+        logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
       }
     }
 
@@ -990,28 +985,24 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    const finalCleanScript = fullScript.trim();
-
+    let finalCleanScript = fullScript.trim();
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
-    const qaResponse = await generateContentWithRetry({
-      contents: getScriptEditorQaPrompt(
-        finalCleanScript,
-        activeHookText,
-        jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
-        jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
-        targetDurationSeconds,
-        isVi,
-      ),
-      config: { responseMimeType: "application/json", responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA, maxOutputTokens: 2048 },
-      task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
-    });
-    const scriptQa = normalizeScriptQualityReport(
-      safeParseJSON(qaResponse.text, {}),
-      _.size(_.words(finalCleanScript)),
-      targetDurationSeconds,
-    );
-    if (qaResponse.rotationLogs) multiStepLogs.push(...qaResponse.rotationLogs);
-    if (qaResponse.aiMetadata) aiMetrics.push(qaResponse.aiMetadata);
+    const evaluateScript = async () => {
+      const response = await generateContentWithRetry({ contents: getScriptEditorQaPrompt(finalCleanScript, activeHookText, jsonUtils.safeStringify(scriptResult.creativeBrief || {}), jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }), targetDurationSeconds, isVi), config: { responseMimeType: "application/json", responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning } });
+      if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
+      if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
+      return normalizeScriptQualityReport(safeParseJSON(response.text, {}), _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    };
+    let scriptQa = await evaluateScript();
+    for (let retryIndex = 0; retryIndex < REFACTOR_CONSTANTS.SCRIPT_QA_CORRECTIVE_RETRY_COUNT && !scriptQa.passed; retryIndex++) {
+      const repairResponse = await generateContentWithRetry({ contents: getScriptCorrectivePrompt(finalCleanScript, jsonUtils.safeStringify(scriptQa), targetDurationSeconds, isVi), config: { responseMimeType: "application/json", responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 8192 }, task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.ScriptWriting } });
+      if (repairResponse.rotationLogs) multiStepLogs.push(...repairResponse.rotationLogs);
+      if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
+      const repairedScript = _.trim(_.toString(safeParseJSON(repairResponse.text, {}).scriptSegment));
+      if (_.isEmpty(repairedScript)) break;
+      finalCleanScript = repairedScript;
+      scriptQa = await evaluateScript();
+    }
 
     const parsedData = {
       rewrittenScript: finalCleanScript,
@@ -1025,20 +1016,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       aiMetrics,
       contentSafety,
     };
-    setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
+    if (scriptQa.passed) setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
-    let finalHook = activeHookText || selectedHookText || "";
-    if (!finalHook && config?.hookConfig) {
-      const type = config.hookConfig.type || "Auto";
-      finalHook = getDummyHookTitle(isVi, type, true);
-    }
-    res.json({
-      warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
-      ...getDummyScript(isVi, finalHook, config, true),
-    });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({error:getGeminiUserMessage(error,isVi),retryable:classifyGeminiError(error).retryable});
   }
 });
 
@@ -1285,7 +1268,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     return res.json({ ...cached, cached: true });
   }
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json(generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
   }
 
@@ -1562,7 +1545,7 @@ router.post("/seo", async (req: Request, res: Response) => {
   const numHashtags = seoConfig.numHashtags || 5;
   const numTags = seoConfig.numTags || 6;
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     return res.json({
       ...getDummySeoData(config?.language === ProjectLanguage.VI, false),
     });
@@ -1632,7 +1615,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   const thumbnailCount = visualConfig.thumbnailCount || 2;
   const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
 
-  if (!isGeminiApiKeyAvailable()) {
+  if (!(await isAiProviderAvailable())) {
     const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false);
     return res.json({
       thumbnails: Array.from({ length: thumbnailCount }).map((_, i) => ({

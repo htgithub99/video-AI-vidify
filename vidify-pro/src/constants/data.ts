@@ -142,6 +142,7 @@ export const LOG_WARN_SYMBOLS = ["⚠️", "⏳"] as const;
 
 export const GEMINI_RETRYABLE_STATUSES = ["RESOURCE_EXHAUSTED", "UNAVAILABLE", 429, "429"] as const;
 export const GEMINI_QUOTA_STATUSES = ["RESOURCE_EXHAUSTED", 429, "429"] as const;
+export const GEMINI_USER_MESSAGES = {vi:{missingKey:"Chưa có khóa Gemini. Hãy thêm khóa hợp lệ trong Cài đặt rồi thử lại.",unsupportedModel:"Mô hình AI hiện tại không còn được hỗ trợ. Hệ thống đã tạm loại mô hình này; hãy thử lại để dùng mô hình khác.",zeroQuota:"Tài khoản Gemini không có hạn mức miễn phí cho mô hình khả dụng. Hãy đổi khóa có hạn mức hoặc bật thanh toán rồi thử lại.",dailyQuota:"Hạn mức Gemini hôm nay đã hết. Hãy chờ hạn mức được làm mới hoặc đổi khóa rồi thử lại.",rateLimit:"Gemini đang giới hạn tần suất yêu cầu. Hãy đợi một lúc rồi tiếp tục dự án.",transient:"Gemini đang tạm thời không phản hồi. Hãy kiểm tra kết nối và thử lại sau ít phút.",fatal:"Không thể tạo nội dung bằng Gemini. Hãy kiểm tra khóa, cấu hình mô hình và thử lại."},en:{missingKey:"No Gemini key is configured. Add a valid key in Settings and try again.",unsupportedModel:"The current AI model is no longer supported. It has been temporarily removed; retry to use another model.",zeroQuota:"This Gemini account has no free quota for an available model. Use a key with quota or enable billing and try again.",dailyQuota:"Today's Gemini quota is exhausted. Wait for the quota to reset or use another key.",rateLimit:"Gemini is rate-limiting requests. Wait briefly, then resume the project.",transient:"Gemini is temporarily unavailable. Check the connection and retry in a few minutes.",fatal:"Gemini could not generate the content. Check the key and model configuration, then try again."}} as const;
 
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
 
@@ -210,7 +211,11 @@ export const AI_TRANSITION_EFFECT_IDS = ["cut", "cross_dissolve", "blur_dissolve
 export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitch", "warm", "cold", "noir", "horror_fog", "vhs", "neon", "film_grain", "sharpen", "chromatic_aberration", "pixelate", "soft_focus"] as const;
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 
-export const AVAILABLE_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"] as const;
+export const AI_MODEL_REGISTRY = [{ id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1 }, { id: "gemini-3.1-flash-lite", freeEligible: true, priority: 2 }, { id: "gemini-3.5-flash", freeEligible: true, priority: 3 }, { id: "gemini-3.6-flash", freeEligible: false, priority: 4 }] as const;
+export const AVAILABLE_MODELS = AI_MODEL_REGISTRY.filter((model) => model.freeEligible).map((model) => model.id);
+export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;
+export const GEMINI_ZERO_QUOTA_PATTERNS = ["limit: 0", "limit=0", "free_tier_requests, limit: 0", "free_tier_input_token_count, limit: 0"] as const;
+export const GEMINI_DAILY_QUOTA_PATTERNS = ["perday", "per day", "requestsperday", "tokensperday"] as const;
 
 export const PROMPT_FILLER_WORDS = ["beautiful", "detailed", "artistic", "image", "generation", "prompt", "describing", "characters", "clothes", "historical", "accuracy", "weather", "camera", "angle", "lighting", "based", "style", "with", "what", "where", "photo", "shot", "highly", "ultra", "dramatic", "gorgeous", "scene", "rendering"] as const;
 

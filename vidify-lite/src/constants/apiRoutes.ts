@@ -122,6 +122,8 @@ export const FALLBACK_VOICES_PREVIEWS = {
 export const API_HEADERS = {
   AI33_API_KEY: "x-ai33-api-key",
   GEMINI_API_KEY: "x-gemini-api-key",
+  CEREBRAS_API_KEY: "x-cerebras-api-key",
+  GROQ_API_KEY: "x-groq-api-key",
   LICENSE_KEY: "x-license-key",
 } as const;
 

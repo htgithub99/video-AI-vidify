@@ -144,6 +144,9 @@ export const JSON_UTILS_CONFIG = {
   PARSE_ERROR_EVENT: "ERROR_PARSING_JSON",
   STRINGIFY_ERROR_EVENT: "ERROR_STRINGIFYING_JSON",
 } as const;
+
+export const GEMINI_REQUEST_POLICY = { DEFAULT_RETRIES: 2, BASE_DELAY_MS: 1200, MODEL_SWITCH_DELAY_MS: 500, TRANSIENT_RETRY_LIMIT: 2, RATE_LIMIT_RETRY_LIMIT: 1, UNSUPPORTED_COOLDOWN_MS: 86400000, ZERO_QUOTA_COOLDOWN_MS: 86400000, DAILY_QUOTA_COOLDOWN_MS: 43200000, TRANSIENT_COOLDOWN_MS: 300000, DEFAULT_QUOTA_WAIT_MS: 8000, RETRY_JITTER_MIN: 0.8, RETRY_JITTER_RANGE: 0.4, RETRY_BUFFER_SECONDS: 1.5, BACKOFF_MULTIPLIER: 1.5, WAIT_BACKOFF_MULTIPLIER: 1.2, TOKEN_ESTIMATE_CHARACTERS: 4, MODEL_INDEX_RESET_MS: 180000 } as const;
+export const FREE_AI_PROVIDER_CONFIG = { CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["qwen-3-235b-a22b-instruct-2507", "gpt-oss-120b"] }, GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["qwen/qwen3.6-27b", "openai/gpt-oss-120b"] }, AUTHORIZATION_HEADER: "Authorization", BEARER_PREFIX: "Bearer ", CONTENT_TYPE_HEADER: "Content-Type", JSON_CONTENT_TYPE: "application/json", DEFAULT_TEMPERATURE: 0.7, JSON_RESPONSE_TYPE: "json_object", REQUEST_TIMEOUT_MS: 45000, DEFAULT_MAX_OUTPUT_TOKENS: 2048, PROMPT_VERSION: "vidify-baseline-v2" } as const;
 export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";

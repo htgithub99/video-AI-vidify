@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbyxvIMbq2LZl57rwCKa0pY9nPmawYh1zKtGX9-OsnTRj9n1B0cnPneepwePcF3aBHk/exec';
+const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbz3lTshREEk-51ftQ0OGfSs4HOMb5S_nMXRc8XctL23HizwXEYx9i5uwuXZN-uK5U5X/exec';
 
 const AdminConstants = {
     TOKEN_KEY: 'adminToken',
@@ -22,7 +22,7 @@ const AdminConstants = {
     KEY_PREVIEW_LENGTH: 5,
     KEY_MASK_SUFFIX_LENGTH: 4,
     COLSPAN_USERS: 8,
-    COLSPAN_KEYS: 5,
+    COLSPAN_KEYS: 7,
     COLSPAN_ACCOUNTS: 6,
     MAX_ITEMS_SELECT: 1,
     DEFAULT_MAX_DEVICES: 1,
@@ -159,6 +159,8 @@ const ApiFields = {
     ID: 'id',
     ROW_INDEX: 'rowIndex',
     GEMINI_KEY: 'geminiKey',
+    CEREBRAS_KEY: 'cerebrasKey',
+    GROQ_KEY: 'groqKey',
     AI33_KEY: 'ai33Key',
     MESSAGE: 'message',
     CREATED_AT_CAMEL: 'createdAt',
@@ -299,6 +301,8 @@ const DOMIds = {
     TAB_CONTENT_ACCOUNTS: 'tab-content-accounts',
     SAVE_KEYS_BTN: 'save-keys-btn',
     KEYS_GEMINI_INPUT: 'keys-gemini-input',
+    KEYS_CEREBRAS_INPUT: 'keys-cerebras-input',
+    KEYS_GROQ_INPUT: 'keys-groq-input',
     KEYS_AI33_INPUT: 'keys-ai33-input',
     KEYS_ASSIGNEE_INPUT: 'keys-assignee-input',
     KEYS_EXCLUDED_INPUT: 'keys-excluded-input',

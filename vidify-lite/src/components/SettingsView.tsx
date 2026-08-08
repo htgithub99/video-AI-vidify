@@ -11,6 +11,7 @@ import { AppLanguage } from "../constants/enums";
 import { Tooltip } from "./ui/Tooltip";
 import _ from "lodash";
 import { jsonUtils } from "../lib/json";
+import { toast } from "sonner";
 
 interface SettingsViewProps {
   currentLang: Lang;
@@ -22,8 +23,11 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
   const [geminiKey, setGeminiKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
+  const [cerebrasKey, setCerebrasKey] = useState(() => getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY));
+  const [groqKey, setGroqKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [isSavingKeys, setIsSavingKeys] = useState(false);
+  useEffect(() => { const migrateKeys = async () => { for (const key of [STORAGE_KEYS.GEMINI_API_KEY, STORAGE_KEYS.CEREBRAS_API_KEY, STORAGE_KEYS.GROQ_API_KEY, STORAGE_KEYS.AI33_API_KEY]) { const value = await storageUtils.getAsync(key); if (!_.isEmpty(value)) storageUtils.set(key, value as string); } setGeminiKey(getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY)); setCerebrasKey(getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY)); setGroqKey(getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY)); setAi33Key(getStoredApiKey(STORAGE_KEYS.AI33_API_KEY)); }; void migrateKeys(); }, []);
   
   const [accounts, setAccounts] = useState<any[]>([]);
   useEffect(() => {
@@ -48,14 +52,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
   const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
 
-  const handleSaveKeys = () => {
-    setIsSavingKeys(true);
-    setTimeout(async () => {
-      await storageUtils.setAsync(STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey));
-      await storageUtils.setAsync(STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key));
-      setIsSavingKeys(false);
-    }, REFACTOR_CONSTANTS.DELAY_SAVE_KEYS_MS);
-  };
+  const handleSaveKeys = async () => { setIsSavingKeys(true); try { const entries = [[STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey)], [STORAGE_KEYS.CEREBRAS_API_KEY, _.trim(cerebrasKey)], [STORAGE_KEYS.GROQ_API_KEY, _.trim(groqKey)], [STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key)]] as const; for (const [key, value] of entries) { storageUtils.set(key, value); await storageUtils.setAsync(key, value); } toast.success(SecurityMessages.SAVE_API_KEYS_SUCCESS); } catch { toast.error(SecurityMessages.SAVE_API_KEYS_ERROR); } finally { setIsSavingKeys(false); } };
 
   const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
@@ -161,6 +158,8 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
               />
             </div>
+            <div className="space-y-1.5"><label className="text-[10px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">CEREBRAS_API_KEY</label><input type={SecurityConstants.INPUT_TYPE_TEXT} value={cerebrasKey} onChange={(e) => setCerebrasKey(e.target.value)} placeholder={texts.CEREBRAS_PLACEHOLDER} className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all" /></div>
+            <div className="space-y-1.5"><label className="text-[10px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">GROQ_API_KEY</label><input type={SecurityConstants.INPUT_TYPE_TEXT} value={groqKey} onChange={(e) => setGroqKey(e.target.value)} placeholder={texts.GROQ_PLACEHOLDER} className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all" /></div>
             <div className="space-y-1.5">
               <label className="text-[10px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">
                 AI33_API_KEY
@@ -179,7 +178,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             <Button
               variant={SecurityConstants.BTN_VARIANT_PRIMARY}
               onClick={handleSaveKeys}
-              disabled={isSavingKeys || (_.isEmpty(_.trim(geminiKey)) && _.isEmpty(_.trim(ai33Key)))}
+              disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))}
               title={texts.SAVE_BTN_TOOLTIP}
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >

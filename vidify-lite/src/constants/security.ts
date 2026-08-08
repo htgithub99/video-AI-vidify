@@ -56,7 +56,7 @@ const _decode = (encodedHex: string): string => {
 export const SecurityConstants = {
   get ADMIN_APP_KEY() { return _decode('7a7d447f4671546d46716a4f604d744b6a492626262cf716e5'); },
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
-  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f527c557ee22652f85de400311625d60205033cc1dd0b939d43462c3d332e09fcdb06d015f5dd27dfe3e42dd8b6bdf0f2e5eb00e202bf96ba001a1cae0b8319e601c35ed099b9dbc1'); },
+  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f5279a1574c3f045e29293cd9c6c3000037fc243d0119559d60602f12d7272d02003837e7dc2af3220ddcc23ab545b16f013518d7e9b5d2ffea001012afcb1cb30e875ed099b9dbc1'); },
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
@@ -188,6 +188,8 @@ export const SecurityConstants = {
   API_KEYS_KEY: 'apiKeys',
   ACCOUNTS_KEY: 'accounts',
   REQ_BODY_GEMINI_KEY: 'geminiKey',
+  REQ_BODY_CEREBRAS_KEY: 'cerebrasKey',
+  REQ_BODY_GROQ_KEY: 'groqKey',
   REQ_BODY_AI33_KEY: 'ai33Key',
   REQ_BODY_ID: 'id',
   REQ_BODY_ASSIGNED_TO: 'assignedTo',

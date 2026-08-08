@@ -1,13 +1,13 @@
 import _ from "lodash";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 export const SCRIPT_QUALITY_THRESHOLDS = {
-  CONTINUITY: 95,
-  FACTUALITY: 95,
-  REPETITION: 85,
-  CONVERSATIONAL: 85,
-  HOOK_PAYOFF: 85,
+  CONTINUITY: 85,
+  FACTUALITY: 85,
+  REPETITION: 80,
+  CONVERSATIONAL: 80,
+  HOOK_PAYOFF: 80,
   HOOK_FACTUAL_SAFETY: 80,
-  DURATION_TOLERANCE_RATIO: 0.1,
+  DURATION_TOLERANCE_RATIO: 0.15,
   WORDS_PER_MINUTE: 150,
 } as const;
 const score = (value: unknown): number => _.clamp(_.toFinite(value), 0, 100);

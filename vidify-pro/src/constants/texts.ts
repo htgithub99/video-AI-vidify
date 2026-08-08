@@ -132,6 +132,7 @@ export const HTTP_STATUS_CODES = {
   BAD_REQUEST: 400,
   NOT_FOUND: 404,
   INTERNAL_SERVER_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
 };
 
 export const TEMPLATE_CONFIG = {
@@ -990,6 +991,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) => `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
     logRenderJob: (jobId: string) => `🧩 Đang tiến hành lắp ráp và kết xuất video ở chế độ chạy nền...`,
     logPipelineElapsed: (seconds: number) => `⏱️ Tuyệt vời! Hoàn tất mọi công đoạn trong ${Math.round(seconds)} giây.`,
+    logPipelineFailedElapsed: (seconds: number) => `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.`,
+    logPipelineCancelledElapsed: (seconds: number) => `⏱️ Đã hủy quy trình sau ${Math.round(seconds)} giây.`,
     logInitProj: "📌 [1/4] Đang khởi tạo không gian làm việc...",
     logInitProjSuccess: (name: string) => `✅ Không gian làm việc đã sẵn sàng.`,
     logScriptGen: "📌 [1/4] Trí tuệ nhân tạo (AI) đang soạn kịch bản & thiết kế nhân vật...",
@@ -1164,6 +1167,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) => `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
     logRenderJob: (jobId: string) => `🧩 Assembling and rendering video in the background...`,
     logPipelineElapsed: (seconds: number) => `⏱️ Awesome! Everything completed in ${Math.round(seconds)} seconds.`,
+    logPipelineFailedElapsed: (seconds: number) => `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.`,
+    logPipelineCancelledElapsed: (seconds: number) => `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.`,
     logInitProj: "📌 [1/4] Initializing workspace...",
     logInitProjSuccess: (name: string) => `✅ Workspace is ready.`,
     logScriptGen: "📌 [1/4] AI is composing the script & characters...",

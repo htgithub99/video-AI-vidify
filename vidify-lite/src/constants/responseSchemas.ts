@@ -19,7 +19,7 @@ export const HOOK_RESPONSE_SCHEMA = {
   properties: {
     audience: stringSchema, triggers: stringArraySchema,
     angles: { type: "array", items: { type: "object", required: ["name", "rationale"], properties: { name: stringSchema, rationale: stringSchema } } },
-    versions: { type: "array", minItems: 1, items: { type: "object", required: ["id", "content", "type", "score"], properties: {
+    versions: { type: "array", minItems: 1, items: { type: "object", required: ["id", "content", "type"], properties: {
       id: stringSchema, content: stringSchema, type: stringSchema,
       score: { type: "object", required: ["retention", "clarity", "emotion", "factualSafety", "unsupportedClaim", "reasons"], properties: {
         retention: numberScoreSchema, clarity: numberScoreSchema, emotion: numberScoreSchema, factualSafety: numberScoreSchema,

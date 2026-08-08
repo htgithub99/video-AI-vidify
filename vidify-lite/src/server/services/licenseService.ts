@@ -95,10 +95,10 @@ export class LicenseService {
             }
             
             return {
-                status: _.get(data, SecurityConstants.STATUS_KEY),
+                status: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.STATUS_KEY)))) as LicenseStatus,
                 plan_id: _.get(data, SecurityConstants.PLAN_ID_KEY),
-                plan_type: _.get(data, SecurityConstants.PLAN_NAME_KEY, PlanType.FREE),
-                quota_type: _.get(data, SecurityConstants.QUOTA_TYPE_KEY, SecurityConstants.QUOTA_TYPE_DAILY),
+                plan_type: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.PLAN_NAME_KEY, PlanType.FREE)))) as PlanType,
+                quota_type: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.QUOTA_TYPE_KEY, SecurityConstants.QUOTA_TYPE_DAILY)))),
                 expires_at: _.get(data, SecurityConstants.EXPIRES_AT_KEY, null),
                 usage: {
                     video: _.get(data, SecurityConstants.USAGE_VIDEO_KEY, SecurityConstants.ZERO),

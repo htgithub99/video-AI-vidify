@@ -1389,3 +1389,11 @@ export const getContentSafetyPrompt = (input: string): string => `You are Vidify
 {"sensitiveTopic":false,"trueCase":false,"minorsInvolved":false,"sexualExploitationRisk":false,"victimExploitationRisk":false,"privacyRisk":false,"likenessRisk":false,"copyrightRisk":false,"requiredDisclosures":[],"blockingErrors":[],"warnings":[]}
 Input: ${input}`;
 
+export const getScriptCorrectivePrompt = (script: string, qaJson: string, targetDurationSeconds: number, isVi: boolean): string => `You are a senior script editor. Correct the script using the QA report without changing its central facts, viewer promise, narrative perspective, or intended language. Resolve every blocking error, improve continuity, factual caution, conversational rhythm, repetition, and hook payoff. Adjust the complete script to approximately ${targetDurationSeconds} seconds at a natural narration pace. Preserve the opening hook and return ONLY raw JSON matching {"scriptSegment":"complete corrected script"}. Language: ${isVi ? "Vietnamese" : "English"}.
+
+[QA report]
+${qaJson}
+
+[Script]
+${script}`;
+

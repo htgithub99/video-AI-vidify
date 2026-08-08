@@ -41,6 +41,8 @@ function formatPlanDisplayName(nameOrId) {
     return str;
 }
 
+function normalizeStatus(status) { return _.toUpper(_.trim(_.toString(status || AdminConstants.EMPTY_STR))); }
+
 function setButtonLoading(btn, isLoading, loadingText = AdminConstants.EMPTY_STR) {
     if (_.isNil(btn)) return;
     if (isLoading) {
@@ -239,7 +241,7 @@ function applyFilters() {
             matchSearch = _.some([uname, ukey], str => _.includes(str, searchStr));
         }
         let matchPlan = _.isEqual(planFilter, AdminConstants.FILTER_ALL) ? true : _.isEqual(_.get(u, ApiFields.PLAN_ID), planFilter);
-        let matchStatus = _.isEqual(statusFilter, AdminConstants.FILTER_ALL) ? true : _.isEqual(_.get(u, ApiFields.STATUS), statusFilter);
+        let matchStatus = _.isEqual(statusFilter, AdminConstants.FILTER_ALL) ? true : _.isEqual(normalizeStatus(_.get(u, ApiFields.STATUS)), normalizeStatus(statusFilter));
         return _.every([matchSearch, matchPlan, matchStatus], Boolean);
     });
     currentPage = AdminConstants.DEFAULT_PAGE;
@@ -273,6 +275,7 @@ function renderTable() {
     };
 
     const localizeStatus = (status) => {
+        status = normalizeStatus(status);
         if (_.isEqual(status, AdminConstants.STATUS_ACTIVE)) return AdminMessages.STATUS_ACTIVE_LABEL;
         if (_.isEqual(status, AdminConstants.STATUS_REVOKED)) return AdminMessages.STATUS_REVOKED_LABEL;
         if (_.isEqual(status, AdminConstants.STATUS_EXPIRED)) return AdminMessages.STATUS_EXPIRED_LABEL;
@@ -280,6 +283,7 @@ function renderTable() {
     };
 
     const getStatusClass = (status) => {
+        status = normalizeStatus(status);
         if (_.isEqual(status, AdminConstants.STATUS_ACTIVE)) return AdminClasses.ACTIVE;
         if (_.isEqual(status, AdminConstants.STATUS_REVOKED)) return AdminClasses.BADGE_REVOKED;
         return AdminClasses.BADGE_EXPIRED;
@@ -404,7 +408,7 @@ function renderPlansConfig() {
         const planId = _.get(plan, ApiFields.ID);
         const planName = _.get(plan, ApiFields.NAME);
         const isUnlimited = _.get(plan, ApiFields.IS_UNLIMITED);
-        const isRevoked = _.isEqual(_.get(plan, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
+        const isRevoked = _.isEqual(normalizeStatus(_.get(plan, ApiFields.STATUS)), AdminConstants.STATUS_REVOKED);
 
         const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem;">${AdminMessages.REVOKED_BADGE}</span>` : '';
         const limitBadge = isUnlimited ? `<span class="badge active">${AdminMessages.UNLIMITED_LABEL}</span>` : `<span class="badge free">${AdminMessages.LIMIT_QUOTA_LABEL}</span>`;
@@ -592,6 +596,8 @@ function addOptionWithLabel(tsInstance, value) {
 function resetResourceForms() {
     window.editingKeyId = null;
     el(DOMIds.KEYS_GEMINI_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_CEREBRAS_INPUT).value = AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_GROQ_INPUT).value = AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = AdminConstants.EMPTY_STR;
     if (tsExcludedModalInstance) tsExcludedModalInstance.clear();
     else el(DOMIds.KEYS_EXCLUDED_INPUT).value = AdminConstants.EMPTY_STR;
@@ -646,7 +652,7 @@ function openEditModal(id) {
     const planSelect = el(DOMIds.MODAL_PLAN_TYPE);
     planSelect.value = _.get(user, ApiFields.PLAN_ID);
 
-    el(DOMIds.MODAL_STATUS).value = _.get(user, ApiFields.STATUS);
+    el(DOMIds.MODAL_STATUS).value = normalizeStatus(_.get(user, ApiFields.STATUS));
     el(DOMIds.MODAL_STATUS).disabled = false;
     el(DOMIds.MODAL_QUOTA_TYPE).value = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
 
@@ -981,10 +987,12 @@ async function handleSaveKeys() {
     };
     const assignee = getSelectValue(tsKeysModalInstance, DOMIds.KEYS_ASSIGNEE_INPUT) || AdminConstants.ASSIGN_ALL;
     const gemini = _.trim(el(DOMIds.KEYS_GEMINI_INPUT).value);
+    const cerebras = _.trim(el(DOMIds.KEYS_CEREBRAS_INPUT).value);
+    const groq = _.trim(el(DOMIds.KEYS_GROQ_INPUT).value);
     const ai33 = _.trim(el(DOMIds.KEYS_AI33_INPUT).value);
     const excluded = getSelectValue(tsExcludedModalInstance, DOMIds.KEYS_EXCLUDED_INPUT);
 
-    if (!gemini && !ai33) {
+    if (!gemini && !cerebras && !groq && !ai33) {
         showToast(AdminMessages.VALIDATION_NEED_KEY, ToastType.ERROR);
         return;
     }
@@ -993,6 +1001,8 @@ async function handleSaveKeys() {
     try {
         const payload = {
             [ApiFields.GEMINI_KEY]: gemini,
+            [ApiFields.CEREBRAS_KEY]: cerebras,
+            [ApiFields.GROQ_KEY]: groq,
             [ApiFields.AI33_KEY]: ai33,
             [ApiFields.ASSIGNED_TO]: assignee,
             [ApiFields.EXCLUDED_TO]: excluded
@@ -1130,6 +1140,8 @@ function editApiKeysAdmin(keyId) {
     }
 
     el(DOMIds.KEYS_GEMINI_INPUT).value = _.get(keyRecord, ApiFields.GEMINI_KEY) || AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_CEREBRAS_INPUT).value = _.get(keyRecord, ApiFields.CEREBRAS_KEY) || AdminConstants.EMPTY_STR;
+    el(DOMIds.KEYS_GROQ_INPUT).value = _.get(keyRecord, ApiFields.GROQ_KEY) || AdminConstants.EMPTY_STR;
     el(DOMIds.KEYS_AI33_INPUT).value = _.get(keyRecord, ApiFields.AI33_KEY) || AdminConstants.EMPTY_STR;
 
     const excludedTo = _.get(keyRecord, ApiFields.EXCLUDED_TO) || AdminConstants.EMPTY_STR;
@@ -1286,12 +1298,14 @@ async function loadApiKeysAdmin() {
             const badgeClass = getAssignBadge(assignee);
             const assigneeLabel = getAssignName(assignee);
             const geminiValue = _.get(k, ApiFields.GEMINI_KEY);
+            const cerebrasValue = _.get(k, ApiFields.CEREBRAS_KEY);
+            const groqValue = _.get(k, ApiFields.GROQ_KEY);
             const ai33Value = _.get(k, ApiFields.AI33_KEY);
             const excludedValue = formatExcludedDisplay(_.get(k, ApiFields.EXCLUDED_TO));
             const keyId = _.get(k, ApiFields.ID);
 
             const formatValue = (v) => v ? AdminMessages.PASSWORD_MASK + v.slice(-AdminConstants.KEY_MASK_SUFFIX_LENGTH) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA);
-            const isRevoked = _.isEqual(_.get(k, ApiFields.STATUS), AdminConstants.STATUS_REVOKED);
+            const isRevoked = _.isEqual(normalizeStatus(_.get(k, ApiFields.STATUS)), AdminConstants.STATUS_REVOKED);
             const rowStyle = isRevoked ? 'opacity: 0.5; background: rgba(239, 68, 68, 0.05);' : '';
             const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem; font-size: 0.65rem;">${AdminMessages.REVOKED_BADGE}</span>` : '';
 
@@ -1299,6 +1313,8 @@ async function loadApiKeysAdmin() {
             <tr style="${rowStyle}">
                 <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
                 <td style="color: var(--text-muted); font-family: monospace;">${formatValue(geminiValue)}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(cerebrasValue)}</td>
+                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(groqValue)}</td>
                 <td style="color: var(--text-muted); font-family: monospace;">${formatValue(ai33Value)}</td>
                 <td style="color: var(--text-muted); font-family: monospace; font-size: 0.85rem;" class="text-center">${escapeHTML(excludedValue)}</td>
                 <td class="text-center">
@@ -1345,9 +1361,9 @@ async function loadAccountsAdmin() {
             const assignee = _.get(a, ApiFields.ASSIGNED_TO, AdminConstants.ASSIGN_ALL);
             const badgeClass = getAssignBadge(assignee);
 
-            const status = _.get(a, ApiFields.STATUS);
+            const status = normalizeStatus(_.get(a, ApiFields.STATUS));
             let statusBadge = '';
-            if (_.isEqual(status, AdminConstants.ACCOUNT_STATUS_ACTIVE)) {
+            if (_.isEqual(status, normalizeStatus(AdminConstants.ACCOUNT_STATUS_ACTIVE))) {
                 statusBadge = `<span class="badge active">${AdminMessages.STATUS_ACTIVE_LABEL}</span>`;
             } else if (_.isEqual(status, AdminConstants.ACCOUNT_STATUS_ERROR)) {
                 statusBadge = `<span class="badge expired">${AdminConstants.ACCOUNT_STATUS_ERROR}</span>`;

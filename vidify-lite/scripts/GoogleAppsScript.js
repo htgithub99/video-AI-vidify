@@ -11,23 +11,24 @@ const _ = {
   },
   isNil: function (val) { return val === null || val === undefined; },
   startsWith: function (str, pre) { return String(str).indexOf(pre) === 0; },
-  findIndex: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return i; } return -1; },
+  findIndex: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; for (let i = 0; i < list.length; i++) { if (fn(list[i], i)) return i; } return -1; },
   includes: function (arr, val) { return arr.indexOf(val) !== -1; },
   toInteger: function (val) { return parseInt(val, 10); },
   isArray: function (val) { return Array.isArray(val); },
-  forEach: function (arr, fn) { for (let i = 0; i < arr.length; i++) fn(arr[i], i); },
-  map: function (arr, fn) { const res = []; for (let i = 0; i < arr.length; i++) res.push(fn(arr[i], i)); return res; },
-  filter: function (arr, fn) { const res = []; for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) res.push(arr[i]); } return res; },
-  find: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return arr[i]; } return undefined; },
+  forEach: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; for (let i = 0; i < list.length; i++) fn(list[i], i); },
+  map: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; const res = []; for (let i = 0; i < list.length; i++) res.push(fn(list[i], i)); return res; },
+  filter: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; const res = []; for (let i = 0; i < list.length; i++) { if (fn(list[i], i)) res.push(list[i]); } return res; },
+  find: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; for (let i = 0; i < list.length; i++) { if (fn(list[i], i)) return list[i]; } return undefined; },
   toUpper: function (str) { return String(str).toUpperCase(); },
+  normalizeStatus: function (status) { return String(status || Constants.EMPTY_STRING).trim().toUpperCase(); },
   split: function (str, sep) { return String(str).split(sep); },
-  some: function (arr, fn) { for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) return true; } return false; },
+  some: function (arr, fn) { const list = Array.isArray(arr) ? arr : []; for (let i = 0; i < list.length; i++) { if (fn(list[i], i)) return true; } return false; },
   cloneDeep: function (obj) { return JSON.parse(JSON.stringify(obj)); },
   isEqual: function (a, b) { return a === b; },
   isEmpty: function (val) { return !val || val.length === 0; },
   eq: function (a, b) { return a === b; },
   orderBy: function (arr, keys, orders) {
-    return arr.sort((a, b) => {
+    return (Array.isArray(arr) ? arr : []).sort((a, b) => {
       const key = keys[0];
       const isDesc = orders[0] === 'desc';
       if (a[key] < b[key]) return isDesc ? 1 : -1;
@@ -52,8 +53,7 @@ const _ = {
     const cleanLicenseKey = String(licenseKey).trim();
     const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(String(row[UserCols.LICENSE_KEY]).trim(), cleanLicenseKey));
     if (rowIndex > 0) {
-      const status = String(data[rowIndex][UserCols.STATUS]).toLowerCase().trim();
-      return this.isEqual(status, StatusEnum.ACTIVE.toLowerCase().trim());
+      return this.isEqual(this.normalizeStatus(data[rowIndex][UserCols.STATUS]), this.normalizeStatus(StatusEnum.ACTIVE));
     }
     return false;
   },
@@ -169,7 +169,7 @@ const _ = {
         }
       }
 
-      let currentStatus = row[UserCols.STATUS];
+      let currentStatus = this.normalizeStatus(row[UserCols.STATUS]);
       const expiresAt = row[UserCols.EXPIRES_AT];
 
       if (expiresAt) {
@@ -298,6 +298,7 @@ const _ = {
   adminGetUsers: function () {
     const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
     const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
+    if (!usersSheet || !usageSheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
     const usersData = usersSheet.getDataRange().getValues();
     const usageData = usageSheet.getDataRange().getValues();
@@ -311,7 +312,7 @@ const _ = {
         username: row[UserCols.USERNAME],
         license_key: key,
         plan_id: row[UserCols.PLAN_ID],
-        status: row[UserCols.STATUS],
+        status: this.normalizeStatus(row[UserCols.STATUS]),
         created_at: row[UserCols.CREATED_AT],
         updated_at: row[UserCols.UPDATED_AT],
         expires_at: row[UserCols.EXPIRES_AT],
@@ -427,8 +428,8 @@ const _ = {
       usersSheet.getRange(rowIndex + 1, UserCols.EXPIRES_AT + 1).setValue(newExpires || Constants.EMPTY_STRING);
 
       if (newStatus) {
-        usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(newStatus);
-      } else if (this.isEqual(data[rowIndex][UserCols.STATUS], StatusEnum.EXPIRED)) {
+        usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(this.normalizeStatus(newStatus));
+      } else if (this.isEqual(this.normalizeStatus(data[rowIndex][UserCols.STATUS]), this.normalizeStatus(StatusEnum.EXPIRED))) {
         usersSheet.getRange(rowIndex + 1, UserCols.STATUS + 1).setValue(StatusEnum.ACTIVE);
       }
 
@@ -536,7 +537,7 @@ const _ = {
     this.forEach(data, (row, idx) => {
       if (idx > 0 && row[UserCols.EXPIRES_AT]) {
         const expiry = new Date(row[UserCols.EXPIRES_AT]);
-        if (now > expiry && this.isEqual(row[UserCols.STATUS], StatusEnum.ACTIVE)) {
+        if (now > expiry && this.isEqual(this.normalizeStatus(row[UserCols.STATUS]), this.normalizeStatus(StatusEnum.ACTIVE))) {
           usersSheet.getRange(idx + 1, UserCols.STATUS + 1).setValue(StatusEnum.EXPIRED);
           synced++;
         }
@@ -558,7 +559,7 @@ const _ = {
       quota_image: this.toInteger(row[PlanCols.IMAGE]) || 0,
       quota_voice: this.toInteger(row[PlanCols.VOICE]) || 0,
       is_unlimited: this.isEqual(String(row[PlanCols.UNLIMITED]), Constants.STRING_TRUE),
-      status: row[PlanCols.STATUS] || Constants.ACTIVE_LOWER,
+      status: this.normalizeStatus(row[PlanCols.STATUS] || Constants.ACTIVE_LOWER),
       created_at: row[PlanCols.CREATED_AT],
       updated_at: row[PlanCols.UPDATED_AT]
     }));
@@ -603,17 +604,29 @@ const _ = {
     return false;
   },
 
+  ensureApiKeyColumns: function (sheet) {
+    const headers = Config.HEADERS.KEYS;
+    if (!Array.isArray(headers) || headers.length === 0) return;
+    const currentColumns = sheet.getLastColumn();
+    if (currentColumns < headers.length) sheet.getRange(1, currentColumns + 1, 1, headers.length - currentColumns).setValues([headers.slice(currentColumns)]);
+  },
+
   getApiKeys: function (params) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
     if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+    this.ensureApiKeyColumns(sheet);
 
     const licenseKey = this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
     const planId = this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING));
 
     const data = sheet.getDataRange().getValues();
     let geminiKey = Constants.EMPTY_STRING;
+    let cerebrasKey = Constants.EMPTY_STRING;
+    let groqKey = Constants.EMPTY_STRING;
     let ai33Key = Constants.EMPTY_STRING;
     let geminiPriority = -1;
+    let cerebrasPriority = -1;
+    let groqPriority = -1;
     let ai33Priority = -1;
 
     const getPriority = (assigned) => {
@@ -657,6 +670,8 @@ const _ = {
           geminiKey = row[KeysCols.GEMINI_KEY];
           geminiPriority = prio;
         }
+        if (row[KeysCols.CEREBRAS_KEY] && prio >= cerebrasPriority) { cerebrasKey = row[KeysCols.CEREBRAS_KEY]; cerebrasPriority = prio; }
+        if (row[KeysCols.GROQ_KEY] && prio >= groqPriority) { groqKey = row[KeysCols.GROQ_KEY]; groqPriority = prio; }
         if (row[KeysCols.AI33_KEY] && prio >= ai33Priority) {
           ai33Key = row[KeysCols.AI33_KEY];
           ai33Priority = prio;
@@ -664,20 +679,23 @@ const _ = {
       }
     });
 
-    return this.jsonResponse({ apiKeys: { geminiKey, ai33Key } });
+    return this.jsonResponse({ apiKeys: { geminiKey, cerebrasKey, groqKey, ai33Key } });
   },
 
   adminGetApiKeys: function () {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
     if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+    this.ensureApiKeyColumns(sheet);
 
     const data = sheet.getDataRange().getValues();
     const keys = this.map(this.filter(data, (row, idx) => idx > 0), row => ({
       id: row[KeysCols.ID] || Constants.EMPTY_STRING,
       assignedTo: row[KeysCols.ASSIGNED_TO] || Constants.ALL,
       geminiKey: row[KeysCols.GEMINI_KEY] || Constants.EMPTY_STRING,
+      cerebrasKey: row[KeysCols.CEREBRAS_KEY] || Constants.EMPTY_STRING,
+      groqKey: row[KeysCols.GROQ_KEY] || Constants.EMPTY_STRING,
       ai33Key: row[KeysCols.AI33_KEY] || Constants.EMPTY_STRING,
-      status: row[KeysCols.STATUS] || Constants.ACTIVE_LOWER,
+      status: this.normalizeStatus(row[KeysCols.STATUS] || Constants.ACTIVE_LOWER),
       createdAt: row[KeysCols.CREATED_AT] || Constants.EMPTY_STRING,
       updatedAt: row[KeysCols.UPDATED_AT] || Constants.EMPTY_STRING,
       excludedTo: row[KeysCols.EXCLUDED_TO] || Constants.EMPTY_STRING
@@ -689,9 +707,12 @@ const _ = {
   updateApiKeys: function (params) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_KEYS);
     if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
+    this.ensureApiKeyColumns(sheet);
 
     const id = this.get(params, ApiFields.ID);
     const geminiKey = this.get(params, ApiFields.GEMINI_KEY);
+    const cerebrasKey = this.get(params, ApiFields.CEREBRAS_KEY);
+    const groqKey = this.get(params, ApiFields.GROQ_KEY);
     const ai33Key = this.get(params, ApiFields.AI33_KEY);
     const assignedTo = this.get(params, ApiFields.ASSIGNED_TO, Constants.ALL);
     const excludedTo = this.get(params, ApiFields.EXCLUDED_TO, Constants.EMPTY_STRING);
@@ -703,6 +724,8 @@ const _ = {
       if (rowIndex > 0) {
         sheet.getRange(rowIndex + 1, KeysCols.ASSIGNED_TO + 1).setValue(assignedTo);
         sheet.getRange(rowIndex + 1, KeysCols.GEMINI_KEY + 1).setValue(geminiKey || Constants.EMPTY_STRING);
+        sheet.getRange(rowIndex + 1, KeysCols.CEREBRAS_KEY + 1).setValue(cerebrasKey || Constants.EMPTY_STRING);
+        sheet.getRange(rowIndex + 1, KeysCols.GROQ_KEY + 1).setValue(groqKey || Constants.EMPTY_STRING);
         sheet.getRange(rowIndex + 1, KeysCols.AI33_KEY + 1).setValue(ai33Key || Constants.EMPTY_STRING);
         sheet.getRange(rowIndex + 1, KeysCols.UPDATED_AT + 1).setValue(now);
         sheet.getRange(rowIndex + 1, KeysCols.EXCLUDED_TO + 1).setValue(excludedTo || Constants.EMPTY_STRING);
@@ -710,7 +733,7 @@ const _ = {
       }
     }
 
-    sheet.appendRow([this.generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER, excludedTo || Constants.EMPTY_STRING]);
+    sheet.appendRow([this.generateUUID(), now, now, assignedTo, geminiKey || Constants.EMPTY_STRING, ai33Key || Constants.EMPTY_STRING, Constants.ACTIVE_LOWER, excludedTo || Constants.EMPTY_STRING, cerebrasKey || Constants.EMPTY_STRING, groqKey || Constants.EMPTY_STRING]);
     return this.jsonResponse({ status: Messages.RES_SUCCESS });
   },
 
@@ -765,7 +788,7 @@ const _ = {
           email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
           password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
           recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
-          status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
+          status: this.normalizeStatus(row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER),
           assignedTo: assigned,
           priority: prio
         });
@@ -786,7 +809,7 @@ const _ = {
       email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
       password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
       recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
-      status: row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER,
+      status: this.normalizeStatus(row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER),
       assignedTo: row[AccountsCols.ASSIGNED_TO] || Constants.ALL,
       createdAt: row[AccountsCols.CREATED_AT] || Constants.EMPTY_STRING,
       updatedAt: row[AccountsCols.UPDATED_AT] || Constants.EMPTY_STRING
@@ -933,7 +956,7 @@ const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 
 const PlanCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, NAME: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, UNLIMITED: 7, STATUS: 8 };
 const AdminCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, PASSWORD: 4, TOKEN: 5 };
 const HttpCode = { OK: 200, BAD_REQUEST: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, INTERNAL_ERROR: 500 };
-const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5, STATUS: 6, EXCLUDED_TO: 7 };
+const KeysCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, ASSIGNED_TO: 3, GEMINI_KEY: 4, AI33_KEY: 5, STATUS: 6, EXCLUDED_TO: 7, CEREBRAS_KEY: 8, GROQ_KEY: 9 };
 const AccountsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, EMAIL: 3, PASSWORD: 4, RECOVERY_EMAIL: 5, STATUS: 6, ASSIGNED_TO: 7 };
 const SettingsCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, KEY: 3, VALUE: 4, DESCRIPTION: 5 };
 
@@ -950,7 +973,7 @@ const Config = {
     PLANS: ["ID", "CREATED_AT", "UPDATED_AT", "NAME", "QUOTA_VIDEO", "QUOTA_IMAGE", "QUOTA_VOICE", "IS_UNLIMITED", "STATUS"],
     USERS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "LICENSE_KEY", "PLAN_ID", "STATUS", "EXPIRES_AT", "DEVICE_ID", "QUOTA_TYPE"],
     USAGE: ["ID", "CREATED_AT", "UPDATED_AT", "LICENSE_KEY", "VIDEO_COUNT", "IMAGE_COUNT", "VOICE_CHARS", "LAST_RESET"],
-    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY", "STATUS", "EXCLUDED_TO"],
+    KEYS: ["ID", "CREATED_AT", "UPDATED_AT", "ASSIGNED_TO", "GEMINI_KEY", "AI33_KEY", "STATUS", "EXCLUDED_TO", "CEREBRAS_KEY", "GROQ_KEY"],
     ACCOUNTS: ["ID", "CREATED_AT", "UPDATED_AT", "EMAIL", "PASSWORD", "RECOVERY_EMAIL", "STATUS", "ASSIGNED_TO"],
     SETTINGS: ["ID", "CREATED_AT", "UPDATED_AT", "KEY", "VALUE", "DESCRIPTION"]
   },
@@ -958,9 +981,9 @@ const Config = {
 };
 
 const StatusEnum = {
-  ACTIVE: "Active",
-  REVOKED: "Revoked",
-  EXPIRED: "Expired"
+  ACTIVE: "ACTIVE",
+  REVOKED: "REVOKED",
+  EXPIRED: "EXPIRED"
 };
 
 const QuotaType = {
@@ -978,7 +1001,7 @@ const Constants = {
   EMPTY_STRING: "",
   EMPTY_ARRAY: "[]",
   STRING_TRUE: "true",
-  ACTIVE_LOWER: "Active",
+  ACTIVE_LOWER: "ACTIVE",
   ALL: "ALL",
   UNKNOWN: "Unknown",
   DATE_SPLIT_CHAR: "T",
@@ -1048,6 +1071,8 @@ const ApiFields = {
   IS_UNLIMITED: "is_unlimited",
   DELETE_TYPE: "delete_type",
   GEMINI_KEY: "geminiKey",
+  CEREBRAS_KEY: "cerebrasKey",
+  GROQ_KEY: "groqKey",
   AI33_KEY: "ai33Key",
   ASSIGNED_TO: "assignedTo",
   ACCOUNT: "account",

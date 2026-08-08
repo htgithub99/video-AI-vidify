@@ -104,6 +104,8 @@ export const fetchSystemApi = async (
       [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(
         STORAGE_KEYS.GEMINI_API_KEY,
       ),
+      [API_HEADERS.CEREBRAS_API_KEY]: getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY),
+      [API_HEADERS.GROQ_API_KEY]: getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY),
       [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
       [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
     },

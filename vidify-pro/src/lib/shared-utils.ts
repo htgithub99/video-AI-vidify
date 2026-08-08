@@ -5,13 +5,15 @@ import _ from 'lodash';
 import { storageUtils } from './storage';
 import { jsonUtils } from "./json";
 
-export const getStoredApiKey = (keyName: typeof STORAGE_KEYS.GEMINI_API_KEY | typeof STORAGE_KEYS.AI33_API_KEY | typeof STORAGE_KEYS.LICENSE_KEY): string => {
+export const getStoredApiKey = (keyName: string): string => {
   return storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 
 export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal) => {
   try {
     const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
+    const cerebrasKey = getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY);
+    const groqKey = getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY);
     const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
     const licenseKey = getStoredApiKey(STORAGE_KEYS.LICENSE_KEY);
 
@@ -20,6 +22,8 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
       headers: {
         [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
         [API_HEADERS.GEMINI_API_KEY]: geminiKey,
+        [API_HEADERS.CEREBRAS_API_KEY]: cerebrasKey,
+        [API_HEADERS.GROQ_API_KEY]: groqKey,
         [API_HEADERS.AI33_API_KEY]: ai33Key,
         [API_HEADERS.LICENSE_KEY]: licenseKey,
       },
@@ -58,6 +62,8 @@ export const safeSystemFetchStream = async (
 ) => {
   try {
     const geminiKey = getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY);
+    const cerebrasKey = getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY);
+    const groqKey = getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY);
     const ai33Key = getStoredApiKey(STORAGE_KEYS.AI33_API_KEY);
     const licenseKey = getStoredApiKey(STORAGE_KEYS.LICENSE_KEY);
 
@@ -66,6 +72,8 @@ export const safeSystemFetchStream = async (
       headers: {
         [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
         [API_HEADERS.GEMINI_API_KEY]: geminiKey,
+        [API_HEADERS.CEREBRAS_API_KEY]: cerebrasKey,
+        [API_HEADERS.GROQ_API_KEY]: groqKey,
         [API_HEADERS.AI33_API_KEY]: ai33Key,
         [API_HEADERS.LICENSE_KEY]: licenseKey
       },

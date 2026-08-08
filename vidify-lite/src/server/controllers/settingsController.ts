@@ -54,6 +54,8 @@ export const getSettingsFromGAS = async (req: Request, res: Response) => {
 export const saveApiKeys = async (req: Request, res: Response) => {
   try {
     const geminiKey = _.get(req.body, SecurityConstants.REQ_BODY_GEMINI_KEY);
+    const cerebrasKey = _.get(req.body, SecurityConstants.REQ_BODY_CEREBRAS_KEY);
+    const groqKey = _.get(req.body, SecurityConstants.REQ_BODY_GROQ_KEY);
     const ai33Key = _.get(req.body, SecurityConstants.REQ_BODY_AI33_KEY);
     const id = _.get(req.body, SecurityConstants.REQ_BODY_ID);
     const assignedTo = _.get(req.body, SecurityConstants.REQ_BODY_ASSIGNED_TO);
@@ -65,6 +67,8 @@ export const saveApiKeys = async (req: Request, res: Response) => {
       body: JSON.stringify({ 
         [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_API_KEYS, 
         [SecurityConstants.REQ_BODY_GEMINI_KEY]: geminiKey, 
+        [SecurityConstants.REQ_BODY_CEREBRAS_KEY]: cerebrasKey,
+        [SecurityConstants.REQ_BODY_GROQ_KEY]: groqKey,
         [SecurityConstants.REQ_BODY_AI33_KEY]: ai33Key,
         [SecurityConstants.REQ_BODY_ID]: id,
         [SecurityConstants.REQ_BODY_ASSIGNED_TO]: assignedTo,

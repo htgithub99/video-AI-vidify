@@ -37,6 +37,8 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const { licenseKey, licenseInfo, logoutLicense } = useLicense();
 
   const [geminiKey, setGeminiKey] = useState(SecurityConstants.EMPTY_STRING);
+  const [cerebrasKey, setCerebrasKey] = useState(SecurityConstants.EMPTY_STRING);
+  const [groqKey, setGroqKey] = useState(SecurityConstants.EMPTY_STRING);
   const [ai33Key, setAi33Key] = useState(SecurityConstants.EMPTY_STRING);
   const [keysSavedSuccess, setKeysSavedSuccess] = useState(false);
   const [isSavingKeys, setIsSavingKeys] = useState(false);
@@ -67,9 +69,13 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     const loadConfig = async () => {
       try {
         const gk = await storageUtils.getAsync(STORAGE_KEYS.GEMINI_API_KEY);
+        const ck = await storageUtils.getAsync(STORAGE_KEYS.CEREBRAS_API_KEY);
+        const grk = await storageUtils.getAsync(STORAGE_KEYS.GROQ_API_KEY);
         const ak = await storageUtils.getAsync(STORAGE_KEYS.AI33_API_KEY);
-        if (gk) setGeminiKey(gk);
-        if (ak) setAi33Key(ak);
+        if (gk) { storageUtils.set(STORAGE_KEYS.GEMINI_API_KEY, gk); setGeminiKey(gk); }
+        if (ck) { storageUtils.set(STORAGE_KEYS.CEREBRAS_API_KEY, ck); setCerebrasKey(ck); }
+        if (grk) { storageUtils.set(STORAGE_KEYS.GROQ_API_KEY, grk); setGroqKey(grk); }
+        if (ak) { storageUtils.set(STORAGE_KEYS.AI33_API_KEY, ak); setAi33Key(ak); }
 
         const saved = await storageUtils.getAsync(STORAGE_KEYS.API_SANDBOX_CONFIG);
         if (saved && !_.includes([COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL, SecurityConstants.EMPTY_STRING], _.trim(saved))) {
@@ -109,24 +115,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     loadConfig();
   }, []);
 
-  const saveConfigHelper = (keysToSave: Record<string, string>, setSavingState: (saving: boolean) => void, setSuccessState: (success: boolean) => void) => {
-    setSavingState(true);
-    setTimeout(async () => {
-      try {
-        for (const [key, val] of Object.entries(keysToSave)) {
-          await storageUtils.setAsync(key, val);
-        }
-        setSavingState(false);
-        setSuccessState(true);
-        setTimeout(() => {
-          setSuccessState(false);
-        }, SETTINGS_CONSTS.SUCCESS_STATE_DURATION);
-      } catch (e) {
-        appError(SecurityConstants.LOG_GENERAL_ERROR, e);
-        setSavingState(false);
-      }
-    }, SETTINGS_CONSTS.MOCK_SAVE_DELAY);
-  };
+  const saveConfigHelper = async (keysToSave: Record<string, string>, setSavingState: (saving: boolean) => void, setSuccessState: (success: boolean) => void) => { setSavingState(true); try { for (const [key, value] of Object.entries(keysToSave)) { storageUtils.set(key, value); await storageUtils.setAsync(key, value); } setSuccessState(true); setTimeout(() => setSuccessState(false), SETTINGS_CONSTS.SUCCESS_STATE_DURATION); } catch (error) { appError(SecurityConstants.LOG_GENERAL_ERROR, error); } finally { setSavingState(false); } };
 
   const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
@@ -172,6 +161,8 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     saveConfigHelper(
       {
         [STORAGE_KEYS.GEMINI_API_KEY]: _.trim(geminiKey),
+        [STORAGE_KEYS.CEREBRAS_API_KEY]: _.trim(cerebrasKey),
+        [STORAGE_KEYS.GROQ_API_KEY]: _.trim(groqKey),
         [STORAGE_KEYS.AI33_API_KEY]: _.trim(ai33Key),
       },
       setIsSavingKeys,
@@ -183,8 +174,12 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     try {
       if (confirmClearType === CLEAR_TYPES.API) {
         setGeminiKey(SecurityConstants.EMPTY_STRING);
+        setCerebrasKey(SecurityConstants.EMPTY_STRING);
+        setGroqKey(SecurityConstants.EMPTY_STRING);
         setAi33Key(SecurityConstants.EMPTY_STRING);
         await storageUtils.removeAsync(STORAGE_KEYS.GEMINI_API_KEY);
+        await storageUtils.removeAsync(STORAGE_KEYS.CEREBRAS_API_KEY);
+        await storageUtils.removeAsync(STORAGE_KEYS.GROQ_API_KEY);
         await storageUtils.removeAsync(STORAGE_KEYS.AI33_API_KEY);
       } else if (confirmClearType === CLEAR_TYPES.SANDBOX) {
         const defaultConfig = {
@@ -277,7 +272,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     }
   };
 
-  const isApiEmpty = _.every([geminiKey, ai33Key], _.isEmpty);
+  const isApiEmpty = _.every([geminiKey, cerebrasKey, groqKey, ai33Key], _.isEmpty);
   const isSandboxEmpty = _.every([config.authToken, config.projectId, config.sessionId, curlInput], _.isEmpty);
 
   return (
@@ -323,7 +318,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 </div>
                 <div>
                   <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{t.apiKeysConfig}</h3>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{geminiKey || ai33Key ? t.configured : t.notSet}</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{_.some([geminiKey, cerebrasKey, groqKey, ai33Key], Boolean) ? t.configured : t.notSet}</p>
                 </div>
               </div>
 
@@ -357,6 +352,8 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                   className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all"
                 />
               </div>
+              <div className="space-y-1.5"><label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">CEREBRAS_API_KEY</label><input type={SecurityConstants.INPUT_TYPE_PASSWORD} value={cerebrasKey} onChange={(e) => setCerebrasKey(e.target.value)} placeholder={REFACTOR_CONSTANTS.CEREBRAS_API_KEY_PLACEHOLDER} className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all" /></div>
+              <div className="space-y-1.5"><label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">GROQ_API_KEY</label><input type={SecurityConstants.INPUT_TYPE_PASSWORD} value={groqKey} onChange={(e) => setGroqKey(e.target.value)} placeholder={REFACTOR_CONSTANTS.GROQ_API_KEY_PLACEHOLDER} className="w-full bg-slate-955 border border-slate-800 hover:border-slate-700 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none transition-all" /></div>
             </div>
 
             <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">

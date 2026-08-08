@@ -7,9 +7,13 @@ import _ from 'lodash';
 
 export interface ResolvedApiKeys {
   geminiKey: string;
+  cerebrasKey: string;
+  groqKey: string;
   ai33Key: string;
   isUserKey: {
     gemini: boolean;
+    cerebras: boolean;
+    groq: boolean;
     ai33: boolean;
   };
 }
@@ -41,17 +45,23 @@ export function getResolvedLicenseKey(req?: any): string {
 export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
   const ctx = requestContext.getStore();
   const userGeminiKey = _.get(ctx, SecurityConstants.REQ_BODY_GEMINI_KEY, SecurityConstants.EMPTY_STRING);
+  const userCerebrasKey = _.get(ctx, SecurityConstants.REQ_BODY_CEREBRAS_KEY, SecurityConstants.EMPTY_STRING) || process.env.CEREBRAS_API_KEY || SecurityConstants.EMPTY_STRING;
+  const userGroqKey = _.get(ctx, SecurityConstants.REQ_BODY_GROQ_KEY, SecurityConstants.EMPTY_STRING) || process.env.GROQ_API_KEY || SecurityConstants.EMPTY_STRING;
   const userAi33Key = _.get(ctx, SecurityConstants.REQ_BODY_AI33_KEY, SecurityConstants.EMPTY_STRING);
   const licenseKey = _.get(ctx, SecurityConstants.STORE_LICENSE_KEY, SecurityConstants.EMPTY_STRING);
   const planType = _.get(ctx, SecurityConstants.STORE_PLAN_TYPE_KEY, SecurityConstants.EMPTY_STRING);
 
   let geminiKey = userGeminiKey;
+  let cerebrasKey = userCerebrasKey;
+  let groqKey = userGroqKey;
   let ai33Key = userAi33Key;
 
   const isGeminiUserKey = !_.isEmpty(userGeminiKey);
+  const isCerebrasUserKey = !_.isEmpty(userCerebrasKey);
+  const isGroqUserKey = !_.isEmpty(userGroqKey);
   const isAi33UserKey = !_.isEmpty(userAi33Key);
 
-  const isMissingAnyKey = _.includes([isGeminiUserKey, isAi33UserKey], false);
+  const isMissingAnyKey = _.includes([isGeminiUserKey, isCerebrasUserKey, isGroqUserKey, isAi33UserKey], false);
 
   appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ licenseKey, planType, userGeminiKey, userAi33Key, isMissingAnyKey }));
 
@@ -79,6 +89,10 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
         geminiKey = fetchedGemini;
         appLog(SecurityMessages.LOG_USING_ADMIN_GEMINI_KEY);
       }
+      const fetchedCerebras = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY]);
+      if (!isCerebrasUserKey && !_.isEmpty(fetchedCerebras)) cerebrasKey = fetchedCerebras;
+      const fetchedGroq = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY]);
+      if (!isGroqUserKey && !_.isEmpty(fetchedGroq)) groqKey = fetchedGroq;
 
       const fetchedAi33 = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY]);
       if (!isAi33UserKey && !_.isEmpty(fetchedAi33)) {
@@ -92,9 +106,13 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
 
   return {
     geminiKey,
+    cerebrasKey,
+    groqKey,
     ai33Key,
     isUserKey: {
       gemini: isGeminiUserKey,
+      cerebras: isCerebrasUserKey,
+      groq: isGroqUserKey,
       ai33: isAi33UserKey
     }
   };

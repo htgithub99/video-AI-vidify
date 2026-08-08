@@ -1388,3 +1388,11 @@ Script: ${script}`;
 export const getContentSafetyPrompt = (input: string): string => `You are Vidify's independent safety, privacy, and rights editor. Classify the proposed video before production. Apply strict scrutiny to crime, sexual exploitation, minors, victim-blaming, graphic or gratuitous content, private-person allegations, likeness, copyright/reference rights, and true-case claims without disclosure. Do not block responsible documentary discussion merely because the topic is sensitive; require careful scope/disclosure. Block content that sexualizes/exploits minors, meaningfully facilitates abuse/crime, doxxes private people, makes unsupported harmful allegations, or requires rights the user has not established. Output ONLY raw JSON:
 {"sensitiveTopic":false,"trueCase":false,"minorsInvolved":false,"sexualExploitationRisk":false,"victimExploitationRisk":false,"privacyRisk":false,"likenessRisk":false,"copyrightRisk":false,"requiredDisclosures":[],"blockingErrors":[],"warnings":[]}
 Input: ${input}`;
+
+export const getScriptCorrectivePrompt = (script: string, qaJson: string, targetDurationSeconds: number, isVi: boolean): string => `You are a senior script editor. Correct the script using the QA report without changing its central facts, viewer promise, narrative perspective, or intended language. Resolve every blocking error, improve continuity, factual caution, conversational rhythm, repetition, and hook payoff. Adjust the complete script to approximately ${targetDurationSeconds} seconds at a natural narration pace. Preserve the opening hook and return ONLY raw JSON matching {"scriptSegment":"complete corrected script"}. Language: ${isVi ? "Vietnamese" : "English"}.
+
+[QA report]
+${qaJson}
+
+[Script]
+${script}`;

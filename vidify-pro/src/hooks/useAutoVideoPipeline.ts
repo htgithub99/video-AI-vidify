@@ -70,6 +70,8 @@ import { validateFinalVideo } from "../services/finalMultimodalQualityService";
 import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rolloutService";
 import { createAudioCueSheet } from "../services/soundDesignService";
 import { createShadowComparison } from "../services/shadowComparisonService";
+import { createSafeFallbackHook } from "../services/hookResilienceService";
+import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import {
   validateSceneImage,
   VISUAL_QA_CONFIG,
@@ -243,6 +245,10 @@ export function useAutoVideoPipeline(
       return;
     }
 
+    const pipelineTargetKey = _.toString(config.selectedProjectId || activeCreatedProject?.id || _.kebabCase(_.join([config.projectName, config.scriptContent], REFACTOR_CONSTANTS.VD_EMPTY_STRING)));
+    const pipelineRunLease = acquirePipelineRunLease(pipelineTargetKey);
+    if (!pipelineRunLease.acquired) { alert(REFACTOR_CONSTANTS.ERR_PIPELINE_ALREADY_RUNNING); return; }
+
     processingRef.current = true;
     cancellationRef.current = false;
     setIsCancelling(false);
@@ -311,6 +317,7 @@ export function useAutoVideoPipeline(
         newProj = {
           ...existingTargetProj,
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+          activeRunId: pipelineRunLease.runId,
           input: { type: config.inputType, content: config.scriptContent },
           config: {
             ...existingTargetProj.config,
@@ -372,6 +379,7 @@ export function useAutoVideoPipeline(
           createdAt: _.defaultTo(selectedProj?.createdAt, new Date().toISOString()),
           updatedAt: new Date().toISOString(),
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
+          activeRunId: pipelineRunLease.runId,
           input: { type: config.inputType, content: config.scriptContent },
           config: {
             genre: config.genre,
@@ -459,7 +467,9 @@ export function useAutoVideoPipeline(
       currentProject = newProj;
 
       const syncProject = async (proj: VideoProject) => {
-        const finalProj = { ...proj, generationLogs: _.clone(currentLogs), updatedAt: new Date().toISOString() };
+        if (!refreshPipelineRunLease(pipelineRunLease)) throw new Error(REFACTOR_CONSTANTS.ERR_PIPELINE_RUN_REPLACED);
+        const isCompleted = _.isEqual(proj.status, REFACTOR_CONSTANTS.STATUS_COMPLETED);
+        const finalProj = { ...proj, activeRunId: isCompleted ? null : pipelineRunLease.runId, lastRunId: isCompleted ? pipelineRunLease.runId : proj.lastRunId, generationLogs: _.clone(currentLogs), updatedAt: new Date().toISOString() };
         currentProject = finalProj;
         setActiveCreatedProject(finalProj);
         await onUpdateProject(finalProj, true);
@@ -477,7 +487,7 @@ export function useAutoVideoPipeline(
       let isScriptCached = false;
       let isStoryboardCached = false;
 
-      if (config.resumeMode && !invalidationState.regenerateScript && !_.isEmpty(newProj.scriptRewritten)) {
+      if (config.resumeMode && !invalidationState.regenerateScript && !_.isEmpty(newProj.scriptRewritten) && Boolean(newProj.scriptQa?.passed)) {
         realScript = newProj.scriptRewritten!;
         chapters = (_.defaultTo(newProj.chapters, []) as Chapter[]);
         factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -502,7 +512,7 @@ export function useAutoVideoPipeline(
           inputType: config.inputType,
           config: { ...newProj.config, hookConfig: newProj.hookConfig },
           selectedHookText: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-          bypassCache: true,
+          bypassCache: !config.resumeMode,
         };
 
         const scriptRes = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, scriptPayload, requestSignal);
@@ -524,11 +534,10 @@ export function useAutoVideoPipeline(
             score: hook.score,
           }),
         );
-        if (_.every([_.gt(newProj.hookConfig.count, SecurityConstants.ZERO), _.isEmpty(hookVersions)], Boolean)) {
-          throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
-        }
+        const resolvedHookVersions = _.every([_.gt(newProj.hookConfig.count, SecurityConstants.ZERO), _.isEmpty(hookVersions)], Boolean) ? [createSafeFallbackHook(config.scriptContent, config.language, newProj.hookConfig.type)] : hookVersions;
         const scriptQa = scriptRes.data.scriptQa as ScriptQualityReport | undefined;
         if (!scriptQa?.passed) {
+          await syncProject({ ...newProj, status: REFACTOR_CONSTANTS.STATUS_PARTIAL, hookConfig: { ...newProj.hookConfig, versions: resolvedHookVersions }, scriptRewritten: realScript, factCheckNotes, creativeBrief: scriptRes.data.creativeBrief as CreativeBrief, factPack: scriptRes.data.factPack as FactPack, scriptQa, chapters });
           throw new Error(_.join([
             REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED,
             ..._.defaultTo(scriptQa?.blockingErrors, []),
@@ -543,7 +552,7 @@ export function useAutoVideoPipeline(
 
         const scriptUpdatedProj = {
           ...newProj,
-          hookConfig: { ...newProj.hookConfig, versions: hookVersions },
+          hookConfig: { ...newProj.hookConfig, versions: resolvedHookVersions },
           scriptRewritten: realScript,
           factCheckNotes,
           creativeBrief: scriptRes.data.creativeBrief as CreativeBrief,
@@ -1627,18 +1636,21 @@ export function useAutoVideoPipeline(
     } catch (error: unknown) {
       if (cancellationRef.current || (error instanceof DOMException && _.isEqual(error.name, "AbortError"))) {
         appendLog(T.logCancelled);
-        appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
+        appendLog(T.logPipelineCancelledElapsed((Date.now() - pipelineStartedAt) / 1000));
+        if (currentProject) { const cancelledProject = { ...currentProject, status: REFACTOR_CONSTANTS.STATUS_CANCELLED, activeRunId: null, lastRunId: pipelineRunLease.runId, generationLogs: _.clone(currentLogs), updatedAt: new Date().toISOString() }; setActiveCreatedProject(cancelledProject); await onUpdateProject(cancelledProject, true); }
         setStepProgress(0);
         setCurrentStepIndex(0);
         return;
       }
       const errorMessage = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_RENDER_FAILED;
       appendLog(AUTO_GENERATOR_CONSTANTS.ERR_AUTO_GEN_FAILED.replace(SecurityConstants.PLACEHOLDER_0, errorMessage));
-      appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
+      appendLog(T.logPipelineFailedElapsed((Date.now() - pipelineStartedAt) / 1000));
       const failedProj = {
         ...(currentProject || {}),
         id: currentProject?.id || REFACTOR_CONSTANTS.STATUS_FAILED,
         status: currentProject ? REFACTOR_CONSTANTS.STATUS_PARTIAL : REFACTOR_CONSTANTS.STATUS_FAILED,
+        activeRunId: null,
+        lastRunId: pipelineRunLease.runId,
         manualReviewItems: currentProject ? createManualReviewItems(currentProject) : [],
         generationLogs: _.clone(currentLogs),
         updatedAt: new Date().toISOString(),
@@ -1650,6 +1662,7 @@ export function useAutoVideoPipeline(
       processingRef.current = false;
       requestAbortControllerRef.current = null;
       setIsCancelling(false);
+      releasePipelineRunLease(pipelineRunLease);
     }
   };
 

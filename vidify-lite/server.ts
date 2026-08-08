@@ -36,12 +36,16 @@ const SERVER_CONFIG = {
     "Authorization",
     "x-api-key",
     "x-gemini-api-key",
+    "x-cerebras-api-key",
+    "x-groq-api-key",
     "x-ai33-api-key",
     SecurityConstants.HEADER_LICENSE_KEY,
     SecurityConstants.HEADER_INTERNAL_TOKEN
   ],
   LIMIT_500MB: "500mb",
   HEADER_GEMINI_KEY: "x-gemini-api-key",
+  HEADER_CEREBRAS_KEY: "x-cerebras-api-key",
+  HEADER_GROQ_KEY: "x-groq-api-key",
   HEADER_AI33_KEY: "x-ai33-api-key",
   KILL_CHROME_WIN: `wmic process where "name='chrome.exe' and commandline like '%--remote-debugging-port=9222%'" call terminate`,
   KILL_CHROME_UNIX: `pkill -f "chrome.*--remote-debugging-port=9222"`,
@@ -76,9 +80,11 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || SecurityConstants.EMPTY_STRING;
+  const cerebrasKey = (req.headers[SERVER_CONFIG.HEADER_CEREBRAS_KEY] as string) || SecurityConstants.EMPTY_STRING;
+  const groqKey = (req.headers[SERVER_CONFIG.HEADER_GROQ_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const ai33Key = (req.headers[SERVER_CONFIG.HEADER_AI33_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const licenseKey = getResolvedLicenseKey(req);
-  requestContext.run({ geminiKey, ai33Key, licenseKey }, next);
+  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey }, next);
 });
 
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));

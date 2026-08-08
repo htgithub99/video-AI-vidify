@@ -1,15 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
-import { GEMINI_UNSUPPORTED_ERROR_KEYWORDS, GEMINI_RETRYABLE_ERROR_KEYWORDS, GEMINI_RETRYABLE_STATUSES, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX } from "../../constants";
+import { GEMINI_REQUEST_POLICY } from "../../constants";
 import { SecurityMessages } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
 import { delayAsync } from "../../lib/shared-utils.js";
 import { resolveApiKeys } from "./apiKeyResolver.js";
-import { AiTaskCapability, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
+import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
+import { classifyGeminiError } from "./geminiErrorClassifier.js";
+import { generateWithFreeProviders } from "./freeAiProviderService.js";
 
-export const isGeminiApiKeyAvailable = async (): Promise<boolean> => {
+export const isAiProviderAvailable = async (): Promise<boolean> => {
   const keys = await resolveApiKeys();
-  return !_.isEmpty(_.get(keys, 'geminiKey'));
+  return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
 };
 
 let currentModelIndex = 0;
@@ -20,14 +22,16 @@ export const generateContentWithRetry = async (
     config?: any;
     task?: { capability?: AiTaskCapability; budgetUsd?: number; promptVersion?: string };
   },
-  retries = 3,
-  delayMs = 1200,
+  retries: number = GEMINI_REQUEST_POLICY.DEFAULT_RETRIES,
+  delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS,
 ): Promise<any> => {
   const keys = await resolveApiKeys();
   const activeApiKey = _.get(keys, 'geminiKey', '');
+  const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+  if (freeProviderResult.response) return freeProviderResult.response;
 
   if (_.isEmpty(activeApiKey)) {
-    throw createAppError(SecurityMessages.MISSING_GEMINI_KEY);
+    throw freeProviderResult.lastError || createAppError(SecurityMessages.MISSING_GEMINI_KEY);
   }
 
   const clientAi = new GoogleGenAI({
@@ -40,7 +44,7 @@ export const generateContentWithRetry = async (
   });
 
   let lastError: any = null;
-  const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / 4);
+  const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS);
   const route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
   const startIndex = currentModelIndex % route.models.length;
   const rotationLogs: string[] = [];
@@ -79,7 +83,7 @@ export const generateContentWithRetry = async (
             () => {
               currentModelIndex = 0;
             },
-            3 * 60 * 1000,
+            GEMINI_REQUEST_POLICY.MODEL_INDEX_RESET_MS,
           );
         }
 
@@ -88,39 +92,26 @@ export const generateContentWithRetry = async (
         return response;
       } catch (error: any) {
         lastError = error;
-        recordModelFailure(model);
         attempt++;
-
-        const errorStr = error?.toString() || "";
         const errorMessage = error?.message || "";
 
         logStep("GEMINI_ERROR", model, attempt, errorMessage);
 
-        const isUnsupportedModel = _.some(GEMINI_UNSUPPORTED_ERROR_KEYWORDS, (term) => _.some([errorMessage, errorStr], (str) => _.includes(_.toLower(str), _.toLower(term))));
-
-        if (isUnsupportedModel) {
+        const decision = classifyGeminiError(error);
+        if (!decision.retryable) {
+          blockModel(model, decision.cooldownMs);
           logStep("GEMINI_UNSUPPORTED_FALLBACK", model);
           break;
         }
-
-        const isRetryable = _.includes(GEMINI_RETRYABLE_STATUSES, error?.status) || _.some(GEMINI_RETRYABLE_ERROR_KEYWORDS, (term) => _.some([errorMessage, errorStr], (str) => _.includes(_.toLower(str), _.toLower(term))));
-
-        let waitTime = delayMs;
-        const retryMatch = errorMessage.match(GEMINI_RETRY_REGEX) || errorStr.match(GEMINI_RETRY_REGEX);
-        if (!_.isNil(retryMatch)) {
-          waitTime = _.ceil((parseFloat(retryMatch[1]) + 1.5) * 1000);
-        } else if (_.includes(GEMINI_QUOTA_STATUSES, error?.status) || _.some([errorMessage, errorStr], (str) => _.includes(_.toLower(str), "quota"))) {
-          waitTime = 8000;
-        }
-        waitTime = _.ceil(waitTime * (0.8 + Math.random() * 0.4));
-
-        if (_.lte(attempt, retries) && isRetryable) {
+        const retryLimit = _.min([retries, decision.retryLimit]) || 0;
+        const waitTime = _.ceil(_.max([delayMs, decision.waitMs])! * (GEMINI_REQUEST_POLICY.RETRY_JITTER_MIN + Math.random() * GEMINI_REQUEST_POLICY.RETRY_JITTER_RANGE));
+        if (_.lte(attempt, retryLimit)) {
           logStep("GEMINI_RETRYABLE_ERROR", model, waitTime);
           await delayAsync(waitTime);
-          delayMs = _.max([delayMs * 1.5, waitTime * 1.2]) || delayMs;
+          delayMs = _.max([delayMs * GEMINI_REQUEST_POLICY.BACKOFF_MULTIPLIER, waitTime * GEMINI_REQUEST_POLICY.WAIT_BACKOFF_MULTIPLIER]) || delayMs;
           continue;
         }
-
+        recordModelFailure(model);
         logStep("GEMINI_MODEL_FAILED", model);
         break;
       }
@@ -128,7 +119,7 @@ export const generateContentWithRetry = async (
 
     if (_.lt(i, _.subtract(route.models.length, 1))) {
       logStep("GEMINI_COOLDOWN");
-      await delayAsync(2000);
+      await delayAsync(GEMINI_REQUEST_POLICY.MODEL_SWITCH_DELAY_MS);
     }
   }
 

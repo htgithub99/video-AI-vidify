@@ -455,6 +455,8 @@ export interface VideoProject {
   allowBulkDeleteImages?: boolean;
   isRecreatingStoryboard?: boolean;
   status?: string;
+  activeRunId?: string | null;
+  lastRunId?: string;
   generationLogs?: string[];
   renderedVideoUrl?: string;
 }
