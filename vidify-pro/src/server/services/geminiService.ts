@@ -47,7 +47,7 @@ export const generateContentWithRetry = async (
   const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS);
   const route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
   const startIndex = currentModelIndex % route.models.length;
-  const rotationLogs: string[] = [];
+  const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
 
   const logStep = (key: string, ...args: any[]) => {
     const msg = getMessage(key, undefined, ...args);

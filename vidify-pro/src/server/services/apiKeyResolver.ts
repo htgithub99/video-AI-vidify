@@ -63,7 +63,7 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
 
   const isMissingAnyKey = _.includes([isGeminiUserKey, isCerebrasUserKey, isGroqUserKey, isAi33UserKey], false);
 
-  appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ licenseKey, planType, userGeminiKey, userAi33Key, isMissingAnyKey }));
+  appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ hasLicenseKey: !_.isEmpty(licenseKey), planType, hasUserGeminiKey: isGeminiUserKey, hasUserCerebrasKey: isCerebrasUserKey, hasUserGroqKey: isGroqUserKey, hasUserAi33Key: isAi33UserKey, isMissingAnyKey }));
 
   if (isMissingAnyKey) {
     try {
@@ -82,7 +82,7 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       });
 
       const data: any = await response.json();
-      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify(data));
+      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify({ hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY])) }));
 
       const fetchedGemini = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY]);
       if (!isGeminiUserKey && !_.isEmpty(fetchedGemini)) {
