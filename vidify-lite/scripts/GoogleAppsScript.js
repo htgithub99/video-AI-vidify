@@ -45,12 +45,58 @@ const _ = {
     return new Date().toISOString();
   },
 
+  normalizeEnumStatus: function (value) {
+    const status = this.normalizeStatus(value);
+    if (this.includes(["ACTIVE", "ACTIVATED", "ENABLED"], status)) return StatusEnum.ACTIVE;
+    if (this.includes(["REVOKED", "BLOCKED", "INACTIVE", "DISABLED"], status)) return StatusEnum.REVOKED;
+    if (this.isEqual(status, "EXPIRED")) return StatusEnum.EXPIRED;
+    return status || StatusEnum.ACTIVE;
+  },
+
+  normalizeQuotaType: function (value) { return this.isEqual(this.normalizeStatus(value), QuotaType.TOTAL) ? QuotaType.TOTAL : QuotaType.DAILY; },
+  normalizeText: function (value) { return this.isNil(value) ? Constants.EMPTY_STRING : String(value).trim(); },
+  normalizeUpperText: function (value) { return this.normalizeText(value).toUpperCase(); },
+  normalizeLowerText: function (value) { return this.normalizeText(value).toLowerCase(); },
+  normalizeNumber: function (value) { const number = Number(value); return isFinite(number) ? Math.max(0, number) : 0; },
+  normalizeBoolean: function (value) { return value === true || this.includes(["TRUE", "1", "YES"], this.normalizeUpperText(value)); },
+  normalizeCsv: function (value) { const items = this.filter(this.map(String(value || Constants.EMPTY_STRING).split(Constants.COMMA_SPLIT), item => this.normalizeUpperText(item)), item => !this.isEmpty(item)); return items.join(Constants.COMMA_SPLIT); },
+  normalizeDevices: function (value) { let devices = value; if (!Array.isArray(devices)) { try { devices = JSON.parse(value || Constants.EMPTY_ARRAY); } catch (e) { devices = value ? [value] : []; } } const unique = []; this.forEach(devices, device => { const normalized = this.normalizeText(device); if (normalized && !this.includes(unique, normalized)) unique.push(normalized); }); return JSON.stringify(unique); },
+
+  normalizeSheetData: function (sheetName, headers, normalizeRow) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    if (!sheet || !Array.isArray(headers) || headers.length === 0) return;
+    if (sheet.getMaxColumns() < headers.length) sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length - sheet.getMaxColumns());
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    const rowCount = sheet.getLastRow() - 1;
+    if (rowCount <= 0) return;
+    const values = sheet.getRange(2, 1, rowCount, headers.length).getValues();
+    sheet.getRange(2, 1, rowCount, headers.length).setValues(this.map(values, normalizeRow));
+  },
+
+  normalizeWorkbookData: function () {
+    const properties = PropertiesService.getScriptProperties();
+    if (this.isEqual(properties.getProperty(Config.NORMALIZATION_PROPERTY), Config.NORMALIZATION_VERSION)) return;
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(Config.NORMALIZATION_LOCK_TIMEOUT_MS)) return;
+    try {
+      if (this.isEqual(properties.getProperty(Config.NORMALIZATION_PROPERTY), Config.NORMALIZATION_VERSION)) return;
+      this.normalizeSheetData(Config.SHEET_ADMINS, Config.HEADERS.ADMINS, row => [this.normalizeText(row[AdminCols.ID]), row[AdminCols.CREATED_AT], row[AdminCols.UPDATED_AT], this.normalizeText(row[AdminCols.USERNAME]), row[AdminCols.PASSWORD], this.normalizeText(row[AdminCols.TOKEN])]);
+      this.normalizeSheetData(Config.SHEET_PLANS, Config.HEADERS.PLANS, row => [this.normalizeText(row[PlanCols.ID]), row[PlanCols.CREATED_AT], row[PlanCols.UPDATED_AT], this.normalizeUpperText(row[PlanCols.NAME]), this.normalizeNumber(row[PlanCols.VIDEO]), this.normalizeNumber(row[PlanCols.IMAGE]), this.normalizeNumber(row[PlanCols.VOICE]), this.normalizeBoolean(row[PlanCols.UNLIMITED]), this.normalizeEnumStatus(row[PlanCols.STATUS])]);
+      this.normalizeSheetData(Config.SHEET_USERS, Config.HEADERS.USERS, row => [this.normalizeText(row[UserCols.ID]), row[UserCols.CREATED_AT], row[UserCols.UPDATED_AT], this.normalizeText(row[UserCols.USERNAME]), this.normalizeUpperText(row[UserCols.LICENSE_KEY]), this.normalizeText(row[UserCols.PLAN_ID]), this.normalizeEnumStatus(row[UserCols.STATUS]), row[UserCols.EXPIRES_AT], this.normalizeDevices(row[UserCols.DEVICE_ID]), this.normalizeQuotaType(row[UserCols.QUOTA_TYPE])]);
+      this.normalizeSheetData(Config.SHEET_USAGE, Config.HEADERS.USAGE, row => [this.normalizeText(row[UsageCols.ID]), row[UsageCols.CREATED_AT], row[UsageCols.UPDATED_AT], this.normalizeUpperText(row[UsageCols.LICENSE_KEY]), this.normalizeNumber(row[UsageCols.VIDEO]), this.normalizeNumber(row[UsageCols.IMAGE]), this.normalizeNumber(row[UsageCols.VOICE]), row[UsageCols.LAST_RESET]]);
+      this.normalizeSheetData(Config.SHEET_KEYS, Config.HEADERS.KEYS, row => [this.normalizeText(row[KeysCols.ID]), row[KeysCols.CREATED_AT], row[KeysCols.UPDATED_AT], this.normalizeCsv(row[KeysCols.ASSIGNED_TO]) || Constants.ALL, this.normalizeText(row[KeysCols.GEMINI_KEY]), this.normalizeText(row[KeysCols.AI33_KEY]), this.normalizeEnumStatus(row[KeysCols.STATUS]), this.normalizeCsv(row[KeysCols.EXCLUDED_TO]), this.normalizeText(row[KeysCols.CEREBRAS_KEY]), this.normalizeText(row[KeysCols.GROQ_KEY])]);
+      this.normalizeSheetData(Config.SHEET_ACCOUNTS, Config.HEADERS.ACCOUNTS, row => [this.normalizeText(row[AccountsCols.ID]), row[AccountsCols.CREATED_AT], row[AccountsCols.UPDATED_AT], this.normalizeLowerText(row[AccountsCols.EMAIL]), row[AccountsCols.PASSWORD], this.normalizeLowerText(row[AccountsCols.RECOVERY_EMAIL]), this.normalizeEnumStatus(row[AccountsCols.STATUS]), this.normalizeCsv(row[AccountsCols.ASSIGNED_TO]) || Constants.ALL]);
+      this.normalizeSheetData(Config.SHEET_SETTINGS, Config.HEADERS.SETTINGS, row => [this.normalizeText(row[SettingsCols.ID]), row[SettingsCols.CREATED_AT], row[SettingsCols.UPDATED_AT], this.normalizeText(row[SettingsCols.KEY]), row[SettingsCols.VALUE], this.normalizeText(row[SettingsCols.DESCRIPTION])]);
+      properties.setProperty(Config.NORMALIZATION_PROPERTY, Config.NORMALIZATION_VERSION);
+    } finally { lock.releaseLock(); }
+  },
+
   validateClientLicense: function (licenseKey) {
     if (this.isEmpty(licenseKey)) return false;
     const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
     if (!usersSheet) return false;
     const data = usersSheet.getDataRange().getValues();
-    const cleanLicenseKey = String(licenseKey).trim();
+    const cleanLicenseKey = this.normalizeUpperText(licenseKey);
     const rowIndex = this.findIndex(data, (row, idx) => idx > 0 && this.isEqual(String(row[UserCols.LICENSE_KEY]).trim(), cleanLicenseKey));
     if (rowIndex > 0) {
       return this.isEqual(this.normalizeStatus(data[rowIndex][UserCols.STATUS]), this.normalizeStatus(StatusEnum.ACTIVE));
@@ -64,6 +110,7 @@ const _ = {
       if (this.isNil(contents)) return this.jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
 
       const params = JSON.parse(contents);
+      this.normalizeWorkbookData();
       const action = this.get(params, ApiFields.ACTION);
 
       const adminToken = this.get(params, ApiFields.ADMIN_TOKEN);
@@ -136,7 +183,7 @@ const _ = {
     const adminKey = this.get(params, ApiFields.ADMIN_KEY);
     if (!this.isEqual(adminKey, this.getAppSecretKey())) return this.jsonResponse({ error: Messages.INVALID_ADMIN_KEY, code: HttpCode.FORBIDDEN });
 
-    const key = this.get(params, ApiFields.LICENSE_KEY);
+    const key = this.normalizeUpperText(this.get(params, ApiFields.LICENSE_KEY));
     const device = this.get(params, ApiFields.DEVICE_ID);
 
     if (this.isNil(key)) return this.jsonResponse({ error: Messages.MISSING_KEY, code: HttpCode.BAD_REQUEST });
@@ -220,7 +267,7 @@ const _ = {
       return this.jsonResponse({ error: Messages.INVALID_LICENSE_ERR, code: HttpCode.FORBIDDEN });
     }
 
-    const cleanKey = String(key).trim();
+    const cleanKey = this.normalizeUpperText(key);
     const usersSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USERS);
     const usersData = usersSheet.getDataRange().getValues();
 
@@ -616,8 +663,8 @@ const _ = {
     if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
     this.ensureApiKeyColumns(sheet);
 
-    const licenseKey = this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-    const planId = this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING));
+    const licenseKey = this.normalizeUpperText(this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING));
+    const planId = this.normalizeUpperText(this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING)));
 
     const data = sheet.getDataRange().getValues();
     let geminiKey = Constants.EMPTY_STRING;
@@ -763,8 +810,8 @@ const _ = {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_ACCOUNTS);
     if (!sheet) return this.jsonResponse({ error: Messages.SHEET_NOT_FOUND });
 
-    const licenseKey = this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING);
-    const planId = this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING));
+    const licenseKey = this.normalizeUpperText(this.get(params, ApiFields.LICENSE_KEY, Constants.EMPTY_STRING));
+    const planId = this.normalizeUpperText(this.get(params, ApiFields.PLAN_ID, this.get(params, ApiFields.PLAN_TYPE_GAS, Constants.EMPTY_STRING)));
 
     const data = sheet.getDataRange().getValues();
     let accounts = [];
@@ -951,6 +998,8 @@ const _ = {
   }
 };
 
+function normalizeGoogleSheetData() { PropertiesService.getScriptProperties().deleteProperty(Config.NORMALIZATION_PROPERTY); _.normalizeWorkbookData(); }
+
 const UserCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, USERNAME: 3, LICENSE_KEY: 4, PLAN_ID: 5, STATUS: 6, EXPIRES_AT: 7, DEVICE_ID: 8, QUOTA_TYPE: 9 };
 const UsageCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, LICENSE_KEY: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, LAST_RESET: 7 };
 const PlanCols = { ID: 0, CREATED_AT: 1, UPDATED_AT: 2, NAME: 3, VIDEO: 4, IMAGE: 5, VOICE: 6, UNLIMITED: 7, STATUS: 8 };
@@ -968,6 +1017,9 @@ const Config = {
   SHEET_KEYS: "keys",
   SHEET_ACCOUNTS: "accounts",
   SHEET_SETTINGS: "settings",
+  NORMALIZATION_PROPERTY: "WORKBOOK_NORMALIZATION_VERSION",
+  NORMALIZATION_VERSION: "2",
+  NORMALIZATION_LOCK_TIMEOUT_MS: 5000,
   HEADERS: {
     ADMINS: ["ID", "CREATED_AT", "UPDATED_AT", "USERNAME", "PASSWORD", "TOKEN"],
     PLANS: ["ID", "CREATED_AT", "UPDATED_AT", "NAME", "QUOTA_VIDEO", "QUOTA_IMAGE", "QUOTA_VOICE", "IS_UNLIMITED", "STATUS"],
@@ -1005,6 +1057,7 @@ const Constants = {
   ALL: "ALL",
   UNKNOWN: "Unknown",
   DATE_SPLIT_CHAR: "T",
+  COMMA_SPLIT: ",",
   COLOR_ADMIN: "#dbeafe",
   COLOR_CONFIG: "#e0e7ff",
   COLOR_USERS: "#dcfce7",
