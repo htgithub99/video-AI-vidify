@@ -1677,12 +1677,10 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
-    res
-      .status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE)
-      .json({
-        error: getGeminiUserMessage(error, isVi),
-        retryable: classifyGeminiError(error).retryable,
-      });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      error: getGeminiUserMessage(error, isVi),
+      retryable: classifyGeminiError(error).retryable,
+    });
   }
 });
 
@@ -2911,13 +2909,11 @@ router.post(
       const { items, visualConfig, style } = req.body;
 
       if (!items || !_.isArray(items) || _.isEmpty(items)) {
-        return res
-          .status(HTTP_STATUS_CODES.BAD_REQUEST)
-          .json({
-            success: false,
-            results: [],
-            warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS,
-          });
+        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+          success: false,
+          results: [],
+          warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS,
+        });
       }
 
       res.setHeader("Content-Type", "application/x-ndjson");
@@ -3083,11 +3079,9 @@ router.post(
       _.toLower(_.join([dataRoot, path.sep], "")),
     );
     if (!isInsideDataRoot || !fs.existsSync(videoPath))
-      return res
-        .status(HTTP_STATUS_CODES.BAD_REQUEST)
-        .json({
-          error: "Rendered video is outside the Vidify data root or missing.",
-        });
+      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
+        error: "Rendered video is outside the Vidify data root or missing.",
+      });
     const tempDir = path.join(dataRoot, `final-qc-${randomUUID()}`);
     fs.mkdirSync(tempDir, { recursive: true });
     try {
@@ -3751,12 +3745,10 @@ router.post("/select-file", async (req: Request, res: Response) => {
           error.message,
         ),
       );
-      return res
-        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
-        .json({
-          success: false,
-          error: getBackendMsg("SELECT_FILE_FAILED", isVi),
-        });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: getBackendMsg("SELECT_FILE_FAILED", isVi),
+      });
     }
     return res.json({ success: true, filePath: stdout.trim() });
   });
@@ -3783,12 +3775,10 @@ router.post("/select-folder", async (req: Request, res: Response) => {
           error.message,
         ),
       );
-      return res
-        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
-        .json({
-          success: false,
-          error: getBackendMsg("SELECT_FOLDER_FAILED", isVi),
-        });
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: getBackendMsg("SELECT_FOLDER_FAILED", isVi),
+      });
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });

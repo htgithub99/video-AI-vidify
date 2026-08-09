@@ -40,6 +40,7 @@ import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { AlertCircle, Download, Pause, Terminal, Workflow } from "lucide-react";
+import { getUserLogBadges } from "../lib/userLogFormatter";
 
 const {
   ArrowLeft,
@@ -116,6 +117,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     handleDeleteFavoriteVoice,
     handleSaveEditVoice,
   } = wizard;
+  const userLogBadges = getUserLogBadges(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang];
 
   const logsEndRef = React.useRef<HTMLDivElement>(null);
@@ -1301,29 +1303,29 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   systemLogs.map((log, i) => {
                     let badgeClass =
                       "bg-sky-500/10 text-sky-500 border-sky-500/20";
-                    let badgeText = "INFO";
+                    let badgeText = userLogBadges.INFO_BADGE;
                     let bgClass = "";
                     let textClass = "text-slate-300";
                     if (log.type === "error") {
                       badgeClass =
                         "bg-red-500/10 text-red-500 border-red-500/30";
-                      badgeText = "ERR";
+                      badgeText = userLogBadges.ERROR_BADGE;
                       bgClass = "bg-red-500/5 -mx-2 px-2";
                       textClass = "text-red-500 font-medium";
                     } else if (log.type === "warn") {
                       badgeClass =
                         "bg-orange-500/10 text-orange-500 border-orange-500/30";
-                      badgeText = "WARN";
+                      badgeText = userLogBadges.WARNING_BADGE;
                       textClass = "text-orange-500";
                     } else if (log.type === "success") {
                       badgeClass =
                         "bg-teal-500/10 text-teal-500 border-teal-500/30";
-                      badgeText = "OK";
+                      badgeText = userLogBadges.SUCCESS_BADGE;
                       textClass = "text-teal-500 font-medium";
                     } else if (log.type === "pending") {
                       badgeClass =
                         "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/30";
-                      badgeText = "WAIT";
+                      badgeText = userLogBadges.PENDING_BADGE;
                       textClass = "text-fuchsia-500 font-medium";
                     }
                     return (

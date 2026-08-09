@@ -768,7 +768,12 @@ export default function AutoVideoGenerator({
             T={T}
           />
 
-          <LogPanelSection logs={logs} theme={theme} T={T} />
+          <LogPanelSection
+            logs={logs}
+            theme={theme}
+            T={T}
+            language={currentLang}
+          />
 
           <PreviewPanelSection
             renderedVideoUrl={renderedVideoUrl}

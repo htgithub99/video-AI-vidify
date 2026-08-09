@@ -2223,7 +2223,6 @@ const AppLogger = {
   },
 };
 
-// Global routing functions for Google Apps Script execution engine
 function doPost(e) {
   return _.doPost(e);
 }

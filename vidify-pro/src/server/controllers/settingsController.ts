@@ -77,15 +77,13 @@ export const getSettingsFromGAS = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     appError(SecurityConstants.LOG_GET_SETTINGS_ERROR, error);
-    res
-      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
-      .json({
-        [SecurityConstants.ERROR_KEY]: _.get(
-          error,
-          SecurityConstants.REQ_BODY_MESSAGE,
-          SecurityMessages.GAS_FETCH_ERROR,
-        ),
-      });
+    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({
+      [SecurityConstants.ERROR_KEY]: _.get(
+        error,
+        SecurityConstants.REQ_BODY_MESSAGE,
+        SecurityMessages.GAS_FETCH_ERROR,
+      ),
+    });
   }
 };
 
@@ -130,15 +128,13 @@ export const saveApiKeys = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     appError(SecurityConstants.LOG_SAVE_API_KEYS_ERROR, error);
-    res
-      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
-      .json({
-        [SecurityConstants.ERROR_KEY]: _.get(
-          error,
-          SecurityConstants.REQ_BODY_MESSAGE,
-          SecurityMessages.SAVE_API_KEYS_ERROR,
-        ),
-      });
+    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({
+      [SecurityConstants.ERROR_KEY]: _.get(
+        error,
+        SecurityConstants.REQ_BODY_MESSAGE,
+        SecurityMessages.SAVE_API_KEYS_ERROR,
+      ),
+    });
   }
 };
 
@@ -146,11 +142,9 @@ export const addGoogleAccount = async (req: Request, res: Response) => {
   try {
     const account = _.get(req.body, SecurityConstants.REQ_BODY_ACCOUNT);
     if (_.isEmpty(account))
-      return res
-        .status(SecurityConstants.HTTP_BAD_REQUEST)
-        .json({
-          [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO,
-        });
+      return res.status(SecurityConstants.HTTP_BAD_REQUEST).json({
+        [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO,
+      });
 
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
@@ -174,15 +168,13 @@ export const addGoogleAccount = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     appError(SecurityConstants.LOG_ADD_ACCOUNT_ERROR, error);
-    res
-      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
-      .json({
-        [SecurityConstants.ERROR_KEY]: _.get(
-          error,
-          SecurityConstants.REQ_BODY_MESSAGE,
-          SecurityMessages.ADD_ACCOUNT_ERROR,
-        ),
-      });
+    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({
+      [SecurityConstants.ERROR_KEY]: _.get(
+        error,
+        SecurityConstants.REQ_BODY_MESSAGE,
+        SecurityMessages.ADD_ACCOUNT_ERROR,
+      ),
+    });
   }
 };
 
@@ -194,11 +186,9 @@ export const updateGoogleAccountStatus = async (
     const rowIndex = _.get(req.body, SecurityConstants.REQ_BODY_ROW_INDEX);
     const status = _.get(req.body, SecurityConstants.REQ_BODY_STATUS);
     if (_.isNil(rowIndex) || _.isEmpty(status))
-      return res
-        .status(SecurityConstants.HTTP_BAD_REQUEST)
-        .json({
-          [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO,
-        });
+      return res.status(SecurityConstants.HTTP_BAD_REQUEST).json({
+        [SecurityConstants.ERROR_KEY]: SecurityMessages.MISSING_REQUEST_INFO,
+      });
 
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
@@ -223,14 +213,12 @@ export const updateGoogleAccountStatus = async (
     });
   } catch (error: any) {
     appError(SecurityConstants.LOG_UPDATE_ACCOUNT_ERROR, error);
-    res
-      .status(SecurityConstants.HTTP_INTERNAL_ERROR)
-      .json({
-        [SecurityConstants.ERROR_KEY]: _.get(
-          error,
-          SecurityConstants.REQ_BODY_MESSAGE,
-          SecurityMessages.UPDATE_ACCOUNT_ERROR,
-        ),
-      });
+    res.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({
+      [SecurityConstants.ERROR_KEY]: _.get(
+        error,
+        SecurityConstants.REQ_BODY_MESSAGE,
+        SecurityMessages.UPDATE_ACCOUNT_ERROR,
+      ),
+    });
   }
 };

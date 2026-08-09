@@ -680,11 +680,9 @@ export const getAllProjects = async (request: Request, response: Response) => {
     const repaired = await repairOrphanedAutoProjects(list);
     response.json(repaired ? await getProjectsListFromDb() : list);
   } catch (error: any) {
-    response
-      .status(500)
-      .json({
-        error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")),
-      });
+    response.status(500).json({
+      error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")),
+    });
   }
 };
 
@@ -700,11 +698,9 @@ export const getProjectById = async (request: Request, response: Response) => {
         .json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND) });
     }
   } catch (error: any) {
-    response
-      .status(500)
-      .json({
-        error: _.defaultTo(error.message, getBackendMsg("SQLITE_DETAIL_ERR")),
-      });
+    response.status(500).json({
+      error: _.defaultTo(error.message, getBackendMsg("SQLITE_DETAIL_ERR")),
+    });
   }
 };
 
@@ -720,11 +716,9 @@ export const createProject = async (request: Request, response: Response) => {
     const savedProject = await saveProjectDetail(newProject);
     response.status(201).json(savedProject);
   } catch (error: any) {
-    response
-      .status(500)
-      .json({
-        error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")),
-      });
+    response.status(500).json({
+      error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")),
+    });
   }
 };
 
@@ -839,11 +833,9 @@ export const updateProject = async (request: Request, response: Response) => {
       response.json(savedProject);
     }
   } catch (error: any) {
-    response
-      .status(500)
-      .json({
-        error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")),
-      });
+    response.status(500).json({
+      error: _.defaultTo(error.message, getBackendMsg("SQLITE_WRITE_ERR")),
+    });
   }
 };
 
@@ -882,10 +874,8 @@ export const deleteProject = async (request: Request, response: Response) => {
         .json({ error: getBackendMsg(ERROR_MESSAGES.PROJECT_NOT_FOUND, isVi) });
     }
   } catch (error: any) {
-    response
-      .status(500)
-      .json({
-        error: _.defaultTo(error.message, getBackendMsg("SQLITE_DELETE_ERR")),
-      });
+    response.status(500).json({
+      error: _.defaultTo(error.message, getBackendMsg("SQLITE_DELETE_ERR")),
+    });
   }
 };

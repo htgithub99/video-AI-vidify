@@ -8,12 +8,14 @@ interface LogPanelSectionProps {
   logs: string[];
   theme: AppTheme;
   T: any;
+  language?: string;
 }
 
 export const LogPanelSection: React.FC<LogPanelSectionProps> = ({
   logs,
   theme,
   T,
+  language,
 }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col min-h-[260px]">
@@ -44,7 +46,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({
             <span>{T.logEmpty}</span>
           </div>
         ) : (
-          <ProgressLogTimeline logs={logs} theme={theme} />
+          <ProgressLogTimeline logs={logs} theme={theme} language={language} />
         )}
       </div>
     </div>

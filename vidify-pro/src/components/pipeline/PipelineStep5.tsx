@@ -24,6 +24,7 @@ import {
   COMMON_STRINGS,
 } from "../../constants/texts";
 import { delayAsync } from "../../lib/shared-utils.js";
+import { formatUserFacingLog } from "../../lib/userLogFormatter";
 
 const {
   Play,
@@ -84,7 +85,8 @@ export default function PipelineStep5(props: PipelineWizardState) {
     const prefix =
       LOG_LEVEL_SYMBOLS[type.toUpperCase() as keyof typeof LOG_LEVEL_SYMBOLS] ||
       LOG_LEVEL_SYMBOLS.INFO;
-    setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${msg}`]);
+    const userMessage = formatUserFacingLog(msg, currentLang);
+    setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${userMessage}`]);
   };
 
   const parsePrompts = (text: string): string[] => {

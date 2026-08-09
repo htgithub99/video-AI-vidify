@@ -17,11 +17,9 @@ export const getAllPresets = async (request: Request, response: Response) => {
     response.status(HttpStatus.OK).json(presets);
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_GET_PRESETS, error);
-    response
-      .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .json({
-        error: _.get(error, "message", BACKEND_MESSAGES.ERROR_GET_PRESETS),
-      });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      error: _.get(error, "message", BACKEND_MESSAGES.ERROR_GET_PRESETS),
+    });
   }
 };
 
@@ -48,11 +46,9 @@ export const savePreset = async (request: Request, response: Response) => {
     response.status(HttpStatus.CREATED).json(saved);
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_SAVE_PRESET, error);
-    response
-      .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .json({
-        error: _.get(error, "message", BACKEND_MESSAGES.ERROR_SAVE_PRESET),
-      });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      error: _.get(error, "message", BACKEND_MESSAGES.ERROR_SAVE_PRESET),
+    });
   }
 };
 
@@ -76,10 +72,8 @@ export const deletePreset = async (request: Request, response: Response) => {
     }
   } catch (error: any) {
     appError(BACKEND_MESSAGES.ERROR_DELETE_PRESET, error);
-    response
-      .status(HttpStatus.INTERNAL_SERVER_ERROR)
-      .json({
-        error: _.get(error, "message", BACKEND_MESSAGES.ERROR_DELETE_PRESET),
-      });
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      error: _.get(error, "message", BACKEND_MESSAGES.ERROR_DELETE_PRESET),
+    });
   }
 };

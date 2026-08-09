@@ -4,6 +4,7 @@ import { PipelineConstants } from "../../constants/pipelineConstants";
 import { logger, subscribeToLogs } from "../../utils/logger";
 import { jsonUtils } from "../../lib/json";
 import { storageUtils } from "../../lib/storage";
+import { formatUserFacingLog } from "../../lib/userLogFormatter";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import _ from "lodash";
 
@@ -386,7 +387,18 @@ export function usePipelineWizard(props: any) {
     {},
   );
 
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setRawErrorMsg] = useState("");
+  const setErrorMsg = useCallback(
+    (message: unknown) => {
+      const rawMessage = _.trim(_.toString(message));
+      setRawErrorMsg(
+        _.isEmpty(rawMessage)
+          ? REFACTOR_CONSTANTS.VD_EMPTY_STRING
+          : formatUserFacingLog(rawMessage, currentLang),
+      );
+    },
+    [currentLang],
+  );
 
   const [infoMsg, setInfoMsg] = useState("");
 
@@ -924,6 +936,7 @@ export function usePipelineWizard(props: any) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 
+        processedMsg = formatUserFacingLog(processedMsg, currentLang);
         let enrichedType = type;
         const processedMsgLower = _.toLower(processedMsg);
         if (
@@ -966,7 +979,7 @@ export function usePipelineWizard(props: any) {
     };
 
     return subscribeToLogs(captureLog);
-  }, []);
+  }, [currentLang]);
 
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
 
@@ -4525,7 +4538,9 @@ export function usePipelineWizard(props: any) {
         const successMsg =
           t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
         if (data.warning) {
-          setInfoMsg(`${successMsg} (${data.warning})`);
+          setInfoMsg(
+            `${successMsg} (${formatUserFacingLog(data.warning, currentLang)})`,
+          );
         } else {
           setInfoMsg(successMsg);
         }
