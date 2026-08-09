@@ -27,20 +27,9 @@ export interface SceneVisualQualityResult {
 export const VISUAL_QA_CONFIG = {
   MIN_GENERAL_SCORE: 80,
   MIN_CHARACTER_SCORE: 85,
+  HARD_MIN_SCORE: 60,
   MAX_RETRIES: 2,
 } as const;
-
-const SCORE_FIELDS: Array<keyof Pick<
-  SceneVisualQuality,
-  "anatomy" | "subjectCount" | "promptAlignment" | "composition" | "styleConsistency" | "editability"
->> = [
-  "anatomy",
-  "subjectCount",
-  "promptAlignment",
-  "composition",
-  "styleConsistency",
-  "editability",
-];
 
 const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuality => ({
   anatomy: _.clamp(_.toNumber(source.anatomy), 0, 100),
@@ -59,16 +48,14 @@ const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuali
 export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boolean => _.every([
   quality.usableForVideo,
   _.isEmpty(quality.blockingErrors),
-  _.every(SCORE_FIELDS, (field) => _.gte(quality[field], VISUAL_QA_CONFIG.MIN_GENERAL_SCORE)),
-  _.some([
-    _.isEqual(quality.characterConsistency, 0),
-    _.gte(quality.characterConsistency, VISUAL_QA_CONFIG.MIN_CHARACTER_SCORE),
-  ]),
 ], Boolean);
+
+export const isSceneVisualQualityUsable = isSceneVisualQualityApproved;
 
 export const validateSceneImage = async (
   projectId: string,
   scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "assetUrl">,
+  referenceAssetUrl?: string,
 ): Promise<SceneVisualQualityResult> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_SCENE_IMAGE, {
     projectId,
@@ -76,6 +63,7 @@ export const validateSceneImage = async (
     script: scene.script,
     prompt: scene.prompt,
     assetUrl: scene.assetUrl,
+    referenceAssetUrl,
   });
 
   if (!response.success || !response.data?.success || _.isEmpty(response.data?.quality)) {

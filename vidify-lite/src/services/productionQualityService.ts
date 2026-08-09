@@ -15,30 +15,38 @@ export const PRODUCTION_QA_THRESHOLDS = { DURATION_TOLERANCE_RATIO: 0.1, MAX_SUB
 
 export const evaluateAudioTiming = (actual: number, target: number): AudioQualityReport => {
   const durationFit = target > 0 && Math.abs(actual - target) <= target * PRODUCTION_QA_THRESHOLDS.DURATION_TOLERANCE_RATIO;
-  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: durationFit ? [] : ["tts_duration_out_of_tolerance"], warnings: ["audio_perceptual_qa_pending"], passed: durationFit };
+  const hasAudioDuration = actual > 0;
+  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false };
 };
 
 export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityReport => {
   const lineErrors = _.filter(scenes, scene => _.size(_.split(scene.subtitle || scene.script, "\n")) > 2);
   const longLines = _.filter(scenes, scene => _.some(_.split(scene.subtitle || scene.script, "\n"), line => _.size(line) > 42));
   const tooFast = _.filter(scenes, scene => _.size(scene.subtitle || scene.script) / _.max([scene.duration, 0.1])! > 18);
-  const blockingErrors = _.compact([
-    !_.isEmpty(lineErrors) && "subtitle_more_than_two_lines",
-    !_.isEmpty(longLines) && "subtitle_line_too_long",
-    !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient",
-  ]);
-  return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), focalSubjectSafe: true, blockingErrors, warnings: ["subtitle_focal_position_requires_preview_qc"], passed: _.isEmpty(blockingErrors) };
+  const hasSubtitleContent = _.every(scenes, scene => !_.isEmpty(scene.subtitle || scene.script));
+  const blockingErrors = hasSubtitleContent ? [] : ["subtitle_content_missing"];
+  const warnings = _.compact([!_.isEmpty(lineErrors) && "subtitle_more_than_two_lines", !_.isEmpty(longLines) && "subtitle_line_too_long", !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient", "subtitle_focal_position_requires_preview_qc"]);
+  return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), focalSubjectSafe: true, blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 
 export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => {
   const assetsApproved = _.every(scenes, scene => scene.assetStatus === SceneAssetStatus.Approved);
   const transitionsIntentional = _.every(scenes, scene => !_.isEmpty(scene.cameraMotion) && !_.isEmpty(scene.transition));
-  const blockingErrors = _.compact([!assetsApproved && "unapproved_asset_on_timeline", !transitionsIntentional && "missing_camera_or_transition_intent"]);
-  return { approvedAssetsOnly: assetsApproved, intentionalTransitions: transitionsIntentional, motionSafeCrop: true, noCompensatoryZoom: true, blockingErrors, warnings: ["motion_safe_crop_requires_preview_qc"], passed: _.isEmpty(blockingErrors) };
+  const transitions = _.map(scenes, scene => _.toLower(scene.transition || ""));
+  const dominantTransitionCount = _.max(_.values(_.countBy(transitions))) || 0;
+  const transitionRepetitionRatio = _.isEmpty(transitions) ? 1 : dominantTransitionCount / transitions.length;
+  const blockingErrors = _.compact([!assetsApproved && "unapproved_asset_on_timeline"]);
+  const warnings = _.compact([
+    !transitionsIntentional && "missing_camera_or_transition_intent",
+    transitionRepetitionRatio > 0.75 && "transition_pattern_too_repetitive",
+    "motion_safe_crop_requires_preview_qc",
+  ]);
+  return { approvedAssetsOnly: assetsApproved, intentionalTransitions: transitionsIntentional, motionSafeCrop: true, noCompensatoryZoom: true, blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 
 export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQualityReport => {
   const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: quality.promptAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, quality.promptAlignment, quality.editability])) };
-  const blockingErrors = _.uniq([...quality.blockingErrors, ..._.compact(_.map(scores, (value, key) => value < 80 ? `thumbnail_${key}_below_threshold` : ""))]);
-  return { ...scores, blockingErrors, warnings: quality.warnings, passed: _.isEmpty(blockingErrors) };
+  const belowTarget = _.compact(_.map(scores, (value, key) => value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? `thumbnail_${key}_below_target` : ""));
+  const blockingErrors = _.uniq(quality.blockingErrors);
+  return { ...scores, blockingErrors, warnings: _.uniq([...quality.warnings, ...belowTarget]), passed: quality.usableForVideo && _.isEmpty(blockingErrors) };
 };

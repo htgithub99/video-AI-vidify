@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_HEADERS, REFACTOR_CONSTANTS, STORAGE_KEYS } from "../../constants";
+import { REFACTOR_CONSTANTS } from "../../constants";
 import { VOICE_MODIFIERS } from "../../constants/defaultConfigs";
 import {
   CONTENT_TYPES,
@@ -7,7 +7,7 @@ import {
   HTTP_METHODS,
 } from "../../constants/texts";
 import { jsonUtils } from "../../lib/json";
-import { getStoredApiKey } from "../../lib/shared-utils";
+import { createAuthenticatedHeaders } from "../../lib/shared-utils";
 import { parseTimeToSeconds } from "../../lib/timeUtils.js";
 import { logger } from "../../utils/logger";
 
@@ -98,19 +98,9 @@ export const fetchSystemApi = async (
   payload?: RequestPayload | null,
   customHeaders?: RequestHeaders,
 ): Promise<Response> => {
-  const headers = _.assign(
-    {
-      [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
-      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(
-        STORAGE_KEYS.GEMINI_API_KEY,
-      ),
-      [API_HEADERS.CEREBRAS_API_KEY]: getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY),
-      [API_HEADERS.GROQ_API_KEY]: getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY),
-      [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
-      [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY),
-    },
-    customHeaders,
-  );
+  const headers = createAuthenticatedHeaders(_.assign({
+    [HTTP_HEADERS.CONTENT_TYPE]: CONTENT_TYPES.JSON,
+  }, customHeaders));
   const options: RequestInit = {
     method: _.isNil(payload) ? HTTP_METHODS.GET : HTTP_METHODS.POST,
     headers,

@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { GEMINI_REQUEST_POLICY } from "../../constants";
+import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants";
 import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
@@ -32,7 +32,10 @@ export const generateContentWithRetry = async (
   if (freeProviderResult.response) return freeProviderResult.response;
 
   if (_.isEmpty(activeApiKey)) {
-    throw freeProviderResult.lastError || createAppError(SecurityMessages.MISSING_GEMINI_KEY);
+    const providerError = freeProviderResult.lastError || createAppError(SecurityMessages.MISSING_GEMINI_KEY);
+    providerError.rotationLogs = freeProviderResult.rotationLogs;
+    providerError.noRetry = true;
+    throw providerError;
   }
 
   const clientAi = new GoogleGenAI({
@@ -45,10 +48,22 @@ export const generateContentWithRetry = async (
   });
 
   let lastError: any = null;
-  const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS);
-  const route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
-  const startIndex = currentModelIndex % route.models.length;
   const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
+  const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS);
+  let route: ReturnType<typeof routeAiTask>;
+  try {
+    route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
+  } catch (routeError: any) {
+    routeError.rotationLogs = rotationLogs;
+    throw routeError;
+  }
+  const startIndex = currentModelIndex % route.models.length;
+  const geminiConfig = _.omit(params.config || {}, ["temperature", "topP", "topK"]);
+  const tryToollessFreeFallback = async (category: string): Promise<any> => {
+    if (!_.includes(FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_CATEGORIES, category as never) || _.isEmpty(params.config?.tools) || !_.isString(params.contents)) return null;
+    appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    if (!fallback.response) return null;fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];return fallback.response;
+  };
 
   const logStep = (key: string, ...args: any[]) => {
     const msg = getMessage(key, undefined, ...args);
@@ -71,7 +86,7 @@ export const generateContentWithRetry = async (
         const response = await clientAi.models.generateContent({
           model: model,
           contents: params.contents,
-          config: params.config,
+          config: geminiConfig,
         });
 
         logStep("GEMINI_SUCCESS", model, attempt + 1);
@@ -100,6 +115,7 @@ export const generateContentWithRetry = async (
         logStep("GEMINI_ERROR", model, attempt, errorMessage);
 
         const decision = classifyGeminiError(error);
+        const toolFreeResponse = await tryToollessFreeFallback(decision.category);if (toolFreeResponse) return toolFreeResponse;
         if (!decision.retryable) {
           blockModel(model, decision.cooldownMs);
           logStep("GEMINI_UNSUPPORTED_FALLBACK", model);

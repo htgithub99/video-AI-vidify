@@ -78,7 +78,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   const geminiKey = (req.headers[SERVER_CONFIG.HEADER_GEMINI_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const cerebrasKey = (req.headers[SERVER_CONFIG.HEADER_CEREBRAS_KEY] as string) || SecurityConstants.EMPTY_STRING;
   const groqKey = (req.headers[SERVER_CONFIG.HEADER_GROQ_KEY] as string) || SecurityConstants.EMPTY_STRING;
@@ -106,7 +106,7 @@ const startServer = async () => {
   } else {
     const distPath = __dirname;
     app.use(express.static(distPath));
-    app.get(SecurityConstants.WILDCARD_ROUTE, (req, res) => {
+    app.get(SecurityConstants.WILDCARD_ROUTE, (_req, res) => {
       res.sendFile(path.join(distPath, SERVER_CONFIG.INDEX_FILE));
     });
   }

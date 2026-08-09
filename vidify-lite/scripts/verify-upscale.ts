@@ -1,3 +1,4 @@
+import { writeVerificationLog } from "./verificationLogger.ts";
 import { calculateUpscaleDimensions } from "../src/services/imageUpscaleService.ts";
 import { selectScenesForUpscale } from "../src/services/qualityProfileService.ts";
 import { QualityMode } from "../src/types.ts";
@@ -7,6 +8,6 @@ const fourK=calculateUpscaleDimensions(3840,2160);assert(!fourK.changed,"4K asse
 const portrait=calculateUpscaleDimensions(1080,1920);assert(portrait.changed&&portrait.width===2160&&portrait.height===3840,"portrait upscale cap failed");
 const scenes:any[]=[{id:"s1"},{id:"s2"},{id:"s3"}];const validated=new Set(["s2"]);
 assert(selectScenesForUpscale(scenes,validated,QualityMode.Economy).length===2,"economy key upscale selection failed");
-assert(selectScenesForUpscale(scenes,validated,QualityMode.Balanced).length===1,"balanced approved upscale selection failed");
+assert(selectScenesForUpscale(scenes,validated,QualityMode.Balanced).length===2,"balanced key upscale selection failed");
 assert(selectScenesForUpscale(scenes,validated,QualityMode.Premium).length===3,"premium upscale selection failed");
-console.log("Image upscale policy assertions passed");
+writeVerificationLog("Image upscale policy assertions passed");

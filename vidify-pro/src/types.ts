@@ -345,6 +345,8 @@ export interface SubtitleQualityReport { maxTwoLines: boolean; semanticBreaks: b
 export interface EditorQualityReport { approvedAssetsOnly: boolean; intentionalTransitions: boolean; motionSafeCrop: boolean; noCompensatoryZoom: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 export interface VisualBible { colorPalette:string; characterSpecs:string; landscapeSpecs:string; lightingMood:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; }
 export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
+export interface ImagePromptQualityIssue { sceneId:string; code:string; severity:"blocking"|"warning"; }
+export interface ImagePromptQualityReport { totalPrompts:number; validPrompts:number; blockingErrors:ImagePromptQualityIssue[]; warnings:ImagePromptQualityIssue[]; passed:boolean; }
 export interface ContentSafetyReport { sensitiveTopic:boolean; trueCase:boolean; minorsInvolved:boolean; sexualExploitationRisk:boolean; victimExploitationRisk:boolean; privacyRisk:boolean; likenessRisk:boolean; copyrightRisk:boolean; requiredDisclosures:string[]; blockingErrors:string[]; warnings:string[]; allowed:boolean; }
 export interface PipelineRolloutConfig { releaseChannel:"stable"|"canary"; canaryEnabled:boolean; shadowMode:boolean; flags:{creativeBrief:boolean;scriptQa:boolean;visualQa:boolean;audioQa:boolean;thumbnailQa:boolean;finalQc:boolean}; }
 export interface PipelineBenchmark { totalLatencyMs:number; aiLatencyMs:number; estimatedCostUsd:number; actualCostUsd:number; retryCount:number; rejectCount:number; generatedAt:string; }
@@ -418,6 +420,7 @@ export interface VideoProject {
   editorQa?: EditorQualityReport;
   visualBible?: VisualBible;
   storyboardQa?: StoryboardQualityReport;
+  imagePromptQa?: ImagePromptQualityReport;
   contentSafety?: ContentSafetyReport;
   rollout?: PipelineRolloutConfig;
   benchmark?: PipelineBenchmark;

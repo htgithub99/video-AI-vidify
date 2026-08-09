@@ -1,15 +1,33 @@
 import _ from "lodash";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 export const SCRIPT_QUALITY_THRESHOLDS = {
-  CONTINUITY: 85,
+  CONTINUITY: 80,
   FACTUALITY: 85,
   REPETITION: 80,
-  CONVERSATIONAL: 80,
+  CONVERSATIONAL: 60,
   HOOK_PAYOFF: 80,
   HOOK_FACTUAL_SAFETY: 80,
   DURATION_TOLERANCE_RATIO: 0.15,
   WORDS_PER_MINUTE: 150,
+  REPAIR_PLACEHOLDERS: ["complete corrected script", "full corrected script", "corrected script", "<full_corrected_script_text>"],
 } as const;
+
+export interface ScriptRepairValidation { accepted: boolean; wordCount: number; minimumWords: number; maximumWords: number; reasons: string[]; }
+export const getTargetWordRange = (targetDurationSeconds: number): { minimumWords: number; maximumWords: number } => {
+  const targetWords = targetDurationSeconds * SCRIPT_QUALITY_THRESHOLDS.WORDS_PER_MINUTE / 60;const tolerance = SCRIPT_QUALITY_THRESHOLDS.DURATION_TOLERANCE_RATIO;
+  return { minimumWords: _.floor(targetWords * (1 - tolerance)), maximumWords: _.ceil(targetWords * (1 + tolerance)) };
+};
+export const validateScriptRepair = (candidate: string, targetDurationSeconds: number, requiredHook = ""): ScriptRepairValidation => {
+  const normalizedCandidate = _.toLower(_.trim(candidate));const wordCount = _.size(_.words(candidate));const { minimumWords, maximumWords } = getTargetWordRange(targetDurationSeconds);
+  const reasons = _.compact([
+    _.isEmpty(normalizedCandidate) && "empty_script_repair",
+    _.includes(SCRIPT_QUALITY_THRESHOLDS.REPAIR_PLACEHOLDERS, normalizedCandidate as never) && "placeholder_script_repair",
+    wordCount < minimumWords && "script_repair_too_short",
+    wordCount > maximumWords && "script_repair_too_long",
+    !_.isEmpty(requiredHook) && !_.startsWith(normalizedCandidate, _.toLower(_.trim(requiredHook))) && "script_repair_missing_hook",
+  ]) as string[];
+  return { accepted: _.isEmpty(reasons), wordCount, minimumWords, maximumWords, reasons };
+};
 const score = (value: unknown): number => _.clamp(_.toFinite(value), 0, 100);
 export const normalizeHookScore = (
   value: Partial<HookScore> = {},

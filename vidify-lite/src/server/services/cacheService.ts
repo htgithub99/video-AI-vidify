@@ -1,6 +1,7 @@
 import { jsonUtils } from "../../lib/json.js";
 import { appLog } from "../../lib/logger.js";
 import _ from 'lodash';
+import { createHash } from "node:crypto";
 
 
 interface CacheEntry {
@@ -13,7 +14,8 @@ const CACHE_TTL = 30 * 60 * 1000;
 
 const getCacheKey = (endpoint: string, body: any): string => {
   const clone = _.omit(body, ["bypassCache", "timestamp", "projectId"]);
-  return `${endpoint}:${jsonUtils.safeStringify(clone)}`;
+  const digest = createHash("sha256").update(jsonUtils.safeStringify(clone)).digest("hex");
+  return `${endpoint}:${digest}`;
 };
 
 export const checkCache = (endpoint: string, body: any, bypass = false): any | null => {

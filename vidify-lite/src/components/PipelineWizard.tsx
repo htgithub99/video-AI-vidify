@@ -183,7 +183,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           </div>
         </div>
 
-        {/* Center Step Indicator */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:flex items-center gap-2">
           {(() => {
             let idx = _.indexOf(PipelineConstants.FLOW_STEPS, currentStep);
@@ -776,7 +775,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
           )}
         </AnimatePresence>
 
-        {/* Horizontal Progress Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-slate-800 z-50">
           {(() => {
             let idx = _.indexOf(PipelineConstants.FLOW_STEPS, currentStep);
@@ -787,7 +785,6 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 className="h-full bg-gradient-to-r from-rose-600 to-rose-400 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(244,63,94,0.8)] relative"
                 style={{ width: `${progressPercent}%` }}
               >
-                {/* Glowing Dot (Progress Head) */}
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)] translate-x-1/2" />
               </div>
             );

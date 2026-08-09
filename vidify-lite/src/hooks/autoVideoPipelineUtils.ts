@@ -29,6 +29,32 @@ export interface PipelineInvalidationState {
   regenerateThumbnails: boolean;
 }
 
+const INTERRUPTED_PIPELINE_STATUSES = [
+  REFACTOR_CONSTANTS.STATUS_GENERATING,
+  REFACTOR_CONSTANTS.STATUS_CANCELLED,
+  REFACTOR_CONSTANTS.STATUS_PARTIAL,
+];
+
+export const preserveInterruptedStoryboardCheckpoint = (
+  project: VideoProject | null,
+  config: PipelineConfig,
+  invalidationState: PipelineInvalidationState,
+): PipelineInvalidationState => {
+  const hasReusableSceneAssets = !_.isEmpty(project?.storyboard)
+    && _.every(project?.storyboard, (scene) => !_.isEmpty(scene.assetUrl) || !_.isEmpty(scene.assetUrls));
+  const canResumeCheckpoint = _.every([
+    config.resumeMode,
+    !config.forceRegenerateScenes,
+    !invalidationState.regenerateScript,
+    hasReusableSceneAssets,
+    _.includes(INTERRUPTED_PIPELINE_STATUSES, project?.status),
+  ], Boolean);
+
+  return canResumeCheckpoint
+    ? { ...invalidationState, regenerateStoryboard: false, regenerateSceneAssets: false }
+    : invalidationState;
+};
+
 export const fetchCachedVoiceAudio = async (voiceConfig: VoiceConfig): Promise<CachedVoiceAudio> => {
   const audioUrl = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   let audioBase64 = _.get(voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);

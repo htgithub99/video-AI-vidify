@@ -7,7 +7,7 @@ import { HttpStatus } from "../../constants/enums.js";
 import { BACKEND_MESSAGES } from "../../constants/messages.js";
 import { PRESET_CONSTANTS } from "../../constants/texts.js";
 
-export const getAllPresets = async (request: Request, response: Response) => {
+export const getAllPresets = async (_request: Request, response: Response) => {
   try {
     const presets = await getPresetsFromDb();
     response.status(HttpStatus.OK).json(presets);

@@ -322,14 +322,6 @@ def apply_visual_effects(frame, effects_str, frame_index, total_frames):
         try:
             blurred = frame.filter(ImageFilter.GaussianBlur(12))
             frame = Image.blend(frame, blurred, 0.28)
-            glow_overlay = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
-            draw = ImageDraw.Draw(glow_overlay)
-            glow_r = int(max(w, h) * 0.4)
-            oscillation = math.sin(frame_index / max(total_frames, 1) * math.pi)
-            glow_r = int(glow_r * (0.9 + 0.2 * oscillation))
-            for r in range(glow_r, 0, -20):
-                draw.ellipse([-r, -r, r, r], fill=FFMPEG_CONSTANTS.COLOR_GLOW_TINT_RGB)
-            frame = Image.blend(frame, glow_overlay, 0.15)
         except:
             pass
 

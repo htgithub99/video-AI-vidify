@@ -1,10 +1,10 @@
 import _ from "lodash";
 import { QualityMode, StoryboardScene } from "../types";
-export interface QualityProfile { draftCandidates:number; visionQa:"suspicious_and_key"|"all_character_scenes"|"all"; finalCandidates:number; upscale:"key_only"|"approved"|"all_approved"; finalMultimodalReview:boolean; }
+export interface QualityProfile { draftCandidates:number; visionQa:"suspicious_and_key"|"all_character_scenes"|"all"; visionSampleStride:number; characterSampleLimit:number; finalCandidates:number; upscale:"key_only"|"approved"|"all_approved"; finalMultimodalReview:boolean; }
 export const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
-  [QualityMode.Economy]: { draftCandidates:1, visionQa:"suspicious_and_key", finalCandidates:1, upscale:"key_only", finalMultimodalReview:false },
-  [QualityMode.Balanced]: { draftCandidates:1, visionQa:"all_character_scenes", finalCandidates:2, upscale:"approved", finalMultimodalReview:false },
-  [QualityMode.Premium]: { draftCandidates:2, visionQa:"all", finalCandidates:3, upscale:"all_approved", finalMultimodalReview:true },
+  [QualityMode.Economy]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:6, characterSampleLimit:2, finalCandidates:1, upscale:"key_only", finalMultimodalReview:false },
+  [QualityMode.Balanced]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:4, characterSampleLimit:5, finalCandidates:2, upscale:"key_only", finalMultimodalReview:true },
+  [QualityMode.Premium]: { draftCandidates:2, visionQa:"all", visionSampleStride:1, characterSampleLimit:Number.MAX_SAFE_INTEGER, finalCandidates:3, upscale:"all_approved", finalMultimodalReview:true },
 };
 export const resolveQualityProfile = (mode?: QualityMode): QualityProfile => QUALITY_PROFILES[mode || QualityMode.Balanced];
 
@@ -31,9 +31,9 @@ export const selectScenesForVisionQa = (
     return _.uniqBy([...characterScenes, ..._.filter(scenes, scene => _.includes(keySceneIds, scene.id))], "id");
   }
 
-  const sampledScenes = _.filter(scenes, (_scene, index) => _.isEqual(index % 5, 0));
+  const sampledScenes = _.filter(scenes, (_scene, index) => _.isEqual(index % profile.visionSampleStride, 0));
   return _.uniqBy([
-    ..._.take(characterScenes, 3),
+    ..._.take(characterScenes, profile.characterSampleLimit),
     ...sampledScenes,
     ..._.filter(scenes, scene => _.includes(keySceneIds, scene.id)),
   ], "id");

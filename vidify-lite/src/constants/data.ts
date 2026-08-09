@@ -101,7 +101,7 @@ export const stylePresetsKeywords = {
   Historical: "historical accuracy, period-accurate costume design, aged sepia tone, archival epic style, ancient realism, vintage atmosphere",
   Watercolor: "watercolor wash, soft paint strokes, artistic ink bleed, traditional texture, delicate hand-painted illustration",
   "Oil Painting": "classic oil on canvas, textured brush strokes, impasto technique, Rembrandt lighting, fine art masterpiece",
-  Stickman: "minimalist stick figure drawing, simple hand-drawn sketch, clean line art, humorous whiteboard presentation style",
+  Stickman: "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval facial features, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading",
   Anime: "modern anime style, vibrant cel shading, beautiful hand-drawn key frames, Kyoto Animation style aesthetic, colorful studio lighting",
   Comic: "comic book illustration, bold ink outlines, halftone dot textures, dramatic marvel action panel style, colored graphic novel",
   "Black & White": "monochrome photography, high contrast black and white film grain, classic noir shading, deep dramatic shadows",
@@ -150,7 +150,7 @@ export const GEMINI_USER_MESSAGES = {
     dailyQuota: "Hạn mức Gemini hôm nay đã hết. Hãy chờ hạn mức được làm mới hoặc đổi khóa rồi thử lại.",
     rateLimit: "Gemini đang giới hạn tần suất yêu cầu. Hãy đợi một lúc rồi tiếp tục dự án.",
     transient: "Gemini đang tạm thời không phản hồi. Hãy kiểm tra kết nối và thử lại sau ít phút.",
-    fatal: "Không thể tạo nội dung bằng Gemini. Hãy kiểm tra khóa, cấu hình mô hình và thử lại.",
+    fatal: "Không thể tạo nội dung bằng các AI đã cấu hình. Hãy kiểm tra khóa Groq, Cerebras hoặc Gemini và thử lại.",
   },
   en: {
     missingKey: "No AI key is configured. Add a valid Cerebras, Groq, or Gemini key in Settings and try again.",
@@ -159,7 +159,7 @@ export const GEMINI_USER_MESSAGES = {
     dailyQuota: "Today's Gemini quota is exhausted. Wait for the quota to reset or use another key.",
     rateLimit: "Gemini is rate-limiting requests. Wait briefly, then resume the project.",
     transient: "Gemini is temporarily unavailable. Check the connection and retry in a few minutes.",
-    fatal: "Gemini could not generate the content. Check the key and model configuration, then try again.",
+    fatal: "The configured AI providers could not generate the content. Check the Groq, Cerebras, or Gemini keys and try again.",
   },
 } as const;
 
@@ -230,7 +230,7 @@ export const AI_TRANSITION_EFFECT_IDS = ["cut", "cross_dissolve", "blur_dissolve
 export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitch", "warm", "cold", "noir", "horror_fog", "vhs", "neon", "film_grain", "sharpen", "chromatic_aberration", "pixelate", "soft_focus"] as const;
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 
-export const AI_MODEL_REGISTRY = [{ id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1 }, { id: "gemini-3.1-flash-lite", freeEligible: true, priority: 2 }, { id: "gemini-3.5-flash", freeEligible: true, priority: 3 }, { id: "gemini-3.6-flash", freeEligible: false, priority: 4 }] as const;
+export const AI_MODEL_REGISTRY = [{ id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1 }] as const;
 export const AVAILABLE_MODELS = AI_MODEL_REGISTRY.filter((model) => model.freeEligible).map((model) => model.id);
 export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;
 export const GEMINI_ZERO_QUOTA_PATTERNS = ["limit: 0", "limit=0", "free_tier_requests, limit: 0", "free_tier_input_token_count, limit: 0"] as const;
@@ -238,7 +238,7 @@ export const GEMINI_DAILY_QUOTA_PATTERNS = ["perday", "per day", "requestsperday
 
 export const PROMPT_FILLER_WORDS = ["beautiful", "detailed", "artistic", "image", "generation", "prompt", "describing", "characters", "clothes", "historical", "accuracy", "weather", "camera", "angle", "lighting", "based", "style", "with", "what", "where", "photo", "shot", "highly", "ultra", "dramatic", "gorgeous", "scene", "rendering"] as const;
 
-export const STICKMAN_STYLE_MODIFIERS = "stickman cartoon style, simple black-outline stickman body with oversized head and face, extremely detailed exaggerated facial expressions, big eyes with black pupils, hand-drawn thick black outlines, flat solid colors, no gradients, no shading, simple rustic color palette, minimalist sketch art background";
+export const STICKMAN_STYLE_MODIFIERS = "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval eyes and tiny nose, restrained expressive eyebrows and mouth, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading, simple cutout-like composition";
 
 export const DEFAULT_SESSION_ID = ";1781857807598";
 
@@ -311,30 +311,33 @@ export const VOICE_PRESET_MAP: Record<string, string> = {
   "gemini-cloud-vi": "edge_vi-VN-HoaiMyNeural",
 };
 
-export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false) => [
+export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false, topic: string = "") => {
+  const normalizedTopic = topic.replace(/\s+/g, " ").trim().slice(0, 240) || (isVi ? "câu chuyện chính của video" : "the video's central story");
+  return [
   {
     id: isFallback ? "th_fallback_1" : "th_1",
-    prompt: "A close up split-screen image, with half side depicting an ancient parchment with glow and key, other half dark space. At the bottom, a bold red text overlay reading 'BÍ MẬT!' with a thick black border. MrBeast high-contrast style. (Resilient Fallback)",
-    style: "MrBeast",
-    hasText: true,
-    textText: isVi ? "BÍ MẬT!" : "SECRET!",
-    layout: "Bold red text on left-side overlay",
-    typography: "Impact Bold Sans",
-    colorSuggestion: "Electric red and yellow glowing effect",
-    subjectFocus: "Ancient golden locked book",
+    prompt: `High-retention documentary thumbnail directly illustrating this video topic: ${normalizedTopic}. One expressive main subject, clear emotional conflict, simple split composition showing before versus after, strong focal separation, clean background, no symbols unrelated to the topic, no generated letters, no logo, no watermark.`,
+    style: "Clean documentary illustration",
+    hasText: false,
+    textText: "",
+    layout: "One expressive subject with a clear before-versus-after split",
+    typography: "Text is added later by the editor",
+    colorSuggestion: "Controlled dark-to-warm contrast",
+    subjectFocus: normalizedTopic,
   },
   {
     id: isFallback ? "th_fallback_2" : "th_2",
-    prompt: "An archaeological dig site uncovered at dusk, golden ray light beams shooting out of the ground. At the bottom, a giant bold white text overlay reading 'BÍ ẨN!' with a thick black drop shadow. History channel look, dramatic angle, high details.",
-    style: "History Channel",
-    hasText: true,
-    textText: isVi ? "BÍ ẨN!" : "MYSTERY!",
-    layout: "Bottom center text",
-    typography: "Impact Bold Sans",
-    colorSuggestion: "Bright white text with thick black drop shadow",
-    subjectFocus: isVi ? "Những tia sáng rực rỡ chiếu ra từ một ngôi mộ cổ" : "Luminous light beams out of an ancient tomb",
+    prompt: `Emotion-led video thumbnail directly matching this topic: ${normalizedTopic}. Tight portrait of the central subject at the decisive moment, one meaningful environment cue from the story, uncluttered composition readable at phone size, strong eyes and facial expression, no clickbait object unrelated to the script, no generated letters, no logo, no watermark.`,
+    style: "Emotion-led editorial illustration",
+    hasText: false,
+    textText: "",
+    layout: "Tight emotional portrait with one story-specific environment cue",
+    typography: "Text is added later by the editor",
+    colorSuggestion: "High subject contrast with a restrained palette",
+    subjectFocus: normalizedTopic,
   },
-];
+  ];
+};
 
 export const getDummyHooks = (isVi: boolean, isFallback: boolean = false, hookType?: string) => [
   {

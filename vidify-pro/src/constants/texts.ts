@@ -922,7 +922,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     lblThumbCount: "Số lượng ý tưởng",
     thumbCountOption: (n: number) => `${n} ý tưởng`,
     thumbUploadTitle: "Tải bìa mẫu",
-    thumbUploadSub: "Tự học style bìa",
+    thumbUploadSub: "Tự học phong cách bìa",
     thumbUploadEmpty: "Không có bìa mẫu.",
     thumbPresetPlaceholder: "Mô tả style bìa...",
     deleteThumbImgTooltip: "Xóa ảnh mẫu ảnh bìa này",

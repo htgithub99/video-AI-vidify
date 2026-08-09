@@ -13,7 +13,11 @@ import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
 
 const cleanupDirectory = (directoryPath: string): void => {
   if (fs.existsSync(directoryPath)) {
-    fs.rmSync(directoryPath, { recursive: true, force: true });
+    try {
+      fs.rmSync(directoryPath, { recursive: true, force: true, maxRetries: FFMPEG_RENDER_CONSTANTS.CLEANUP_MAX_RETRIES, retryDelay: FFMPEG_RENDER_CONSTANTS.CLEANUP_RETRY_DELAY_MS });
+    } catch (error) {
+      logger.warn(FFMPEG_RENDER_CONSTANTS.LOG_CLEANUP_WARNING, directoryPath, error);
+    }
   }
 };
 
@@ -205,6 +209,7 @@ export const renderFFmpegVideo = async (
       maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
     });
     let stdout = SecurityConstants.EMPTY_STRING;
+    let stderr = SecurityConstants.EMPTY_STRING;
     let progressBuffer = SecurityConstants.EMPTY_STRING;
     renderer.stdout?.on("data", (chunk: Buffer | string) => {
       const output = _.toString(chunk);
@@ -218,11 +223,12 @@ export const renderFFmpegVideo = async (
         }
       });
     });
+    renderer.stderr?.on("data", (chunk: Buffer | string) => { stderr += _.toString(chunk); });
     await new Promise<void>((resolve, reject) => {
       renderer.once("error", reject);
       renderer.once("exit", (code) => {
         if (_.isEqual(code, SecurityConstants.ZERO)) resolve();
-        else reject(new Error(FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON));
+        else reject(new Error(_.trim(stderr) || _.toString(_.get(parsePythonResult(stdout), FFMPEG_RENDER_KEYS.ERROR)) || FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON));
       });
     });
     const result = parsePythonResult(stdout);

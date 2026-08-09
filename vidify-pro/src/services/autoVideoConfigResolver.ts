@@ -49,7 +49,9 @@ const NO_TEXT_NEGATIVE_PROMPT = [
   "no watermark",
 ] as const;
 
-const hasCharacterReference = (config: VisualConfig): boolean => _.some([
+const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
+  !_.isEmpty(config.characterPrompt),
+  _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
   _.every([config.characterExtracted, !_.isEmpty(config.characterImages)], Boolean),
   _.some(config.characters, (character) => _.every([
     character.referenceApproved,
@@ -62,7 +64,7 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
 
-  if (_.every([config.characterConsistency, !hasCharacterReference(config)], Boolean)) {
+  if (_.every([config.characterConsistency, !hasCharacterIdentity(config)], Boolean)) {
     config.characterConsistency = false;
     issues.push({
       code: ConfigIssueCode.CharacterConsistencyDisabled,

@@ -16,10 +16,17 @@ export interface ResolvedApiKeys {
     groq: boolean;
     ai33: boolean;
   };
+  source: {
+    gemini: 'user_config' | 'google_sheet' | 'missing';
+    cerebras: 'user_config' | 'google_sheet' | 'missing';
+    groq: 'user_config' | 'google_sheet' | 'missing';
+    ai33: 'user_config' | 'google_sheet' | 'missing';
+  };
 }
 
 export function extractFirstNonEmptyString(sources: any[]): string {
-  return (_.find(sources, (val) => !_.isEmpty(val) && _.isString(val)) as string) || SecurityConstants.EMPTY_STRING;
+  const value = _.find(sources, (candidate) => _.isString(candidate) && !_.isEmpty(_.trim(candidate))) as string | undefined;
+  return _.trim(value || SecurityConstants.EMPTY_STRING);
 }
 
 export function extractApiKeyFromResponse(data: any, keyNames: string[]): string {
@@ -27,9 +34,37 @@ export function extractApiKeyFromResponse(data: any, keyNames: string[]): string
   const adminKeys = _.get(data, SecurityConstants.API_KEYS_KEY, {});
   const sources = [adminKeys, _.get(data, SecurityConstants.DATA_KEY), data];
   
-  const candidatePaths = _.flatMap(keyNames, (name) => _.map(sources, (src) => _.get(src, name)));
+  const candidatePaths = _.flatMap(sources, (source) => _.map(keyNames, (name) => _.get(source, name)));
   return extractFirstNonEmptyString(candidatePaths);
 }
+
+const API_KEY_ALIASES = {
+  gemini: [
+    SecurityConstants.REQ_BODY_GEMINI_KEY,
+    REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY,
+    'GEMINI_KEY',
+    'GEMINI_API_KEY',
+  ],
+  cerebras: [
+    SecurityConstants.REQ_BODY_CEREBRAS_KEY,
+    REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY,
+    'CEREBRAS_KEY',
+    'CEREBRAS_API_KEY',
+  ],
+  groq: [
+    SecurityConstants.REQ_BODY_GROQ_KEY,
+    REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY,
+    'GROQ_KEY',
+    'GROQ_API_KEY',
+  ],
+  ai33: [
+    SecurityConstants.REQ_BODY_AI33_KEY,
+    REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY,
+    'AI33_KEY',
+    'AI33_API_KEY',
+    'AI3_KEY',
+  ],
+} as const;
 
 export function getResolvedLicenseKey(req?: any): string {
   const ctx = requestContext.getStore();
@@ -44,10 +79,10 @@ export function getResolvedLicenseKey(req?: any): string {
 
 export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
   const ctx = requestContext.getStore();
-  const userGeminiKey = _.get(ctx, SecurityConstants.REQ_BODY_GEMINI_KEY, SecurityConstants.EMPTY_STRING);
-  const userCerebrasKey = _.get(ctx, SecurityConstants.REQ_BODY_CEREBRAS_KEY, SecurityConstants.EMPTY_STRING) || process.env.CEREBRAS_API_KEY || SecurityConstants.EMPTY_STRING;
-  const userGroqKey = _.get(ctx, SecurityConstants.REQ_BODY_GROQ_KEY, SecurityConstants.EMPTY_STRING) || process.env.GROQ_API_KEY || SecurityConstants.EMPTY_STRING;
-  const userAi33Key = _.get(ctx, SecurityConstants.REQ_BODY_AI33_KEY, SecurityConstants.EMPTY_STRING);
+  const userGeminiKey = extractFirstNonEmptyString([_.get(ctx, SecurityConstants.REQ_BODY_GEMINI_KEY), process.env.GEMINI_API_KEY]);
+  const userCerebrasKey = extractFirstNonEmptyString([_.get(ctx, SecurityConstants.REQ_BODY_CEREBRAS_KEY), process.env.CEREBRAS_API_KEY]);
+  const userGroqKey = extractFirstNonEmptyString([_.get(ctx, SecurityConstants.REQ_BODY_GROQ_KEY), process.env.GROQ_API_KEY]);
+  const userAi33Key = extractFirstNonEmptyString([_.get(ctx, SecurityConstants.REQ_BODY_AI33_KEY), process.env.AI33_API_KEY]);
   const licenseKey = _.get(ctx, SecurityConstants.STORE_LICENSE_KEY, SecurityConstants.EMPTY_STRING);
   const planType = _.get(ctx, SecurityConstants.STORE_PLAN_TYPE_KEY, SecurityConstants.EMPTY_STRING);
 
@@ -73,7 +108,16 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
         [SecurityConstants.PROP_PLAN_ID_GAS]: planType,
         [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType
       };
-      appLog(SecurityMessages.LOG_RESOLVER_FETCH, jsonUtils.safeStringify(payload));
+      appLog(SecurityMessages.LOG_RESOLVER_FETCH, jsonUtils.safeStringify({
+        hasLicenseKey: !_.isEmpty(licenseKey),
+        planType,
+        missingProviders: _.compact([
+          !isGeminiUserKey && 'gemini',
+          !isCerebrasUserKey && 'cerebras',
+          !isGroqUserKey && 'groq',
+          !isAi33UserKey && 'ai33',
+        ]),
+      }));
 
       const response = await fetch(SecurityConstants.GAS_API_URL, {
         method: SecurityConstants.HTTP_POST,
@@ -82,19 +126,19 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       });
 
       const data: any = await response.json();
-      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify({ hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY])) }));
+      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify({ hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])) }));
 
-      const fetchedGemini = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GEMINI_KEY, REFACTOR_CONSTANTS.KEY_NAME_GEMINI_API_KEY]);
+      const fetchedGemini = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini]);
       if (!isGeminiUserKey && !_.isEmpty(fetchedGemini)) {
         geminiKey = fetchedGemini;
         appLog(SecurityMessages.LOG_USING_ADMIN_GEMINI_KEY);
       }
-      const fetchedCerebras = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_CEREBRAS_KEY, REFACTOR_CONSTANTS.KEY_NAME_CEREBRAS_API_KEY]);
+      const fetchedCerebras = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras]);
       if (!isCerebrasUserKey && !_.isEmpty(fetchedCerebras)) cerebrasKey = fetchedCerebras;
-      const fetchedGroq = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_GROQ_KEY, REFACTOR_CONSTANTS.KEY_NAME_GROQ_API_KEY]);
+      const fetchedGroq = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq]);
       if (!isGroqUserKey && !_.isEmpty(fetchedGroq)) groqKey = fetchedGroq;
 
-      const fetchedAi33 = extractApiKeyFromResponse(data, [SecurityConstants.REQ_BODY_AI33_KEY, REFACTOR_CONSTANTS.KEY_NAME_AI33_API_KEY]);
+      const fetchedAi33 = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33]);
       if (!isAi33UserKey && !_.isEmpty(fetchedAi33)) {
         ai33Key = fetchedAi33;
         appLog(SecurityMessages.LOG_USING_ADMIN_AI33_KEY);
@@ -114,6 +158,12 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       cerebras: isCerebrasUserKey,
       groq: isGroqUserKey,
       ai33: isAi33UserKey
+    },
+    source: {
+      gemini: isGeminiUserKey ? 'user_config' : (!_.isEmpty(geminiKey) ? 'google_sheet' : 'missing'),
+      cerebras: isCerebrasUserKey ? 'user_config' : (!_.isEmpty(cerebrasKey) ? 'google_sheet' : 'missing'),
+      groq: isGroqUserKey ? 'user_config' : (!_.isEmpty(groqKey) ? 'google_sheet' : 'missing'),
+      ai33: isAi33UserKey ? 'user_config' : (!_.isEmpty(ai33Key) ? 'google_sheet' : 'missing')
     }
   };
 }

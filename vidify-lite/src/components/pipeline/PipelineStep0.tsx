@@ -551,7 +551,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                         ))}
                       </div>
                     ) : (
-                      (project.chapters || []).map((ch, idx) => (
+                      (project.chapters || []).map((ch) => (
                         <div key={ch.id} className="bg-slate-900 border border-slate-800/60 p-3.5 rounded-xl space-y-2 shadow-sm hover:border-rose-500/20 transition-all group">
                           <span className="inline-flex items-center text-[9px] text-rose-500 font-mono font-bold uppercase tracking-wider bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20 shadow-inner">
                             {t.Chapter}: {ch.id}

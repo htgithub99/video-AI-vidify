@@ -631,8 +631,6 @@ class MotionEngine:
             actual_motion_scale = pan_scale / fill_scale
             dx_limit, dy_limit = CanvasEngine.calculate_safe_crop_margin(actual_motion_scale, fill_scale)
             
-            # Keep pans subtle: keyframes travel from +offset to -offset,
-            # so using most of the crop margin doubles the perceived motion.
             dx = dx_limit * random.uniform(0.25, 0.35)
             dy = dy_limit * random.uniform(0.25, 0.35)
 

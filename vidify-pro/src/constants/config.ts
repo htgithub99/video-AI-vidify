@@ -4,7 +4,7 @@ export const APP_CONFIG = {
 
 export const PIPELINE_CONFIG = {
   BATCH_CHUNK_SIZE_REWRITE: 25,
-  BATCH_CHUNK_SIZE_OPTIMIZE: 8,
+  BATCH_CHUNK_SIZE_OPTIMIZE: 12,
   DELAY_BETWEEN_CHUNKS_MS: 1500,
   DELAY_LONG_CHUNKS_MS: 3000,
   STEP5_DELAY_MS: 2000,
@@ -60,6 +60,33 @@ export const AUTO_VIDEO_PIPELINE_PROGRESS = {
   SEO_THUMB_DONE: 85,
   ALIGN_DONE: 90,
   COMPLETE: 100,
+} as const;
+
+export const IMAGE_PROMPT_QA_CONFIG = {
+  MIN_WORDS: 25,
+  MAX_WORDS: 140,
+  MAX_REPAIR_ROUNDS: 1,
+  MAX_ADJACENT_SIMILARITY: 0.88,
+  CAMERA_PATTERN: /\b(?:shot|angle|composition|view|framing)\b/i,
+  ASPECT_FLAG_PATTERN: /\s*--ar\s+\d+(?:\.\d+)?:\d+(?:\.\d+)?\s*/gi,
+  READABLE_TEXT_REQUEST_PATTERN: /\b(?:with|showing|displaying|containing)\s+(?:clear\s+|readable\s+)?(?:vietnamese\s+)?text\b/i,
+  WHITESPACE_PATTERN: /\s+/g,
+  BACKGROUND_KEYWORDS: {
+    white: ["white background", "white canvas", "white seamless"],
+    transparent: ["transparent background"],
+    solid: ["solid background", "single-color background"],
+  },
+  ERROR_CODES: {
+    EMPTY_PROMPT: "empty_image_prompt",
+    MISSING_CAMERA: "missing_camera_direction",
+    READABLE_TEXT: "ai_generated_readable_text_requested",
+  },
+  WARNING_CODES: {
+    PROMPT_TOO_SHORT: "image_prompt_too_short",
+    PROMPT_TOO_LONG: "image_prompt_too_long",
+    BACKGROUND_POLICY: "background_policy_not_explicit",
+    ADJACENT_REPETITION: "adjacent_prompts_too_similar",
+  },
 } as const;
 
 export const AUTO_VIDEO_PIPELINE_CONFIG = {
@@ -264,8 +291,10 @@ export const JSON_UTILS_CONFIG = {
 } as const;
 
 export const GEMINI_REQUEST_POLICY = { DEFAULT_RETRIES: 2, BASE_DELAY_MS: 1200, MODEL_SWITCH_DELAY_MS: 500, TRANSIENT_RETRY_LIMIT: 2, RATE_LIMIT_RETRY_LIMIT: 1, UNSUPPORTED_COOLDOWN_MS: 86400000, ZERO_QUOTA_COOLDOWN_MS: 86400000, DAILY_QUOTA_COOLDOWN_MS: 43200000, TRANSIENT_COOLDOWN_MS: 300000, DEFAULT_QUOTA_WAIT_MS: 8000, RETRY_JITTER_MIN: 0.8, RETRY_JITTER_RANGE: 0.4, RETRY_BUFFER_SECONDS: 1.5, BACKOFF_MULTIPLIER: 1.5, WAIT_BACKOFF_MULTIPLIER: 1.2, TOKEN_ESTIMATE_CHARACTERS: 4, MODEL_INDEX_RESET_MS: 180000 } as const;
-export const FREE_AI_PROVIDER_CONFIG = { CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["gpt-oss-120b", "gemma-4-31b", "zai-glm-4.7"] }, GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "openai/gpt-oss-20b"] }, AUTHORIZATION_HEADER: "Authorization", BEARER_PREFIX: "Bearer ", CONTENT_TYPE_HEADER: "Content-Type", JSON_CONTENT_TYPE: "application/json", DEFAULT_TEMPERATURE: 0.7, JSON_RESPONSE_TYPE: "json_object", REQUEST_TIMEOUT_MS: 45000, DEFAULT_MAX_OUTPUT_TOKENS: 2048, PROMPT_VERSION: "vidify-baseline-v2", PROVIDER_BLOCK_STATUSES: [401, 402, 403, 429], PROVIDER_BLOCK_COOLDOWN_MS: 43200000 } as const;
-export const FREE_AI_PROVIDER_LOGS = { NO_KEYS: "[AI Router] Không tìm thấy khóa Cerebras/Groq; chuyển sang Gemini.", TOOL_REQUIRED: "[AI Router] Tác vụ cần công cụ hoặc dữ liệu đa phương tiện; chuyển sang Gemini.", CALLING: (provider: string, model: string) => `[AI Router] Đang gọi ${provider}: ${model}.`, SUCCESS: (provider: string, model: string) => `[AI Router] ${provider}/${model} phản hồi thành công.`, FAILED: (provider: string, model: string, reason: string) => `[AI Router] ${provider}/${model} thất bại: ${reason}.`, FALLBACK: "[AI Router] Các provider miễn phí mới không khả dụng; chuyển sang Gemini." } as const;
+export const FREE_AI_PROVIDER_CONFIG = { CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["gpt-oss-120b", "gemma-4-31b", "zai-glm-4.7"] }, GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["llama-3.3-70b-versatile", "openai/gpt-oss-120b", "openai/gpt-oss-20b"], scriptModels: ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] }, AUTHORIZATION_HEADER: "Authorization", BEARER_PREFIX: "Bearer ", CONTENT_TYPE_HEADER: "Content-Type", JSON_CONTENT_TYPE: "application/json", DEFAULT_TEMPERATURE: 0.7, JSON_RESPONSE_TYPE: "json_object", REQUEST_TIMEOUT_MS: 45000, DEFAULT_MAX_OUTPUT_TOKENS: 2048, PROMPT_VERSION: "vidify-baseline-v2", EMPTY_RESPONSE_ERROR: "empty_provider_response", PROVIDER_BLOCK_STATUSES: [401, 402, 403], PROVIDER_BLOCK_COOLDOWN_MS: 43200000, MODEL_RATE_LIMIT_COOLDOWN_MS: 60000, TOOLLESS_FALLBACK_CATEGORIES: ["zero_quota", "daily_quota", "rate_limit"], TOOLLESS_FALLBACK_DIRECTIVE: "The requested external tool is unavailable because its free quota is exhausted. Complete the task using only the supplied context and general knowledge. Never invent citations, URLs, quotations, studies, dates, statistics, or claims of verification. Explicitly mark unavailable evidence as unsupported and use cautious qualitative wording." } as const;
+export const FREE_AI_PROVIDER_LOGS = { NO_KEYS: "[AI Router] Không tìm thấy khóa Cerebras/Groq; chuyển sang Gemini.", TOOL_REQUIRED: "[AI Router] Tác vụ cần công cụ hoặc dữ liệu đa phương tiện; chuyển sang Gemini.", TOOLLESS_FALLBACK: "[AI Router] Gemini đã hết quota miễn phí; chuyển tác vụ sang Groq không dùng công cụ tìm kiếm.", CALLING: (provider: string, model: string) => `[AI Router] Đang gọi ${provider}: ${model}.`, SUCCESS: (provider: string, model: string) => `[AI Router] ${provider}/${model} phản hồi thành công.`, FAILED: (provider: string, model: string, reason: string) => `[AI Router] ${provider}/${model} thất bại: ${reason}.`, FALLBACK: "[AI Router] Các provider miễn phí mới không khả dụng; chuyển sang Gemini." } as const;
+export const FREE_TTS_CONFIG = { STRICT_FREE_MODE: true, MAX_CHUNK_CHARACTERS: 180, CONCURRENCY: 4, WORD_REGEX: /\S+/g, DEFAULT_LANGUAGE: "vi", ENGLISH_VOICE_MARKERS: ["en-", "aria", "guy", "sonia", "ryan"], CLIENT: "tw-ob", INPUT_ENCODING: "UTF-8", USER_AGENT_HEADER: "User-Agent", USER_AGENT: "Mozilla/5.0", PROVIDER: "google-translate-free", UNAVAILABLE_ERROR: "Dịch vụ giọng đọc miễn phí đang tạm gián đoạn. Vui lòng thử lại sau.", FALLBACK_LOG: "[TTS Router] Tuyến miễn phí không phản hồi; không gọi dịch vụ tính phí." } as const;
+export const STYLE_EXTRACTION_CONFIG = { ASSET_PREFIX: "/assets/", HTTP_PREFIXES: ["http://", "https://"], DEFAULT_STYLE: "Realistic cinematic, balanced composition, coherent color palette, natural depth, professional editorial lighting", FALLBACK_WARNING: "Không thể phân tích ảnh bằng AI lúc này. Hệ thống tiếp tục dùng phong cách đã chọn.", MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" } } as const;
 export const REFERENCE_ASSET_GROUP = {
   STYLE: "style",
   SCENE: "scene",
@@ -326,6 +355,9 @@ export const FFMPEG_RENDER_CONSTANTS = {
   LOG_ERROR_RENDER: "FFMPEG Python Render Error",
   LOG_ERROR_RENDER_ROUTE: "FFMPEG Render Route Error",
   ERR_UNKNOWN_PYTHON: "Unknown error from Python script",
+  CLEANUP_MAX_RETRIES: 8,
+  CLEANUP_RETRY_DELAY_MS: 150,
+  LOG_CLEANUP_WARNING: "FFmpeg temporary directory cleanup deferred",
 } as const;
 
 export const FFMPEG_RENDER_KEYS = {

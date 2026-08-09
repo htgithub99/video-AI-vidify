@@ -1,10 +1,65 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS } from "../constants";
+import { API_ROUTES, FINAL_MULTIMODAL_QA_CONFIG, REFACTOR_CONSTANTS } from "../constants";
 import { safeSystemFetch } from "../lib/shared-utils";
 import { FinalMultimodalQualityReport } from "../types";
-const MIN_SCORE = 85;
-export const validateFinalVideo = async (videoUrl:string,script:string,viewerPromise:string):Promise<FinalMultimodalQualityReport> => {
-  const response=await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO,{videoUrl,script,viewerPromise});
-  if(!response.success||!response.data?.success)return{visualScore:0,cropScore:0,continuityScore:0,pacingScore:0,transitionVarietyScore:0,promiseAlignmentScore:0,blockingErrors:[response.error||REFACTOR_CONSTANTS.UNKNOWN_WARNING],warnings:[],passed:false};
-  const value=response.data.quality;const score=(key:string)=>_.clamp(_.toNumber(_.get(value,key)),0,100);const report={visualScore:score("visualScore"),cropScore:score("cropScore"),continuityScore:score("continuityScore"),pacingScore:score("pacingScore"),transitionVarietyScore:score("transitionVarietyScore"),promiseAlignmentScore:score("promiseAlignmentScore"),blockingErrors:_.uniq(_.compact(_.castArray(value.blockingErrors))),warnings:_.uniq(_.compact(_.castArray(value.warnings))),passed:false};report.passed=_.isEmpty(report.blockingErrors)&&_.every([report.visualScore,report.cropScore,report.continuityScore,report.pacingScore,report.transitionVarietyScore,report.promiseAlignmentScore],item=>item>=MIN_SCORE);return report;
+
+const createUnavailableReport = (error?: string): FinalMultimodalQualityReport => ({
+  visualScore: 0,
+  cropScore: 0,
+  continuityScore: 0,
+  pacingScore: 0,
+  transitionVarietyScore: 0,
+  promiseAlignmentScore: 0,
+  blockingErrors: [],
+  warnings: [
+    error || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+    FINAL_MULTIMODAL_QA_CONFIG.UNAVAILABLE_WARNING,
+  ],
+  passed: false,
+  reviewAvailable: false,
+});
+
+export const validateFinalVideo = async (
+  videoUrl: string,
+  script: string,
+  viewerPromise: string,
+): Promise<FinalMultimodalQualityReport> => {
+  const response = await safeSystemFetch(
+    API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO,
+    { videoUrl, script, viewerPromise },
+  );
+  if (!response.success || !response.data?.success) return createUnavailableReport(response.error);
+  const quality = response.data.quality;
+  const scores = _.map(
+    FINAL_MULTIMODAL_QA_CONFIG.SCORE_FIELDS,
+    field => _.clamp(_.toNumber(_.get(quality, field)), 0, 100),
+  );
+  const [
+    visualScore,
+    cropScore,
+    continuityScore,
+    pacingScore,
+    transitionVarietyScore,
+    promiseAlignmentScore,
+  ] = scores;
+  const report: FinalMultimodalQualityReport = {
+    visualScore,
+    cropScore,
+    continuityScore,
+    pacingScore,
+    transitionVarietyScore,
+    promiseAlignmentScore,
+    blockingErrors: _.uniq(_.compact(_.castArray(quality.blockingErrors))),
+    warnings: _.uniq(_.compact(_.castArray(quality.warnings))),
+    passed: false,
+    reviewAvailable: true,
+  };
+  if (_.some(scores, score => score < FINAL_MULTIMODAL_QA_CONFIG.TARGET_SCORE)) {
+    report.warnings = _.uniq([
+      ...report.warnings,
+      FINAL_MULTIMODAL_QA_CONFIG.BELOW_TARGET_WARNING,
+    ]);
+  }
+  report.passed = _.isEmpty(report.blockingErrors);
+  return report;
 };

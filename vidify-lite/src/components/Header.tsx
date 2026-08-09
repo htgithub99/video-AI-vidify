@@ -16,8 +16,6 @@ const LANG_BTN_INACTIVE = "text-slate-500 hover:text-slate-700 hover:bg-slate-30
 interface HeaderProps {
   currentLang: AppLanguage | Lang;
   setLang: (lang: Lang) => void;
-  credits: number;
-  costTracker: number;
   theme: AppTheme | string;
   toggleTheme: () => void;
 }
@@ -25,8 +23,6 @@ interface HeaderProps {
 export default function Header({
   currentLang,
   setLang,
-  credits,
-  costTracker,
   theme,
   toggleTheme,
 }: HeaderProps) {

@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -1727,7 +1727,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
         .first();
       if (await unexpectedImage.isVisible().catch(() => false)) {
         await captureGeminiDomState(page, "video_unexpected_image");
-        throw new Error("Gemini trả về ảnh trong khi yêu cầu tạo video; chế độ Tạo video chưa được áp dụng.");
+        throw new Error(GEMINI_MEDIA_ERRORS.VIDEO_REQUEST_RETURNED_IMAGE);
       }
     }
 
@@ -1736,7 +1736,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
     if (matchedError) {
       generationError = _.truncate(_.trim(responseText), { length: GEMINI_MEDIA_EXTRACTION_CONFIG.MAX_ERROR_TEXT_LENGTH });
       await captureGeminiDomState(page, isVideoGeneration ? "video_error" : "image_error");
-      throw new Error(`Gemini từ chối tạo nội dung: ${generationError}`);
+      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace("{error}", generationError));
     }
     await page.waitForTimeout(1000);
   }
@@ -1744,7 +1744,8 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   if (!(await mediaContainer.isVisible().catch(() => false))) {
     await captureGeminiDomState(page, isVideoGeneration ? "video_timeout" : "image_timeout");
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
-    throw new Error(`Gemini không trả về ${isVideoGeneration ? "video" : "ảnh"} trước khi hết thời gian chờ.`);
+    const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+    throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace("{mediaType}", mediaType));
   }
   await captureGeminiDomState(page, isVideoGeneration ? "video_ready" : "image_ready");
 
@@ -1804,7 +1805,9 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
                 ? String(imageElement.getAttribute("src"))
                 : extractionConfig.emptyValue;
           const response = await fetch(sourceUrl);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          if (!response.ok) {
+            throw new Error(GEMINI_MEDIA_ERRORS.HTTP_ERROR_TEMPLATE.replace("{status}", _.toString(response.status)));
+          }
           const blob = await response.blob();
           return await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
@@ -1859,7 +1862,9 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
             || videoEl.querySelector?.("source[src]")?.getAttribute("src")
             || "";
           const res = await fetch(sourceUrl);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (!res.ok) {
+            throw new Error(GEMINI_MEDIA_ERRORS.HTTP_ERROR_TEMPLATE.replace("{status}", _.toString(res.status)));
+          }
           const blob = await res.blob();
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();

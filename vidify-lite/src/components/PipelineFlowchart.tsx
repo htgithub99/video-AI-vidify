@@ -43,7 +43,7 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {pipelineNodes.map((node, idx) => {
+        {pipelineNodes.map((node) => {
           const isActiveGroup = node.stageGroup === activeStepIndex;
           const isPassedGroup = node.stageGroup < activeStepIndex;
 

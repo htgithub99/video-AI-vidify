@@ -562,12 +562,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 border-t border-slate-800 pt-5 mt-5">
-          {/* CỘT TRÁI: KẾT QUẢ SEO */}
           <div className="h-full">
             <PipelineStep3 {...props} />
           </div>
 
-          {/* CỘT PHẢI: KẾT QUẢ ẢNH BÌA */}
           <div className="space-y-4 h-full flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
               <h4 className="text-base font-bold text-slate-100 flex items-center gap-2">

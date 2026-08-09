@@ -211,6 +211,39 @@ def get_media_duration(ffmpeg_cmd, media_path):
     except (OSError, ValueError, subprocess.SubprocessError):
         return FFMPEG_CONSTANTS.ZERO_SECONDS
 
+def validate_rendered_output(ffmpeg_cmd, media_path, width, height, expected_duration, audio_required):
+    if not os.path.exists(media_path) or os.path.getsize(media_path) < 1024:
+        raise Exception("Final render is missing or empty")
+    command = [
+        get_ffprobe_command(ffmpeg_cmd), "-v", "error",
+        "-show_entries", "format=duration:stream=codec_type,width,height",
+        "-of", "json", media_path,
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=FFMPEG_CONSTANTS.PROBE_TIMEOUT_SECONDS,
+            check=True,
+        )
+        metadata = json.loads(result.stdout)
+    except (OSError, ValueError, json.JSONDecodeError, subprocess.SubprocessError) as error:
+        raise Exception("Final render could not be inspected") from error
+    streams = metadata.get("streams", [])
+    video_stream = next((stream for stream in streams if stream.get("codec_type") == "video"), None)
+    has_audio = any(stream.get("codec_type") == "audio" for stream in streams)
+    if not video_stream:
+        raise Exception("Final render has no video stream")
+    if int(video_stream.get("width", 0)) != int(width) or int(video_stream.get("height", 0)) != int(height):
+        raise Exception("Final render resolution does not match the requested output")
+    if audio_required and not has_audio:
+        raise Exception("Final render has no audio stream")
+    actual_duration = float(metadata.get("format", {}).get("duration", 0) or 0)
+    tolerance = max(1.25, expected_duration * 0.05)
+    if actual_duration <= 0 or (expected_duration > 0 and abs(actual_duration - expected_duration) > tolerance):
+        raise Exception("Final render duration is outside the expected range")
+
 def get_video_trim_filter(ffmpeg_cmd, media_path, trim_start, trim_end, output_duration):
     source_duration = get_media_duration(ffmpeg_cmd, media_path)
     safe_start = max(float(trim_start), FFMPEG_CONSTANTS.ZERO_SECONDS)
@@ -322,14 +355,6 @@ def apply_visual_effects(frame, effects_str, frame_index, total_frames):
         try:
             blurred = frame.filter(ImageFilter.GaussianBlur(12))
             frame = Image.blend(frame, blurred, 0.28)
-            glow_overlay = Image.new("RGB", (w, h), FFMPEG_CONSTANTS.COLOR_BLACK_RGB)
-            draw = ImageDraw.Draw(glow_overlay)
-            glow_r = int(max(w, h) * 0.4)
-            oscillation = math.sin(frame_index / max(total_frames, 1) * math.pi)
-            glow_r = int(glow_r * (0.9 + 0.2 * oscillation))
-            for r in range(glow_r, 0, -20):
-                draw.ellipse([-r, -r, r, r], fill=FFMPEG_CONSTANTS.COLOR_GLOW_TINT_RGB)
-            frame = Image.blend(frame, glow_overlay, 0.15)
         except:
             pass
 
@@ -435,7 +460,6 @@ def apply_lighting_effect(frame, lighting_str, frame_index, total_frames):
     if light == "flicker":
         return ImageEnhance.Brightness(frame).enhance(0.96 + 0.05 * math.sin(progress * math.pi * 6.0))
     if light == "strobe":
-        # Deliberately restrained to avoid uncomfortable flashing.
         return ImageEnhance.Brightness(frame).enhance(1.0 + 0.08 * max(0.0, math.sin(progress * math.pi * 4.0)))
     if light == "exposure_pulse":
         return ImageEnhance.Brightness(frame).enhance(1.0 + 0.10 * pulse)
@@ -630,7 +654,7 @@ def write_ken_burns_frames_to_pipe(image_path, width, height, duration, fps, sty
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
     
-    scale_factor = max(width / w_orig, height / h_orig) * 1.08
+    scale_factor = max(width / w_orig, height / h_orig)
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     
@@ -889,7 +913,7 @@ def get_last_frame_from_scene(image_path, width, height, duration, fps, style_in
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
     
-    scale_factor = max(width / w_orig, height / h_orig) * 1.08
+    scale_factor = max(width / w_orig, height / h_orig)
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
@@ -914,7 +938,7 @@ def get_first_frame_from_scene(image_path, width, height, style_index, effects_s
     
     img = img.convert(FFMPEG_CONSTANTS.RGB_MODE)
     w_orig, h_orig = img.size
-    scale_factor = max(width / w_orig, height / h_orig) * 1.08
+    scale_factor = max(width / w_orig, height / h_orig)
     w_new = float(w_orig * scale_factor)
     h_new = float(h_orig * scale_factor)
     img_resized = img.resize((int(w_new), int(h_new)), Image.Resampling.BILINEAR)
@@ -1216,12 +1240,18 @@ def main():
         emit_progress(94)
         
         globalAudioPath = config.get("globalAudioPath")
+        scene_audio_present = any(scene_audio_paths)
+        expected_output_duration = sum(scene_durations)
         if globalAudioPath and os.path.exists(globalAudioPath):
             global_audio_duration = get_media_duration(ffmpegCmd, globalAudioPath)
+            if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                expected_output_duration = global_audio_duration
             mergeAudioCmd = [
                 ffmpegCmd, "-y", "-i", tempFinalPath, "-i", globalAudioPath,
                 "-map", "0:v:0", "-map", "1:a:0",
-                "-c:v", FFMPEG_CONSTANTS.COPY_CODEC, "-c:a", FFMPEG_CONSTANTS.AAC,
+                "-c:v", FFMPEG_CONSTANTS.COPY_CODEC,
+                "-af", "loudnorm=I=-16:TP=-1:LRA=7",
+                "-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000",
             ]
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
                 mergeAudioCmd.extend(["-t", str(global_audio_duration)])
@@ -1230,7 +1260,26 @@ def main():
         else:
             if os.path.exists(finalOutputPath):
                 os.remove(finalOutputPath)
-            os.rename(tempFinalPath, finalOutputPath)
+            if scene_audio_present:
+                normalizeAudioCmd = [
+                    ffmpegCmd, "-y", "-i", tempFinalPath,
+                    "-map", "0:v:0", "-map", "0:a:0",
+                    "-c:v", FFMPEG_CONSTANTS.COPY_CODEC,
+                    "-af", "loudnorm=I=-16:TP=-1:LRA=7",
+                    "-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000",
+                    finalOutputPath,
+                ]
+                subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                os.rename(tempFinalPath, finalOutputPath)
+        validate_rendered_output(
+            ffmpegCmd,
+            finalOutputPath,
+            width,
+            height,
+            expected_output_duration,
+            scene_audio_present or bool(globalAudioPath and os.path.exists(globalAudioPath)),
+        )
         emit_progress(99)
         print(json.dumps({FFMPEG_CONSTANTS.OUTPUT_SUCCESS: True, "url": finalOutputUrl}))
         

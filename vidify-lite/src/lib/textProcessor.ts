@@ -27,6 +27,7 @@ import {
   RENDER_LOGIC_CONSTANTS,
 } from "../constants/index.js";
 import _ from "lodash";
+import { assignStoryboardChapterIds } from "../utils/storyboardChapterUtils.js";
 
 interface SegmentWithContext {
   text: string;
@@ -183,7 +184,7 @@ export function generateMockStoryboard(
   chapters: any[],
   isVi: boolean,
   style: string,
-  density: number,
+  _density: number,
   voiceDuration?: number,
   splitStrategy?: string,
   aspectRatio: string = AspectRatio.SixteenNine
@@ -280,7 +281,6 @@ export function generateMockStoryboard(
   const randomTransitions = generateRandomSequence(SCENE_SPLIT_TRANSITIONS, scenesCount);
 
   for (let i = 0; _.lt(i, scenesCount); i++) {
-    const chapter = defaultChapters[i % defaultChapters.length];
     const segment = pList[i];
     const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(_.add(i, 1));
     const contextText = segment ? segment.context : scriptText;
@@ -317,7 +317,7 @@ export function generateMockStoryboard(
 
     scenes.push({
       id: `${RENDER_LOGIC_CONSTANTS.SCENE_ID_PREFIX}${_.add(i, 1)}`,
-      chapterId: chapter.id,
+      chapterId: defaultChapters[0].id,
       startTime: formatTime(startTimeSeconds),
       endTime: formatTime(endTimeSeconds),
       duration,
@@ -330,5 +330,5 @@ export function generateMockStoryboard(
     });
   }
 
-  return { scenes };
+  return { scenes: assignStoryboardChapterIds(scenes, defaultChapters) };
 }

@@ -1737,7 +1737,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
-      const extractPayload = { images };
+      const extractPayload = { images, fallbackStyle: project.visualConfig?.referencePrompt };
       const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, extractPayload);
 
       if (!extractSuccess || extractData?.error) {

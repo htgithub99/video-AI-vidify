@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { GEMINI_REQUEST_POLICY } from "../../constants";
+import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants";
 import { SecurityMessages } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
 import _ from 'lodash';
@@ -48,6 +48,11 @@ export const generateContentWithRetry = async (
   const route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
   const startIndex = currentModelIndex % route.models.length;
   const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
+  const tryToollessFreeFallback = async (category: string): Promise<any> => {
+    if (!_.includes(FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_CATEGORIES, category as never) || _.isEmpty(params.config?.tools) || !_.isString(params.contents)) return null;
+    appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    if (!fallback.response) return null;fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];return fallback.response;
+  };
 
   const logStep = (key: string, ...args: any[]) => {
     const msg = getMessage(key, undefined, ...args);
@@ -98,6 +103,7 @@ export const generateContentWithRetry = async (
         logStep("GEMINI_ERROR", model, attempt, errorMessage);
 
         const decision = classifyGeminiError(error);
+        const toolFreeResponse = await tryToollessFreeFallback(decision.category);if (toolFreeResponse) return toolFreeResponse;
         if (!decision.retryable) {
           blockModel(model, decision.cooldownMs);
           logStep("GEMINI_UNSUPPORTED_FALLBACK", model);

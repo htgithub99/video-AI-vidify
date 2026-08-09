@@ -3,7 +3,7 @@ import path from "path";
 
 const SOURCE_DIRECTORY = "src";
 const SOURCE_FILE_PATTERN = /\.(ts|tsx)$/;
-const COMMENT_PATTERN = /TODO|FIXME|\/\*\*|(^|[^\S\r\n])\/\//m;
+const COMMENT_PATTERN = /TODO|FIXME|\/\*\*|\{\s*\/\*|(^|[^\S\r\n])\/\//m;
 const DIRECT_CONSOLE_PATTERN = /console\.(log|warn|error|info|debug)/;
 const LOGGER_FILE = path.normalize("src/utils/logger.ts");
 

@@ -57,12 +57,12 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const templatesDir = getTemplatesDirectory();
 
   const currentTemplates = listTemplates();
-  if (currentTemplates.length >= 2) {
-    throw new Error("EXCEED_MAX_TEMPLATES");
+  if (currentTemplates.length >= TEMPLATE_CONFIG.MAX_TEMPLATES) {
+    throw new Error(TEMPLATE_CONFIG.MAX_TEMPLATES_ERROR);
   }
 
-  if (!fs.existsSync(path.join(folderPath, "draft_content.json"))) {
-    throw new Error("INVALID_CAPCUT_TEMPLATE");
+  if (!fs.existsSync(path.join(folderPath, TEMPLATE_CONFIG.DRAFT_CONTENT_FILE))) {
+    throw new Error(TEMPLATE_CONFIG.INVALID_TEMPLATE_ERROR);
   }
 
   const uuidRegex = new RegExp(`(?:_([a-zA-Z0-9]{${TEMPLATE_CONFIG.ID_LENGTH}}))+$`);

@@ -11,7 +11,7 @@ export interface QualityProfile {
 
 export const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
   [QualityMode.Economy]: { draftCandidates: 1, visionQa: "suspicious_and_key", finalCandidates: 1, upscale: "key_only", finalMultimodalReview: false },
-  [QualityMode.Balanced]: { draftCandidates: 1, visionQa: "all_character_scenes", finalCandidates: 2, upscale: "approved", finalMultimodalReview: false },
+  [QualityMode.Balanced]: { draftCandidates: 1, visionQa: "all_character_scenes", finalCandidates: 2, upscale: "key_only", finalMultimodalReview: false },
   [QualityMode.Premium]: { draftCandidates: 2, visionQa: "all", finalCandidates: 3, upscale: "all_approved", finalMultimodalReview: true },
 };
 

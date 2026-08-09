@@ -10,7 +10,7 @@ import _ from 'lodash';
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
 import { fetchSystemApi, formatRoundedTime, getTargetDurationSeconds, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
@@ -1277,7 +1277,7 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, payload);
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.REQUEST_REJECTED);
       }
 
       setProject((prev) => ({
@@ -1364,7 +1364,7 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, payload);
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.REQUEST_REJECTED);
       }
 
       if (data.scenes) {
@@ -1640,7 +1640,7 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_HOOKS, payload);
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "Failed to generate hooks.");
+        throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.HOOK_GENERATION_FAILED);
       }
 
       const generatedVersions = data.versions || [];
@@ -1737,11 +1737,11 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
-      const extractPayload = { images };
+      const extractPayload = { images, fallbackStyle: project.visualConfig?.referencePrompt };
       const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, extractPayload);
 
       if (!extractSuccess || extractData?.error) {
-        throw new Error(extractError || extractData?.error || "Style extraction failed");
+        throw new Error(extractError || extractData?.error || PIPELINE_CLIENT_ERRORS.STYLE_EXTRACTION_FAILED);
       }
 
       const extractedStyle = extractData.style;
@@ -1872,7 +1872,7 @@ export function usePipelineWizard(props: any) {
     try {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script });
       if (!success || data?.error) {
-        throw new Error(error || data?.error || "Character analysis failed");
+        throw new Error(error || data?.error || PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
       }
 
       const rawCharacters = (data.characters || []).slice(0, 3);
@@ -1979,7 +1979,7 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, payload);
 
       if (!success || data?.error) {
-        throw new Error(error || data?.error || "Character extraction failed");
+        throw new Error(error || data?.error || PIPELINE_CLIENT_ERRORS.CHARACTER_EXTRACTION_FAILED);
       }
 
       setProject((prev) => {
@@ -2542,7 +2542,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.cancellingBatchGen);
   };
 
-  const handleBatchGenerateAllImages = async (isFromAutoGenerateAll = false, providedScenes?: any[]) => {
+  const handleBatchGenerateAllImages = async (_isFromAutoGenerateAll = false, providedScenes?: any[]) => {
     logAction("handleBatchGenerateAllImages");
     if (isBatchGenerating) return;
 
@@ -2809,7 +2809,7 @@ export function usePipelineWizard(props: any) {
       };
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_DETAILED_PROMPT, payload);
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "Prompt generation failed");
+        throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
       }
       if (data.prompt) {
         setSceneEditPrompt(data.prompt);
@@ -2919,7 +2919,7 @@ export function usePipelineWizard(props: any) {
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, payload);
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(error || data?.error || data?.warning || PIPELINE_CLIENT_ERRORS.REQUEST_REJECTED);
       }
 
       if (data.thumbnails) {
@@ -3080,7 +3080,7 @@ export function usePipelineWizard(props: any) {
           setInfoMsg(successMsg);
           logger.info(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
-          throw new Error("Missing audio URL from synthesis");
+          throw new Error(PIPELINE_CLIENT_ERRORS.AUDIO_URL_MISSING);
         }
       } catch (err: any) {
         logger.error("SYNTHESIZE_ON_THE_FLY_FAILED", err);
@@ -3144,7 +3144,7 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerVoiceGenerate = async (force = false, btnPosition = "top") => {
+  const handleTriggerVoiceGenerate = async (_force = false, btnPosition = "top") => {
     logAction("handleTriggerVoiceGenerate");
 
     if (simAudioRef.current) {
@@ -3409,7 +3409,7 @@ export function usePipelineWizard(props: any) {
       });
 
       if (!audioData || !audioData.success || !audioData.audioBase64) {
-        throw new Error(audioData?.warning || audioData?.error || "No audio returned");
+        throw new Error(audioData?.warning || audioData?.error || PIPELINE_CLIENT_ERRORS.AUDIO_MISSING);
       }
 
       const arrayBuffer = base64ToArrayBuffer(audioData.audioBase64);

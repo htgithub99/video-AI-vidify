@@ -1,0 +1,28 @@
+import { writeVerificationLog } from "./verificationLogger.ts";
+import assert from "node:assert/strict";
+import { validateFactPack } from "../src/server/services/factPackValidationService";
+import { FactClaimStatus } from "../src/types";
+
+const baseClaim = {
+  id: "claim_1",
+  text: "A test claim",
+  status: FactClaimStatus.Verified,
+  sourceTitle: "Primary source",
+  sourceUrl: "https://example.com/source",
+  publishedAt: "2026-01-01",
+  jurisdiction: "global",
+  confidence: 95,
+  safeRewrite: "A scoped test claim",
+};
+
+const reachable = await validateFactPack({ claims: [baseClaim] }, true, async () => true);
+assert.equal(reachable.claims[0].status, FactClaimStatus.Verified);
+
+const unreachable = await validateFactPack({ claims: [baseClaim] }, true, async () => false);
+assert.equal(unreachable.claims[0].status, FactClaimStatus.Unsupported);
+assert.ok(unreachable.claims[0].confidence <= 25);
+
+const disabled = await validateFactPack({ claims: [baseClaim] }, false, async () => true);
+assert.equal(disabled.claims[0].status, FactClaimStatus.Unsupported);
+
+writeVerificationLog("Fact-pack source validation checks passed.");

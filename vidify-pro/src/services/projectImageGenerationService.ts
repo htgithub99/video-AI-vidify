@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { API_ROUTES, EXTERNAL_URLS, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -56,7 +56,6 @@ export const hasSceneAsset = (scene: Pick<StoryboardScene, "assetUrl" | "assetUr
 );
 
 export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSummary => {
-  const missingSceneIds = _.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY);
   const rejectedSceneIds = _.map(
     _.filter(scenes, (scene) => _.includes(
       [SceneAssetStatus.Rejected, SceneAssetStatus.Failed],
@@ -64,6 +63,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
     )),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
   );
+  const missingSceneIds = _.uniq(_.concat(_.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY), rejectedSceneIds));
   const total = _.size(scenes);
   const completed = _.subtract(total, _.size(missingSceneIds));
 
@@ -76,10 +76,12 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
   };
 };
 
+export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value) && !_.startsWith(_.toLower(value), _.toLower(EXTERNAL_URLS.LOREM_FLICKR));
+
 const hasImageResult = (result?: ProjectImageResult): boolean => (
   _.every([
     result?.success,
-    _.some([result?.base64, result?.fallbackUrl], (value) => !_.isEmpty(value)),
+    _.some([result?.base64, result?.fallbackUrl], isUsableGeneratedAssetUrl),
   ], Boolean)
 );
 
@@ -127,7 +129,7 @@ const generateFallbackImage = async (
         generationSucceeded,
         _.isEqual(item.generateType, GenerateType.Image),
       ], Boolean),
-      _.some([base64, fallbackUrl], Boolean),
+      _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
     ], Boolean),
     base64,
     fallbackUrl,
@@ -150,7 +152,7 @@ export const createProjectImageUrl = (result: ProjectImageResult): string => {
       REFACTOR_CONSTANTS.VD_EMPTY_STRING,
     );
   }
-  return _.defaultTo(result.fallbackUrl, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  return isUsableGeneratedAssetUrl(result.fallbackUrl) ? result.fallbackUrl! : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 
 export const selectVideoSceneIds = async (

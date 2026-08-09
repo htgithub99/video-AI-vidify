@@ -594,8 +594,6 @@ export default function App() {
       <Header
         currentLang={currentLang}
         setLang={setLang}
-        credits={credits}
-        costTracker={costTracker}
         theme={theme as any}
         toggleTheme={toggleTheme}
       />
@@ -646,8 +644,6 @@ export default function App() {
             ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
               <DashboardView
                 currentLang={currentLang}
-                credits={credits}
-                costTracker={costTracker}
                 projects={projects}
                 onSelectProject={handleSelectProject}
                 onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}

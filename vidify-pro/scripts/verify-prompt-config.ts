@@ -13,6 +13,8 @@ const blockedVideoConfig = resolveVisualConfig({
   imageGeneratorEngine: ImageGeneratorEngine.Imagen,
 } as any);
 assert(blockedVideoConfig.blocked, "unsupported video/image-engine conflict was not blocked");
+const textIdentityConfig = resolveVisualConfig({ characterConsistency: true, characterPrompt: "Vietnamese man in his forties, short black hair, worn navy jacket" } as any);
+assert(textIdentityConfig.config.characterConsistency, "textual character identity was incorrectly disabled");
 
 const prompt = "A cinematic street scene --ar 16:9";
 const compiledOnce = applyBackgroundMode(prompt, BackgroundMode.Auto);

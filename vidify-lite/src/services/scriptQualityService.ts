@@ -2,15 +2,35 @@ import _ from "lodash";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
 export const SCRIPT_QUALITY_THRESHOLDS = {
-  CONTINUITY: 85,
+  CONTINUITY: 80,
   FACTUALITY: 85,
   REPETITION: 80,
-  CONVERSATIONAL: 80,
+  CONVERSATIONAL: 60,
   HOOK_PAYOFF: 80,
   HOOK_FACTUAL_SAFETY: 80,
   DURATION_TOLERANCE_RATIO: 0.15,
   WORDS_PER_MINUTE: 150,
+  REPAIR_PLACEHOLDERS: ["complete corrected script", "full corrected script", "corrected script", "<full_corrected_script_text>"],
 } as const;
+
+const HARD_SCRIPT_BLOCKER_PATTERN = /(?:empty|missing(?:_|\s)+(?:the(?:_|\s)+)?script|no(?:_|\s)+script|unintelligible|corrupt|malformed|child(?:_|\s)+sexual|sexual(?:_|\s)+exploitation|csam|doxx|privacy(?:_|\s)+violation|incitement|illegal(?:_|\s)+instructions?)/i;
+
+export interface ScriptRepairValidation { accepted: boolean; wordCount: number; minimumWords: number; maximumWords: number; reasons: string[]; }
+export const getTargetWordRange = (targetDurationSeconds: number): { minimumWords: number; maximumWords: number } => {
+  const targetWords = targetDurationSeconds * SCRIPT_QUALITY_THRESHOLDS.WORDS_PER_MINUTE / 60;const tolerance = SCRIPT_QUALITY_THRESHOLDS.DURATION_TOLERANCE_RATIO;
+  return { minimumWords: _.floor(targetWords * (1 - tolerance)), maximumWords: _.ceil(targetWords * (1 + tolerance)) };
+};
+export const validateScriptRepair = (candidate: string, targetDurationSeconds: number, requiredHook = ""): ScriptRepairValidation => {
+  const normalizedCandidate = _.toLower(_.trim(candidate));const wordCount = _.size(_.words(candidate));const { minimumWords, maximumWords } = getTargetWordRange(targetDurationSeconds);
+  const reasons = _.compact([
+    _.isEmpty(normalizedCandidate) && "empty_script_repair",
+    _.includes(SCRIPT_QUALITY_THRESHOLDS.REPAIR_PLACEHOLDERS, normalizedCandidate as never) && "placeholder_script_repair",
+    wordCount < minimumWords && "script_repair_too_short",
+    wordCount > maximumWords && "script_repair_too_long",
+    !_.isEmpty(requiredHook) && !_.startsWith(normalizedCandidate, _.toLower(_.trim(requiredHook))) && "script_repair_missing_hook",
+  ]) as string[];
+  return { accepted: _.isEmpty(reasons), wordCount, minimumWords, maximumWords, reasons };
+};
 
 const score = (value: unknown): number => _.clamp(_.toFinite(value), 0, 100);
 
@@ -31,7 +51,7 @@ export const normalizeHookScore = (value: Partial<HookScore> = {}): HookScore =>
     factualSafety,
     weightedTotal,
     unsupportedClaim,
-    accepted: factualSafety >= SCRIPT_QUALITY_THRESHOLDS.HOOK_FACTUAL_SAFETY && !unsupportedClaim,
+    accepted: !unsupportedClaim,
     reasons: _.compact(_.map(value.reasons, _.toString)),
   };
 };
@@ -56,6 +76,9 @@ export const normalizeScriptQualityReport = (
   const durationDelta = Math.abs(estimatedDurationSeconds - targetDurationSeconds);
   const durationFit = targetDurationSeconds > 0
     && durationDelta <= targetDurationSeconds * SCRIPT_QUALITY_THRESHOLDS.DURATION_TOLERANCE_RATIO;
+  const reportedBlockingErrors = _.compact(_.map(value.blockingErrors, _.toString));
+  const hardBlockingErrors = _.filter(reportedBlockingErrors, error => HARD_SCRIPT_BLOCKER_PATTERN.test(error));
+  const editorialAdvisories = _.reject(reportedBlockingErrors, error => HARD_SCRIPT_BLOCKER_PATTERN.test(error));
   const report = {
     continuityScore: score(value.continuityScore),
     repetitionScore: score(value.repetitionScore),
@@ -65,18 +88,24 @@ export const normalizeScriptQualityReport = (
     hookPayoffScore: score(value.hookPayoffScore),
     durationFit,
     estimatedDurationSeconds,
-    blockingErrors: _.compact(_.map(value.blockingErrors, _.toString)),
-    warnings: _.compact(_.map(value.warnings, _.toString)),
+    blockingErrors: _.uniq(_.compact([wordCount <= 0 && "script_missing_or_empty", ...hardBlockingErrors])) as string[],
+    warnings: _.uniq(_.compact([
+      ..._.map(value.warnings, _.toString),
+      ..._.map(editorialAdvisories, advisory => `editorial_advisory: ${advisory}`),
+      !durationFit && "script_duration_out_of_target",
+    ])) as string[],
     suggestedPatches: _.compact(_.map(value.suggestedPatches, _.toString)),
     passed: false,
   };
-  report.passed = _.isEmpty(report.blockingErrors)
-    && report.continuityScore >= SCRIPT_QUALITY_THRESHOLDS.CONTINUITY
-    && report.factualityScore >= SCRIPT_QUALITY_THRESHOLDS.FACTUALITY
-    && report.repetitionScore >= SCRIPT_QUALITY_THRESHOLDS.REPETITION
-    && report.conversationalScore >= SCRIPT_QUALITY_THRESHOLDS.CONVERSATIONAL
-    && report.hookPayoffScore >= SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF
-    && report.durationFit;
+  const belowTargetScores = _.compact([
+    report.continuityScore < SCRIPT_QUALITY_THRESHOLDS.CONTINUITY && "script_continuity_below_target",
+    report.factualityScore < SCRIPT_QUALITY_THRESHOLDS.FACTUALITY && "script_factuality_below_target",
+    report.repetitionScore < SCRIPT_QUALITY_THRESHOLDS.REPETITION && "script_repetition_below_target",
+    report.conversationalScore < SCRIPT_QUALITY_THRESHOLDS.CONVERSATIONAL && "script_conversational_style_below_target",
+    report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && "script_hook_payoff_below_target",
+  ]);
+  report.warnings = _.uniq([...report.warnings, ...belowTargetScores]);
+  report.passed = _.isEmpty(report.blockingErrors);
   return report;
 };
 

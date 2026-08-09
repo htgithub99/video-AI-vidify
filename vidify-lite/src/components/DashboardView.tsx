@@ -10,8 +10,6 @@ import _ from "lodash";
 
 interface DashboardViewProps {
   currentLang: Lang;
-  credits: number;
-  costTracker: number;
   projects: VideoProject[];
   onSelectProject: (id: string) => void;
   onNavigateToProjects: () => void;
@@ -19,8 +17,6 @@ interface DashboardViewProps {
 
 export default function DashboardView({
   currentLang,
-  credits,
-  costTracker,
   projects,
   onSelectProject,
   onNavigateToProjects,

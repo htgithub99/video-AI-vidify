@@ -17,7 +17,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     if (!project) return null;
 
     const projectStr = jsonUtils.safeStringify(project);
-    const cleaned = _.replace(projectStr, UNSPLASH_IMAGE_REGEX, (match, query) => {
+    const cleaned = _.replace(projectStr, UNSPLASH_IMAGE_REGEX, (_match, query) => {
       const decoded = decodeURIComponent(query)
         .replace(URL_ENCODED_COMMA_REGEX, ",")
         .replace(URL_ENCODED_PLUS_REGEX, ",")
@@ -480,7 +480,7 @@ const repairOrphanedAutoProjects = async (projects: VideoProject[]): Promise<boo
   return repaired;
 };
 
-export const getAllProjects = async (request: Request, response: Response) => {
+export const getAllProjects = async (_request: Request, response: Response) => {
   try {
     const list = await getProjectsListFromDb();
     const repaired = await repairOrphanedAutoProjects(list);
