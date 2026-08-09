@@ -1303,7 +1303,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                   systemLogs.map((log, i) => {
                     let badgeClass =
                       "bg-sky-500/10 text-sky-500 border-sky-500/20";
-                    let badgeText = userLogBadges.INFO_BADGE;
+                    let badgeText: string = userLogBadges.INFO_BADGE;
                     let bgClass = "";
                     let textClass = "text-slate-300";
                     if (log.type === "error") {

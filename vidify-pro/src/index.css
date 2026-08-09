@@ -5,16 +5,14 @@
   --font-sans: "Montserrat", system-ui, -apple-system, sans-serif;
   --font-logo: "Merienda", cursive;
   --font-mono: "JetBrains Mono", monospace;
-
-  /* Refined Sleek Dark Theme (High Contrast Backgrounds for Flat UI) */
   --color-slate-955: #000000;
-  --color-slate-950: #09090b; /* Main Body Background - Zinc 950 */
-  --color-slate-900: #18181b; /* Card Background - Zinc 900 */
+  --color-slate-950: #09090b;
+  --color-slate-900: #18181b;
   --color-slate-880: #202024;
-  --color-slate-850: #27272a; /* Zinc 800 */
-  --color-slate-800: #3f3f46; /* Borders / Active Inputs - Zinc 700 */
+  --color-slate-850: #27272a;
+  --color-slate-800: #3f3f46;
   --color-slate-750: #4b4b52;
-  --color-slate-700: #52525b; /* Zinc 600 */
+  --color-slate-700: #52525b;
   --color-slate-650: #6b6b75;
   --color-slate-600: #525252;
   --color-slate-550: #acafb5;
@@ -28,16 +26,14 @@
   --color-slate-205: #ffffff;
   --color-slate-200: #ffffff;
   --color-slate-100: #ffffff;
-
-  /* Redefine Rose for Amber / Gold Accent colors (1999 Earth Element) */
   --color-rose-955: #1f1406;
   --color-rose-950: #382109;
   --color-rose-900: #78350f;
   --color-rose-800: #92400e;
   --color-rose-705: #a84b0d;
   --color-rose-700: #b45309;
-  --color-rose-600: #d97706; /* Darker Gold */
-  --color-rose-500: #f59e0b; /* Primary Brand Gold */
+  --color-rose-600: #d97706;
+  --color-rose-500: #f59e0b;
   --color-rose-455: #fbbf24;
   --color-rose-450: #fcd34d;
   --color-rose-400: #fde68a;
@@ -79,8 +75,6 @@
     }
   }
 }
-
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -107,21 +101,19 @@ body {
 
 :root.light {
   color-scheme: light;
-
-  /* Inverse for Light Mode - Premium High-Contrast Layout */
   --color-slate-955: #f4f4f5;
-  --color-slate-950: #f4f4f5; /* Main Background - Zinc 100 */
-  --color-slate-900: #ffffff; /* Card Background - White */
+  --color-slate-950: #f4f4f5;
+  --color-slate-900: #ffffff;
   --color-slate-880: #fafafa;
-  --color-slate-850: #e4e4e7; /* Zinc 200 */
-  --color-slate-800: #d4d4d8; /* Zinc 300 */
-  --color-slate-750: #a1a1aa; /* Zinc 400 */
-  --color-slate-700: #71717a; /* Zinc 500 */
-  --color-slate-650: #52525b; /* Zinc 600 */
-  --color-slate-600: #3f3f46; /* Zinc 700 */
-  --color-slate-550: #27272a; /* Zinc 800 */
-  --color-slate-500: #18181b; /* Zinc 900 */
-  --color-slate-450: #09090b; /* Zinc 950 */
+  --color-slate-850: #e4e4e7;
+  --color-slate-800: #d4d4d8;
+  --color-slate-750: #a1a1aa;
+  --color-slate-700: #71717a;
+  --color-slate-650: #52525b;
+  --color-slate-600: #3f3f46;
+  --color-slate-550: #27272a;
+  --color-slate-500: #18181b;
+  --color-slate-450: #09090b;
   --color-slate-400: #000000;
   --color-slate-355: #000000;
   --color-slate-350: #000000;
@@ -130,39 +122,33 @@ body {
   --color-slate-205: #000000;
   --color-slate-200: #000000;
   --color-slate-100: #000000;
-
-  /* Override blue in light mode to provide excellent accessibility contrast */
   --color-blue-950: #eff6ff;
   --color-blue-900: #dbeafe;
   --color-blue-800: #3b82f6;
   --color-blue-700: #2563eb;
   --color-blue-600: #1d4ed8;
   --color-blue-500: #1e40af;
-  --color-blue-400: #2563eb; /* high visibility blue text substitute */
-  --color-blue-300: #1e3a8a; /* darker blue accent */
+  --color-blue-400: #2563eb;
+  --color-blue-300: #1e3a8a;
   --color-blue-200: #172554;
   --color-blue-100: #0f172a;
-
-  /* Adjust Rose mapped to Amber/Gold in Light Mode - High Contrast Text */
   --color-rose-955: #fffbeb;
   --color-rose-950: #fffbeb;
   --color-rose-900: #fef3c7;
-  --color-rose-800: #78350f; /* Nâu thẫm hẳn */
+  --color-rose-800: #78350f;
   --color-rose-705: #92400e;
-  --color-rose-700: #92400e; /* active state */
-  --color-rose-600: #b45309; /* normal state */
+  --color-rose-700: #92400e;
+  --color-rose-600: #b45309;
   --color-rose-550: #78350f;
-  --color-rose-500: #d97706; /* hover state */
-  --color-rose-455: #92400e; /* Nâu sẫm để chữ rõ nét */
-  --color-rose-450: #b45309; /* Nâu sẫm để chữ rõ nét */
-  --color-rose-400: #b45309; /* Nâu sẫm để chữ rõ nét */
+  --color-rose-500: #d97706;
+  --color-rose-455: #92400e;
+  --color-rose-450: #b45309;
+  --color-rose-400: #b45309;
   --color-rose-350: #fef3c7;
   --color-rose-300: #fffbeb;
   --color-rose-200: #ffffff;
   --color-rose-100: #ffffff;
 }
-
-/* Shimmer Background Utility */
 .shimmer-bg {
   background: linear-gradient(
     90deg,
@@ -182,8 +168,6 @@ body {
   ) !important;
   background-size: 200% 100% !important;
 }
-
-/* Map other highlight colors for light mode contrast */
 :root.light {
   --color-emerald-950: #ecfdf5;
   --color-emerald-900: #d1fae5;
@@ -205,8 +189,6 @@ body {
   --color-purple-500: #7e22ce;
   --color-purple-400: #6b21a8;
   --color-purple-300: #4c1d95;
-
-  /* Fallback overrides for arbitrary hardcoded hexs used in code to support light mode */
   --color-bg-05: #f8f9fa;
   --color-bg-0a: #ffffff;
   --color-bg-0e: #f3f4f6;
@@ -221,8 +203,6 @@ body {
   --color-text-55: #374151;
   --color-text-aa: #4b5563;
 }
-
-/* MINIMALIST OVERRIDES & MICRO-INTERACTIONS */
 @layer utilities {
   .uppercase {
     text-transform: none !important;
@@ -233,8 +213,6 @@ body {
     letter-spacing: normal !important;
   }
 }
-
-/* Micro-interactions: Ensure interactive elements have cursor pointers and hover states */
 button,
 a,
 [role="button"],
@@ -249,7 +227,6 @@ select {
 button:active,
 a:active,
 [role="button"]:active {
-  /* Removed global hardcoded scale to let base Button component handle active scale gracefully */
 }
 
 button:disabled,
@@ -259,8 +236,6 @@ a:disabled,
   opacity: 0.5 !important;
   transform: none !important;
 }
-
-/* Unify Focus and Hover Styles for Inputs, Textareas, and Selects */
 input,
 textarea,
 select {
@@ -280,7 +255,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
 textarea:focus {
   outline: none !important;
   border-color: var(--color-rose-600) !important;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important; /* Amber-500 ring shadow */
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important;
 }
 
 button:focus-visible,
@@ -296,16 +271,10 @@ a {
 a:hover {
   color: var(--color-rose-500) !important;
 }
-
-/* Strip backgrounds like aggressive radial gradients to keep it clean */
 .bg-\[radial-gradient\(\#1e293b_1\.1px\,transparent_1\.1px\)\] {
   background-image: none !important;
   background-color: var(--color-slate-950) !important;
 }
-
-/* Modal and layout border radiuses reset to default (Tailwind xl = 12px) */
-
-/* Clean up shadows */
 .shadow-2xl,
 .shadow-xl,
 .shadow-lg,
@@ -327,8 +296,6 @@ a:hover {
   background-color: var(--color-slate-950);
   color: var(--color-slate-200);
 }
-
-/* Elegant shadow overlay for dialog/modal backdrops in light mode */
 :root.light .fixed.bg-slate-950\/80 {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(4px);
@@ -337,15 +304,11 @@ a:hover {
   background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(4px);
 }
-
-/* flowchart badge */
 :root.light .bg-\[\#0f1d16\] {
   background-color: #d1fae5 !important;
   border-color: #34d399 !important;
   color: #065f46 !important;
 }
-
-/* Header credentials popup */
 :root.light .bg-\[\#111115\]\/50 {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
@@ -353,31 +316,25 @@ a:hover {
 :root.light .border-\[\#23232c\] {
   border-color: #cbd5e1 !important;
 }
-
-/* general scrollbar override for light mode */
 :root.light ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.5);
 }
 :root.light ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.8);
 }
-
-/* Custom, highly-visible, polished styled range inputs for light & dark mode */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
   cursor: pointer;
-  height: 28px; /* higher tactile hit target */
+  height: 28px;
   padding: 0;
   width: 100%;
 }
-
-/* Track styles - Dark mode defaults */
 input[type="range"]::-webkit-slider-runnable-track {
   width: 100%;
   height: 8px;
-  background: #121824; /* deeper track in dark mode */
+  background: #121824;
   border: 1.5px solid #2d3748;
   border-radius: 9999px;
   transition:
@@ -397,12 +354,10 @@ input[type="range"]::-moz-range-track {
   border: 1.5px solid #2d3748;
   border-radius: 9999px;
 }
-
-/* WEB_KIT THUMB - Dark mode default */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  margin-top: -6.5px; /* perfectly centered */
+  margin-top: -6.5px;
   border: 2px solid #ffffff;
   height: 19px;
   width: 19px;
@@ -418,8 +373,6 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.18);
 }
-
-/* MOZILLA THUMB - Dark mode default */
 input[type="range"]::-moz-range-thumb {
   border: 2px solid #ffffff;
   height: 19px;
@@ -434,10 +387,8 @@ input[type="range"]::-moz-range-thumb {
 input[type="range"]::-moz-range-thumb:hover {
   transform: scale(1.18);
 }
-
-/* LIGHT MODE EXPLICIT HOOKS (High contrast, clearly visible) */
 :root.light input[type="range"]::-webkit-slider-runnable-track {
-  background: #cbd5e1; /* highly distinct gray track on white card background */
+  background: #cbd5e1;
   border: 1.5px solid #94a3b8;
 }
 
@@ -464,8 +415,6 @@ input[type="range"]::-moz-range-thumb:hover {
     0 0 0 2px #475569,
     0 3px 6px rgba(0, 0, 0, 0.22);
 }
-
-/* Map direct colors depending on accent overrides */
 input.accent-rose-500::-webkit-slider-thumb,
 input.accent-rose-600::-webkit-slider-thumb {
   background-color: var(--color-rose-500, #3b82f6) !important;
@@ -497,9 +446,6 @@ input.accent-amber-500::-moz-range-thumb {
 .font-logo {
   font-family: var(--font-logo), var(--font-sans) !important;
 }
-
-/* --- FLAT AESTHETICS OVERRIDE --- */
-/* Bỏ box shadow và border để dùng Flat Design */
 [class*="shadow"] {
   box-shadow: none !important;
 }
@@ -509,8 +455,6 @@ input.accent-amber-500::-moz-range-thumb {
   )[class*="border"] {
   border-color: transparent !important;
 }
-
-/* HIỆU ỨNG MÀU NỀN CHO FORM CONTROLS (Chỉ thêm màu nền khi hover/focus, BỎ VIỀN/BÓNG) */
 [class*="focus-within"] {
   transition: all 0.2s ease !important;
   background-color: var(--color-slate-900) !important;
@@ -526,8 +470,6 @@ input.accent-amber-500::-moz-range-thumb {
   border-color: transparent !important;
   background-color: var(--color-slate-850) !important;
 }
-
-/* Global Input Styles: Đảm bảo có lớp nền phân biệt và text đen/trắng cho mọi node/sidebar */
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
     [type="submit"]
   ):not([type="button"]):not(.bg-transparent),
@@ -543,8 +485,6 @@ input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
 textarea:not(.bg-transparent):hover {
   background-color: var(--color-slate-800) !important;
 }
-
-/* CHỈ thêm border khi focus, KHÔNG đổi nền hay thêm hiệu ứng khác */
 input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
     [type="submit"]
   ):not([type="button"]):focus,
@@ -553,8 +493,6 @@ textarea:focus {
   box-shadow: none !important;
   outline: none !important;
 }
-
-/* Select phẳng, không viền, đồng bộ cho dark/light mode. */
 :root {
   --app-select-bg: #000000;
   --app-select-bg-hover: #0a0a0a;
@@ -579,8 +517,6 @@ select {
   box-shadow: none !important;
   outline: none !important;
 }
-
-/* Keep icon, value and chevron on one flat select surface. */
 .relative:has(> select) {
   background-color: var(--app-select-bg) !important;
   border: 0 !important;
@@ -617,8 +553,6 @@ select option:checked {
   background-color: var(--app-select-option-active) !important;
   color: var(--app-select-text) !important;
 }
-
-/* Advanced settings accordion follows the same flat dark/light surfaces. */
 .advanced-config-panel {
   --advanced-panel-content: #0a0a0a;
   --advanced-panel-muted: #a3a3a3;
@@ -677,8 +611,6 @@ select option:checked {
   background-color: var(--advanced-panel-content);
   border: 0 !important;
 }
-
-/* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */
 *,
 ::before,
 ::after {
@@ -699,8 +631,6 @@ textarea:active {
   box-shadow: none !important;
   outline: none !important;
 }
-
-/* Hide scrollbar but keep functionality */
 .scrollbar-none::-webkit-scrollbar {
   display: none !important;
 }
