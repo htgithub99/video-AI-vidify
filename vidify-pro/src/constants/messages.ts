@@ -30,7 +30,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     CHARACTER_EXTRACT_FAIL: "Lỗi trích xuất nhân vật",
     STORYBOARD_INVALID: "Phân cảnh không hợp lệ",
     CHARACTER_PROMPT_REQUIRED: "Thiếu prompt nhân vật",
-    GEMINI_NOT_INIT: "Chưa có khóa AI. Hãy thêm khóa Cerebras, Groq hoặc Gemini trong Cài đặt.",
+    GEMINI_NOT_INIT:
+      "Chưa có khóa AI. Hãy thêm khóa Cerebras, Groq hoặc Gemini trong Cài đặt.",
     STYLE_EXTRACTION_ERR: "Lỗi trích xuất phong cách",
     STORYBOARD_REQUIRED: "Thiếu kịch bản phân cảnh",
     NEW_STYLE_REQUIRED: "Thiếu phong cách mới",
@@ -49,9 +50,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PROJECT_NOT_FOUND: "Không tìm thấy dự án",
     PROJECT_READ_ERR: "Lỗi tải danh sách dự án:",
     PROJECT_WRITE_ERR: "Lỗi lưu danh sách dự án:",
-    SQLITE_MIGRATION_START: "[Hệ thống] 🔄 Phát hiện dữ liệu phiên bản cũ. Đang nâng cấp cơ sở dữ liệu...",
-    SQLITE_MIGRATION_EMPTY: "[Hệ thống] ℹ️ Danh sách dự án trống. Bỏ qua bước nâng cấp cơ sở dữ liệu.",
-    SQLITE_MIGRATION_SUCCESS: "[Hệ thống] ✅ Cập nhật dữ liệu lên phiên bản mới thành công. Bản sao lưu dữ liệu cũ đã được tạo.",
+    SQLITE_MIGRATION_START:
+      "[Hệ thống] 🔄 Phát hiện dữ liệu phiên bản cũ. Đang nâng cấp cơ sở dữ liệu...",
+    SQLITE_MIGRATION_EMPTY:
+      "[Hệ thống] ℹ️ Danh sách dự án trống. Bỏ qua bước nâng cấp cơ sở dữ liệu.",
+    SQLITE_MIGRATION_SUCCESS:
+      "[Hệ thống] ✅ Cập nhật dữ liệu lên phiên bản mới thành công. Bản sao lưu dữ liệu cũ đã được tạo.",
     SQLITE_INIT_ERR: "Không thể khởi tạo cơ sở dữ liệu hệ thống",
     SQLITE_LIST_ERR: "Không thể đọc danh sách dự án từ hệ thống",
     SQLITE_DETAIL_ERR: "Không thể đọc thông tin chi tiết dự án",
@@ -66,115 +70,180 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ERROR_GET_PRESETS: "Không thể tải danh sách mẫu cấu hình",
     ERROR_SAVE_PRESET: "Không thể lưu mẫu cấu hình",
     ERROR_DELETE_PRESET: "Không thể xóa mẫu cấu hình",
-    SQLITE_MIGRATE_CRITICAL: "[Hệ thống] Gặp lỗi nghiêm trọng khi nâng cấp dữ liệu",
+    SQLITE_MIGRATE_CRITICAL:
+      "[Hệ thống] Gặp lỗi nghiêm trọng khi nâng cấp dữ liệu",
     SQLITE_MIGRATE_PARSE_ERR: "[Hệ thống] Lỗi đọc định dạng dữ liệu cũ",
     SQLITE_MIGRATE_BACKUP_ERR: "[Hệ thống] Lỗi tạo bản sao lưu dự án cũ",
     FETCH_VOICES_ERR: "Lỗi tải danh sách giọng đọc:",
     PLAYWRIGHT_CONNECTING: "🔗 Đang kết nối tới trình duyệt...",
     PLAYWRIGHT_ACCESSING_LABS: "🌐 Đang kết nối tới máy chủ sinh ảnh...",
-    PLAYWRIGHT_LOGIN_PROMPT: "\n⚠️  [CHÚ Ý] Vui lòng đăng nhập tài khoản của bạn trên trình duyệt...",
+    PLAYWRIGHT_LOGIN_PROMPT:
+      "\n⚠️  [CHÚ Ý] Vui lòng đăng nhập tài khoản của bạn trên trình duyệt...",
     PLAYWRIGHT_TOKEN_CAPTURED: "✅ Kết nối tài khoản thành công!",
     PLAYWRIGHT_TOKEN_TIMEOUT: "⏳ Hết thời gian chờ đăng nhập.",
     PLAYWRIGHT_CONNECT_ERR: "❌ Lỗi kết nối trình duyệt:",
-    PLAYWRIGHT_CHROME_MANDATE: "⚠️  BẠN CẦN MỞ TRÌNH DUYỆT CHROME TRƯỚC BẰNG LỆNH SAU RỒI MỚI CHẠY SERVER:",
-    PLAYWRIGHT_CHROME_COMMAND: '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
+    PLAYWRIGHT_CHROME_MANDATE:
+      "⚠️  BẠN CẦN MỞ TRÌNH DUYỆT CHROME TRƯỚC BẰNG LỆNH SAU RỒI MỚI CHẠY SERVER:",
+    PLAYWRIGHT_CHROME_COMMAND:
+      '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
     MISSING_SCENE_SCRIPT: "Thiếu kịch bản phân cảnh",
     TTS_TASK_ERROR: "Lỗi Task TTS: ",
     NO_AUDIO_CHUNKS: "Không có đoạn âm thanh nào được cung cấp",
-    NO_VALID_AUDIO_BASE64: "Không tìm thấy dữ liệu âm thanh base64 hợp lệ trong các đoạn",
+    NO_VALID_AUDIO_BASE64:
+      "Không tìm thấy dữ liệu âm thanh base64 hợp lệ trong các đoạn",
     FAILED_READ_MERGED_AUDIO: "Không thể đọc file âm thanh đã ghép",
     FFMPEG_PROCESSING_ERROR: "Lỗi xử lý FFmpeg: ",
     INTERNAL_SERVER_ERROR: "Lỗi máy chủ nội bộ: ",
     HTTP_STATUS_ERROR: "Lỗi trạng thái HTTP! trạng thái: ",
     GOOGLE_TTS_FAILED: "Chuyển đổi Google TTS thất bại cho phân đoạn: {0}",
-    PLAYWRIGHT_BORDER: "\n=======================================================",
-    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
-    PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Trình duyệt sinh ảnh đã bị đóng hoặc chưa khởi tạo. Đang kết nối lại...",
-    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT: "[Playwright] Trình duyệt đã bị đóng ở lần thử trước. Đang kết nối lại...",
-    PLAYWRIGHT_CLOSED_DETECTED_RESET: "[Playwright] Phát hiện trình duyệt bị đóng. Đang giải phóng và reset kết nối...",
-    GEMINI_CHAT_START_ROOM: "[Gemini Chat] Bắt đầu phòng chat mới (Lần thử {0}/{1})...",
+    PLAYWRIGHT_BORDER:
+      "\n=======================================================",
+    PLAYWRIGHT_BORDER_BOTTOM:
+      "=======================================================\n",
+    PLAYWRIGHT_PAGE_CLOSED_REINIT:
+      "[Playwright] Trình duyệt sinh ảnh đã bị đóng hoặc chưa khởi tạo. Đang kết nối lại...",
+    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT:
+      "[Playwright] Trình duyệt đã bị đóng ở lần thử trước. Đang kết nối lại...",
+    PLAYWRIGHT_CLOSED_DETECTED_RESET:
+      "[Playwright] Phát hiện trình duyệt bị đóng. Đang giải phóng và reset kết nối...",
+    GEMINI_CHAT_START_ROOM:
+      "[Gemini Chat] Bắt đầu phòng chat mới (Lần thử {0}/{1})...",
     GEMINI_CHAT_INIT_FAILED: "[Gemini Chat] Không thể khởi tạo trang mới: {0}",
     GEMINI_CHAT_RELOAD: "[Gemini Chat] Gặp sự cố, reload trang lần {0}...",
     GEMINI_CHAT_RELOAD_FAILED: "[Gemini Chat] Reload trang lỗi: {0}",
-    GEMINI_CHAT_ATTEMPT_FAILED: "[Gemini Chat] Lỗi tại lần thử {0} của room {1}: {2}",
+    GEMINI_CHAT_ATTEMPT_FAILED:
+      "[Gemini Chat] Lỗi tại lần thử {0} của room {1}: {2}",
     GEMINI_CHAT_FAILED_COMPLETELY: "[Gemini Chat] Thất bại hoàn toàn: {0}",
-    GEMINI_CHAT_FALLBACK_WARNING: "Tạo ảnh qua Gemini Chat Room thất bại hoàn toàn. Sử dụng ảnh dự phòng.",
+    GEMINI_CHAT_FALLBACK_WARNING:
+      "Tạo ảnh qua Gemini Chat Room thất bại hoàn toàn. Sử dụng ảnh dự phòng.",
     GEMINI_CHAT_CONFIG_MODEL: "[Gemini Chat] Cấu hình model: Mục tiêu là {0}",
     GEMINI_CHAT_CURRENT_MODEL: "[Gemini Chat] Model hiện tại: {0}",
-    GEMINI_CHAT_MODEL_CORRECT: "[Gemini Chat] Model hiện tại khớp với cấu hình, không cần đổi.",
+    GEMINI_CHAT_MODEL_CORRECT:
+      "[Gemini Chat] Model hiện tại khớp với cấu hình, không cần đổi.",
     GEMINI_CHAT_MODEL_SUCCESS: "[Gemini Chat] Đã đổi model sang: {0}",
-    GEMINI_CHAT_MODEL_NOT_FOUND: "[Gemini Chat] Không tìm thấy nút chọn model {0}",
-    GEMINI_CHAT_MODEL_PICKER_NOT_FOUND: "[Gemini Chat] Không tìm thấy nút chọn model.",
+    GEMINI_CHAT_MODEL_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy nút chọn model {0}",
+    GEMINI_CHAT_MODEL_PICKER_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy nút chọn model.",
     GEMINI_CHAT_CONFIG_GEN_TYPE: "[Gemini Chat] Cấu hình loại tạo: {0}",
     GEMINI_CHAT_GEN_TYPE_SUCCESS: "[Gemini Chat] Đã chọn chế độ: {0}",
-    GEMINI_CHAT_GEN_TYPE_FALLBACK: "[Gemini Chat] Đã chọn chế độ (dự phòng): {0}",
-    GEMINI_CHAT_GEN_TYPE_NOT_FOUND: '[Gemini Chat] Không tìm thấy option "{0}" trong menu.',
-    GEMINI_CHAT_PLUS_NOT_FOUND: "[Gemini Chat] Không tìm thấy nút '+' cấu hình.",
-    GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND: "[Gemini Chat] Không tìm thấy nút tỷ lệ.",
-    GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND: "[Gemini Chat] Không tìm thấy tỷ lệ {0}.",
+    GEMINI_CHAT_GEN_TYPE_FALLBACK:
+      "[Gemini Chat] Đã chọn chế độ (dự phòng): {0}",
+    GEMINI_CHAT_GEN_TYPE_NOT_FOUND:
+      '[Gemini Chat] Không tìm thấy option "{0}" trong menu.',
+    GEMINI_CHAT_PLUS_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy nút '+' cấu hình.",
+    GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy nút tỷ lệ.",
+    GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy tỷ lệ {0}.",
     GEMINI_CHAT_ASPECT_SUCCESS: "[Gemini Chat] Đã chọn tỷ lệ {0}.",
-    GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND: "[Gemini Chat] Không tìm thấy ô tải ảnh.",
+    GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND:
+      "[Gemini Chat] Không tìm thấy ô tải ảnh.",
     GEMINI_CHAT_REFERENCE_UPLOAD: "[Gemini Chat] Đã tải {0} ảnh tham chiếu.",
     GEMINI_CHAT_TYPING_PROMPT: "[Gemini Chat] Đang gõ prompt...",
     GEMINI_CHAT_PASTING_PROMPT: "[Gemini Chat] Đang dán prompt...",
     GEMINI_CHAT_WAITING_RESPONSE: "[Gemini Chat] Chờ phản hồi từ Gemini...",
-    GEMINI_CHAT_THINKING_DETACHED: "[Gemini Chat] Không thấy thinking-overlay hoặc đã biến mất trước.",
-    GEMINI_CHAT_DOWNLOAD_ERROR: "Không thấy nút Tải xuống trong phản hồi của Gemini.",
-    GEMINI_CHAT_ROOM_REUSE: "[Gemini Chat] Tiếp tục sử dụng room chat hiện tại để sinh ảnh...",
-    GEMINI_CHAT_ROOM_FORCED: "[Gemini Chat] Phát hiện lỗi liên tiếp >= 2 lần, buộc tạo room mới.",
-    GEMINI_CHAT_NO_RESPONSE: "[Gemini Chat] Không tìm thấy phản hồi model-response cuối cùng.",
-    GEMINI_CHAT_BUSY_WAIT: "[Gemini Chat] Phát hiện phản hồi đang bận (aria-busy=true), chờ cho đến khi hoàn thành...",
-    GEMINI_CHAT_BUSY_TIMEOUT: "[Gemini Chat] Lỗi hoặc hết thời gian chờ phản hồi hết bận (aria-busy=false).",
-    GEMINI_CHAT_NO_CONTAINER: "[Gemini Chat] Không tìm thấy vật chứa ảnh đã hoàn thành, tiếp tục kiểm tra.",
-    GEMINI_CHAT_NO_SRC: "[Gemini Chat] Không tìm thấy thuộc tính src hợp lệ trên media element.",
-    GEMINI_CHAT_EXTRACTING_MEDIA: "[Gemini Chat] Phát hiện nguồn đa phương tiện ({0}): {1}. Đang trích xuất dữ liệu trực tiếp...",
-    GEMINI_CHAT_EXTRACT_FAILED: "[Gemini Chat] Trích xuất trực tiếp thất bại: {0}",
+    GEMINI_CHAT_THINKING_DETACHED:
+      "[Gemini Chat] Không thấy thinking-overlay hoặc đã biến mất trước.",
+    GEMINI_CHAT_DOWNLOAD_ERROR:
+      "Không thấy nút Tải xuống trong phản hồi của Gemini.",
+    GEMINI_CHAT_ROOM_REUSE:
+      "[Gemini Chat] Tiếp tục sử dụng room chat hiện tại để sinh ảnh...",
+    GEMINI_CHAT_ROOM_FORCED:
+      "[Gemini Chat] Phát hiện lỗi liên tiếp >= 2 lần, buộc tạo room mới.",
+    GEMINI_CHAT_NO_RESPONSE:
+      "[Gemini Chat] Không tìm thấy phản hồi model-response cuối cùng.",
+    GEMINI_CHAT_BUSY_WAIT:
+      "[Gemini Chat] Phát hiện phản hồi đang bận (aria-busy=true), chờ cho đến khi hoàn thành...",
+    GEMINI_CHAT_BUSY_TIMEOUT:
+      "[Gemini Chat] Lỗi hoặc hết thời gian chờ phản hồi hết bận (aria-busy=false).",
+    GEMINI_CHAT_NO_CONTAINER:
+      "[Gemini Chat] Không tìm thấy vật chứa ảnh đã hoàn thành, tiếp tục kiểm tra.",
+    GEMINI_CHAT_NO_SRC:
+      "[Gemini Chat] Không tìm thấy thuộc tính src hợp lệ trên media element.",
+    GEMINI_CHAT_EXTRACTING_MEDIA:
+      "[Gemini Chat] Phát hiện nguồn đa phương tiện ({0}): {1}. Đang trích xuất dữ liệu trực tiếp...",
+    GEMINI_CHAT_EXTRACT_FAILED:
+      "[Gemini Chat] Trích xuất trực tiếp thất bại: {0}",
     GEMINI_CHAT_EXTRACT_ERROR: "[Gemini Chat] Lỗi khi trích xuất dữ liệu: {0}",
-    GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Lấy đa phương tiện thành công trực tiếp từ nguồn URL trình duyệt!",
-    GEMINI_CHAT_EXTRACT_ERR_THROW: "Không thể trích xuất dữ liệu ảnh/video từ URL trình duyệt.",
-    GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra menu Plus...",
-    GEMINI_CHAT_BATCH_START: "[Batch Gemini] Mở {0} tab song song để tạo ảnh...",
+    GEMINI_CHAT_EXTRACT_SUCCESS:
+      "[Gemini Chat] Lấy đa phương tiện thành công trực tiếp từ nguồn URL trình duyệt!",
+    GEMINI_CHAT_EXTRACT_ERR_THROW:
+      "Không thể trích xuất dữ liệu ảnh/video từ URL trình duyệt.",
+    GEMINI_CHAT_MODEL_MOCK_CHECK:
+      "[Gemini Chat] Giả lập click kiểm tra Model Picker...",
+    GEMINI_CHAT_PLUS_MOCK_CHECK:
+      "[Gemini Chat] Giả lập click kiểm tra menu Plus...",
+    GEMINI_CHAT_BATCH_START:
+      "[Batch Gemini] Mở {0} tab song song để tạo ảnh...",
     GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} đã mở thành công.",
-    GEMINI_CHAT_BATCH_TAB_START: '[Batch Gemini] Tab {0}: Bắt đầu tạo ảnh cho scene "{1}"...',
-    GEMINI_CHAT_BATCH_TAB_SUCCESS: '[Batch Gemini] Tab {0}: ✅ Tạo ảnh thành công cho scene "{1}".',
-    GEMINI_CHAT_BATCH_TAB_ERROR: '[Batch Gemini] Tab {0}: ❌ Lỗi scene "{1}": {2}',
-    GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Tự động reload tab gặp lỗi để phục hồi...",
-    GEMINI_CHAT_BATCH_TAB_REDIRECT: "[Batch Gemini] Tab {0}: Chuyển hướng về trang chủ Gemini để khởi tạo phiên chat mới...",
-    GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Hoàn thành batch: {0}/{1} thành công.",
+    GEMINI_CHAT_BATCH_TAB_START:
+      '[Batch Gemini] Tab {0}: Bắt đầu tạo ảnh cho scene "{1}"...',
+    GEMINI_CHAT_BATCH_TAB_SUCCESS:
+      '[Batch Gemini] Tab {0}: ✅ Tạo ảnh thành công cho scene "{1}".',
+    GEMINI_CHAT_BATCH_TAB_ERROR:
+      '[Batch Gemini] Tab {0}: ❌ Lỗi scene "{1}": {2}',
+    GEMINI_CHAT_BATCH_TAB_RECOVERY:
+      "[Batch Gemini] Tab {0}: Tự động reload tab gặp lỗi để phục hồi...",
+    GEMINI_CHAT_BATCH_TAB_REDIRECT:
+      "[Batch Gemini] Tab {0}: Chuyển hướng về trang chủ Gemini để khởi tạo phiên chat mới...",
+    GEMINI_CHAT_BATCH_COMPLETE:
+      "[Batch Gemini] Hoàn thành batch: {0}/{1} thành công.",
     GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Lỗi khởi tạo batch: {0}",
-    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Đóng tất cả {0} tab phụ đang chạy...",
+    GEMINI_CHAT_BATCH_CLOSE_TABS:
+      "[Batch Gemini] Đóng tất cả {0} tab phụ đang chạy...",
     GEMINI_CHAT_PAGE_CLOSED: "Trình duyệt đã bị đóng hoặc chưa khởi tạo.",
-    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM: "[Batch Gemini] Tab {0}: Bắt buộc tạo room mới do lỗi liên tục ({1} lần)",
-    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT: "[Batch Gemini] Tab {0}: Đang chuyển hướng về trang chủ để tạo room mới (Lần thử {1}/{2})...",
-    GEMINI_CHAT_BATCH_REDIRECT_FAILED: "[Batch Gemini] Tab {0}: Chuyển hướng thất bại: {1}",
-    GEMINI_CHAT_BATCH_ROOM_REUSE: "[Batch Gemini] Tab {0}: Tái sử dụng room chat hiện tại",
-    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reload lại room (Lần reload: {1})...",
-    GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload thất bại: {1}",
-    GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Lỗi tạo ảnh (Lần thử {1} trong room): {2}",
-    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Thất bại hoàn toàn sau các lượt thử room: {1}",
+    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM:
+      "[Batch Gemini] Tab {0}: Bắt buộc tạo room mới do lỗi liên tục ({1} lần)",
+    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT:
+      "[Batch Gemini] Tab {0}: Đang chuyển hướng về trang chủ để tạo room mới (Lần thử {1}/{2})...",
+    GEMINI_CHAT_BATCH_REDIRECT_FAILED:
+      "[Batch Gemini] Tab {0}: Chuyển hướng thất bại: {1}",
+    GEMINI_CHAT_BATCH_ROOM_REUSE:
+      "[Batch Gemini] Tab {0}: Tái sử dụng room chat hiện tại",
+    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT:
+      "[Batch Gemini] Tab {0}: Reload lại room (Lần reload: {1})...",
+    GEMINI_CHAT_BATCH_RELOAD_FAILED:
+      "[Batch Gemini] Tab {0}: Reload thất bại: {1}",
+    GEMINI_CHAT_BATCH_RENDER_ERROR:
+      "[Batch Gemini] Tab {0}: Lỗi tạo ảnh (Lần thử {1} trong room): {2}",
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY:
+      "[Batch Gemini] Tab {0}: Thất bại hoàn toàn sau các lượt thử room: {1}",
     UNKNOWN_ERROR: "Lỗi không xác định.",
     BATCH_GEN_NO_ITEMS: "Không có items để tạo ảnh",
     BATCH_GEN_SYSTEM_ERROR: "Có lỗi hệ thống xảy ra: {0}",
-    STREAM_NOT_SUPPORTED: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
+    STREAM_NOT_SUPPORTED:
+      "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
     VOICE_ALIGN_NO_AUDIO: "Không tìm thấy dữ liệu âm thanh.",
     VOICE_ALIGN_NO_SCENES: "Không tìm thấy danh sách phân cảnh.",
-    VOICE_ALIGN_MISSING_OUTPUT: "Không nhận được file kết quả từ script Python.",
-    VOICE_ALIGN_INSTALL_ERR: "Môi trường Python thiếu thư viện 'openai-whisper' và không thể tự động cài đặt. Vui lòng tự chạy lệnh 'pip install openai-whisper' trên Terminal. Lỗi: {0}",
+    VOICE_ALIGN_MISSING_OUTPUT:
+      "Không nhận được file kết quả từ script Python.",
+    VOICE_ALIGN_INSTALL_ERR:
+      "Môi trường Python thiếu thư viện 'openai-whisper' và không thể tự động cài đặt. Vui lòng tự chạy lệnh 'pip install openai-whisper' trên Terminal. Lỗi: {0}",
     VOICE_ALIGN_PARSE_ERR: "Lỗi đọc kết quả đồng bộ: {0}",
-    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT: "Đợi phản hồi mới từ Gemini Chat bị timeout hoặc không có phản hồi mới.",
-    GEMINI_CHAT_NO_NEW_RESPONSE: "Không thấy phản hồi mới từ Gemini sau khi gửi prompt. Vui lòng thử lại.",
-    GEMINI_CHAT_PREVENT_OLD_IMAGE: "Không có phản hồi mới nào được tạo ra từ Gemini Chat. Đã ngăn chặn lấy nhầm ảnh cũ.",
-    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM: "[Batch] Chuẩn bị Tab {0}: Chuyển hướng về phòng chat mới sạch sẽ.",
+    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT:
+      "Đợi phản hồi mới từ Gemini Chat bị timeout hoặc không có phản hồi mới.",
+    GEMINI_CHAT_NO_NEW_RESPONSE:
+      "Không thấy phản hồi mới từ Gemini sau khi gửi prompt. Vui lòng thử lại.",
+    GEMINI_CHAT_PREVENT_OLD_IMAGE:
+      "Không có phản hồi mới nào được tạo ra từ Gemini Chat. Đã ngăn chặn lấy nhầm ảnh cũ.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM:
+      "[Batch] Chuẩn bị Tab {0}: Chuyển hướng về phòng chat mới sạch sẽ.",
     GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR: "[Batch] Lỗi chuẩn bị Tab {0}: {1}",
     GEMINI_CHAT_CLICKED_SEND: "[Gemini Chat] Đã click nút Gửi tin nhắn.",
-    GEMINI_CHAT_CLICK_SEND_FAILED: "[Gemini Chat] Không thể click nút Gửi, chuyển sang nhấn Enter: {0}",
+    GEMINI_CHAT_CLICK_SEND_FAILED:
+      "[Gemini Chat] Không thể click nút Gửi, chuyển sang nhấn Enter: {0}",
     GEMINI_CHAT_PRESSED_ENTER: "[Gemini Chat] Đã nhấn Enter.",
-    PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
-    GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
+    PLAYWRIGHT_MUTEX_DELAY:
+      "[Playwright] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
+    GEMINI_CHAT_MUTEX_DELAY:
+      "[Gemini Chat] Chờ {0}ms trước khi giải phóng mutex sinh ảnh...",
     GEMINI_CHAT_REQUEST_PACING: "[Gemini Chat] Giãn yêu cầu {0}ms...",
-    GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Chờ {1}ms trước khi xử lý phân cảnh tiếp theo...",
-    SPAM_PREVENTION_DELAY: "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo...",
+    GEMINI_CHAT_BATCH_NEXT_DELAY:
+      "[Batch Gemini] Tab {0}: Chờ {1}ms trước khi xử lý phân cảnh tiếp theo...",
+    SPAM_PREVENTION_DELAY:
+      "[Spam Prevention] Đang chờ {0}ms trước khi thực hiện yêu cầu tạo ảnh tiếp theo...",
     API_RATE_LIMITS_TRIGGERED: "Giới hạn tỷ lệ API đã được kích hoạt",
     TTS_DEFAULT_TEST: "Xin chào, đây là giọng đọc thử nghiệm.",
     ULTRA_FILE_REQUIRED: "Đường dẫn file dự án draft_content.json là bắt buộc!",
@@ -199,13 +268,19 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     TEMPLATE_NOT_FOUND: "Không tìm thấy mẫu dự án yêu cầu",
     TEMPLATE_DELETE_FAILED: "Lỗi khi xoá mẫu dự án",
     ULTRA_EXPORT_STARTING: "🎬 [Xuất Video] Bắt đầu kết xuất video...",
-    ULTRA_EXPORT_NO_MEDIA: "⚠️ [Xuất Video] Không tìm thấy hình ảnh hoặc âm thanh để kết xuất!",
-    ULTRA_EXPORT_NO_OUTPUT_DIR: "❌ [Xuất Video] Chưa chỉ định thư mục lưu video!",
-    ULTRA_EXPORT_NO_DRAFT: "❌ [Xuất Video] Không tìm thấy dữ liệu kịch bản để đọc file media!",
-    ULTRA_EXPORT_RENDERING: "⏳ [Xuất Video] Đang kết xuất video ({0} ảnh, {1} âm thanh)...",
-    ULTRA_EXPORT_SUCCESS: "✅ [Xuất Video] Kết xuất video thành công! File lưu tại: {0}",
+    ULTRA_EXPORT_NO_MEDIA:
+      "⚠️ [Xuất Video] Không tìm thấy hình ảnh hoặc âm thanh để kết xuất!",
+    ULTRA_EXPORT_NO_OUTPUT_DIR:
+      "❌ [Xuất Video] Chưa chỉ định thư mục lưu video!",
+    ULTRA_EXPORT_NO_DRAFT:
+      "❌ [Xuất Video] Không tìm thấy dữ liệu kịch bản để đọc file media!",
+    ULTRA_EXPORT_RENDERING:
+      "⏳ [Xuất Video] Đang kết xuất video ({0} ảnh, {1} âm thanh)...",
+    ULTRA_EXPORT_SUCCESS:
+      "✅ [Xuất Video] Kết xuất video thành công! File lưu tại: {0}",
     ULTRA_EXPORT_FAILED: "❌ [Xuất Video] Kết xuất thất bại: {0}",
-    ULTRA_EXPORT_WARN_NO_AUDIO: "⚠️ [Xuất Video] Không có âm thanh thuyết minh, sẽ kết xuất video im lặng.",
+    ULTRA_EXPORT_WARN_NO_AUDIO:
+      "⚠️ [Xuất Video] Không có âm thanh thuyết minh, sẽ kết xuất video im lặng.",
     PARSE_URL_ERR: "Không thể đọc dữ liệu định danh từ URL",
     FFMPEG_RENDER_ERROR: "Lỗi kết xuất video",
   },
@@ -240,7 +315,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     CHARACTER_EXTRACT_FAIL: "Character extraction failed",
     STORYBOARD_INVALID: "Invalid storyboard structure",
     CHARACTER_PROMPT_REQUIRED: "Missing character prompt",
-    GEMINI_NOT_INIT: "No AI key is configured. Add a Cerebras, Groq, or Gemini key in Settings.",
+    GEMINI_NOT_INIT:
+      "No AI key is configured. Add a Cerebras, Groq, or Gemini key in Settings.",
     STYLE_EXTRACTION_ERR: "Style extraction failed",
     STORYBOARD_REQUIRED: "Storyboard script is required",
     NEW_STYLE_REQUIRED: "New style description is required",
@@ -259,9 +335,12 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     PROJECT_NOT_FOUND: "Project not found",
     PROJECT_READ_ERR: "Error reading projects.json file:",
     PROJECT_WRITE_ERR: "Error writing projects.json file:",
-    SQLITE_MIGRATION_START: "[System - SQLite] 🔄 Old JSON data files detected. Starting migration to SQLite...",
-    SQLITE_MIGRATION_EMPTY: "[System - SQLite] ℹ️ Old project list is empty. Skipping migration.",
-    SQLITE_MIGRATION_SUCCESS: "[System - SQLite] ✅ Successfully migrated all data to SQLite. Old JSON files backed up in projects_backup_json/.",
+    SQLITE_MIGRATION_START:
+      "[System - SQLite] 🔄 Old JSON data files detected. Starting migration to SQLite...",
+    SQLITE_MIGRATION_EMPTY:
+      "[System - SQLite] ℹ️ Old project list is empty. Skipping migration.",
+    SQLITE_MIGRATION_SUCCESS:
+      "[System - SQLite] ✅ Successfully migrated all data to SQLite. Old JSON files backed up in projects_backup_json/.",
     SQLITE_INIT_ERR: "Could not connect to or initialize SQLite database",
     SQLITE_LIST_ERR: "Error reading project list from SQLite",
     SQLITE_DETAIL_ERR: "Error reading project detail from SQLite",
@@ -276,18 +355,25 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     ERROR_GET_PRESETS: "Failed to fetch presets",
     ERROR_SAVE_PRESET: "Failed to save preset",
     ERROR_DELETE_PRESET: "Failed to delete preset",
-    SQLITE_MIGRATE_CRITICAL: "[System - SQLite] Critical error during old data migration",
-    SQLITE_MIGRATE_PARSE_ERR: "[System - SQLite] Error parsing project detail file",
-    SQLITE_MIGRATE_BACKUP_ERR: "[System - SQLite] Error backing up metadata file projects.json",
+    SQLITE_MIGRATE_CRITICAL:
+      "[System - SQLite] Critical error during old data migration",
+    SQLITE_MIGRATE_PARSE_ERR:
+      "[System - SQLite] Error parsing project detail file",
+    SQLITE_MIGRATE_BACKUP_ERR:
+      "[System - SQLite] Error backing up metadata file projects.json",
     FETCH_VOICES_ERR: "Error fetching voice list:",
-    PLAYWRIGHT_CONNECTING: "🔗 Connecting to real Chrome browser via port 9222...",
+    PLAYWRIGHT_CONNECTING:
+      "🔗 Connecting to real Chrome browser via port 9222...",
     PLAYWRIGHT_ACCESSING_LABS: "🌐 Accessing Google Labs...",
-    PLAYWRIGHT_LOGIN_PROMPT: "\n⚠️  [ATTENTION] Please log in to your Google account in the browser...",
+    PLAYWRIGHT_LOGIN_PROMPT:
+      "\n⚠️  [ATTENTION] Please log in to your Google account in the browser...",
     PLAYWRIGHT_TOKEN_CAPTURED: "✅ Bearer Token captured successfully!",
     PLAYWRIGHT_TOKEN_TIMEOUT: "⏳ Login timeout.",
     PLAYWRIGHT_CONNECT_ERR: "❌ Error connecting to Chrome:",
-    PLAYWRIGHT_CHROME_MANDATE: "⚠️  YOU NEED TO OPEN CHROME FIRST USING THIS COMMAND BEFORE RUNNING SERVER:",
-    PLAYWRIGHT_CHROME_COMMAND: '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
+    PLAYWRIGHT_CHROME_MANDATE:
+      "⚠️  YOU NEED TO OPEN CHROME FIRST USING THIS COMMAND BEFORE RUNNING SERVER:",
+    PLAYWRIGHT_CHROME_COMMAND:
+      '👉 start chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\\chrome_debug_profile"',
     MISSING_SCENE_SCRIPT: "Missing scene script",
     TTS_TASK_ERROR: "TTS Task Error: ",
     NO_AUDIO_CHUNKS: "No audio chunks provided",
@@ -299,72 +385,122 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GOOGLE_TTS_FAILED: "Google TTS failed for chunk: {0}",
     TTS_FETCH_POLLING_ERROR: "Fetch polling error: {0}",
     TTS_POLLING_FAILED_RETRYING: "Polling task failed, retrying... {0}",
-    PLAYWRIGHT_BORDER: "\n=======================================================",
-    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
-    PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Browser page is closed or not initialized. Re-initializing...",
-    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT: "[Playwright] Page was closed in previous attempt. Re-initializing...",
-    PLAYWRIGHT_CLOSED_DETECTED_RESET: "[Playwright] Detect closed page/context. Resetting Playwright instance...",
-    GEMINI_CHAT_START_ROOM: "[Gemini Chat] Starting new chat room (Attempt {0}/{1})...",
+    PLAYWRIGHT_BORDER:
+      "\n=======================================================",
+    PLAYWRIGHT_BORDER_BOTTOM:
+      "=======================================================\n",
+    PLAYWRIGHT_PAGE_CLOSED_REINIT:
+      "[Playwright] Browser page is closed or not initialized. Re-initializing...",
+    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT:
+      "[Playwright] Page was closed in previous attempt. Re-initializing...",
+    PLAYWRIGHT_CLOSED_DETECTED_RESET:
+      "[Playwright] Detect closed page/context. Resetting Playwright instance...",
+    GEMINI_CHAT_START_ROOM:
+      "[Gemini Chat] Starting new chat room (Attempt {0}/{1})...",
     GEMINI_CHAT_INIT_FAILED: "[Gemini Chat] Failed to initialize new page: {0}",
-    GEMINI_CHAT_RELOAD: "[Gemini Chat] Encountered issue, reloading page attempt {0}...",
+    GEMINI_CHAT_RELOAD:
+      "[Gemini Chat] Encountered issue, reloading page attempt {0}...",
     GEMINI_CHAT_RELOAD_FAILED: "[Gemini Chat] Page reload failed: {0}",
-    GEMINI_CHAT_ATTEMPT_FAILED: "[Gemini Chat] Error on attempt {0} in room {1}: {2}",
+    GEMINI_CHAT_ATTEMPT_FAILED:
+      "[Gemini Chat] Error on attempt {0} in room {1}: {2}",
     GEMINI_CHAT_FAILED_COMPLETELY: "[Gemini Chat] Failed completely: {0}",
-    GEMINI_CHAT_FALLBACK_WARNING: "Image generation via Gemini Chat Room failed completely. Using fallback image.",
+    GEMINI_CHAT_FALLBACK_WARNING:
+      "Image generation via Gemini Chat Room failed completely. Using fallback image.",
     GEMINI_CHAT_CONFIG_MODEL: "[Gemini Chat] Configuring model: Target is {0}",
     GEMINI_CHAT_CURRENT_MODEL: "[Gemini Chat] Current model: {0}",
-    GEMINI_CHAT_MODEL_CORRECT: "[Gemini Chat] Current model matches config, skipping.",
+    GEMINI_CHAT_MODEL_CORRECT:
+      "[Gemini Chat] Current model matches config, skipping.",
     GEMINI_CHAT_MODEL_SUCCESS: "[Gemini Chat] Changed model to: {0}",
-    GEMINI_CHAT_MODEL_NOT_FOUND: "[Gemini Chat] Model option button {0} not found",
-    GEMINI_CHAT_MODEL_PICKER_NOT_FOUND: "[Gemini Chat] Model picker button not found.",
+    GEMINI_CHAT_MODEL_NOT_FOUND:
+      "[Gemini Chat] Model option button {0} not found",
+    GEMINI_CHAT_MODEL_PICKER_NOT_FOUND:
+      "[Gemini Chat] Model picker button not found.",
     GEMINI_CHAT_CONFIG_GEN_TYPE: "[Gemini Chat] Configuring generate type: {0}",
     GEMINI_CHAT_GEN_TYPE_SUCCESS: "[Gemini Chat] Generate type set to: {0}",
-    GEMINI_CHAT_GEN_TYPE_FALLBACK: "[Gemini Chat] Generate type set to (fallback): {0}",
-    GEMINI_CHAT_GEN_TYPE_NOT_FOUND: '[Gemini Chat] Generate type option "{0}" not found in menu.',
-    GEMINI_CHAT_PLUS_NOT_FOUND: "[Gemini Chat] Plus configuration button not found.",
-    GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND: "[Gemini Chat] Aspect ratio button not found.",
-    GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND: "[Gemini Chat] Aspect ratio {0} not found.",
+    GEMINI_CHAT_GEN_TYPE_FALLBACK:
+      "[Gemini Chat] Generate type set to (fallback): {0}",
+    GEMINI_CHAT_GEN_TYPE_NOT_FOUND:
+      '[Gemini Chat] Generate type option "{0}" not found in menu.',
+    GEMINI_CHAT_PLUS_NOT_FOUND:
+      "[Gemini Chat] Plus configuration button not found.",
+    GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND:
+      "[Gemini Chat] Aspect ratio button not found.",
+    GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND:
+      "[Gemini Chat] Aspect ratio {0} not found.",
     GEMINI_CHAT_ASPECT_SUCCESS: "[Gemini Chat] Aspect ratio set to {0}.",
-    GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND: "[Gemini Chat] Reference upload input not found.",
-    GEMINI_CHAT_REFERENCE_UPLOAD: "[Gemini Chat] Uploaded {0} reference images.",
+    GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND:
+      "[Gemini Chat] Reference upload input not found.",
+    GEMINI_CHAT_REFERENCE_UPLOAD:
+      "[Gemini Chat] Uploaded {0} reference images.",
     GEMINI_CHAT_TYPING_PROMPT: "[Gemini Chat] Typing prompt...",
     GEMINI_CHAT_PASTING_PROMPT: "[Gemini Chat] Pasting prompt...",
-    GEMINI_CHAT_WAITING_RESPONSE: "[Gemini Chat] Waiting for Gemini response...",
-    GEMINI_CHAT_THINKING_DETACHED: "[Gemini Chat] Thinking-overlay not found or detached early.",
+    GEMINI_CHAT_WAITING_RESPONSE:
+      "[Gemini Chat] Waiting for Gemini response...",
+    GEMINI_CHAT_THINKING_DETACHED:
+      "[Gemini Chat] Thinking-overlay not found or detached early.",
     GEMINI_CHAT_DOWNLOAD_ERROR: "Download button not found in Gemini response.",
-    GEMINI_CHAT_ROOM_REUSE: "[Gemini Chat] Continuing using the current chat room for generation...",
-    GEMINI_CHAT_ROOM_FORCED: "[Gemini Chat] Detected consecutive errors >= 2, forcing a new room.",
+    GEMINI_CHAT_ROOM_REUSE:
+      "[Gemini Chat] Continuing using the current chat room for generation...",
+    GEMINI_CHAT_ROOM_FORCED:
+      "[Gemini Chat] Detected consecutive errors >= 2, forcing a new room.",
     GEMINI_CHAT_NO_RESPONSE: "[Gemini Chat] Last model-response not found.",
-    GEMINI_CHAT_BUSY_WAIT: "[Gemini Chat] Detected busy response (aria-busy=true), waiting for completion...",
-    GEMINI_CHAT_BUSY_TIMEOUT: "[Gemini Chat] Error or timeout waiting for response to be ready (aria-busy=false).",
-    GEMINI_CHAT_NO_CONTAINER: "[Gemini Chat] Completed image container not found, continuing checking.",
-    GEMINI_CHAT_NO_SRC: "[Gemini Chat] Valid src attribute not found on media element.",
-    GEMINI_CHAT_EXTRACTING_MEDIA: "[Gemini Chat] Detected media source ({0}): {1}. Extracting data directly...",
+    GEMINI_CHAT_BUSY_WAIT:
+      "[Gemini Chat] Detected busy response (aria-busy=true), waiting for completion...",
+    GEMINI_CHAT_BUSY_TIMEOUT:
+      "[Gemini Chat] Error or timeout waiting for response to be ready (aria-busy=false).",
+    GEMINI_CHAT_NO_CONTAINER:
+      "[Gemini Chat] Completed image container not found, continuing checking.",
+    GEMINI_CHAT_NO_SRC:
+      "[Gemini Chat] Valid src attribute not found on media element.",
+    GEMINI_CHAT_EXTRACTING_MEDIA:
+      "[Gemini Chat] Detected media source ({0}): {1}. Extracting data directly...",
     GEMINI_CHAT_EXTRACT_FAILED: "[Gemini Chat] Direct extraction failed: {0}",
     GEMINI_CHAT_EXTRACT_ERROR: "[Gemini Chat] Error extracting data: {0}",
-    GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Successfully retrieved media directly from browser URL!",
-    GEMINI_CHAT_EXTRACT_ERR_THROW: "Could not extract image/video data from browser URL.",
-    GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Simulating click to check Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Simulating click to check menu Plus...",
-    GEMINI_CHAT_BATCH_START: "[Batch Gemini] Opening {0} parallel tabs to generate images...",
-    GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} opened successfully.",
-    GEMINI_CHAT_BATCH_TAB_START: '[Batch Gemini] Tab {0}: Starting image generation for scene "{1}"...',
-    GEMINI_CHAT_BATCH_TAB_SUCCESS: '[Batch Gemini] Tab {0}: ✅ Successfully generated image for scene "{1}".',
-    GEMINI_CHAT_BATCH_TAB_ERROR: '[Batch Gemini] Tab {0}: ❌ Error for scene "{1}": {2}',
-    GEMINI_CHAT_BATCH_TAB_RECOVERY: "[Batch Gemini] Tab {0}: Automatically reloading tab due to error to recover...",
-    GEMINI_CHAT_BATCH_TAB_REDIRECT: "[Batch Gemini] Tab {0}: Redirecting to Gemini homepage to initialize a new chat session...",
-    GEMINI_CHAT_BATCH_COMPLETE: "[Batch Gemini] Completed batch: {0}/{1} successful.",
-    GEMINI_CHAT_BATCH_INIT_ERROR: "[Batch Gemini] Batch initialization error: {0}",
-    GEMINI_CHAT_BATCH_CLOSE_TABS: "[Batch Gemini] Closing all {0} active batch tabs...",
+    GEMINI_CHAT_EXTRACT_SUCCESS:
+      "[Gemini Chat] Successfully retrieved media directly from browser URL!",
+    GEMINI_CHAT_EXTRACT_ERR_THROW:
+      "Could not extract image/video data from browser URL.",
+    GEMINI_CHAT_MODEL_MOCK_CHECK:
+      "[Gemini Chat] Simulating click to check Model Picker...",
+    GEMINI_CHAT_PLUS_MOCK_CHECK:
+      "[Gemini Chat] Simulating click to check menu Plus...",
+    GEMINI_CHAT_BATCH_START:
+      "[Batch Gemini] Opening {0} parallel tabs to generate images...",
+    GEMINI_CHAT_BATCH_TAB_INIT:
+      "[Batch Gemini] Tab {0}/{1} opened successfully.",
+    GEMINI_CHAT_BATCH_TAB_START:
+      '[Batch Gemini] Tab {0}: Starting image generation for scene "{1}"...',
+    GEMINI_CHAT_BATCH_TAB_SUCCESS:
+      '[Batch Gemini] Tab {0}: ✅ Successfully generated image for scene "{1}".',
+    GEMINI_CHAT_BATCH_TAB_ERROR:
+      '[Batch Gemini] Tab {0}: ❌ Error for scene "{1}": {2}',
+    GEMINI_CHAT_BATCH_TAB_RECOVERY:
+      "[Batch Gemini] Tab {0}: Automatically reloading tab due to error to recover...",
+    GEMINI_CHAT_BATCH_TAB_REDIRECT:
+      "[Batch Gemini] Tab {0}: Redirecting to Gemini homepage to initialize a new chat session...",
+    GEMINI_CHAT_BATCH_COMPLETE:
+      "[Batch Gemini] Completed batch: {0}/{1} successful.",
+    GEMINI_CHAT_BATCH_INIT_ERROR:
+      "[Batch Gemini] Batch initialization error: {0}",
+    GEMINI_CHAT_BATCH_CLOSE_TABS:
+      "[Batch Gemini] Closing all {0} active batch tabs...",
     GEMINI_CHAT_PAGE_CLOSED: "Browser page is closed or not initialized.",
-    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM: "[Batch Gemini] Tab {0}: Forced to create a new room due to consecutive errors ({1} times)",
-    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT: "[Batch Gemini] Tab {0}: Redirecting to homepage to create a new room (Attempt {1}/{2})...",
-    GEMINI_CHAT_BATCH_REDIRECT_FAILED: "[Batch Gemini] Tab {0}: Redirect failed: {1}",
-    GEMINI_CHAT_BATCH_ROOM_REUSE: "[Batch Gemini] Tab {0}: Reusing the current chat room",
-    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT: "[Batch Gemini] Tab {0}: Reloading room (Reload: {1})...",
-    GEMINI_CHAT_BATCH_RELOAD_FAILED: "[Batch Gemini] Tab {0}: Reload failed: {1}",
-    GEMINI_CHAT_BATCH_RENDER_ERROR: "[Batch Gemini] Tab {0}: Error rendering image (Attempt {1} in room): {2}",
-    GEMINI_CHAT_BATCH_FAILED_COMPLETELY: "[Batch Gemini] Tab {0}: Failed completely after room attempts: {1}",
+    GEMINI_CHAT_BATCH_FORCED_NEW_ROOM:
+      "[Batch Gemini] Tab {0}: Forced to create a new room due to consecutive errors ({1} times)",
+    GEMINI_CHAT_BATCH_REDIRECT_ATTEMPT:
+      "[Batch Gemini] Tab {0}: Redirecting to homepage to create a new room (Attempt {1}/{2})...",
+    GEMINI_CHAT_BATCH_REDIRECT_FAILED:
+      "[Batch Gemini] Tab {0}: Redirect failed: {1}",
+    GEMINI_CHAT_BATCH_ROOM_REUSE:
+      "[Batch Gemini] Tab {0}: Reusing the current chat room",
+    GEMINI_CHAT_BATCH_RELOAD_ATTEMPT:
+      "[Batch Gemini] Tab {0}: Reloading room (Reload: {1})...",
+    GEMINI_CHAT_BATCH_RELOAD_FAILED:
+      "[Batch Gemini] Tab {0}: Reload failed: {1}",
+    GEMINI_CHAT_BATCH_RENDER_ERROR:
+      "[Batch Gemini] Tab {0}: Error rendering image (Attempt {1} in room): {2}",
+    GEMINI_CHAT_BATCH_FAILED_COMPLETELY:
+      "[Batch Gemini] Tab {0}: Failed completely after room attempts: {1}",
     UNKNOWN_ERROR: "Unknown error.",
     BATCH_GEN_NO_ITEMS: "No items to generate images.",
     BATCH_GEN_SYSTEM_ERROR: "A system error occurred: {0}",
@@ -372,21 +508,32 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     VOICE_ALIGN_NO_AUDIO: "No audio data found.",
     VOICE_ALIGN_NO_SCENES: "No scenes found.",
     VOICE_ALIGN_MISSING_OUTPUT: "No output file received from Python script.",
-    VOICE_ALIGN_INSTALL_ERR: "Python environment lacks 'openai-whisper' library and automatic installation failed. Please run 'pip install openai-whisper' manually on Terminal. Error: {0}",
+    VOICE_ALIGN_INSTALL_ERR:
+      "Python environment lacks 'openai-whisper' library and automatic installation failed. Please run 'pip install openai-whisper' manually on Terminal. Error: {0}",
     VOICE_ALIGN_PARSE_ERR: "Error reading synchronization results: {0}",
-    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT: "Timeout waiting for new response from Gemini Chat or no new response found.",
-    GEMINI_CHAT_NO_NEW_RESPONSE: "No new response from Gemini after sending prompt. Please try again.",
-    GEMINI_CHAT_PREVENT_OLD_IMAGE: "No new response created from Gemini Chat. Prevented extracting old image.",
-    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM: "[Batch] Preparing Tab {0}: Redirecting to a clean new chat room.",
-    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR: "[Batch] Error preparing Tab {0}: {1}",
+    GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT:
+      "Timeout waiting for new response from Gemini Chat or no new response found.",
+    GEMINI_CHAT_NO_NEW_RESPONSE:
+      "No new response from Gemini after sending prompt. Please try again.",
+    GEMINI_CHAT_PREVENT_OLD_IMAGE:
+      "No new response created from Gemini Chat. Prevented extracting old image.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM:
+      "[Batch] Preparing Tab {0}: Redirecting to a clean new chat room.",
+    GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM_ERR:
+      "[Batch] Error preparing Tab {0}: {1}",
     GEMINI_CHAT_CLICKED_SEND: "[Gemini Chat] Clicked Send Button.",
-    GEMINI_CHAT_CLICK_SEND_FAILED: "[Gemini Chat] Failed to click Send Button, falling back to Enter: {0}",
+    GEMINI_CHAT_CLICK_SEND_FAILED:
+      "[Gemini Chat] Failed to click Send Button, falling back to Enter: {0}",
     GEMINI_CHAT_PRESSED_ENTER: "[Gemini Chat] Pressed Enter.",
-    PLAYWRIGHT_MUTEX_DELAY: "[Playwright] Waiting {0}ms before releasing image generation mutex...",
-    GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
+    PLAYWRIGHT_MUTEX_DELAY:
+      "[Playwright] Waiting {0}ms before releasing image generation mutex...",
+    GEMINI_CHAT_MUTEX_DELAY:
+      "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_REQUEST_PACING: "[Gemini Chat] Pacing request for {0}ms...",
-    GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
-    SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
+    GEMINI_CHAT_BATCH_NEXT_DELAY:
+      "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
+    SPAM_PREVENTION_DELAY:
+      "[Spam Prevention] Waiting for {0}ms before next image generation request...",
     API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
     TTS_DEFAULT_TEST: "Hello, this is a test voice.",
     ULTRA_FILE_REQUIRED: "draft_content.json file path is required!",
@@ -395,8 +542,10 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     SELECT_FILE_FAILED: "Error opening file selector!",
     SELECT_FOLDER_FAILED: "Error opening folder selector!",
     ULTRA_SPAWN_LOG: "[System] 🚀 Spawning CapCut optimization tool...",
-    ULTRA_CLEANED_LOCK: "[System] 🗑️ Removed project lock file .locked to fully release the project.",
-    ULTRA_UPDATED_META: "[System] 📝 Updated modification time in draft_meta_info.json to present.",
+    ULTRA_CLEANED_LOCK:
+      "[System] 🗑️ Removed project lock file .locked to fully release the project.",
+    ULTRA_UPDATED_META:
+      "[System] 📝 Updated modification time in draft_meta_info.json to present.",
     ULTRA_EXIT_ERROR: "CapCut Editor process failed with exit code: {0}",
     ULTRA_UNEXPECTED_ERR: "Unexpected error running CapCut Editor: {0}",
     ULTRA_RUN_SELECT_FILE: "Running select-file command: {0}",
@@ -408,14 +557,21 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     TEMPLATE_NAME_REQUIRED: "Name and content are required",
     TEMPLATE_NOT_FOUND: "Template not found",
     TEMPLATE_DELETE_FAILED: "Failed to delete template",
-    ULTRA_EXPORT_STARTING: "🎬 [Export Video] Starting video render from CapCut project...",
-    ULTRA_EXPORT_NO_MEDIA: "⚠️ [Export Video] No image or audio files found in project to render!",
-    ULTRA_EXPORT_NO_OUTPUT_DIR: "❌ [Export Video] No output directory specified!",
-    ULTRA_EXPORT_NO_DRAFT: "❌ [Export Video] Could not find draft_content.json to read media!",
-    ULTRA_EXPORT_RENDERING: "⏳ [Export Video] Rendering video with ffmpeg ({0} images, {1} audio tracks)...",
-    ULTRA_EXPORT_SUCCESS: "✅ [Export Video] Video exported successfully! Saved to: {0}",
+    ULTRA_EXPORT_STARTING:
+      "🎬 [Export Video] Starting video render from CapCut project...",
+    ULTRA_EXPORT_NO_MEDIA:
+      "⚠️ [Export Video] No image or audio files found in project to render!",
+    ULTRA_EXPORT_NO_OUTPUT_DIR:
+      "❌ [Export Video] No output directory specified!",
+    ULTRA_EXPORT_NO_DRAFT:
+      "❌ [Export Video] Could not find draft_content.json to read media!",
+    ULTRA_EXPORT_RENDERING:
+      "⏳ [Export Video] Rendering video with ffmpeg ({0} images, {1} audio tracks)...",
+    ULTRA_EXPORT_SUCCESS:
+      "✅ [Export Video] Video exported successfully! Saved to: {0}",
     ULTRA_EXPORT_FAILED: "❌ [Export Video] Export failed: {0}",
-    ULTRA_EXPORT_WARN_NO_AUDIO: "⚠️ [Export Video] No audio found, rendering silent video.",
+    ULTRA_EXPORT_WARN_NO_AUDIO:
+      "⚠️ [Export Video] No audio found, rendering silent video.",
     PARSE_URL_ERR: "[Playwright] Cannot parse URL id",
     FFMPEG_RENDER_ERROR: "FFMPEG render error",
   },
@@ -424,7 +580,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
 export const PIPELINE_LOGS_LOCALIZED = {
   vi: {
     HOOK_STEP1: "[Hook] B1: Phân tích chủ đề & đối tượng...",
-    HOOK_AUTO_GENERATE: "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình...",
+    HOOK_AUTO_GENERATE:
+      "🤖 Tự động biên soạn Câu dẫn dắt (Hook) theo cấu hình...",
     HOOK_EMBEDDED: "✨ Đã nhúng Hook: ",
     HOOK_STEP1_DONE: "[Hook] Đã xác định khán giả:",
     HOOK_STEP2: "[Hook] B2: Tạo nháp hook...",
@@ -507,31 +664,53 @@ export const PIPELINE_LOGS_LOCALIZED = {
 export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.en;
 export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.en;
 
-export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => {
-  return isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : BACKEND_MESSAGES_LOCALIZED.en[key];
+export const getBackendMsg = (
+  key: BackendMessageKey,
+  isVi: boolean = true,
+): string => {
+  return isVi
+    ? BACKEND_MESSAGES_LOCALIZED.vi[key]
+    : BACKEND_MESSAGES_LOCALIZED.en[key];
 };
 
-export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => {
-  return isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : PIPELINE_LOGS_LOCALIZED.en[key];
+export const getPipelineLog = (
+  key: PipelineLogKey,
+  isVi: boolean = true,
+): string => {
+  return isVi
+    ? PIPELINE_LOGS_LOCALIZED.vi[key]
+    : PIPELINE_LOGS_LOCALIZED.en[key];
 };
 
-export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
-  get(_, prop: string) {
-    const key = prop as BackendMessageKey;
-    return BACKEND_MESSAGES_LOCALIZED.vi[key] || BACKEND_MESSAGES_LOCALIZED.en[key] || "";
+export const BACKEND_MESSAGES = new Proxy(
+  {} as Record<BackendMessageKey, string>,
+  {
+    get(_, prop: string) {
+      const key = prop as BackendMessageKey;
+      return (
+        BACKEND_MESSAGES_LOCALIZED.vi[key] ||
+        BACKEND_MESSAGES_LOCALIZED.en[key] ||
+        ""
+      );
+    },
   },
-});
+);
 
 export const PIPELINE_LOGS = new Proxy({} as Record<PipelineLogKey, string>, {
   get(_, prop: string) {
     const key = prop as PipelineLogKey;
-    return PIPELINE_LOGS_LOCALIZED.vi[key] || PIPELINE_LOGS_LOCALIZED.en[key] || "";
+    return (
+      PIPELINE_LOGS_LOCALIZED.vi[key] || PIPELINE_LOGS_LOCALIZED.en[key] || ""
+    );
   },
 });
 
 export type LogLang = "en" | "vi";
 
-export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "vi"): string => {
+export const getFriendlyActionName = (
+  actionName: string,
+  lang: "vi" | "en" = "vi",
+): string => {
   const dictionary: Record<string, { vi: string; en: string }> = {
     handleCloseVoiceModal: {
       vi: "Đóng cửa sổ chọn giọng đọc",
@@ -702,7 +881,9 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
   if (!actionName) return "";
 
   if (actionName.startsWith("handleExtractCharacter")) {
-    return lang === "vi" ? "Bắt đầu trích xuất đặc điểm nhân vật..." : "Extracting character traits from script...";
+    return lang === "vi"
+      ? "Bắt đầu trích xuất đặc điểm nhân vật..."
+      : "Extracting character traits from script...";
   }
 
   const match = dictionary[actionName];
@@ -714,7 +895,9 @@ export const getFriendlyActionName = (actionName: string, lang: "vi" | "en" = "v
     .replace(/^handle/, "")
     .replace(/([A-Z])/g, " $1")
     .trim();
-  return lang === "vi" ? `Yêu cầu thực thi: ${cleanName}` : `Requested execution: ${cleanName}`;
+  return lang === "vi"
+    ? `Yêu cầu thực thi: ${cleanName}`
+    : `Requested execution: ${cleanName}`;
 };
 
 export const LOG_DICTIONARY = {
@@ -1295,9 +1478,12 @@ export const VOICE_ALIGN_LOGS = {
   ALIGN_SUCCESS: "[Whisper Alignment] ✅ Đồng bộ thành công:",
   ALIGN_FAILED: "[Whisper Alignment] ❌ Đồng bộ thất bại:",
   CHECK_WHISPER: "Checking if openai-whisper is installed...",
-  WHISPER_NOT_INSTALLED: "openai-whisper is not installed. Attempting to install automatically via pip...",
-  WHISPER_INSTALL_SUCCESS: "Successfully installed openai-whisper. Running voice aligner...",
-  WHISPER_ALREADY_INSTALLED: "openai-whisper is already installed. Running voice aligner...",
+  WHISPER_NOT_INSTALLED:
+    "openai-whisper is not installed. Attempting to install automatically via pip...",
+  WHISPER_INSTALL_SUCCESS:
+    "Successfully installed openai-whisper. Running voice aligner...",
+  WHISPER_ALREADY_INSTALLED:
+    "openai-whisper is already installed. Running voice aligner...",
   ERR_DELETE_TEMP_FILES: "Error deleting temp files",
   ERR_UNEXPECTED_ALIGN: "UNEXPECTED_ERROR_ALIGN_VOICE",
   ERR_RUNNING_SCRIPT: "Error running python_scripts/voice_aligner.py: ",

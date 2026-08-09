@@ -25,7 +25,8 @@ export const translations = {
     cancel: "Cancel",
     confirm: "Recreate",
     confirmRecreateTitle: "Recreate All Images",
-    confirmRecreateMessage: "All scenes already have images. Do you want to recreate all of them?",
+    confirmRecreateMessage:
+      "All scenes already have images. Do you want to recreate all of them?",
     create: "Create",
     saving: "Saving...",
     save: "Save",
@@ -33,7 +34,15 @@ export const translations = {
     confirmDelete: "Confirm deletion?",
     editProject: "Edit",
     credits: "Credits",
-    stepShortLabels: ["Script", "Storyboard", "Covers", "SEO", "Export", "Generate Image/Video", "CapCut Editor"],
+    stepShortLabels: [
+      "Script",
+      "Storyboard",
+      "Covers",
+      "SEO",
+      "Export",
+      "Generate Image/Video",
+      "CapCut Editor",
+    ],
     stepTooltips: [
       "Input ideas and generate script",
       "Segment scenes, direct visual style, generate prompts, and synthesize scene-by-scene voices",
@@ -124,7 +133,8 @@ export const translations = {
     listenTest: "Listen",
     uploadedAudio: "Upload Audio",
     seoOptimizer: "SEO Boost",
-    seoDescription: "Select AI descriptive metadata with computed engagement probability.",
+    seoDescription:
+      "Select AI descriptive metadata with computed engagement probability.",
     searchability: "Search Demand",
     ctrProb: "Expected CTR",
     compRatio: "Competition",
@@ -149,26 +159,34 @@ export const translations = {
     flowSEO: "SEO",
     flowExport: "Export",
     viewPipelineMap: "View Pipeline",
-    Please_enter_script_conte: "Please enter script content or narrative concept.",
+    Please_enter_script_conte:
+      "Please enter script content or narrative concept.",
     MULTI_STEP_SYSTEM_FLOW_Dr: "[MULTI-STEP SYSTEM FLOW] Drafting script...",
     Generation_completed_The_: "Generation completed! The script is ready.",
     Loaded_current_scenes_sto: "Loaded current scenes storyboard!",
     Missing_detailed_script_f: "Missing detailed script for storyboarding.",
-    MULTI_STEP_SYSTEM_FLOW_Fo: "[MULTI-STEP SYSTEM FLOW] Formulating storyboard...",
-    Storyboard_coordinates_fo: "Storyboard coordinates formulated successfully!",
-    Scene_visual_prompt_copie: "Scene visual prompt copied to clipboard successfully!",
+    MULTI_STEP_SYSTEM_FLOW_Fo:
+      "[MULTI-STEP SYSTEM FLOW] Formulating storyboard...",
+    Storyboard_coordinates_fo:
+      "Storyboard coordinates formulated successfully!",
+    Scene_visual_prompt_copie:
+      "Scene visual prompt copied to clipboard successfully!",
     Hook_content_copied_to_cl: "Hook content copied to clipboard successfully!",
     No_scenes_available_to_co: "No scenes available to copy prompts!",
-    Pure_optimized_scene_prom: "Pure optimized scene prompts list copied to clipboard!",
-    MULTI_STEP_SYSTEM_FLOW_Ex: "[MULTI-STEP SYSTEM FLOW] Extracting visual style...",
+    Pure_optimized_scene_prom:
+      "Pure optimized scene prompts list copied to clipboard!",
+    MULTI_STEP_SYSTEM_FLOW_Ex:
+      "[MULTI-STEP SYSTEM FLOW] Extracting visual style...",
     Style_extracted_successfu: "Style extracted successfully!",
     No_scenes_to_apply_style: "No scenes to apply style!",
     No_style_extracted_yet: "No style extracted yet!",
     Applying_style_to_scenes: "Applying style to scenes...",
     Successfully_applied_styl: "Successfully applied style to scenes!",
     Applied_style_fallback_mo: "Applied style (fallback mode)!",
-    No_matching_image_files_f: "No matching image files found to align with scenes!",
-    Rewriting_thumbnail_promp: "Rewriting thumbnail prompts to match new style...",
+    No_matching_image_files_f:
+      "No matching image files found to align with scenes!",
+    Rewriting_thumbnail_promp:
+      "Rewriting thumbnail prompts to match new style...",
     Thumbnail_style_extracted: "Thumbnail style extracted successfully!",
     No_thumbnails_to_apply_style: "No cover pages to apply style.",
     Deleted_scene_image_succe: "Deleted scene image successfully!",
@@ -177,18 +195,24 @@ export const translations = {
     Scene_mod_saved_successfu: "Scene mod saved successfully.",
     Loaded_current_Thumbnail_: "Loaded current Thumbnail drafts!",
     Missing_detailed_script_f_1: "Missing detailed script for thumbnails.",
-    MULTI_STEP_SYSTEM_FLOW_De: "[MULTI-STEP SYSTEM FLOW] Designing thumbnails...",
+    MULTI_STEP_SYSTEM_FLOW_De:
+      "[MULTI-STEP SYSTEM FLOW] Designing thumbnails...",
     High_engagement_Thumbnail: "High engagement Thumbnail drafts drawn!",
     Mockup_thumbnail_painted_: "Mockup thumbnail painted successfully!",
     Generating_and_preparing_: "Generating and preparing download...",
-    You_must_generate_the_sto: "You must generate the storyboard before downloading (the system uses sequential generation).",
+    You_must_generate_the_sto:
+      "You must generate the storyboard before downloading (the system uses sequential generation).",
     Voiceover_downloaded_succ: "Voiceover downloaded successfully!",
-    MULTI_STEP_SYSTEM_FLOW_Ge: "[MULTI-STEP SYSTEM FLOW] Generating voiceover...",
-    You_must_generate_the_sto_2: "You must generate the storyboard before synthesizing the scene-by-scene voiceover!",
+    MULTI_STEP_SYSTEM_FLOW_Ge:
+      "[MULTI-STEP SYSTEM FLOW] Generating voiceover...",
+    You_must_generate_the_sto_2:
+      "You must generate the storyboard before synthesizing the scene-by-scene voiceover!",
     No_scenes_to_generate_voi: "No scenes to generate voiceovers for!",
     Script_is_empty: "Script is empty!",
-    MULTI_STEP_SYSTEM_FLOW_Ge_3: "[MULTI-STEP SYSTEM FLOW] Generating voiceover for the entire story...",
-    charScriptEmpty: "Script is empty, please generate storyboard script first.",
+    MULTI_STEP_SYSTEM_FLOW_Ge_3:
+      "[MULTI-STEP SYSTEM FLOW] Generating voiceover for the entire story...",
+    charScriptEmpty:
+      "Script is empty, please generate storyboard script first.",
     charAnalyzing: "Analyzing main character of the script...",
     charAnalyzeSuccess: "Successfully analyzed main character!",
     charAnalyzeFailed: "Failed to analyze character.",
@@ -223,7 +247,8 @@ export const translations = {
     charUploadFor: "Upload {name}",
     charNoImagesFor: "No images uploaded for {name}",
     deleteAllImagesBtn: "Delete All Images",
-    deleteAllImagesConfirm: "Are you sure you want to delete all generated and uploaded images for all scenes? This action cannot be undone.",
+    deleteAllImagesConfirm:
+      "Are you sure you want to delete all generated and uploaded images for all scenes? This action cannot be undone.",
     deleteAllImagesSuccess: "Successfully deleted all scene images!",
     favVoicesTitle: "Favorite Voices",
     favVoicesEmpty: "No favorite voices saved yet.",
@@ -259,18 +284,23 @@ export const translations = {
     copiedPrompt: "AI image prompt copied!",
     Synthesized_full_story_vo: "Synthesized full story voiceover successfully!",
     Loaded_current_SEO_draft: "Loaded current SEO draft!",
-    Missing_detailed_script_f_4: "Missing detailed script for SEO optimization.",
+    Missing_detailed_script_f_4:
+      "Missing detailed script for SEO optimization.",
     MULTI_STEP_SYSTEM_FLOW_An: "[MULTI-STEP SYSTEM FLOW] Analyzing SEO...",
     SEO_metrics_formulated_su: "SEO metrics formulated successfully!",
     Preparing_rendering: "Preparing rendering...",
-    Cinematic_simulated_video: "Cinematic simulated video downloaded successfully!",
-    Failed_to_compile_video_C: "Failed to compile video. Check audio context permissions.",
+    Cinematic_simulated_video:
+      "Cinematic simulated video downloaded successfully!",
+    Failed_to_compile_video_C:
+      "Failed to compile video. Check audio context permissions.",
     No_subtitles_or_descripti: "No subtitles or description written yet",
     Packaging_project: "Packaging project...",
     Rendering_video: "Rendering video...",
     Syncing_scene_voices: "Syncing scene voices...",
-    Package_ZIP_created_succe: "🎉 Package ZIP created successfully! Fully matches CapCut PC Desktop active draft format specifications.",
-    Error_generating_template: "❌ Error generating template bundle ZIP. Please check and retry.",
+    Package_ZIP_created_succe:
+      "🎉 Package ZIP created successfully! Fully matches CapCut PC Desktop active draft format specifications.",
+    Error_generating_template:
+      "❌ Error generating template bundle ZIP. Please check and retry.",
     Back_to_projects: "Back to projects",
     Projects: "Projects",
     Pro: "Pro",
@@ -282,28 +312,34 @@ export const translations = {
     NODES: "NODES",
     NODE: "NODE_",
     FPS_24_COMPLIANT: "FPS-24 | COMPLIANT",
-    Select_your_story_materia: "Select your story materials, format target lengths and tweak Gemini coefficients.",
+    Select_your_story_materia:
+      "Select your story materials, format target lengths and tweak Gemini coefficients.",
     N_i_dung_c_t_truy_n: "Nội dung cốt truyện",
-    Nh_p_n_i_dung_k_ch_b_n_nh: "Nhập nội dung, kịch bản nháp hoặc ý tưởng sơ bộ...",
+    Nh_p_n_i_dung_k_ch_b_n_nh:
+      "Nhập nội dung, kịch bản nháp hoặc ý tưởng sơ bộ...",
     C_u_h_nh_K_ch_b_n: "Cấu hình Kịch bản",
     Th_lo_i_video: "Thể loại video",
     Ng_n_ng_u_ra: "Ngôn ngữ đầu ra",
     Ti_ng_Vi_t: "🇻🇳 Tiếng Việt",
     Ti_ng_Anh: "🇺🇸 Tiếng Anh",
     C_u_h_nh_S_l_ng_t_Th_i_l_: "Cấu hình Số lượng từ & Thời lượng",
-    AI_s_bu_c_ph_i_m_r_ng_n_i: "AI sẽ buộc phải mở rộng nội dung để kịch bản bám sát\n                        đúng chỉ tiêu từ này.",
+    AI_s_bu_c_ph_i_m_r_ng_n_i:
+      "AI sẽ buộc phải mở rộng nội dung để kịch bản bám sát\n                        đúng chỉ tiêu từ này.",
     Kh_n_gi_m_c_ti_u: "Khán giả mục tiêu",
     Phong_c_ch_h_nh_v_n: "Phong cách hành văn",
     C_ng_Vi_t_l_i: "Cường độ Viết lại",
     Gi_m_tr_ng_l_p: "Giảm trùng lặp",
     s_ng_t_o: "Độ sáng tạo",
     X_c_th_c_th_ng_tin_Fact_c: "Xác thực thông tin (Fact check)",
-    T_ng_ph_n_t_ch_v_x_c_minh: "Tự động phân tích và xác minh độ chuẩn xác của các\n                          thông tin.",
-    Ph_n_t_ch_t_ng_v_bi_n_so_: "Phân tích ý tưởng và biên soạn kịch bản chi tiết tự động",
+    T_ng_ph_n_t_ch_v_x_c_minh:
+      "Tự động phân tích và xác minh độ chuẩn xác của các\n                          thông tin.",
+    Ph_n_t_ch_t_ng_v_bi_n_so_:
+      "Phân tích ý tưởng và biên soạn kịch bản chi tiết tự động",
     ang_t_o: "Đang tạo...",
     Generate_Script: "Generate Script",
     ang_so_n_k_ch_b_n: "Đang soạn kịch bản...",
-    M_h_nh_AI_ang_ki_n_t_o_k_: "Mô hình AI đang kiến tạo kịch bản thuyết minh đầy\n                              đủ chi tiết bằng luồng thuật toán đa bước.",
+    M_h_nh_AI_ang_ki_n_t_o_k_:
+      "Mô hình AI đang kiến tạo kịch bản thuyết minh đầy\n                              đủ chi tiết bằng luồng thuật toán đa bước.",
     FULL_VERBOSE_SCRIPT: "FULL VERBOSE SCRIPT",
     Copied_script: "Copied script!",
     Copy: "Copy",
@@ -317,7 +353,8 @@ export const translations = {
     Chapter: "Chapter",
     Continue: "Continue",
     Scene_Voiceovers: "Scene Voiceovers",
-    Design_sequential_visual_: "Design sequential visual slides and generate professional voiceovers for each individual scene.",
+    Design_sequential_visual_:
+      "Design sequential visual slides and generate professional voiceovers for each individual scene.",
     Automatically_split_story: "Automatically split story scenes",
     Processing: "Processing...",
     Generate_Storyboard: "Generate Storyboard",
@@ -338,7 +375,8 @@ export const translations = {
     Short_sentence: "⚡ Short sentence",
     Default_balanced_standard: "Default, balanced standard full sentence",
     Long_sentence: "⚖️ Long sentence",
-    Mixed_sentences_desc: "A smart blend of short, punchy sentences and detailed standard sentences",
+    Mixed_sentences_desc:
+      "A smart blend of short, punchy sentences and detailed standard sentences",
     Mixed_sentences: "🎭 Mixed Short & Long Sentences",
     Logical_paragraph_aligned: "Logical paragraph-aligned narration flow",
     Paragraph_density: "📖 Paragraph density",
@@ -348,7 +386,8 @@ export const translations = {
     Live_playing: "Live playing",
     Deck_ready: "Deck ready",
     Synthesizing_voice: "Synthesizing voice...",
-    Building_audio_waves_and_: "Building audio waves and aligning timeline subtitle markings.",
+    Building_audio_waves_and_:
+      "Building audio waves and aligning timeline subtitle markings.",
     No_voiceover_synthesized_: "No voiceover synthesized yet",
     AI_Speech_Channel: "AI Speech Channel",
     Female_Speaker: "Female Speaker",
@@ -371,10 +410,12 @@ export const translations = {
     Switching_to_Audio_Voice_: "Switching to Audio Voice split mode",
     Audio_voice_mode: "Audio voice mode",
     Recommended: "Recommended",
-    Align_scenes_timings_dyna: "Align scenes timings dynamically triggered by the voiceover audio source.",
+    Align_scenes_timings_dyna:
+      "Align scenes timings dynamically triggered by the voiceover audio source.",
     Switching_to_full_text_sc: "Switching to full text script mode",
     Script_mode: "Script mode",
-    Utilize_raw_screenplay_sc: "Utilize raw screenplay script lines to sync scenes cuts prompts.",
+    Utilize_raw_screenplay_sc:
+      "Utilize raw screenplay script lines to sync scenes cuts prompts.",
     AI_Speech: "AI Speech",
     External_Audio: "External Audio",
     Female_speaker_AI: "Female speaker AI",
@@ -387,7 +428,8 @@ export const translations = {
     Synthesized_audio_demo: "Synthesized audio demo",
     Exit_synth: "Exit synth",
     AI_voiceover_not_compiled: "AI voiceover not compiled",
-    Compile_AI_speech_at_step: "Compile AI speech at step 1 or trigger simulated TTS voice below.",
+    Compile_AI_speech_at_step:
+      "Compile AI speech at step 1 or trigger simulated TTS voice below.",
     Sample_Speech: "Sample Speech",
     Activated_simulated_speec: "Activated simulated speech fallback!",
     Simulated_Voice_5: "Simulated Voice",
@@ -398,7 +440,8 @@ export const translations = {
     Drag_audio_or_Click_to_up: "Drag audio or Click to upload",
     Supported_up_to_50MB_wav_: "Supported up to 50MB wav, mp3 formats",
     Paste_verbose_storyboard_: "Paste verbose storyboard scenes script here...",
-    Tip_Pasting_full_narratio: "Tip: Pasting full narration content results in highly aligned image cues.",
+    Tip_Pasting_full_narratio:
+      "Tip: Pasting full narration content results in highly aligned image cues.",
     Modify_visual_configurati: "Modify visual configurations",
     Veo_3_Creative_Studio_Dec: "Veo 3 Creative Studio Deck",
     Collapse: "Collapse",
@@ -416,37 +459,48 @@ export const translations = {
     Apply_Style: "Apply Style",
     No_reference_images_uploa: "No reference images uploaded yet.",
     Bulk_visuals_sync_suite: "Bulk visuals sync suite",
-    Export_all_scene_prompts_: "Export all scene prompts instantly and sync finished external images back in one batch.",
+    Export_all_scene_prompts_:
+      "Export all scene prompts instantly and sync finished external images back in one batch.",
     Step_1_Bulk_copy_raw_prom: "Step 1: Bulk copy raw prompts",
-    Copy_all_chronological_sc: "Copy all chronological scene prompts instantly with no decorators to generate outside.",
+    Copy_all_chronological_sc:
+      "Copy all chronological scene prompts instantly with no decorators to generate outside.",
     Copied_successfully: "Copied successfully!",
     Copy_All: "Copy All",
     Step_2_Batch_upload_scene: "Step 2: Batch upload scene images",
-    Drag_drop_all_generated_i: "Drag & drop all generated images or click to select them from local directories.",
+    Drag_drop_all_generated_i:
+      "Drag & drop all generated images or click to select them from local directories.",
     How_auto_alignment_works: "📌 How auto-alignment works:",
     H_th_ng_s_ng_b_theo_t_n_f: "Hệ thống sẽ đồng bộ theo tên file dạng:",
     txt_1_jpg: "1.jpg",
     txt_2_jpg: "2.jpg",
-    ho_c_ch_a_ch_s_t_ng_ng_v_: ", hoặc chứa chữ số tương ứng với Phân cảnh. Nếu tên\n                          không khớp số, hệ thống tự động gắn tệp theo thứ tự\n                          chữ cái",
+    ho_c_ch_a_ch_s_t_ng_ng_v_:
+      ", hoặc chứa chữ số tương ứng với Phân cảnh. Nếu tên\n                          không khớp số, hệ thống tự động gắn tệp theo thứ tự\n                          chữ cái",
     A_Z: "A-Z",
     ph_n_ph_i_u_t_u_n_cu_i: "phân phối đều từ đầu đến cuối.",
-    Aligns_based_on_number_in: "Aligns based on number indicators within file name:\n                          e.g.",
+    Aligns_based_on_number_in:
+      "Aligns based on number indicators within file name:\n                          e.g.",
     or: "or",
     scene_2_jpg: "scene_2.jpg",
-    Otherwise_distributes_sor: ".\n                          Otherwise distributes sorted filenames alphabetically\n                          (A-Z) sequentially.",
+    Otherwise_distributes_sor:
+      ".\n                          Otherwise distributes sorted filenames alphabetically\n                          (A-Z) sequentially.",
     Auto_Render_All_Scene_Art: "Auto Render All Scene Artwork",
-    Process_all_storyboard_de: "Process all storyboard descriptions sequentially. Runs up to 10 scene images per request block to comply with API security standards.",
-    Trigger_batch_AI_renderin: "Trigger batch AI rendering for all scene visualizations",
+    Process_all_storyboard_de:
+      "Process all storyboard descriptions sequentially. Runs up to 10 scene images per request block to comply with API security standards.",
+    Trigger_batch_AI_renderin:
+      "Trigger batch AI rendering for all scene visualizations",
     BATCH_RENDER: "BATCH RENDER",
     OPTIMIZE_PROMPTS: "Optimize AI",
     optimizingPrompts: "Optimizing...",
     optimizePromptsSuccess: "Successfully improved image descriptions!",
     No_Storyboard_Scenes: "No Storyboard Scenes",
-    Click_button_below_to_sub: "Click button below to subdivide script into scenes with precise visual guidelines.",
+    Click_button_below_to_sub:
+      "Click button below to subdivide script into scenes with precise visual guidelines.",
     Generating_all_voices: "Generating all voices...",
     MULTI_STEP_SYSTEM_FLOW_Di: "[MULTI-STEP SYSTEM FLOW] Dividing scenes...",
-    System_is_synthesizing_te: "System is synthesizing text-to-speech for all scenes.",
-    Mapping_detailed_timeline: "Mapping detailed timelines to separate storyboard scenes.",
+    System_is_synthesizing_te:
+      "System is synthesizing text-to-speech for all scenes.",
+    Mapping_detailed_timeline:
+      "Mapping detailed timelines to separate storyboard scenes.",
     Drawing: "Drawing...",
     s: "s",
     No_AI_image: "No AI image",
@@ -459,7 +513,8 @@ export const translations = {
     s_6: "s)",
     Scene_Artwork: "Scene Artwork",
     No_AI_Artwork_Rendered: "No AI Artwork Rendered",
-    Render_AI_image_matching_: "Render AI image matching the scene narration strictly",
+    Render_AI_image_matching_:
+      "Render AI image matching the scene narration strictly",
     Regen_AI: "Regen AI",
     Render_AI: "Render AI",
     Upload_file: "Upload file",
@@ -489,8 +544,10 @@ export const translations = {
     Cancel: "Cancel",
     Save_Changes: "Save Changes",
     Back: "Back",
-    Select_visual_styles_defi: "Select visual styles, define mapping properties of assets or design high CTR YouTube icons.",
-    Create_prompt_guides_and_: "Create prompt guides and phantoms of high CTR mockups",
+    Select_visual_styles_defi:
+      "Select visual styles, define mapping properties of assets or design high CTR YouTube icons.",
+    Create_prompt_guides_and_:
+      "Create prompt guides and phantoms of high CTR mockups",
     Generating: "Generating...",
     Generate_Thumbnails: "Generate Thumbnails",
     Thumbnail_Prompts_Input: "Thumbnail Prompts Input",
@@ -502,12 +559,16 @@ export const translations = {
     Reference_Image_Optional: "Reference Image (Optional)",
     Style_copied: "Style copied",
     No_Thumbnail_Prompts: "No Thumbnail Prompts",
-    bulkRenderThumbnailsSuccess: "Bulk thumbnail rendering completed successfully!",
-    Draft_eye_catching_visual: "Draft eye-catching visual arrangements and high-contrast styling settings.",
-    Draft_visual_arrangements: "Draft visual arrangements for your YouTube mockup icons",
+    bulkRenderThumbnailsSuccess:
+      "Bulk thumbnail rendering completed successfully!",
+    Draft_eye_catching_visual:
+      "Draft eye-catching visual arrangements and high-contrast styling settings.",
+    Draft_visual_arrangements:
+      "Draft visual arrangements for your YouTube mockup icons",
     Generate_Thumbnail: "Generate Thumbnail",
     Drafting_CTR_thumbnail: "Drafting CTR thumbnail...",
-    Drafting_eye_catching_vis: "Drafting eye-catching visual arrangements and color grading palettes.",
+    Drafting_eye_catching_vis:
+      "Drafting eye-catching visual arrangements and color grading palettes.",
     thumbnail: "thumbnail",
     No_Render_Done: "No Render Done",
     Look: "Look",
@@ -519,13 +580,17 @@ export const translations = {
     Render_YouTube_mockup_thu: "Render YouTube mockup thumbnail using AI",
     Render_Mockup: "Render Mockup",
     Recreate_Mockup: "Recreate",
-    Form_tts_voices_with_dive: "Form tts voices with diverse emotions then lock alignments directly with speech subtitles.",
-    Run_speech_audio_synthesi: "Run speech audio synthesizer for narration script",
+    Form_tts_voices_with_dive:
+      "Form tts voices with diverse emotions then lock alignments directly with speech subtitles.",
+    Run_speech_audio_synthesi:
+      "Run speech audio synthesizer for narration script",
     Synthesizing: "Synthesizing...",
     Synthesize_Voice: "Synthesize Voice",
     Full_verbose_script: "Full verbose script",
-    txt_1_Vocal_timbre_expression: "1. Vocal timbre & expression characteristics",
-    Choose_narrator_voices_em: "Choose narrator voices, emotional empathy profiles and synthetic vocal presets.",
+    txt_1_Vocal_timbre_expression:
+      "1. Vocal timbre & expression characteristics",
+    Choose_narrator_voices_em:
+      "Choose narrator voices, emotional empathy profiles and synthetic vocal presets.",
     System_Cloud_Speaker: "System & Cloud Speaker",
     Requires_Vietnamese_voice: "Requires Vietnamese voice",
     NARRATOR: "NARRATOR",
@@ -563,7 +628,8 @@ export const translations = {
     Female_Voice: "Female Voice",
     Neutral_Accent: "Neutral Accent",
     txt_2_Acoustic_master_control: "2. Acoustic master controllers",
-    Refine_playback_rates_emo: "Refine playback rates, emotional voice pitch and scale volume metrics.",
+    Refine_playback_rates_emo:
+      "Refine playback rates, emotional voice pitch and scale volume metrics.",
     Speed_7: "Speed",
     txt_0_5x: "0.5x",
     txt_2_0x: "2.0x",
@@ -572,10 +638,12 @@ export const translations = {
     Mute: "Mute",
     Synchronicity_Journal: "Synchronicity Journal",
     Aligned: "Aligned",
-    Click_the_button_below_to: "Click the button below to synthesize automatically or upload your own audio voice track.",
+    Click_the_button_below_to:
+      "Click the button below to synthesize automatically or upload your own audio voice track.",
     Synthesize_AI_Voice: "Synthesize AI Voice",
     Alignment_Console_Ready: "Alignment Console Ready",
-    Once_voiceover_is_synthes: "Once voiceover is synthesized, detailed records of forced alignment matching, scene splits, and accuracy will be listed visually.",
+    Once_voiceover_is_synthes:
+      "Once voiceover is synthesized, detailed records of forced alignment matching, scene splits, and accuracy will be listed visually.",
     syncing: "(syncing...)",
     CONFIG: "[CONFIG]",
     Mapping_timelines_to_scen: "Mapping timelines to scenes...",
@@ -583,7 +651,8 @@ export const translations = {
     Aligning_subtitles: "Aligning subtitles...",
     Synchronizing: "Synchronizing...",
     Forced_alignment_matches_: "Forced alignment matches words in audio",
-    Optimize_metadata_and_tri: "Optimize metadata and trigger smart tag recommendations",
+    Optimize_metadata_and_tri:
+      "Optimize metadata and trigger smart tag recommendations",
     Optimizing: "Optimizing...",
     Optimize_SEO: "Optimize SEO",
     SEO_Optimization_Input: "SEO Optimization Input",
@@ -591,7 +660,8 @@ export const translations = {
     variants: "variants",
     Titles_Options_Group: "Titles Options Group",
     No_SEO_Data: "No SEO Data",
-    Click_Optimize_Boost_at_t: 'Click"Optimize / Boost"at the top to draft metadata.',
+    Click_Optimize_Boost_at_t:
+      'Click"Optimize / Boost"at the top to draft metadata.',
     Copied_title_to_clipboard: "Copied title to clipboard!",
     Copy_title: "Copy title",
     Search: "Search:",
@@ -618,11 +688,16 @@ export const translations = {
     Stop_Simulation: "Stop Simulation",
     Play_Simulation: "Play Simulation",
     Professional_Project_Pack: "Professional Project Packaging",
-    Exports_timeline_JSON_fil: "Exports timeline JSON file compatible with CapCut Desktop.",
-    Construct_XML_track_metad: "Construct XML track metadata for Adobe workflows.",
-    Download_FCPXML_timing_fi: "Download FCPXML timing file matching DaVinci formats.",
-    Render_and_compile_full_p: "Render and compile full panoramic cinematic video session with camera motions and subtitles.",
-    Download_complete_CapCut_: "Download complete CapCut PC active draft folder bundle including full subdirectories and timeline templates.",
+    Exports_timeline_JSON_fil:
+      "Exports timeline JSON file compatible with CapCut Desktop.",
+    Construct_XML_track_metad:
+      "Construct XML track metadata for Adobe workflows.",
+    Download_FCPXML_timing_fi:
+      "Download FCPXML timing file matching DaVinci formats.",
+    Render_and_compile_full_p:
+      "Render and compile full panoramic cinematic video session with camera motions and subtitles.",
+    Download_complete_CapCut_:
+      "Download complete CapCut PC active draft folder bundle including full subdirectories and timeline templates.",
     Download_SRT: "Download SRT",
     Extract_synced_subtitle_t: "Extract synced subtitle timestamps file.",
     Cloud_Exporter_Sync_Setup: "Cloud Exporter Sync Setup",
@@ -635,19 +710,22 @@ export const translations = {
     Close_window: "Close window",
     Voice_Registry: "Voice Registry",
     Voices: "Voices",
-    Search_voices_registry_by: "Search voices registry by moniker, language code, locale...",
+    Search_voices_registry_by:
+      "Search voices registry by moniker, language code, locale...",
     Cloud_AI_Premium: "Cloud AI (Premium)",
     Offline_Local_TTS: "Offline Local TTS",
     LOCALE: "LOCALE:",
     All: "All",
     Vietnamese: "Vietnamese",
     English: "English",
-    Premium_studio_quality_vo: "Premium studio-quality voices for realistic storytelling narration.",
+    Premium_studio_quality_vo:
+      "Premium studio-quality voices for realistic storytelling narration.",
     GENDER: "GENDER:",
     Male_9: "Male",
     Female_10: "Female",
     No_speakers_found_matchin: "No speakers found matching filters",
-    Adjust_search_query_revok: "Adjust search query, revoke gender exclusions or toggle Cloud / Offline tabs.",
+    Adjust_search_query_revok:
+      "Adjust search query, revoke gender exclusions or toggle Cloud / Offline tabs.",
     FEMALE: "FEMALE",
     MALE: "MALE",
     NEUTRAL: "NEUTRAL",
@@ -696,18 +774,21 @@ export const translations = {
     API_Mode: "API Mode",
     Saving: "Saving...",
     Save_Config: "Save Config",
-    Synthesize_stories_design: "Synthesize stories, design visual timelines, and export.",
+    Synthesize_stories_design:
+      "Synthesize stories, design visual timelines, and export.",
     en_US: "en-US",
     No_description_1: "No description...",
     Open: "Open",
     Confirm_Deletion: "Confirm Deletion",
     Are_you_sure_you_want_to_: "Are you sure you want to delete the project",
-    This_action_cannot_be_und: "This action cannot be undone. All scripts and configurations will be permanently removed.",
+    This_action_cannot_be_und:
+      "This action cannot be undone. All scripts and configurations will be permanently removed.",
     Edit_Project: "Edit Project",
     E_g_Legends_of_Rome: "E.g., Legends of Rome",
     Write_custom_script_idea_: "Write custom script idea metrics...",
     Niche_ideas: "Niche ideas",
-    You_can_choice_History_Do: "You can choice History, Documentary or Science genre to generate accurate prompts for rendering with Imagen 4.",
+    You_can_choice_History_Do:
+      "You can choice History, Documentary or Science genre to generate accurate prompts for rendering with Imagen 4.",
     Update: "Update",
     Inputs: "Inputs",
     Hook_Engine: "Hook Engine",
@@ -785,24 +866,29 @@ export const translations = {
     Duration_10s: "10s",
     cancellingBatchGen: "Cancelling batch image generation...",
     initializingBatchGen: "Initializing batch image generation...",
-    batchGenCancelled: "Process cancelled. Successfully generated {completedCount} images.",
-    generatingSceneBatch: "Generating scene {sceneId} ({currentIndex}/{totalToProcess})...",
+    batchGenCancelled:
+      "Process cancelled. Successfully generated {completedCount} images.",
+    generatingSceneBatch:
+      "Generating scene {sceneId} ({currentIndex}/{totalToProcess})...",
     errorRenderingSceneBatch: "Error rendering scene {sceneId}: {error}",
     waitingBetweenScenes: "Waiting 3 seconds before next scene...",
-    batchGenSuccess: "Successfully completed sequential generation of all {completedCount} scene images!",
+    batchGenSuccess:
+      "Successfully completed sequential generation of all {completedCount} scene images!",
     imagesAlreadyComplete: "Images complete.",
     batchGenFailed: "Error during batch image generation: {error}",
     alignmentLoaded: "Subtitles sync loaded.",
     scriptPipelineError: "Script error: {error}",
     syncLedgerSuccess: "=== VOICE TIMING SYNC SUCCESS ({totalDuration}s) ===\n",
-    syncLedgerItem: '👉 Scene {index} ({startTime} --> {endTime}) | {duration}s | Sub: "{script}..."\n',
+    syncLedgerItem:
+      '👉 Scene {index} ({startTime} --> {endTime}) | {duration}s | Sub: "{script}..."\n',
     storyboardPipelineError: "Storyboard error: {error}",
     imagePipelineError: "Image generation error: {error}",
     imageUploadSuccess: "Image uploaded for Scene {sceneId}!",
     styleExtractionError: "Style extraction failed: {error}",
     applyStyleError: "Failed to apply style: {error}",
     missingImagesWarning: "⚠️ Missing images for Scenes: {ids}.",
-    mismatchImagesWarning: '⚠️ Name/Scene index mismatch: file "{fileName}" -> Scene {sceneId}.',
+    mismatchImagesWarning:
+      '⚠️ Name/Scene index mismatch: file "{fileName}" -> Scene {sceneId}.',
     bulkUploadSuccess: "Successfully synced {count} images!",
     promptGenError: "Prompt generation error: {error}",
     thumbnailPipelineError: "Thumbnail generation error: {error}",
@@ -847,21 +933,27 @@ export const translations = {
     copyAiImagePrompt: "Copy AI image prompt",
     totalScenesCount: "Total Scenes: {count}",
     pageIndicator: "Page {current} of {total}",
-    noPhotoRenderedYet: "No photo rendered yet for SCENE {sceneId}. Go back and render!",
+    noPhotoRenderedYet:
+      "No photo rendered yet for SCENE {sceneId}. Go back and render!",
     offlineRenderProgressText: "Rendering progress: {progress}%...",
     streamNotSupported: "Data stream is not supported by this browser.",
     aligningVoiceWithWhisper: "Syncing audio via Whisper AI...",
-    voiceAlignSuccess: "Successfully aligned scene durations 1-1 with real voice (Whisper AI)!",
-    voiceAlignNoValidResult: "No valid analysis result returned from Whisper AI.",
-    voiceAlignSceneNotFound: "Synchronization data not found for scene {sceneId}.",
-    voiceAlignError: "Voice synchronization via Whisper AI failed. Please check your Python/Whisper installation. Error details: {error}",
+    voiceAlignSuccess:
+      "Successfully aligned scene durations 1-1 with real voice (Whisper AI)!",
+    voiceAlignNoValidResult:
+      "No valid analysis result returned from Whisper AI.",
+    voiceAlignSceneNotFound:
+      "Synchronization data not found for scene {sceneId}.",
+    voiceAlignError:
+      "Voice synchronization via Whisper AI failed. Please check your Python/Whisper installation. Error details: {error}",
     exportingCapcut: "Exporting CapCut...",
     exportingPremiere: "Exporting Premiere...",
     exportingDavinci: "Exporting DaVinci...",
     exportingVideo: "Rendering Video...",
     packagingZip: "Packaging ZIP...",
     exportingSRT: "Exporting SRT...",
-    waitExportProcess: "Please wait a moment, this process may take some time...",
+    waitExportProcess:
+      "Please wait a moment, this process may take some time...",
     download: "Download",
     node6_settings_title: "Independent Creator Settings",
     node6_engine: "Generation Engine",
@@ -874,7 +966,8 @@ export const translations = {
     node6_prompts_list: "Prompts List",
     node6_sample_prompts: "Sample Prompts",
     node6_clear_workspace: "Clear Workspace",
-    node6_placeholder: "Paste prompts here, one per line...\nExample:\n1. A stickman walking in rain...\n2. A stickman holding a sword...",
+    node6_placeholder:
+      "Paste prompts here, one per line...\nExample:\n1. A stickman walking in rain...\n2. A stickman holding a sword...",
     node6_detected_prompts: "Detected: {count} prompts",
     node6_stop_gen: "STOP GENERATION",
     node6_start_gen: "START BATCH GENERATION",
@@ -883,7 +976,8 @@ export const translations = {
     node6_console_waiting: "Waiting to launch alignment engine...",
     node6_library_title: "Independent Library Deck",
     node6_library_empty: "No Prompts Entered",
-    node6_library_empty_desc: "Enter a list of prompt descriptions on the left to begin rendering artwork or video segments.",
+    node6_library_empty_desc:
+      "Enter a list of prompt descriptions on the left to begin rendering artwork or video segments.",
     node6_prompt_label: "Prompt {id}",
     node6_badge_done: "DONE",
     node6_badge_error: "ERR",
@@ -905,7 +999,8 @@ export const translations = {
     node6_log_zip_error: "ZIP packing failed: {error}",
     node6_log_cleared: "Workspace cleared.",
     node7_title: "CapCut Editor",
-    node7_desc: "Automation, Image-to-Audio syncing, Dynamic Motion, and AI Sound Effects for CapCut draft projects.",
+    node7_desc:
+      "Automation, Image-to-Audio syncing, Dynamic Motion, and AI Sound Effects for CapCut draft projects.",
     node7_input_file_label: "1. Target draft_content.json file",
     node7_choose_file_btn: "Browse Draft",
     node7_file_selected: "Selected: {name}",
@@ -930,8 +1025,10 @@ export const translations = {
     node7_log_success: "CapCut Ultra completed successfully!",
     node7_log_error: "CapCut Ultra execution failed: {error}",
     node7_log_missing_file: "Please select a draft_content.json file first!",
-    node7_log_missing_api: "Gemini API key is required when AI Sound Effect Generator is enabled!",
-    node7_log_missing_sfx: "Sound Effects directory is required when AI Sound Effect Generator is enabled!",
+    node7_log_missing_api:
+      "Gemini API key is required when AI Sound Effect Generator is enabled!",
+    node7_log_missing_sfx:
+      "Sound Effects directory is required when AI Sound Effect Generator is enabled!",
     node7_opt_sync: "Sync Image to Voice",
     node7_opt_music_mix: "Ultra Music Mix",
     node7_opt_custom_order: "Custom Audio Order",
@@ -969,8 +1066,10 @@ export const translations = {
     node7_log_canceled_folder: "Folder selection canceled.",
     node7_log_error_file: "Error selecting file: {error}",
     node7_log_error_folder: "Error selecting folder: {error}",
-    node7_log_calling_backend: "Calling backend to execute Python subprocess...",
-    node7_log_backup_saved: "Backup file was saved in the same directory (.backup_ultra).",
+    node7_log_calling_backend:
+      "Calling backend to execute Python subprocess...",
+    node7_log_backup_saved:
+      "Backup file was saved in the same directory (.backup_ultra).",
     dashboardCreatorInfo: "Creator Info",
     dashboardAICreator: "AI Creator",
     dashboardMemberPro: "Member V2.4 Pro",
@@ -983,7 +1082,8 @@ export const translations = {
     dashboardNoDesc: "No description available.",
     dashboardOpenStudio: "Open Studio",
     dashboardWelcome: "Welcome to Vidify Studio",
-    dashboardWelcomeDesc: "Create a new AI video project in Content tab to start your automated video production journey.",
+    dashboardWelcomeDesc:
+      "Create a new AI video project in Content tab to start your automated video production journey.",
     dashboardGoToContent: "Go to Content",
   },
   vi: {
@@ -1010,7 +1110,8 @@ export const translations = {
     cancel: "Hủy",
     confirm: "Tạo lại",
     confirmRecreateTitle: "Tạo lại tất cả",
-    confirmRecreateMessage: "Tất cả phân cảnh đã có ảnh. Bạn muốn tạo lại tất cả?",
+    confirmRecreateMessage:
+      "Tất cả phân cảnh đã có ảnh. Bạn muốn tạo lại tất cả?",
     create: "Tạo",
     saving: "Đang lưu...",
     save: "Lưu",
@@ -1018,8 +1119,24 @@ export const translations = {
     confirmDelete: "Xác nhận xóa?",
     editProject: "Sửa",
     credits: "Tín dụng",
-    stepShortLabels: ["Kịch bản", "Phân cảnh", "Ảnh bìa", "Tối ưu SEO", "Kết xuất", "Tạo ảnh/video", "Biên tập CapCut"],
-    stepTooltips: ["Ý tưởng & kịch bản", "Dàn cảnh, tạo lời thoại và giọng đọc cho từng phân cảnh.", "Thiết kế ảnh bìa", "Tối ưu hóa tìm kiếm SEO", "Kết xuất thành phẩm", "Tạo ảnh/video độc lập bằng Veo 3 hoặc Gemini Room.", "Tự động khớp ảnh, chỉnh góc quay và tạo hiệu ứng âm thanh AI cho CapCut."],
+    stepShortLabels: [
+      "Kịch bản",
+      "Phân cảnh",
+      "Ảnh bìa",
+      "Tối ưu SEO",
+      "Kết xuất",
+      "Tạo ảnh/video",
+      "Biên tập CapCut",
+    ],
+    stepTooltips: [
+      "Ý tưởng & kịch bản",
+      "Dàn cảnh, tạo lời thoại và giọng đọc cho từng phân cảnh.",
+      "Thiết kế ảnh bìa",
+      "Tối ưu hóa tìm kiếm SEO",
+      "Kết xuất thành phẩm",
+      "Tạo ảnh/video độc lập bằng Veo 3 hoặc Gemini Room.",
+      "Tự động khớp ảnh, chỉnh góc quay và tạo hiệu ứng âm thanh AI cho CapCut.",
+    ],
     stepInput: "1. Kịch bản",
     stepVoice: "2. Phân cảnh",
     stepStoryboard: "2. Phân cảnh",
@@ -1127,26 +1244,34 @@ export const translations = {
     flowSEO: "SEO",
     flowExport: "Xuất bản",
     viewPipelineMap: "Bộ điều phối",
-    Please_enter_script_conte: "Vui lòng nhập kịch kịch bản hoặc ý tưởng trước.",
-    MULTI_STEP_SYSTEM_FLOW_Dr: "[MULTI-STEP SYSTEM FLOW] Đang sáng tác kịch bản...",
+    Please_enter_script_conte:
+      "Vui lòng nhập kịch kịch bản hoặc ý tưởng trước.",
+    MULTI_STEP_SYSTEM_FLOW_Dr:
+      "[MULTI-STEP SYSTEM FLOW] Đang sáng tác kịch bản...",
     Generation_completed_The_: "Sáng tác thành công! Kịch bản đã sẵn sàng.",
     Loaded_current_scenes_sto: "Đã tải danh sách phân cảnh hiện tại!",
     Missing_detailed_script_f: "Chưa có kịch bản chi tiết để dàn dựng.",
-    MULTI_STEP_SYSTEM_FLOW_Fo: "[MULTI-STEP SYSTEM FLOW] Đang dàn dựng phân cảnh...",
+    MULTI_STEP_SYSTEM_FLOW_Fo:
+      "[MULTI-STEP SYSTEM FLOW] Đang dàn dựng phân cảnh...",
     Storyboard_coordinates_fo: "Đã xây dựng bản phân cảnh chi tiết!",
-    Scene_visual_prompt_copie: "Đã sao chép nội dung mô tả hình ảnh phân cảnh thành công!",
+    Scene_visual_prompt_copie:
+      "Đã sao chép nội dung mô tả hình ảnh phân cảnh thành công!",
     Hook_content_copied_to_cl: "Đã sao chép nội dung hook thành công!",
     No_scenes_available_to_co: "Không có phân cảnh nào để sao chép!",
-    Pure_optimized_scene_prom: "Đã sao chép toàn bộ danh sách miêu tả âm thầm vào bộ nhớ tạm!",
-    MULTI_STEP_SYSTEM_FLOW_Ex: "[MULTI-STEP SYSTEM FLOW] Đang phân tích phong cách hình ảnh...",
+    Pure_optimized_scene_prom:
+      "Đã sao chép toàn bộ danh sách miêu tả âm thầm vào bộ nhớ tạm!",
+    MULTI_STEP_SYSTEM_FLOW_Ex:
+      "[MULTI-STEP SYSTEM FLOW] Đang phân tích phong cách hình ảnh...",
     Style_extracted_successfu: "Đã trích xuất phong cách thành công!",
     No_scenes_to_apply_style: "Chưa có phân cảnh nào để áp dụng!",
     No_style_extracted_yet: "Chưa có phong cách nào được trích xuất!",
     Applying_style_to_scenes: "Đang áp dụng phong cách cho các phân cảnh...",
     Successfully_applied_styl: "Áp dụng phong cách vào phân cảnh thành công!",
     Applied_style_fallback_mo: "Đã áp dụng phong cách (chế độ dự phòng)!",
-    No_matching_image_files_f: "Không tìm thấy tệp ảnh phù hợp để sắp xếp vào các phân cảnh!",
-    Rewriting_thumbnail_promp: "Đang viết lại các ảnh bìa theo phong cách mới...",
+    No_matching_image_files_f:
+      "Không tìm thấy tệp ảnh phù hợp để sắp xếp vào các phân cảnh!",
+    Rewriting_thumbnail_promp:
+      "Đang viết lại các ảnh bìa theo phong cách mới...",
     Thumbnail_style_extracted: "Trích xuất phong cách ảnh bìa thành công!",
     No_thumbnails_to_apply_style: "Chưa có ảnh bìa để áp dụng phong cách.",
     Deleted_scene_image_succe: "Đã xóa ảnh phân cảnh thành công!",
@@ -1154,14 +1279,19 @@ export const translations = {
     Detailed_image_prompt_gen: "Đã tạo Câu Lệnh tạo ảnh chi tiết thành công!",
     Scene_mod_saved_successfu: "Đã lưu chỉnh sửa phân cảnh thành công",
     Loaded_current_Thumbnail_: "Đã tải danh sách hình thu nhỏ hiện tại!",
-    Missing_detailed_script_f_1: "Chưa có kịch bản chi tiết để tạo hình thu nhỏ.",
-    MULTI_STEP_SYSTEM_FLOW_De: "[MULTI-STEP SYSTEM FLOW] Đang thiết kế hình thu nhỏ...",
-    High_engagement_Thumbnail: "Đã thiết kế kế hoạch hình thu nhỏ tỷ lệ nhấp kích hoạt cao!",
+    Missing_detailed_script_f_1:
+      "Chưa có kịch bản chi tiết để tạo hình thu nhỏ.",
+    MULTI_STEP_SYSTEM_FLOW_De:
+      "[MULTI-STEP SYSTEM FLOW] Đang thiết kế hình thu nhỏ...",
+    High_engagement_Thumbnail:
+      "Đã thiết kế kế hoạch hình thu nhỏ tỷ lệ nhấp kích hoạt cao!",
     Mockup_thumbnail_painted_: "Ảnh bìa mẫu thử đã được phác họa hoàn thành!",
     Generating_and_preparing_: "Đang chuẩn bị tạo và tải file...",
-    You_must_generate_the_sto: "Bạn cần Dàn dựng phân cảnh (Bước 3) trước khi hệ thống có thể tải về (vì cần xử lý tuần tự từng cảnh).",
+    You_must_generate_the_sto:
+      "Bạn cần Dàn dựng phân cảnh (Bước 3) trước khi hệ thống có thể tải về (vì cần xử lý tuần tự từng cảnh).",
     Voiceover_downloaded_succ: "Tải giọng đọc thuyết minh thành công!",
-    MULTI_STEP_SYSTEM_FLOW_Ge: "[MULTI-STEP SYSTEM FLOW] Đang khởi tạo bộ thuyết minh...",
+    MULTI_STEP_SYSTEM_FLOW_Ge:
+      "[MULTI-STEP SYSTEM FLOW] Đang khởi tạo bộ thuyết minh...",
     charScriptEmpty: "Hãy tạo kịch bản trước.",
     charAnalyzing: "Đang phân tích nhân vật...",
     charAnalyzeSuccess: "Phân tích nhân vật thành công!",
@@ -1197,7 +1327,8 @@ export const translations = {
     charUploadFor: "Tải ảnh {name}",
     charNoImagesFor: "Thiếu ảnh {name}",
     deleteAllImagesBtn: "Xóa tất cả",
-    deleteAllImagesConfirm: "Bạn có chắc chắn muốn xóa tất cả hình ảnh đã tạo và tải lên của toàn bộ các phân cảnh không? Hành động này không thể hoàn tác.",
+    deleteAllImagesConfirm:
+      "Bạn có chắc chắn muốn xóa tất cả hình ảnh đã tạo và tải lên của toàn bộ các phân cảnh không? Hành động này không thể hoàn tác.",
     deleteAllImagesSuccess: "Đã xóa tất cả ảnh!",
     favVoicesTitle: "Giọng đọc yêu thích",
     favVoicesEmpty: "Chưa lưu giọng đọc nào.",
@@ -1260,7 +1391,8 @@ export const translations = {
     NODES: "CÁC BƯỚC",
     NODE: "NODE_",
     FPS_24_COMPLIANT: "FPS-24 | CHUẨN",
-    Select_your_story_materia: "Nhập cốt truyện, thời lượng và chọn mô hình AI.",
+    Select_your_story_materia:
+      "Nhập cốt truyện, thời lượng và chọn mô hình AI.",
     N_i_dung_c_t_truy_n: "Cốt truyện",
     Nh_p_n_i_dung_k_ch_b_n_nh: "Nhập cốt truyện hoặc ý tưởng...",
     C_u_h_nh_K_ch_b_n: "Cài đặt kịch bản",
@@ -1269,7 +1401,8 @@ export const translations = {
     Ti_ng_Vi_t: "🇻🇳 Tiếng Việt",
     Ti_ng_Anh: "🇺🇸 Tiếng Anh",
     C_u_h_nh_S_l_ng_t_Th_i_l_: "Số từ & Thời lượng",
-    AI_s_bu_c_ph_i_m_r_ng_n_i: "AI sẽ buộc phải mở rộng nội dung để kịch bản bám sát\n                        đúng chỉ tiêu từ này.",
+    AI_s_bu_c_ph_i_m_r_ng_n_i:
+      "AI sẽ buộc phải mở rộng nội dung để kịch bản bám sát\n                        đúng chỉ tiêu từ này.",
     Kh_n_gi_m_c_ti_u: "Khán giả",
     Phong_c_ch_h_nh_v_n: "Văn phong",
     C_ng_Vi_t_l_i: "Viết lại",
@@ -1383,7 +1516,7 @@ export const translations = {
     Active_Drawing_Engine: "Model vẽ:",
     IMAGE_REFERENCE_NODE: "ẢNH THAM CHIẾU",
     Upload_style_images: "Tải ảnh mẫu",
-    System_extracts_Style_Art: 'Học hỏi phong cách và màu sắc.',
+    System_extracts_Style_Art: "Học hỏi phong cách và màu sắc.",
     Style: "Phong cách:",
     Copied_style: "Đã sao chép phong cách!",
     Copy_style: "Sao chép phong cách",
@@ -1404,13 +1537,16 @@ export const translations = {
     H_th_ng_s_ng_b_theo_t_n_f: "Đồng bộ tự động theo tên file.",
     txt_1_jpg: "1.jpg",
     txt_2_jpg: "2.jpg",
-    ho_c_ch_a_ch_s_t_ng_ng_v_: ", hoặc chứa chữ số tương ứng với Phân cảnh. Nếu tên\n                          không khớp số, hệ thống tự động gắn tệp theo thứ tự\n                          chữ cái",
+    ho_c_ch_a_ch_s_t_ng_ng_v_:
+      ", hoặc chứa chữ số tương ứng với Phân cảnh. Nếu tên\n                          không khớp số, hệ thống tự động gắn tệp theo thứ tự\n                          chữ cái",
     A_Z: "A-Z",
     ph_n_ph_i_u_t_u_n_cu_i: "phân phối đều từ đầu đến cuối.",
-    Aligns_based_on_number_in: "Aligns based on number indicators within file name:\n                          e.g.",
+    Aligns_based_on_number_in:
+      "Aligns based on number indicators within file name:\n                          e.g.",
     or: "or",
     scene_2_jpg: "scene_2.jpg",
-    Otherwise_distributes_sor: ".\n                          Otherwise distributes sorted filenames alphabetically\n                          (A-Z) sequentially.",
+    Otherwise_distributes_sor:
+      ".\n                          Otherwise distributes sorted filenames alphabetically\n                          (A-Z) sequentially.",
     Auto_Render_All_Scene_Art: "Vẽ toàn bộ",
     Process_all_storyboard_de: "Tự động vẽ ảnh cho phân cảnh.",
     Trigger_batch_AI_renderin: "Vẽ ảnh hàng loạt cho cảnh.",
@@ -1421,8 +1557,10 @@ export const translations = {
     No_Storyboard_Scenes: "Chưa có cảnh",
     Click_button_below_to_sub: "Nhấn nút để tạo phân cảnh.",
     Generating_all_voices: "Đang tạo toàn bộ Voice...",
-    MULTI_STEP_SYSTEM_FLOW_Di: "[MULTI-STEP SYSTEM FLOW] Đang chia phân cảnh...",
-    System_is_synthesizing_te: "Hệ thống đang tiến hành chuyển đổi văn bản sang giọng đọc cho các phân cảnh.",
+    MULTI_STEP_SYSTEM_FLOW_Di:
+      "[MULTI-STEP SYSTEM FLOW] Đang chia phân cảnh...",
+    System_is_synthesizing_te:
+      "Hệ thống đang tiến hành chuyển đổi văn bản sang giọng đọc cho các phân cảnh.",
     Mapping_detailed_timeline: "Phân tích kịch bản thành các cảnh.",
     Drawing: "Đang vẽ...",
     s: "s",
@@ -1496,13 +1634,15 @@ export const translations = {
     Render_YouTube_mockup_thu: "Vẽ ảnh bìa bằng AI.",
     Render_Mockup: "Tạo ảnh",
     Recreate_Mockup: "Tạo lại",
-    Form_tts_voices_with_dive: "Sinh thuyết minh tự động hoặc căn khớp mốc thời gian (Alignment)",
+    Form_tts_voices_with_dive:
+      "Sinh thuyết minh tự động hoặc căn khớp mốc thời gian (Alignment)",
     Run_speech_audio_synthesi: "Khởi chạy luồng sinh giọng thuyết minh AI",
     Synthesizing: "Đang tạo...",
     Synthesize_Voice: "Tạo giọng đọc",
     Full_verbose_script: "Kịch bản thuyết minh toàn diện",
     txt_1_Vocal_timbre_expression: "1. Đặc trưng giọng đọc & diễn cảm",
-    Choose_narrator_voices_em: "Lựa chọn phương thức đọc, giới tính biểu đạt và cảm xúc giọng văn.",
+    Choose_narrator_voices_em:
+      "Lựa chọn phương thức đọc, giới tính biểu đạt và cảm xúc giọng văn.",
     System_Cloud_Speaker: "Chọn giọng đọc hệ thống & đám mây",
     Requires_Vietnamese_voice: "Cần giọng Việt",
     NARRATOR: "THUYẾT MINH VIÊN",
@@ -1549,10 +1689,12 @@ export const translations = {
     Mute: "Tắt tiếng",
     Synchronicity_Journal: "Nhật ký đồng bộ",
     Aligned: "Đã liên kết",
-    Click_the_button_below_to: "Vui lòng click nút dưới đây để tạo giọng đọc tự động hoặc tải lên file âm thanh của bạn.",
+    Click_the_button_below_to:
+      "Vui lòng click nút dưới đây để tạo giọng đọc tự động hoặc tải lên file âm thanh của bạn.",
     Synthesize_AI_Voice: "Tạo giọng đọc",
     Alignment_Console_Ready: "Sẵn sàng đồng bộ",
-    Once_voiceover_is_synthes: "Khi bạn tiến hành sinh thuyết minh, nhật ký chi tiết về mốc phụ đề Forced Alignment, phân chia cảnh và tỷ lệ khớp âm sẽ lập tức được ghi nhận tại đây.",
+    Once_voiceover_is_synthes:
+      "Khi bạn tiến hành sinh thuyết minh, nhật ký chi tiết về mốc phụ đề Forced Alignment, phân chia cảnh và tỷ lệ khớp âm sẽ lập tức được ghi nhận tại đây.",
     syncing: "(đang xử lý...)",
     CONFIG: "[CONFIG]",
     Mapping_timelines_to_scen: "Cấu hình khung thời lượng...",
@@ -1560,7 +1702,8 @@ export const translations = {
     Aligning_subtitles: "Tính toán phụ đề...",
     Synchronizing: "Đang đồng bộ...",
     Forced_alignment_matches_: "Đồng bộ mốc thời gian phụ đề (2-5 giây)",
-    Optimize_metadata_and_tri: "Sáng tạo tiêu đề và thẻ từ khóa tăng tương tác đề xuất",
+    Optimize_metadata_and_tri:
+      "Sáng tạo tiêu đề và thẻ từ khóa tăng tương tác đề xuất",
     Optimizing: "Đang tạo...",
     Optimize_SEO: "Tối ưu SEO",
     SEO_Optimization_Input: "Nhập nội dung tham chiếu Tối ưu SEO",
@@ -1595,13 +1738,19 @@ export const translations = {
     Stop_Simulation: "Dừng",
     Play_Simulation: "Mô phỏng",
     Professional_Project_Pack: "Lựa chọn Xuất bản kỹ thuật",
-    Exports_timeline_JSON_fil: "Xuất dữ liệu dòng thời gian kịch bản tương thích trực tiếp phần mềm máy tính.",
-    Construct_XML_track_metad: "Khởi tạo dữ liệu đa rãnh chuyển tiếp hoàn hảo cho ứng dụng chỉnh sửa phim.",
-    Download_FCPXML_timing_fi: "Tải tập tin đồng bộ thời lượng chuyển cảnh cho ứng dụng phối màu.",
-    Render_and_compile_full_p: "Dựng phim trực tiếp hoàn chỉnh có kèm lời thuyết minh và phụ đề đầy đủ.",
-    Download_complete_CapCut_: "Tải trọn bộ dữ liệu lưu trữ cấu trúc thư mục con và mốc thời gian hoàn tất, mở ra là dùng ngay.",
+    Exports_timeline_JSON_fil:
+      "Xuất dữ liệu dòng thời gian kịch bản tương thích trực tiếp phần mềm máy tính.",
+    Construct_XML_track_metad:
+      "Khởi tạo dữ liệu đa rãnh chuyển tiếp hoàn hảo cho ứng dụng chỉnh sửa phim.",
+    Download_FCPXML_timing_fi:
+      "Tải tập tin đồng bộ thời lượng chuyển cảnh cho ứng dụng phối màu.",
+    Render_and_compile_full_p:
+      "Dựng phim trực tiếp hoàn chỉnh có kèm lời thuyết minh và phụ đề đầy đủ.",
+    Download_complete_CapCut_:
+      "Tải trọn bộ dữ liệu lưu trữ cấu trúc thư mục con và mốc thời gian hoàn tất, mở ra là dùng ngay.",
     Download_SRT: "Tải phụ đề SRT",
-    Extract_synced_subtitle_t: "Trích xuất dữ liệu mốc thời gian phụ đề chuẩn định dạng chạy chữ quốc tế.",
+    Extract_synced_subtitle_t:
+      "Trích xuất dữ liệu mốc thời gian phụ đề chuẩn định dạng chạy chữ quốc tế.",
     Cloud_Exporter_Sync_Setup: "Cấu hình đồng bộ S3",
     https_s3_amazonaws_com_yo: "https://s3.amazonaws.com/your-bucket",
     Configured_bucket_coordin: "Đã liên kết bộ lưu trữ đám mây S3 thành công!",
@@ -1612,7 +1761,8 @@ export const translations = {
     Close_window: "Đóng cửa sổ",
     Voice_Registry: "Thư viện Giọng",
     Voices: "Giọng",
-    Search_voices_registry_by: 'Tìm theo tên, ngôn ngữ ví dụ"vi-VN","gemini"...',
+    Search_voices_registry_by:
+      'Tìm theo tên, ngôn ngữ ví dụ"vi-VN","gemini"...',
     Cloud_AI_Premium: "Cao cấp",
     Offline_Local_TTS: "Thiết bị",
     LOCALE: "KHU VỰC:",
@@ -1624,14 +1774,18 @@ export const translations = {
     Male_9: "Giọng Nam",
     Female_10: "Giọng Nữ",
     No_speakers_found_matchin: "Không tìm thấy thuyết minh viên nào",
-    Adjust_search_query_revok: "Hãy thử thay đổi từ khoá tìm kiếm, huỷ bớt bộ lọc hoặc chuyển đổi tab khác.",
+    Adjust_search_query_revok:
+      "Hãy thử thay đổi từ khoá tìm kiếm, huỷ bớt bộ lọc hoặc chuyển đổi tab khác.",
     FEMALE: "NỮ",
     MALE: "NAM",
     NEUTRAL: "TRUNG TÍNH",
-    Hifidelity_female_cloud_A: "Giọng Gemini Nữ chuẩn, trong trẻo cao cấp bậc nhất.",
-    Hifidelity_male_cloud_AI: "Giọng Gemini Nam trầm ấm, cực kỳ thuyết phục và chuyên nghiệp.",
+    Hifidelity_female_cloud_A:
+      "Giọng Gemini Nữ chuẩn, trong trẻo cao cấp bậc nhất.",
+    Hifidelity_male_cloud_AI:
+      "Giọng Gemini Nam trầm ấm, cực kỳ thuyết phục và chuyên nghiệp.",
     Muff_free_cloud_AI_defaul: "Giọng đọc AI mặc định tối ưu hóa cho kịch bản.",
-    Offline_system_synthesize: "Giọng offline xử lý trực tiếp trên trình duyệt của bạn.",
+    Offline_system_synthesize:
+      "Giọng offline xử lý trực tiếp trên trình duyệt của bạn.",
     Online_speech_voice: "Giọng đám mây trực tuyến chuẩn hóa.",
     Offline_Supported: "Hỗ trợ Offline",
     Online_API_Required: "Cần Internet",
@@ -1679,12 +1833,14 @@ export const translations = {
     Open: "Mở",
     Confirm_Deletion: "Xác nhận xóa dự án",
     Are_you_sure_you_want_to_: "Bạn có chắc chắn muốn xóa dự án",
-    This_action_cannot_be_und: "Hành động này không thể hoàn tác. Mọi kịch bản và cấu hình sẽ bị xóa vĩnh viễn.",
+    This_action_cannot_be_und:
+      "Hành động này không thể hoàn tác. Mọi kịch bản và cấu hình sẽ bị xóa vĩnh viễn.",
     Edit_Project: "Chỉnh sửa Dự án",
     E_g_Legends_of_Rome: "Ví dụ: Ký sự Nhà Tần",
     Write_custom_script_idea_: "Bản thảo video kể về sự ra đời của...",
     Niche_ideas: "Ý tưởng ngách",
-    You_can_choice_History_Do: "Bạn có thể chọn thể loại Lịch Sử, Khoa Học hay True Crime để tái thiết phân cảnh chân thật nhất bằng Imagen 4.",
+    You_can_choice_History_Do:
+      "Bạn có thể chọn thể loại Lịch Sử, Khoa Học hay True Crime để tái thiết phân cảnh chân thật nhất bằng Imagen 4.",
     Update: "Cập nhật",
     Inputs: "Đầu vào",
     Hook_Engine: "Sản xuất lời dẫn",
@@ -1763,7 +1919,8 @@ export const translations = {
     cancellingBatchGen: "Đang hủy tạo hàng loạt...",
     initializingBatchGen: "Đang chuẩn bị vẽ ảnh hàng loạt...",
     batchGenCancelled: "Đã dừng. Đã vẽ thành công {completedCount} ảnh.",
-    generatingSceneBatch: "Đang vẽ phân cảnh {sceneId} ({currentIndex}/{totalToProcess})...",
+    generatingSceneBatch:
+      "Đang vẽ phân cảnh {sceneId} ({currentIndex}/{totalToProcess})...",
     errorRenderingSceneBatch: "Lỗi phân cảnh {sceneId}: {error}",
     waitingBetweenScenes: "Chờ 3 giây...",
     batchGenSuccess: "Đã vẽ xong toàn bộ {completedCount} ảnh phân cảnh!",
@@ -1771,15 +1928,18 @@ export const translations = {
     batchGenFailed: "Lỗi vẽ ảnh hàng loạt: {error}",
     alignmentLoaded: "Đã tải cấu hình phụ đề đồng bộ.",
     scriptPipelineError: "Lỗi kịch bản: {error}",
-    syncLedgerSuccess: "=== ĐỒNG BỘ GIỌNG ĐỌC THÀNH CÔNG ({totalDuration}giây) ===\n",
-    syncLedgerItem: '👉 Phân cảnh {index} ({startTime} --> {endTime}) | {duration}s | Phụ đề: "{script}..."\n',
+    syncLedgerSuccess:
+      "=== ĐỒNG BỘ GIỌNG ĐỌC THÀNH CÔNG ({totalDuration}giây) ===\n",
+    syncLedgerItem:
+      '👉 Phân cảnh {index} ({startTime} --> {endTime}) | {duration}s | Phụ đề: "{script}..."\n',
     storyboardPipelineError: "Lỗi phân cảnh: {error}",
     imagePipelineError: "Lỗi tạo ảnh: {error}",
     imageUploadSuccess: "Đã tải ảnh phân cảnh {sceneId} thành công!",
     styleExtractionError: "Lỗi phân tích ảnh: {error}",
     applyStyleError: "Lỗi áp dụng phong cách: {error}",
     missingImagesWarning: "⚠️ Thiếu ảnh cho phân cảnh: {ids}.",
-    mismatchImagesWarning: '⚠️ Sai số thứ tự: file "{fileName}" gán cho Phân cảnh {sceneId}.',
+    mismatchImagesWarning:
+      '⚠️ Sai số thứ tự: file "{fileName}" gán cho Phân cảnh {sceneId}.',
     bulkUploadSuccess: "Đã liên kết {count} ảnh phân cảnh!",
     promptGenError: "Lỗi tạo prompt: {error}",
     thumbnailPipelineError: "Lỗi tạo ảnh thu nhỏ: {error}",
@@ -1797,7 +1957,8 @@ export const translations = {
     apiKeysConfig: "Cấu hình khóa API",
     configured: "Đã nhập",
     notSet: "Chưa cấu hình",
-    apiKeysDesc: "Các khóa này sẽ được ưu tiên sử dụng trước các cấu hình trong file .env",
+    apiKeysDesc:
+      "Các khóa này sẽ được ưu tiên sử dụng trước các cấu hình trong file .env",
     enterGeminiKey: "Nhập khóa API Gemini...",
     enterAi33Key: "Nhập mã AI33 TTS...",
     favorite: "Yêu thích",
@@ -1824,21 +1985,27 @@ export const translations = {
     copyAiImagePrompt: "Sao chép mô tả AI",
     totalScenesCount: "Tổng số phân cảnh: {count}",
     pageIndicator: "Trang {current} / {total}",
-    noPhotoRenderedYet: "Chưa có hình ảnh được tạo cho PHÂN CẢNH {sceneId}. Hãy quay lại bước phân cảnh để tạo!",
+    noPhotoRenderedYet:
+      "Chưa có hình ảnh được tạo cho PHÂN CẢNH {sceneId}. Hãy quay lại bước phân cảnh để tạo!",
     offlineRenderProgressText: "Đang kết xuất: {progress}%...",
     streamNotSupported: "Luồng dữ liệu không được hỗ trợ bởi trình duyệt này.",
     aligningVoiceWithWhisper: "Đang đồng bộ âm thanh bằng Whisper AI...",
-    voiceAlignSuccess: "Đã đồng bộ thời lượng các phân cảnh khớp 1-1 theo giọng nói thật (Whisper AI)!",
-    voiceAlignNoValidResult: "Không nhận được kết quả phân tích hợp lệ từ Whisper AI.",
-    voiceAlignSceneNotFound: "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
-    voiceAlignError: "Lỗi đồng bộ giọng nói bằng Whisper AI. Vui lòng kiểm tra cài đặt Python/Whisper. Chi tiết lỗi: {error}",
+    voiceAlignSuccess:
+      "Đã đồng bộ thời lượng các phân cảnh khớp 1-1 theo giọng nói thật (Whisper AI)!",
+    voiceAlignNoValidResult:
+      "Không nhận được kết quả phân tích hợp lệ từ Whisper AI.",
+    voiceAlignSceneNotFound:
+      "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
+    voiceAlignError:
+      "Lỗi đồng bộ giọng nói bằng Whisper AI. Vui lòng kiểm tra cài đặt Python/Whisper. Chi tiết lỗi: {error}",
     exportingCapcut: "Đang xuất CapCut...",
     exportingPremiere: "Đang xuất Premiere...",
     exportingDavinci: "Đang xuất DaVinci...",
     exportingVideo: "Đang kết xuất Video...",
     packagingZip: "Đang đóng gói ZIP...",
     exportingSRT: "Đang xuất SRT...",
-    waitExportProcess: "Vui lòng chờ trong giây lát, tiến trình này có thể mất chút thời gian...",
+    waitExportProcess:
+      "Vui lòng chờ trong giây lát, tiến trình này có thể mất chút thời gian...",
     download: "Tải về",
     node6_settings_title: "Cấu Hình Sinh Độc Lập",
     node6_engine: "Cơ chế tạo",
@@ -1851,7 +2018,8 @@ export const translations = {
     node6_prompts_list: "Danh Sách Prompt",
     node6_sample_prompts: "Prompt Mẫu",
     node6_clear_workspace: "Xóa bộ nhớ",
-    node6_placeholder: "Dán danh sách prompt tại đây, mỗi prompt một dòng...\nVí dụ:\n1. Một người que đi dưới mưa...\n2. Một người que đang cầm kiếm...",
+    node6_placeholder:
+      "Dán danh sách prompt tại đây, mỗi prompt một dòng...\nVí dụ:\n1. Một người que đi dưới mưa...\n2. Một người que đang cầm kiếm...",
     node6_detected_prompts: "Đã nhận diện: {count} prompts",
     node6_stop_gen: "DỪNG LẠI",
     node6_start_gen: "BẮT ĐẦU TẠO",
@@ -1860,7 +2028,8 @@ export const translations = {
     node6_console_waiting: "Đang đợi bắt đầu tiến trình...",
     node6_library_title: "Kho Tài Nguyên Độc Lập",
     node6_library_empty: "Danh sách trống",
-    node6_library_empty_desc: "Hãy nhập danh sách các mô tả ở cột bên trái để bắt đầu sinh hình ảnh hoặc video.",
+    node6_library_empty_desc:
+      "Hãy nhập danh sách các mô tả ở cột bên trái để bắt đầu sinh hình ảnh hoặc video.",
     node6_prompt_label: "Prompt {id}",
     node6_badge_done: "XONG",
     node6_badge_error: "LỖI",
@@ -1882,12 +2051,15 @@ export const translations = {
     node6_log_zip_error: "Lỗi đóng gói file ZIP: {error}",
     node6_log_cleared: "Đã dọn dẹp bộ nhớ.",
     node7_title: "Biên tập CapCut",
-    node7_desc: "Tự động hóa đồng bộ hình ảnh theo giọng đọc, tạo chuyển động góc quay, tự động chuyển cảnh và chèn hiệu ứng âm thanh chuyên nghiệp cho dự án CapCut.",
-    node7_input_file_label: "1. Chọn tệp cấu hình dự án gốc (draft_content.json)",
+    node7_desc:
+      "Tự động hóa đồng bộ hình ảnh theo giọng đọc, tạo chuyển động góc quay, tự động chuyển cảnh và chèn hiệu ứng âm thanh chuyên nghiệp cho dự án CapCut.",
+    node7_input_file_label:
+      "1. Chọn tệp cấu hình dự án gốc (draft_content.json)",
     node7_choose_file_btn: "Chọn tệp dự án",
     node7_file_selected: "Đã chọn: {name}",
     node7_file_empty: "Chưa chọn tệp cấu hình dự án draft_content.json",
-    node7_api_key_label: "2. Khóa API Google Gemini (Bắt buộc khi tạo hiệu ứng âm thanh)",
+    node7_api_key_label:
+      "2. Khóa API Google Gemini (Bắt buộc khi tạo hiệu ứng âm thanh)",
     node7_api_key_placeholder: "Nhập khóa API Gemini tại đây...",
     node7_sfx_folder_label: "3. Thư mục chứa các hiệu ứng âm thanh (Tùy chọn)",
     node7_choose_sfx_btn: "Chọn thư mục âm thanh",
@@ -1902,13 +2074,18 @@ export const translations = {
     node7_select_all: "Chọn tất cả",
     node7_deselect_all: "Bỏ chọn tất cả",
     node7_console_title: "Bảng điều khiển tiến trình CapCut",
-    node7_console_waiting: "Hệ thống sẵn sàng thực thi các tác vụ tối ưu hóa dòng thời gian...",
-    node7_log_started: "Bắt đầu thực thi quy trình tối ưu hóa CapCut nâng cao...",
+    node7_console_waiting:
+      "Hệ thống sẵn sàng thực thi các tác vụ tối ưu hóa dòng thời gian...",
+    node7_log_started:
+      "Bắt đầu thực thi quy trình tối ưu hóa CapCut nâng cao...",
     node7_log_success: "Quy trình tối ưu hóa CapCut hoàn tất thành công!",
     node7_log_error: "Gặp lỗi trong quá trình xử lý: {error}",
-    node7_log_missing_file: "Vui lòng chọn tệp cấu hình draft_content.json trước khi chạy!",
-    node7_log_missing_api: "Vui lòng cung cấp khóa API Gemini để kích hoạt tính năng tạo hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)!",
-    node7_log_missing_sfx: "Vui lòng chọn thư mục hiệu ứng âm thanh để kích hoạt tính năng tạo hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)!",
+    node7_log_missing_file:
+      "Vui lòng chọn tệp cấu hình draft_content.json trước khi chạy!",
+    node7_log_missing_api:
+      "Vui lòng cung cấp khóa API Gemini để kích hoạt tính năng tạo hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)!",
+    node7_log_missing_sfx:
+      "Vui lòng chọn thư mục hiệu ứng âm thanh để kích hoạt tính năng tạo hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)!",
     node7_opt_sync: "Đồng bộ hình/âm",
     node7_opt_music_mix: "Nhạc nền ngẫu nhiên",
     node7_opt_custom_order: "Sắp xếp âm thanh",
@@ -1925,17 +2102,23 @@ export const translations = {
     node7_opt_music_mix_tt: "Tự động chèn và lặp nhạc nền ngẫu nhiên",
     node7_opt_custom_order_tt: "Sắp xếp thứ tự phân cảnh theo từ khóa âm thanh",
     node7_opt_randomize_tt: "Xáo trộn ngẫu nhiên thứ tự các phân cảnh",
-    node7_opt_motion_tt: "Tạo hiệu ứng thu phóng và chuyển động góc quay tự động",
+    node7_opt_motion_tt:
+      "Tạo hiệu ứng thu phóng và chuyển động góc quay tự động",
     node7_opt_transition_tt: "Tự động thêm hiệu ứng chuyển cảnh giữa các đoạn",
     node7_opt_clear_trans_tt: "Xóa toàn bộ hiệu ứng chuyển cảnh hiện có",
     node7_opt_fill_canvas_tt: "Tự động kéo giãn hình ảnh vừa khít khung hình",
     node7_opt_normalize_tt: "Chuẩn hóa âm lượng tự động về mức tiêu chuẩn",
     node7_opt_reverse_tt: "Đảo ngược thứ tự dòng thời gian của các phân cảnh",
-    node7_opt_subtitles_tt: "Đồng bộ phông chữ và kiểu dáng phụ đề chuyên nghiệp",
-    node7_opt_sfx_tt: "Tự động tạo và ghép hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)",
-    node7_placeholder_file: "Nhập đường dẫn tuyệt đối đến tệp draft_content.json...",
-    node7_placeholder_sfx: "Nhập đường dẫn tuyệt đối đến thư mục chứa hiệu ứng âm thanh...",
-    node7_placeholder_audio_list: "Nhập các từ khóa âm thanh, ngăn cách bằng dấu phẩy (Ví dụ: intro, voice, outro)",
+    node7_opt_subtitles_tt:
+      "Đồng bộ phông chữ và kiểu dáng phụ đề chuyên nghiệp",
+    node7_opt_sfx_tt:
+      "Tự động tạo và ghép hiệu ứng âm thanh bằng trí tuệ nhân tạo (AI)",
+    node7_placeholder_file:
+      "Nhập đường dẫn tuyệt đối đến tệp draft_content.json...",
+    node7_placeholder_sfx:
+      "Nhập đường dẫn tuyệt đối đến thư mục chứa hiệu ứng âm thanh...",
+    node7_placeholder_audio_list:
+      "Nhập các từ khóa âm thanh, ngăn cách bằng dấu phẩy (Ví dụ: intro, voice, outro)",
     node7_opt_title: "Các tùy chọn tự động hóa và tối ưu hóa",
     node7_audio_order_label: "Danh sách từ khóa sắp xếp âm thanh ưu tiên:",
     node7_log_started_dialog: "Đang mở cửa sổ hệ thống để chọn tệp tin...",
@@ -1946,8 +2129,10 @@ export const translations = {
     node7_log_canceled_folder: "Đã hủy bỏ việc chọn thư mục âm thanh.",
     node7_log_error_file: "Lỗi phát sinh khi chọn tệp cấu hình: {error}",
     node7_log_error_folder: "Lỗi phát sinh khi chọn thư mục âm thanh: {error}",
-    node7_log_calling_backend: "Đang kết nối với hệ thống dịch vụ để thực thi thuật toán...",
-    node7_log_backup_saved: "Tệp sao lưu dự án đã được tạo và lưu trữ an toàn (.backup_ultra).",
+    node7_log_calling_backend:
+      "Đang kết nối với hệ thống dịch vụ để thực thi thuật toán...",
+    node7_log_backup_saved:
+      "Tệp sao lưu dự án đã được tạo và lưu trữ an toàn (.backup_ultra).",
     dashboardCreatorInfo: "Thông tin tài khoản",
     dashboardAICreator: "Nhà Sáng Tạo AI",
     dashboardMemberPro: "Thành viên V2.4 Pro",
@@ -1960,7 +2145,8 @@ export const translations = {
     dashboardNoDesc: "Không có mô tả cho dự án này.",
     dashboardOpenStudio: "Mở phòng sáng tạo",
     dashboardWelcome: "Chào mừng bạn đến với Vidify Studio",
-    dashboardWelcomeDesc: "Hãy tạo một dự án video AI mới ở tab Nội dung để bắt đầu hành trình sản xuất video tự động của bạn.",
+    dashboardWelcomeDesc:
+      "Hãy tạo một dự án video AI mới ở tab Nội dung để bắt đầu hành trình sản xuất video tự động của bạn.",
     dashboardGoToContent: "Đến mục Nội dung",
   },
 };

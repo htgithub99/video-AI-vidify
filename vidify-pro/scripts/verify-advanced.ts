@@ -1,1 +1,48 @@
-import { normalizeContentSafety } from "../src/services/contentSafetyService.ts";import { rollbackSceneAssetRevision } from "../src/services/dependencyHashService.ts";import { resolveQualityProfile } from "../src/services/qualityProfileService.ts";import { resolveRolloutConfig } from "../src/services/rolloutService.ts";import { QualityMode,SceneAssetStatus } from "../src/types.ts";const assert=(value:unknown,message:string)=>{if(!value)throw new Error(message)};assert(!normalizeContentSafety({sexualExploitationRisk:true}).allowed,"safety gate");const scene:any={id:"s",prompt:"p",script:"s",assetRevisionId:"r2",assetRevisions:[{id:"r1",assetUrl:"a",status:SceneAssetStatus.Approved,promptHash:"h",createdAt:""},{id:"r2",assetUrl:"b",status:SceneAssetStatus.Rejected,promptHash:"h",createdAt:""}]};const restored=rollbackSceneAssetRevision(scene,"r1");assert(restored.assetUrl==="a"&&restored.assetRevisions.at(-1)?.operation==="rollback","rollback");assert(resolveQualityProfile(QualityMode.Premium).finalCandidates===3&&resolveQualityProfile().finalCandidates===2,"quality profile");assert(resolveRolloutConfig("project_1").flags.finalQc,"rollout");console.log("Pro advanced safety/rollback/rollout assertions passed");
+import { normalizeContentSafety } from "../src/services/contentSafetyService.ts";
+import { rollbackSceneAssetRevision } from "../src/services/dependencyHashService.ts";
+import { resolveQualityProfile } from "../src/services/qualityProfileService.ts";
+import { resolveRolloutConfig } from "../src/services/rolloutService.ts";
+import { QualityMode, SceneAssetStatus } from "../src/types.ts";
+import { writeVerificationLog } from "./verificationLogger.ts";
+const assert = (value: unknown, message: string) => {
+  if (!value) throw new Error(message);
+};
+assert(
+  !normalizeContentSafety({ sexualExploitationRisk: true }).allowed,
+  "safety gate",
+);
+const scene: any = {
+  id: "s",
+  prompt: "p",
+  script: "s",
+  assetRevisionId: "r2",
+  assetRevisions: [
+    {
+      id: "r1",
+      assetUrl: "a",
+      status: SceneAssetStatus.Approved,
+      promptHash: "h",
+      createdAt: "",
+    },
+    {
+      id: "r2",
+      assetUrl: "b",
+      status: SceneAssetStatus.Rejected,
+      promptHash: "h",
+      createdAt: "",
+    },
+  ],
+};
+const restored = rollbackSceneAssetRevision(scene, "r1");
+assert(
+  restored.assetUrl === "a" &&
+    restored.assetRevisions.at(-1)?.operation === "rollback",
+  "rollback",
+);
+assert(
+  resolveQualityProfile(QualityMode.Premium).finalCandidates === 3 &&
+    resolveQualityProfile().finalCandidates === 2,
+  "quality profile",
+);
+assert(resolveRolloutConfig("project_1").flags.finalQc, "rollout");
+writeVerificationLog("Pro advanced safety/rollback/rollout assertions passed");

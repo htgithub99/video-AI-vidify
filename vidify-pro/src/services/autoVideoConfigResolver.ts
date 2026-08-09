@@ -49,22 +49,46 @@ const NO_TEXT_NEGATIVE_PROMPT = [
   "no watermark",
 ] as const;
 
-const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
-  !_.isEmpty(config.characterPrompt),
-  _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
-  _.every([config.characterExtracted, !_.isEmpty(config.characterImages)], Boolean),
-  _.some(config.characters, (character) => _.every([
-    character.referenceApproved,
-    !_.isEmpty(character.images),
-    _.every(["front", "side", "three_quarter", "expression"], view => _.includes(character.referenceViews, view)),
-  ], Boolean)),
-], Boolean);
+const hasCharacterIdentity = (config: VisualConfig): boolean =>
+  _.some(
+    [
+      !_.isEmpty(config.characterPrompt),
+      _.some(
+        config.characters,
+        (character) => !_.isEmpty(character.prompt || character.description),
+      ),
+      _.every(
+        [config.characterExtracted, !_.isEmpty(config.characterImages)],
+        Boolean,
+      ),
+      _.some(config.characters, (character) =>
+        _.every(
+          [
+            character.referenceApproved,
+            !_.isEmpty(character.images),
+            _.every(["front", "side", "three_quarter", "expression"], (view) =>
+              _.includes(character.referenceViews, view),
+            ),
+          ],
+          Boolean,
+        ),
+      ),
+    ],
+    Boolean,
+  );
 
-export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig => {
+export const resolveVisualConfig = (
+  source: VisualConfig,
+): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
 
-  if (_.every([config.characterConsistency, !hasCharacterIdentity(config)], Boolean)) {
+  if (
+    _.every(
+      [config.characterConsistency, !hasCharacterIdentity(config)],
+      Boolean,
+    )
+  ) {
     config.characterConsistency = false;
     issues.push({
       code: ConfigIssueCode.CharacterConsistencyDisabled,
@@ -73,7 +97,12 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
   }
 
   if (_.isEqual(config.generateType, GenerateType.Image)) {
-    if (_.some([config.videoDuration, config.maxVideoScenes], (value) => !_.isNil(value))) {
+    if (
+      _.some(
+        [config.videoDuration, config.maxVideoScenes],
+        (value) => !_.isNil(value),
+      )
+    ) {
       delete config.videoDuration;
       delete config.maxVideoScenes;
       issues.push({
@@ -82,7 +111,12 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
       });
     }
 
-    if (_.includes(VIDEO_ENGINES, config.imageGeneratorEngine as typeof VIDEO_ENGINES[number])) {
+    if (
+      _.includes(
+        VIDEO_ENGINES,
+        config.imageGeneratorEngine as (typeof VIDEO_ENGINES)[number],
+      )
+    ) {
       config.imageGeneratorEngine = ImageGeneratorEngine.Imagen;
       issues.push({
         code: ConfigIssueCode.ImageModeVideoEngineReplaced,
@@ -91,10 +125,16 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
     }
   }
 
-  if (_.some([
-    _.isEqual(config.generateType, GenerateType.Video),
-    _.isEqual(config.generateType, GenerateType.Mixed),
-  ]) && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as typeof IMAGE_ENGINES[number])) {
+  if (
+    _.some([
+      _.isEqual(config.generateType, GenerateType.Video),
+      _.isEqual(config.generateType, GenerateType.Mixed),
+    ]) &&
+    _.includes(
+      IMAGE_ENGINES,
+      config.imageGeneratorEngine as (typeof IMAGE_ENGINES)[number],
+    )
+  ) {
     issues.push({
       code: ConfigIssueCode.VideoModeImageEngineUnsupported,
       severity: ConfigIssueSeverity.Blocking,
@@ -102,10 +142,10 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
   }
 
   if (_.isEqual(config.styleTextInImageMode, TextInImageMode.NoText)) {
-    config.negativePrompt = _.join(_.uniq(_.compact([
-      config.negativePrompt,
-      ...NO_TEXT_NEGATIVE_PROMPT,
-    ])), ", ");
+    config.negativePrompt = _.join(
+      _.uniq(_.compact([config.negativePrompt, ...NO_TEXT_NEGATIVE_PROMPT])),
+      ", ",
+    );
     issues.push({
       code: ConfigIssueCode.NoTextConstraintApplied,
       severity: ConfigIssueSeverity.Warning,

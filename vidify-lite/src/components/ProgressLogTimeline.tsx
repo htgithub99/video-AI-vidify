@@ -16,10 +16,12 @@ import { PROGRESS_LOG_CONFIG, ProgressLogTone } from "../constants/progressLog";
 import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
+import { formatUserFacingLog } from "../lib/userLogFormatter";
 
 interface ProgressLogTimelineProps {
   logs: string[];
   theme: AppTheme;
+  language?: string;
 }
 
 const resolveProgressLogTone = (message: string): ProgressLogTone => {
@@ -45,7 +47,7 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
   return matchedTone || ProgressLogTone.Info;
 };
 
-const parseProgressLog = (log: string) => {
+const parseProgressLog = (log: string, language?: string) => {
   const rawLog = _.toString(log);
   const timeMatch = rawLog.match(PROGRESS_LOG_CONFIG.TIME_PATTERN);
   const message = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
@@ -63,7 +65,7 @@ const parseProgressLog = (log: string) => {
 
   return {
     time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
-    message: finalMessage,
+    message: formatUserFacingLog(finalMessage, language),
     stepLabel,
     tone: resolveProgressLogTone(message),
   };
@@ -93,8 +95,8 @@ const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: A
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
 
-export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelineProps) => {
-  const entries = useMemo(() => _.map(logs, parseProgressLog), [logs]);
+export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogTimelineProps) => {
+  const entries = useMemo(() => _.map(logs, log => parseProgressLog(log, language)), [logs, language]);
   const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
 
   return (

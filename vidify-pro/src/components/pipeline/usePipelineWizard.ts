@@ -3,43 +3,125 @@ import { base64ToArrayBuffer, blobToBase64 } from "../../lib/fileUtils.js";
 import { PipelineConstants } from "../../constants/pipelineConstants";
 import { logger, subscribeToLogs } from "../../utils/logger";
 import { jsonUtils } from "../../lib/json";
-import { storageUtils } from '../../lib/storage';
+import { storageUtils } from "../../lib/storage";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import _ from 'lodash';
+import _ from "lodash";
 
-import { formatTimeHelper } from "../../utils/helpers";
+import { formatTimeHelper } from "../../lib/timeUtils";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION } from "../../constants";
+import {
+  APP_LOCALES,
+  DEFAULT_PROVIDER,
+  EXTERNAL_URLS,
+  API_QUERY_PARAMS,
+  API_ROUTES,
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+  VOICE_GENDER,
+  MEDIA_MIX_CONFIG,
+  UI_MESSAGE_DURATION,
+} from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
-import { fetchSystemApi, formatRoundedTime, getTargetDurationSeconds, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
+import {
+  fetchSystemApi,
+  formatRoundedTime,
+  getTargetDurationSeconds,
+  getVoiceGender,
+  getVoiceModifiers,
+  isPremiumVoice,
+  isProjectContentEqual,
+  safeFetchJsonWithAuth,
+  safeResponseJson,
+} from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
-import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender } from "../../types";
+import {
+  CONSOLE_LOG_IGNORED_MESSAGES,
+  LOG_SUCCESS_KEYWORDS,
+  LOG_PENDING_KEYWORDS,
+  LOG_WARN_KEYWORDS,
+  LOG_ERROR_KEYWORDS,
+  VITE_CONNECTED_KEYWORD,
+  VITE_CONNECTION_LOST_KEYWORDS,
+  VITE_FAILED_RELOAD_KEYWORD,
+  VITE_HOT_UPDATE_KEYWORDS,
+} from "../../constants/data";
+import {
+  APP_TEXTS,
+  AUDIO_MIME_TYPE,
+  SIMULATED_SPEECH_VAL,
+  BLOB_PREFIX,
+  RESTORE_SCENE_BLOB_ERR,
+  RESTORE_BLOB_ERR,
+  COMMON_STRINGS,
+  EXTERNAL_AUDIO_TEXTS,
+  ERROR_MESSAGES,
+  VITE_HMR_LOGS,
+  AUTO_GENERATE_TEXTS,
+} from "../../constants/texts";
+import {
+  VideoProject,
+  HookVersion,
+  StoryboardScene,
+  ThumbnailItem,
+  WizardStep,
+  ImageGeneratorEngine,
+  ProjectLanguage,
+  HookPosition,
+  ImageGenerationMode,
+  GenerateType,
+  AudioType,
+  Gender,
+} from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
-import { safeSystemFetch, logSystemAction, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
-import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
+import {
+  safeSystemFetch,
+  logSystemAction,
+  randomDelay,
+  getBatchDelayMs,
+} from "../../lib/shared-utils";
+import { WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { delayAsync } from "../../lib/shared-utils.js";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
-import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
+import {
+  createProjectImageUrl,
+  generateProjectImages,
+  hasSceneAsset,
+  resolveSceneGenerateType,
+  selectVideoSceneIds,
+  type ProjectImageResult,
+} from "../../services/projectImageGenerationService";
+import {
+  applyThumbnailPromptDirectives,
+  createThumbnailGenerationPrompt,
+  resolveThumbnailReferenceImages,
+} from "../../services/thumbnailPromptService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
 const fallbackImageCache = new Map<string, string>();
-let handleNextStep = () => { };
-let handlePrevStep = () => { };
+let handleNextStep = () => {};
+let handlePrevStep = () => {};
 let audioRef: any = null;
 let videoRef: any = null;
 let simVideoRef: any = null;
 let workspaceRef: any = null;
 
 export function usePipelineWizard(props: any) {
-  const { theme, currentLang, project: initialProject, onSaveProject, costTracker, setCostTracker, credits, setCredits } = props;
+  const {
+    theme,
+    currentLang,
+    project: initialProject,
+    onSaveProject,
+    costTracker,
+    setCostTracker,
+    credits,
+    setCredits,
+  } = props;
   const t = translations[currentLang];
 
   const logAction = (actionName: string) => {
@@ -50,74 +132,159 @@ export function usePipelineWizard(props: any) {
     if (!initialProject) return initialProject;
     return {
       ...initialProject,
-      voiceConfig: _.defaultTo(initialProject.voiceConfig, PipelineConstants.DEFAULT_VOICE_CONFIG),
-      input: _.defaultTo(initialProject.input, PipelineConstants.DEFAULT_PROJECT_INPUT),
-      config: _.defaultTo(initialProject.config, PipelineConstants.DEFAULT_PROJECT_CONFIG),
-      hookConfig: _.defaultTo(initialProject.hookConfig, PipelineConstants.DEFAULT_HOOK_CONFIG),
-      visualConfig: _.defaultTo(initialProject.visualConfig, PipelineConstants.DEFAULT_VISUAL_CONFIG),
+      voiceConfig: _.defaultTo(
+        initialProject.voiceConfig,
+        PipelineConstants.DEFAULT_VOICE_CONFIG,
+      ),
+      input: _.defaultTo(
+        initialProject.input,
+        PipelineConstants.DEFAULT_PROJECT_INPUT,
+      ),
+      config: _.defaultTo(
+        initialProject.config,
+        PipelineConstants.DEFAULT_PROJECT_CONFIG,
+      ),
+      hookConfig: _.defaultTo(
+        initialProject.hookConfig,
+        PipelineConstants.DEFAULT_HOOK_CONFIG,
+      ),
+      visualConfig: _.defaultTo(
+        initialProject.visualConfig,
+        PipelineConstants.DEFAULT_VISUAL_CONFIG,
+      ),
     };
   }, [initialProject]);
 
-  const [project, setProject] = useState<VideoProject>(normalizedInitialProject);
+  const [project, setProject] = useState<VideoProject>(
+    normalizedInitialProject,
+  );
 
   useEffect(() => {
     if (normalizedInitialProject) {
       setProject((prev) => {
-        if (!prev || prev.id !== normalizedInitialProject.id) return normalizedInitialProject;
+        if (!prev || prev.id !== normalizedInitialProject.id)
+          return normalizedInitialProject;
 
-        const isServerUpdate = normalizedInitialProject.updatedAt !== prev.updatedAt;
+        const isServerUpdate =
+          normalizedInitialProject.updatedAt !== prev.updatedAt;
         if (isServerUpdate) {
           return prev;
         }
-        const isTimingLogChanged = _.some([prev.voiceConfig?.timingLog !== normalizedInitialProject.voiceConfig?.timingLog], Boolean);
+        const isTimingLogChanged = _.some(
+          [
+            prev.voiceConfig?.timingLog !==
+              normalizedInitialProject.voiceConfig?.timingLog,
+          ],
+          Boolean,
+        );
 
         let mergedStoryboard = _.defaultTo(prev.storyboard, []);
-        if (_.some([isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)], Boolean)) {
-          mergedStoryboard = _.defaultTo(normalizedInitialProject.storyboard, []);
+        if (
+          _.some(
+            [isServerUpdate, !prev.storyboard, _.isEmpty(prev?.storyboard)],
+            Boolean,
+          )
+        ) {
+          mergedStoryboard = _.defaultTo(
+            normalizedInitialProject.storyboard,
+            [],
+          );
         } else if (isTimingLogChanged) {
           mergedStoryboard = prev.storyboard;
         } else {
-          mergedStoryboard = _.defaultTo(prev.storyboard, []).map((localScene) => {
-            if (localScene.assetUrl === REFACTOR_CONSTANTS.VD_EMPTY_STRING) return localScene;
-            const serverScene = _.find(normalizedInitialProject.storyboard, (s) => _.isEqual(s.id, localScene.id));
-            return serverScene?.assetUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH)
-              ? {
-                ...localScene,
-                assetUrl: serverScene.assetUrl,
-                assetUrls: _.defaultTo(serverScene.assetUrls, [serverScene.assetUrl]),
-              }
-              : localScene;
-          });
+          mergedStoryboard = _.defaultTo(prev.storyboard, []).map(
+            (localScene) => {
+              if (localScene.assetUrl === REFACTOR_CONSTANTS.VD_EMPTY_STRING)
+                return localScene;
+              const serverScene = _.find(
+                normalizedInitialProject.storyboard,
+                (s) => _.isEqual(s.id, localScene.id),
+              );
+              return serverScene?.assetUrl?.startsWith(
+                COMMON_STRINGS.SLASH_ASSETS_SLASH,
+              )
+                ? {
+                    ...localScene,
+                    assetUrl: serverScene.assetUrl,
+                    assetUrls: _.defaultTo(serverScene.assetUrls, [
+                      serverScene.assetUrl,
+                    ]),
+                  }
+                : localScene;
+            },
+          );
         }
 
         let mergedThumbnails = _.defaultTo(prev.thumbnails, []);
-        if (_.some([isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)], Boolean)) {
-          mergedThumbnails = _.defaultTo(normalizedInitialProject.thumbnails, []);
+        if (
+          _.some(
+            [isServerUpdate, !prev.thumbnails, _.isEmpty(prev?.thumbnails)],
+            Boolean,
+          )
+        ) {
+          mergedThumbnails = _.defaultTo(
+            normalizedInitialProject.thumbnails,
+            [],
+          );
         } else {
-          mergedThumbnails = _.defaultTo(prev.thumbnails, []).map((localThumb) => {
-            const serverThumb = _.find(normalizedInitialProject.thumbnails, (t) => _.isEqual(t.id, localThumb.id));
-            return serverThumb?.imageUrl?.startsWith(COMMON_STRINGS.SLASH_ASSETS_SLASH) ? { ...localThumb, imageUrl: serverThumb.imageUrl } : localThumb;
-          });
+          mergedThumbnails = _.defaultTo(prev.thumbnails, []).map(
+            (localThumb) => {
+              const serverThumb = _.find(
+                normalizedInitialProject.thumbnails,
+                (t) => _.isEqual(t.id, localThumb.id),
+              );
+              return serverThumb?.imageUrl?.startsWith(
+                COMMON_STRINGS.SLASH_ASSETS_SLASH,
+              )
+                ? { ...localThumb, imageUrl: serverThumb.imageUrl }
+                : localThumb;
+            },
+          );
         }
 
-        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig ? _.some(["audioUrl", "audioBase64", "timingLog"], (key) => prev.voiceConfig?.[key as any] !== normalizedInitialProject.voiceConfig?.[key as any]) : false;
+        const shouldUpdateVoiceConfig = normalizedInitialProject.voiceConfig
+          ? _.some(
+              ["audioUrl", "audioBase64", "timingLog"],
+              (key) =>
+                prev.voiceConfig?.[key as any] !==
+                normalizedInitialProject.voiceConfig?.[key as any],
+            )
+          : false;
 
-        const syncField = (key: keyof VideoProject, fallback: any = undefined, checkEmptyArray = false) => {
+        const syncField = (
+          key: keyof VideoProject,
+          fallback: any = undefined,
+          checkEmptyArray = false,
+        ) => {
           const serverVal = normalizedInitialProject[key];
           const localVal = prev[key];
-          const isEmpty = checkEmptyArray ? !(localVal as any)?.length : !localVal;
-          return isServerUpdate || isEmpty ? _.defaultTo(serverVal, fallback) : localVal;
+          const isEmpty = checkEmptyArray
+            ? !(localVal as any)?.length
+            : !localVal;
+          return isServerUpdate || isEmpty
+            ? _.defaultTo(serverVal, fallback)
+            : localVal;
         };
 
         const voiceConfig = isServerUpdate
           ? _.defaultTo(normalizedInitialProject.voiceConfig, prev.voiceConfig)
-          : _.every([!isTimingLogChanged, shouldUpdateVoiceConfig, !!normalizedInitialProject.voiceConfig], Boolean)
+          : _.every(
+                [
+                  !isTimingLogChanged,
+                  shouldUpdateVoiceConfig,
+                  !!normalizedInitialProject.voiceConfig,
+                ],
+                Boolean,
+              )
             ? {
-              ...(_.defaultTo(prev.voiceConfig, {})),
-              audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
-              audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
-              timingLog: _.defaultTo(normalizedInitialProject.voiceConfig.timingLog, prev.voiceConfig?.timingLog),
-            }
+                ..._.defaultTo(prev.voiceConfig, {}),
+                audioUrl: normalizedInitialProject.voiceConfig.audioUrl,
+                audioBase64: normalizedInitialProject.voiceConfig.audioBase64,
+                timingLog: _.defaultTo(
+                  normalizedInitialProject.voiceConfig.timingLog,
+                  prev.voiceConfig?.timingLog,
+                ),
+              }
             : prev.voiceConfig;
 
         const scriptRewritten = syncField("scriptRewritten", "");
@@ -140,7 +307,9 @@ export function usePipelineWizard(props: any) {
           [prev.currentStep, normalizedInitialProject.currentStep],
           [prev.creditsUsed, normalizedInitialProject.creditsUsed],
         ];
-        const hasChanges = _.some(compareItems, ([a, b, isJson]) => (isJson ? !_.isEqual(a, b) : a !== b));
+        const hasChanges = _.some(compareItems, ([a, b, isJson]) =>
+          isJson ? !_.isEqual(a, b) : a !== b,
+        );
 
         if (!hasChanges) {
           return prev;
@@ -166,7 +335,9 @@ export function usePipelineWizard(props: any) {
   }, [normalizedInitialProject]);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
-    return (initialProject as any).currentStep !== undefined ? (initialProject as any).currentStep : WizardStep.SourceInput;
+    return (initialProject as any).currentStep !== undefined
+      ? (initialProject as any).currentStep
+      : WizardStep.SourceInput;
   });
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(false);
@@ -177,33 +348,43 @@ export function usePipelineWizard(props: any) {
 
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
 
-  const selectVoiceForProject = useCallback((voice: any) => {
-    const updatedProject: VideoProject = {
-      ...project,
-      voiceConfig: {
-        ...project.voiceConfig,
-        voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
-        voiceName: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH),
-        previewUrl: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_PREVIEW_PATH),
-        provider: _.get(
-          voice,
-          REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
-          _.get(project, REFACTOR_CONSTANTS.VOICE_CONFIG_PROVIDER_PATH),
-        ),
-        gender: _.isEqual(
-          _.toLower(_.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH)),
-          VOICE_GENDER.MALE,
-        )
-          ? Gender.Male
-          : Gender.Female,
-      },
-    };
-    setProject(updatedProject);
-    void onSaveProject(updatedProject, true);
-    setIsVoiceDialogOpen(false);
-  }, [project, onSaveProject]);
+  const selectVoiceForProject = useCallback(
+    (voice: any) => {
+      const updatedProject: VideoProject = {
+        ...project,
+        voiceConfig: {
+          ...project.voiceConfig,
+          voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+          voiceName: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH),
+          previewUrl: _.get(
+            voice,
+            REFACTOR_CONSTANTS.VOICE_CATALOG_PREVIEW_PATH,
+          ),
+          provider: _.get(
+            voice,
+            REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
+            _.get(project, REFACTOR_CONSTANTS.VOICE_CONFIG_PROVIDER_PATH),
+          ),
+          gender: _.isEqual(
+            _.toLower(
+              _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH),
+            ),
+            VOICE_GENDER.MALE,
+          )
+            ? Gender.Male
+            : Gender.Female,
+        },
+      };
+      setProject(updatedProject);
+      void onSaveProject(updatedProject, true);
+      setIsVoiceDialogOpen(false);
+    },
+    [project, onSaveProject],
+  );
 
-  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -253,11 +434,18 @@ export function usePipelineWizard(props: any) {
 
   const [promptCameraAngle, setPromptCameraAngle] = useState("");
 
-  const isGeneratingDetailedPrompt = activeSceneId ? !!loadingStates[LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId] : false;
-  const setIsGeneratingDetailedPrompt = (val: boolean | ((prev: boolean) => boolean)) => {
+  const isGeneratingDetailedPrompt = activeSceneId
+    ? !!loadingStates[
+        LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId
+      ]
+    : false;
+  const setIsGeneratingDetailedPrompt = (
+    val: boolean | ((prev: boolean) => boolean),
+  ) => {
     if (!activeSceneId) return;
     setLoadingStates((prev) => {
-      const currentVal = !!prev[LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId];
+      const currentVal =
+        !!prev[LOADING_KEYS.GENERATE_DETAILED_PROMPT_PREFIX + activeSceneId];
       const newVal = typeof val === "function" ? val(currentVal) : val;
       return {
         ...prev,
@@ -269,15 +457,19 @@ export function usePipelineWizard(props: any) {
   const [isDeletingImage, setIsDeletingImage] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [showPromptGeneratorPanel, setShowPromptGeneratorPanel] = useState(false);
+  const [showPromptGeneratorPanel, setShowPromptGeneratorPanel] =
+    useState(false);
 
-  const [activeSlideIndices, setActiveSlideIndices] = useState<Record<string, number>>({});
+  const [activeSlideIndices, setActiveSlideIndices] = useState<
+    Record<string, number>
+  >({});
 
   const [copiedAll, setCopiedAll] = useState(false);
 
   const [showGlobalConfig, setShowGlobalConfig] = useState(false);
 
-  const [showAdvancedVisualConfig, setShowAdvancedVisualConfig] = useState(false);
+  const [showAdvancedVisualConfig, setShowAdvancedVisualConfig] =
+    useState(false);
 
   const [bulkUploadWarning, setBulkUploadWarning] = useState("");
 
@@ -297,15 +489,17 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = storageUtils.get(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES);
+      const stored = storageUtils.get(
+        PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES,
+      );
       setFavoriteStyles(
         jsonUtils.safeParse<any[]>(stored, [
           {
             id: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_ID,
-              name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_NAME,
-              prompt: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_PROMPT,
+            name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_NAME,
+            prompt: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_STYLE_PROMPT,
           },
-        ])
+        ]),
       );
     } catch (e) {
       logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
@@ -314,7 +508,10 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteStyles = (list: any[]) => {
     setFavoriteStyles(list);
-    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES, jsonUtils.safeStringify(list));
+    storageUtils.set(
+      PipelineConstants.STORAGE_KEYS.FAVORITE_STYLES,
+      jsonUtils.safeStringify(list),
+    );
   };
 
   const handleAddFavoriteStyle = (name: string, promptText: string) => {
@@ -327,25 +524,52 @@ export function usePipelineWizard(props: any) {
         prompt: promptText.trim(),
       },
     ]);
-    setTemporaryState(setInfoMsg,t.saveStyleSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    setTemporaryState(
+      setInfoMsg,
+      t.saveStyleSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
   const handleDeleteFavoriteStyle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    saveFavoriteStyles(_.filter(favoriteStyles, (item) => !_.isEqual(item.id, id)));
+    saveFavoriteStyles(
+      _.filter(favoriteStyles, (item) => !_.isEqual(item.id, id)),
+    );
   };
 
-  const handleSaveEditStyle = (id: string, name: string, promptText: string) => {
+  const handleSaveEditStyle = (
+    id: string,
+    name: string,
+    promptText: string,
+  ) => {
     if (!name.trim() || !promptText.trim()) return;
-    saveFavoriteStyles(favoriteStyles.map((item) => (item.id === id ? { ...item, name: name.trim(), prompt: promptText.trim() } : item)));
-    setTemporaryState(setInfoMsg,t.updateStyleSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    saveFavoriteStyles(
+      favoriteStyles.map((item) =>
+        item.id === id
+          ? { ...item, name: name.trim(), prompt: promptText.trim() }
+          : item,
+      ),
+    );
+    setTemporaryState(
+      setInfoMsg,
+      t.updateStyleSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
   const handleSaveCurrentStyle = () => {
     const curStyle = project.visualConfig?.referencePrompt;
     if (!curStyle) return;
     if (_.some(favoriteStyles, (s) => _.isEqual(s.prompt, curStyle))) {
-      setTemporaryState(setInfoMsg,t.saveStyleSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+      setTemporaryState(
+        setInfoMsg,
+        t.saveStyleSuccess,
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        UI_MESSAGE_DURATION.STANDARD_MS,
+      );
       return;
     }
     saveFavoriteStyles([
@@ -356,7 +580,12 @@ export function usePipelineWizard(props: any) {
         prompt: curStyle,
       },
     ]);
-    setTemporaryState(setInfoMsg,t.saveStyleSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    setTemporaryState(
+      setInfoMsg,
+      t.saveStyleSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
   const handleApplyFavoriteStyle = (promptText: string) => {
@@ -364,7 +593,12 @@ export function usePipelineWizard(props: any) {
       ...prev,
       visualConfig: { ...prev.visualConfig, referencePrompt: promptText },
     }));
-    setTemporaryState(setInfoMsg,t.applyStyleSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    setTemporaryState(
+      setInfoMsg,
+      t.applyStyleSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
   const [favoriteVoices, setFavoriteVoices] = useState<any[]>([]);
@@ -372,16 +606,18 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     try {
-      const stored = storageUtils.get(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES);
+      const stored = storageUtils.get(
+        PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES,
+      );
       setFavoriteVoices(
         jsonUtils.safeParse<any[]>(stored, [
           {
             id: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_ID,
-              name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_NAME,
-              voiceURI: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_URI,
-              channelName: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_CHANNEL,
+            name: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_NAME,
+            voiceURI: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_URI,
+            channelName: REFACTOR_CONSTANTS.DEFAULT_FAVORITE_VOICE_CHANNEL,
           },
-        ])
+        ]),
       );
     } catch (e) {
       logger.error(REFACTOR_CONSTANTS.LOG_ERROR_GENERAL, e);
@@ -390,10 +626,17 @@ export function usePipelineWizard(props: any) {
 
   const saveFavoriteVoices = (list: any[]) => {
     setFavoriteVoices(list);
-    storageUtils.set(PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES, jsonUtils.safeStringify(list));
+    storageUtils.set(
+      PipelineConstants.STORAGE_KEYS.FAVORITE_VOICES,
+      jsonUtils.safeStringify(list),
+    );
   };
 
-  const handleAddFavoriteVoice = (name: string, voiceURI: string, channelName?: string) => {
+  const handleAddFavoriteVoice = (
+    name: string,
+    voiceURI: string,
+    channelName?: string,
+  ) => {
     if (!name.trim() || !voiceURI.trim()) return;
     saveFavoriteVoices([
       ...favoriteVoices,
@@ -404,35 +647,60 @@ export function usePipelineWizard(props: any) {
         channelName: channelName?.trim() || "Custom",
       },
     ]);
-    setTemporaryState(setInfoMsg,t.saveVoiceSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    setTemporaryState(
+      setInfoMsg,
+      t.saveVoiceSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
   const handleDeleteFavoriteVoice = (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    saveFavoriteVoices(_.filter(favoriteVoices, (item) => !_.isEqual(item.id, id)));
+    saveFavoriteVoices(
+      _.filter(favoriteVoices, (item) => !_.isEqual(item.id, id)),
+    );
   };
 
-  const handleSaveEditVoice = (id: string, name: string, voiceURI: string, channelName?: string) => {
+  const handleSaveEditVoice = (
+    id: string,
+    name: string,
+    voiceURI: string,
+    channelName?: string,
+  ) => {
     if (!name.trim() || !voiceURI.trim()) return;
     saveFavoriteVoices(
       favoriteVoices.map((item) =>
         item.id === id
           ? {
-            ...item,
-            name: name.trim(),
-            voiceURI: voiceURI.trim(),
-            channelName: channelName?.trim() || item.channelName,
-          }
+              ...item,
+              name: name.trim(),
+              voiceURI: voiceURI.trim(),
+              channelName: channelName?.trim() || item.channelName,
+            }
           : item,
       ),
     );
-    setTemporaryState(setInfoMsg,t.updateVoiceSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+    setTemporaryState(
+      setInfoMsg,
+      t.updateVoiceSuccess,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.STANDARD_MS,
+    );
   };
 
-  const handleToggleFavoriteVoice = (voiceId: string, name: string, providerName?: string) => {
-    const exists = _.some(favoriteVoices, (v) => _.isEqual(v.voiceURI, voiceId));
+  const handleToggleFavoriteVoice = (
+    voiceId: string,
+    name: string,
+    providerName?: string,
+  ) => {
+    const exists = _.some(favoriteVoices, (v) =>
+      _.isEqual(v.voiceURI, voiceId),
+    );
     if (exists) {
-      saveFavoriteVoices(_.filter(favoriteVoices, (v) => !_.isEqual(v.voiceURI, voiceId)));
+      saveFavoriteVoices(
+        _.filter(favoriteVoices, (v) => !_.isEqual(v.voiceURI, voiceId)),
+      );
     } else {
       saveFavoriteVoices([
         ...favoriteVoices,
@@ -443,7 +711,12 @@ export function usePipelineWizard(props: any) {
           channelName: providerName || "Custom",
         },
       ]);
-      setTemporaryState(setInfoMsg,t.saveVoiceSuccess,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+      setTemporaryState(
+        setInfoMsg,
+        t.saveVoiceSuccess,
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        UI_MESSAGE_DURATION.STANDARD_MS,
+      );
     }
   };
 
@@ -452,7 +725,10 @@ export function usePipelineWizard(props: any) {
   const scenesPerPage = 12;
 
   const paginatedStoryboard = useMemo(() => {
-    return (project.storyboard || []).slice((storyboardPage - 1) * scenesPerPage, storyboardPage * scenesPerPage);
+    return (project.storyboard || []).slice(
+      (storyboardPage - 1) * scenesPerPage,
+      storyboardPage * scenesPerPage,
+    );
   }, [project.storyboard, storyboardPage, scenesPerPage]);
 
   useEffect(() => {
@@ -478,8 +754,15 @@ export function usePipelineWizard(props: any) {
 
   const [sandboxConfig, setSandboxConfig] = useState(() => {
     try {
-      const saved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
-      if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
+      const saved = storageUtils.get(
+        PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG,
+      );
+      if (
+        saved &&
+        saved.trim() !== "undefined" &&
+        saved.trim() !== "null" &&
+        saved.trim() !== ""
+      ) {
         const parsed = jsonUtils.safeParse<any>(saved, null);
         if (parsed && typeof parsed === "object") {
           return parsed;
@@ -499,10 +782,15 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     if (sandboxConfig && typeof sandboxConfig === "object") {
-      const currentSaved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
+      const currentSaved = storageUtils.get(
+        PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG,
+      );
       const newStr = jsonUtils.safeStringify(sandboxConfig);
       if (currentSaved !== newStr) {
-        storageUtils.set(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG, newStr);
+        storageUtils.set(
+          PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG,
+          newStr,
+        );
       }
     }
   }, [sandboxConfig]);
@@ -528,8 +816,15 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     const syncConfig = () => {
       try {
-        const saved = storageUtils.get(PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG);
-        if (saved && saved.trim() !== "undefined" && saved.trim() !== "null" && saved.trim() !== "") {
+        const saved = storageUtils.get(
+          PipelineConstants.STORAGE_KEYS.API_SANDBOX_CONFIG,
+        );
+        if (
+          saved &&
+          saved.trim() !== "undefined" &&
+          saved.trim() !== "null" &&
+          saved.trim() !== ""
+        ) {
           const parsed = jsonUtils.safeParse<any>(saved, null);
           if (parsed && typeof parsed === "object") {
             setSandboxConfig((prev: any) => {
@@ -546,23 +841,36 @@ export function usePipelineWizard(props: any) {
     return () => window.removeEventListener("storage", syncConfig);
   }, []);
 
-  const [systemLogs, setSystemLogs] = useState<{ time: string; type: ConsoleLogType; msg: string }[]>(() => {
+  const [systemLogs, setSystemLogs] = useState<
+    { time: string; type: ConsoleLogType; msg: string }[]
+  >(() => {
     try {
-      const savedLogs = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY);
+      const savedLogs = sessionStorage.getItem(
+        REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY,
+      );
       if (savedLogs) return jsonUtils.safeParse<any[]>(savedLogs, []);
-    } catch { }
+    } catch {}
     return [];
   });
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(systemLogs));
+      sessionStorage.setItem(
+        REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY,
+        jsonUtils.safeStringify(systemLogs),
+      );
     } catch (e: any) {
       if (_.isEqual(e.name, REFACTOR_CONSTANTS.STORAGE_QUOTA_ERROR_NAME)) {
-        const reduced = _.slice(systemLogs, REFACTOR_CONSTANTS.SYSTEM_LOG_REDUCED_START);
+        const reduced = _.slice(
+          systemLogs,
+          REFACTOR_CONSTANTS.SYSTEM_LOG_REDUCED_START,
+        );
         try {
-          sessionStorage.setItem(REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY, jsonUtils.safeStringify(reduced));
-        } catch { }
+          sessionStorage.setItem(
+            REFACTOR_CONSTANTS.PIPELINE_SYSTEM_LOGS_KEY,
+            jsonUtils.safeStringify(reduced),
+          );
+        } catch {}
       }
     }
   }, [systemLogs]);
@@ -573,46 +881,88 @@ export function usePipelineWizard(props: any) {
     const captureLog = (type: ConsoleLogType, args: unknown[]) => {
       try {
         const msg = _.join(
-          _.map(args, (value) => (
+          _.map(args, (value) =>
             _.isObject(value)
               ? jsonUtils.safeStringify(value)
-              : _.toString(value)
-          )),
+              : _.toString(value),
+          ),
           REFACTOR_CONSTANTS.VD_BLANK,
         );
-        if (_.some(CONSOLE_LOG_IGNORED_MESSAGES, (keyword) => _.includes(msg, keyword))) return;
+        if (
+          _.some(CONSOLE_LOG_IGNORED_MESSAGES, (keyword) =>
+            _.includes(msg, keyword),
+          )
+        )
+          return;
 
         let processedMsg = msg;
         const msgLower = _.toLower(msg);
 
-        const logsLang = _.includes([COMMON_STRINGS.VI, COMMON_STRINGS.EN], currentLang) ? currentLang : COMMON_STRINGS.VI;
+        const logsLang = _.includes(
+          [COMMON_STRINGS.VI, COMMON_STRINGS.EN],
+          currentLang,
+        )
+          ? currentLang
+          : COMMON_STRINGS.VI;
         const logTexts = VITE_HMR_LOGS[logsLang as "vi" | "en"];
 
-        if (_.some(VITE_CONNECTION_LOST_KEYWORDS, (keyword) => _.includes(msgLower, keyword))) {
+        if (
+          _.some(VITE_CONNECTION_LOST_KEYWORDS, (keyword) =>
+            _.includes(msgLower, keyword),
+          )
+        ) {
           processedMsg = logTexts.SERVER_CONNECTION_LOST;
         } else if (_.includes(msgLower, VITE_FAILED_RELOAD_KEYWORD)) {
           processedMsg = logTexts.FAILED_RELOAD_GENERIC;
         } else if (_.includes(msgLower, VITE_CONNECTED_KEYWORD)) {
           processedMsg = logTexts.CONNECTED;
-        } else if (_.some(VITE_HOT_UPDATE_KEYWORDS, (keyword) => _.includes(msgLower, keyword))) {
+        } else if (
+          _.some(VITE_HOT_UPDATE_KEYWORDS, (keyword) =>
+            _.includes(msgLower, keyword),
+          )
+        ) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 
         let enrichedType = type;
         const processedMsgLower = _.toLower(processedMsg);
-        if (_.some(LOG_SUCCESS_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.SUCCESS;
-        else if (_.some(LOG_PENDING_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.PENDING;
-        else if (_.isEqual(type, ConsoleLogType.LOG) && _.some(LOG_WARN_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.WARN;
-        else if (_.isEqual(type, ConsoleLogType.LOG) && _.some(LOG_ERROR_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.ERROR;
+        if (
+          _.some(LOG_SUCCESS_KEYWORDS, (term) =>
+            _.includes(processedMsgLower, term),
+          )
+        )
+          enrichedType = ConsoleLogType.SUCCESS;
+        else if (
+          _.some(LOG_PENDING_KEYWORDS, (term) =>
+            _.includes(processedMsgLower, term),
+          )
+        )
+          enrichedType = ConsoleLogType.PENDING;
+        else if (
+          _.isEqual(type, ConsoleLogType.LOG) &&
+          _.some(LOG_WARN_KEYWORDS, (term) =>
+            _.includes(processedMsgLower, term),
+          )
+        )
+          enrichedType = ConsoleLogType.WARN;
+        else if (
+          _.isEqual(type, ConsoleLogType.LOG) &&
+          _.some(LOG_ERROR_KEYWORDS, (term) =>
+            _.includes(processedMsgLower, term),
+          )
+        )
+          enrichedType = ConsoleLogType.ERROR;
 
         const time = new Date().toLocaleTimeString();
         setTimeout(() => {
-          setSystemLogs((prev) => _.slice(
-            _.concat(prev, { time, type: enrichedType, msg: processedMsg }),
-            REFACTOR_CONSTANTS.SYSTEM_LOG_LIMIT_START,
-          ));
+          setSystemLogs((prev) =>
+            _.slice(
+              _.concat(prev, { time, type: enrichedType, msg: processedMsg }),
+              REFACTOR_CONSTANTS.SYSTEM_LOG_LIMIT_START,
+            ),
+          );
         }, REFACTOR_CONSTANTS.LOG_CAPTURE_DELAY_MS);
-      } catch { }
+      } catch {}
     };
 
     return subscribeToLogs(captureLog);
@@ -650,21 +1000,35 @@ export function usePipelineWizard(props: any) {
 
   const [voiceSearch, setVoiceSearch] = useState("");
 
-  const [voiceTypeFilter, setVoiceTypeFilter] = useState<"premium" | "local">("premium");
+  const [voiceTypeFilter, setVoiceTypeFilter] = useState<"premium" | "local">(
+    "premium",
+  );
 
-  const [voiceHealth, setVoiceHealth] = useState<Record<string, "ok" | "error">>({});
+  const [voiceHealth, setVoiceHealth] = useState<
+    Record<string, "ok" | "error">
+  >({});
 
-  const [voiceLangFilter, setVoiceLangFilter] = useState<"all" | "vi" | "en">("all");
+  const [voiceLangFilter, setVoiceLangFilter] = useState<"all" | "vi" | "en">(
+    "all",
+  );
 
-  const [selectedGenderFilter, setSelectedGenderFilter] = useState<"all" | "male" | "female">("all");
+  const [selectedGenderFilter, setSelectedGenderFilter] = useState<
+    "all" | "male" | "female"
+  >("all");
 
   const [playingVoiceURI, setPlayingVoiceURI] = useState<string | null>(null);
 
-  const [voiceAudioDuration, setVoiceAudioDuration] = useState<number | null>(null);
+  const [voiceAudioDuration, setVoiceAudioDuration] = useState<number | null>(
+    null,
+  );
 
-  const [storyboardSourceMode, setStoryboardSourceMode] = useState<StoryboardSourceMode>(() => {
-    return (initialProject as any)?.storyboardSourceMode || StoryboardSourceMode.SCRIPT;
-  });
+  const [storyboardSourceMode, setStoryboardSourceMode] =
+    useState<StoryboardSourceMode>(() => {
+      return (
+        (initialProject as any)?.storyboardSourceMode ||
+        StoryboardSourceMode.SCRIPT
+      );
+    });
 
   const [isAudioDragging, setIsAudioDragging] = useState(false);
 
@@ -682,7 +1046,10 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     let interval: any = null;
-    if (step2IsSimulatedPlaying && project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL) {
+    if (
+      step2IsSimulatedPlaying &&
+      project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL
+    ) {
       interval = setInterval(() => {
         setStep2SimulatedCurrentTime((prev) => {
           const maxDur = voiceAudioDuration || 10;
@@ -704,7 +1071,11 @@ export function usePipelineWizard(props: any) {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [step2IsSimulatedPlaying, project.voiceConfig?.audioUrl, voiceAudioDuration]);
+  }, [
+    step2IsSimulatedPlaying,
+    project.voiceConfig?.audioUrl,
+    voiceAudioDuration,
+  ]);
 
   useEffect(() => {
     if (step2AudioRef.current) {
@@ -762,12 +1133,18 @@ export function usePipelineWizard(props: any) {
 
   const [offlineRenderProgress, setOfflineRenderProgress] = useState(0);
 
-  const [loadingExportType, setLoadingExportType] = useState<EXPORT_TYPES | null>(null);
+  const [loadingExportType, setLoadingExportType] =
+    useState<EXPORT_TYPES | null>(null);
 
   const [renderedVideoBlob, setRenderedVideoBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    if (ttsAudioUrl && !([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
+    if (
+      ttsAudioUrl &&
+      !([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(
+        ttsAudioUrl,
+      )
+    ) {
       const audio = new Audio(ttsAudioUrl);
       const onLoadedMetadata = () => {
         setVoiceAudioDuration(audio.duration);
@@ -776,7 +1153,12 @@ export function usePipelineWizard(props: any) {
       return () => {
         audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       };
-    } else if (ttsAudioUrl && ([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
+    } else if (
+      ttsAudioUrl &&
+      ([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(
+        ttsAudioUrl,
+      )
+    ) {
       const estimatedDuration = getTargetDurationSeconds();
       setVoiceAudioDuration(estimatedDuration);
     } else {
@@ -786,14 +1168,29 @@ export function usePipelineWizard(props: any) {
 
   useEffect(() => {
     setRenderedVideoBlob(null);
-  }, [project.storyboard, project.voiceConfig?.audioUrl, project.voiceConfig?.speed, project.voiceConfig?.pitch, project.voiceConfig?.volume, project.scriptRewritten, ttsAudioUrl, activeSlideIndices]);
+  }, [
+    project.storyboard,
+    project.voiceConfig?.audioUrl,
+    project.voiceConfig?.speed,
+    project.voiceConfig?.pitch,
+    project.voiceConfig?.volume,
+    project.scriptRewritten,
+    ttsAudioUrl,
+    activeSlideIndices,
+  ]);
 
   const createSpeechUtterance = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = project.config.language === "vi" ? "vi-VN" : "en-US";
     utterance.rate = project.voiceConfig?.speed || 1.0;
-    utterance.pitch = project.voiceConfig?.pitch !== undefined ? project.voiceConfig?.pitch : 1.0;
-    utterance.volume = project.voiceConfig?.volume !== undefined ? project.voiceConfig?.volume : 1.0;
+    utterance.pitch =
+      project.voiceConfig?.pitch !== undefined
+        ? project.voiceConfig?.pitch
+        : 1.0;
+    utterance.volume =
+      project.voiceConfig?.volume !== undefined
+        ? project.voiceConfig?.volume
+        : 1.0;
 
     if ("speechSynthesis" in window) {
       const voices = window.speechSynthesis.getVoices();
@@ -807,14 +1204,22 @@ export function usePipelineWizard(props: any) {
       }
 
       if (!matchedVoice) {
-        const langVoices = voices.filter((v) => (isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en")));
+        const langVoices = voices.filter((v) =>
+          isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en"),
+        );
         if (langVoices.length > 0) {
           if (gender === "female") {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "female") || langVoices[0];
+            matchedVoice =
+              langVoices.find((v) => getVoiceGender(v) === "female") ||
+              langVoices[0];
           } else if (gender === "male") {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "male") || langVoices[0];
+            matchedVoice =
+              langVoices.find((v) => getVoiceGender(v) === "male") ||
+              langVoices[0];
           } else {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "neutral") || langVoices[0];
+            matchedVoice =
+              langVoices.find((v) => getVoiceGender(v) === "neutral") ||
+              langVoices[0];
           }
         }
       }
@@ -827,7 +1232,14 @@ export function usePipelineWizard(props: any) {
     return utterance;
   };
 
-  const playVoicePreview = async (voiceURI: string, gender: string, lang: string, speed?: number, pitch?: number, previewUrl?: string) => {
+  const playVoicePreview = async (
+    voiceURI: string,
+    gender: string,
+    lang: string,
+    speed?: number,
+    pitch?: number,
+    previewUrl?: string,
+  ) => {
     activePreviewToken = Date.now();
     const currentToken = activePreviewToken;
 
@@ -873,11 +1285,17 @@ export function usePipelineWizard(props: any) {
     }
 
     const isVi = lang.startsWith("vi") || voiceURI.includes("vi");
-    const sampleText = isVi ? "Xin chào, đây là âm thanh nghe thử của tôi." : "Hello, this is a quick audio preview of my voice.";
+    const sampleText = isVi
+      ? "Xin chào, đây là âm thanh nghe thử của tôi."
+      : "Hello, this is a quick audio preview of my voice.";
 
     const useCloudVoice = isPremiumVoice(voiceURI);
 
-    const { finalSpeed, finalPitch } = getVoiceModifiers(voiceURI, speed || 1.0, pitch || 1.0);
+    const { finalSpeed, finalPitch } = getVoiceModifiers(
+      voiceURI,
+      speed || 1.0,
+      pitch || 1.0,
+    );
 
     if (useCloudVoice) {
       try {
@@ -888,7 +1306,9 @@ export function usePipelineWizard(props: any) {
           gender: gender,
           speed: finalSpeed,
           pitch: finalPitch,
-          ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee") ? { voice_ownership: "community" } : {}),
+          ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee")
+            ? { voice_ownership: "community" }
+            : {}),
         });
 
         if (activePreviewToken !== currentToken) {
@@ -909,7 +1329,12 @@ export function usePipelineWizard(props: any) {
           let blob;
           let dspApplied = false;
           try {
-            blob = await applyAudioEffects(bytes.buffer.slice(0), finalSpeed, finalPitch, 1.0);
+            blob = await applyAudioEffects(
+              bytes.buffer.slice(0),
+              finalSpeed,
+              finalPitch,
+              1.0,
+            );
             dspApplied = true;
           } catch (e) {
             logger.warn("PREVIEW_DSP_FAILED", e);
@@ -957,7 +1382,10 @@ export function usePipelineWizard(props: any) {
     utterance.lang = isVi ? "vi-VN" : "en-US";
     utterance.rate = speed !== undefined ? speed : 1.0;
     utterance.pitch = pitch !== undefined ? pitch : 1.0;
-    utterance.volume = project.voiceConfig?.volume !== undefined ? project.voiceConfig?.volume : 1.0;
+    utterance.volume =
+      project.voiceConfig?.volume !== undefined
+        ? project.voiceConfig?.volume
+        : 1.0;
 
     utterance.onstart = () => {
       setPlayingVoiceURI(voiceURI);
@@ -973,14 +1401,22 @@ export function usePipelineWizard(props: any) {
     let matchedVoice = voices.find((v) => v.voiceURI === voiceURI);
 
     if (!matchedVoice) {
-      const langVoices = voices.filter((v) => (isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en")));
+      const langVoices = voices.filter((v) =>
+        isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en"),
+      );
       if (langVoices.length > 0) {
         if (gender === "female") {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "female") || langVoices[0];
+          matchedVoice =
+            langVoices.find((v) => getVoiceGender(v) === "female") ||
+            langVoices[0];
         } else if (gender === "male") {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "male") || langVoices[0];
+          matchedVoice =
+            langVoices.find((v) => getVoiceGender(v) === "male") ||
+            langVoices[0];
         } else {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "neutral") || langVoices[0];
+          matchedVoice =
+            langVoices.find((v) => getVoiceGender(v) === "neutral") ||
+            langVoices[0];
         }
       }
     }
@@ -1001,21 +1437,42 @@ export function usePipelineWizard(props: any) {
     void fetchVoiceCatalog(params)
       .then((responseData) => {
         const voices = _.get(responseData, SecurityConstants.DATA_KEY);
-        if (!_.every([
-          isActive,
-          _.get(responseData, SecurityConstants.SUCCESS_KEY),
-          _.isArray(voices),
-        ], Boolean)) return;
+        if (
+          !_.every(
+            [
+              isActive,
+              _.get(responseData, SecurityConstants.SUCCESS_KEY),
+              _.isArray(voices),
+            ],
+            Boolean,
+          )
+        )
+          return;
 
         const mappedVoices = _.map(voices, (voice) => {
-          const voiceName = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, SecurityConstants.EMPTY_STRING);
-          const voiceGender = _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH, SecurityConstants.EMPTY_STRING);
+          const voiceName = _.get(
+            voice,
+            REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH,
+            SecurityConstants.EMPTY_STRING,
+          );
+          const voiceGender = _.get(
+            voice,
+            REFACTOR_CONSTANTS.VOICE_CATALOG_GENDER_PATH,
+            SecurityConstants.EMPTY_STRING,
+          );
           return {
             voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
             name: _.isEmpty(voiceGender)
               ? voiceName
-              : _.join([voiceName, voiceGender], REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_SEPARATOR),
-            lang: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_LANGUAGE_PATH, APP_LOCALES.VI),
+              : _.join(
+                  [voiceName, voiceGender],
+                  REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_SEPARATOR,
+                ),
+            lang: _.get(
+              voice,
+              REFACTOR_CONSTANTS.VOICE_CATALOG_LANGUAGE_PATH,
+              APP_LOCALES.VI,
+            ),
             localService: REFACTOR_CONSTANTS.VOICE_CATALOG_REMOTE_SERVICE,
             default: REFACTOR_CONSTANTS.VOICE_CATALOG_NOT_DEFAULT,
           };
@@ -1035,7 +1492,9 @@ export function usePipelineWizard(props: any) {
 
   const [currentSimTime, setCurrentSimTime] = useState(0);
 
-  const [simActiveScene, setSimActiveScene] = useState<StoryboardScene | null>(null);
+  const [simActiveScene, setSimActiveScene] = useState<StoryboardScene | null>(
+    null,
+  );
 
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -1093,21 +1552,22 @@ export function usePipelineWizard(props: any) {
           [currentHookConfig.duration, hookDuration],
           [currentHookConfig.count, hookCount],
           [currentHookConfig.positions, hookPosition],
-        ].every(([a, b]) => a === b) && _.isEqual(currentHookConfig.versions, hooksDraft);
+        ].every(([a, b]) => a === b) &&
+        _.isEqual(currentHookConfig.versions, hooksDraft);
 
       return isHookUnchanged
         ? prev
         : {
-          ...prev,
-          hookConfig: {
-            ...currentHookConfig,
-            type: hookStrategy,
-            duration: hookDuration,
-            count: hookCount,
-            positions: hookPosition,
-            versions: hooksDraft,
-          },
-        };
+            ...prev,
+            hookConfig: {
+              ...currentHookConfig,
+              type: hookStrategy,
+              duration: hookDuration,
+              count: hookCount,
+              positions: hookPosition,
+              versions: hooksDraft,
+            },
+          };
     });
   }, [hookStrategy, hookDuration, hookCount, hookPosition, hooksDraft]);
 
@@ -1116,22 +1576,27 @@ export function usePipelineWizard(props: any) {
   const cancelBatchImageRef = useRef<boolean>(false);
   const imageCheckpointQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const persistImageCheckpoint = useCallback((checkpointProject: VideoProject): void => {
-    const projectSnapshot = _.cloneDeep(checkpointProject);
-    imageCheckpointQueueRef.current = imageCheckpointQueueRef.current
-      .then(async () => {
-        await onSaveProject(projectSnapshot, true);
-      })
-      .catch((error) => {
-        logger.error(ERROR_MESSAGES.AUTO_SAVE_ERR, error);
-      });
-  }, [onSaveProject]);
+  const persistImageCheckpoint = useCallback(
+    (checkpointProject: VideoProject): void => {
+      const projectSnapshot = _.cloneDeep(checkpointProject);
+      imageCheckpointQueueRef.current = imageCheckpointQueueRef.current
+        .then(async () => {
+          await onSaveProject(projectSnapshot, true);
+        })
+        .catch((error) => {
+          logger.error(ERROR_MESSAGES.AUTO_SAVE_ERR, error);
+        });
+    },
+    [onSaveProject],
+  );
 
   useEffect(() => {
     if (!initialProject) return;
 
     const isNewProject = lastProjectIdRef.current !== initialProject.id;
-    const isServerUpdate = lastUpdatedAtRef.current && initialProject.updatedAt !== lastUpdatedAtRef.current;
+    const isServerUpdate =
+      lastUpdatedAtRef.current &&
+      initialProject.updatedAt !== lastUpdatedAtRef.current;
 
     lastProjectIdRef.current = initialProject.id;
     lastUpdatedAtRef.current = initialProject.updatedAt;
@@ -1153,7 +1618,9 @@ export function usePipelineWizard(props: any) {
         setHookStrategy(initialProject.hookConfig.type || "Auto");
         setHookDuration(initialProject.hookConfig.duration || 10);
         setHookCount(initialProject.hookConfig.count || 3);
-        setHookPosition(initialProject.hookConfig.positions || HookPosition.Start);
+        setHookPosition(
+          initialProject.hookConfig.positions || HookPosition.Start,
+        );
         setHooksDraft(initialProject.hookConfig.versions || []);
       } else {
         setHookStrategy("Auto");
@@ -1163,16 +1630,23 @@ export function usePipelineWizard(props: any) {
         setHooksDraft([]);
       }
 
-      let restoredVoiceConfig = initialProject.voiceConfig ? { ...initialProject.voiceConfig } : undefined;
+      let restoredVoiceConfig = initialProject.voiceConfig
+        ? { ...initialProject.voiceConfig }
+        : undefined;
       let restoredTtsUrl: string | null = null;
 
       if (restoredVoiceConfig) {
         if (restoredVoiceConfig.audioUrl) {
           restoredTtsUrl = restoredVoiceConfig.audioUrl;
-          if (restoredTtsUrl === SIMULATED_SPEECH_VAL || restoredTtsUrl.startsWith(BLOB_PREFIX)) {
+          if (
+            restoredTtsUrl === SIMULATED_SPEECH_VAL ||
+            restoredTtsUrl.startsWith(BLOB_PREFIX)
+          ) {
             if (restoredVoiceConfig.audioBase64) {
               try {
-                const arr = base64ToArrayBuffer(restoredVoiceConfig.audioBase64);
+                const arr = base64ToArrayBuffer(
+                  restoredVoiceConfig.audioBase64,
+                );
                 const blob = new Blob([arr], { type: AUDIO_MIME_TYPE });
                 restoredTtsUrl = URL.createObjectURL(blob);
               } catch (e) {
@@ -1191,7 +1665,10 @@ export function usePipelineWizard(props: any) {
 
         if (restoredVoiceConfig.timingLog) {
           setAlignmentsLog(restoredVoiceConfig.timingLog);
-        } else if (restoredVoiceConfig.subtitleFiles && restoredVoiceConfig.subtitleFiles.length > 0) {
+        } else if (
+          restoredVoiceConfig.subtitleFiles &&
+          restoredVoiceConfig.subtitleFiles.length > 0
+        ) {
           setAlignmentsLog(t.alignmentLoaded);
         } else {
           setAlignmentsLog("");
@@ -1201,30 +1678,41 @@ export function usePipelineWizard(props: any) {
         setAlignmentsLog("");
       }
 
-      const restoredStoryboard = (initialProject.storyboard || []).map((scene) => {
-        if (scene.audioUrl && (scene.audioUrl.startsWith(BLOB_PREFIX) || scene.audioUrl === SIMULATED_SPEECH_VAL)) {
-          if (scene.audioBase64) {
-            try {
-              const arr = base64ToArrayBuffer(scene.audioBase64);
-              const blob = new Blob([arr], { type: AUDIO_MIME_TYPE });
-              return { ...scene, audioUrl: URL.createObjectURL(blob) };
-            } catch (e) {
-              logger.error(RESTORE_SCENE_BLOB_ERR, e);
+      const restoredStoryboard = (initialProject.storyboard || []).map(
+        (scene) => {
+          if (
+            scene.audioUrl &&
+            (scene.audioUrl.startsWith(BLOB_PREFIX) ||
+              scene.audioUrl === SIMULATED_SPEECH_VAL)
+          ) {
+            if (scene.audioBase64) {
+              try {
+                const arr = base64ToArrayBuffer(scene.audioBase64);
+                const blob = new Blob([arr], { type: AUDIO_MIME_TYPE });
+                return { ...scene, audioUrl: URL.createObjectURL(blob) };
+              } catch (e) {
+                logger.error(RESTORE_SCENE_BLOB_ERR, e);
+              }
             }
+            return scene;
           }
           return scene;
-        }
-        return scene;
-      });
+        },
+      );
 
       const restoredProject: VideoProject = {
         ...initialProject,
         storyboard: restoredStoryboard,
-        voiceConfig: restoredVoiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG,
+        voiceConfig:
+          restoredVoiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG,
         input: initialProject.input || PipelineConstants.DEFAULT_PROJECT_INPUT,
-        config: initialProject.config || PipelineConstants.DEFAULT_PROJECT_CONFIG,
-        hookConfig: initialProject.hookConfig || PipelineConstants.DEFAULT_HOOK_CONFIG,
-        visualConfig: initialProject.visualConfig || PipelineConstants.DEFAULT_VISUAL_CONFIG,
+        config:
+          initialProject.config || PipelineConstants.DEFAULT_PROJECT_CONFIG,
+        hookConfig:
+          initialProject.hookConfig || PipelineConstants.DEFAULT_HOOK_CONFIG,
+        visualConfig:
+          initialProject.visualConfig ||
+          PipelineConstants.DEFAULT_VISUAL_CONFIG,
       };
 
       isRestoringRef.current = true;
@@ -1274,10 +1762,18 @@ export function usePipelineWizard(props: any) {
         bypassCache: force === true,
       };
 
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_SCRIPT,
+        payload,
+      );
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(
+          error ||
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
+        );
       }
 
       setProject((prev) => ({
@@ -1303,7 +1799,12 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerStoryboardSplit = async (force = false, btnPosition = "top", isFromAutoGenerateAll = false, customScript?: string) => {
+  const handleTriggerStoryboardSplit = async (
+    force = false,
+    btnPosition = "top",
+    isFromAutoGenerateAll = false,
+    customScript?: string,
+  ) => {
     logAction("handleTriggerStoryboardSplit");
 
     const isForce = force === true;
@@ -1339,7 +1840,8 @@ export function usePipelineWizard(props: any) {
           visualStylePreset: project.visualConfig.stylePreset,
           aspectRatio: project.visualConfig.aspectRatio,
           imageQuality: project.visualConfig.imageQuality,
-          characterConsistencyLevel: project.visualConfig.characterConsistencyLevel,
+          characterConsistencyLevel:
+            project.visualConfig.characterConsistencyLevel,
           contextConsistencyLevel: project.visualConfig.contextConsistencyLevel,
           negativePrompt: project.visualConfig.negativePrompt,
         },
@@ -1347,24 +1849,36 @@ export function usePipelineWizard(props: any) {
         referenceImages: project.visualConfig.referenceImages || [],
         referenceStyle: project.visualConfig.referencePrompt,
         referenceCharacters:
-          project.visualConfig.characters && project.visualConfig.characters.length > 0
+          project.visualConfig.characters &&
+          project.visualConfig.characters.length > 0
             ? project.visualConfig.characters.map((c) => ({
-              name: c.name,
-              prompt: c.prompt || c.description,
-            }))
+                name: c.name,
+                prompt: c.prompt || c.description,
+              }))
             : undefined,
         referenceCharacter: project.visualConfig.characterPrompt || undefined,
         visualDensity: project.visualConfig.density || 5,
-        voiceDuration: storyboardSourceMode === StoryboardSourceMode.AUDIO ? voiceAudioDuration : null,
+        voiceDuration:
+          storyboardSourceMode === StoryboardSourceMode.AUDIO
+            ? voiceAudioDuration
+            : null,
         targetDuration: project.config.targetDuration,
         sourceMode: storyboardSourceMode,
         bypassCache: isForce,
       };
 
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_STORYBOARD, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_STORYBOARD,
+        payload,
+      );
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(
+          error ||
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
+        );
       }
 
       if (data.scenes) {
@@ -1385,15 +1899,24 @@ export function usePipelineWizard(props: any) {
           const texts = EXTERNAL_AUDIO_TEXTS[langKey];
           setBulkVoiceStatus(t.aligningVoiceWithWhisper || texts.ALIGNING);
           try {
-            const rawAudioBase64 = await getVoiceSourceBase64({ audioUrl, audioBase64 });
+            const rawAudioBase64 = await getVoiceSourceBase64({
+              audioUrl,
+              audioBase64,
+            });
             if (!_.isEmpty(rawAudioBase64)) {
-              finalScenes = await alignStoryboardVoice(updatedScenes, rawAudioBase64);
+              finalScenes = await alignStoryboardVoice(
+                updatedScenes,
+                rawAudioBase64,
+              );
 
-              const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const audioCtx = new (window.AudioContext ||
+                (window as any).webkitAudioContext)();
               let totalDuration = 10;
               try {
                 const arrayBufferRaw = base64ToArrayBuffer(rawAudioBase64);
-                const decoded = await audioCtx.decodeAudioData(arrayBufferRaw.slice(0));
+                const decoded = await audioCtx.decodeAudioData(
+                  arrayBufferRaw.slice(0),
+                );
                 totalDuration = Math.max(3, decoded.duration);
               } catch (decodeErr) {
                 logger.warn("FAILED_DECODE_AUDIO_DURATION", decodeErr);
@@ -1401,14 +1924,25 @@ export function usePipelineWizard(props: any) {
                 audioCtx.close();
               }
 
-              syncLogText = texts.SYNC_COMPLETE.replace("{totalDuration}", totalDuration.toFixed(1));
+              syncLogText = texts.SYNC_COMPLETE.replace(
+                "{totalDuration}",
+                totalDuration.toFixed(1),
+              );
               finalScenes.forEach((scene: any, idx: number) => {
-                syncLogText += texts.SYNC_ITEM
-                  .replace("{index}", (idx + 1).toString())
+                syncLogText += texts.SYNC_ITEM.replace(
+                  "{index}",
+                  (idx + 1).toString(),
+                )
                   .replace("{startTime}", formatRoundedTime(scene.startTime))
                   .replace("{endTime}", formatRoundedTime(scene.endTime))
-                  .replace("{duration}", Math.round(scene.duration || 0).toString())
-                  .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
+                  .replace(
+                    "{duration}",
+                    Math.round(scene.duration || 0).toString(),
+                  )
+                  .replace(
+                    "{script}",
+                    (scene.script || scene.subtitle || "").substring(0, 35),
+                  );
               });
             }
           } catch (alignErr: any) {
@@ -1486,22 +2020,28 @@ export function usePipelineWizard(props: any) {
       setErrorMsg("");
     }
     try {
-      const sceneGenerateType = requestedGenerateType
-        || (_.isEqual(project.visualConfig.generateType, GenerateType.Video)
+      const sceneGenerateType =
+        requestedGenerateType ||
+        (_.isEqual(project.visualConfig.generateType, GenerateType.Video)
           ? GenerateType.Video
           : GenerateType.Image);
-      const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-        prompt: customPrompt,
-        style: project.visualConfig.style,
-        resolution: project.visualConfig.quality,
-        bypassCache: isForce,
-        engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-        sandboxConfig: sandboxConfig,
-        visualConfig: {
-          ...project.visualConfig,
-          generateType: sceneGenerateType,
+      const response = await fetchSystemApi(
+        API_ROUTES.PIPELINE_GENERATE_IMAGE,
+        {
+          prompt: customPrompt,
+          style: project.visualConfig.style,
+          resolution: project.visualConfig.quality,
+          bypassCache: isForce,
+          engine:
+            project.visualConfig.imageGeneratorEngine ||
+            ImageGeneratorEngine.Veo3,
+          sandboxConfig: sandboxConfig,
+          visualConfig: {
+            ...project.visualConfig,
+            generateType: sceneGenerateType,
+          },
         },
-      });
+      );
       const data = await safeResponseJson(response, {});
 
       if (data.warning) {
@@ -1518,17 +2058,22 @@ export function usePipelineWizard(props: any) {
 
       let imageUrl = "";
       if (data.success && data.base64) {
-        imageUrl = _.join([
-          _.isEqual(sceneGenerateType, GenerateType.Video)
-            ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
-            : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
-          data.base64,
-        ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        imageUrl = _.join(
+          [
+            _.isEqual(sceneGenerateType, GenerateType.Video)
+              ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX
+              : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
+            data.base64,
+          ],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        );
         trackOperationCost(40, 0.03);
-      } else if (_.every([
-        data.fallbackUrl,
-        _.isEqual(sceneGenerateType, GenerateType.Image),
-      ], Boolean)) {
+      } else if (
+        _.every(
+          [data.fallbackUrl, _.isEqual(sceneGenerateType, GenerateType.Image)],
+          Boolean,
+        )
+      ) {
         imageUrl = data.fallbackUrl;
         trackOperationCost(5, 0.0002);
       } else {
@@ -1555,7 +2100,9 @@ export function usePipelineWizard(props: any) {
         }, 0);
         return updatedProject;
       });
-      logger.info(`[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`);
+      logger.info(
+        `[Hệ thống] ✅ Thành công: Tạo hình ảnh thành công cho phân cảnh ${sceneId}.`,
+      );
     } catch (e: any) {
       if (!isBatch) {
         setErrorMsg(t.imagePipelineError.replace("{error}", e.message));
@@ -1573,7 +2120,10 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleUploadSceneImage = async (sceneId: string, base64DataUrl: string) => {
+  const handleUploadSceneImage = async (
+    sceneId: string,
+    base64DataUrl: string,
+  ) => {
     logAction("handleUploadSceneImage");
     setIsUploadingImage(true);
     await delayAsync(600);
@@ -1613,14 +2163,22 @@ export function usePipelineWizard(props: any) {
     logAction("handleCopyPrompt");
     navigator.clipboard.writeText(promptText);
     const successMsg = t.Scene_visual_prompt_copie || "Đã sao chép prompt.";
-    setTemporaryState(setInfoMsg,successMsg,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.EXTENDED_MS);
+    setTemporaryState(
+      setInfoMsg,
+      successMsg,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.EXTENDED_MS,
+    );
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
   const handleGenerateHooks = async (force = false) => {
     logAction("handleGenerateHooks");
     if (!(project.input?.content || "").trim()) {
-      setErrorMsg(t.Please_enter_script_conte || "Vui lòng nhập nội dung trước khi tạo hook.");
+      setErrorMsg(
+        t.Please_enter_script_conte ||
+          "Vui lòng nhập nội dung trước khi tạo hook.",
+      );
       return;
     }
     setLoadingStates((prev) => ({ ...prev, generateHooks: true }));
@@ -1637,10 +2195,15 @@ export function usePipelineWizard(props: any) {
         bypassCache: force === true,
       };
 
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_HOOKS, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_HOOKS,
+        payload,
+      );
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "Failed to generate hooks.");
+        throw new Error(
+          error || data?.error || data?.warning || "Failed to generate hooks.",
+        );
       }
 
       const generatedVersions = data.versions || [];
@@ -1648,7 +2211,9 @@ export function usePipelineWizard(props: any) {
 
       const successMsg = t.generateHookSuccess || "Tạo hook thành công.";
       setInfoMsg(successMsg);
-      logger.info(`[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`);
+      logger.info(
+        `[Hooks] ✅ Success: Generated ${generatedVersions.length} hooks.`,
+      );
     } catch (e: any) {
       setErrorMsg(e.message || t.generateHookFailed || "Lỗi tạo hook.");
     } finally {
@@ -1660,8 +2225,14 @@ export function usePipelineWizard(props: any) {
   const handleCopyHook = (hookText: string) => {
     logAction("handleCopyHook");
     navigator.clipboard.writeText(hookText);
-    const successMsg = t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
-    setTemporaryState(setInfoMsg,successMsg,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.EXTENDED_MS);
+    const successMsg =
+      t.Hook_content_copied_to_cl || "Đã sao chép nội dung hook.";
+    setTemporaryState(
+      setInfoMsg,
+      successMsg,
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      UI_MESSAGE_DURATION.EXTENDED_MS,
+    );
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
@@ -1682,8 +2253,14 @@ export function usePipelineWizard(props: any) {
     navigator.clipboard
       .writeText(textBlock)
       .then(() => {
-        setTemporaryState(setCopiedAll, true, false, UI_MESSAGE_DURATION.STANDARD_MS);
-        const successMsg = t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
+        setTemporaryState(
+          setCopiedAll,
+          true,
+          false,
+          UI_MESSAGE_DURATION.STANDARD_MS,
+        );
+        const successMsg =
+          t.Pure_optimized_scene_prom || "Đã sao chép toàn bộ prompt.";
         setInfoMsg(successMsg);
         logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       })
@@ -1737,11 +2314,23 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
-      const extractPayload = { images, fallbackStyle: project.visualConfig?.referencePrompt };
-      const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, extractPayload);
+      const extractPayload = {
+        images,
+        fallbackStyle: project.visualConfig?.referencePrompt,
+      };
+      const {
+        success: extractSuccess,
+        data: extractData,
+        error: extractError,
+      } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_EXTRACT_STYLE,
+        extractPayload,
+      );
 
       if (!extractSuccess || extractData?.error) {
-        throw new Error(extractError || extractData?.error || "Style extraction failed");
+        throw new Error(
+          extractError || extractData?.error || "Style extraction failed",
+        );
       }
 
       const extractedStyle = extractData.style;
@@ -1755,8 +2344,15 @@ export function usePipelineWizard(props: any) {
       }));
 
       setLoadingStates((prev) => ({ ...prev, extractStyle: false }));
-      const successMsg = t.Style_extracted_successfu || "Trích xuất phong cách thiết kế thành công.";
-      setTemporaryState(setInfoMsg,successMsg,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.EXTENDED_MS);
+      const successMsg =
+        t.Style_extracted_successfu ||
+        "Trích xuất phong cách thiết kế thành công.";
+      setTemporaryState(
+        setInfoMsg,
+        successMsg,
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        UI_MESSAGE_DURATION.EXTENDED_MS,
+      );
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
       logger.error("STYLE_EXTRACTION_ERR", e);
@@ -1790,14 +2386,20 @@ export function usePipelineWizard(props: any) {
         newStyle: currentStyle,
         aspectRatio: project.visualConfig.aspectRatio,
       };
-      const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS, rewritePayload);
+      const { success: rewriteSuccess, data: rewriteData } =
+        await safeSystemFetch(
+          API_ROUTES.PIPELINE_REWRITE_PROMPTS,
+          rewritePayload,
+        );
 
       if (rewriteSuccess && rewriteData?.storyboard) {
         setProject((prev) => ({
           ...prev,
           storyboard: rewriteData.storyboard,
         }));
-        const successMsg = t.Successfully_applied_styl || "Áp dụng phong cách thiết kế thành công.";
+        const successMsg =
+          t.Successfully_applied_styl ||
+          "Áp dụng phong cách thiết kế thành công.";
         setInfoMsg(successMsg);
         logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       } else {
@@ -1840,16 +2442,25 @@ export function usePipelineWizard(props: any) {
         aspectRatio: project.visualConfig.aspectRatio,
         language: project.config.language,
       };
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS,
+        payload,
+      );
 
       if (success && data?.storyboard) {
         setProject((prev) => ({ ...prev, storyboard: data.storyboard }));
-        setInfoMsg(t.optimizePromptsSuccess || txt.OPTIMIZE_PROMPTS_SUCCESS_FALLBACK);
+        setInfoMsg(
+          t.optimizePromptsSuccess || txt.OPTIMIZE_PROMPTS_SUCCESS_FALLBACK,
+        );
       } else {
         throw new Error(error || data?.error || txt.OPTIMIZATION_FAILED);
       }
     } catch (err: any) {
-      setErrorMsg(t.optimizePromptsError ? t.optimizePromptsError.replace("{error}", err.message) : txt.OPTIMIZE_PROMPTS_FAILED_FALLBACK + err.message);
+      setErrorMsg(
+        t.optimizePromptsError
+          ? t.optimizePromptsError.replace("{error}", err.message)
+          : txt.OPTIMIZE_PROMPTS_FAILED_FALLBACK + err.message,
+      );
     } finally {
       setLoadingStates((prev) => ({ ...prev, optimizePrompts: false }));
       setLoading(false);
@@ -1870,7 +2481,10 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.charAnalyzing);
 
     try {
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script });
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_ANALYZE_CHARACTER,
+        { script },
+      );
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character analysis failed");
       }
@@ -1890,12 +2504,15 @@ export function usePipelineWizard(props: any) {
         visualConfig: {
           ...prev.visualConfig,
           characters: chars,
-          characterAnalysis: rawCharacters.map((c: any) => `${c.name}: ${c.description}`).join("\n"),
+          characterAnalysis: rawCharacters
+            .map((c: any) => `${c.name}: ${c.description}`)
+            .join("\n"),
           characterExtracted: false,
         },
       }));
 
-      const successMsg = t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
+      const successMsg =
+        t.charAnalyzeSuccess || "Phân tích nhân vật thành công.";
       setInfoMsg(successMsg);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
@@ -1907,7 +2524,10 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleCharacterImagesUpload = async (charId: string, files: FileList | null) => {
+  const handleCharacterImagesUpload = async (
+    charId: string,
+    files: FileList | null,
+  ) => {
     logAction("handleCharacterImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
@@ -1976,7 +2596,10 @@ export function usePipelineWizard(props: any) {
         images,
         characterDescription: char.description,
       };
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_EXTRACT_CHARACTER,
+        payload,
+      );
 
       if (!success || data?.error) {
         throw new Error(error || data?.error || "Character extraction failed");
@@ -2008,7 +2631,8 @@ export function usePipelineWizard(props: any) {
         };
       });
 
-      const successMsg = t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
+      const successMsg =
+        t.charExtractSuccess || "Trích xuất đặc điểm nhân vật thành công.";
       setInfoMsg(successMsg);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (e: any) {
@@ -2050,7 +2674,10 @@ export function usePipelineWizard(props: any) {
         })),
         aspectRatio: project.visualConfig.aspectRatio,
       };
-      const { success, data } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER, payload);
+      const { success, data } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_REWRITE_PROMPTS_CHARACTER,
+        payload,
+      );
       if (success && data?.storyboard) {
         setProject((prev) => ({
           ...prev,
@@ -2080,7 +2707,10 @@ export function usePipelineWizard(props: any) {
   const handleApplyCharacterToThumbnails = async () => {
     logAction("handleApplyCharacterToThumbnails");
     if (!project.thumbnails || _.isEmpty(project.thumbnails)) {
-      setInfoMsg(t.No_thumbnails_to_apply_style || "Chưa có ảnh bìa để áp dụng phong cách.");
+      setInfoMsg(
+        t.No_thumbnails_to_apply_style ||
+          "Chưa có ảnh bìa để áp dụng phong cách.",
+      );
       return;
     }
     const characters = project.visualConfig?.characters || [];
@@ -2104,7 +2734,10 @@ export function usePipelineWizard(props: any) {
         })),
         aspectRatio: project.visualConfig.aspectRatio || "16:9",
       };
-      const { success, data } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS_CHARACTER, payload);
+      const { success, data } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_REWRITE_THUMBNAILS_CHARACTER,
+        payload,
+      );
       if (success && data?.thumbnails) {
         setProject((prev) => {
           const updatedProject = {
@@ -2195,7 +2828,11 @@ export function usePipelineWizard(props: any) {
           const fileNum = fileNumbers[0];
           for (const scene of storyboard) {
             const sceneNumbers = scene.id.match(/\d+/g);
-            if (sceneNumbers && sceneNumbers.length > 0 && sceneNumbers[0] === fileNum) {
+            if (
+              sceneNumbers &&
+              sceneNumbers.length > 0 &&
+              sceneNumbers[0] === fileNum
+            ) {
               matchedSceneId = scene.id;
               break;
             }
@@ -2266,7 +2903,10 @@ export function usePipelineWizard(props: any) {
       });
 
       if (missingIds.length > 0) {
-        warnings = t.missingImagesWarning.replace("{ids}", missingIds.join(", "));
+        warnings = t.missingImagesWarning.replace(
+          "{ids}",
+          missingIds.join(", "),
+        );
       }
 
       const outOfOrderMatches = results.filter((r) => {
@@ -2278,7 +2918,9 @@ export function usePipelineWizard(props: any) {
       });
 
       if (outOfOrderMatches.length > 0) {
-        const warningDetail = t.mismatchImagesWarning.replace("{fileName}", outOfOrderMatches[0].fileName).replace("{sceneId}", outOfOrderMatches[0].sceneId);
+        const warningDetail = t.mismatchImagesWarning
+          .replace("{fileName}", outOfOrderMatches[0].fileName)
+          .replace("{sceneId}", outOfOrderMatches[0].sceneId);
         warnings = warnings ? `${warnings} | ${warningDetail}` : warningDetail;
       }
 
@@ -2308,7 +2950,10 @@ export function usePipelineWizard(props: any) {
       return prev;
     });
 
-    const successMsg = t.bulkUploadSuccess.replace("{count}", results.length.toString());
+    const successMsg = t.bulkUploadSuccess.replace(
+      "{count}",
+      results.length.toString(),
+    );
     setInfoMsg(successMsg);
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
@@ -2322,7 +2967,9 @@ export function usePipelineWizard(props: any) {
     });
   };
 
-  const handleThumbnailReferenceImagesUpload = async (files: FileList | null) => {
+  const handleThumbnailReferenceImagesUpload = async (
+    files: FileList | null,
+  ) => {
     logAction("handleThumbnailReferenceImagesUpload");
     if (!files) return;
     const ArrayFiles = Array.from(files);
@@ -2362,7 +3009,9 @@ export function usePipelineWizard(props: any) {
 
     setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: true }));
     try {
-      const response = await fetchSystemApi(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images });
+      const response = await fetchSystemApi(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+        images,
+      });
       const data = await response.json();
       if (data.style) {
         setProject((prev) => {
@@ -2414,7 +3063,11 @@ export function usePipelineWizard(props: any) {
         newStyle: currentStyle,
         aspectRatio: project.visualConfig.aspectRatio || "16:9",
       };
-      const { success: rewriteSuccess, data: rewriteData } = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS, rewritePayload);
+      const { success: rewriteSuccess, data: rewriteData } =
+        await safeSystemFetch(
+          API_ROUTES.PIPELINE_REWRITE_THUMBNAILS,
+          rewritePayload,
+        );
 
       if (rewriteSuccess && rewriteData?.thumbnails) {
         setProject((prev) => {
@@ -2447,7 +3100,11 @@ export function usePipelineWizard(props: any) {
         setInfoMsg(t.Applied_style_fallback_mo);
       }
     } catch (err: any) {
-      setErrorMsg(t.applyStyleError ? t.applyStyleError.replace("{error}", err.message) : err.message);
+      setErrorMsg(
+        t.applyStyleError
+          ? t.applyStyleError.replace("{error}", err.message)
+          : err.message,
+      );
     } finally {
       setLoadingStates((prev) => ({ ...prev, applyThumbnailStyle: false }));
       setLoading(false);
@@ -2542,7 +3199,10 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.cancellingBatchGen);
   };
 
-  const handleBatchGenerateAllImages = async (isFromAutoGenerateAll = false, providedScenes?: any[]) => {
+  const handleBatchGenerateAllImages = async (
+    isFromAutoGenerateAll = false,
+    providedScenes?: any[],
+  ) => {
     logAction("handleBatchGenerateAllImages");
     if (isBatchGenerating) return;
 
@@ -2569,17 +3229,23 @@ export function usePipelineWizard(props: any) {
     let completedCount = 0;
     let hasError = false;
 
-    const isGeminiChat = project.visualConfig.generationMode === ImageGenerationMode.GeminiChat;
+    const isGeminiChat =
+      project.visualConfig.generationMode === ImageGenerationMode.GeminiChat;
     const concurrency = SecurityConstants.DEFAULT_AMOUNT;
-    const configuredGenerateType = project.visualConfig.generateType || GenerateType.Image;
-    const existingVideoCount = _.size(_.filter(
-      scenes,
-      (scene) => _.isEqual(scene.assetType, GenerateType.Video)
-        && hasSceneAsset(scene),
-    ));
+    const configuredGenerateType =
+      project.visualConfig.generateType || GenerateType.Image;
+    const existingVideoCount = _.size(
+      _.filter(
+        scenes,
+        (scene) =>
+          _.isEqual(scene.assetType, GenerateType.Video) &&
+          hasSceneAsset(scene),
+      ),
+    );
     const remainingVideoSlots = _.max([
       _.subtract(
-        project.visualConfig.maxVideoScenes || MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS,
+        project.visualConfig.maxVideoScenes ||
+          MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS,
         existingVideoCount,
       ),
       SecurityConstants.ZERO,
@@ -2630,7 +3296,10 @@ export function usePipelineWizard(props: any) {
             persistImageCheckpoint(updatedProject);
             return updatedProject;
           });
-          completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
+          completedCount = _.add(
+            completedCount,
+            SecurityConstants.DEFAULT_AMOUNT,
+          );
         };
 
         await generateProjectImages({
@@ -2644,7 +3313,9 @@ export function usePipelineWizard(props: any) {
             style: project.visualConfig.style,
             resolution: project.visualConfig.quality,
             bypassCache: false,
-            engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
+            engine:
+              project.visualConfig.imageGeneratorEngine ||
+              ImageGeneratorEngine.Veo3,
             sandboxConfig,
             visualConfig: {
               ...project.visualConfig,
@@ -2660,24 +3331,39 @@ export function usePipelineWizard(props: any) {
             if (result.success) {
               applyResult(result);
             } else {
-              logger.error(LogEvent.BATCH_SCENE_FAILED, result.sceneId, result.warning);
-              setErrorMsg(t.errorRenderingSceneBatch
-                .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
-                .replace(
-                  REFACTOR_CONSTANTS.TEMPLATE_ERROR,
-                  result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-                ));
+              logger.error(
+                LogEvent.BATCH_SCENE_FAILED,
+                result.sceneId,
+                result.warning,
+              );
+              setErrorMsg(
+                t.errorRenderingSceneBatch
+                  .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                  .replace(
+                    REFACTOR_CONSTANTS.TEMPLATE_ERROR,
+                    result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+                  ),
+              );
             }
 
-            setBatchProgressMsg(t.generatingSceneBatch
-              .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
-              .replace(REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX, _.toString(completedCount))
-              .replace(REFACTOR_CONSTANTS.TEMPLATE_TOTAL, _.toString(totalToProcess)));
+            setBatchProgressMsg(
+              t.generatingSceneBatch
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                .replace(
+                  REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX,
+                  _.toString(completedCount),
+                )
+                .replace(
+                  REFACTOR_CONSTANTS.TEMPLATE_TOTAL,
+                  _.toString(totalToProcess),
+                ),
+            );
           },
-          onFallbackItemStart: (item) => setLoadingStates((prev) => ({
-            ...prev,
-            [LOADING_KEYS.RENDER_SCENE_PREFIX + item.sceneId]: true,
-          })),
+          onFallbackItemStart: (item) =>
+            setLoadingStates((prev) => ({
+              ...prev,
+              [LOADING_KEYS.RENDER_SCENE_PREFIX + item.sceneId]: true,
+            })),
           onFallbackResult: (result) => {
             setLoadingStates((prev) => ({
               ...prev,
@@ -2687,12 +3373,14 @@ export function usePipelineWizard(props: any) {
               applyResult(result);
               return;
             }
-            setErrorMsg(t.errorRenderingSceneBatch
-              .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
-              .replace(
-                REFACTOR_CONSTANTS.TEMPLATE_ERROR,
-                result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-              ));
+            setErrorMsg(
+              t.errorRenderingSceneBatch
+                .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
+                .replace(
+                  REFACTOR_CONSTANTS.TEMPLATE_ERROR,
+                  result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
+                ),
+            );
           },
         });
       } else {
@@ -2701,7 +3389,12 @@ export function usePipelineWizard(props: any) {
 
         for (let i = 0; i < batches.length && !hasError; i++) {
           if (cancelBatchImageRef.current) {
-            setInfoMsg(t.batchGenCancelled.replace("{completedCount}", completedCount.toString()));
+            setInfoMsg(
+              t.batchGenCancelled.replace(
+                "{completedCount}",
+                completedCount.toString(),
+              ),
+            );
             break;
           }
 
@@ -2738,7 +3431,11 @@ export function usePipelineWizard(props: any) {
             completedCount++;
           } catch (err: any) {
             logger.error("ERROR_RENDERING_SCENE_BATCH", scene.id, err);
-            setErrorMsg(t.errorRenderingSceneBatch.replace("{sceneId}", scene.id).replace("{error}", err.message));
+            setErrorMsg(
+              t.errorRenderingSceneBatch
+                .replace("{sceneId}", scene.id)
+                .replace("{error}", err.message),
+            );
             hasError = true;
           } finally {
             setLoadingStates((prev) => ({
@@ -2749,17 +3446,28 @@ export function usePipelineWizard(props: any) {
 
           completedBatchesCount++;
 
-          if (i < batches.length - 1 && !hasError && !cancelBatchImageRef.current) {
+          if (
+            i < batches.length - 1 &&
+            !hasError &&
+            !cancelBatchImageRef.current
+          ) {
             const delayMs = getBatchDelayMs(project.visualConfig.batchDelay);
             const delaySecs = (delayMs / 1000).toFixed(1);
-            setBatchProgressMsg(project.config.language === "vi" ? APP_TEXTS.VN.WAITING_MSG(delaySecs) : APP_TEXTS.EN.WAITING_MSG(delaySecs));
+            setBatchProgressMsg(
+              project.config.language === "vi"
+                ? APP_TEXTS.VN.WAITING_MSG(delaySecs)
+                : APP_TEXTS.EN.WAITING_MSG(delaySecs),
+            );
             await randomDelay(delayMs, delayMs);
           }
         }
       }
 
       if (!cancelBatchImageRef.current && !hasError) {
-        const successMsg = t.batchGenSuccess.replace("{completedCount}", completedCount.toString());
+        const successMsg = t.batchGenSuccess.replace(
+          "{completedCount}",
+          completedCount.toString(),
+        );
         setInfoMsg(successMsg);
       }
     } catch (err: any) {
@@ -2807,9 +3515,14 @@ export function usePipelineWizard(props: any) {
         referencePrompt: project.visualConfig?.referencePrompt,
         currentPrompt: sceneEditPrompt,
       };
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_DETAILED_PROMPT, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_DETAILED_PROMPT,
+        payload,
+      );
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "Prompt generation failed");
+        throw new Error(
+          error || data?.error || data?.warning || "Prompt generation failed",
+        );
       }
       if (data.prompt) {
         setSceneEditPrompt(data.prompt);
@@ -2822,13 +3535,24 @@ export function usePipelineWizard(props: any) {
           });
           return { ...prev, storyboard: updated };
         });
-        const successMsg = t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
-        setTemporaryState(setInfoMsg,successMsg,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.EXTENDED_MS);
+        const successMsg =
+          t.Detailed_image_prompt_gen || "Mở rộng prompt thành công.";
+        setTemporaryState(
+          setInfoMsg,
+          successMsg,
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          UI_MESSAGE_DURATION.EXTENDED_MS,
+        );
         logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
       }
     } catch (err: any) {
       logger.error("ERROR_GEN_DETAILED_PROMPT", err);
-      setTemporaryState(setErrorMsg,t.promptGenError.replace("{error}",err.message),REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.EXTENDED_MS);
+      setTemporaryState(
+        setErrorMsg,
+        t.promptGenError.replace("{error}", err.message),
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        UI_MESSAGE_DURATION.EXTENDED_MS,
+      );
     } finally {
       setIsGeneratingDetailedPrompt(false);
     }
@@ -2840,7 +3564,10 @@ export function usePipelineWizard(props: any) {
     setProject((prev) => {
       const updated = (prev.storyboard || []).map((sc) => {
         if (sc.id === activeSceneId) {
-          const changed = [sc.script !== sceneEditScript, sc.subtitle !== sceneEditSubtitle].some(Boolean);
+          const changed = [
+            sc.script !== sceneEditScript,
+            sc.subtitle !== sceneEditSubtitle,
+          ].some(Boolean);
           return {
             ...sc,
             script: sceneEditScript,
@@ -2856,8 +3583,14 @@ export function usePipelineWizard(props: any) {
         return sc;
       });
 
-      const totalDuration = updated.reduce((sum: number, s: any) => sum + (s.duration || 0), 0);
-      let syncLogText = t.syncLedgerSuccess.replace("{totalDuration}", totalDuration.toFixed(1));
+      const totalDuration = updated.reduce(
+        (sum: number, s: any) => sum + (s.duration || 0),
+        0,
+      );
+      let syncLogText = t.syncLedgerSuccess.replace(
+        "{totalDuration}",
+        totalDuration.toFixed(1),
+      );
 
       updated.forEach((scene: any, idx: number) => {
         syncLogText += t.syncLedgerItem
@@ -2865,7 +3598,10 @@ export function usePipelineWizard(props: any) {
           .replace("{startTime}", formatRoundedTime(scene.startTime))
           .replace("{endTime}", formatRoundedTime(scene.endTime))
           .replace("{duration}", Math.round(scene.duration || 0).toString())
-          .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
+          .replace(
+            "{script}",
+            (scene.script || scene.subtitle || "").substring(0, 35),
+          );
       });
 
       setAlignmentsLog(syncLogText);
@@ -2880,12 +3616,16 @@ export function usePipelineWizard(props: any) {
       };
     });
     setActiveSceneId(null);
-    const successMsg = t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
+    const successMsg =
+      t.Scene_mod_saved_successfu || "Lưu chỉnh sửa phân cảnh thành công.";
     setInfoMsg(successMsg);
     logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
   };
 
-  const handleTriggerAssetAndThumbnail = async (force = false, btnPosition = "top") => {
+  const handleTriggerAssetAndThumbnail = async (
+    force = false,
+    btnPosition = "top",
+  ) => {
     logAction("handleTriggerAssetAndThumbnail");
 
     const isForce = force === true;
@@ -2916,10 +3656,18 @@ export function usePipelineWizard(props: any) {
         bypassCache: isForce,
       };
 
-      const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, payload);
+      const { success, data, error } = await safeSystemFetch(
+        API_ROUTES.PIPELINE_THUMBNAILS,
+        payload,
+      );
 
       if (!success || data?.error || data?.warning) {
-        throw new Error(error || data?.error || data?.warning || "System pipeline rejected the request.");
+        throw new Error(
+          error ||
+            data?.error ||
+            data?.warning ||
+            "System pipeline rejected the request.",
+        );
       }
 
       if (data.thumbnails) {
@@ -2935,7 +3683,8 @@ export function usePipelineWizard(props: any) {
           thumbnails: formattedThumbs,
         }));
         trackOperationCost(15, 0.0008);
-        const successMsg = t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
+        const successMsg =
+          t.High_engagement_Thumbnail || "Hoàn thành tạo ảnh thu nhỏ.";
         setInfoMsg(successMsg);
         logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
@@ -2951,27 +3700,50 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleRenderThumbnailImage = async (thumbId: string, promptText: string, styleText: string, force = false) => {
+  const handleRenderThumbnailImage = async (
+    thumbId: string,
+    promptText: string,
+    styleText: string,
+    force = false,
+  ) => {
     logAction("handleRenderThumbnailImage");
     const isForce = force === true;
     setLoadingStates((prev) => ({ ...prev, ["renderThumb_" + thumbId]: true }));
     setLoading(true);
     setErrorMsg("");
     try {
-      let cleanPromptText = promptText || "";
-      cleanPromptText = cleanPromptText.replace(ASPECT_RATIO_PARAM_REGEX, "");
-
       const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
+      const thumbnail =
+        _.find(project.thumbnails, { id: thumbId }) ||
+        ({
+          id: thumbId,
+          prompt: promptText,
+          style: styleText,
+          hasText: false,
+        } as ThumbnailItem);
+      const referenceImages = resolveThumbnailReferenceImages(
+        project.visualConfig,
+      );
+      let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, styleText, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
+      generationPrompt = applyThumbnailPromptDirectives(
+        generationPrompt,
+        project.visualConfig,
+      );
 
-      const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-        prompt: `${cleanPromptText}. Designed in rich high-CTR ${styleText} layout. --ar ${currentAspectRatio}`,
-        style: styleText,
-        resolution: "Standard",
-        bypassCache: isForce,
-        engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-        sandboxConfig: sandboxConfig,
-        visualConfig: project.visualConfig,
-      });
+      const data = await safeFetchJsonWithAuth(
+        API_ROUTES.PIPELINE_GENERATE_IMAGE,
+        {
+          prompt: generationPrompt,
+          style: styleText,
+          resolution: "Standard",
+          bypassCache: isForce,
+          engine:
+            project.visualConfig.imageGeneratorEngine ||
+            ImageGeneratorEngine.Veo3,
+          sandboxConfig: sandboxConfig,
+          visualConfig: { ...project.visualConfig, referenceImages },
+        },
+      );
       if (data.warning) {
         setErrorMsg(data.warning);
       }
@@ -2999,7 +3771,7 @@ export function usePipelineWizard(props: any) {
       setProject((prev) => {
         const updated = (prev.thumbnails || []).map((th) => {
           if (th.id === thumbId) {
-            return { ...th, imageUrl: imgUrl };
+            return { ...th, imageUrl: imgUrl, generationPrompt };
           }
           return th;
         });
@@ -3010,7 +3782,8 @@ export function usePipelineWizard(props: any) {
         return updatedProject;
       });
       if (isSuccess) {
-        const successMsg = t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
+        const successMsg =
+          t.Mockup_thumbnail_painted_ || "Tạo ảnh thu nhỏ thành công.";
         setInfoMsg(successMsg);
         logger.info(`[Thumbnail] ✅ Thành công: ${successMsg}`);
       }
@@ -3043,8 +3816,99 @@ export function usePipelineWizard(props: any) {
     setErrorMsg("");
 
     try {
-      for (const thumb of targets) {
-        await handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style, true);
+      if (
+        _.isEqual(
+          project.visualConfig.generationMode,
+          ImageGenerationMode.GeminiChat,
+        )
+      ) {
+        const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
+        const referenceImages = resolveThumbnailReferenceImages(
+          project.visualConfig,
+        );
+        const generationPrompts = new Map<string, string>();
+        const items = _.map(targets, (thumbnail) => {
+          let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, thumbnail.style, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
+          generationPrompt = applyThumbnailPromptDirectives(
+            generationPrompt,
+            project.visualConfig,
+          );
+          generationPrompts.set(thumbnail.id, generationPrompt);
+          return {
+            sceneId: thumbnail.id,
+            prompt: generationPrompt,
+            generateType: GenerateType.Image,
+            referenceImages,
+          };
+        });
+        const applyThumbnailResult = (result: ProjectImageResult) => {
+          const imageUrl = createProjectImageUrl(result);
+          if (_.isEmpty(imageUrl)) return;
+          setProject((prev) => {
+            const updatedProject = {
+              ...prev,
+              thumbnails: _.map(prev.thumbnails, (thumbnail) =>
+                _.isEqual(thumbnail.id, result.sceneId)
+                  ? {
+                      ...thumbnail,
+                      imageUrl,
+                      generationPrompt: generationPrompts.get(thumbnail.id),
+                    }
+                  : thumbnail,
+              ),
+            };
+            setTimeout(
+              () => onSaveProject(updatedProject, true),
+              UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS,
+            );
+            return updatedProject;
+          });
+        };
+        await generateProjectImages({
+          items,
+          visualConfig: {
+            ...project.visualConfig,
+            referenceImages,
+            batchTabCount: _.size(targets),
+          },
+          style:
+            project.visualConfig.thumbnailReferencePrompt ||
+            project.visualConfig.style,
+          sandboxConfig,
+          cancelRef: cancelBatchImageRef,
+          createFallbackPayload: (item) => ({
+            prompt: item.prompt,
+            style:
+              project.visualConfig.thumbnailReferencePrompt ||
+              project.visualConfig.style,
+            resolution: project.visualConfig.quality,
+            bypassCache: true,
+            engine:
+              project.visualConfig.imageGeneratorEngine ||
+              ImageGeneratorEngine.Imagen,
+            sandboxConfig,
+            visualConfig: {
+              ...project.visualConfig,
+              referenceImages: item.referenceImages,
+              generateType: GenerateType.Image,
+            },
+          }),
+          onBatchResult: (result) => {
+            if (result.success) applyThumbnailResult(result);
+          },
+          onFallbackResult: (result) => {
+            if (result.success) applyThumbnailResult(result);
+          },
+        });
+      } else {
+        for (const thumb of targets) {
+          await handleRenderThumbnailImage(
+            thumb.id,
+            thumb.prompt,
+            thumb.style,
+            true,
+          );
+        }
       }
       setInfoMsg(t.bulkRenderThumbnailsSuccess);
     } catch (err: any) {
@@ -3067,7 +3931,10 @@ export function usePipelineWizard(props: any) {
         if (!project.storyboard || _.isEmpty(project.storyboard)) {
           throw new Error(t.You_must_generate_the_sto);
         }
-        const mergedUrl = await handleTriggerAllSceneVoices(project.storyboard, true);
+        const mergedUrl = await handleTriggerAllSceneVoices(
+          project.storyboard,
+          true,
+        );
 
         if (mergedUrl) {
           const a = document.createElement("a");
@@ -3076,7 +3943,8 @@ export function usePipelineWizard(props: any) {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
+          const successMsg =
+            t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
           setInfoMsg(successMsg);
           logger.info(`[TTS] ✅ Thành công: ${successMsg}`);
         } else {
@@ -3126,7 +3994,11 @@ export function usePipelineWizard(props: any) {
 
     try {
       if (project.storyboard && project.storyboard.length > 0) {
-        await handleTriggerAllSceneVoices(project.storyboard, true, voiceConfigOverride);
+        await handleTriggerAllSceneVoices(
+          project.storyboard,
+          true,
+          voiceConfigOverride,
+        );
       } else {
         throw new Error(t.You_must_generate_the_sto_2);
       }
@@ -3144,7 +4016,10 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerVoiceGenerate = async (force = false, btnPosition = "top") => {
+  const handleTriggerVoiceGenerate = async (
+    force = false,
+    btnPosition = "top",
+  ) => {
     logAction("handleTriggerVoiceGenerate");
 
     if (simAudioRef.current) {
@@ -3206,7 +4081,9 @@ export function usePipelineWizard(props: any) {
           const chunkSize = 0x8000;
           let binary = "";
           for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
+            binary += String.fromCharCode(
+              ...uint8Array.subarray(i, i + chunkSize),
+            );
           }
           audioBase64 = btoa(binary);
         }
@@ -3218,13 +4095,16 @@ export function usePipelineWizard(props: any) {
   };
 
   const alignStoryboardVoice = async (scenes: any[], audioBase64: string) => {
-    let alignData = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_ALIGN_VOICE, {
-      audioBase64: audioBase64,
-      scenes: _.map(scenes, (sc) => ({
-        id: sc.id,
-        script: sc.script || sc.subtitle || "",
-      })),
-    });
+    let alignData = await safeFetchJsonWithAuth(
+      API_ROUTES.PIPELINE_ALIGN_VOICE,
+      {
+        audioBase64: audioBase64,
+        scenes: _.map(scenes, (sc) => ({
+          id: sc.id,
+          script: sc.script || sc.subtitle || "",
+        })),
+      },
+    );
 
     if (!alignData || !alignData.success || !_.isArray(alignData.alignments)) {
       const langKey = currentLang === "en" ? "en" : "vi";
@@ -3254,7 +4134,13 @@ export function usePipelineWizard(props: any) {
     });
   };
 
-  const handleAlignAndSaveVoice = async (audioName: string, audioUrl: string, audioBase64: string, audioType: AudioType, isFromAutoGenerateAll = false) => {
+  const handleAlignAndSaveVoice = async (
+    audioName: string,
+    audioUrl: string,
+    audioBase64: string,
+    audioType: AudioType,
+    isFromAutoGenerateAll = false,
+  ) => {
     stopPlaybackSim();
 
     const lang = currentLang === "en" ? "en" : "vi";
@@ -3281,7 +4167,8 @@ export function usePipelineWizard(props: any) {
     try {
       const alignedScenes = await alignStoryboardVoice(scenes, audioBase64);
 
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       let totalDuration = 10;
       try {
         const arrayBufferRaw = base64ToArrayBuffer(audioBase64);
@@ -3292,14 +4179,19 @@ export function usePipelineWizard(props: any) {
       } finally {
         audioCtx.close();
       }
-      let syncLogText = texts.SYNC_COMPLETE.replace("{totalDuration}", totalDuration.toFixed(1));
+      let syncLogText = texts.SYNC_COMPLETE.replace(
+        "{totalDuration}",
+        totalDuration.toFixed(1),
+      );
       alignedScenes.forEach((scene: any, idx: number) => {
-        syncLogText += texts.SYNC_ITEM
-          .replace("{index}", (idx + 1).toString())
+        syncLogText += texts.SYNC_ITEM.replace("{index}", (idx + 1).toString())
           .replace("{startTime}", formatRoundedTime(scene.startTime))
           .replace("{endTime}", formatRoundedTime(scene.endTime))
           .replace("{duration}", Math.round(scene.duration || 0).toString())
-          .replace("{script}", (scene.script || scene.subtitle || "").substring(0, 35));
+          .replace(
+            "{script}",
+            (scene.script || scene.subtitle || "").substring(0, 35),
+          );
       });
 
       setAlignmentsLog(syncLogText);
@@ -3312,7 +4204,10 @@ export function usePipelineWizard(props: any) {
         voiceConfig: {
           ...project.voiceConfig,
           audioType: audioType,
-          uploadedAudioName: audioType === AudioType.Upload ? audioName : project.voiceConfig.uploadedAudioName,
+          uploadedAudioName:
+            audioType === AudioType.Upload
+              ? audioName
+              : project.voiceConfig.uploadedAudioName,
           audioUrl: audioUrl,
           audioBase64: audioBase64,
           timingLog: syncLogText,
@@ -3342,7 +4237,11 @@ export function usePipelineWizard(props: any) {
       return audioUrl;
     } catch (err: any) {
       logger.error(EXTERNAL_AUDIO_TEXTS.LOG_ERROR_KEY, err);
-      setErrorMsg(t.voiceAlignError ? t.voiceAlignError.replace("{error}", err.message) : texts.ALIGN_ERROR.replace("{error}", err.message));
+      setErrorMsg(
+        t.voiceAlignError
+          ? t.voiceAlignError.replace("{error}", err.message)
+          : texts.ALIGN_ERROR.replace("{error}", err.message),
+      );
       throw err;
     } finally {
       if (!isFromAutoGenerateAll) {
@@ -3357,7 +4256,11 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleTriggerAllSceneVoices = async (providedScenes?: any[], isFromAutoGenerateAll = false, voiceConfigOverride?: any) => {
+  const handleTriggerAllSceneVoices = async (
+    providedScenes?: any[],
+    isFromAutoGenerateAll = false,
+    voiceConfigOverride?: any,
+  ) => {
     logAction("handleTriggerAllSceneVoices");
     stopPlaybackSim();
 
@@ -3378,12 +4281,17 @@ export function usePipelineWizard(props: any) {
     setBulkVoiceStatus("");
 
     try {
-      const vConfig = voiceConfigOverride || project.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG;
+      const vConfig =
+        voiceConfigOverride ||
+        project.voiceConfig ||
+        PipelineConstants.DEFAULT_VOICE_CONFIG;
       const updatedScenes = [...scenes];
 
       let fullScript = project.scriptRewritten || "";
       if (!fullScript) {
-        fullScript = updatedScenes.map((s) => cleanScriptText(s.script || s.subtitle || "")).join(" ");
+        fullScript = updatedScenes
+          .map((s) => cleanScriptText(s.script || s.subtitle || ""))
+          .join(" ");
       }
 
       if (!fullScript.trim()) {
@@ -3393,7 +4301,11 @@ export function usePipelineWizard(props: any) {
       setBulkVoiceStatus(t.MULTI_STEP_SYSTEM_FLOW_Ge_3);
 
       const voiceURI = vConfig.voiceURI || "preset-vi-bac-female";
-      const { finalSpeed, finalPitch } = getVoiceModifiers(voiceURI, vConfig.speed || 1.0, vConfig.pitch || 1.0);
+      const { finalSpeed, finalPitch } = getVoiceModifiers(
+        voiceURI,
+        vConfig.speed || 1.0,
+        vConfig.pitch || 1.0,
+      );
 
       const audioData = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_VOICE, {
         text: fullScript,
@@ -3405,18 +4317,27 @@ export function usePipelineWizard(props: any) {
         volume: vConfig.volume || 1.0,
         voiceURI: voiceURI,
         voice_id: voiceURI,
-        ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee") ? { voice_ownership: "community" } : {}),
+        ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee")
+          ? { voice_ownership: "community" }
+          : {}),
       });
 
       if (!audioData || !audioData.success || !audioData.audioBase64) {
-        throw new Error(audioData?.warning || audioData?.error || "No audio returned");
+        throw new Error(
+          audioData?.warning || audioData?.error || "No audio returned",
+        );
       }
 
       const arrayBuffer = base64ToArrayBuffer(audioData.audioBase64);
       const bufferClone = arrayBuffer.slice(0);
       let processedBlob;
       try {
-        processedBlob = await applyAudioEffects(bufferClone, finalSpeed, finalPitch, vConfig.volume || 1.0);
+        processedBlob = await applyAudioEffects(
+          bufferClone,
+          finalSpeed,
+          finalPitch,
+          vConfig.volume || 1.0,
+        );
       } catch (effectsError) {
         processedBlob = new Blob([arrayBuffer], {
           type: audioData.mimeType || "audio/wav",
@@ -3432,7 +4353,13 @@ export function usePipelineWizard(props: any) {
         sc.textLength = text.length;
       });
 
-      return await handleAlignAndSaveVoice("", mergedUrl, processedBase64, AudioType.Generated, isFromAutoGenerateAll);
+      return await handleAlignAndSaveVoice(
+        "",
+        mergedUrl,
+        processedBase64,
+        AudioType.Generated,
+        isFromAutoGenerateAll,
+      );
     } catch (err: any) {
       logger.error("GENERAL_ERROR", err);
       setErrorMsg(t.errorGeneratingVoiceover.replace("{error}", err.message));
@@ -3449,9 +4376,11 @@ export function usePipelineWizard(props: any) {
 
   const handleAutoGenerateVideo = async () => {
     logAction("handleAutoGenerateVideo");
-    
+
     if (_.isEmpty(_.trim(project.input?.content))) {
-      setErrorMsg(t.Please_enter_script_conte || AUTO_GENERATE_TEXTS.EMPTY_SCRIPT_ERR);
+      setErrorMsg(
+        t.Please_enter_script_conte || AUTO_GENERATE_TEXTS.EMPTY_SCRIPT_ERR,
+      );
       return;
     }
 
@@ -3462,7 +4391,9 @@ export function usePipelineWizard(props: any) {
 
       if (_.isEmpty(currentScript)) {
         setCurrentStep(WizardStep.SourceInput);
-        setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Dr || AUTO_GENERATE_TEXTS.DRAFTING_SCRIPT);
+        setInfoMsg(
+          t.MULTI_STEP_SYSTEM_FLOW_Dr || AUTO_GENERATE_TEXTS.DRAFTING_SCRIPT,
+        );
         const scriptData = await handleProcessInputAndConfig(IS_FORCE);
         if (scriptData && !_.isEmpty(scriptData.rewrittenScript)) {
           currentScript = scriptData.rewrittenScript;
@@ -3472,16 +4403,27 @@ export function usePipelineWizard(props: any) {
       }
 
       setCurrentStep(WizardStep.Storyboard);
-      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_An || AUTO_GENERATE_TEXTS.STORYBOARDING);
-      const newStoryboard = await handleTriggerStoryboardSplit(IS_FORCE, AUTO_GENERATE_TEXTS.POSITION_TOP, IS_FORCE, currentScript);
-      
-      const hasValidScenes = _.isArray(newStoryboard) && _.some(newStoryboard, scene => !_.isEmpty(scene.id));
+      setInfoMsg(
+        t.MULTI_STEP_SYSTEM_FLOW_An || AUTO_GENERATE_TEXTS.STORYBOARDING,
+      );
+      const newStoryboard = await handleTriggerStoryboardSplit(
+        IS_FORCE,
+        AUTO_GENERATE_TEXTS.POSITION_TOP,
+        IS_FORCE,
+        currentScript,
+      );
+
+      const hasValidScenes =
+        _.isArray(newStoryboard) &&
+        _.some(newStoryboard, (scene) => !_.isEmpty(scene.id));
       if (!hasValidScenes) {
         throw new Error(AUTO_GENERATE_TEXTS.STORYBOARD_ERR);
       }
 
       setCurrentStep(WizardStep.AssetManager);
-      setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ge_3 || AUTO_GENERATE_TEXTS.VOICEOVER);
+      setInfoMsg(
+        t.MULTI_STEP_SYSTEM_FLOW_Ge_3 || AUTO_GENERATE_TEXTS.VOICEOVER,
+      );
       await handleTriggerAllSceneVoices(newStoryboard, IS_FORCE);
 
       setInfoMsg(t.initializingBatchGen || AUTO_GENERATE_TEXTS.IMAGES);
@@ -3497,11 +4439,20 @@ export function usePipelineWizard(props: any) {
     }
   };
 
-  const handleProcessExternalAudio = async (audioName: string, audioUrl: string, audioBase64: string) => {
+  const handleProcessExternalAudio = async (
+    audioName: string,
+    audioUrl: string,
+    audioBase64: string,
+  ) => {
     logAction(EXTERNAL_AUDIO_TEXTS.LOG_ACTION);
     try {
-      await handleAlignAndSaveVoice(audioName, audioUrl, audioBase64, AudioType.Upload);
-    } catch (err) { }
+      await handleAlignAndSaveVoice(
+        audioName,
+        audioUrl,
+        audioBase64,
+        AudioType.Upload,
+      );
+    } catch (err) {}
   };
 
   const handleTriggerStoryboardAndVoices = async () => {
@@ -3511,7 +4462,11 @@ export function usePipelineWizard(props: any) {
       storyboardAndVoices_loading: true,
     }));
     try {
-      const newStoryboard = await handleTriggerStoryboardSplit(true, "top", true);
+      const newStoryboard = await handleTriggerStoryboardSplit(
+        true,
+        "top",
+        true,
+      );
       if (newStoryboard && newStoryboard.length > 0) {
         await handleTriggerAllSceneVoices(newStoryboard, true);
       }
@@ -3567,7 +4522,8 @@ export function usePipelineWizard(props: any) {
         setProject(updatedProject);
         onSaveProject(updatedProject, true);
         trackOperationCost(10, 0.0005);
-        const successMsg = t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
+        const successMsg =
+          t.SEO_metrics_formulated_su || "Tối ưu hóa SEO thành công.";
         if (data.warning) {
           setInfoMsg(`${successMsg} (${data.warning})`);
         } else {
@@ -3611,7 +4567,10 @@ export function usePipelineWizard(props: any) {
 
       const audio = new Audio(ttsAudioUrl);
       audio.playbackRate = 1.0;
-      audio.volume = project.voiceConfig?.volume !== undefined ? project.voiceConfig?.volume : 1.0;
+      audio.volume =
+        project.voiceConfig?.volume !== undefined
+          ? project.voiceConfig?.volume
+          : 1.0;
       simAudioRef.current = audio;
 
       audio.ontimeupdate = () => {
@@ -3619,11 +4578,18 @@ export function usePipelineWizard(props: any) {
         setCurrentSimTime(currentTime);
 
         const ranges = getSceneTimeRanges(project.storyboard || []);
-        const matchingRange = ranges.find((r) => currentTime >= r.start && currentTime < r.end) || ranges[ranges.length - 1];
+        const matchingRange =
+          ranges.find((r) => currentTime >= r.start && currentTime < r.end) ||
+          ranges[ranges.length - 1];
 
         if (matchingRange) {
-          const matchingScene = project.storyboard?.find((sc) => sc.id === matchingRange.id);
-          if (matchingScene && (!simActiveScene || simActiveScene.id !== matchingScene.id)) {
+          const matchingScene = project.storyboard?.find(
+            (sc) => sc.id === matchingRange.id,
+          );
+          if (
+            matchingScene &&
+            (!simActiveScene || simActiveScene.id !== matchingScene.id)
+          ) {
             setSimActiveScene(matchingScene);
           }
         }
@@ -3645,7 +4611,8 @@ export function usePipelineWizard(props: any) {
   const startTimerBasedSim = () => {
     let secondsElapsed = 0;
     const ranges = getSceneTimeRanges(project.storyboard || []);
-    const totalDuration = ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
+    const totalDuration =
+      ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
 
     simTimerRef.current = setInterval(() => {
       secondsElapsed += 1;
@@ -3656,12 +4623,22 @@ export function usePipelineWizard(props: any) {
         return;
       }
 
-      const matchingRange = ranges.find((r) => secondsElapsed >= r.start && secondsElapsed < r.end);
+      const matchingRange = ranges.find(
+        (r) => secondsElapsed >= r.start && secondsElapsed < r.end,
+      );
       if (matchingRange) {
-        const matchingScene = project.storyboard?.find((sc) => sc.id === matchingRange.id);
-        if (matchingScene && (!simActiveScene || simActiveScene.id !== matchingScene.id)) {
+        const matchingScene = project.storyboard?.find(
+          (sc) => sc.id === matchingRange.id,
+        );
+        if (
+          matchingScene &&
+          (!simActiveScene || simActiveScene.id !== matchingScene.id)
+        ) {
           setSimActiveScene(matchingScene);
-          if (project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL && "speechSynthesis" in window) {
+          if (
+            project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL &&
+            "speechSynthesis" in window
+          ) {
             window.speechSynthesis.cancel();
             const utterance = createSpeechUtterance(matchingScene.script);
             window.speechSynthesis.speak(utterance);
@@ -3813,11 +4790,26 @@ export function usePipelineWizard(props: any) {
         ctx.beginPath();
         ctx.moveTo(pillX + pillR, pillY);
         ctx.lineTo(pillX + pillW - pillR, pillY);
-        ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
+        ctx.quadraticCurveTo(
+          pillX + pillW,
+          pillY,
+          pillX + pillW,
+          pillY + pillR,
+        );
         ctx.lineTo(pillX + pillW, pillY + totalHeight - pillR);
-        ctx.quadraticCurveTo(pillX + pillW, pillY + totalHeight, pillX + pillW - pillR, pillY + totalHeight);
+        ctx.quadraticCurveTo(
+          pillX + pillW,
+          pillY + totalHeight,
+          pillX + pillW - pillR,
+          pillY + totalHeight,
+        );
         ctx.lineTo(pillX + pillR, pillY + totalHeight);
-        ctx.quadraticCurveTo(pillX, pillY + totalHeight, pillX, pillY + totalHeight - pillR);
+        ctx.quadraticCurveTo(
+          pillX,
+          pillY + totalHeight,
+          pillX,
+          pillY + totalHeight - pillR,
+        );
         ctx.lineTo(pillX, pillY + pillR);
         ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
         ctx.closePath();
@@ -3825,7 +4817,11 @@ export function usePipelineWizard(props: any) {
 
         ctx.fillStyle = "#ffffff";
         lines.forEach((lineText, idx) => {
-          ctx.fillText(lineText, 640, pillY + 16 + (idx + 0.75) * subLineHeight);
+          ctx.fillText(
+            lineText,
+            640,
+            pillY + 16 + (idx + 0.75) * subLineHeight,
+          );
         });
       } else {
         ctx.fillStyle = "#94a3b8";
@@ -3877,9 +4873,13 @@ export function usePipelineWizard(props: any) {
       dlAnchorElem.setAttribute("download", fileName);
       dlAnchorElem.click();
 
-      window.setTimeout(() => window.URL.revokeObjectURL(url), UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS);
+      window.setTimeout(
+        () => window.URL.revokeObjectURL(url),
+        UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS,
+      );
 
-      const successMsg = t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
+      const successMsg =
+        t.Package_ZIP_created_succe || "Đã đóng gói dự án thành công.";
       setInfoMsg(successMsg);
       logger.info(`[Hệ thống] ✅ Thành công: ${successMsg}`);
     } catch (zipError: any) {

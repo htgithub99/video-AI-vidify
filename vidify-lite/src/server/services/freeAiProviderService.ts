@@ -18,7 +18,26 @@ const createProviderCandidates = ({ cerebrasKey, groqKey }: FreeProviderKeys, re
   return _.compact([_.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey }, _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability)]) as ProviderCandidate[];
 };
 const createRequestBody = (model: string, request: FreeProviderRequest) => ({ model, messages: [{ role: "user", content: request.contents }], max_tokens: request.config?.maxOutputTokens || FREE_AI_PROVIDER_CONFIG.DEFAULT_MAX_OUTPUT_TOKENS, temperature: request.config?.temperature ?? FREE_AI_PROVIDER_CONFIG.DEFAULT_TEMPERATURE, ...(request.config?.responseMimeType === FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE ? { response_format: { type: FREE_AI_PROVIDER_CONFIG.JSON_RESPONSE_TYPE } } : {}) });
-const createMetadata = (provider: ProviderCandidate, model: string, request: FreeProviderRequest, fallbackIndex: number, startedAt: number, usage: any): AiCallMetadata => ({ capability: request.task?.capability || AiTaskCapability.TextPlanning, provider: provider.id, model, modelVersion: model, promptVersion: FREE_AI_PROVIDER_CONFIG.PROMPT_VERSION, estimatedCostUsd: 0, actualCostUsd: 0, latencyMs: Date.now() - startedAt, inputTokens: _.toNumber(usage?.prompt_tokens) || 0, outputTokens: _.toNumber(usage?.completion_tokens) || 0, fallbackIndex });
+const createMetadata = (
+  provider: ProviderCandidate,
+  model: string,
+  request: FreeProviderRequest,
+  fallbackIndex: number,
+  startedAt: number,
+  usage: any,
+): AiCallMetadata => ({
+  capability: request.task?.capability || AiTaskCapability.TextPlanning,
+  provider: provider.id,
+  model,
+  modelVersion: model,
+  promptVersion: FREE_AI_PROVIDER_CONFIG.PROMPT_VERSION,
+  estimatedCostUsd: 0,
+  actualCostUsd: 0,
+  latencyMs: Date.now() - startedAt,
+  inputTokens: _.toNumber(usage?.prompt_tokens) || 0,
+  outputTokens: _.toNumber(usage?.completion_tokens) || 0,
+  fallbackIndex,
+});
 const createProviderError = (data: any, status: number): Error => Object.assign(new Error(_.toString(data?.error?.message || data?.message || status)), { status });
 const getModelCooldown = (status: number): number => status === 429 ? FREE_AI_PROVIDER_CONFIG.MODEL_RATE_LIMIT_COOLDOWN_MS : GEMINI_REQUEST_POLICY.TRANSIENT_COOLDOWN_MS;
 const extractTextContents = (contents: unknown): string => {

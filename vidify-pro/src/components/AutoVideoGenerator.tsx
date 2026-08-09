@@ -26,9 +26,18 @@ import {
   STORAGE_KEYS,
 } from "../constants";
 import { MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
-import { REGENERATION_TARGET, REGENERATION_TEXTS, PROJECT_ASSET_GROUP } from "../constants/config";
+import {
+  REGENERATION_TARGET,
+  REGENERATION_TEXTS,
+  PROJECT_ASSET_GROUP,
+} from "../constants/config";
 import { Lang } from "../lib/lang";
-import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords } from "./auto-video/autoVideoGeneratorUtils";
+import {
+  getAutoVideoTexts,
+  getImageEngineOptions,
+  getSplitLabels,
+  truncateWords,
+} from "./auto-video/autoVideoGeneratorUtils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
@@ -55,7 +64,10 @@ interface AutoVideoGeneratorProps {
   selectedProjectId?: string | null;
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string, desc: string) => Promise<void>;
-  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
+  onUpdateProject: (
+    project: VideoProject,
+    immediate?: boolean,
+  ) => Promise<void> | void;
   theme?: AppTheme;
 }
 
@@ -68,37 +80,117 @@ export default function AutoVideoGenerator({
   theme = AppTheme.DARK,
 }: AutoVideoGeneratorProps) {
   const T = getAutoVideoTexts(currentLang);
-  const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
+  const mediaMixTexts =
+    MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
   const splitLabelMap = getSplitLabels(T);
 
-  const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang);
-  const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
+  const { state, actions } = useAutoVideoState(
+    selectedProjectId,
+    projects,
+    currentLang,
+  );
+  const { pipelineState, pipelineActions, syncSelectedProject } =
+    useAutoVideoPipeline(projects, onUpdateProject, currentLang);
 
   const {
-    inputType, scriptContent, genre, language, duration, splitStrategy,
-    voiceProvider, voiceURI, voiceName, isVoiceDialogOpen,
-    generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
-    aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages,
-    characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
-    projectName, resumeMode, showAdvancedImageSettings,
-    rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
-    hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
-    promptInputMethod, sampleCount, videoDuration, geminiChatSpeed, batchDelay,
-    ffmpegQuality, isConfigLoaded,
+    inputType,
+    scriptContent,
+    genre,
+    language,
+    duration,
+    splitStrategy,
+    voiceProvider,
+    voiceURI,
+    voiceName,
+    isVoiceDialogOpen,
+    generationMode,
+    imageGeneratorEngine,
+    generateType,
+    maxVideoScenes,
+    aspectRatio,
+    chromeHeadless,
+    stylePreset,
+    styleBackgroundMode,
+    styleTextInImageMode,
+    imageFocusMode,
+    referenceImages,
+    sceneReferenceImages,
+    characterImages,
+    thumbnailCount,
+    thumbnailStylePreset,
+    thumbnailBackgroundMode,
+    thumbnailTextInImageMode,
+    thumbnailImageFocusMode,
+    thumbnailReferenceImages,
+    projectName,
+    resumeMode,
+    showAdvancedImageSettings,
+    rewriteLevel,
+    similarityReduction,
+    creativityLevel,
+    factCheck,
+    audience,
+    writingStyle,
+    hookStrategy,
+    hookDuration,
+    hookPosition,
+    voiceSpeed,
+    voicePitch,
+    voiceVolume,
+    promptInputMethod,
+    sampleCount,
+    videoDuration,
+    geminiChatSpeed,
+    batchDelay,
+    ffmpegQuality,
+    isConfigLoaded,
   } = state;
 
   const {
-    setInputType, setScriptContent, setGenre, setLanguage, setDuration, setSplitStrategy,
-    setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
-    setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
-    setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode,
-    setReferenceImages, setSceneReferenceImages,
-    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setThumbnailReferenceImages,
-    setProjectName, setResumeMode, setShowAdvancedImageSettings,
+    setInputType,
+    setScriptContent,
+    setGenre,
+    setLanguage,
+    setDuration,
+    setSplitStrategy,
+    setVoiceProvider,
+    setVoiceURI,
+    setVoiceName,
+    setIsVoiceDialogOpen,
+    setGenerationMode,
+    setImageGeneratorEngine,
+    setGenerateType,
+    setMaxVideoScenes,
+    setAspectRatio,
+    setChromeHeadless,
+    setStylePreset,
+    setStyleBackgroundMode,
+    setStyleTextInImageMode,
+    setImageFocusMode,
+    setReferenceImages,
+    setSceneReferenceImages,
+    setThumbnailCount,
+    setThumbnailStylePreset,
+    setThumbnailBackgroundMode,
+    setThumbnailTextInImageMode,
+    setThumbnailImageFocusMode,
+    setThumbnailReferenceImages,
+    setProjectName,
+    setResumeMode,
+    setShowAdvancedImageSettings,
   } = actions;
 
-  const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
-  const { startPipeline, cancelPipeline, setActiveCreatedProject } = pipelineActions;
+  const {
+    isProcessing,
+    isCancelling,
+    currentStepIndex,
+    stepProgress,
+    logs,
+    renderedVideoUrl,
+    activeCreatedProject,
+  } = pipelineState;
+  const { startPipeline, cancelPipeline, setActiveCreatedProject } =
+    pipelineActions;
 
   useEffect(() => {
     syncSelectedProject(selectedProjectId);
@@ -109,8 +201,13 @@ export default function AutoVideoGenerator({
     const foundProj = _.find(projects, { id: selectedProjectId });
     if (foundProj) {
       setActiveCreatedProject(foundProj);
-      storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
-      pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      storageUtils.setAsync(
+        REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT,
+        selectedProjectId,
+      );
+      pipelineActions.setRenderedVideoUrl(
+        foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      );
       pipelineActions.setLogs(foundProj.generationLogs || []);
     }
   }, [selectedProjectId, projects, isConfigLoaded, isProcessing]);
@@ -118,19 +215,29 @@ export default function AutoVideoGenerator({
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
 
-  const [_presetNameInputState, setPresetNameInputState] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [_presetNameInputState, setPresetNameInputState] = useState<string>(
+    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  );
+  const [selectedPresetId, setSelectedPresetId] = useState<string>(
+    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  );
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    pipelineActions.setLogs((prev) => [...prev, _.join([`[${timestamp}]`, msg], REFACTOR_CONSTANTS.AVG_BLANK)]);
+    pipelineActions.setLogs((prev) => [
+      ...prev,
+      _.join([`[${timestamp}]`, msg], REFACTOR_CONSTANTS.AVG_BLANK),
+    ]);
   };
 
   const handleSavePreset = async () => {
     const trimmedName = _.trim(_presetNameInputState);
     if (_.isEmpty(trimmedName)) return;
     const newPresetData = {
-      id: _.join([PRESET_CONSTANTS.ID_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+      id: _.join(
+        [PRESET_CONSTANTS.ID_PREFIX, Date.now()],
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      ),
       name: trimmedName,
       config: {
         [REFACTOR_CONSTANTS.AVG_INPUT_TYPE_KEY]: inputType,
@@ -144,17 +251,22 @@ export default function AutoVideoGenerator({
         [REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY]: generationMode,
         [REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY]: generateType,
         [REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY]: maxVideoScenes,
-        [REFACTOR_CONSTANTS.AVG_IMAGE_GENERATOR_ENGINE_KEY]: imageGeneratorEngine,
+        [REFACTOR_CONSTANTS.AVG_IMAGE_GENERATOR_ENGINE_KEY]:
+          imageGeneratorEngine,
         [REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY]: aspectRatio,
         [REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY]: stylePreset,
         [REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY]: styleBackgroundMode,
         [REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY]: styleTextInImageMode,
         [REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY]: imageFocusMode,
         [REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY]: thumbnailCount,
-        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY]: thumbnailStylePreset,
-        [REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY]: thumbnailBackgroundMode,
-        [REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY]: thumbnailTextInImageMode,
-        [REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY]: thumbnailImageFocusMode,
+        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY]:
+          thumbnailStylePreset,
+        [REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY]:
+          thumbnailBackgroundMode,
+        [REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY]:
+          thumbnailTextInImageMode,
+        [REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY]:
+          thumbnailImageFocusMode,
       },
     };
     try {
@@ -182,76 +294,175 @@ export default function AutoVideoGenerator({
       const val = _.get(c, key);
       if (!_.isUndefined(val)) setter(val);
     };
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENRE_KEY, (v) => setGenre(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY, (v) => setLanguage(v as ProjectLanguage));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_DURATION_KEY, (v) => setDuration(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY, (v) => setSplitStrategy(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY, (v) => setVoiceURI(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY, (v) => setVoiceName(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY, (v) => setAspectRatio(v as AspectRatio));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY, (v) => setGenerationMode(v as ImageGenerationMode));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) => setGenerateType(v as GenerateType));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) => setStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) => setStyleBackgroundMode(v as BackgroundMode));
-    applyIfExists(REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY, (v) => setStyleTextInImageMode(v as TextInImageMode));
-    applyIfExists(REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY, (v) => setImageFocusMode(v as ImageFocusMode));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) => setMaxVideoScenes(v as number));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(v as BackgroundMode));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(v as TextInImageMode));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) => setThumbnailImageFocusMode(v as ImageFocusMode));
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENRE_KEY, (v) =>
+      setGenre(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY, (v) =>
+      setLanguage(v as ProjectLanguage),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_DURATION_KEY, (v) =>
+      setDuration(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY, (v) =>
+      setSplitStrategy(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY, (v) =>
+      setVoiceURI(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY, (v) =>
+      setVoiceName(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY, (v) =>
+      setAspectRatio(v as AspectRatio),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY, (v) =>
+      setGenerationMode(v as ImageGenerationMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) =>
+      setGenerateType(v as GenerateType),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) =>
+      setStylePreset(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) =>
+      setStyleBackgroundMode(v as BackgroundMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY, (v) =>
+      setStyleTextInImageMode(v as TextInImageMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY, (v) =>
+      setImageFocusMode(v as ImageFocusMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) =>
+      setMaxVideoScenes(v as number),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) =>
+      setThumbnailCount(v as number),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) =>
+      setThumbnailStylePreset(v as string),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) =>
+      setThumbnailBackgroundMode(v as BackgroundMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) =>
+      setThumbnailTextInImageMode(v as TextInImageMode),
+    );
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) =>
+      setThumbnailImageFocusMode(v as ImageFocusMode),
+    );
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
   };
 
   const handleDeletePreset = async (id: string) => {
     try {
-      const res = await fetch(_.join([API_ROUTES.PRESETS, id], REFACTOR_CONSTANTS.VD_SLASH), {
-        method: HTTP_METHODS.DELETE,
-      });
+      const res = await fetch(
+        _.join([API_ROUTES.PRESETS, id], REFACTOR_CONSTANTS.VD_SLASH),
+        {
+          method: HTTP_METHODS.DELETE,
+        },
+      );
       const json = await res.json();
       if (json.success) {
         refetchPresets();
-        if (_.isEqual(selectedPresetId, id)) setSelectedPresetId(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        if (_.isEqual(selectedPresetId, id))
+          setSelectedPresetId(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       }
     } catch (err) {
       logger.error(REFACTOR_CONSTANTS.VD_EMPTY_STRING, err);
     }
   };
 
-  const createImageUploadHandler = (
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    logMessage: (count: number) => string,
-  ) => (files: FileList) => {
-    readFilesAsDataURL(files, (result) => {
-      setter((prev) => [...prev, result]);
-    });
-    addLog(logMessage(files.length));
-  };
+  const createImageUploadHandler =
+    (
+      setter: React.Dispatch<React.SetStateAction<string[]>>,
+      logMessage: (count: number) => string,
+    ) =>
+    (files: FileList) => {
+      readFilesAsDataURL(files, (result) => {
+        setter((prev) => [...prev, result]);
+      });
+      addLog(logMessage(files.length));
+    };
 
-  const handleStyleFilesUpload = createImageUploadHandler(setReferenceImages, T.logStyleUploaded);
-  const handleSceneReferenceFilesUpload = createImageUploadHandler(setSceneReferenceImages, T.logSceneReferenceUploaded);
-  const handleThumbnailStyleFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbUploaded);
+  const handleStyleFilesUpload = createImageUploadHandler(
+    setReferenceImages,
+    T.logStyleUploaded,
+  );
+  const handleSceneReferenceFilesUpload = createImageUploadHandler(
+    setSceneReferenceImages,
+    T.logSceneReferenceUploaded,
+  );
+  const handleThumbnailStyleFilesUpload = createImageUploadHandler(
+    setThumbnailReferenceImages,
+    T.logThumbUploaded,
+  );
 
-  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}) => {
+  const handleStartAutoGenerate = (
+    overrides: {
+      forceRegenerateVoice?: boolean;
+      forceRegenerateScenes?: boolean;
+      resumeMode?: boolean;
+    } = {},
+  ) => {
     startPipeline({
-      scriptContent, inputType, genre, language, duration, rewriteLevel,
-      similarityReduction, creativityLevel, factCheck, audience, writingStyle,
-      splitStrategy, hookStrategy, hookDuration, hookPosition,
-      voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
-      generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
-      aspectRatio, promptInputMethod, sampleCount, videoDuration,
-      chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode,
-      referenceImages, sceneReferenceImages, characterImages,
-      thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
-      projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
+      scriptContent,
+      inputType,
+      genre,
+      language,
+      duration,
+      rewriteLevel,
+      similarityReduction,
+      creativityLevel,
+      factCheck,
+      audience,
+      writingStyle,
+      splitStrategy,
+      hookStrategy,
+      hookDuration,
+      hookPosition,
+      voiceProvider,
+      voiceSpeed,
+      voicePitch,
+      voiceVolume,
+      voiceURI,
+      voiceName,
+      generationMode,
+      imageGeneratorEngine,
+      generateType,
+      maxVideoScenes,
+      aspectRatio,
+      promptInputMethod,
+      sampleCount,
+      videoDuration,
+      chromeHeadless,
+      geminiChatSpeed,
+      batchDelay,
+      stylePreset,
+      styleBackgroundMode,
+      styleTextInImageMode,
+      imageFocusMode,
+      referenceImages,
+      sceneReferenceImages,
+      characterImages,
+      thumbnailCount,
+      thumbnailStylePreset,
+      thumbnailBackgroundMode,
+      thumbnailTextInImageMode,
+      thumbnailImageFocusMode,
+      thumbnailReferenceImages,
+      projectName,
+      resumeMode: overrides.resumeMode ?? resumeMode,
+      ffmpegQuality,
+      selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
     });
   };
 
-  const regenerationTexts = REGENERATION_TEXTS[currentLang as "vi" | "en"] || REGENERATION_TEXTS.vi;
+  const regenerationTexts =
+    REGENERATION_TEXTS[currentLang as "vi" | "en"] || REGENERATION_TEXTS.vi;
   const handleRegenerate = async (target: string) => {
     const project = activeCreatedProject;
     if (!project) return;
@@ -261,10 +472,18 @@ export default function AutoVideoGenerator({
       : _.isEqual(target, REGENERATION_TARGET.IMAGES)
         ? [PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS]
         : [PROJECT_ASSET_GROUP.VIDEOS];
-    const responses = await Promise.all(_.map(groups, (group) => fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
-      method: HTTP_METHODS.DELETE,
-      headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-    })));
+    const responses = await Promise.all(
+      _.map(groups, (group) =>
+        fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
+          method: HTTP_METHODS.DELETE,
+          headers: {
+            [API_HEADERS.LICENSE_KEY]:
+              storageUtils.get(STORAGE_KEYS.LICENSE_KEY) ||
+              REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          },
+        }),
+      ),
+    );
     if (_.some(responses, (response) => !response.ok)) {
       toast.error(regenerationTexts.failed);
       return;
@@ -277,10 +496,21 @@ export default function AutoVideoGenerator({
     const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
 
     if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
-      _.set(updatedProject.voiceConfig, "audioBase64", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      _.set(updatedProject.voiceConfig, "audioUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      _.set(
+        updatedProject.voiceConfig,
+        "audioBase64",
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      );
+      _.set(
+        updatedProject.voiceConfig,
+        "audioUrl",
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      );
       changed = true;
-    } else if ((isImages || isVideos) && !_.isEmpty(updatedProject.storyboard)) {
+    } else if (
+      (isImages || isVideos) &&
+      !_.isEmpty(updatedProject.storyboard)
+    ) {
       _.forEach(updatedProject.storyboard, (scene) => {
         const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
         if ((isImages && !isVideoScene) || (isVideos && isVideoScene)) {
@@ -303,31 +533,54 @@ export default function AutoVideoGenerator({
     });
   };
 
-
   const voiceDialogPersistenceScope = _.join(
-    [AppTab.AUTO_GENERATOR, _.defaultTo(activeCreatedProject?.id, _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE))],
+    [
+      AppTab.AUTO_GENERATOR,
+      _.defaultTo(
+        activeCreatedProject?.id,
+        _.defaultTo(
+          selectedProjectId,
+          REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
+        ),
+      ),
+    ],
     REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
   );
 
   const handleVoiceSelect = (v: CatalogVoice) => {
-    const selectedVoiceURI = _.find([
-      _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
-      _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
-      _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
-    ], (value) => !_.isEmpty(value));
-    const selectedVoiceName = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, selectedVoiceURI);
-    const selectedVoiceProvider = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH, voiceProvider);
+    const selectedVoiceURI = _.find(
+      [
+        _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
+        _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
+        _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
+      ],
+      (value) => !_.isEmpty(value),
+    );
+    const selectedVoiceName = _.get(
+      v,
+      REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH,
+      selectedVoiceURI,
+    );
+    const selectedVoiceProvider = _.get(
+      v,
+      REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH,
+      voiceProvider,
+    );
 
     setVoiceURI(_.toString(selectedVoiceURI));
     setVoiceName(_.toString(selectedVoiceName));
     setVoiceProvider(_.toString(selectedVoiceProvider));
 
-    const targetProject = activeCreatedProject || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
+    const targetProject =
+      activeCreatedProject ||
+      (selectedProjectId
+        ? _.find(projects, { id: selectedProjectId })
+        : undefined);
     if (targetProject) {
       const updatedProject = {
         ...targetProject,
         voiceConfig: {
-          ...(targetProject.voiceConfig || {} as VoiceConfig),
+          ...(targetProject.voiceConfig || ({} as VoiceConfig)),
           voiceURI: selectedVoiceURI,
           voiceName: selectedVoiceName,
           provider: selectedVoiceProvider,
@@ -347,7 +600,10 @@ export default function AutoVideoGenerator({
             <Zap className="w-5 h-5 fill-rose-500/20 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-slate-100 flex items-center gap-2" title={T.bannerTitleTooltip}>
+            <h1
+              className="text-sm font-bold text-slate-100 flex items-center gap-2"
+              title={T.bannerTitleTooltip}
+            >
               {T.bannerTitle}
               <span className="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase font-bold">
                 {T.bannerBadge}
@@ -381,13 +637,18 @@ export default function AutoVideoGenerator({
                   <Sliders className="w-5 h-5 text-rose-500" />
                 </div>
                 <div>
-                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-100 flex items-center gap-2 font-mono" title={T.panelTitleTooltip}>
+                  <h2
+                    className="text-xs font-extrabold uppercase tracking-wider text-slate-100 flex items-center gap-2 font-mono"
+                    title={T.panelTitleTooltip}
+                  >
                     {T.panelTitle}
                     <span className="text-[9px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
                       {T.panelBadge}
                     </span>
                   </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{T.panelSubtitle}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {T.panelSubtitle}
+                  </p>
                 </div>
               </div>
             </div>
@@ -466,7 +727,9 @@ export default function AutoVideoGenerator({
                 sceneReferenceImages={sceneReferenceImages}
                 setSceneReferenceImages={setSceneReferenceImages}
                 handleStyleFilesUpload={handleStyleFilesUpload}
-                handleSceneReferenceFilesUpload={handleSceneReferenceFilesUpload}
+                handleSceneReferenceFilesUpload={
+                  handleSceneReferenceFilesUpload
+                }
                 T={T}
               />
             </div>
@@ -520,8 +783,14 @@ export default function AutoVideoGenerator({
 
           {(activeCreatedProject?.seo || activeCreatedProject?.thumbnails) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 shrink-0 mt-2 pb-5">
-              <SeoPanelSection activeCreatedProject={activeCreatedProject} T={T} />
-              <ThumbnailsPanelSection activeCreatedProject={activeCreatedProject} T={T} />
+              <SeoPanelSection
+                activeCreatedProject={activeCreatedProject}
+                T={T}
+              />
+              <ThumbnailsPanelSection
+                activeCreatedProject={activeCreatedProject}
+                T={T}
+              />
             </div>
           )}
         </div>

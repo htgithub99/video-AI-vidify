@@ -1,6 +1,16 @@
 import express from "express";
-import { getAllProjects, getProjectById, createProject, updateProject, deleteProject } from "../controllers/projectController.js";
-import { getAllPresets, savePreset, deletePreset } from "../controllers/presetController.js";
+import {
+  getAllProjects,
+  getProjectById,
+  createProject,
+  updateProject,
+  deleteProject,
+} from "../controllers/projectController.js";
+import {
+  getAllPresets,
+  savePreset,
+  deletePreset,
+} from "../controllers/presetController.js";
 
 const router = express.Router();
 
@@ -19,4 +29,3 @@ router.delete("/presets/:id", deletePreset);
 router.get("/voices", getVoices);
 
 export default router;
-

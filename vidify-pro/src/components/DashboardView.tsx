@@ -24,22 +24,26 @@ export default function DashboardView({
   onNavigateToProjects,
 }: DashboardViewProps) {
   const t = translations[currentLang];
-  const langKey = _.isEqual(currentLang, 'vi') ? 'VN' : 'EN';
+  const langKey = _.isEqual(currentLang, "vi") ? "VN" : "EN";
   const quotaText = QUOTA_TEXTS[langKey];
-  const latestProject = projects.length > 0 ? projects[projects.length - 1] : null;
+  const latestProject =
+    projects.length > 0 ? projects[projects.length - 1] : null;
 
   const { licenseInfo } = useLicense();
 
-  const limitVideo = _.get(licenseInfo, 'limits.video', 0);
-  const limitImage = _.get(licenseInfo, 'limits.image', 0);
-  const limitVoice = _.get(licenseInfo, 'limits.voice', 0);
-  const isUnlimited = _.get(licenseInfo, 'limits.unlimited', false);
+  const limitVideo = _.get(licenseInfo, "limits.video", 0);
+  const limitImage = _.get(licenseInfo, "limits.image", 0);
+  const limitVoice = _.get(licenseInfo, "limits.voice", 0);
+  const isUnlimited = _.get(licenseInfo, "limits.unlimited", false);
 
-  const usageVideo = _.get(licenseInfo, 'usage.video', 0);
-  const usageImage = _.get(licenseInfo, 'usage.image', 0);
-  const usageVoice = _.get(licenseInfo, 'usage.voice', 0);
+  const usageVideo = _.get(licenseInfo, "usage.video", 0);
+  const usageImage = _.get(licenseInfo, "usage.image", 0);
+  const usageVoice = _.get(licenseInfo, "usage.voice", 0);
 
-  const getPercent = (used: number, limit: number) => isUnlimited ? 100 : Math.min(100, (used / (_.clamp(limit, 1, Infinity))) * 100);
+  const getPercent = (used: number, limit: number) =>
+    isUnlimited
+      ? 100
+      : Math.min(100, (used / _.clamp(limit, 1, Infinity)) * 100);
 
   const videoPercent = getPercent(usageVideo, limitVideo);
   const imagePercent = getPercent(usageImage, limitImage);
@@ -57,8 +61,12 @@ export default function DashboardView({
               <Video className="w-8 h-8 text-rose-500" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-100">{t.dashboardAICreator}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{t.dashboardMemberPro}</p>
+              <h4 className="text-sm font-bold text-slate-100">
+                {t.dashboardAICreator}
+              </h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {t.dashboardMemberPro}
+              </p>
             </div>
           </div>
         </div>
@@ -70,20 +78,36 @@ export default function DashboardView({
           <div className="space-y-4 flex-1">
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-[10px] font-bold">
-                <span className="text-blue-400 flex items-center gap-1.5"><Video className="w-3 h-3" /> {quotaText.VIDEO}</span>
-                <span className="text-slate-500"><span className="text-slate-200">{usageVideo}</span> / {isUnlimited ? '∞' : limitVideo}</span>
+                <span className="text-blue-400 flex items-center gap-1.5">
+                  <Video className="w-3 h-3" /> {quotaText.VIDEO}
+                </span>
+                <span className="text-slate-500">
+                  <span className="text-slate-200">{usageVideo}</span> /{" "}
+                  {isUnlimited ? "∞" : limitVideo}
+                </span>
               </div>
               <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${videoPercent}%` }} />
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${videoPercent}%` }}
+                />
               </div>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-[10px] font-bold">
-                <span className="text-emerald-400 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> {quotaText.IMAGE}</span>
-                <span className="text-slate-500"><span className="text-slate-200">{usageImage}</span> / {isUnlimited ? '∞' : limitImage}</span>
+                <span className="text-emerald-400 flex items-center gap-1.5">
+                  <ImageIcon className="w-3 h-3" /> {quotaText.IMAGE}
+                </span>
+                <span className="text-slate-500">
+                  <span className="text-slate-200">{usageImage}</span> /{" "}
+                  {isUnlimited ? "∞" : limitImage}
+                </span>
               </div>
               <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${imagePercent}%` }} />
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${imagePercent}%` }}
+                />
               </div>
             </div>
           </div>
@@ -95,11 +119,21 @@ export default function DashboardView({
           </h3>
           <div className="space-y-1.5">
             <div className="flex justify-between items-center text-[10px] font-bold">
-              <span className="text-amber-400 flex items-center gap-1.5"><Mic className="w-3 h-3" /> {quotaText.CHARS}</span>
-              <span className="text-slate-500"><span className="text-slate-200">{usageVoice.toLocaleString()}</span> / {isUnlimited ? '∞' : limitVoice.toLocaleString()}</span>
+              <span className="text-amber-400 flex items-center gap-1.5">
+                <Mic className="w-3 h-3" /> {quotaText.CHARS}
+              </span>
+              <span className="text-slate-500">
+                <span className="text-slate-200">
+                  {usageVoice.toLocaleString()}
+                </span>{" "}
+                / {isUnlimited ? "∞" : limitVoice.toLocaleString()}
+              </span>
             </div>
             <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${voicePercent}%` }} />
+              <div
+                className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                style={{ width: `${voicePercent}%` }}
+              />
             </div>
           </div>
           <p className="text-[10px] text-slate-500 mt-auto">
@@ -121,12 +155,18 @@ export default function DashboardView({
               </div>
             </div>
             <div className="flex-1 space-y-2">
-              <h4 className="text-sm font-bold text-slate-100 uppercase">{latestProject.name}</h4>
+              <h4 className="text-sm font-bold text-slate-100 uppercase">
+                {latestProject.name}
+              </h4>
               <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
                 {latestProject.description || t.dashboardNoDesc}
               </p>
               <div className="pt-3 flex gap-2">
-                <Button variant="primary" size="sm" onClick={() => onSelectProject(latestProject.id)}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onSelectProject(latestProject.id)}
+                >
                   {t.dashboardOpenStudio}
                 </Button>
               </div>
@@ -142,7 +182,12 @@ export default function DashboardView({
           <p className="text-xs text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
             {t.dashboardWelcomeDesc}
           </p>
-          <Button variant="primary" size="sm" className="mt-4" onClick={onNavigateToProjects}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="mt-4"
+            onClick={onNavigateToProjects}
+          >
             {t.dashboardGoToContent}
           </Button>
         </div>

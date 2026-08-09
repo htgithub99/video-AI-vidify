@@ -24,7 +24,7 @@ interface ProgressLogTimelineProps {
 
 const resolveProgressLogTone = (message: string): ProgressLogTone => {
   const normalizedMessage = _.toLower(message);
-  
+
   const tones = [
     ProgressLogTone.Error,
     ProgressLogTone.Warning,
@@ -48,8 +48,18 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
 const parseProgressLog = (log: string) => {
   const rawLog = _.toString(log);
   const timeMatch = rawLog.match(PROGRESS_LOG_CONFIG.TIME_PATTERN);
-  const message = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
-  const cleanMessage = _.trim(message.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
+  const message = _.trim(
+    rawLog.replace(
+      PROGRESS_LOG_CONFIG.TIME_PATTERN,
+      PROGRESS_LOG_CONFIG.EMPTY_VALUE,
+    ),
+  );
+  const cleanMessage = _.trim(
+    message.replace(
+      PROGRESS_LOG_CONFIG.PREFIX_PATTERN,
+      PROGRESS_LOG_CONFIG.EMPTY_VALUE,
+    ),
+  );
 
   const stepMatch = cleanMessage.match(PROGRESS_LOG_CONFIG.STEP_PATTERN);
 
@@ -62,84 +72,109 @@ const parseProgressLog = (log: string) => {
   }
 
   return {
-    time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
+    time: _.defaultTo(
+      _.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT),
+      PROGRESS_LOG_CONFIG.EMPTY_VALUE,
+    ),
     message: finalMessage,
     stepLabel,
     tone: resolveProgressLogTone(message),
   };
 };
 
-const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {
-  const style = PROGRESS_LOG_CONFIG.STYLES[tone];
-  const iconClassName = cn(
-    PROGRESS_LOG_CONFIG.CLASSES.ICON,
-    _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME) ? style.iconLight : style.iconDark
-  );
-  
-  const Icon = _.get({
-    [ProgressLogTone.Script]: FileText,
-    [ProgressLogTone.Voice]: Mic,
-    [ProgressLogTone.Image]: Palette,
-    [ProgressLogTone.Render]: Film,
-    [ProgressLogTone.SEO]: Search,
-    [ProgressLogTone.Thumbnails]: Sparkles,
-    [ProgressLogTone.Success]: Trophy,
-    [ProgressLogTone.Warning]: AlertTriangle,
-    [ProgressLogTone.Error]: XCircle,
-  }, tone, Activity);
+const ProgressLogIcon = memo(
+  ({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {
+    const style = PROGRESS_LOG_CONFIG.STYLES[tone];
+    const iconClassName = cn(
+      PROGRESS_LOG_CONFIG.CLASSES.ICON,
+      _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME)
+        ? style.iconLight
+        : style.iconDark,
+    );
 
-  return <Icon className={iconClassName} />;
-});
+    const Icon = _.get(
+      {
+        [ProgressLogTone.Script]: FileText,
+        [ProgressLogTone.Voice]: Mic,
+        [ProgressLogTone.Image]: Palette,
+        [ProgressLogTone.Render]: Film,
+        [ProgressLogTone.SEO]: Search,
+        [ProgressLogTone.Thumbnails]: Sparkles,
+        [ProgressLogTone.Success]: Trophy,
+        [ProgressLogTone.Warning]: AlertTriangle,
+        [ProgressLogTone.Error]: XCircle,
+      },
+      tone,
+      Activity,
+    );
+
+    return <Icon className={iconClassName} />;
+  },
+);
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
 
-export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelineProps) => {
-  const entries = useMemo(() => _.map(logs, parseProgressLog), [logs]);
-  const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
+export const ProgressLogTimeline = memo(
+  ({ logs, theme }: ProgressLogTimelineProps) => {
+    const entries = useMemo(() => _.map(logs, parseProgressLog), [logs]);
+    const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
 
-  return (
-    <div className="relative pl-1.5 py-1 space-y-4">
-      <div className={cn(
-        PROGRESS_LOG_CONFIG.CLASSES.LINE,
-        isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK
-      )} />
+    return (
+      <div className="relative pl-1.5 py-1 space-y-4">
+        <div
+          className={cn(
+            PROGRESS_LOG_CONFIG.CLASSES.LINE,
+            isLightTheme
+              ? PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT
+              : PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK,
+          )}
+        />
 
-      {_.map(entries, (entry, index) => {
-        const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
-        return (
-          <div key={index} className={PROGRESS_LOG_CONFIG.CLASSES.ITEM}>
-            <span className={cn(
-              PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER,
-              isLightTheme ? style.iconBgLight : style.iconBgDark
-            )}>
-              <ProgressLogIcon tone={entry.tone} theme={theme} />
-            </span>
+        {_.map(entries, (entry, index) => {
+          const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
+          return (
+            <div key={index} className={PROGRESS_LOG_CONFIG.CLASSES.ITEM}>
+              <span
+                className={cn(
+                  PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER,
+                  isLightTheme ? style.iconBgLight : style.iconBgDark,
+                )}
+              >
+                <ProgressLogIcon tone={entry.tone} theme={theme} />
+              </span>
 
-            <span className={cn(
-              PROGRESS_LOG_CONFIG.CLASSES.MESSAGE,
-              isLightTheme ? style.textLight : style.textDark
-            )}>
-              {!_.isEmpty(entry.stepLabel) && (
-                <span className={PROGRESS_LOG_CONFIG.CLASSES.STEP_LABEL}>
-                  {entry.stepLabel}:
+              <span
+                className={cn(
+                  PROGRESS_LOG_CONFIG.CLASSES.MESSAGE,
+                  isLightTheme ? style.textLight : style.textDark,
+                )}
+              >
+                {!_.isEmpty(entry.stepLabel) && (
+                  <span className={PROGRESS_LOG_CONFIG.CLASSES.STEP_LABEL}>
+                    {entry.stepLabel}:
+                  </span>
+                )}
+                {entry.message}
+              </span>
+
+              {!_.isEmpty(entry.time) && (
+                <span
+                  className={cn(
+                    PROGRESS_LOG_CONFIG.CLASSES.TIME,
+                    isLightTheme
+                      ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT
+                      : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK,
+                  )}
+                >
+                  {entry.time}
                 </span>
               )}
-              {entry.message}
-            </span>
-
-            {!_.isEmpty(entry.time) && (
-              <span className={cn(
-                PROGRESS_LOG_CONFIG.CLASSES.TIME,
-                isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK
-              )}>
-                {entry.time}
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-});
+            </div>
+          );
+        })}
+      </div>
+    );
+  },
+);
 
 ProgressLogTimeline.displayName = "ProgressLogTimeline";

@@ -56,6 +56,7 @@ const visualQaProperties = {
   anatomy: numberScoreSchema, subjectCount: numberScoreSchema, promptAlignment: numberScoreSchema,
   characterConsistency: numberScoreSchema, composition: numberScoreSchema, styleConsistency: numberScoreSchema,
   editability: numberScoreSchema, usableForVideo: { type: "boolean" }, blockingErrors: stringArraySchema,
+  unwantedText: { type: "boolean" }, multiPanelLayout: { type: "boolean" }, duplicatedSubjects: { type: "boolean" },
   warnings: stringArraySchema, correctivePrompt: stringSchema,
 } as const;
 export const VISUAL_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:Object.keys(visualQaProperties),properties:visualQaProperties } as const;

@@ -6,7 +6,10 @@ import { LicenseProvider } from "./contexts/LicenseContext.tsx";
 import { LicenseActivation } from "./components/LicenseActivation.tsx";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "./constants";
 import _ from "lodash";
-import { invalidateBrowserLicenseSession, isLicenseFailureCode } from "./lib/licenseSession";
+import {
+  invalidateBrowserLicenseSession,
+  isLicenseFailureCode,
+} from "./lib/licenseSession";
 
 const urlParams = new URLSearchParams(window.location.search);
 const tokenFromUrl = urlParams.get(SecurityConstants.QUERY_TOKEN_KEY);
@@ -14,8 +17,16 @@ if (tokenFromUrl) {
   sessionStorage.setItem(SecurityConstants.SESSION_TOKEN_KEY, tokenFromUrl);
   urlParams.delete(SecurityConstants.QUERY_TOKEN_KEY);
   const newSearch = urlParams.toString();
-  const queryPart = newSearch ? _.join([SecurityConstants.QUERY_MARK, newSearch], SecurityConstants.EMPTY_STRING) : SecurityConstants.EMPTY_STRING;
-  const newPath = _.join([window.location.pathname, queryPart, window.location.hash], SecurityConstants.EMPTY_STRING);
+  const queryPart = newSearch
+    ? _.join(
+        [SecurityConstants.QUERY_MARK, newSearch],
+        SecurityConstants.EMPTY_STRING,
+      )
+    : SecurityConstants.EMPTY_STRING;
+  const newPath = _.join(
+    [window.location.pathname, queryPart, window.location.hash],
+    SecurityConstants.EMPTY_STRING,
+  );
   window.history.replaceState({}, document.title, newPath);
 }
 
@@ -34,25 +45,42 @@ const dispatchUsageUpdated = () => {
   window.dispatchEvent(new CustomEvent(SecurityConstants.USAGE_UPDATED_EVENT));
 };
 
-const handleLicenseFailureResponse = async (response: Response): Promise<void> => {
-  if (!_.includes([SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) return;
+const handleLicenseFailureResponse = async (
+  response: Response,
+): Promise<void> => {
+  if (
+    !_.includes(
+      [SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN],
+      response.status,
+    )
+  )
+    return;
 
-  const data = await response.clone().json().catch(() => null);
+  const data = await response
+    .clone()
+    .json()
+    .catch(() => null);
   if (isLicenseFailureCode(_.get(data, SecurityConstants.CODE_KEY))) {
     invalidateBrowserLicenseSession();
   }
 };
 
-const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: Response) => {
+const notifyUsageAfterSuccessfulResponse = (
+  input: RequestInfo | URL,
+  response: Response,
+) => {
   const rawUrl = input instanceof Request ? input.url : input.toString();
   const pathname = new URL(rawUrl, window.location.origin).pathname;
-  const isTrackedRoute = _.some(usageTrackedRoutes, (route) => _.includes(pathname, route));
+  const isTrackedRoute = _.some(usageTrackedRoutes, (route) =>
+    _.includes(pathname, route),
+  );
   if (!_.every([response.ok, isTrackedRoute], Boolean)) return;
 
   const responseCopy = response.clone();
 
   if (_.includes(usageJsonRoutes, pathname)) {
-    void responseCopy.json()
+    void responseCopy
+      .json()
       .then((data) => {
         if (_.get(data, SecurityConstants.SUCCESS_KEY)) dispatchUsageUpdated();
       })
@@ -61,30 +89,40 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
   }
 
   if (_.isEqual(pathname, API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES)) {
-    void responseCopy.text()
+    void responseCopy
+      .text()
       .then((body) => {
-        if (_.includes(body, REFACTOR_CONSTANTS.USAGE_BATCH_SUCCESS_FRAGMENT)) dispatchUsageUpdated();
+        if (_.includes(body, REFACTOR_CONSTANTS.USAGE_BATCH_SUCCESS_FRAGMENT))
+          dispatchUsageUpdated();
       })
       .catch(_.noop);
     return;
   }
 
   if (_.includes(pathname, API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS)) {
-    void responseCopy.json()
+    void responseCopy
+      .json()
       .then((data) => {
-        if (_.isEqual(
-          _.get(data, SecurityConstants.STATUS_KEY),
-          REFACTOR_CONSTANTS.STATUS_COMPLETED,
-        )) dispatchUsageUpdated();
+        if (
+          _.isEqual(
+            _.get(data, SecurityConstants.STATUS_KEY),
+            REFACTOR_CONSTANTS.STATUS_COMPLETED,
+          )
+        )
+          dispatchUsageUpdated();
       })
       .catch(_.noop);
   }
 };
 
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const licenseKey = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-  const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
-  
+  const licenseKey = localStorage.getItem(
+    SecurityConstants.LOCAL_STORAGE_LICENSE_KEY,
+  );
+  const internalToken = sessionStorage.getItem(
+    SecurityConstants.SESSION_TOKEN_KEY,
+  );
+
   const requestInit = init || {};
   const headers = { ...(requestInit.headers || {}) } as Record<string, string>;
 
@@ -113,7 +151,9 @@ const queryClient = new QueryClient({
   },
 });
 
-ReactDOM.createRoot(document.getElementById(SecurityConstants.HTML_ROOT_ID) as HTMLElement).render(
+ReactDOM.createRoot(
+  document.getElementById(SecurityConstants.HTML_ROOT_ID) as HTMLElement,
+).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <LicenseProvider>

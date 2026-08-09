@@ -34,7 +34,9 @@ export function getProfiles(): GoogleProfile[] {
   for (let i = 1; i <= DEFAULT_PROFILE_COUNT; i++) {
     const id = `g_profile_${i}`;
     const profilePath = path.join(profilesDir, id);
-    const isLinked = fs.existsSync(profilePath) && fs.existsSync(path.join(profilePath, "Default"));
+    const isLinked =
+      fs.existsSync(profilePath) &&
+      fs.existsSync(path.join(profilePath, "Default"));
     profiles.push({
       id,
       name: `Google Profile ${i}`,

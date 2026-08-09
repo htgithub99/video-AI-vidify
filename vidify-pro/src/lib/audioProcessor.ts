@@ -1,8 +1,12 @@
 import { appWarn, createAppError } from "./logger.js";
-import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
+import {
+  AUDIO_CLEAN_PREFIX_REGEX,
+  AUDIO_CLEAN_MARKDOWN_REGEX,
+  AUDIO_CLEAN_EMOJI_REGEX,
+  WHITESPACE_REGEX,
+} from "../constants/index.js";
 import { MimeType } from "../constants/enums.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;
@@ -41,7 +45,10 @@ export const bufferToWav = (buffer: AudioBuffer): Blob => {
   return new Blob([arrayBuffer], { type: MimeType.WAV });
 };
 
-const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array => {
+const interleave = (
+  inputL: Float32Array,
+  inputR: Float32Array,
+): Float32Array => {
   const length = inputL.length + inputR.length;
   const result = new Float32Array(length);
   let index = 0;
@@ -55,7 +62,11 @@ const interleave = (inputL: Float32Array, inputR: Float32Array): Float32Array =>
   return result;
 };
 
-const floatTo16BitPCM = (output: DataView, offset: number, input: Float32Array): void => {
+const floatTo16BitPCM = (
+  output: DataView,
+  offset: number,
+  input: Float32Array,
+): void => {
   let off = offset;
   for (let i = 0; _.lt(i, input.length); i++, off = _.add(off, 2)) {
     const s = _.max([-1, _.min([1, input[i]]) || 1]) || -1;
@@ -69,15 +80,29 @@ const writeString = (view: DataView, offset: number, string: string): void => {
   }
 };
 
-export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, pitch: number, volume: number): Promise<Blob> => {
-  if (_.lt(Math.abs(_.subtract(rate, 1.0)), 0.01) && _.lt(Math.abs(_.subtract(pitch, 1.0)), 0.01) && _.lt(Math.abs(_.subtract(volume, 1.0)), 0.01)) {
+export const applyAudioEffects = async (
+  arrayBuffer: ArrayBuffer,
+  rate: number,
+  pitch: number,
+  volume: number,
+): Promise<Blob> => {
+  if (
+    _.lt(Math.abs(_.subtract(rate, 1.0)), 0.01) &&
+    _.lt(Math.abs(_.subtract(pitch, 1.0)), 0.01) &&
+    _.lt(Math.abs(_.subtract(volume, 1.0)), 0.01)
+  ) {
     const uint8 = new Uint8Array(arrayBuffer, 0, 4);
-    const isWav = _.eq(uint8[0], 0x52) && _.eq(uint8[1], 0x49) && _.eq(uint8[2], 0x46) && _.eq(uint8[3], 0x46);
+    const isWav =
+      _.eq(uint8[0], 0x52) &&
+      _.eq(uint8[1], 0x49) &&
+      _.eq(uint8[2], 0x46) &&
+      _.eq(uint8[3], 0x46);
     const mimeType = isWav ? MimeType.WAV : MimeType.MPEG;
     return new Blob([arrayBuffer], { type: mimeType });
   }
 
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass =
+    window.AudioContext || (window as any).webkitAudioContext;
   if (_.isNil(AudioContextClass)) {
     throw createAppError("Web Audio API is not supported in this browser.");
   }
@@ -96,10 +121,16 @@ export const applyAudioEffects = async (arrayBuffer: ArrayBuffer, rate: number, 
 
     const combinedRate = _.max([0.5, _.min([2.0, rate * pitch]) || 2.0]) || 0.5;
 
-    const targetLength = _.max([1, _.ceil(decodedBuffer.length / combinedRate)]) || 1;
+    const targetLength =
+      _.max([1, _.ceil(decodedBuffer.length / combinedRate)]) || 1;
 
-    const OfflineAudioCtxClass = window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
-    const offlineCtx = new OfflineAudioCtxClass(decodedBuffer.numberOfChannels, targetLength, decodedBuffer.sampleRate);
+    const OfflineAudioCtxClass =
+      window.OfflineAudioContext || (window as any).webkitOfflineAudioContext;
+    const offlineCtx = new OfflineAudioCtxClass(
+      decodedBuffer.numberOfChannels,
+      targetLength,
+      decodedBuffer.sampleRate,
+    );
 
     const source = offlineCtx.createBufferSource();
     source.buffer = decodedBuffer;

@@ -60,7 +60,7 @@ export const PipelineConstants = {
     API_SANDBOX_CONFIG: "pipeline_api_sandbox_config",
     FAVORITE_STYLES: "pipeline_favorite_styles",
     FAVORITE_VOICES: "pipeline_favorite_voices",
-  }
+  },
 };
 
 export enum PipelineEnum {

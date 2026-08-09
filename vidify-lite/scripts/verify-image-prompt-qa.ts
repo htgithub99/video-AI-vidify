@@ -14,5 +14,8 @@ const repairedStyle = enforceImagePromptStyle("Stunning high-quality design depi
 assert(repairedStyle.includes("distinct stable hair silhouette") && !/realistic cinematic|3d render|dramatic lighting/i.test(repairedStyle), "Reference style was not enforced over a cinematic fallback.");
 assert(evaluateImagePrompts([createScene("sc_1", repairedStyle)], { textMode: TextInImageMode.Auto, targetStyle: referenceStyle }).passed, "Repaired reference-style prompt was rejected.");
 assert(!evaluateImagePrompts([createScene("sc_1", "Realistic Cinematic 3D render of Nam at a table, medium shot")], { targetStyle: referenceStyle }).passed, "Cross-style prompt drift was accepted.");
+const repeatedRules = enforceImagePromptStyle(repairedStyle, referenceStyle, "Nam sits at a table", "medium shot", TextInImageMode.Auto);
+assert((repeatedRules.match(/absolutely no readable text/gi) || []).length === 1, "No-text directive was duplicated.");
+assert((repeatedRules.match(/flat solid colors/gi) || []).length === 1, "Style clauses were duplicated.");
 
 process.stdout.write("Image prompt QA assertions passed.\n");

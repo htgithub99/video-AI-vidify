@@ -26,7 +26,8 @@ export const APP_TEXTS = {
     BATCH_DELAY_2S: translations.vi.Batch_Delay_2s,
     BATCH_DELAY_3S: translations.vi.Batch_Delay_3s,
     BATCH_DELAY_RANDOM_123: translations.vi.Batch_Delay_Random_123,
-    WAITING_MSG: (secs: string) => `Đang chờ ${secs} giây trước khi vẽ phân cảnh tiếp theo...`,
+    WAITING_MSG: (secs: string) =>
+      `Đang chờ ${secs} giây trước khi vẽ phân cảnh tiếp theo...`,
     NO_SCENES_TO_OPTIMIZE: "Không tìm thấy phân cảnh nào để cải thiện.",
     OPTIMIZING_PROMPTS_FALLBACK: "Đang tối ưu...",
     OPTIMIZE_PROMPTS_SUCCESS_FALLBACK: "Cải thiện mô tả hình ảnh thành công!",
@@ -60,7 +61,8 @@ export const APP_TEXTS = {
     WAITING_MSG: (secs: string) => `Waiting ${secs}s before next scene...`,
     NO_SCENES_TO_OPTIMIZE: "No scenes found to improve.",
     OPTIMIZING_PROMPTS_FALLBACK: "Optimizing...",
-    OPTIMIZE_PROMPTS_SUCCESS_FALLBACK: "Successfully improved image descriptions!",
+    OPTIMIZE_PROMPTS_SUCCESS_FALLBACK:
+      "Successfully improved image descriptions!",
     OPTIMIZE_PROMPTS_FAILED_FALLBACK: "Error optimizing image descriptions: ",
     OPTIMIZATION_FAILED: "Could not optimize image descriptions",
   },
@@ -68,14 +70,20 @@ export const APP_TEXTS = {
 
 export const SCENE_SPLIT_PROMPTS = {
   VN: {
-    DEFAULT_SCRIPT: (idx: number) => `Chi tiết cốt truyện hấp dẫn phần ${idx} tiếp nối mạch truyện đầy lôi cuốn.`,
-    EFFECTS: (style: string) => `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${style}`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    DEFAULT_SCRIPT: (idx: number) =>
+      `Chi tiết cốt truyện hấp dẫn phần ${idx} tiếp nối mạch truyện đầy lôi cuốn.`,
+    EFFECTS: (style: string) =>
+      `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${style}`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
   EN: {
-    DEFAULT_SCRIPT: (idx: number) => `Interesting plot detail part ${idx} continuing the engaging narrative.`,
-    EFFECTS: (style: string) => `Soft light leaks overlays adhering to ${style} feel`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    DEFAULT_SCRIPT: (idx: number) =>
+      `Interesting plot detail part ${idx} continuing the engaging narrative.`,
+    EFFECTS: (style: string) =>
+      `Soft light leaks overlays adhering to ${style} feel`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
 };
 
@@ -120,7 +128,7 @@ export const QUOTA_TEXTS = {
     CHARS: "Chars",
     VIDEO: "Video",
     IMAGE: "Image",
-  }
+  },
 };
 
 export const TRANSFER_ENCODINGS = {
@@ -234,10 +242,14 @@ export const ERROR_MESSAGES = {
   DELETE_SCENE_IMAGE_DISK_ERR: "Lỗi khi xóa file ảnh phân cảnh trên đĩa: ",
   READ_IMAGES_DIR_CLEAN_ERR: "Lỗi đọc thư mục ảnh để dọn dẹp: ",
   DELETE_PROJECT_ASSETS_ERR: "Lỗi xóa thư mục assets của dự án",
-  DELETE_SCENE_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice phân cảnh cũ: ",
-  READ_AUDIO_DIR_CLEAN_ERR: "[Dọn dẹp Audio] Không thể đọc thư mục audio để dọn dẹp: ",
-  DELETE_UNIFIED_AUDIO_DISK_ERR: "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ",
-  BULK_DELETE_PROJECT_DIR_ERR: "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
+  DELETE_SCENE_AUDIO_DISK_ERR:
+    "[Dọn dẹp Audio] Không thể xóa file voice phân cảnh cũ: ",
+  READ_AUDIO_DIR_CLEAN_ERR:
+    "[Dọn dẹp Audio] Không thể đọc thư mục audio để dọn dẹp: ",
+  DELETE_UNIFIED_AUDIO_DISK_ERR:
+    "[Dọn dẹp Audio] Không thể xóa file voice tổng hợp cũ: ",
+  BULK_DELETE_PROJECT_DIR_ERR:
+    "Lỗi dọn dẹp toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
   LLM_EXECUTION_FAILED: "Unable to execute LLM request.",
   FETCH_AUDIO_URL_FOR_ALIGN_ERR: "FETCH_AUDIO_URL_FOR_ALIGN_ERR",
   RENAME_ASSETS_DIR_ERR_FALLBACK: "(Đang thử copy đệ quy...)",
@@ -250,12 +262,18 @@ export const ERROR_MESSAGES = {
 } as const;
 
 export const LOG_MESSAGES = {
-  DELETE_SCENE_IMAGE_DISK_SUCCESS: "Đã xóa file ảnh phân cảnh trên đĩa (dọn dẹp prefix): ",
-  DELETE_SCENE_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ",
-  DELETE_UNIFIED_AUDIO_DISK_SUCCESS: "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
-  BULK_DELETE_PROJECT_DIR_SUCCESS: "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
-  DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ",
-  MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi thư mục dự án từ tên cũ sang ID: ",
+  DELETE_SCENE_IMAGE_DISK_SUCCESS:
+    "Đã xóa file ảnh phân cảnh trên đĩa (dọn dẹp prefix): ",
+  DELETE_SCENE_AUDIO_DISK_SUCCESS:
+    "[Dọn dẹp Audio] Đã xóa file voice phân cảnh cũ: ",
+  DELETE_UNIFIED_AUDIO_DISK_SUCCESS:
+    "[Dọn dẹp Audio] Đã xóa file voice tổng hợp cũ: ",
+  BULK_DELETE_PROJECT_DIR_SUCCESS:
+    "Đã dọn dẹp sạch toàn bộ thư mục dự án cũ khi tạo lại phân cảnh: ",
+  DELETE_OLD_LOCKED_DIR_WARN:
+    "Không thể xóa hoàn toàn thư mục cũ do file bị lock: ",
+  MIGRATE_PROJECT_DIR_SUCCESS:
+    "Đã chuyển đổi thư mục dự án từ tên cũ sang ID: ",
 } as const;
 
 export const DEFAULT_PROJECT_CONFIGS = {
@@ -275,7 +293,8 @@ export const DEFAULT_PROJECT_CONFIGS = {
 export const EXPORT_LOADING_TEXTS = {
   vi: {
     VIDEO_TITLE: "Đang kết xuất Video...",
-    VIDEO_DESC: "Vui lòng chờ trong giây lát, tiến trình này có thể mất chút thời gian...",
+    VIDEO_DESC:
+      "Vui lòng chờ trong giây lát, tiến trình này có thể mất chút thời gian...",
     CAPCUT_TITLE: "Đang xuất CapCut...",
     XML_TITLE: "Đang xuất cấu trúc XML...",
     ZIP_TITLE: "Đang đóng gói ZIP...",
@@ -301,11 +320,14 @@ export const EXTERNAL_AUDIO_TEXTS = {
   vi: {
     NO_SCENES: "Không có phân cảnh nào để đồng bộ.",
     ALIGNING: "Đang đồng bộ giọng nói bằng Whisper...",
-    SCENE_NOT_FOUND: "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
+    SCENE_NOT_FOUND:
+      "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
     ALIGN_SUCCESS: "Đồng bộ giọng nói thành công.",
     NO_VALID_RESULT: "Không có kết quả đồng bộ hợp lệ.",
-    SYNC_COMPLETE: "Đồng bộ kịch bản và giọng nói hoàn tất (Tổng thời lượng: {totalDuration}s)\n",
-    SYNC_ITEM: "👉 Phân cảnh #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
+    SYNC_COMPLETE:
+      "Đồng bộ kịch bản và giọng nói hoàn tất (Tổng thời lượng: {totalDuration}s)\n",
+    SYNC_ITEM:
+      "👉 Phân cảnh #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
     ALIGN_ERROR: "Lỗi đồng bộ giọng nói: {error}",
     SERVER_ALIGN_ERROR: "Lỗi đồng bộ giọng đọc từ server.",
   },
@@ -315,8 +337,10 @@ export const EXTERNAL_AUDIO_TEXTS = {
     SCENE_NOT_FOUND: "Sync info not found for scene {sceneId}.",
     ALIGN_SUCCESS: "Voice synchronization successful.",
     NO_VALID_RESULT: "No valid synchronization result.",
-    SYNC_COMPLETE: "Storyboard and voice sync completed (Total duration: {totalDuration}s)\n",
-    SYNC_ITEM: "👉 Scene #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
+    SYNC_COMPLETE:
+      "Storyboard and voice sync completed (Total duration: {totalDuration}s)\n",
+    SYNC_ITEM:
+      "👉 Scene #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
     ALIGN_ERROR: "Voice synchronization error: {error}",
     SERVER_ALIGN_ERROR: "Failed to align voice from server.",
   },
@@ -357,19 +381,25 @@ export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
 
 export const VOICE_OPTIMIZATION_TEXTS = {
   vi: {
-    LAZY_ALIGN_START: "[Lazy Alignment] Đã đồng bộ ước lượng theo từ khóa (Thời lượng: {totalDuration}s)\n",
-    LAZY_ALIGN_ITEM: "- Cảnh {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
+    LAZY_ALIGN_START:
+      "[Lazy Alignment] Đã đồng bộ ước lượng theo từ khóa (Thời lượng: {totalDuration}s)\n",
+    LAZY_ALIGN_ITEM:
+      "- Cảnh {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
     ALIGN_ERROR: "Lỗi lấy dữ liệu align từ Whisper",
-    SYNC_WHISPER_WAIT: "Đang đồng bộ Whisper và phân đoạn voice... Vui lòng đợi trong giây lát.",
+    SYNC_WHISPER_WAIT:
+      "Đang đồng bộ Whisper và phân đoạn voice... Vui lòng đợi trong giây lát.",
     SYNC_WHISPER_ERROR: "Lỗi đồng bộ giọng nói với Whisper",
     PREPARE_ZIP: "Đang chuẩn bị gói dự án...",
     ZIP_GEN_ERROR: "Lỗi đóng gói file ZIP.",
   },
   en: {
-    LAZY_ALIGN_START: "[Lazy Alignment] Synchronized estimated word-proportion duration (Duration: {totalDuration}s)\n",
-    LAZY_ALIGN_ITEM: "- Scene {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
+    LAZY_ALIGN_START:
+      "[Lazy Alignment] Synchronized estimated word-proportion duration (Duration: {totalDuration}s)\n",
+    LAZY_ALIGN_ITEM:
+      "- Scene {index}: [{startTime} -> {endTime}] ({duration}s) | {script}...\n",
     ALIGN_ERROR: "Failed to retrieve alignment data from Whisper",
-    SYNC_WHISPER_WAIT: "Aligning voice with Whisper and segmenting... Please wait a moment.",
+    SYNC_WHISPER_WAIT:
+      "Aligning voice with Whisper and segmenting... Please wait a moment.",
     SYNC_WHISPER_ERROR: "Failed to align voice with Whisper",
     PREPARE_ZIP: "Preparing project bundle...",
     ZIP_GEN_ERROR: "Failed to generate ZIP project bundle.",
@@ -386,16 +416,21 @@ export const LLM_CONFIG = {
 
 export const VITE_HMR_LOGS = {
   vi: {
-    SERVER_CONNECTION_LOST: "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
-    FAILED_RELOAD_WITH_FILE: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
-    FAILED_RELOAD_GENERIC: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
+    SERVER_CONNECTION_LOST:
+      "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
+    FAILED_RELOAD_WITH_FILE:
+      "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
+    FAILED_RELOAD_GENERIC:
+      "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
     CONNECTED: "[Hệ thống] Đã kết nối lại thành công với máy chủ dịch vụ.",
     HOT_UPDATED: "[Hệ thống] Giao diện đã tự động cập nhật thay đổi mới.",
   },
   en: {
     SERVER_CONNECTION_LOST: "[System] Connection lost. Reconnecting...",
-    FAILED_RELOAD_WITH_FILE: "[System] Interface update failed. Please reload page (F5).",
-    FAILED_RELOAD_GENERIC: "[System] Interface update failed. Please reload page (F5).",
+    FAILED_RELOAD_WITH_FILE:
+      "[System] Interface update failed. Please reload page (F5).",
+    FAILED_RELOAD_GENERIC:
+      "[System] Interface update failed. Please reload page (F5).",
     CONNECTED: "[System] Reconnected to server successfully.",
     HOT_UPDATED: "[System] Interface updated successfully.",
   },
@@ -419,7 +454,7 @@ export const PIPELINE_STEP5_TEXTS = {
   en: {
     VIDEO_ZIP_NAME: "independent_video_list.zip",
     IMAGE_ZIP_NAME: "independent_image_list.zip",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP6_TEXTS = {
@@ -438,7 +473,8 @@ export const SETTINGS_TEXTS = {
     SANDBOX_TITLE: "Cổng Vẽ AI (Sandbox)",
     MODAL_TITLE_CLEAR: "Xác nhận xóa dữ liệu",
     MODAL_WARN_CLEAR: "Cảnh báo xóa dữ liệu",
-    MODAL_DESC_CLEAR_PREFIX: "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu cấu hình ",
+    MODAL_DESC_CLEAR_PREFIX:
+      "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu cấu hình ",
     MODAL_DESC_CLEAR_SUFFIX: " không?",
     MODAL_IRREVERSIBLE: "Hành động này không thể hoàn tác.",
     CANCEL: "Hủy bỏ",
@@ -465,13 +501,14 @@ export const SETTINGS_TEXTS = {
     SSE_MODE: "SSE Stream",
     BATCH_MODE: "Batch",
     CLEAR_BTN: "Clear",
-  }
+  },
 } as const;
 
 export const SETTINGS_VIEW_TEXTS = {
   vi: {
     SYSTEM_TITLE: "Tài Nguyên Cá Nhân",
-    SYSTEM_DESC: "Dữ liệu nhập ở đây được ưu tiên sử dụng thay cho dữ liệu hệ thống. Mọi thứ được lưu trữ cục bộ trên trình duyệt.",
+    SYSTEM_DESC:
+      "Dữ liệu nhập ở đây được ưu tiên sử dụng thay cho dữ liệu hệ thống. Mọi thứ được lưu trữ cục bộ trên trình duyệt.",
     API_KEYS_TITLE: "Khóa API Cá Nhân",
     SAVE_BTN: "Lưu",
     SAVE_BTN_TOOLTIP: "Lưu khóa API vào trình duyệt",
@@ -488,7 +525,8 @@ export const SETTINGS_VIEW_TEXTS = {
   },
   en: {
     SYSTEM_TITLE: "Personal Resources",
-    SYSTEM_DESC: "Data entered here is prioritized over system data. Everything is stored locally in your browser.",
+    SYSTEM_DESC:
+      "Data entered here is prioritized over system data. Everything is stored locally in your browser.",
     API_KEYS_TITLE: "Personal API Keys",
     SAVE_BTN: "Save",
     SAVE_BTN_TOOLTIP: "Save API keys to browser",
@@ -502,22 +540,26 @@ export const SETTINGS_VIEW_TEXTS = {
     ADD_BTN_TOOLTIP: "Add account to list",
     NO_ACCOUNTS: "No accounts",
     HIDDEN_PWD: "••••••••",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP2_TEXTS = {
   vi: {
-    THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
-    THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.",
+    THUMBNAIL_SCREEN_DESC:
+      "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
+    THUMBNAIL_GENERATE_DESC:
+      "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.",
     BATCH_COUNT_LABEL: "Ảnh & Tiêu đề",
     CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
   },
   en: {
-    THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.",
-    THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
+    THUMBNAIL_SCREEN_DESC:
+      "Batch generate YouTube Thumbnails screen based on script and theme.",
+    THUMBNAIL_GENERATE_DESC:
+      "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
     BATCH_COUNT_LABEL: "Images & Titles",
     CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
-  }
+  },
 } as const;
 
 export const CURL_KEYWORDS = {
@@ -664,7 +706,8 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   TITLE_MEDIA: "Nguồn Media",
   TOOLTIP_MEDIA: "Nguồn chứa hình ảnh và âm thanh",
   BTN_MODE_ZIP: "Chung (ZIP)",
-  BTN_MODE_ZIP_TOOLTIP: "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
+  BTN_MODE_ZIP_TOOLTIP:
+    "Dùng chung 1 thư mục chứa ảnh và audio, hoặc 1 file ZIP",
   BTN_MODE_SPLIT: "Tách riêng",
   BTN_MODE_SPLIT_TOOLTIP: "Chọn riêng biệt đường dẫn Hình ảnh và Âm thanh",
   BTN_MODE_CURRENT: "Dự án hiện tại",
@@ -703,11 +746,13 @@ export const PIPELINE_STEP6_UI_TEXTS = {
   BTN_CANCEL: "Hủy",
   TITLE_PROJECT_NAME: "TÊN DỰ ÁN CAPCUT",
   TOOLTIP_PROJECT_NAME: "Tên dự án CapCut sẽ được sinh ra",
-  PLACEHOLDER_PROJECT_NAME: "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
+  PLACEHOLDER_PROJECT_NAME:
+    "Để trống hệ thống sẽ lấy tên ngẫu nhiên: AI_CAPCUT_hhmmDDMMYY",
   NO_TEMPLATE_FOUND: "Chưa có mẫu nào",
   SELECT_TEMPLATE: "Chọn mẫu...",
   TITLE_EXPORT_VIDEO: "XUẤT VIDEO CAPCUT",
-  TOOLTIP_EXPORT_VIDEO: "Tự động xuất video sau khi tạo dự án CapCut thành công",
+  TOOLTIP_EXPORT_VIDEO:
+    "Tự động xuất video sau khi tạo dự án CapCut thành công",
   LABEL_EXPORT_VIDEO: "Tự động xuất video sau khi tạo xong",
   TITLE_VIDEO_OUTPUT_DIR: "Thư mục lưu video",
   TOOLTIP_VIDEO_OUTPUT_DIR: "Chọn thư mục để lưu file video xuất ra",
@@ -771,13 +816,16 @@ export const PIPELINE_STEP4_TEXTS = {
   SELECT_QUALITY: "Chọn chất lượng",
   FOLDER_SELECT_ERR: "Lỗi chọn thư mục: ",
   ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi render.",
-  ERR_REQUIRE_IMAGES: "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.",
-  ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.",
+  ERR_REQUIRE_IMAGES:
+    "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.",
+  ERR_REQUIRE_AUDIO:
+    "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.",
   RENDERING_WAIT: "Đang render video FFmpeg, vui lòng chờ...",
   RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!",
   RENDER_FFMPEG_ERR: "Lỗi render: ",
   NO_FFMPEG_VIDEO: "Chưa có video FFmpeg.",
-  USE_CREATE_BTN_HINT: "Vui lòng sử dụng tính năng \"Tạo Video Ngay\" ở khung bên phải.",
+  USE_CREATE_BTN_HINT:
+    'Vui lòng sử dụng tính năng "Tạo Video Ngay" ở khung bên phải.',
   EXPORTING_FFMPEG: "Đang xuất video FFmpeg...",
   BTN_DOWNLOAD_HINT: "Tải video về máy",
   PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...",
@@ -823,7 +871,8 @@ export const AUTO_GENERATE_TEXTS = {
   SUCCESS: "Đã hoàn thành tạo video tự động.",
   GENERIC_ERR: "Lỗi tự động tạo video.",
   BTN_AUTO: "Tự động",
-  BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
+  BTN_AUTO_TOOLTIP:
+    "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
   ERR_CODE: "AUTO_GENERATE_ERROR",
   POSITION_TOP: "top",
 } as const;
@@ -904,12 +953,14 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     styleUploadSub: "Tự học phong cách",
     styleUploadEmpty: "Không có ảnh mẫu.",
     sceneReferenceTitle: "Ảnh tham chiếu tạo cảnh",
-    sceneReferenceDescription: "Chỉ các ảnh trong mục này được gửi kèm tới Gemini/Veo khi tạo từng phân cảnh. Ảnh phong cách và ảnh bìa không được dùng làm tham chiếu cảnh.",
+    sceneReferenceDescription:
+      "Chỉ các ảnh trong mục này được gửi kèm tới Gemini/Veo khi tạo từng phân cảnh. Ảnh phong cách và ảnh bìa không được dùng làm tham chiếu cảnh.",
     sceneReferenceUploadTitle: "Tải ảnh tham chiếu",
     sceneReferenceUploadSub: "Nhân vật, vật thể hoặc bối cảnh",
     sceneReferenceAlt: "Ảnh tham chiếu cảnh",
     deleteSceneReferenceTooltip: "Xóa ảnh tham chiếu cảnh này",
-    logSceneReferenceUploaded: (count: number) => `📎 Đã thêm ${count} ảnh tham chiếu tạo cảnh.`,
+    logSceneReferenceUploaded: (count: number) =>
+      `📎 Đã thêm ${count} ảnh tham chiếu tạo cảnh.`,
     stylePresetPlaceholder: "Mô tả phong cách ảnh...",
     extractStyleBtn: "Trích Phong Cách",
     extractStyleTooltip: "Phân tích và trích xuất phong cách từ ảnh mẫu",
@@ -931,28 +982,49 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     rightActionTitleTooltip: "Tự Động Tạo Video 1-Click",
     rightActionSub: "Tự động tạo video",
     lblResumeMode: "Cách bắt đầu",
-    lblResumeModeTooltip: "Tái sử dụng Kịch bản, Giọng đọc và các Phân cảnh/Ảnh đã tạo thành công của dự án hiện tại để tránh tốn token/tiền.",
+    lblResumeModeTooltip:
+      "Tái sử dụng Kịch bản, Giọng đọc và các Phân cảnh/Ảnh đã tạo thành công của dự án hiện tại để tránh tốn token/tiền.",
     lblChromeHeadless: "Chế độ Chrome",
     lblChromeHeadlessTooltip: "Cấu hình Chrome chạy ngầm hoặc hiển thị cửa sổ",
     optionHeadless: "Chạy ngầm",
     optionWindowed: "Hiển thị",
     optionResume: "Dùng lại nội dung đã có",
     optionNew: "Bắt đầu tạo mới",
-    logResumeProject: (name: string) => `♻️ Sử dụng lại dự án: [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
-    logResumeScript: "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
-    logResumeVoice: "♻️ Sử dụng lại Giọng đọc (TTS) đã tạo từ phiên chạy trước.",
-    logResumeSceneSkip: (idx: number, total: number) => `♻️ Phân cảnh ${idx}/${total}: Đã có ảnh từ trước, bỏ qua.`,
+    logResumeProject: (name: string) =>
+      `♻️ Sử dụng lại dự án: [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
+    logResumeScript:
+      "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
+    logResumeVoice:
+      "♻️ Sử dụng lại Giọng đọc (TTS) đã tạo từ phiên chạy trước.",
+    logResumeSceneSkip: (idx: number, total: number) =>
+      `♻️ Phân cảnh ${idx}/${total}: Đã có ảnh từ trước, bỏ qua.`,
     logResumeThumbnails: "♻️ Sử dụng lại ảnh bìa (Thumbnails) đã tạo.",
     logResumeAlignment: "♻️ Sử dụng lại Căn khớp & Phân đoạn âm thanh đã tạo.",
     logResumeSeo: "♻️ Sử dụng lại dữ liệu SEO đã tạo từ phiên chạy trước.",
-    logBatchImageStreamStart: "🚀 Bắt đầu tạo ảnh hàng loạt bằng Gemini Chat qua luồng Stream...",
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
-    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Lỗi luồng tạo ảnh hàng loạt: ${msg}. Chuyển sang cơ chế dự phòng sinh tuần tự...`,
-    logFallbackSceneError: (id: string) => `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) => `⚠️ [Bước 3.2] Tạo ảnh hàng loạt thất bại ${failed}/${total}. Nguyên nhân: ${reason}. Chuyển sang tạo dự phòng tuần tự.`,
-    logFallbackProgress: (current: number, total: number) => `🎨 [Bước 3.3] Đang tạo ảnh dự phòng ${current}/${total}...`,
-    logImageGenerationSummary: (success: number, failed: number, total: number) => `${failed > 0 ? "⚠️" : "✅"} [Bước 3.4] Hoàn tất sinh ảnh: ${success}/${total} thành công, ${failed} thất bại.`,
+    logBatchImageStreamStart:
+      "🚀 Bắt đầu tạo ảnh hàng loạt bằng Gemini Chat qua luồng Stream...",
+    logBatchImageSceneSuccess: (
+      sceneId: string,
+      completed: number,
+      total: number,
+    ) =>
+      `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneError: (sceneId: string, warn: string) =>
+      `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string) =>
+      `❌ Lỗi luồng tạo ảnh hàng loạt: ${msg}. Chuyển sang cơ chế dự phòng sinh tuần tự...`,
+    logFallbackSceneError: (id: string) =>
+      `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
+      `⚠️ [Bước 3.2] Tạo ảnh hàng loạt thất bại ${failed}/${total}. Nguyên nhân: ${reason}. Chuyển sang tạo dự phòng tuần tự.`,
+    logFallbackProgress: (current: number, total: number) =>
+      `🎨 [Bước 3.3] Đang tạo ảnh dự phòng ${current}/${total}...`,
+    logImageGenerationSummary: (
+      success: number,
+      failed: number,
+      total: number,
+    ) =>
+      `${failed > 0 ? "⚠️" : "✅"} [Bước 3.4] Hoàn tất sinh ảnh: ${success}/${total} thành công, ${failed} thất bại.`,
     startBtnProcessing: "Đang Tạo Video...",
     startBtnStart: " Bắt Đầu Tạo",
     startBtnTooltip: "Khởi động luồng tạo video tự động 1-Click",
@@ -975,44 +1047,83 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Mở dự án này trong AI Studio",
     alertEmptyScript: "Vui lòng nhập Kịch bản hoặc Ý tưởng ở phần Cấu hình.",
     logPipelineStart: "🚀 KHỞI ĐỘNG QUY TRÌNH TẠO VIDEO TỰ ĐỘNG",
-    logConfigSummary: (genre: string, language: string, duration: string, mode: string, resume: boolean) => `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
-    logProjectResolved: (id: string, reused: boolean) => `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
-    logScriptRequestDetail: (characters: number, inputType: string) => `📝 Đang đọc và phân tích dữ liệu đầu vào để chuẩn bị kịch bản...`,
-    logScriptResultDetail: (words: number, chapters: number) => `✓ Kịch bản đã hoàn thành (${words} từ, ${chapters} chương).`,
-    logStoryboardRequestDetail: (strategy: string, hasStyleRefs: boolean) => `🎬 Đang lên ý tưởng hình ảnh cho từng phân cảnh...`,
-    logStoryboardResultDetail: (scenes: number) => `✓ Đã chia xong nội dung thành ${scenes} phân cảnh.`,
-    logVoiceRequestDetail: (provider: string, voice: string, characters: number) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
-    logVoiceResultDetail: (source: string) => `✓ Giọng đọc thuyết minh đã thu âm xong.`,
-    logReferenceSummary: (style: number, scene: number, character: number) => `🖼️ Đang phân tích các ảnh mẫu để học hỏi phong cách...`,
-    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Bắt đầu chuẩn bị hình ảnh minh họa cho các phân cảnh...`,
-    logSeoResultDetail: (titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
-    logAlignmentPlan: (scenes: number) => `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
-    logAlignmentResultDetail: (aligned: number, seconds: number) => `✓ Đã căn khớp chính xác thời gian cho ${aligned} phân cảnh.`,
-    logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) => `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
-    logRenderJob: (jobId: string) => `🧩 Đang tiến hành lắp ráp và kết xuất video ở chế độ chạy nền...`,
-    logPipelineElapsed: (seconds: number) => `⏱️ Tuyệt vời! Hoàn tất mọi công đoạn trong ${Math.round(seconds)} giây.`,
-    logPipelineFailedElapsed: (seconds: number) => `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.`,
-    logPipelineCancelledElapsed: (seconds: number) => `⏱️ Đã hủy quy trình sau ${Math.round(seconds)} giây.`,
+    logConfigSummary: (
+      genre: string,
+      language: string,
+      duration: string,
+      mode: string,
+      resume: boolean,
+    ) =>
+      `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
+    logProjectResolved: (id: string, reused: boolean) =>
+      `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
+    logScriptRequestDetail: (characters: number, inputType: string) =>
+      `📝 Đang đọc và phân tích dữ liệu đầu vào để chuẩn bị kịch bản...`,
+    logScriptResultDetail: (words: number, chapters: number) =>
+      `✓ Kịch bản đã hoàn thành (${words} từ, ${chapters} chương).`,
+    logStoryboardRequestDetail: (strategy: string, hasStyleRefs: boolean) =>
+      `🎬 Đang lên ý tưởng hình ảnh cho từng phân cảnh...`,
+    logStoryboardResultDetail: (scenes: number) =>
+      `✓ Đã chia xong nội dung thành ${scenes} phân cảnh.`,
+    logVoiceRequestDetail: (
+      provider: string,
+      voice: string,
+      characters: number,
+    ) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
+    logVoiceResultDetail: (source: string) =>
+      `✓ Giọng đọc thuyết minh đã thu âm xong.`,
+    logReferenceSummary: (style: number, scene: number, character: number) =>
+      `🖼️ Đang phân tích các ảnh mẫu để học hỏi phong cách...`,
+    logMediaPlan: (generate: number, reused: number, type: string) =>
+      `🎨 Bắt đầu chuẩn bị hình ảnh minh họa cho các phân cảnh...`,
+    logSeoResultDetail: (titles: number, thumbnails: number) =>
+      `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
+    logAlignmentPlan: (scenes: number) =>
+      `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
+    logAlignmentResultDetail: (aligned: number, seconds: number) =>
+      `✓ Đã căn khớp chính xác thời gian cho ${aligned} phân cảnh.`,
+    logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) =>
+      `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
+    logRenderJob: (jobId: string) =>
+      `🧩 Đang tiến hành lắp ráp và kết xuất video ở chế độ chạy nền...`,
+    logPipelineElapsed: (seconds: number) =>
+      `⏱️ Tuyệt vời! Hoàn tất mọi công đoạn trong ${Math.round(seconds)} giây.`,
+    logPipelineFailedElapsed: (seconds: number) =>
+      `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.`,
+    logPipelineCancelledElapsed: (seconds: number) =>
+      `⏱️ Đã hủy quy trình sau ${Math.round(seconds)} giây.`,
     logInitProj: "📌 [1/4] Đang khởi tạo không gian làm việc...",
     logInitProjSuccess: (name: string) => `✅ Không gian làm việc đã sẵn sàng.`,
-    logScriptGen: "📌 [1/4] Trí tuệ nhân tạo (AI) đang soạn kịch bản & thiết kế nhân vật...",
+    logScriptGen:
+      "📌 [1/4] Trí tuệ nhân tạo (AI) đang soạn kịch bản & thiết kế nhân vật...",
     logScriptSuccess: "✅ Đã xây dựng kịch bản & áp dụng nhân vật tự động.",
     logVoiceGen: (name: string) => `📌 [2/4] Đang tạo giọng đọc thuyết minh...`,
     logVoiceSuccess: "✅ Đã tạo xong giọng đọc thuyết minh.",
-    logImageGen: (engine: string, style: string, ar: string) => `📌 [2/4] Đang vẽ bộ hình minh họa (Tỷ lệ: ${ar})...`,
+    logImageGen: (engine: string, style: string, ar: string) =>
+      `📌 [2/4] Đang vẽ bộ hình minh họa (Tỷ lệ: ${ar})...`,
     logImageSuccess: "✅ Đã vẽ xong toàn bộ hình ảnh minh họa.",
-    logSeoGen: "📌 [3/4] Đang thiết kế ảnh bìa & chuẩn bị thông tin đăng tải...",
+    logSeoGen:
+      "📌 [3/4] Đang thiết kế ảnh bìa & chuẩn bị thông tin đăng tải...",
     logSeoSuccess: "✅ Đã hoàn tất thiết kế ảnh bìa & thông tin đăng tải.",
-    logRenderGen: (quality: string) => `📌 [4/4] Đang tiến hành ghép nối hình ảnh, âm thanh và hoàn thiện video (Chất lượng: ${quality})...`,
-    logRenderSuccess: "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
-    logRenderPreview: "🎉 TẠO VIDEO THÀNH CÔNG! Bạn có thể xem trước ở khung bên phải.",
-    logRenderPreviewMode: "🎉 TẠO VIDEO THÀNH CÔNG! Video đã sẵn sàng để xem và tải về.",
-    logStyleExtracted: "✨ [Tự động] Đã phân tích & trích xuất phong cách nghệ thuật từ ảnh mẫu vừa tải!",
-    logThumbStyleExtracted: "✨ [Tự động] Đã phân tích & trích xuất phong cách ảnh bìa từ ảnh mẫu vừa tải!",
+    logRenderGen: (quality: string) =>
+      `📌 [4/4] Đang tiến hành ghép nối hình ảnh, âm thanh và hoàn thiện video (Chất lượng: ${quality})...`,
+    logRenderSuccess:
+      "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
+    logRenderPreview:
+      "🎉 TẠO VIDEO THÀNH CÔNG! Bạn có thể xem trước ở khung bên phải.",
+    logRenderPreviewMode:
+      "🎉 TẠO VIDEO THÀNH CÔNG! Video đã sẵn sàng để xem và tải về.",
+    logStyleExtracted:
+      "✨ [Tự động] Đã phân tích & trích xuất phong cách nghệ thuật từ ảnh mẫu vừa tải!",
+    logThumbStyleExtracted:
+      "✨ [Tự động] Đã phân tích & trích xuất phong cách ảnh bìa từ ảnh mẫu vừa tải!",
     logStyleManualExtracted: "Đã trích xuất phong cách nghệ thuật từ ảnh mẫu!",
-    logThumbStyleManualExtracted: "Đã trích xuất phong cách ảnh bìa từ ảnh mẫu!",
-    logStyleUploaded: (count: number) => `Đã tải lên ${count} ảnh mẫu phong cách nghệ thuật.`,
-    logThumbUploaded: (count: number) => `Đã tải lên ${count} ảnh mẫu phong cách ảnh bìa.`,
+    logThumbStyleManualExtracted:
+      "Đã trích xuất phong cách ảnh bìa từ ảnh mẫu!",
+    logStyleUploaded: (count: number) =>
+      `Đã tải lên ${count} ảnh mẫu phong cách nghệ thuật.`,
+    logThumbUploaded: (count: number) =>
+      `Đã tải lên ${count} ảnh mẫu phong cách ảnh bìa.`,
     logSavedPreset: (name: string) => `Đã lưu mẫu cấu hình: "${name}"`,
     logAppliedPreset: (name: string) => `Đã áp dụng mẫu cấu hình: "${name}"`,
     errExtractStyle: "Lỗi phân tích phong cách.",
@@ -1080,12 +1191,14 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     styleUploadSub: "Learn visual style",
     styleUploadEmpty: "No style images",
     sceneReferenceTitle: "Scene reference images",
-    sceneReferenceDescription: "Only images in this section are attached to Gemini/Veo for scene generation. Style and thumbnail images are not used as scene references.",
+    sceneReferenceDescription:
+      "Only images in this section are attached to Gemini/Veo for scene generation. Style and thumbnail images are not used as scene references.",
     sceneReferenceUploadTitle: "Upload references",
     sceneReferenceUploadSub: "Characters, objects, or locations",
     sceneReferenceAlt: "Scene reference image",
     deleteSceneReferenceTooltip: "Delete this scene reference image",
-    logSceneReferenceUploaded: (count: number) => `📎 Added ${count} scene reference image(s).`,
+    logSceneReferenceUploaded: (count: number) =>
+      `📎 Added ${count} scene reference image(s).`,
     stylePresetPlaceholder: "Describe image style...",
     extractStyleBtn: "Extract Style",
     extractStyleTooltip: "Analyze and extract style from reference image",
@@ -1107,28 +1220,48 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     rightActionTitleTooltip: "One-Click Auto Video Creator",
     rightActionSub: "Auto generate video",
     lblResumeMode: "How to start",
-    lblResumeModeTooltip: "Reuse generated Script, Voice, and Scene Images of current project to avoid wasting tokens or funds.",
+    lblResumeModeTooltip:
+      "Reuse generated Script, Voice, and Scene Images of current project to avoid wasting tokens or funds.",
     lblChromeHeadless: "Chrome Mode",
-    lblChromeHeadlessTooltip: "Run Chrome headless in background or show window",
+    lblChromeHeadlessTooltip:
+      "Run Chrome headless in background or show window",
     optionHeadless: "Headless",
     optionWindowed: "Windowed",
     optionResume: "Reuse existing content",
     optionNew: "Start from scratch",
-    logResumeProject: (name: string) => `♻️ Reusing project: [${name}]. Resume mode is active.`,
+    logResumeProject: (name: string) =>
+      `♻️ Reusing project: [${name}]. Resume mode is active.`,
     logResumeScript: "♻️ Reusing Script & Storyboard from previous session.",
     logResumeVoice: "♻️ Reusing Voice (TTS) from previous session.",
-    logResumeSceneSkip: (idx: number, total: number) => `♻️ Scene ${idx}/${total}: Already has image, skipped.`,
+    logResumeSceneSkip: (idx: number, total: number) =>
+      `♻️ Scene ${idx}/${total}: Already has image, skipped.`,
     logResumeThumbnails: "♻️ Reusing generated thumbnails.",
     logResumeAlignment: "♻️ Reusing generated voice alignments.",
     logResumeSeo: "♻️ Reusing SEO data from previous session.",
-    logBatchImageStreamStart: "🚀 Starting batch image generation using Gemini Chat stream...",
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
-    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to sequential generation...`,
-    logFallbackSceneError: (id: string) => `⚠️ Error generating fallback image for scene ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) => `⚠️ [Step 3.2] Batch generation failed for ${failed}/${total}. Reason: ${reason}. Switching to sequential fallback.`,
-    logFallbackProgress: (current: number, total: number) => `🎨 [Step 3.3] Generating fallback image ${current}/${total}...`,
-    logImageGenerationSummary: (success: number, failed: number, total: number) => `${failed > 0 ? "⚠️" : "✅"} [Step 3.4] Image generation finished: ${success}/${total} succeeded, ${failed} failed.`,
+    logBatchImageStreamStart:
+      "🚀 Starting batch image generation using Gemini Chat stream...",
+    logBatchImageSceneSuccess: (
+      sceneId: string,
+      completed: number,
+      total: number,
+    ) =>
+      `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneError: (sceneId: string, warn: string) =>
+      `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string) =>
+      `❌ Batch image stream error: ${msg}. Falling back to sequential generation...`,
+    logFallbackSceneError: (id: string) =>
+      `⚠️ Error generating fallback image for scene ${id}`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
+      `⚠️ [Step 3.2] Batch generation failed for ${failed}/${total}. Reason: ${reason}. Switching to sequential fallback.`,
+    logFallbackProgress: (current: number, total: number) =>
+      `🎨 [Step 3.3] Generating fallback image ${current}/${total}...`,
+    logImageGenerationSummary: (
+      success: number,
+      failed: number,
+      total: number,
+    ) =>
+      `${failed > 0 ? "⚠️" : "✅"} [Step 3.4] Image generation finished: ${success}/${total} succeeded, ${failed} failed.`,
     startBtnProcessing: "Creating Video...",
     startBtnStart: "🚀 Start Creating",
     startBtnTooltip: "Launch 1-Click automated video creation pipeline",
@@ -1151,44 +1284,81 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Open this project in AI Studio",
     alertEmptyScript: "Please enter Script or Idea in configuration.",
     logPipelineStart: "🚀 LAUNCHING ONE-CLICK AUTOMATED VIDEO PIPELINE",
-    logConfigSummary: (genre: string, language: string, duration: string, mode: string, resume: boolean) => `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
-    logProjectResolved: (id: string, reused: boolean) => `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
-    logScriptRequestDetail: (characters: number, inputType: string) => `📝 Reading and analyzing input data to prepare script...`,
-    logScriptResultDetail: (words: number, chapters: number) => `✓ Script is ready (${words} words, ${chapters} chapters).`,
-    logStoryboardRequestDetail: (strategy: string, hasStyleRefs: boolean) => `🎬 Analyzing script and creating visual scenes...`,
-    logStoryboardResultDetail: (scenes: number) => `✓ Successfully split into ${scenes} scenes.`,
-    logVoiceRequestDetail: (provider: string, voice: string, characters: number) => `🎙️ Synthesizing AI voiceover...`,
-    logVoiceResultDetail: (source: string) => `✓ AI voiceover is fully generated.`,
-    logReferenceSummary: (style: number, scene: number, character: number) => `🖼️ Analyzing provided references to learn your style...`,
-    logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Preparing visuals for the scenes...`,
-    logSeoResultDetail: (titles: number, thumbnails: number) => `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,
-    logAlignmentPlan: (scenes: number) => `⏱️ Synchronizing voiceover with visual scenes...`,
-    logAlignmentResultDetail: (aligned: number, seconds: number) => `✓ Flawlessly aligned audio for ${aligned} scenes.`,
-    logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) => `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
-    logRenderJob: (jobId: string) => `🧩 Assembling and rendering video in the background...`,
-    logPipelineElapsed: (seconds: number) => `⏱️ Awesome! Everything completed in ${Math.round(seconds)} seconds.`,
-    logPipelineFailedElapsed: (seconds: number) => `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.`,
-    logPipelineCancelledElapsed: (seconds: number) => `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.`,
+    logConfigSummary: (
+      genre: string,
+      language: string,
+      duration: string,
+      mode: string,
+      resume: boolean,
+    ) =>
+      `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
+    logProjectResolved: (id: string, reused: boolean) =>
+      `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
+    logScriptRequestDetail: (characters: number, inputType: string) =>
+      `📝 Reading and analyzing input data to prepare script...`,
+    logScriptResultDetail: (words: number, chapters: number) =>
+      `✓ Script is ready (${words} words, ${chapters} chapters).`,
+    logStoryboardRequestDetail: (strategy: string, hasStyleRefs: boolean) =>
+      `🎬 Analyzing script and creating visual scenes...`,
+    logStoryboardResultDetail: (scenes: number) =>
+      `✓ Successfully split into ${scenes} scenes.`,
+    logVoiceRequestDetail: (
+      provider: string,
+      voice: string,
+      characters: number,
+    ) => `🎙️ Synthesizing AI voiceover...`,
+    logVoiceResultDetail: (source: string) =>
+      `✓ AI voiceover is fully generated.`,
+    logReferenceSummary: (style: number, scene: number, character: number) =>
+      `🖼️ Analyzing provided references to learn your style...`,
+    logMediaPlan: (generate: number, reused: number, type: string) =>
+      `🎨 Preparing visuals for the scenes...`,
+    logSeoResultDetail: (titles: number, thumbnails: number) =>
+      `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,
+    logAlignmentPlan: (scenes: number) =>
+      `⏱️ Synchronizing voiceover with visual scenes...`,
+    logAlignmentResultDetail: (aligned: number, seconds: number) =>
+      `✓ Flawlessly aligned audio for ${aligned} scenes.`,
+    logRenderPlan: (scenes: number, seconds: number, hasAudio: boolean) =>
+      `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
+    logRenderJob: (jobId: string) =>
+      `🧩 Assembling and rendering video in the background...`,
+    logPipelineElapsed: (seconds: number) =>
+      `⏱️ Awesome! Everything completed in ${Math.round(seconds)} seconds.`,
+    logPipelineFailedElapsed: (seconds: number) =>
+      `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.`,
+    logPipelineCancelledElapsed: (seconds: number) =>
+      `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.`,
     logInitProj: "📌 [1/4] Initializing workspace...",
     logInitProjSuccess: (name: string) => `✅ Workspace is ready.`,
     logScriptGen: "📌 [1/4] AI is composing the script & characters...",
     logScriptSuccess: "✅ Script & character consistency applied.",
     logVoiceGen: (name: string) => `📌 [2/4] Synthesizing AI voice actor...`,
     logVoiceSuccess: "✅ AI voice synthesis completed.",
-    logImageGen: (engine: string, style: string, ar: string) => `📌 [2/4] Generating AI illustrations (Ratio: ${ar})...`,
+    logImageGen: (engine: string, style: string, ar: string) =>
+      `📌 [2/4] Generating AI illustrations (Ratio: ${ar})...`,
     logImageSuccess: "✅ AI illustration generation completed.",
     logSeoGen: "📌 [3/4] Designing Thumbnails & Optimizing SEO Boost...",
     logSeoSuccess: "✅ SEO Boost & Thumbnail package optimized.",
-    logRenderGen: (quality: string) => `📌 [4/4] Rendering Video with FFmpeg (Quality: ${quality})...`,
-    logRenderSuccess: "🎉 100% AUTOMATED VIDEO CREATION SUCCESSFUL! Preview and download your video.",
-    logRenderPreview: "🎉 VIDEO CREATED! You can play the video in the right panel.",
-    logRenderPreviewMode: "🎉 VIDEO CREATED! Video ready to preview and download.",
-    logStyleExtracted: "✨ [Auto] Analyzed & extracted art style from uploaded sample image!",
-    logThumbStyleExtracted: "✨ [Auto] Analyzed & extracted thumbnail style from uploaded sample image!",
+    logRenderGen: (quality: string) =>
+      `📌 [4/4] Rendering Video with FFmpeg (Quality: ${quality})...`,
+    logRenderSuccess:
+      "🎉 100% AUTOMATED VIDEO CREATION SUCCESSFUL! Preview and download your video.",
+    logRenderPreview:
+      "🎉 VIDEO CREATED! You can play the video in the right panel.",
+    logRenderPreviewMode:
+      "🎉 VIDEO CREATED! Video ready to preview and download.",
+    logStyleExtracted:
+      "✨ [Auto] Analyzed & extracted art style from uploaded sample image!",
+    logThumbStyleExtracted:
+      "✨ [Auto] Analyzed & extracted thumbnail style from uploaded sample image!",
     logStyleManualExtracted: "Art style extracted from sample image!",
-    logThumbStyleManualExtracted: "Thumbnail style extracted from sample image!",
-    logStyleUploaded: (count: number) => `Uploaded ${count} art style sample images.`,
-    logThumbUploaded: (count: number) => `Uploaded ${count} thumbnail style sample images.`,
+    logThumbStyleManualExtracted:
+      "Thumbnail style extracted from sample image!",
+    logStyleUploaded: (count: number) =>
+      `Uploaded ${count} art style sample images.`,
+    logThumbUploaded: (count: number) =>
+      `Uploaded ${count} thumbnail style sample images.`,
     logSavedPreset: (name: string) => `Saved Preset template: "${name}"`,
     logAppliedPreset: (name: string) => `Applied Preset: "${name}"`,
     errExtractStyle: "Style analysis error.",
@@ -1264,7 +1434,7 @@ export const VOICE_DIALOG_TEXTS = {
     loadingMore: "Loading more...",
     selectedLabel: "Selected",
     favoriteTooltip: "Favorite",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP4_SHORT_TEXTS = {
@@ -1291,20 +1461,24 @@ export const PIPELINE_STEP4_SHORT_TEXTS = {
     SRT_TOOLTIP: "Download synchronized SRT subtitle file",
     PREVIEW_BTN: "Preview",
     PREVIEW_TOOLTIP: "Preview currently active video scene",
-  }
+  },
 } as const;
 
 export const PRESET_CONSTANTS = {
   ID_PREFIX: "preset_",
   DEFAULT_VOICE_NAME: "Preset Voice VI",
   DEFAULT_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting",
-  EXTRACTED_STYLE_PRESET: "Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors",
-  DEFAULT_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Vibrant Colors",
-  EXTRACTED_THUMB_STYLE_PRESET: "Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography",
+  EXTRACTED_STYLE_PRESET:
+    "Realistic Cinematic, 3D Render, Dramatic Lighting & Vibrant Colors",
+  DEFAULT_THUMB_STYLE_PRESET:
+    "Bold Clickbait 3D Style, High Contrast, Vibrant Colors",
+  EXTRACTED_THUMB_STYLE_PRESET:
+    "Bold Clickbait 3D Style, High Contrast, Eye-Catching Typography",
   CHARACTER_NAME: "Nhân vật chính",
   CHARACTER_BIO: "Một nhân vật hoạt hình thiết kế sắc nét...",
   PROJECT_NAME_PREFIX: "Video_Auto_",
-  SAMPLE_VIDEO_URL: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  SAMPLE_VIDEO_URL:
+    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
   DEFAULT_CAMERA_MOTION: "default",
   DEFAULT_TRANSITION: "default",
 } as const;

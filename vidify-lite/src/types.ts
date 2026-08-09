@@ -276,6 +276,7 @@ export interface VisualConfig {
   batchDelay?: BatchDelayOption;
   videoDuration?: string;
   qualityMode?: QualityMode;
+  batchTabCount?: number;
 }
 
 export interface CharacterConfig {
@@ -330,15 +331,23 @@ export interface StoryboardScene {
   effects?: string;
   lightingEffect?: string;
   transition?: string;
+  characterIds?: string[];
+  expectedSubjectCount?: number;
+  allowBackgroundPeople?: boolean;
+  layout?: "single_frame" | "split_screen" | "collage";
+  textAllowed?: boolean;
 }
 
 export interface ThumbnailItem {
   id: string;
   prompt: string;
+  generationPrompt?: string;
   style: string;
   hasText: boolean;
   textText?: string;
   layout?: string;
+  layoutId?: string;
+  layoutRationale?: string;
   typography?: string;
   colorSuggestion?: string;
   subjectFocus?: string;

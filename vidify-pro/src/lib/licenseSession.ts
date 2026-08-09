@@ -10,21 +10,26 @@ const getCookiePaths = (): string[] => {
   const segments = _.compact(_.split(window.location.pathname, ROOT_PATH));
   return _.uniq([
     ROOT_PATH,
-    ..._.map(segments, (_segment, index) => `${ROOT_PATH}${_.join(_.take(segments, index + 1), ROOT_PATH)}`),
+    ..._.map(
+      segments,
+      (_segment, index) =>
+        `${ROOT_PATH}${_.join(_.take(segments, index + 1), ROOT_PATH)}`,
+    ),
   ]);
 };
 
-const getCookieDomains = (): string[] => _.compact([
-  window.location.hostname,
-  `.${window.location.hostname}`,
-]);
+const getCookieDomains = (): string[] =>
+  _.compact([window.location.hostname, `.${window.location.hostname}`]);
 
 export const clearBrowserLicenseSession = (): void => {
   window.localStorage.clear();
   window.sessionStorage.clear();
 
   _.forEach(_.split(document.cookie, COOKIE_SEPARATOR), (cookie) => {
-    const cookieName = _.trim(_.first(_.split(cookie, COOKIE_VALUE_SEPARATOR)) || SecurityConstants.EMPTY_STRING);
+    const cookieName = _.trim(
+      _.first(_.split(cookie, COOKIE_VALUE_SEPARATOR)) ||
+        SecurityConstants.EMPTY_STRING,
+    );
     if (!_.isEmpty(cookieName)) {
       _.forEach(getCookiePaths(), (path) => {
         document.cookie = `${cookieName}${COOKIE_EXPIRED_VALUE}; path=${path}`;
@@ -38,11 +43,17 @@ export const clearBrowserLicenseSession = (): void => {
 
 export const invalidateBrowserLicenseSession = (): void => {
   clearBrowserLicenseSession();
-  window.dispatchEvent(new CustomEvent(SecurityConstants.LICENSE_INVALIDATED_EVENT));
+  window.dispatchEvent(
+    new CustomEvent(SecurityConstants.LICENSE_INVALIDATED_EVENT),
+  );
 };
 
-export const isLicenseFailureCode = (code: unknown): boolean => _.includes([
-  SecurityConstants.LICENSE_MISSING_CODE,
-  SecurityConstants.LICENSE_INVALID_CODE,
-  SecurityConstants.LICENSE_INACTIVE_CODE,
-], code);
+export const isLicenseFailureCode = (code: unknown): boolean =>
+  _.includes(
+    [
+      SecurityConstants.LICENSE_MISSING_CODE,
+      SecurityConstants.LICENSE_INVALID_CODE,
+      SecurityConstants.LICENSE_INACTIVE_CODE,
+    ],
+    code,
+  );

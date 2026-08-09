@@ -1,9 +1,16 @@
-import { renderFFmpegVideo, FFmpegRenderOptions } from "../utils/ffmpegRender.js";
+import {
+  renderFFmpegVideo,
+  FFmpegRenderOptions,
+} from "../utils/ffmpegRender.js";
 import { logger } from "../../lib/logger.js";
 import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { LicenseService } from "./licenseService.js";
-import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
+import {
+  FeatureType,
+  SecurityConstants,
+  SecurityMessages,
+} from "../../constants/security.js";
 
 export enum JobStatus {
   PENDING = "pending",
@@ -30,7 +37,11 @@ class RenderQueueService {
   private isProcessing = false;
   private jobsMap = new Map<string, RenderJob>();
 
-  public addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): RenderJob {
+  public addJob(
+    jobId: string,
+    payload: FFmpegRenderOptions,
+    licenseKey?: string,
+  ): RenderJob {
     const job: RenderJob = {
       id: jobId,
       payload,
@@ -41,11 +52,15 @@ class RenderQueueService {
     };
     this.queue.push(job);
     this.jobsMap.set(jobId, job);
-    
+
     logger.info(
-      REFACTOR_CONSTANTS.RENDER_LOG_ADDED
-        .replace(SecurityConstants.PLACEHOLDER_0, jobId)
-        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue)))
+      REFACTOR_CONSTANTS.RENDER_LOG_ADDED.replace(
+        SecurityConstants.PLACEHOLDER_0,
+        jobId,
+      ).replace(
+        SecurityConstants.PLACEHOLDER_1,
+        _.toString(_.size(this.queue)),
+      ),
     );
     this.processQueue();
     return job;
@@ -63,10 +78,12 @@ class RenderQueueService {
     const job = this.queue.shift()!;
     job.status = JobStatus.PROCESSING;
     job.startedAt = new Date();
-    
+
     logger.info(
-      REFACTOR_CONSTANTS.RENDER_LOG_PROCESSING
-        .replace(SecurityConstants.PLACEHOLDER_0, job.id)
+      REFACTOR_CONSTANTS.RENDER_LOG_PROCESSING.replace(
+        SecurityConstants.PLACEHOLDER_0,
+        job.id,
+      ),
     );
 
     try {
@@ -78,7 +95,11 @@ class RenderQueueService {
 
       if (!_.isEmpty(job.licenseKey)) {
         try {
-          await LicenseService.incrementUsage(job.licenseKey, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
+          await LicenseService.incrementUsage(
+            job.licenseKey,
+            FeatureType.VIDEO,
+            SecurityConstants.DEFAULT_AMOUNT,
+          );
         } catch (e) {
           logger.error(SecurityMessages.USAGE_UPDATE_ERROR, e);
         }
@@ -87,22 +108,27 @@ class RenderQueueService {
       job.status = JobStatus.COMPLETED;
       job.progress = REFACTOR_CONSTANTS.RENDER_PROGRESS_COMPLETE;
       job.completedAt = new Date();
-      
+
       logger.info(
-        REFACTOR_CONSTANTS.RENDER_LOG_COMPLETED
-          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-          .replace(SecurityConstants.PLACEHOLDER_1, url)
+        REFACTOR_CONSTANTS.RENDER_LOG_COMPLETED.replace(
+          SecurityConstants.PLACEHOLDER_0,
+          job.id,
+        ).replace(SecurityConstants.PLACEHOLDER_1, url),
       );
     } catch (error: any) {
       job.status = JobStatus.FAILED;
-      job.error = _.defaultTo(error?.message, REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT);
+      job.error = _.defaultTo(
+        error?.message,
+        REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT,
+      );
       job.completedAt = new Date();
-      
+
       logger.error(
-        REFACTOR_CONSTANTS.RENDER_LOG_FAILED
-          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-          .replace(SecurityConstants.PLACEHOLDER_1, job.error),
-        error
+        REFACTOR_CONSTANTS.RENDER_LOG_FAILED.replace(
+          SecurityConstants.PLACEHOLDER_0,
+          job.id,
+        ).replace(SecurityConstants.PLACEHOLDER_1, job.error),
+        error,
       );
     } finally {
       this.isProcessing = false;

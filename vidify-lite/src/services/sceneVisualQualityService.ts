@@ -11,6 +11,9 @@ export interface SceneVisualQuality {
   composition: number;
   styleConsistency: number;
   editability: number;
+  unwantedText?: boolean;
+  multiPanelLayout?: boolean;
+  duplicatedSubjects?: boolean;
   usableForVideo: boolean;
   blockingErrors: string[];
   warnings: string[];
@@ -39,6 +42,9 @@ const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuali
   composition: _.clamp(_.toNumber(source.composition), 0, 100),
   styleConsistency: _.clamp(_.toNumber(source.styleConsistency), 0, 100),
   editability: _.clamp(_.toNumber(source.editability), 0, 100),
+  unwantedText: Boolean(source.unwantedText),
+  multiPanelLayout: Boolean(source.multiPanelLayout),
+  duplicatedSubjects: Boolean(source.duplicatedSubjects),
   usableForVideo: Boolean(source.usableForVideo),
   blockingErrors: _.uniq(_.compact(_.castArray(source.blockingErrors))),
   warnings: _.uniq(_.compact(_.castArray(source.warnings))),
@@ -54,8 +60,9 @@ export const isSceneVisualQualityUsable = isSceneVisualQualityApproved;
 
 export const validateSceneImage = async (
   projectId: string,
-  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "assetUrl">,
+  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "assetUrl" | "expectedSubjectCount">,
   referenceAssetUrl?: string,
+  referenceAssetUrls: string[] = [],
 ): Promise<SceneVisualQualityResult> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_SCENE_IMAGE, {
     projectId,
@@ -64,6 +71,8 @@ export const validateSceneImage = async (
     prompt: scene.prompt,
     assetUrl: scene.assetUrl,
     referenceAssetUrl,
+    referenceAssetUrls,
+    expectedSubjectCount: scene.expectedSubjectCount,
   });
 
   if (!response.success || !response.data?.success || _.isEmpty(response.data?.quality)) {

@@ -1,4 +1,9 @@
-import { AppTab, REFACTOR_CONSTANTS, StoryboardSourceMode, UI_MESSAGE_DURATION } from "../../constants";
+import {
+  AppTab,
+  REFACTOR_CONSTANTS,
+  StoryboardSourceMode,
+  UI_MESSAGE_DURATION,
+} from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
@@ -91,7 +96,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
     if (voiceTestAudioRef.current) {
       voiceTestAudioRef.current.src = previewUrl;
-      voiceTestAudioRef.current.play().catch(() => { });
+      voiceTestAudioRef.current.play().catch(() => {});
       setTestingVoiceURI(voiceURI);
     }
   };
@@ -214,10 +219,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
   } = props;
 
   const voiceDialogPersistenceScope = _.join(
-    [
-      AppTab.STUDIO,
-      project.id || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE,
-    ],
+    [AppTab.STUDIO, project.id || REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE],
     REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
   );
 
@@ -367,23 +369,30 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors shrink-0 ml-2" />
                   </Button>
 
-                  {isVoiceDialogOpen && <VoiceSelectionDialog
-                    key={voiceDialogPersistenceScope}
-                    isOpen={isVoiceDialogOpen}
-                    onClose={() => setIsVoiceDialogOpen(false)}
-                    currentLang={currentLang}
-                    selectedVoiceId={project.voiceConfig.voiceURI}
-                    favoriteVoices={favoriteVoices}
-                    onToggleFavoriteVoice={handleToggleFavoriteVoice}
-                    persistenceScope={voiceDialogPersistenceScope}
-                    onSelectVoice={selectVoiceForProject}
-                  />}
+                  {isVoiceDialogOpen && (
+                    <VoiceSelectionDialog
+                      key={voiceDialogPersistenceScope}
+                      isOpen={isVoiceDialogOpen}
+                      onClose={() => setIsVoiceDialogOpen(false)}
+                      currentLang={currentLang}
+                      selectedVoiceId={project.voiceConfig.voiceURI}
+                      favoriteVoices={favoriteVoices}
+                      onToggleFavoriteVoice={handleToggleFavoriteVoice}
+                      persistenceScope={voiceDialogPersistenceScope}
+                      onSelectVoice={selectVoiceForProject}
+                    />
+                  )}
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <Button
-                  variant={testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? "outline" : "secondary"}
+                  variant={
+                    testingVoiceURI ===
+                    (project.voiceConfig.voiceURI || "preset-vi-bac-female")
+                      ? "outline"
+                      : "secondary"
+                  }
                   type="button"
                   onClick={() => {
                     const voiceURI =
@@ -398,14 +407,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       project.voiceConfig.previewUrl,
                     );
                   }}
-                  className={cn(`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
-                    testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female")
-                      ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5"
-                      : ""
-                  }`)}
+                  className={cn(
+                    `flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
+                      testingVoiceURI ===
+                      (project.voiceConfig.voiceURI || "preset-vi-bac-female")
+                        ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5"
+                        : ""
+                    }`,
+                  )}
                 >
                   {testingVoiceURI ===
-                    (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
+                  (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
                     <Pause className="w-4 h-4 animate-pulse text-amber-400" />
                   ) : (
                     <Play className="w-4 h-4 text-rose-500" />
@@ -510,7 +522,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </span>
                   <span className="text-[9px] text-slate-500 font-sans flex items-center gap-1.5">
                     <span
-                      className={cn(`w-1.5 h-1.5 rounded-full ${isPlayingTts || isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`)}
+                      className={cn(
+                        `w-1.5 h-1.5 rounded-full ${isPlayingTts || isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`,
+                      )}
                     />
                     {isPlayingTts || isPlayingRealAudio
                       ? t.Live_playing
@@ -628,7 +642,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 ? undefined
                                 : `${baseCurve}px`,
                             }}
-                            className={cn(`w-0.5 rounded-full transition-all duration-300 ${isMainPlaying ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]" : "bg-slate-800"}`)}
+                            className={cn(
+                              `w-0.5 rounded-full transition-all duration-300 ${isMainPlaying ? "bg-gradient-to-t from-amber-500 via-rose-500 to-[#ffffff]" : "bg-slate-800"}`,
+                            )}
                           />
                         );
                       })}
@@ -788,10 +804,13 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           variant="ghost"
                           type="button"
                           onClick={handleDownloadVoice}
-                          className={cn(`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300"
-                              : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
-                            }`)}
+                          className={cn(
+                            `flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${
+                              ttsAudioUrl === COMMON_STRINGS.SIMULATED
+                                ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300"
+                                : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
+                            }`,
+                          )}
                           title={t.Download_voiceover_file}
                         >
                           <Download className="w-3.5 h-3.5 text-current shrink-0" />
@@ -806,7 +825,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="border border-slate-800 rounded-lg bg-slate-950/90 overflow-hidden font-mono text-[10px] leading-relaxed relative flex flex-col min-h-[220px] max-h-[320px]">
                 <div className="bg-slate-900 px-3 py-1.5 flex items-center justify-between border-b border-slate-800">
                   <div className="flex items-center gap-2">
-                    {loadingStates["bulkVoiceGenerate_loading"] || loadingStates["storyboardSplit_loading"] ? (
+                    {loadingStates["bulkVoiceGenerate_loading"] ||
+                    loadingStates["storyboardSplit_loading"] ? (
                       <span className="relative flex h-2 w-2 shrink-0">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
@@ -843,9 +863,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </div>
                       <div className="flex items-center gap-2 text-amber-300 animate-pulse font-mono pl-4">
                         <span className="animate-spin text-[10px]">⚙️</span>
-                        <span>
-                          {t.Mapping_detailed_timeline}
-                        </span>
+                        <span>{t.Mapping_detailed_timeline}</span>
                       </div>
                     </div>
                   ) : loadingStates["bulkVoiceGenerate_loading"] ? (
@@ -962,17 +980,23 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setStoryboardSourceMode(StoryboardSourceMode.AUDIO);
                 setInfoMsg(t.Switching_to_Audio_Voice_);
               }}
-              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
+              className={cn(
+                `p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`,
+              )}
             >
               <div
-                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
+                className={cn(
+                  `absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`,
+                )}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
               <div className="flex items-center gap-3">
                 <div
-                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
+                  className={cn(
+                    `p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.AUDIO ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-955 border-slate-850 text-slate-400 group-hover:text-slate-300"}`,
+                  )}
                 >
                   <Music className="w-4 h-4" />
                 </div>
@@ -999,17 +1023,23 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 setStoryboardSourceMode(StoryboardSourceMode.SCRIPT);
                 setInfoMsg(t.Switching_to_full_text_sc);
               }}
-              className={cn(`p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`)}
+              className={cn(
+                `p-3.5 rounded-xl border text-left transition-all relative overflow-hidden group flex flex-col justify-center min-h-[90px] h-auto w-full shadow-none ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "border-rose-500/35 bg-rose-950/15 hover:bg-rose-950/20" : "border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/10 bg-slate-900/20"}`,
+              )}
             >
               <div
-                className={cn(`absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`)}
+                className={cn(
+                  `absolute top-3.5 right-3.5 w-4 h-4 rounded-full flex items-center justify-center transition-all ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500 text-white scale-100" : "bg-slate-800 text-transparent scale-75"}`,
+                )}
               >
                 <Check className="w-2.5 h-2.5" />
               </div>
 
               <div className="flex items-center gap-3">
                 <div
-                  className={cn(`p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`)}
+                  className={cn(
+                    `p-2 rounded-lg border shrink-0 transition-colors ${storyboardSourceMode === StoryboardSourceMode.SCRIPT ? "bg-rose-500/10 border-rose-500/20 text-rose-450" : "bg-slate-950 border-slate-850 text-slate-400 group-hover:text-slate-300"}`,
+                  )}
                 >
                   <FileText className="w-4 h-4" />
                 </div>
@@ -1066,7 +1096,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-rose-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner relative z-10 max-w-sm">
-                <Button variant="unstyled"
+                <Button
+                  variant="unstyled"
                   type="button"
                   onClick={() => {
                     setProject((prev) => ({
@@ -1078,14 +1109,19 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={cn(`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
+                  className={cn(
+                    `flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType !== AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                  )}
                 >
                   <Sparkles
-                    className={cn(`w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`)}
+                    className={cn(
+                      `w-3 h-3 ${project.voiceConfig.audioType !== AudioType.Upload ? "text-amber-400" : "text-slate-500"}`,
+                    )}
                   />
                   <span>{t.AI_Speech}</span>
                 </Button>
-                <Button variant="unstyled"
+                <Button
+                  variant="unstyled"
                   type="button"
                   onClick={() => {
                     setProject((prev) => ({
@@ -1099,10 +1135,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       },
                     }));
                   }}
-                  className={cn(`flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`)}
+                  className={cn(
+                    `flex-1 px-3 py-1.5 rounded-md text-xs font-semibold tracking-tight transition-all flex items-center justify-center gap-1.5 h-auto ${project.voiceConfig.audioType === AudioType.Upload ? "bg-slate-800 text-slate-100 border border-slate-600 shadow-md shadow-black/40 ring-1 ring-slate-900/50 z-10" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 hover:shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-rose-500/30"}`,
+                  )}
                 >
                   <Upload
-                    className={cn(`w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`)}
+                    className={cn(
+                      `w-3 h-3 ${project.voiceConfig.audioType === AudioType.Upload ? "text-emerald-400" : "text-slate-500"}`,
+                    )}
                   />
                   <span>{t.External_Audio}</span>
                 </Button>
@@ -1245,24 +1285,31 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               style={{
                                 height: step2IsPlaying ? "auto" : "3px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "2px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "4px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`,
+                              )}
                             />
                           </div>
                         </div>
                       </div>
-                    ) : project.voiceConfig.audioUrl === SIMULATED_SPEECH_VAL ? (
+                    ) : project.voiceConfig.audioUrl ===
+                      SIMULATED_SPEECH_VAL ? (
                       <div className="bg-slate-950/45 border border-slate-855 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.015] rounded-full blur-2xl pointer-events-none" />
 
@@ -1403,7 +1450,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "3px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
@@ -1411,7 +1460,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "2px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
@@ -1419,7 +1470,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   ? "auto"
                                   : "4px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`,
+                              )}
                             />
                           </div>
                         </div>
@@ -1618,19 +1671,25 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               style={{
                                 height: step2IsPlaying ? "auto" : "3px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "2px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-405 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-405 ${step2IsPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`,
+                              )}
                             />
                             <span
                               style={{
                                 height: step2IsPlaying ? "auto" : "4px",
                               }}
-                              className={cn(`w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
+                              className={cn(
+                                `w-[1.5px] rounded-sm bg-emerald-400 ${step2IsPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`,
+                              )}
                             />
                           </div>
                         </div>
@@ -1653,10 +1712,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         className="relative z-10"
                       >
                         <label
-                          className={cn(`w-full min-h-[95px] py-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-slate-955/40 ${isAudioDragging ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]" : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"}`)}
+                          className={cn(
+                            `w-full min-h-[95px] py-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer bg-slate-955/40 ${isAudioDragging ? "border-emerald-500/60 bg-emerald-950/25 animate-pulse scale-[1.01]" : "border-slate-850 hover:border-emerald-500/40 hover:bg-slate-950/60"}`,
+                          )}
                         >
                           <Upload
-                            className={cn(`w-5 h-5 transition-transform ${isAudioDragging ? "text-emerald-400 scale-125" : "text-slate-500"}`)}
+                            className={cn(
+                              `w-5 h-5 transition-transform ${isAudioDragging ? "text-emerald-400 scale-125" : "text-slate-500"}`,
+                            )}
                           />
                           <div className="text-center space-y-0.5">
                             <span className="text-[11px] font-bold text-slate-300 block font-sans">
@@ -1810,7 +1873,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
                 <div className="flex-1 flex flex-col min-w-0 w-full min-h-[90px]">
                   {project.visualConfig?.referenceImages &&
-                    project.visualConfig.referenceImages.length > 0 ? (
+                  project.visualConfig.referenceImages.length > 0 ? (
                     <div className="flex flex-col gap-3 h-full">
                       <div className="flex flex-wrap gap-2">
                         {project.visualConfig.referenceImages.map(
@@ -1965,7 +2028,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
 
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-inner">
                 {!project.visualConfig?.characters ||
-                  project.visualConfig.characters.length === 0 ? (
+                project.visualConfig.characters.length === 0 ? (
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 text-[11px] text-slate-350 leading-relaxed italic">
                       {t.charNotAnalyzed}
@@ -2003,7 +2066,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           size="xs"
                         >
                           <RefreshCw
-                            className={cn(`w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`)}
+                            className={cn(
+                              `w-2.5 h-2.5 ${loadingStates["analyzeCharacter"] ? "animate-spin" : ""}`,
+                            )}
                           />
                           {t.charReAnalyze}
                         </Button>
@@ -2065,7 +2130,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         navigator.clipboard.writeText(
                                           `${char.name}: ${char.description}`,
                                         );
-                                        setTemporaryState(setInfoMsg,t.charDescCopied,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+                                        setTemporaryState(
+                                          setInfoMsg,
+                                          t.charDescCopied,
+                                          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+                                          UI_MESSAGE_DURATION.STANDARD_MS,
+                                        );
                                       }}
                                       title={t.charCopyDesc}
                                       className="shrink-0 p-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-855 rounded text-slate-400 hover:text-slate-205 transition-colors shadow-none h-auto w-auto"
@@ -2213,7 +2283,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                         navigator.clipboard.writeText(
                                           char.prompt || "",
                                         );
-                                        setTemporaryState(setInfoMsg,t.charCopied,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+                                        setTemporaryState(
+                                          setInfoMsg,
+                                          t.charCopied,
+                                          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+                                          UI_MESSAGE_DURATION.STANDARD_MS,
+                                        );
                                       }}
                                       className="shrink-0 p-0.5 bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-500/20 rounded text-emerald-400 transition-colors shadow-none h-auto w-auto"
                                     >
@@ -2301,7 +2376,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <Button
                 variant="ghost"
                 onClick={handleCopyAllPrompts}
-                className={cn(`w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-none h-auto ${copiedAll ? "bg-emerald-600 text-white hover:bg-emerald-600 hover:text-white" : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"}`)}
+                className={cn(
+                  `w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-none h-auto ${copiedAll ? "bg-emerald-600 text-white hover:bg-emerald-600 hover:text-white" : "bg-rose-955/40 hover:bg-rose-900/40 text-rose-400 border border-rose-500/20"}`,
+                )}
               >
                 {copiedAll ? (
                   <Check className="w-4 h-4" />
@@ -2535,8 +2612,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                     <span>{(project.storyboard || []).length}</span>
                     {(loadingStates["storyboardSplit_loading"] ||
                       loadingStates["bulkVoiceGenerate_loading"]) && (
-                        <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
-                      )}
+                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                    )}
                   </span>
                   {t.totalScenesCount.split("{count}")[1] && (
                     <span className="text-slate-300 font-medium text-sm">
@@ -2568,24 +2645,24 @@ export default function PipelineStep1(props: PipelineWizardState) {
             <div className="relative min-h-[250px] rounded-xl">
               {(loadingStates["storyboardSplit_loading"] ||
                 loadingStates["bulkVoiceGenerate_loading"]) && (
-                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
-                    <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
-                      <Sparkles className="w-8 h-8 text-rose-500" />
-                    </div>
-                    <div className="space-y-1 max-w-sm">
-                      <p className="font-bold text-slate-200 text-sm">
-                        {loadingStates["bulkVoiceGenerate_loading"]
-                          ? t.Generating_all_voices
-                          : t.MULTI_STEP_SYSTEM_FLOW_Di}
-                      </p>
-                      <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
-                        {loadingStates["bulkVoiceGenerate_loading"]
-                          ? t.System_is_synthesizing_te
-                          : t.Mapping_detailed_timeline}
-                      </p>
-                    </div>
+                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-xl z-20 flex flex-col items-center justify-center p-8 text-center space-y-4 border border-rose-500/10">
+                  <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 animate-spin">
+                    <Sparkles className="w-8 h-8 text-rose-500" />
                   </div>
-                )}
+                  <div className="space-y-1 max-w-sm">
+                    <p className="font-bold text-slate-200 text-sm">
+                      {loadingStates["bulkVoiceGenerate_loading"]
+                        ? t.Generating_all_voices
+                        : t.MULTI_STEP_SYSTEM_FLOW_Di}
+                    </p>
+                    <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                      {loadingStates["bulkVoiceGenerate_loading"]
+                        ? t.System_is_synthesizing_te
+                        : t.Mapping_detailed_timeline}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {paginatedStoryboard.map((scene) => {
@@ -2609,7 +2686,14 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       className="group relative aspect-[16/9] bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer hover:scale-[1.03] hover:-translate-y-1"
                     >
                       {_.isEqual(scene.assetType, GenerateType.Video) ? (
-                        <video src={displayUrl} muted loop playsInline preload="metadata" className="w-full h-full object-cover" />
+                        <video
+                          src={displayUrl}
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <img
                           referrerPolicy="no-referrer"
@@ -2625,20 +2709,22 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       {loadingStates[
                         LOADING_KEYS.RENDER_SCENE_PREFIX + scene.id
                       ] && (
-                          <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
-                            <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
-                            <span className="text-[10px] font-mono text-rose-300 font-bold tracking-wider uppercase">
-                              {t.Drawing}
-                            </span>
-                          </div>
-                        )}
+                        <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-2 text-center space-y-1.5 animate-fadeIn">
+                          <RefreshCw className="w-5 h-5 text-rose-500 animate-spin" />
+                          <span className="text-[10px] font-mono text-rose-300 font-bold tracking-wider uppercase">
+                            {t.Drawing}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
                         <span className="bg-slate-950/85 backdrop-blur-md text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded font-mono border border-slate-800/70 shadow">
                           #{scene.id}
                         </span>
                         <span className="bg-rose-600/90 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shadow-sm">
-                          {ttsAudioUrl && ttsAudioUrl !== "simulated" && ttsAudioUrl !== "simulated_speech"
+                          {ttsAudioUrl &&
+                          ttsAudioUrl !== "simulated" &&
+                          ttsAudioUrl !== "simulated_speech"
                             ? `${formatCleanTime(scene.startTime)} - ${formatCleanTime(scene.endTime)}`
                             : "--:-- - --:--"}
                         </span>
@@ -2755,7 +2841,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       {t.Scene_Inspector} - {activeScene.id}
                     </span>
                     <span className="text-slate-400 font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded-full ml-2">
-                      {ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED && ttsAudioUrl !== SIMULATED_SPEECH_VAL
+                      {ttsAudioUrl &&
+                      ttsAudioUrl !== COMMON_STRINGS.SIMULATED &&
+                      ttsAudioUrl !== SIMULATED_SPEECH_VAL
                         ? `${formatCleanTime(activeScene.startTime)} - ${formatCleanTime(activeScene.endTime)} (${Math.round(activeScene.duration || 0)}${t.s_6 || "s"})`
                         : "--:-- - --:--"}
                     </span>
@@ -2771,9 +2859,20 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </label>
 
                         <div className="aspect-[16/9] bg-slate-955 rounded-xl overflow-hidden border border-slate-800 relative flex items-center justify-center shadow-inner">
-                          {hasAsset && (
-                            _.isEqual(activeScene.assetType, GenerateType.Video) ? (
-                              <video src={displayUrl} controls autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                          {hasAsset &&
+                            (_.isEqual(
+                              activeScene.assetType,
+                              GenerateType.Video,
+                            ) ? (
+                              <video
+                                src={displayUrl}
+                                controls
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <img
                                 referrerPolicy="no-referrer"
@@ -2784,8 +2883,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 }
                                 className="w-full h-full object-cover"
                               />
-                            )
-                          )}
+                            ))}
 
                           {!hasAsset && (
                             <div className="absolute inset-0 bg-slate-950/20 flex flex-col items-center justify-center p-4 text-center pointer-events-none">
@@ -2798,13 +2896,13 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           {loadingStates[
                             LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
                           ] && (
-                              <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-4 text-center space-y-2 animate-fadeIn animate-duration-200">
-                                <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
-                                <span className="text-xs font-mono text-rose-300 font-bold tracking-wider uppercase">
-                                  {t.Drawing}
-                                </span>
-                              </div>
-                            )}
+                            <div className="absolute inset-0 bg-slate-950 backdrop-blur-[2px] flex flex-col items-center justify-center z-10 p-4 text-center space-y-2 animate-fadeIn animate-duration-200">
+                              <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
+                              <span className="text-xs font-mono text-rose-300 font-bold tracking-wider uppercase">
+                                {t.Drawing}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -2820,7 +2918,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           }
                           disabled={
                             !!loadingStates[
-                            LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
+                              LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
                             ] ||
                             isDeletingImage ||
                             isUploadingImage
@@ -2847,7 +2945,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         </Button>
 
                         <label
-                          className={cn(`flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`)}
+                          className={cn(
+                            `flex items-center justify-center gap-1.5 text-xs font-bold text-cyan-400 hover:text-white bg-cyan-500/10 hover:bg-cyan-600 px-3 py-2.5 rounded-xl border border-cyan-500/20 cursor-pointer transition shadow-sm text-center ${isUploadingImage || isDeletingImage || !!loadingStates[LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id] ? "opacity-50 pointer-events-none cursor-not-allowed" : ""}`,
+                          )}
                         >
                           {isUploadingImage ? (
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -2867,8 +2967,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               isUploadingImage ||
                               isDeletingImage ||
                               !!loadingStates[
-                              LOADING_KEYS.RENDER_SCENE_PREFIX +
-                              activeScene.id
+                                LOADING_KEYS.RENDER_SCENE_PREFIX +
+                                  activeScene.id
                               ]
                             }
                             onChange={(e) => {
@@ -2901,7 +3001,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             isDeletingImage ||
                             isUploadingImage ||
                             !!loadingStates[
-                            LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
+                              LOADING_KEYS.RENDER_SCENE_PREFIX + activeScene.id
                             ]
                           }
                           className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-red-500 hover:text-white bg-red-500/10 hover:bg-red-655 px-3 py-2 rounded-xl border border-red-500/20 h-auto shadow-none"
@@ -2962,7 +3062,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(sceneEditScript);
-                                setTemporaryState(setInfoMsg,t.copiedScript,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+                                setTemporaryState(
+                                  setInfoMsg,
+                                  t.copiedScript,
+                                  REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+                                  UI_MESSAGE_DURATION.STANDARD_MS,
+                                );
                               }}
                               title={t.copyNarration}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
@@ -2993,7 +3098,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 navigator.clipboard.writeText(
                                   sceneEditSubtitle,
                                 );
-                                setTemporaryState(setInfoMsg,t.copiedSubtitle,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+                                setTemporaryState(
+                                  setInfoMsg,
+                                  t.copiedSubtitle,
+                                  REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+                                  UI_MESSAGE_DURATION.STANDARD_MS,
+                                );
                               }}
                               title={t.copySubtitle}
                               className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"
@@ -3171,7 +3281,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                   navigator.clipboard.writeText(
                                     sceneEditPrompt,
                                   );
-                                  setTemporaryState(setInfoMsg,t.copiedPrompt,REFACTOR_CONSTANTS.VD_EMPTY_STRING,UI_MESSAGE_DURATION.STANDARD_MS);
+                                  setTemporaryState(
+                                    setInfoMsg,
+                                    t.copiedPrompt,
+                                    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+                                    UI_MESSAGE_DURATION.STANDARD_MS,
+                                  );
                                 }}
                                 title={t.copyAiImagePrompt}
                                 className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 hover:text-slate-100 text-slate-300 text-[9px] font-bold rounded flex items-center gap-1 shadow-none h-auto w-auto"

@@ -126,7 +126,13 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       });
 
       const data: any = await response.json();
-      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify({ hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])) }));
+      const keyAvailability = {
+        hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])),
+        hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])),
+        hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])),
+        hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])),
+      };
+      appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify(keyAvailability));
 
       const fetchedGemini = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini]);
       if (!isGeminiUserKey && !_.isEmpty(fetchedGemini)) {

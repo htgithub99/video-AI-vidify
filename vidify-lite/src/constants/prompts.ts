@@ -3,6 +3,7 @@ import { AspectRatio } from "../types.js";
 import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
+import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG } from "./thumbnail.js";
 
 export const NO_FRAME_RULE = `CRITICAL RULE - NO FRAMES OR BORDERS: The generated image must be a direct, full-bleed view of the scene. NEVER use words like "framed", "painting in a frame", "picture frame", "canvas border", or "museum display". Include the constraint "borderless, no frame, no borders" exactly once before the final aspect-ratio parameter.`;
 
@@ -138,8 +139,8 @@ ${NO_FRAME_RULE}
 - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
-export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
-Your task is to take a list of original image generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
+export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string, isThumbnail: boolean = false): string => `You are an elite AI Image Prompt Designer.
+Your task is to take a list of original ${isThumbnail ? "thumbnail" : "image"} generation prompts and rewrite them so that they perfectly align with the new visual style provided, while STRICTLY keeping the original meaning, setting, characters, actions, key identifiers${isThumbnail ? ", selected layout, negative space, headline wording, and headline placement" : ""} intact.
 
 [VISUAL REFERENCE SOURCE MATERIALS]
 - New Target Style: "${newStyle}"
@@ -158,7 +159,7 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 ${NO_FRAME_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
 - FRAME FORMAT: Compose every scene natively for ${aspectRatio}. Do not include model-specific flags such as --ar in the prompt text because aspect ratio is supplied separately to the image engine.
-IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
+${isThumbnail ? "Write the technical prompt in English, but preserve the exact visible headline in its requested language with correct spelling and diacritics." : "IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output."}
 
 Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt in English"}]. Do not include markdown tags, code blocks, or explanatory text.
 
@@ -227,7 +228,9 @@ ${getGeneratedMediaLanguageDirective(isVi)}
 
 IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output.
 
-Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "optimized prompt in English"}]. Do not include markdown tags, code blocks, or explanatory text.
+For every scene, also identify the named character IDs that are visibly present, the exact number of primary visible subjects, whether background people are narratively required, whether readable text is required, and the intended layout. Default to one continuous frame, no background people, and no readable text unless the narration explicitly requires otherwise.
+
+Output ONLY a valid JSON array matching this structure: [{"id":"scene_id","prompt":"optimized prompt in English","characterIds":["char_1"],"expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false}]. Use only character IDs supplied in Character Reference Specs. Do not include markdown tags, code blocks, or explanatory text.
 
 Input scenes to optimize (includes current prompt and script):
 ${chunkJson}`;
@@ -347,13 +350,16 @@ Return JSON only:
   "composition": 0,
   "styleConsistency": 0,
   "editability": 0,
+  "unwantedText": false,
+  "multiPanelLayout": false,
+  "duplicatedSubjects": false,
   "usableForVideo": false,
   "blockingErrors": ["machine_readable_error_tag"],
   "warnings": [],
   "correctivePrompt": "A concise corrected image-generation prompt that preserves the intended scene while explicitly preventing every detected error."
 }
 
-Use integer scores from 0 to 100. If a blocking defect exists, usableForVideo must be false.`;
+Use integer scores from 0 to 100. Detect unwanted readable text, multi-panel/collage layouts, and duplicated primary subjects explicitly. Only mark them blocking when they materially violate the supplied prompt or make the frame unusable. If a blocking defect exists, usableForVideo must be false.`;
 
 export const SCENE_QA_REFERENCE_DIRECTIVE = "The next image is the canonical character/style reference. Penalize identity, clothing, age, skin-tone, line-style, and palette drift in the candidate image.";
 
@@ -727,52 +733,55 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean, aspectRatio: string = "16:9"): string => `You are an elite YouTube visual strategist and viral click-through rate copywriter.
-Your task is to analyze this script and generate EXACTLY ${thumbnailCount} highly engaging, high-contrast ${aspectRatio} visual thumbnail designs.
+export const getThumbnailLayoutPrompt = (rewrittenScript: string, thumbnailCount: number, refImageStr: string, isVi: boolean, aspectRatio: string = "16:9", textMode: string = "auto"): string => `You are a senior YouTube thumbnail art director and CTR strategist.
+Analyze the script and create EXACTLY ${thumbnailCount} distinct ${aspectRatio} thumbnail concepts. Select each layout because it fits the story, not merely to force variety.
 
----
+[SCRIPT]
 ${rewrittenScript}
----
 
-${refImageStr}
+[STYLE REFERENCE]
+${refImageStr || "No extracted thumbnail style was supplied. Use an editorial treatment appropriate to the script."}
 
-Your process MUST complete all steps internally:
-1. Concept Brainstorming: Devise visual concepts that use powerful emotional drivers (intense curiosity, dread, wonder, shock, mystery).
-2. Layout & Composition (Inspired by high-converting duel/confrontation style):
-   - You MUST utilize highly viral YouTube thumbnail layouts, varying them across the generated thumbnails.
-   - Dual/Confrontation Layout: Design a split-screen or high-contrast comparison (e.g., two opposing subjects, factions, or choices on the left and right). In the middle/divider of the split-screen, there must be a giant, striking, vibrant symbol to create curiosity, such as a giant red painted question mark (?), a fiery glowing rift, or a bold historic-looking 'VS' divider. Avoid using modern glowing cyberpunk neon symbols in historical or classic settings.
-   - Extreme Close-up Reaction: A huge, highly detailed face showing intense emotion taking up one half of the screen, with the object of interest on the other half. If the setting is historical or classic, demand a classic oil painting style or dramatic Rembrandt lighting to make the expression look authentic and cinematic, rather than generic low-quality AI stock photos.
-   - The Hidden Secret: A mysterious glowing object or silhouette in the foreground, with blurred cinematic depth behind it.
-3. Typography & Text Overlay (100% MANDATORY REQUIREMENT):
-   - EVERY single design in the array MUST have hasText: true.
-   - The textText must be a highly relevant, click-bait text hook derived from the video script, written in ${isVi ? "Vietnamese (e.g., 'QUYẾT ĐỊNH!', 'SỰ THẬT!', 'SAI LẦM!')" : "English (e.g., 'THE TRUTH!', 'DECISION!', 'WHAT IF?')"} in uppercase, keep it extremely short (1 to 4 words maximum) to avoid clutter.
-   - Typography should suggest massive, bold, high-contrast block fonts (like Impact, Arial Black, Montserrat Bold).
-   - Underneath the main text, instead of flat game-like buttons, optionally suggest natural thematic elements that simulate interactive choices (e.g., a dusty red flag pointing left and a worn white flag pointing right with choice text, or physical objects placed on a map like a sword vs. shackles).
-4. Prompt Design & Text Integration (CRITICAL FOR IMAGE GENERATION):
-   - You MUST write the visual image generation prompts in English.
-   - CRITICAL DIRECTIVE: You MUST explicitly describe the text overlay and its visual details directly inside the "prompt" field so the AI image generator (like Flux, Midjourney, or Veo) actually renders the text onto the generated image.
-   - POSITIONING SAFETY: To prevent UI labels or status overlays from covering the text, specify the text to be placed with a safe margin from the top edge, preferably positioned slightly lower in the upper-center or lower-center areas.
-   - Describe the text in the prompt as: "...a bold, massive, high-contrast text overlay reading '[YOUR_TEXT_TEXT]' in uppercase, written in clean blocky typography with a heavy black outline/drop shadow, safely positioned with a top padding to avoid edges...".
-   - If there are choices or secondary labels, describe them as physical, in-world rustic objects: "...at the bottom, two physical choice markers represented by weathered items on a table with short text labels 'OPTION A' and 'OPTION B' written clearly beside them...". Avoid flat digital banners or game UI overlays.
-   - The overall image style must be highly cinematic, with dramatic lighting, high contrast, sharp details, and strong color contrast (e.g. warm sunset/dust tones vs. cold shadows). Use subject separation or depth of field only when permitted by the active background policy.
-   - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single thumbnail. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
+[APPROVED LAYOUT LIBRARY]
+${_.join(_.map(THUMBNAIL_LAYOUT_CATALOG, layout => `- ${layout.id}: ${layout.composition} Best suited to ${layout.bestFor}.`), "\n")}
+
+[ART-DIRECTION PROCESS]
+1. Identify the video's central promise, strongest visible evidence, dominant emotion, recurring characters, and the one question that should make a viewer click.
+2. Score the approved layouts internally for story fit, phone-size clarity, emotional force, style compatibility, and available negative space.
+3. Select one layoutId per concept. Prefer different layouts when several score similarly, but reuse a layout when it is clearly strongest.
+4. Use only story-supported people, props, places, and consequences. Do not invent generic shock objects, glowing mysteries, versus symbols, question marks, arrows, or extra faces unless they clarify real evidence in the script.
+5. Match the supplied reference style faithfully. Never upgrade a flat illustration into cinematic realism, 3D, oil painting, neon, or heavy shading unless those traits exist in the reference.
+6. Keep one dominant idea, one readable hierarchy, clear silhouettes, strong subject-background separation, and minimal clutter. Keep the bottom-right timestamp zone and outer edge margins clear.
+7. Arrows are optional editorial aids. Use at most one arrow and only when it points to a specific story-relevant clue.
+3. Text policy:
+   - ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)}
+   - When text is used, write natural ${isVi ? "Vietnamese with correct diacritics" : "English"}, keep the main hook to at most ${THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS} words, and describe its exact placement.
+   - When text is not used, set hasText=false and textText to an empty string. Never add a platform duration badge.
+4. Prompt construction:
+   - Write each generation prompt in English except for the exact visible headline stored in textText.
+   - Preserve the selected layout, subject count, negative space, headline placement, reference style, and safe zones.
+   - Produce one full-bleed image, not a mockup, poster frame, contact sheet, or bordered collage.
+   - Do not include model-specific aspect-ratio flags because the image engine receives ${aspectRatio} separately.
+   - Every concept must be materially different in focal evidence, emotional angle, or layout.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, no markdown code wraps or backticks:
 {
   "concepts": [
-    { "composition": "Visual focus and emotion driver", "textHook": "TEXT" }
+    { "layoutId": "subject_left_text_right", "composition": "Why this composition fits", "textHook": "SHORT HOOK", "layoutScore": 90 }
   ],
   "thumbnails": [
     {
       "id": "th_1",
-      "prompt": "Highly detailed ${aspectRatio} thumbnail prompt in English. Must describe all visual elements, cinematic lighting, explicitly detail the typography text overlay (e.g. '...a bold massive white text overlay safely below the top edge that reads \"THE TRUTH\" with a thick black outline...') so it is rendered by the AI image generator, and you MUST append the exact parameter '--ar ${aspectRatio}' at the very end of the prompt.",
-      "style": "Dramatic Cinematic",
+      "prompt": "Concise English generation prompt describing the visible subject, action, evidence, background, selected composition, optional headline placement, palette, and faithful reference style.",
+      "style": "Faithful reusable style description",
       "hasText": true,
-      "textText": "${isVi ? "SỰ THẬT!" : "THE TRUTH!"}",
-      "layout": "Split-screen confrontation with a giant red question mark (?) in the center",
-      "typography": "Impact Bold Sans",
-      "colorSuggestion": "Vibrant white text with thick black borders, and safe margins",
-      "subjectFocus": "Opposing commanders on left and right sides"
+      "textText": "${isVi ? "MÓC CÂU" : "THE HOOK"}",
+      "layoutId": "subject_left_text_right",
+      "layout": "Exact spatial arrangement",
+      "layoutRationale": "Why this layout best communicates the video's promise",
+      "typography": "Short typography direction",
+      "colorSuggestion": "Controlled contrast and accent colors",
+      "subjectFocus": "The single primary focal subject or group"
     }
   ]
 }`;

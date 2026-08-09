@@ -2,7 +2,10 @@ import _ from "lodash";
 import { ChevronDown, Mic } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
-import { VoiceSelectionDialog, type Voice as CatalogVoice } from "../VoiceSelectionDialog";
+import {
+  VoiceSelectionDialog,
+  type Voice as CatalogVoice,
+} from "../VoiceSelectionDialog";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Lang } from "../../lib/lang";
 import { PIPELINE_STEPS } from "../../constants/enums";
@@ -35,8 +38,13 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">{PIPELINE_STEPS.STEP_2}</span>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
+        <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">
+          {PIPELINE_STEPS.STEP_2}
+        </span>
+        <h3
+          className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5"
+          title={T.sec2TitleTooltip}
+        >
           <Mic className="w-3.5 h-3.5 text-rose-500" /> {T.sec2Title}
         </h3>
       </div>
@@ -59,7 +67,9 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
                   {truncateWords(voiceName || voiceURI, 4)}
                 </span>
               </Tooltip>
-              <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>
+              <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">
+                {voiceProvider}
+              </span>
             </div>
           </div>
           <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-rose-400" />
@@ -74,7 +84,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
           currentLang={currentLang}
           selectedVoiceId={voiceURI}
           favoriteVoices={[]}
-          onToggleFavoriteVoice={() => { }}
+          onToggleFavoriteVoice={() => {}}
           persistenceScope={voiceDialogPersistenceScope}
           onSelectVoice={handleVoiceSelect}
         />

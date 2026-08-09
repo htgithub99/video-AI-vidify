@@ -4,8 +4,7 @@ import { chromium } from "playwright-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
 import { EXTERNAL_URLS } from "../../constants";
 import { appLog, appError } from "../../lib/logger.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 chromium.use(stealthPlugin());
 
@@ -75,7 +74,9 @@ export async function initPlaywright() {
     if (_.isEmpty(globalBearerToken)) {
       appLog("PLAYWRIGHT_LOGIN_PROMPT");
       page
-        .waitForResponse((res) => res.url().includes("googleapis.com"), { timeout: 300000 })
+        .waitForResponse((res) => res.url().includes("googleapis.com"), {
+          timeout: 300000,
+        })
         .then(() => appLog("PLAYWRIGHT_TOKEN_CAPTURED"))
         .catch(() => appLog("PLAYWRIGHT_TOKEN_TIMEOUT"));
     } else {
@@ -85,7 +86,15 @@ export async function initPlaywright() {
     globalPlaywrightPage = page;
   } catch (e: any) {
     appError("PLAYWRIGHT_CONNECT_ERR", e?.message || e);
-    _.forEach(["PLAYWRIGHT_BORDER", "PLAYWRIGHT_CHROME_MANDATE", "PLAYWRIGHT_CHROME_COMMAND", "PLAYWRIGHT_BORDER_BOTTOM"], (k) => appLog(k));
+    _.forEach(
+      [
+        "PLAYWRIGHT_BORDER",
+        "PLAYWRIGHT_CHROME_MANDATE",
+        "PLAYWRIGHT_CHROME_COMMAND",
+        "PLAYWRIGHT_BORDER_BOTTOM",
+      ],
+      (k) => appLog(k),
+    );
   }
 }
 

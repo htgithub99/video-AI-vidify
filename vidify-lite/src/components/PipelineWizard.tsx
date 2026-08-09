@@ -19,6 +19,7 @@ import { Button } from "./ui/Button";
 import { Tooltip } from "./ui/Tooltip";
 import { AlertCircle, Download, Pause, Terminal, Workflow } from "lucide-react";
 import { PipelineConstants } from "../constants/pipelineConstants";
+import { getUserLogBadges } from "../lib/userLogFormatter";
 
 const { ArrowLeft, Settings2, ImageIcon, Video, ChevronDown, Type, ClipboardPaste, Volume2, Play, User, Layers, Check, Sparkles, Search, X, Heart, Trash, Copy, Pencil, Palette } = LucideIcons as any;
 
@@ -74,6 +75,7 @@ export default function PipelineWizard(props: PipelineWizardProps) {
     handleDeleteFavoriteVoice,
     handleSaveEditVoice,
   } = wizard;
+  const userLogBadges = getUserLogBadges(currentLang);
   const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang];
 
   const logsEndRef = React.useRef<HTMLDivElement>(null);
@@ -739,31 +741,31 @@ export default function PipelineWizard(props: PipelineWizardProps) {
                 ) : (
                   systemLogs.map((log, i) => {
                     let badgeClass = "bg-sky-500/10 text-sky-500 border-sky-500/20";
-                    let badgeText = "INFO";
+                    let badgeText: string = userLogBadges.INFO_BADGE;
                     let bgClass = "";
                     let textClass = "text-slate-300";
                     if (log.type === "error") {
                       badgeClass = "bg-red-500/10 text-red-500 border-red-500/30";
-                      badgeText = "ERR";
+                      badgeText = userLogBadges.ERROR_BADGE;
                       bgClass = "bg-red-500/5 -mx-2 px-2";
                       textClass = "text-red-500 font-medium";
                     } else if (log.type === "warn") {
                       badgeClass = "bg-orange-500/10 text-orange-500 border-orange-500/30";
-                      badgeText = "WARN";
+                      badgeText = userLogBadges.WARNING_BADGE;
                       textClass = "text-orange-500";
                     } else if (log.type === "success") {
                       badgeClass = "bg-teal-500/10 text-teal-500 border-teal-500/30";
-                      badgeText = "OK";
+                      badgeText = userLogBadges.SUCCESS_BADGE;
                       textClass = "text-teal-500 font-medium";
                     } else if (log.type === "pending") {
                       badgeClass = "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/30";
-                      badgeText = "WAIT";
+                      badgeText = userLogBadges.PENDING_BADGE;
                       textClass = "text-fuchsia-500 font-medium";
                     }
                     return (
                       <div key={i} className={cn(`flex items-start gap-2 border-b border-slate-800/50 pb-2 pt-1 ${bgClass}`)}>
                         <span className="text-slate-500 shrink-0 mt-0.5">[{log.time}]</span>
-                        <span className={cn(`shrink-0 text-[9px] uppercase font-bold w-10 text-center py-0.5 mt-0.5 rounded border ${badgeClass}`)}>{badgeText}</span>
+                        <span className={cn(`shrink-0 text-[9px] uppercase font-bold w-12 text-center py-0.5 mt-0.5 rounded border ${badgeClass}`)}>{badgeText}</span>
                         <span className={cn(`break-all whitespace-pre-wrap leading-relaxed ${textClass}`)}>{log.msg}</span>
                       </div>
                     );

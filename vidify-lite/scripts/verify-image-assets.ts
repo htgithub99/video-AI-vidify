@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { readEncodedProjectImage, readStyleReferenceImage } from "../src/server/services/imageAssetService.ts";
+import { createGeminiReferenceFiles } from "../src/server/services/imageGeneratorService.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 
 const originalAppDataDirectory = process.env.APP_DATA_DIR;
@@ -31,6 +32,15 @@ try {
   const encodedStyleImage = await readStyleReferenceImage("/assets/projects/test/images/reference.png");
   assert.equal(encodedStyleImage.mimeType, "image/png");
   assert.equal(encodedStyleImage.data, imageBuffer.toString("base64"));
+
+  const referenceFiles = createGeminiReferenceFiles([
+    "data:image/webp;base64,aW1hZ2U=",
+    "/assets/projects/test/images/reference.png",
+  ]);
+  assert.equal(referenceFiles.length, 2);
+  assert.equal(referenceFiles[0].mimeType, "image/webp");
+  assert.equal(referenceFiles[1].mimeType, "image/png");
+  assert.equal(referenceFiles[1].buffer.toString(), imageBuffer.toString());
 
   writeVerificationLog("Image asset assertions passed");
 } finally {

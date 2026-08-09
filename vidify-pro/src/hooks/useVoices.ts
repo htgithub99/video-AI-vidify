@@ -1,14 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import _ from 'lodash';
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import _ from "lodash";
 import {
   API_QUERY_PARAMS,
   VBEE_PROVIDER_ID,
   VOICE_OWNERSHIP_KEY,
   VOICE_OWNERSHIP_COMMUNITY,
-  REFACTOR_CONSTANTS
-} from '../constants';
-import { fetchVoiceCatalog } from '../services/voiceCatalogService';
+  REFACTOR_CONSTANTS,
+} from "../constants";
+import { fetchVoiceCatalog } from "../services/voiceCatalogService";
 
 const CACHE_PREFIX = REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX;
 const QUERY_KEY = REFACTOR_CONSTANTS.VOICES_QUERY_KEY;
@@ -35,7 +35,7 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
     filters.language || EMPTY_STRING,
     filters.gender || EMPTY_STRING,
     filters.age || EMPTY_STRING,
-    filters.search || EMPTY_STRING
+    filters.search || EMPTY_STRING,
   ];
   const cacheKey = _.join(parts, JOIN_CHAR);
 
@@ -78,7 +78,7 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
   });
 
   useEffect(() => {
-    const data = _.get(query, 'data');
+    const data = _.get(query, "data");
     if (data) {
       localStorage.setItem(cacheKey, JSON.stringify(data));
     }

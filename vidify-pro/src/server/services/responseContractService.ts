@@ -1,4 +1,44 @@
 import _ from "lodash";
-export enum ResponseContractName { Hook="hook",ScriptPlan="script_plan",Chapter="chapter" }
-const REQUIRED_PATHS:Record<ResponseContractName,string[]>={[ResponseContractName.Hook]:["audience","versions"],[ResponseContractName.ScriptPlan]:["theme","creativeBrief","factPack","chapters"],[ResponseContractName.Chapter]:["scriptSegment"]};
-export const assertResponseContract=(value:unknown,contract:ResponseContractName):void=>{if(!_.isPlainObject(value))throw new Error(`invalid_${contract}_response`);const missing=_.filter(REQUIRED_PATHS[contract],item=>_.isNil(_.get(value,item)));if(!_.isEmpty(missing))throw new Error(`invalid_${contract}_response_missing_${_.join(missing,"_")}`);if(contract===ResponseContractName.Hook&&_.isEmpty(_.get(value,"versions")))throw new Error("invalid_hook_response_empty_versions");if(contract===ResponseContractName.ScriptPlan&&_.lt(_.size(_.get(value,"chapters")),3))throw new Error("invalid_script_plan_response_insufficient_chapters");if(contract===ResponseContractName.Chapter&&_.isEmpty(_.trim(_.toString(_.get(value,"scriptSegment")))))throw new Error("invalid_chapter_response_empty_script")};
+export enum ResponseContractName {
+  Hook = "hook",
+  ScriptPlan = "script_plan",
+  Chapter = "chapter",
+}
+const REQUIRED_PATHS: Record<ResponseContractName, string[]> = {
+  [ResponseContractName.Hook]: ["audience", "versions"],
+  [ResponseContractName.ScriptPlan]: [
+    "theme",
+    "creativeBrief",
+    "factPack",
+    "chapters",
+  ],
+  [ResponseContractName.Chapter]: ["scriptSegment"],
+};
+export const assertResponseContract = (
+  value: unknown,
+  contract: ResponseContractName,
+): void => {
+  if (!_.isPlainObject(value)) throw new Error(`invalid_${contract}_response`);
+  const missing = _.filter(REQUIRED_PATHS[contract], (item) =>
+    _.isNil(_.get(value, item)),
+  );
+  if (!_.isEmpty(missing))
+    throw new Error(
+      `invalid_${contract}_response_missing_${_.join(missing, "_")}`,
+    );
+  if (
+    contract === ResponseContractName.Hook &&
+    _.isEmpty(_.get(value, "versions"))
+  )
+    throw new Error("invalid_hook_response_empty_versions");
+  if (
+    contract === ResponseContractName.ScriptPlan &&
+    _.lt(_.size(_.get(value, "chapters")), 3)
+  )
+    throw new Error("invalid_script_plan_response_insufficient_chapters");
+  if (
+    contract === ResponseContractName.Chapter &&
+    _.isEmpty(_.trim(_.toString(_.get(value, "scriptSegment"))))
+  )
+    throw new Error("invalid_chapter_response_empty_script");
+};

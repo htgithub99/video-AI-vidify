@@ -46,5 +46,17 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
     !project.finalMultimodalQa ? ["final_multimodal_qa_missing"] : [],
     project.finalMultimodalQa?.warnings,
   ])));
-  return { visualBlockingErrors: unapprovedScenes + unapprovedThumbnails, audioBlockingErrors, subtitleBlockingErrors, missingAssets, continuityScore: project.finalMultimodalQa?.continuityScore || project.scriptQa?.continuityScore || 0, emotionalArcScore: project.scriptQa?.emotionalArcScore || 0, pacingScore: project.finalMultimodalQa?.pacingScore || 0, promiseAlignmentScore: project.finalMultimodalQa?.promiseAlignmentScore || project.scriptQa?.hookPayoffScore || 0, blockingErrors, warnings, publishable: _.isEmpty(blockingErrors) };
+  return {
+    visualBlockingErrors: unapprovedScenes + unapprovedThumbnails,
+    audioBlockingErrors,
+    subtitleBlockingErrors,
+    missingAssets,
+    continuityScore: project.finalMultimodalQa?.continuityScore || project.scriptQa?.continuityScore || 0,
+    emotionalArcScore: project.scriptQa?.emotionalArcScore || 0,
+    pacingScore: project.finalMultimodalQa?.pacingScore || 0,
+    promiseAlignmentScore: project.finalMultimodalQa?.promiseAlignmentScore || project.scriptQa?.hookPayoffScore || 0,
+    blockingErrors,
+    warnings,
+    publishable: _.isEmpty(blockingErrors),
+  };
 };

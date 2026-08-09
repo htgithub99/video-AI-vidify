@@ -58,15 +58,47 @@ export function ImageUploadZone({
         accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
         multiple
         onChange={handleChange}
-        className={inputClass || "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"}
+        className={
+          inputClass ||
+          "absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        }
       />
-      <div className={contentClass || "absolute inset-0 flex flex-col items-center justify-center p-2 text-center"}>
-        <div className={iconBoxClass || `p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-${hoverColor}-500/30 transition-all duration-300 mb-1.5 shadow-lg`}>
-          <Upload className={iconClass || `w-4 h-4 text-slate-400 group-hover:text-${hoverColor}-400 transition-colors`} />
+      <div
+        className={
+          contentClass ||
+          "absolute inset-0 flex flex-col items-center justify-center p-2 text-center"
+        }
+      >
+        <div
+          className={
+            iconBoxClass ||
+            `p-2 bg-slate-955 rounded-lg border border-slate-800 group-hover:scale-110 group-hover:border-${hoverColor}-500/30 transition-all duration-300 mb-1.5 shadow-lg`
+          }
+        >
+          <Upload
+            className={
+              iconClass ||
+              `w-4 h-4 text-slate-400 group-hover:text-${hoverColor}-400 transition-colors`
+            }
+          />
         </div>
-        <span className={titleClass || `text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-${hoverColor}-400 transition-colors`}>{title}</span>
+        <span
+          className={
+            titleClass ||
+            `text-[10px] font-bold text-slate-200 block mb-0.5 truncate max-w-full group-hover:text-${hoverColor}-400 transition-colors`
+          }
+        >
+          {title}
+        </span>
         {!hideSubtitle && (
-          <span className={subtitleClass || "text-[8px] text-slate-505 leading-tight block truncate max-w-full"}>{subtitle}</span>
+          <span
+            className={
+              subtitleClass ||
+              "text-[8px] text-slate-505 leading-tight block truncate max-w-full"
+            }
+          >
+            {subtitle}
+          </span>
         )}
       </div>
     </div>
@@ -78,7 +110,10 @@ interface ImageDeleteOverlayProps {
   tooltip: string;
 }
 
-export function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProps) {
+export function ImageDeleteOverlay({
+  onDelete,
+  tooltip,
+}: ImageDeleteOverlayProps) {
   return (
     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
       <Button

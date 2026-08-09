@@ -1,6 +1,9 @@
 import { AspectRatio } from "../types.js";
 import { SCENE_SPLIT_PROMPTS } from "../constants/texts.js";
-import { SCENE_SPLIT_MOTIONS, SCENE_SPLIT_TRANSITIONS } from "../constants/data.js";
+import {
+  SCENE_SPLIT_MOTIONS,
+  SCENE_SPLIT_TRANSITIONS,
+} from "../constants/data.js";
 import { formatTimeHelper as formatTime } from "../lib/timeUtils.js";
 import {
   ABBREVIATIONS,
@@ -37,7 +40,7 @@ interface SegmentWithContext {
 export const smartChunkScript = (
   script: string,
   maxChunkSize: number = TEXT_PROCESSOR_CONFIGS.MAX_CHUNK_SIZE,
-  minChunkSize: number = TEXT_PROCESSOR_CONFIGS.MIN_CHUNK_SIZE
+  minChunkSize: number = TEXT_PROCESSOR_CONFIGS.MIN_CHUNK_SIZE,
 ): string[] => {
   if (_.isEmpty(_.trim(script))) return [];
   if (_.lte(script.length, maxChunkSize)) return [_.trim(script)];
@@ -105,7 +108,9 @@ export const smartSplitSentences = (text: string): string[] => {
           continue;
         }
 
-        const lastWordMatch = currentSentence.slice(0, -1).match(LAST_WORD_IN_SENTENCE_REGEX);
+        const lastWordMatch = currentSentence
+          .slice(0, -1)
+          .match(LAST_WORD_IN_SENTENCE_REGEX);
         if (!_.isNil(lastWordMatch)) {
           const lastWord = _.toLower(lastWordMatch[1]);
           if (_.includes(ABBREVIATIONS, lastWord)) {
@@ -114,7 +119,11 @@ export const smartSplitSentences = (text: string): string[] => {
         }
       }
 
-      if (_.eq(char, NEWLINE_CHAR) || _.eq(i, _.subtract(text.length, 1)) || SINGLE_WHITESPACE_REGEX.test(text[i + 1])) {
+      if (
+        _.eq(char, NEWLINE_CHAR) ||
+        _.eq(i, _.subtract(text.length, 1)) ||
+        SINGLE_WHITESPACE_REGEX.test(text[i + 1])
+      ) {
         const trimmed = _.trim(currentSentence);
         if (!_.isEmpty(trimmed)) {
           sentences.push(trimmed);
@@ -133,34 +142,48 @@ export const smartSplitSentences = (text: string): string[] => {
 
 export const splitSentenceSafely = (
   sent: string,
-  maxWords: number = TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE
+  maxWords: number = TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE,
 ): string[] => {
-  const safeMaxWords = _.max([TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE, maxWords]) || TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE;
+  const safeMaxWords =
+    _.max([TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE, maxWords]) ||
+    TEXT_PROCESSOR_CONFIGS.DEFAULT_MAX_WORDS_SAFE;
   const words = _.compact(_.split(sent, WHITESPACE_REGEX));
   if (_.lte(words.length, safeMaxWords)) {
     return [sent];
   }
 
   const len = words.length;
-  const startIdx = _.floor(len * TEXT_PROCESSOR_CONFIGS.SENTENCE_SPLIT_MIN_RATIO);
+  const startIdx = _.floor(
+    len * TEXT_PROCESSOR_CONFIGS.SENTENCE_SPLIT_MIN_RATIO,
+  );
   const endIdx = _.ceil(len * TEXT_PROCESSOR_CONFIGS.SENTENCE_SPLIT_MAX_RATIO);
 
   for (let i = startIdx; _.lte(i, endIdx); i++) {
     const word = words[i];
     if (SENTENCE_PUNCTUATION_END_REGEX.test(word)) {
       if (_.endsWith(word, ".")) {
-        const cleanWord = _.toLower(word.slice(0, -1)).replace(VIETNAMESE_VALID_CHARS_REGEX, "");
+        const cleanWord = _.toLower(word.slice(0, -1)).replace(
+          VIETNAMESE_VALID_CHARS_REGEX,
+          "",
+        );
         if (_.includes(ABBREVIATIONS, cleanWord)) {
           continue;
         }
-        if (ENDS_WITH_DIGIT_REGEX.test(cleanWord) && _.lt(i, _.subtract(len, 1)) && STARTS_WITH_DIGIT_REGEX.test(words[i + 1])) {
+        if (
+          ENDS_WITH_DIGIT_REGEX.test(cleanWord) &&
+          _.lt(i, _.subtract(len, 1)) &&
+          STARTS_WITH_DIGIT_REGEX.test(words[i + 1])
+        ) {
           continue;
         }
       }
 
       const part1 = _.join(_.slice(words, 0, _.add(i, 1)), SPACE_CHAR);
       const part2 = _.join(_.slice(words, _.add(i, 1)), SPACE_CHAR);
-      return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+      return _.concat(
+        splitSentenceSafely(part1, safeMaxWords),
+        splitSentenceSafely(part2, safeMaxWords),
+      );
     }
   }
 
@@ -169,14 +192,20 @@ export const splitSentenceSafely = (
     if (_.includes(CONJUNCTIONS, word)) {
       const part1 = _.join(_.slice(words, 0, i), SPACE_CHAR);
       const part2 = _.join(_.slice(words, i), SPACE_CHAR);
-      return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+      return _.concat(
+        splitSentenceSafely(part1, safeMaxWords),
+        splitSentenceSafely(part2, safeMaxWords),
+      );
     }
   }
 
   const mid = _.ceil(len / 2);
   const part1 = _.join(_.slice(words, 0, mid), SPACE_CHAR);
   const part2 = _.join(_.slice(words, mid), SPACE_CHAR);
-  return _.concat(splitSentenceSafely(part1, safeMaxWords), splitSentenceSafely(part2, safeMaxWords));
+  return _.concat(
+    splitSentenceSafely(part1, safeMaxWords),
+    splitSentenceSafely(part2, safeMaxWords),
+  );
 };
 
 export function generateMockStoryboard(
@@ -187,81 +216,140 @@ export function generateMockStoryboard(
   density: number,
   voiceDuration?: number,
   splitStrategy?: string,
-  aspectRatio: string = AspectRatio.SixteenNine
+  aspectRatio: string = AspectRatio.SixteenNine,
 ) {
   const defaultStrategy = (text: string) => {
     const sentences = smartSplitSentences(text || "");
     return _.map(sentences, (sent) => ({ text: sent, context: sent }));
   };
 
-  const getWordSplitStrategy = (limit: number) => (text: string): SegmentWithContext[] => {
-    const res: SegmentWithContext[] = [];
-    const sents = smartSplitSentences(text);
-    _.forEach(sents, (sent) => {
-      const clauses = splitSentenceSafely(sent, limit);
-      _.forEach(clauses, (clause) => res.push({ text: clause, context: sent }));
-    });
-    return res;
-  };
+  const getWordSplitStrategy =
+    (limit: number) =>
+    (text: string): SegmentWithContext[] => {
+      const res: SegmentWithContext[] = [];
+      const sents = smartSplitSentences(text);
+      _.forEach(sents, (sent) => {
+        const clauses = splitSentenceSafely(sent, limit);
+        _.forEach(clauses, (clause) =>
+          res.push({ text: clause, context: sent }),
+        );
+      });
+      return res;
+    };
 
-  const getSentenceChunkStrategy = (chunkSize: number) => (text: string): SegmentWithContext[] => {
-    const res: SegmentWithContext[] = [];
-    const sentences = smartSplitSentences(text);
-    _.forEach(_.chunk(sentences, chunkSize), (batch) => {
-      const chunkText = _.join(batch, ". ");
-      res.push({ text: chunkText, context: chunkText });
-    });
-    return res;
-  };
+  const getSentenceChunkStrategy =
+    (chunkSize: number) =>
+    (text: string): SegmentWithContext[] => {
+      const res: SegmentWithContext[] = [];
+      const sentences = smartSplitSentences(text);
+      _.forEach(_.chunk(sentences, chunkSize), (batch) => {
+        const chunkText = _.join(batch, ". ");
+        res.push({ text: chunkText, context: chunkText });
+      });
+      return res;
+    };
 
-  const SLICE_STRATEGIES: Record<string, (text: string) => SegmentWithContext[]> = {
-    [SplitStrategy.MIXED_SENTENCES]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.mixed_sentences),
-    [SplitStrategy.ULTRADENSE]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.ultradense),
+  const SLICE_STRATEGIES: Record<
+    string,
+    (text: string) => SegmentWithContext[]
+  > = {
+    [SplitStrategy.MIXED_SENTENCES]: getWordSplitStrategy(
+      STRATEGY_WORDS_LIMITS.mixed_sentences,
+    ),
+    [SplitStrategy.ULTRADENSE]: getWordSplitStrategy(
+      STRATEGY_WORDS_LIMITS.ultradense,
+    ),
     [SplitStrategy.WORD]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.word),
-    [SplitStrategy.HYPERDENSE]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.hyperdense),
-    [SplitStrategy.SHORT_SENTENCE]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.short_sentence),
-    [SplitStrategy.HIGHPACED]: getWordSplitStrategy(STRATEGY_WORDS_LIMITS.highpaced),
+    [SplitStrategy.HYPERDENSE]: getWordSplitStrategy(
+      STRATEGY_WORDS_LIMITS.hyperdense,
+    ),
+    [SplitStrategy.SHORT_SENTENCE]: getWordSplitStrategy(
+      STRATEGY_WORDS_LIMITS.short_sentence,
+    ),
+    [SplitStrategy.HIGHPACED]: getWordSplitStrategy(
+      STRATEGY_WORDS_LIMITS.highpaced,
+    ),
 
-    [SplitStrategy.DRAMATIC]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.dramatic),
-    [SplitStrategy.EPIC]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.epic),
-    [SplitStrategy.CINEMATIC]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.cinematic),
-    [SplitStrategy.ARTISTIC]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.artistic),
-    [SplitStrategy.SLOWPACED]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.slowpaced),
-    [SplitStrategy.SUPER_SLOW]: getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.super_slow),
+    [SplitStrategy.DRAMATIC]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.dramatic,
+    ),
+    [SplitStrategy.EPIC]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.epic,
+    ),
+    [SplitStrategy.CINEMATIC]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.cinematic,
+    ),
+    [SplitStrategy.ARTISTIC]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.artistic,
+    ),
+    [SplitStrategy.SLOWPACED]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.slowpaced,
+    ),
+    [SplitStrategy.SUPER_SLOW]: getSentenceChunkStrategy(
+      STRATEGY_SENTENCE_CHUNKS.super_slow,
+    ),
 
     [SplitStrategy.PARAGRAPH]: (text) => {
       const res: SegmentWithContext[] = [];
       const paragraphs = _.filter(
         _.map(_.split(text || "", MULTIPLE_NEWLINES_REGEX), _.trim),
-        (p) => _.gt(p.length, TEXT_PROCESSOR_CONFIGS.MIN_PARAGRAPH_LENGTH)
+        (p) => _.gt(p.length, TEXT_PROCESSOR_CONFIGS.MIN_PARAGRAPH_LENGTH),
       );
       _.forEach(paragraphs, (para) => res.push({ text: para, context: para }));
       if (_.lt(res.length, MIN_PARAGRAPHS_COUNT)) {
-        return getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.paragraph)(text);
+        return getSentenceChunkStrategy(STRATEGY_SENTENCE_CHUNKS.paragraph)(
+          text,
+        );
       }
       return res;
     },
   };
 
-  const pList: SegmentWithContext[] = (SLICE_STRATEGIES[splitStrategy || ""] || defaultStrategy)(rewrittenScript || "");
-  const totalWords = _.sumBy(pList, (p) => _.compact(_.split(p.text, /\s+/)).length);
+  const pList: SegmentWithContext[] = (
+    SLICE_STRATEGIES[splitStrategy || ""] || defaultStrategy
+  )(rewrittenScript || "");
+  const totalWords = _.sumBy(
+    pList,
+    (p) => _.compact(_.split(p.text, /\s+/)).length,
+  );
   const maxScenes = TEXT_PROCESSOR_CONFIGS.MAX_SCENES_LIMIT;
-  const scenesCount = _.min([maxScenes, _.gt(pList.length, 0) ? pList.length : TEXT_PROCESSOR_CONFIGS.DEFAULT_FALLBACK_SCENES_COUNT]) || TEXT_PROCESSOR_CONFIGS.DEFAULT_FALLBACK_SCENES_COUNT;
+  const scenesCount =
+    _.min([
+      maxScenes,
+      _.gt(pList.length, 0)
+        ? pList.length
+        : TEXT_PROCESSOR_CONFIGS.DEFAULT_FALLBACK_SCENES_COUNT,
+    ]) || TEXT_PROCESSOR_CONFIGS.DEFAULT_FALLBACK_SCENES_COUNT;
   const scenes: any[] = [];
   let currentTime = 0;
 
   const styleStr = style || DEFAULT_STYLE;
-  const defaultChapters = !_.isEmpty(chapters) ? chapters : [{ id: DEFAULT_CHAPTER.id, title: isVi ? DEFAULT_CHAPTER.titleVi : DEFAULT_CHAPTER.titleEn }];
+  const defaultChapters = !_.isEmpty(chapters)
+    ? chapters
+    : [
+        {
+          id: DEFAULT_CHAPTER.id,
+          title: isVi ? DEFAULT_CHAPTER.titleVi : DEFAULT_CHAPTER.titleEn,
+        },
+      ];
   const promptConfig = isVi ? SCENE_SPLIT_PROMPTS.VN : SCENE_SPLIT_PROMPTS.EN;
-  const generateRandomSequence = (options: readonly string[], length: number): string[] => {
+  const generateRandomSequence = (
+    options: readonly string[],
+    length: number,
+  ): string[] => {
     const seq: string[] = [];
-    const filteredOptions = _.filter(options, (opt) =>
-      !_.includes([
-        RENDER_LOGIC_CONSTANTS.MOTION_STATIC,
-        RENDER_LOGIC_CONSTANTS.TRANSITION_CUT,
-        RENDER_LOGIC_CONSTANTS.NONE,
-        RENDER_LOGIC_CONSTANTS.DEFAULT
-      ], opt)
+    const filteredOptions = _.filter(
+      options,
+      (opt) =>
+        !_.includes(
+          [
+            RENDER_LOGIC_CONSTANTS.MOTION_STATIC,
+            RENDER_LOGIC_CONSTANTS.TRANSITION_CUT,
+            RENDER_LOGIC_CONSTANTS.NONE,
+            RENDER_LOGIC_CONSTANTS.DEFAULT,
+          ],
+          opt,
+        ),
     );
     const finalOptions = _.isEmpty(filteredOptions) ? options : filteredOptions;
 
@@ -277,12 +365,20 @@ export function generateMockStoryboard(
     return seq;
   };
 
-  const randomMotions = generateRandomSequence(SCENE_SPLIT_MOTIONS, scenesCount);
-  const randomTransitions = generateRandomSequence(SCENE_SPLIT_TRANSITIONS, scenesCount);
+  const randomMotions = generateRandomSequence(
+    SCENE_SPLIT_MOTIONS,
+    scenesCount,
+  );
+  const randomTransitions = generateRandomSequence(
+    SCENE_SPLIT_TRANSITIONS,
+    scenesCount,
+  );
 
   for (let i = 0; _.lt(i, scenesCount); i++) {
     const segment = pList[i];
-    const scriptText = segment ? segment.text : promptConfig.DEFAULT_SCRIPT(_.add(i, 1));
+    const scriptText = segment
+      ? segment.text
+      : promptConfig.DEFAULT_SCRIPT(_.add(i, 1));
     const contextText = segment ? segment.context : scriptText;
 
     const wordsCount = _.compact(_.split(scriptText, /\s+/)).length;
@@ -304,7 +400,11 @@ export function generateMockStoryboard(
     }
 
     if (voiceDuration && _.eq(i, _.subtract(scenesCount, 1))) {
-      duration = _.max([TEXT_PROCESSOR_CONFIGS.MIN_LAST_SCENE_DURATION, _.subtract(voiceDuration, currentTime)]) || TEXT_PROCESSOR_CONFIGS.MIN_LAST_SCENE_DURATION;
+      duration =
+        _.max([
+          TEXT_PROCESSOR_CONFIGS.MIN_LAST_SCENE_DURATION,
+          _.subtract(voiceDuration, currentTime),
+        ]) || TEXT_PROCESSOR_CONFIGS.MIN_LAST_SCENE_DURATION;
     }
 
     const startTimeSeconds = currentTime;

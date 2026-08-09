@@ -14,6 +14,7 @@ import { logger } from "../../utils/logger";
 interface VoiceReference {
   gender?: string;
   name?: string;
+  provider?: string;
 }
 
 type RequestPayload = Record<string, unknown>;
@@ -41,7 +42,6 @@ const PIPELINE_CONTENT_FIELDS = [
 const DEFAULT_VOICE_SPEED = 1;
 const DEFAULT_VOICE_PITCH = 1;
 const DEFAULT_VOICE_GENDER = "neutral";
-const PREMIUM_VOICE_MARKER = "Premium";
 const CHILD_VOICE_MARKER = "child";
 const CHILD_VOICE_PRESET = "preset-vi-kid";
 const EMPTY_TIME = "00:00";
@@ -59,7 +59,7 @@ export const getVoiceGender = (voice: VoiceReference): any =>
 
 export const isPremiumVoice = (voice: VoiceReference | string): boolean => {
   const voiceName = _.isString(voice) ? voice : voice?.name;
-  return _.includes(voiceName, PREMIUM_VOICE_MARKER);
+  return !_.isEmpty(voiceName);
 };
 
 export const getVoiceModifiers = (

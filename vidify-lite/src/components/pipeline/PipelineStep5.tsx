@@ -12,6 +12,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { PromptStatus, LogLevel } from "../../constants/enums";
 import { PIPELINE_STEP5_TEXTS, LOG_LEVEL_SYMBOLS, COMMON_STRINGS } from "../../constants/texts";
 import { delayAsync } from "../../lib/shared-utils.js";
+import { formatUserFacingLog } from "../../lib/userLogFormatter";
 
 const { Play, Square, Download, Trash, Sparkles, Terminal, RefreshCw, FileText, Eye } = LucideIcons as any;
 
@@ -54,7 +55,8 @@ export default function PipelineStep5(props: PipelineWizardState) {
   const addLog = (msg: string, type: LogLevel = LogLevel.INFO) => {
     const time = new Date().toLocaleTimeString();
     const prefix = LOG_LEVEL_SYMBOLS[type.toUpperCase() as keyof typeof LOG_LEVEL_SYMBOLS] || LOG_LEVEL_SYMBOLS.INFO;
-    setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${msg}`]);
+    const userMessage = formatUserFacingLog(msg, currentLang);
+    setConsoleLogs((prev) => [...prev, `[${time}] ${prefix} ${userMessage}`]);
   };
 
   const parsePrompts = (text: string): string[] => {

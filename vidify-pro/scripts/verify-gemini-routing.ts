@@ -1,1 +1,57 @@
-import { AVAILABLE_MODELS } from "../src/constants/data.ts";import { classifyGeminiError, GeminiErrorCategory, getGeminiUserMessage } from "../src/server/services/geminiErrorClassifier.ts";import { AiTaskCapability, routeAiTask } from "../src/server/services/taskRouterService.ts";const assert=(value:unknown,message:string):void=>{if(!value)throw new Error(message)};assert(!AVAILABLE_MODELS.includes("gemini-2.5-flash" as never),"retired model remained enabled");assert(!AVAILABLE_MODELS.includes("gemini-3.1-pro-preview" as never),"zero-quota preview remained enabled");assert(classifyGeminiError({status:404,message:"model no longer available"}).category===GeminiErrorCategory.UnsupportedModel,"404 classification failed");assert(classifyGeminiError({status:429,message:"free_tier_requests, limit: 0"}).category===GeminiErrorCategory.ZeroQuota,"zero quota classification failed");assert(!classifyGeminiError({status:429,message:"requests per day quota"}).retryable,"daily quota was retryable");assert(classifyGeminiError({status:429,message:"retry in 3s"}).retryLimit===1,"rate limit retry policy failed");assert(getGeminiUserMessage({status:429,message:"free_tier_requests, limit: 0"},true).includes("hạn mức"),"localized quota message failed");assert(routeAiTask({capability:AiTaskCapability.FactualReview,estimatedInputTokens:100,maxOutputTokens:100}).models.some((model)=>model.includes("lite")),"free factual routing excluded lite models");console.log("Gemini routing assertions passed");
+import { AVAILABLE_MODELS } from "../src/constants/data.ts";
+import { writeVerificationLog } from "./verificationLogger.ts";
+import {
+  classifyGeminiError,
+  GeminiErrorCategory,
+  getGeminiUserMessage,
+} from "../src/server/services/geminiErrorClassifier.ts";
+import {
+  AiTaskCapability,
+  routeAiTask,
+} from "../src/server/services/taskRouterService.ts";
+const assert = (value: unknown, message: string): void => {
+  if (!value) throw new Error(message);
+};
+assert(
+  !AVAILABLE_MODELS.includes("gemini-2.5-flash" as never),
+  "retired model remained enabled",
+);
+assert(
+  !AVAILABLE_MODELS.includes("gemini-3.1-pro-preview" as never),
+  "zero-quota preview remained enabled",
+);
+assert(
+  classifyGeminiError({ status: 404, message: "model no longer available" })
+    .category === GeminiErrorCategory.UnsupportedModel,
+  "404 classification failed",
+);
+assert(
+  classifyGeminiError({ status: 429, message: "free_tier_requests, limit: 0" })
+    .category === GeminiErrorCategory.ZeroQuota,
+  "zero quota classification failed",
+);
+assert(
+  !classifyGeminiError({ status: 429, message: "requests per day quota" })
+    .retryable,
+  "daily quota was retryable",
+);
+assert(
+  classifyGeminiError({ status: 429, message: "retry in 3s" }).retryLimit === 1,
+  "rate limit retry policy failed",
+);
+assert(
+  getGeminiUserMessage(
+    { status: 429, message: "free_tier_requests, limit: 0" },
+    true,
+  ).includes("hạn mức"),
+  "localized quota message failed",
+);
+assert(
+  routeAiTask({
+    capability: AiTaskCapability.FactualReview,
+    estimatedInputTokens: 100,
+    maxOutputTokens: 100,
+  }).models.some((model) => model.includes("lite")),
+  "free factual routing excluded lite models",
+);
+writeVerificationLog("Gemini routing assertions passed");

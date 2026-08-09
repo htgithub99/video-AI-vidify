@@ -1,17 +1,23 @@
-import _ from 'lodash';
-import { appError } from './logger.js';
-import { REFACTOR_CONSTANTS } from '../constants/refactor.js';
+import _ from "lodash";
+import { appError } from "./logger.js";
+import { REFACTOR_CONSTANTS } from "../constants/refactor.js";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 const getDB = (): Promise<IDBDatabase> => {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    if (_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED) || !window.indexedDB) {
+    if (
+      _.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED) ||
+      !window.indexedDB
+    ) {
       reject(new Error(REFACTOR_CONSTANTS.ERR_SAVE_CONFIG_LOCAL_STORAGE));
       return;
     }
-    const request = window.indexedDB.open(REFACTOR_CONSTANTS.DB_NAME, REFACTOR_CONSTANTS.DB_VERSION);
+    const request = window.indexedDB.open(
+      REFACTOR_CONSTANTS.DB_NAME,
+      REFACTOR_CONSTANTS.DB_VERSION,
+    );
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(REFACTOR_CONSTANTS.DB_STORE_NAME)) {
@@ -35,7 +41,13 @@ export const storageUtils = {
         return window.localStorage.getItem(key);
       }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_READ_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_READ_LOCAL, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
     }
     return null;
   },
@@ -47,7 +59,13 @@ export const storageUtils = {
         window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
       }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_WRITE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_WRITE_LOCAL, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
     }
   },
 
@@ -58,7 +76,13 @@ export const storageUtils = {
         window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
       }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_LOCAL, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
     }
   },
 
@@ -66,7 +90,10 @@ export const storageUtils = {
     try {
       const db = await getDB();
       return new Promise((resolve, reject) => {
-        const tx = db.transaction(REFACTOR_CONSTANTS.DB_STORE_NAME, REFACTOR_CONSTANTS.DB_MODE_READONLY as IDBTransactionMode);
+        const tx = db.transaction(
+          REFACTOR_CONSTANTS.DB_STORE_NAME,
+          REFACTOR_CONSTANTS.DB_MODE_READONLY as IDBTransactionMode,
+        );
         const store = tx.objectStore(REFACTOR_CONSTANTS.DB_STORE_NAME);
         const req = store.get(key);
         req.onsuccess = () => resolve(_.defaultTo(req.result, null));
@@ -75,7 +102,13 @@ export const storageUtils = {
         };
       });
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_READ_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_READ_IDB, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
       return storageUtils.get(key);
     }
   },
@@ -84,7 +117,10 @@ export const storageUtils = {
     try {
       const db = await getDB();
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(REFACTOR_CONSTANTS.DB_STORE_NAME, REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode);
+        const tx = db.transaction(
+          REFACTOR_CONSTANTS.DB_STORE_NAME,
+          REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode,
+        );
         const store = tx.objectStore(REFACTOR_CONSTANTS.DB_STORE_NAME);
         const req = store.put(value, key);
         req.onsuccess = () => {
@@ -98,7 +134,13 @@ export const storageUtils = {
         window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
       }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_WRITE_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_WRITE_IDB, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
       storageUtils.set(key, value);
     }
   },
@@ -107,7 +149,10 @@ export const storageUtils = {
     try {
       const db = await getDB();
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(REFACTOR_CONSTANTS.DB_STORE_NAME, REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode);
+        const tx = db.transaction(
+          REFACTOR_CONSTANTS.DB_STORE_NAME,
+          REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode,
+        );
         const store = tx.objectStore(REFACTOR_CONSTANTS.DB_STORE_NAME);
         const req = store.delete(key);
         req.onsuccess = () => {
@@ -121,7 +166,13 @@ export const storageUtils = {
         window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
       }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
+      appError(
+        _.join(
+          [REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_IDB, key],
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        error,
+      );
       storageUtils.remove(key);
     }
   },

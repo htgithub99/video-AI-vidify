@@ -16,7 +16,12 @@ import {
   ImageFocusMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
+import {
+  AUTO_VIDEO_DEFAULTS,
+  REFACTOR_CONSTANTS,
+  DEFAULT_PROJECT_CONFIGS,
+  MEDIA_MIX_CONFIG,
+} from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -148,60 +153,123 @@ export interface AutoVideoFormActions {
 
 const buildInitialProjectName = () =>
   _.join(
-    [PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)],
+    [
+      PRESET_CONSTANTS.PROJECT_NAME_PREFIX,
+      new Date()
+        .toISOString()
+        .slice(
+          REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0,
+          REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10,
+        ),
+    ],
     REFACTOR_CONSTANTS.VD_EMPTY_STRING,
   );
 
 const applyProjectToState = (
   proj: VideoProject,
-  actions: Pick<AutoVideoFormActions,
-    | "setInputType" | "setScriptContent" | "setGenre" | "setLanguage" | "setDuration" | "setSplitStrategy"
-    | "setVoiceProvider" | "setVoiceURI" | "setVoiceName"
-    | "setGenerationMode" | "setImageGeneratorEngine" | "setGenerateType"
-    | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode" | "setStyleTextInImageMode" | "setImageFocusMode" | "setThumbnailImageFocusMode"
-    | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode" | "setThumbnailTextInImageMode"
-    | "setReferenceImages" | "setSceneReferenceImages" | "setThumbnailReferenceImages" | "setProjectName"
+  actions: Pick<
+    AutoVideoFormActions,
+    | "setInputType"
+    | "setScriptContent"
+    | "setGenre"
+    | "setLanguage"
+    | "setDuration"
+    | "setSplitStrategy"
+    | "setVoiceProvider"
+    | "setVoiceURI"
+    | "setVoiceName"
+    | "setGenerationMode"
+    | "setImageGeneratorEngine"
+    | "setGenerateType"
+    | "setMaxVideoScenes"
+    | "setAspectRatio"
+    | "setStylePreset"
+    | "setStyleBackgroundMode"
+    | "setStyleTextInImageMode"
+    | "setImageFocusMode"
+    | "setThumbnailImageFocusMode"
+    | "setThumbnailCount"
+    | "setThumbnailStylePreset"
+    | "setThumbnailBackgroundMode"
+    | "setThumbnailTextInImageMode"
+    | "setReferenceImages"
+    | "setSceneReferenceImages"
+    | "setThumbnailReferenceImages"
+    | "setProjectName"
   >,
 ) => {
   if (proj.input) {
     if (proj.input.type) actions.setInputType(proj.input.type);
-    actions.setScriptContent(_.defaultTo(proj.input.content, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
+    actions.setScriptContent(
+      _.defaultTo(proj.input.content, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+    );
   }
   if (proj.config) {
     if (proj.config.genre) actions.setGenre(proj.config.genre);
     if (proj.config.language) actions.setLanguage(proj.config.language);
     if (proj.config.duration) actions.setDuration(proj.config.duration);
-    if (proj.config.splitStrategy) actions.setSplitStrategy(proj.config.splitStrategy);
+    if (proj.config.splitStrategy)
+      actions.setSplitStrategy(proj.config.splitStrategy);
   }
   if (proj.voiceConfig) {
-    if (proj.voiceConfig.provider) actions.setVoiceProvider(proj.voiceConfig.provider);
-    if (proj.voiceConfig.voiceURI) actions.setVoiceURI(proj.voiceConfig.voiceURI);
-    if (proj.voiceConfig.voiceName) actions.setVoiceName(proj.voiceConfig.voiceName);
+    if (proj.voiceConfig.provider)
+      actions.setVoiceProvider(proj.voiceConfig.provider);
+    if (proj.voiceConfig.voiceURI)
+      actions.setVoiceURI(proj.voiceConfig.voiceURI);
+    if (proj.voiceConfig.voiceName)
+      actions.setVoiceName(proj.voiceConfig.voiceName);
   }
   if (proj.visualConfig) {
-    if (proj.visualConfig.generationMode) actions.setGenerationMode(proj.visualConfig.generationMode);
-    if (proj.visualConfig.imageGeneratorEngine) actions.setImageGeneratorEngine(proj.visualConfig.imageGeneratorEngine);
-    if (proj.visualConfig.generateType) actions.setGenerateType(proj.visualConfig.generateType);
-    if (!_.isUndefined(proj.visualConfig.maxVideoScenes)) actions.setMaxVideoScenes(proj.visualConfig.maxVideoScenes);
-    if (proj.visualConfig.aspectRatio) actions.setAspectRatio(proj.visualConfig.aspectRatio as AspectRatio);
-    if (proj.visualConfig.stylePreset) actions.setStylePreset(proj.visualConfig.stylePreset);
-    if (proj.visualConfig.styleBackgroundMode) actions.setStyleBackgroundMode(proj.visualConfig.styleBackgroundMode);
-    if (proj.visualConfig.styleTextInImageMode) actions.setStyleTextInImageMode(proj.visualConfig.styleTextInImageMode);
-    if (proj.visualConfig.imageFocusMode) actions.setImageFocusMode(proj.visualConfig.imageFocusMode);
-    if (proj.visualConfig.thumbnailImageFocusMode) actions.setThumbnailImageFocusMode(proj.visualConfig.thumbnailImageFocusMode);
-    if (!_.isUndefined(proj.visualConfig.thumbnailCount)) actions.setThumbnailCount(proj.visualConfig.thumbnailCount);
-    if (proj.visualConfig.thumbnailReferencePrompt) actions.setThumbnailStylePreset(proj.visualConfig.thumbnailReferencePrompt);
-    if (proj.visualConfig.thumbnailBackgroundMode) actions.setThumbnailBackgroundMode(proj.visualConfig.thumbnailBackgroundMode);
-    if (proj.visualConfig.thumbnailTextInImageMode) actions.setThumbnailTextInImageMode(proj.visualConfig.thumbnailTextInImageMode);
+    if (proj.visualConfig.generationMode)
+      actions.setGenerationMode(proj.visualConfig.generationMode);
+    if (proj.visualConfig.imageGeneratorEngine)
+      actions.setImageGeneratorEngine(proj.visualConfig.imageGeneratorEngine);
+    if (proj.visualConfig.generateType)
+      actions.setGenerateType(proj.visualConfig.generateType);
+    if (!_.isUndefined(proj.visualConfig.maxVideoScenes))
+      actions.setMaxVideoScenes(proj.visualConfig.maxVideoScenes);
+    if (proj.visualConfig.aspectRatio)
+      actions.setAspectRatio(proj.visualConfig.aspectRatio as AspectRatio);
+    if (proj.visualConfig.stylePreset)
+      actions.setStylePreset(proj.visualConfig.stylePreset);
+    if (proj.visualConfig.styleBackgroundMode)
+      actions.setStyleBackgroundMode(proj.visualConfig.styleBackgroundMode);
+    if (proj.visualConfig.styleTextInImageMode)
+      actions.setStyleTextInImageMode(proj.visualConfig.styleTextInImageMode);
+    if (proj.visualConfig.imageFocusMode)
+      actions.setImageFocusMode(proj.visualConfig.imageFocusMode);
+    if (proj.visualConfig.thumbnailImageFocusMode)
+      actions.setThumbnailImageFocusMode(
+        proj.visualConfig.thumbnailImageFocusMode,
+      );
+    if (!_.isUndefined(proj.visualConfig.thumbnailCount))
+      actions.setThumbnailCount(proj.visualConfig.thumbnailCount);
+    if (proj.visualConfig.thumbnailReferencePrompt)
+      actions.setThumbnailStylePreset(
+        proj.visualConfig.thumbnailReferencePrompt,
+      );
+    if (proj.visualConfig.thumbnailBackgroundMode)
+      actions.setThumbnailBackgroundMode(
+        proj.visualConfig.thumbnailBackgroundMode,
+      );
+    if (proj.visualConfig.thumbnailTextInImageMode)
+      actions.setThumbnailTextInImageMode(
+        proj.visualConfig.thumbnailTextInImageMode,
+      );
     actions.setReferenceImages(
-      _.defaultTo(proj.visualConfig.styleReferenceImages, (
+      _.defaultTo(
+        proj.visualConfig.styleReferenceImages,
         _.isEmpty(proj.visualConfig.sceneReferenceImages)
           ? _.defaultTo(proj.visualConfig.referenceImages, [])
-          : []
-      )),
+          : [],
+      ),
     );
-    actions.setSceneReferenceImages(_.defaultTo(proj.visualConfig.sceneReferenceImages, []));
-    actions.setThumbnailReferenceImages(_.defaultTo(proj.visualConfig.thumbnailReferenceImages, []));
+    actions.setSceneReferenceImages(
+      _.defaultTo(proj.visualConfig.sceneReferenceImages, []),
+    );
+    actions.setThumbnailReferenceImages(
+      _.defaultTo(proj.visualConfig.thumbnailReferenceImages, []),
+    );
   }
 };
 
@@ -210,63 +278,116 @@ export function useAutoVideoState(
   projects: VideoProject[],
   currentLang: Lang,
 ) {
-  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const T =
+    AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] ||
+    AUTO_GENERATOR_PANEL_TEXTS.vi;
 
-  const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
-  const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [inputType, setInputType] = useState<ProjectInputType>(
+    ProjectInputType.Script,
+  );
+  const [scriptContent, setScriptContent] = useState<string>(
+    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+  );
   const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
   const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
-  const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
+  const [duration, setDuration] = useState<string>(
+    DEFAULT_PROJECT_CONFIGS.DURATION,
+  );
   const [rewriteLevel] = useState<number>(3);
   const [similarityReduction] = useState<number>(3);
   const [creativityLevel] = useState<number>(3);
   const [factCheck] = useState<boolean>(true);
   const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
-  const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [splitStrategy, setSplitStrategy] = useState<string>(REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
+  const [writingStyle] = useState<string>(
+    DEFAULT_PROJECT_CONFIGS.WRITING_STYLE,
+  );
+  const [splitStrategy, setSplitStrategy] = useState<string>(
+    REFACTOR_CONSTANTS.AVG_SPLIT_MIXED,
+  );
 
   const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
   const [hookDuration] = useState<number>(10);
   const [hookPosition] = useState<string>(REFACTOR_CONSTANTS.AVG_START_POS);
 
-  const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
+  const [voiceProvider, setVoiceProvider] = useState<string>(
+    DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER,
+  );
   const [voiceSpeed] = useState<number>(1.0);
   const [voicePitch] = useState<number>(1.0);
   const [voiceVolume] = useState<number>(1.0);
-  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
+  const [voiceURI, setVoiceURI] = useState<string>(
+    DEFAULT_PROJECT_CONFIGS.VOICE_URI,
+  );
+  const [voiceName, setVoiceName] = useState<string>(
+    PRESET_CONSTANTS.DEFAULT_VOICE_NAME,
+  );
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
-  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
-  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
-  const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
+  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(
+    ImageGenerationMode.LabsFlow,
+  );
+  const [imageGeneratorEngine, setImageGeneratorEngine] =
+    useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
+  const [generateType, setGenerateType] = useState<GenerateType>(
+    GenerateType.Image,
+  );
+  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(
+    MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS,
+  );
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(
+    AspectRatio.NineSixteen,
+  );
+  const [promptInputMethod] = useState<PromptInputMethod>(
+    PromptInputMethod.Paste,
+  );
   const [sampleCount] = useState<number>(1);
-  const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless, setChromeHeadless] = useState<boolean>(AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
+  const [videoDuration] = useState<string>(
+    REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION,
+  );
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(
+    AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS,
+  );
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Fast);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
-  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
-  const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
-  const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
-  const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
-  const [thumbnailImageFocusMode, setThumbnailImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
+  const [stylePreset, setStylePreset] = useState<string>(
+    PRESET_CONSTANTS.DEFAULT_STYLE_PRESET,
+  );
+  const [styleBackgroundMode, setStyleBackgroundMode] =
+    useState<BackgroundMode>(BackgroundMode.Auto);
+  const [styleTextInImageMode, setStyleTextInImageMode] =
+    useState<TextInImageMode>(TextInImageMode.Auto);
+  const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(
+    ImageFocusMode.Default,
+  );
+  const [thumbnailImageFocusMode, setThumbnailImageFocusMode] =
+    useState<ImageFocusMode>(ImageFocusMode.Default);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>([]);
+  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>(
+    [],
+  );
   const [characterImages] = useState<string[]>([]);
 
   const [thumbnailCount, setThumbnailCount] = useState<number>(2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
-  const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
-  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
-  const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
+  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(
+    PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET,
+  );
+  const [thumbnailBackgroundMode, setThumbnailBackgroundMode] =
+    useState<BackgroundMode>(BackgroundMode.Auto);
+  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] =
+    useState<TextInImageMode>(TextInImageMode.Auto);
+  const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<
+    string[]
+  >([]);
 
-  const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
-  const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
-  const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
+  const [projectName, setProjectName] = useState<string>(
+    buildInitialProjectName,
+  );
+  const [resumeMode, setResumeMode] = useState<boolean>(
+    AUTO_VIDEO_DEFAULTS.RESUME_MODE,
+  );
+  const [showAdvancedImageSettings, setShowAdvancedImageSettings] =
+    useState<boolean>(false);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
@@ -306,18 +427,39 @@ export function useAutoVideoState(
 
   const loadConfig = async (projectId?: string | null) => {
     try {
-      const saved = await storageUtils.getAsync(getAutoVideoConfigStorageKey(projectId));
-      const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
-      const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
-      const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
-      const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
-      const projectThumbnailReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailReferenceImages, []);
+      const saved = await storageUtils.getAsync(
+        getAutoVideoConfigStorageKey(projectId),
+      );
+      const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(
+        saved,
+        null,
+      );
+      const foundProj = projectId
+        ? _.find(projects, { id: projectId })
+        : undefined;
+      const projectStyleReferenceImages = _.defaultTo(
+        foundProj?.visualConfig?.styleReferenceImages,
+        [],
+      );
+      const projectSceneReferenceImages = _.defaultTo(
+        foundProj?.visualConfig?.sceneReferenceImages,
+        [],
+      );
+      const projectThumbnailReferenceImages = _.defaultTo(
+        foundProj?.visualConfig?.thumbnailReferenceImages,
+        [],
+      );
       if (parsed) {
-        const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
+        const usesCurrentDefaults = _.isEqual(
+          parsed.version,
+          AUTO_VIDEO_DEFAULTS.CONFIG_VERSION,
+        );
         if (foundProj?.input?.type) setInputType(foundProj.input.type);
         else if (parsed.inputType) setInputType(parsed.inputType);
-        if (!_.isUndefined(foundProj?.input?.content)) setScriptContent(foundProj.input.content);
-        else if (!_.isUndefined(parsed.scriptContent)) setScriptContent(parsed.scriptContent);
+        if (!_.isUndefined(foundProj?.input?.content))
+          setScriptContent(foundProj.input.content);
+        else if (!_.isUndefined(parsed.scriptContent))
+          setScriptContent(parsed.scriptContent);
         if (parsed.genre) setGenre(parsed.genre);
         if (parsed.language) setLanguage(parsed.language);
         if (parsed.duration) setDuration(parsed.duration);
@@ -326,35 +468,54 @@ export function useAutoVideoState(
         if (parsed.voiceURI) setVoiceURI(parsed.voiceURI);
         if (parsed.voiceName) setVoiceName(parsed.voiceName);
         if (parsed.generationMode) setGenerationMode(parsed.generationMode);
-        if (parsed.imageGeneratorEngine) setImageGeneratorEngine(parsed.imageGeneratorEngine);
+        if (parsed.imageGeneratorEngine)
+          setImageGeneratorEngine(parsed.imageGeneratorEngine);
         if (parsed.generateType) setGenerateType(parsed.generateType);
-        if (!_.isUndefined(parsed.maxVideoScenes)) setMaxVideoScenes(parsed.maxVideoScenes);
+        if (!_.isUndefined(parsed.maxVideoScenes))
+          setMaxVideoScenes(parsed.maxVideoScenes);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
-        if (parsed.styleBackgroundMode) setStyleBackgroundMode(parsed.styleBackgroundMode);
-        if (parsed.styleTextInImageMode) setStyleTextInImageMode(parsed.styleTextInImageMode);
+        if (parsed.styleBackgroundMode)
+          setStyleBackgroundMode(parsed.styleBackgroundMode);
+        if (parsed.styleTextInImageMode)
+          setStyleTextInImageMode(parsed.styleTextInImageMode);
         if (parsed.imageFocusMode) setImageFocusMode(parsed.imageFocusMode);
-        if (parsed.thumbnailImageFocusMode) setThumbnailImageFocusMode(parsed.thumbnailImageFocusMode);
-        if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
-        if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
-        if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
-        if (parsed.thumbnailTextInImageMode) setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
+        if (parsed.thumbnailImageFocusMode)
+          setThumbnailImageFocusMode(parsed.thumbnailImageFocusMode);
+        if (parsed.thumbnailCount !== undefined)
+          setThumbnailCount(parsed.thumbnailCount);
+        if (parsed.thumbnailStylePreset)
+          setThumbnailStylePreset(parsed.thumbnailStylePreset);
+        if (parsed.thumbnailBackgroundMode)
+          setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
+        if (parsed.thumbnailTextInImageMode)
+          setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
         if (parsed.projectName) setProjectName(parsed.projectName);
-        setReferenceImages(!_.isEmpty(projectStyleReferenceImages)
-          ? projectStyleReferenceImages
-          : _.defaultTo(parsed.referenceImages, []));
-        setSceneReferenceImages(!_.isEmpty(projectSceneReferenceImages)
-          ? projectSceneReferenceImages
-          : _.defaultTo(parsed.sceneReferenceImages, []));
-        setThumbnailReferenceImages(!_.isEmpty(projectThumbnailReferenceImages)
-          ? projectThumbnailReferenceImages
-          : _.defaultTo(parsed.thumbnailReferenceImages, []));
-        setResumeMode(usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
-          ? parsed.resumeMode
-          : AUTO_VIDEO_DEFAULTS.RESUME_MODE);
-        setChromeHeadless(usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
-          ? parsed.chromeHeadless
-          : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
+        setReferenceImages(
+          !_.isEmpty(projectStyleReferenceImages)
+            ? projectStyleReferenceImages
+            : _.defaultTo(parsed.referenceImages, []),
+        );
+        setSceneReferenceImages(
+          !_.isEmpty(projectSceneReferenceImages)
+            ? projectSceneReferenceImages
+            : _.defaultTo(parsed.sceneReferenceImages, []),
+        );
+        setThumbnailReferenceImages(
+          !_.isEmpty(projectThumbnailReferenceImages)
+            ? projectThumbnailReferenceImages
+            : _.defaultTo(parsed.thumbnailReferenceImages, []),
+        );
+        setResumeMode(
+          usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
+            ? parsed.resumeMode
+            : AUTO_VIDEO_DEFAULTS.RESUME_MODE,
+        );
+        setChromeHeadless(
+          usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
+            ? parsed.chromeHeadless
+            : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS,
+        );
       } else {
         if (foundProj) {
           applyProjectToState(foundProj, actions);
@@ -414,24 +575,91 @@ export function useAutoVideoState(
       jsonUtils.safeStringify(config),
     );
   }, [
-    isConfigLoaded, selectedProjectId,
-    inputType, scriptContent, genre, language, duration, splitStrategy,
-    voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
-    generateType, maxVideoScenes, aspectRatio, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode,
-    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless,
+    isConfigLoaded,
+    selectedProjectId,
+    inputType,
+    scriptContent,
+    genre,
+    language,
+    duration,
+    splitStrategy,
+    voiceProvider,
+    voiceURI,
+    voiceName,
+    generationMode,
+    imageGeneratorEngine,
+    generateType,
+    maxVideoScenes,
+    aspectRatio,
+    stylePreset,
+    styleBackgroundMode,
+    styleTextInImageMode,
+    imageFocusMode,
+    thumbnailImageFocusMode,
+    thumbnailCount,
+    thumbnailStylePreset,
+    thumbnailBackgroundMode,
+    thumbnailTextInImageMode,
+    projectName,
+    referenceImages,
+    sceneReferenceImages,
+    thumbnailReferenceImages,
+    resumeMode,
+    chromeHeadless,
   ]);
 
   const state: AutoVideoFormState = {
-    inputType, scriptContent, genre, language, duration, rewriteLevel,
-    similarityReduction, creativityLevel, factCheck, audience, writingStyle,
-    splitStrategy, hookStrategy, hookDuration, hookPosition,
-    voiceProvider, voiceSpeed, voicePitch, voiceVolume, voiceURI, voiceName,
-    isVoiceDialogOpen, generationMode, imageGeneratorEngine, generateType,
-    maxVideoScenes, aspectRatio, promptInputMethod, sampleCount, videoDuration,
-    chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode,
-    referenceImages, sceneReferenceImages, characterImages,
-    thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
-    projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded,
+    inputType,
+    scriptContent,
+    genre,
+    language,
+    duration,
+    rewriteLevel,
+    similarityReduction,
+    creativityLevel,
+    factCheck,
+    audience,
+    writingStyle,
+    splitStrategy,
+    hookStrategy,
+    hookDuration,
+    hookPosition,
+    voiceProvider,
+    voiceSpeed,
+    voicePitch,
+    voiceVolume,
+    voiceURI,
+    voiceName,
+    isVoiceDialogOpen,
+    generationMode,
+    imageGeneratorEngine,
+    generateType,
+    maxVideoScenes,
+    aspectRatio,
+    promptInputMethod,
+    sampleCount,
+    videoDuration,
+    chromeHeadless,
+    geminiChatSpeed,
+    batchDelay,
+    stylePreset,
+    styleBackgroundMode,
+    styleTextInImageMode,
+    imageFocusMode,
+    thumbnailImageFocusMode,
+    referenceImages,
+    sceneReferenceImages,
+    characterImages,
+    thumbnailCount,
+    thumbnailStylePreset,
+    thumbnailBackgroundMode,
+    thumbnailTextInImageMode,
+    thumbnailReferenceImages,
+    projectName,
+    resumeMode,
+    showAdvancedImageSettings,
+    ffmpegQuality,
+    isConfigLoaded,
   };
 
   return { state, actions };

@@ -21,12 +21,16 @@ import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, 
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
-import { ASPECT_RATIO_PARAM_REGEX, WHITESPACE_REGEX } from "../../constants/regexes";
+import { WHITESPACE_REGEX } from "../../constants/regexes";
 import { CAPCUT_CONFIG } from "../../constants/capcut";
 
 import { delayAsync } from "../../lib/shared-utils.js";
+import { applyVoiceSelection } from "../../lib/voiceRouting";
+import { formatUserFacingLog } from "../../lib/userLogFormatter";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
+import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../../services/thumbnailPromptService";
+import { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../../lib/imagePromptDirectives";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -178,10 +182,7 @@ export function usePipelineWizard(props: any) {
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
 
   const selectVoiceForProject = useCallback((voice: any) => {
-    const updatedProject: VideoProject = {
-      ...project,
-      voiceConfig: {
-        ...project.voiceConfig,
+    const updatedProject = applyVoiceSelection(project, {
         voiceURI: _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
         voiceName: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH),
         previewUrl: _.get(voice, REFACTOR_CONSTANTS.VOICE_CATALOG_PREVIEW_PATH),
@@ -196,8 +197,7 @@ export function usePipelineWizard(props: any) {
         )
           ? Gender.Male
           : Gender.Female,
-      },
-    };
+    });
     setProject(updatedProject);
     void onSaveProject(updatedProject, true);
     setIsVoiceDialogOpen(false);
@@ -598,6 +598,7 @@ export function usePipelineWizard(props: any) {
           processedMsg = logTexts.HOT_UPDATED;
         }
 
+        processedMsg = formatUserFacingLog(processedMsg, currentLang);
         let enrichedType = type;
         const processedMsgLower = _.toLower(processedMsg);
         if (_.some(LOG_SUCCESS_KEYWORDS, (term) => _.includes(processedMsgLower, term))) enrichedType = ConsoleLogType.SUCCESS;
@@ -616,7 +617,7 @@ export function usePipelineWizard(props: any) {
     };
 
     return subscribeToLogs(captureLog);
-  }, []);
+  }, [currentLang]);
 
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
 
@@ -875,7 +876,7 @@ export function usePipelineWizard(props: any) {
     const isVi = lang.startsWith("vi") || voiceURI.includes("vi");
     const sampleText = isVi ? "Xin chào, đây là âm thanh nghe thử của tôi." : "Hello, this is a quick audio preview of my voice.";
 
-    const useCloudVoice = isPremiumVoice(voiceURI);
+    const useCloudVoice = isPremiumVoice({ name: voiceURI, provider: project.voiceConfig.provider });
 
     const { finalSpeed, finalPitch } = getVoiceModifiers(voiceURI, speed || 1.0, pitch || 1.0);
 
@@ -885,6 +886,7 @@ export function usePipelineWizard(props: any) {
           text: sampleText,
           voiceURI: voiceURI,
           voice_id: voiceURI,
+          provider: project.voiceConfig.provider,
           gender: gender,
           speed: finalSpeed,
           pitch: finalPitch,
@@ -2958,19 +2960,27 @@ export function usePipelineWizard(props: any) {
     setLoading(true);
     setErrorMsg("");
     try {
-      let cleanPromptText = promptText || "";
-      cleanPromptText = cleanPromptText.replace(ASPECT_RATIO_PARAM_REGEX, "");
-
       const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
+      const thumbnail = _.find(project.thumbnails, { id: thumbId }) || {
+        id: thumbId,
+        prompt: promptText,
+        style: styleText,
+        hasText: false,
+      } as ThumbnailItem;
+      const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
+      let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, styleText, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
+      if (project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyBackgroundMode(generationPrompt, project.visualConfig.thumbnailBackgroundMode);
+      if (project.visualConfig.thumbnailTextInImageMode) generationPrompt = applyTextInImageMode(generationPrompt, project.visualConfig.thumbnailTextInImageMode);
+      if (project.visualConfig.thumbnailImageFocusMode && project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyImageFocusMode(generationPrompt, project.visualConfig.thumbnailImageFocusMode, project.visualConfig.thumbnailBackgroundMode);
 
       const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-        prompt: `${cleanPromptText}. Designed in rich high-CTR ${styleText} layout. --ar ${currentAspectRatio}`,
+        prompt: generationPrompt,
         style: styleText,
         resolution: "Standard",
         bypassCache: isForce,
         engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
         sandboxConfig: sandboxConfig,
-        visualConfig: project.visualConfig,
+        visualConfig: { ...project.visualConfig, referenceImages },
       });
       if (data.warning) {
         setErrorMsg(data.warning);
@@ -2999,7 +3009,7 @@ export function usePipelineWizard(props: any) {
       setProject((prev) => {
         const updated = (prev.thumbnails || []).map((th) => {
           if (th.id === thumbId) {
-            return { ...th, imageUrl: imgUrl };
+            return { ...th, imageUrl: imgUrl, generationPrompt };
           }
           return th;
         });
@@ -3043,8 +3053,54 @@ export function usePipelineWizard(props: any) {
     setErrorMsg("");
 
     try {
-      for (const thumb of targets) {
-        await handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style, true);
+      if (_.isEqual(project.visualConfig.generationMode, ImageGenerationMode.GeminiChat)) {
+        const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
+        const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
+        const generationPrompts = new Map<string, string>();
+        const items = _.map(targets, thumbnail => {
+          let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, thumbnail.style, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
+          if (project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyBackgroundMode(generationPrompt, project.visualConfig.thumbnailBackgroundMode);
+          if (project.visualConfig.thumbnailTextInImageMode) generationPrompt = applyTextInImageMode(generationPrompt, project.visualConfig.thumbnailTextInImageMode);
+          if (project.visualConfig.thumbnailImageFocusMode && project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyImageFocusMode(generationPrompt, project.visualConfig.thumbnailImageFocusMode, project.visualConfig.thumbnailBackgroundMode);
+          generationPrompts.set(thumbnail.id, generationPrompt);
+          return { sceneId: thumbnail.id, prompt: generationPrompt, generateType: GenerateType.Image, referenceImages };
+        });
+        const applyThumbnailResult = (result: ProjectImageResult) => {
+          const imageUrl = createProjectImageUrl(result);
+          if (_.isEmpty(imageUrl)) return;
+          setProject(prev => {
+            const updatedProject = {
+              ...prev,
+              thumbnails: _.map(prev.thumbnails, thumbnail => _.isEqual(thumbnail.id, result.sceneId)
+                ? { ...thumbnail, imageUrl, generationPrompt: generationPrompts.get(thumbnail.id) }
+                : thumbnail),
+            };
+            setTimeout(() => onSaveProject(updatedProject, true), UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS);
+            return updatedProject;
+          });
+        };
+        await generateProjectImages({
+          items,
+          visualConfig: { ...project.visualConfig, referenceImages, batchTabCount: _.size(targets) },
+          style: project.visualConfig.thumbnailReferencePrompt || project.visualConfig.style,
+          sandboxConfig,
+          cancelRef: cancelBatchImageRef,
+          createFallbackPayload: item => ({
+            prompt: item.prompt,
+            style: project.visualConfig.thumbnailReferencePrompt || project.visualConfig.style,
+            resolution: project.visualConfig.quality,
+            bypassCache: true,
+            engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
+            sandboxConfig,
+            visualConfig: { ...project.visualConfig, referenceImages: item.referenceImages, generateType: GenerateType.Image },
+          }),
+          onBatchResult: result => { if (result.success) applyThumbnailResult(result); },
+          onFallbackResult: result => { if (result.success) applyThumbnailResult(result); },
+        });
+      } else {
+        for (const thumb of targets) {
+          await handleRenderThumbnailImage(thumb.id, thumb.prompt, thumb.style, true);
+        }
       }
       setInfoMsg(t.bulkRenderThumbnailsSuccess);
     } catch (err: any) {
@@ -3405,6 +3461,7 @@ export function usePipelineWizard(props: any) {
         volume: vConfig.volume || 1.0,
         voiceURI: voiceURI,
         voice_id: voiceURI,
+        provider: vConfig.provider,
         ...(_.startsWith(voiceURI, "vbee-") || _.includes(voiceURI, "vbee") ? { voice_ownership: "community" } : {}),
       });
 

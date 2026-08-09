@@ -3,15 +3,15 @@ import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
-import { 
-  PROJECTS_FILE_NAME, 
-  ENCODING_UTF8, 
-  SQLITE_DB_NAME, 
-  PROJECTS_BACKUP_DIR_NAME, 
-  getBackendMsg, 
-  SQL_STATEMENTS, 
-  MIGRATION_DEFAULTS, 
-  REFACTOR_CONSTANTS 
+import {
+  PROJECTS_FILE_NAME,
+  ENCODING_UTF8,
+  SQLITE_DB_NAME,
+  PROJECTS_BACKUP_DIR_NAME,
+  getBackendMsg,
+  SQL_STATEMENTS,
+  MIGRATION_DEFAULTS,
+  REFACTOR_CONSTANTS,
 } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import _ from "lodash";
@@ -20,7 +20,9 @@ import { jsonUtils } from "../../lib/json.js";
 
 let dbInstance: Database<sqlite3.Database, sqlite3.Statement> | null = null;
 
-export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> {
+export async function initDb(): Promise<
+  Database<sqlite3.Database, sqlite3.Statement>
+> {
   if (!_.isNil(dbInstance)) {
     return dbInstance;
   }
@@ -59,7 +61,11 @@ export async function getPresetsFromDb(): Promise<any[]> {
   }
 }
 
-export async function savePresetToDb(preset: { id: string; name: string; config: any }): Promise<any> {
+export async function savePresetToDb(preset: {
+  id: string;
+  name: string;
+  config: any;
+}): Promise<any> {
   try {
     const db = await initDb();
     const now = new Date().toISOString();
@@ -78,7 +84,13 @@ export async function savePresetToDb(preset: { id: string; name: string; config:
       updatedAt: now,
     };
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(
+      _.join(
+        [getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
+      error,
+    );
     throw error;
   }
 }
@@ -89,7 +101,13 @@ export async function deletePresetFromDb(id: string): Promise<boolean> {
     const result = await db.run(SQL_STATEMENTS.DELETE_PRESET, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_PRESET_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(
+      _.join(
+        [getBackendMsg("SQLITE_PRESET_DELETE_ERR"), id],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
+      error,
+    );
     return false;
   }
 }
@@ -129,7 +147,9 @@ export async function getProjectsListFromDb(): Promise<any[]> {
   }
 }
 
-export async function getProjectDetailFromDb(id: string): Promise<VideoProject | null> {
+export async function getProjectDetailFromDb(
+  id: string,
+): Promise<VideoProject | null> {
   try {
     const db = await initDb();
     const row = await db.get(SQL_STATEMENTS.SELECT_PROJECT_DETAIL, [id]);
@@ -137,30 +157,41 @@ export async function getProjectDetailFromDb(id: string): Promise<VideoProject |
       return jsonUtils.safeParse<VideoProject>(row.data, null);
     }
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_DETAIL_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(
+      _.join(
+        [getBackendMsg("SQLITE_DETAIL_ERR"), id],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
+      error,
+    );
   }
   return null;
 }
 
-export async function saveProjectDetailToDb(project: VideoProject): Promise<void> {
+export async function saveProjectDetailToDb(
+  project: VideoProject,
+): Promise<void> {
   try {
     const db = await initDb();
 
-    await db.run(
-      SQL_STATEMENTS.INSERT_PROJECT,
-      [
-        project.id,
-        project.name,
-        _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-        _.defaultTo(project.createdAt, new Date().toISOString()),
-        _.defaultTo(project.updatedAt, new Date().toISOString()),
-        _.defaultTo(project.currentStep, 0),
-        _.defaultTo(project.creditsUsed, 0),
-        jsonUtils.safeStringify(project)
-      ],
-    );
+    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
+      project.id,
+      project.name,
+      _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+      _.defaultTo(project.createdAt, new Date().toISOString()),
+      _.defaultTo(project.updatedAt, new Date().toISOString()),
+      _.defaultTo(project.currentStep, 0),
+      _.defaultTo(project.creditsUsed, 0),
+      jsonUtils.safeStringify(project),
+    ]);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_WRITE_ERR"), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(
+      _.join(
+        [getBackendMsg("SQLITE_WRITE_ERR"), project.id],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
+      error,
+    );
     throw error;
   }
 }
@@ -171,7 +202,13 @@ export async function deleteProjectFromDb(id: string): Promise<boolean> {
     const result = await db.run(SQL_STATEMENTS.DELETE_PROJECT, [id]);
     return !_.isNil(result.changes) && _.gt(result.changes, 0);
   } catch (error) {
-    appError(_.join([getBackendMsg("SQLITE_DELETE_ERR"), id], REFACTOR_CONSTANTS.VD_BLANK), error);
+    appError(
+      _.join(
+        [getBackendMsg("SQLITE_DELETE_ERR"), id],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
+      error,
+    );
     return false;
   }
 }
@@ -179,7 +216,10 @@ export async function deleteProjectFromDb(id: string): Promise<boolean> {
 export async function migrateJsonToSqlite(): Promise<void> {
   try {
     const projectsFile = path.join(getDataDirectory(), PROJECTS_FILE_NAME);
-    const projectsDir = path.join(getDataDirectory(), MIGRATION_DEFAULTS.PROJECTS_DIR);
+    const projectsDir = path.join(
+      getDataDirectory(),
+      MIGRATION_DEFAULTS.PROJECTS_DIR,
+    );
     const backupDir = path.join(getDataDirectory(), PROJECTS_BACKUP_DIR_NAME);
 
     if (_.isEqual(fs.existsSync(projectsFile), false)) {
@@ -192,7 +232,10 @@ export async function migrateJsonToSqlite(): Promise<void> {
     const rawList = fs.readFileSync(projectsFile, ENCODING_UTF8);
     const metadataList = jsonUtils.safeParse<any[]>(rawList, []);
 
-    if (_.isEqual(_.isArray(metadataList), false) || _.isEqual(metadataList.length, 0)) {
+    if (
+      _.isEqual(_.isArray(metadataList), false) ||
+      _.isEqual(metadataList.length, 0)
+    ) {
       appLog(getBackendMsg("SQLITE_MIGRATION_EMPTY"));
       return;
     }
@@ -219,71 +262,92 @@ export async function migrateJsonToSqlite(): Promise<void> {
       if (_.isNil(projectDetail)) {
         projectDetail = {
           id,
-          name: _.defaultTo(projectMeta.name, MIGRATION_DEFAULTS.MIGRATE_PROJECT_NAME),
-          description: _.defaultTo(projectMeta.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          createdAt: _.defaultTo(projectMeta.createdAt, new Date().toISOString()),
-          updatedAt: _.defaultTo(projectMeta.updatedAt, new Date().toISOString()),
+          name: _.defaultTo(
+            projectMeta.name,
+            MIGRATION_DEFAULTS.MIGRATE_PROJECT_NAME,
+          ),
+          description: _.defaultTo(
+            projectMeta.description,
+            REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          ),
+          createdAt: _.defaultTo(
+            projectMeta.createdAt,
+            new Date().toISOString(),
+          ),
+          updatedAt: _.defaultTo(
+            projectMeta.updatedAt,
+            new Date().toISOString(),
+          ),
           currentStep: _.defaultTo(projectMeta.currentStep, 0),
           creditsUsed: _.defaultTo(projectMeta.creditsUsed, 0),
-          input: _.defaultTo(projectMeta.input, { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING }),
-          config: _.defaultTo(projectMeta.config, { 
-            genre: MIGRATION_DEFAULTS.GENRE, 
-            language: MIGRATION_DEFAULTS.LANGUAGE, 
-            duration: MIGRATION_DEFAULTS.DURATION 
+          input: _.defaultTo(projectMeta.input, {
+            type: MIGRATION_DEFAULTS.PROJECTS_DIR,
+            content: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           }),
-          hookConfig: _.defaultTo(projectMeta.hookConfig, { 
-            type: MIGRATION_DEFAULTS.HOOK_TYPE, 
-            duration: MIGRATION_DEFAULTS.HOOK_DURATION, 
-            count: MIGRATION_DEFAULTS.HOOK_COUNT, 
-            positions: MIGRATION_DEFAULTS.HOOK_POSITIONS, 
-            versions: [] 
+          config: _.defaultTo(projectMeta.config, {
+            genre: MIGRATION_DEFAULTS.GENRE,
+            language: MIGRATION_DEFAULTS.LANGUAGE,
+            duration: MIGRATION_DEFAULTS.DURATION,
           }),
-          voiceConfig: _.defaultTo(projectMeta.voiceConfig, { 
-            provider: MIGRATION_DEFAULTS.VOICE_PROVIDER, 
-            audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE, 
-            gender: MIGRATION_DEFAULTS.VOICE_GENDER, 
-            age: MIGRATION_DEFAULTS.VOICE_AGE, 
-            emotion: MIGRATION_DEFAULTS.VOICE_EMOTION, 
-            speed: MIGRATION_DEFAULTS.VOICE_SPEED, 
-            pitch: MIGRATION_DEFAULTS.VOICE_PITCH, 
-            volume: MIGRATION_DEFAULTS.VOICE_VOLUME, 
-            voiceURI: MIGRATION_DEFAULTS.VOICE_URI 
+          hookConfig: _.defaultTo(projectMeta.hookConfig, {
+            type: MIGRATION_DEFAULTS.HOOK_TYPE,
+            duration: MIGRATION_DEFAULTS.HOOK_DURATION,
+            count: MIGRATION_DEFAULTS.HOOK_COUNT,
+            positions: MIGRATION_DEFAULTS.HOOK_POSITIONS,
+            versions: [],
           }),
-          visualConfig: _.defaultTo(projectMeta.visualConfig, { 
-            source: MIGRATION_DEFAULTS.VISUAL_SOURCE, 
-            style: MIGRATION_DEFAULTS.VISUAL_STYLE, 
-            quality: MIGRATION_DEFAULTS.VISUAL_QUALITY, 
-            density: MIGRATION_DEFAULTS.VISUAL_DENSITY, 
-            characterConsistency: true, 
-            assetsMode: MIGRATION_DEFAULTS.VISUAL_ASSETS_MODE, 
-            imageGeneratorEngine: MIGRATION_DEFAULTS.VISUAL_SOURCE, 
-            generateType: "image", 
-            aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO, 
-            promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT, 
-            generateCount: 1 
+          voiceConfig: _.defaultTo(projectMeta.voiceConfig, {
+            provider: MIGRATION_DEFAULTS.VOICE_PROVIDER,
+            audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE,
+            gender: MIGRATION_DEFAULTS.VOICE_GENDER,
+            age: MIGRATION_DEFAULTS.VOICE_AGE,
+            emotion: MIGRATION_DEFAULTS.VOICE_EMOTION,
+            speed: MIGRATION_DEFAULTS.VOICE_SPEED,
+            pitch: MIGRATION_DEFAULTS.VOICE_PITCH,
+            volume: MIGRATION_DEFAULTS.VOICE_VOLUME,
+            voiceURI: MIGRATION_DEFAULTS.VOICE_URI,
+          }),
+          visualConfig: _.defaultTo(projectMeta.visualConfig, {
+            source: MIGRATION_DEFAULTS.VISUAL_SOURCE,
+            style: MIGRATION_DEFAULTS.VISUAL_STYLE,
+            quality: MIGRATION_DEFAULTS.VISUAL_QUALITY,
+            density: MIGRATION_DEFAULTS.VISUAL_DENSITY,
+            characterConsistency: true,
+            assetsMode: MIGRATION_DEFAULTS.VISUAL_ASSETS_MODE,
+            imageGeneratorEngine: MIGRATION_DEFAULTS.VISUAL_SOURCE,
+            generateType: "image",
+            aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO,
+            promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT,
+            generateCount: 1,
           }),
         } as any;
       }
 
-      await db.run(
-        SQL_STATEMENTS.INSERT_PROJECT,
-        [
-          projectDetail!.id,
-          projectDetail!.name,
-          _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          _.defaultTo(projectDetail!.createdAt, new Date().toISOString()),
-          _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()),
-          _.defaultTo(projectDetail!.currentStep, 0),
-          _.defaultTo(projectDetail!.creditsUsed, 0),
-          jsonUtils.safeStringify(projectDetail)
-        ],
-      );
+      await db.run(SQL_STATEMENTS.INSERT_PROJECT, [
+        projectDetail!.id,
+        projectDetail!.name,
+        _.defaultTo(
+          projectDetail!.description,
+          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        ),
+        _.defaultTo(projectDetail!.createdAt, new Date().toISOString()),
+        _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()),
+        _.defaultTo(projectDetail!.currentStep, 0),
+        _.defaultTo(projectDetail!.creditsUsed, 0),
+        jsonUtils.safeStringify(projectDetail),
+      ]);
 
       if (_.isEqual(fs.existsSync(detailFile), true)) {
         try {
           fs.renameSync(detailFile, path.join(backupDir, `${id}.json`));
         } catch (e) {
-          appError(_.join([getBackendMsg("SQLITE_MIGRATE_PARSE_ERR"), `${id}.json`], REFACTOR_CONSTANTS.VD_BLANK), e);
+          appError(
+            _.join(
+              [getBackendMsg("SQLITE_MIGRATE_PARSE_ERR"), `${id}.json`],
+              REFACTOR_CONSTANTS.VD_BLANK,
+            ),
+            e,
+          );
         }
       }
     }
@@ -292,9 +356,15 @@ export async function migrateJsonToSqlite(): Promise<void> {
 
     try {
       fs.renameSync(projectsFile, path.join(backupDir, PROJECTS_FILE_NAME));
-      const backupFile = path.join(getDataDirectory(), MIGRATION_DEFAULTS.BACKUP_JSON);
+      const backupFile = path.join(
+        getDataDirectory(),
+        MIGRATION_DEFAULTS.BACKUP_JSON,
+      );
       if (_.isEqual(fs.existsSync(backupFile), true)) {
-        fs.renameSync(backupFile, path.join(backupDir, MIGRATION_DEFAULTS.BACKUP_JSON));
+        fs.renameSync(
+          backupFile,
+          path.join(backupDir, MIGRATION_DEFAULTS.BACKUP_JSON),
+        );
       }
       appLog(getBackendMsg("SQLITE_MIGRATION_SUCCESS"));
     } catch (e) {

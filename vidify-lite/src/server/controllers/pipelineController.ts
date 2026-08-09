@@ -17,8 +17,12 @@ import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, FREE_TTS_CONFIG, STYLE_EXTRACTION_CONFIG, IMAGE_PROMPT_QA_CONFIG, PIPELINE_SERVER_ERRORS } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, IMAGE_PROMPT_QA_CONFIG, IMAGE_PROMPT_METADATA_CONFIG, PIPELINE_SERVER_ERRORS } from "../../constants/config.js";
 import { enforceImagePromptStyle, evaluateImagePrompts, sanitizeImagePrompt } from "../../services/imagePromptQualityService.js";
+import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
+import { normalizeExtractedStyle } from "../../services/styleReferenceService.js";
+import { normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
+import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
 import {
   EXTERNAL_URLS,
@@ -75,7 +79,6 @@ import {
   getDummySeoData,
   getThumbnailLayoutPrompt,
   getDummyThumbs,
-  VOICE_PRESET_MAP,
   GENRE_VISUAL_GUIDELINES,
   VideoGenre,
   SplitStrategy,
@@ -131,7 +134,7 @@ import { SecurityMessages } from "../../constants/security.js";
 
 import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
-import { createFreeTtsResponse } from "../services/freeTtsService.js";
+import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
 import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage } from "../services/imageAssetService.js";
 
@@ -257,12 +260,7 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     });
 
     if (response && response.text) {
-      let extracted = response.text.trim();
-
-      const lower = extracted.toLowerCase();
-      if (_.some(STICKMAN_KEYWORDS, (kw) => _.includes(lower, kw))) {
-        extracted = STICKMAN_STYLE_MODIFIERS;
-      }
+      const extracted = normalizeExtractedStyle(response.text);
       const result = { style: extracted };
       setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, req.body, result);
       return res.json(result);
@@ -390,7 +388,19 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
     const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
     const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-    const optimizedMap = new Map<string, string>();
+    const validCharacterIds = new Set(_.map(_.defaultTo(visualConfig?.characters, []), "id"));
+    const normalizeOptimizedItem = (item: any) => ({
+      prompt: sanitizeImagePrompt(item.prompt),
+      characterIds: _.filter(_.uniq(_.castArray(item.characterIds)), characterId => validCharacterIds.has(characterId)),
+      expectedSubjectCount: _.clamp(_.toInteger(item.expectedSubjectCount), IMAGE_PROMPT_METADATA_CONFIG.MIN_SUBJECT_COUNT, IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT),
+      allowBackgroundPeople: Boolean(item.allowBackgroundPeople),
+      layout: _.includes(IMAGE_PROMPT_METADATA_CONFIG.ALLOWED_LAYOUTS, item.layout)
+        ? item.layout
+        : IMAGE_PROMPT_METADATA_CONFIG.DEFAULT_LAYOUT,
+      textAllowed: _.includes(TEXT_IN_IMAGE_MODE_CONFIG.TEXT_ALLOWED_MODES, visualConfig?.styleTextInImageMode)
+        || Boolean(item.textAllowed),
+    });
+    const optimizedMap = new Map<string, ReturnType<typeof normalizeOptimizedItem>>();
 
     for (let i = 0; i < chunks.length; i++) {
       const chunkItem = chunks[i];
@@ -405,7 +415,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
-              optimizedMap.set(item.id, sanitizeImagePrompt(item.prompt));
+              optimizedMap.set(item.id, normalizeOptimizedItem(item));
             }
           }
         }
@@ -423,7 +433,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       const optimized = optimizedMap.get(scene.id);
       return {
         ...scene,
-        prompt: enforceImagePromptStyle(optimized || scene.prompt || "", targetStyle, scene.script || scene.subtitle || "", scene.cameraMotion || "", visualConfig?.styleTextInImageMode),
+        ...optimized,
+        prompt: enforceImagePromptStyle(optimized?.prompt || scene.prompt || "", targetStyle, scene.script || scene.subtitle || "", scene.cameraMotion || "", visualConfig?.styleTextInImageMode),
       };
     });
     let promptQa = evaluateImagePrompts(updatedStoryboard, { backgroundMode: visualConfig?.styleBackgroundMode, textMode: visualConfig?.styleTextInImageMode, targetStyle });
@@ -436,8 +447,15 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       try {
         const repairResponse = await generateContentWithRetry({ contents: repairPrompt, config: { responseMimeType: "application/json" } });
         const repairedItems = safeParseJSON(repairResponse.text, []);
-        const repairedMap = new Map<string, string>(_.map(_.filter(repairedItems, item => item?.id && item?.prompt), item => [item.id, sanitizeImagePrompt(item.prompt)]));
-        updatedStoryboard = _.map(updatedStoryboard, scene => ({ ...scene, prompt: enforceImagePromptStyle(repairedMap.get(scene.id) || scene.prompt || "", targetStyle, scene.script || scene.subtitle || "", scene.cameraMotion || "", visualConfig?.styleTextInImageMode) }));
+        const repairedMap = new Map<string, ReturnType<typeof normalizeOptimizedItem>>(_.map(_.filter(repairedItems, item => item?.id && item?.prompt), item => [item.id, normalizeOptimizedItem(item)]));
+        updatedStoryboard = _.map(updatedStoryboard, scene => {
+          const repaired = repairedMap.get(scene.id);
+          return {
+            ...scene,
+            ...repaired,
+            prompt: enforceImagePromptStyle(repaired?.prompt || scene.prompt || "", targetStyle, scene.script || scene.subtitle || "", scene.cameraMotion || "", visualConfig?.styleTextInImageMode),
+          };
+        });
         promptQa = evaluateImagePrompts(updatedStoryboard, { backgroundMode: visualConfig?.styleBackgroundMode, textMode: visualConfig?.styleTextInImageMode, targetStyle });
       } catch (error) {
         logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, error);
@@ -476,7 +494,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
       const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
       const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
       const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
+      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective, true);
 
       try {
         const response = await generateContentWithRetry({
@@ -1249,6 +1267,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
   const imagePrompt = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY));
   const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
   const referenceAssetUrl = _.toString(_.get(req.body, "referenceAssetUrl"));
+  const referenceAssetUrls = _.take(_.filter(_.castArray(_.get(req.body, "referenceAssetUrls", [])), _.isString), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
 
   if (_.isEmpty(assetUrl)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
@@ -1262,8 +1281,9 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
       { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount) },
       { inlineData: encodedImage },
     ];
-    if (!_.isEmpty(referenceAssetUrl)) {
-      const encodedReference = readEncodedProjectImage(referenceAssetUrl);
+    const qualityReferences = _.take(_.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
+    for (const qualityReference of qualityReferences) {
+      const encodedReference = readEncodedProjectImage(qualityReference);
       if (encodedReference) {
         parts.push({ text: SCENE_QA_REFERENCE_DIRECTIVE });
         parts.push({ inlineData: encodedReference });
@@ -1674,16 +1694,13 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     return res.json({ ...cached, cached: true });
   }
 
-  const thumbnailCount = visualConfig.thumbnailCount || 2;
+  const thumbnailCount = _.toInteger(visualConfig.thumbnailCount) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_COUNT;
   const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
 
   if (!(await isAiProviderAvailable())) {
     const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false, rewrittenScript);
     return res.json({
-      thumbnails: Array.from({ length: thumbnailCount }).map((_, i) => ({
-        ...dummyThumbs[i % dummyThumbs.length],
-        id: `th_${i}`,
-      })),
+      thumbnails: normalizeThumbnailIdeas([], dummyThumbs, thumbnailCount, visualConfig.thumbnailTextInImageMode),
     });
   }
 
@@ -1696,7 +1713,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
-    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi, visualConfig.aspectRatio || "16:9");
+    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi, visualConfig.aspectRatio || "16:9", visualConfig.thumbnailTextInImageMode);
 
     const thumbParts: any[] = [];
     if (visualConfig.thumbnailReferenceImages && _.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
@@ -1736,8 +1753,14 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
 
+    const normalizedThumbnails = normalizeThumbnailIdeas(
+      _.castArray(thumbsResult.thumbnails || []),
+      getDummyThumbs(isVi, true, rewrittenScript),
+      thumbnailCount,
+      visualConfig.thumbnailTextInImageMode,
+    );
     const parsedData = {
-      thumbnails: thumbsResult.thumbnails || [],
+      thumbnails: normalizedThumbnails,
       rotationLogs: thumbLogs,
     };
 
@@ -1748,36 +1771,20 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const isVi = config?.language === ProjectLanguage.VI;
     res.json({
       warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
-      thumbnails: getDummyThumbs(isVi, true, rewrittenScript),
+      thumbnails: normalizeThumbnailIdeas([], getDummyThumbs(isVi, true, rewrittenScript), thumbnailCount, visualConfig.thumbnailTextInImageMode),
     });
   }
 });
 
 router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, res: Response) => {
   try {
-    let { text, speed, voice_id, voiceURI } = req.body;
-    let finalVoiceId = voice_id || voiceURI || "";
-
-    if (!_.isEmpty(finalVoiceId) && VOICE_PRESET_MAP[finalVoiceId]) {
-      finalVoiceId = VOICE_PRESET_MAP[finalVoiceId];
-    }
-
-    const validPrefixes = REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES;
-    const hasValidPrefix = _.some(validPrefixes, (prefix) => _.startsWith(finalVoiceId, prefix));
-
-    if (!hasValidPrefix) {
-      if (!_.isEmpty(finalVoiceId)) {
-        finalVoiceId = `${REFACTOR_CONSTANTS.EDGE_PREFIX}${finalVoiceId}`;
-      } else {
-        finalVoiceId = REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID;
-      }
-    }
+    let { text, speed, voice_id, voiceURI, provider } = req.body;
+    const requestedVoiceId = voice_id || voiceURI || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+    const { finalVoiceId } = resolveVoiceRouting({ provider, voiceId: requestedVoiceId });
 
     if (!text || !text.trim()) {
       text = BACKEND_MESSAGES.TTS_DEFAULT_TEST;
     }
-
-    try { const freeTtsResponse = await createFreeTtsResponse(text, finalVoiceId);await incrementFeatureUsage(req, FeatureType.VOICE, _.size(text));return res.json(freeTtsResponse); } catch (error) { appWarn(FREE_TTS_CONFIG.FALLBACK_LOG, error);if (FREE_TTS_CONFIG.STRICT_FREE_MODE) throw error; }
 
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, 'ai33Key', '');
@@ -2824,7 +2831,21 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     };
     writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, jsonUtils.safeStringify(draftMetaInfoObj, null, 2));
 
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, jsonUtils.safeStringify({ project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } }, null, 2));
+    const draftSettings = {
+      project_setting: {
+        fps: CAPCUT_CONFIG.FPS,
+        ratio: CAPCUT_CONFIG.CANVAS_RATIO,
+        width: CAPCUT_CONFIG.CANVAS_WIDTH,
+        height: CAPCUT_CONFIG.CANVAS_HEIGHT,
+      },
+      export_setting: {
+        resolution: CAPCUT_CONFIG.RESOLUTION,
+        fps: CAPCUT_CONFIG.FPS,
+        rate_control: CAPCUT_CONFIG.RATE_CONTROL,
+        bit_rate: CAPCUT_CONFIG.BIT_RATE,
+      },
+    };
+    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, jsonUtils.safeStringify(draftSettings, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, jsonUtils.safeStringify({ cache_items: [], local_res_map: [] }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, jsonUtils.safeStringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, jsonUtils.safeStringify({ enable_proxy: false, render_quality: 100 }, null, 2));

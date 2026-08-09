@@ -1,5 +1,12 @@
 import { ErrorMessage } from "./constants";
-import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
+import {
+  lazy,
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import { Toaster } from "sonner";
 import Header from "./components/Header.tsx";
 import Sidebar from "./components/Sidebar.tsx";
@@ -8,10 +15,38 @@ import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
 import TabContentLoading from "./components/TabContentLoading.tsx";
 
-import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
+import {
+  VideoProject,
+  ProjectInputType,
+  ProjectKind,
+  ProjectLanguage,
+  HookPosition,
+  AudioType,
+  Gender,
+  AgeGroup,
+  AssetsMode,
+  ImageGeneratorEngine,
+  GenerateType,
+  PromptInputMethod,
+  AspectRatio,
+} from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS } from "./constants";
+import {
+  API_ROUTES,
+  STORAGE_KEYS,
+  LOADING_CONFIG,
+  TAB_CONTENT_LOADING_CONFIG,
+  HTTP_METHODS,
+  CONTENT_TYPES,
+  ERROR_MESSAGES,
+  CONTENT_TYPE_HEADER,
+  THEME_VALUES,
+  COMMON_STRINGS,
+  DEFAULT_PROJECT_CONFIGS,
+  REFACTOR_CONSTANTS,
+  PROJECT_LIST_CONSTANTS,
+} from "./constants";
 import { AppTab } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
@@ -21,53 +56,86 @@ import { storageUtils } from "./lib/storage";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 const PROJECT_WORKSPACE_TABS = [AppTab.AUTO_GENERATOR, AppTab.STUDIO];
 const PipelineWizard = lazy(() => import("./components/PipelineWizard.tsx"));
-const AutoVideoGenerator = lazy(() => import("./components/AutoVideoGenerator.tsx"));
-
-const isProjectWorkspaceTab = (tab: string): boolean => (
-  _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab)
+const AutoVideoGenerator = lazy(
+  () => import("./components/AutoVideoGenerator.tsx"),
 );
+
+const isProjectWorkspaceTab = (tab: string): boolean =>
+  _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab);
 
 const convertToSlug = (text: string): string => {
   return _.trim(
     _.toLower(text)
       .normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM)
-      .replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
+      .replace(
+        REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX,
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      )
+      .replace(
+        REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX,
+        REFACTOR_CONSTANTS.VD_LETTER_D,
+      )
+      .replace(
+        REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX,
+        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+      )
+      .replace(
+        REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX,
+        REFACTOR_CONSTANTS.VD_HYPHEN,
+      )
+      .replace(
+        REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX,
+        REFACTOR_CONSTANTS.VD_HYPHEN,
+      ),
   ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
 };
 
 const isProjectReadyForTab = (
   project: VideoProject | undefined,
   tab: string,
-): boolean => _.some([
-  _.every([
-    _.isEqual(tab, AppTab.AUTO_GENERATOR),
-    _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Auto),
-      _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-  _.every([
-    _.isEqual(tab, AppTab.STUDIO),
-    _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Studio),
-      _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-], Boolean);
+): boolean =>
+  _.some(
+    [
+      _.every(
+        [
+          _.isEqual(tab, AppTab.AUTO_GENERATOR),
+          _.some([
+            _.isEqual(project?.projectKind, ProjectKind.Auto),
+            _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+          ]),
+        ],
+        Boolean,
+      ),
+      _.every(
+        [
+          _.isEqual(tab, AppTab.STUDIO),
+          _.some([
+            _.isEqual(project?.projectKind, ProjectKind.Studio),
+            _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
+          ]),
+        ],
+        Boolean,
+      ),
+    ],
+    Boolean,
+  );
 
-const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
+const createProjectRecord = async (
+  project: VideoProject,
+): Promise<VideoProject> => {
   const response = await fetch(API_ROUTES.PROJECTS, {
     method: HTTP_METHODS.POST,
     headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
     body: jsonUtils.safeStringify(project),
-    signal: AbortSignal.timeout(PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(
+      PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS,
+    ),
   });
   if (!response.ok) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
-  const savedProject = jsonUtils.safeParse<VideoProject>(await response.text(), null);
+  const savedProject = jsonUtils.safeParse<VideoProject>(
+    await response.text(),
+    null,
+  );
   if (!savedProject) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
   return savedProject;
 };
@@ -76,17 +144,21 @@ export default function App() {
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
   const [activeTab, setActiveTab] = useState<string>(() => {
     const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);
-    const isValidTab = !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
+    const isValidTab =
+      !_.isEmpty(savedTab) && !_.includes(INVALID_CACHE_VALUES, savedTab);
     if (isValidTab) {
       if (_.isEqual(savedTab, AppTab.STUDIO)) {
         const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-        const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+        const isValidProj =
+          !_.isEmpty(cachedProj) &&
+          !_.includes(INVALID_CACHE_VALUES, cachedProj);
         return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
       }
       return savedTab!;
     }
     const cachedProj = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    const isValidProj = !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
+    const isValidProj =
+      !_.isEmpty(cachedProj) && !_.includes(INVALID_CACHE_VALUES, cachedProj);
     return isValidProj ? AppTab.STUDIO : AppTab.PROJECTS;
   });
 
@@ -122,20 +194,28 @@ export default function App() {
             headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
             body: jsonUtils.safeStringify(proj),
             keepalive: true,
-          }).catch((error) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error));
+          }).catch((error) =>
+            appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error),
+          );
         }
       });
     };
-
   }, []);
 
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
-    const cached = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
-    return !cached || _.includes(INVALID_CACHE_VALUES, cached) ? null : cached;
-  });
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    () => {
+      const cached = storageUtils.get(STORAGE_KEYS.SELECTED_PROJECT_ID);
+      return !cached || _.includes(INVALID_CACHE_VALUES, cached)
+        ? null
+        : cached;
+    },
+  );
 
   useEffect(() => {
-    if (selectedProjectId && !_.includes(INVALID_CACHE_VALUES, selectedProjectId)) {
+    if (
+      selectedProjectId &&
+      !_.includes(INVALID_CACHE_VALUES, selectedProjectId)
+    ) {
       storageUtils.set(STORAGE_KEYS.SELECTED_PROJECT_ID, selectedProjectId);
     } else {
       storageUtils.remove(STORAGE_KEYS.SELECTED_PROJECT_ID);
@@ -143,7 +223,10 @@ export default function App() {
   }, [selectedProjectId]);
 
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;
+    return (
+      (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") ||
+      THEME_VALUES.LIGHT
+    );
   });
 
   useEffect(() => {
@@ -158,11 +241,17 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (_.isEqual(prev, THEME_VALUES.DARK) ? THEME_VALUES.LIGHT : THEME_VALUES.DARK));
+    setTheme((prev) =>
+      _.isEqual(prev, THEME_VALUES.DARK)
+        ? THEME_VALUES.LIGHT
+        : THEME_VALUES.DARK,
+    );
   };
 
   const [credits] = useState<number>(REFACTOR_CONSTANTS.CREDITS_DEFAULT_10000);
-  const [costTracker, setCostTracker] = useState<number>(REFACTOR_CONSTANTS.ZERO_FLOAT);
+  const [costTracker, setCostTracker] = useState<number>(
+    REFACTOR_CONSTANTS.ZERO_FLOAT,
+  );
 
   useEffect(() => {
     let active = true;
@@ -173,7 +262,10 @@ export default function App() {
       try {
         const text = await res.text();
         const trimmedText = _.trim(text);
-        if (_.isEmpty(trimmedText) || _.includes(INVALID_CACHE_VALUES, trimmedText)) {
+        if (
+          _.isEmpty(trimmedText) ||
+          _.includes(INVALID_CACHE_VALUES, trimmedText)
+        ) {
           return [];
         }
         const list = jsonUtils.safeParse<any[]>(text, []);
@@ -181,12 +273,16 @@ export default function App() {
           const hasProj = _.some(list, (p: any) => _.isEqual(p.id, cachedId));
           if (hasProj) {
             try {
-              const detailRes = await fetch(`${API_ROUTES.PROJECTS}/${cachedId}`);
+              const detailRes = await fetch(
+                `${API_ROUTES.PROJECTS}/${cachedId}`,
+              );
               if (detailRes.ok) {
                 const detailText = await detailRes.text();
                 const detailData = jsonUtils.safeParse(detailText, null);
                 if (detailData) {
-                  return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
+                  return _.map(list, (p: any) =>
+                    _.isEqual(p.id, cachedId) ? detailData : p,
+                  );
                 }
               }
             } catch (e) {
@@ -236,14 +332,21 @@ export default function App() {
       const activeProj = _.find(projects, { id: selectedProjectId });
       if (activeProj) {
         if (!activeProj.parentId) {
-          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+          const studioChild = _.find(
+            projects,
+            (p) =>
+              _.isEqual(p.parentId, activeProj.id) &&
+              _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
+          );
           if (studioChild) {
             setSelectedProjectId(studioChild.id);
           } else {
             if (creatingChildRef.current[activeProj.id]) return;
             creatingChildRef.current[activeProj.id] = true;
 
-            const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+            const projectSlug = convertToSlug(
+              activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME,
+            );
             const randomStr = generateRandomString();
             const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_studio_${randomStr}`;
             const childProject: VideoProject = {
@@ -254,23 +357,32 @@ export default function App() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            
+
             fetch(API_ROUTES.PROJECTS, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
               body: jsonUtils.safeStringify(childProject),
-            }).then(response => {
-              if (response.ok) {
-                setProjects((prev) => [...prev, childProject]);
-                setSelectedProjectId(childId);
-              }
-            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
-            .finally(() => {
-              creatingChildRef.current[activeProj.id] = false;
-            });
+            })
+              .then((response) => {
+                if (response.ok) {
+                  setProjects((prev) => [...prev, childProject]);
+                  setSelectedProjectId(childId);
+                }
+              })
+              .catch((err) => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+              .finally(() => {
+                creatingChildRef.current[activeProj.id] = false;
+              });
           }
-        } else if (_.endsWith(activeProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
-          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+        } else if (
+          _.endsWith(activeProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
+        ) {
+          const studioChild = _.find(
+            projects,
+            (p) =>
+              _.isEqual(p.parentId, activeProj.parentId) &&
+              _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
+          );
           if (studioChild) {
             setSelectedProjectId(studioChild.id);
           }
@@ -289,10 +401,11 @@ export default function App() {
     }
     const startedAt = workspaceTabLoadingStartedAtRef.current || Date.now();
     const elapsedMs = _.subtract(Date.now(), startedAt);
-    const remainingMs = _.max([
-      _.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs),
-      REFACTOR_CONSTANTS.ZERO_FLOAT,
-    ]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
+    const remainingMs =
+      _.max([
+        _.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs),
+        REFACTOR_CONSTANTS.ZERO_FLOAT,
+      ]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
     let frameId: number | undefined;
     const timeoutId = setTimeout(() => {
       frameId = requestAnimationFrame(() => {
@@ -312,13 +425,10 @@ export default function App() {
     if (!isSwitchingWorkspaceTab) {
       return;
     }
-    const timeoutId = setTimeout(
-      () => {
-        workspaceTabLoadingStartedAtRef.current = null;
-        setIsSwitchingWorkspaceTab(false);
-      },
-      TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS,
-    );
+    const timeoutId = setTimeout(() => {
+      workspaceTabLoadingStartedAtRef.current = null;
+      setIsSwitchingWorkspaceTab(false);
+    }, TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS);
     return () => clearTimeout(timeoutId);
   }, [isSwitchingWorkspaceTab]);
 
@@ -327,15 +437,25 @@ export default function App() {
       const activeProj = _.find(projects, { id: selectedProjectId });
       if (activeProj) {
         if (!activeProj.parentId) {
-          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX));
+          const autoChild = _.find(
+            projects,
+            (p) =>
+              _.isEqual(p.parentId, activeProj.id) &&
+              _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+          );
           if (autoChild) {
             setSelectedProjectId(autoChild.id);
           } else {
-            const childKey = _.join([activeProj.id, COMMON_STRINGS.AUTO_CHILD_SUFFIX], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+            const childKey = _.join(
+              [activeProj.id, COMMON_STRINGS.AUTO_CHILD_SUFFIX],
+              REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+            );
             if (creatingChildRef.current[childKey]) return;
             creatingChildRef.current[childKey] = true;
 
-            const projectSlug = convertToSlug(activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+            const projectSlug = convertToSlug(
+              activeProj.name || COMMON_STRINGS.PROJECT_DEFAULT_NAME,
+            );
             const randomStr = generateRandomString();
             const childId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_auto_${randomStr}`;
             const childProject: VideoProject = {
@@ -346,23 +466,32 @@ export default function App() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            
+
             fetch(API_ROUTES.PROJECTS, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
               body: jsonUtils.safeStringify(childProject),
-            }).then(response => {
-              if (response.ok) {
-                setProjects((prev) => [...prev, childProject]);
-                setSelectedProjectId(childId);
-              }
-            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
-            .finally(() => {
-              creatingChildRef.current[childKey] = false;
-            });
+            })
+              .then((response) => {
+                if (response.ok) {
+                  setProjects((prev) => [...prev, childProject]);
+                  setSelectedProjectId(childId);
+                }
+              })
+              .catch((err) => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+              .finally(() => {
+                creatingChildRef.current[childKey] = false;
+              });
           }
-        } else if (_.endsWith(activeProj.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) {
-          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX));
+        } else if (
+          _.endsWith(activeProj.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)
+        ) {
+          const autoChild = _.find(
+            projects,
+            (p) =>
+              _.isEqual(p.parentId, activeProj.parentId) &&
+              _.endsWith(p.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+          );
           if (autoChild) {
             setSelectedProjectId(autoChild.id);
           }
@@ -385,10 +514,15 @@ export default function App() {
         const detailText = await res.text();
         const detailData = jsonUtils.safeParse(detailText, null);
         if (detailData) {
-          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
+          setProjects((prev) =>
+            _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)),
+          );
         }
         setSelectedProjectId(id);
-        if (project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+        if (
+          project.parentId &&
+          _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
+        ) {
           setActiveTab(AppTab.AUTO_GENERATOR);
         } else {
           setActiveTab(AppTab.STUDIO);
@@ -398,7 +532,11 @@ export default function App() {
       }
     } else {
       setSelectedProjectId(id);
-      if (project && project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+      if (
+        project &&
+        project.parentId &&
+        _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)
+      ) {
         setActiveTab(AppTab.AUTO_GENERATOR);
       } else {
         setActiveTab(AppTab.STUDIO);
@@ -407,9 +545,11 @@ export default function App() {
   }, []);
 
   const handleCreateProject = async (name: string, desc: string) => {
-    const projectSlug = convertToSlug(name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
+    const projectSlug = convertToSlug(
+      name || COMMON_STRINGS.PROJECT_DEFAULT_NAME,
+    );
     const randomStr = () => generateRandomString();
-    
+
     const parentId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_parent_${randomStr()}`;
     const parentProject: VideoProject = {
       id: parentId,
@@ -502,47 +642,59 @@ export default function App() {
     }
   };
 
-  const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
-    setProjects((prev) => {
-      const exists = _.some(prev, { id: updated.id });
-      if (exists) {
-        return _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p));
-      }
-      return [...prev, updated];
-    });
-
-    if (pendingSavesRef.current[updated.id]) {
-      clearTimeout(pendingSavesRef.current[updated.id]);
-    }
-
-    const doSave = async () => {
-      try {
-        const response = await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
-          method: HTTP_METHODS.PUT,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(updated),
-        });
-        if (!response.ok) {
-          throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
+  const handleUpdateProject = useCallback(
+    (updated: VideoProject, immediate = false) => {
+      setProjects((prev) => {
+        const exists = _.some(prev, { id: updated.id });
+        if (exists) {
+          return _.map(prev, (p) =>
+            _.isEqual(p.id, updated.id) ? updated : p,
+          );
         }
-        delete pendingSavesRef.current[updated.id];
-      } catch (e) {
-        appError(ERROR_MESSAGES.AUTO_SAVE_ERR, e);
-      }
-    };
+        return [...prev, updated];
+      });
 
-    if (immediate) {
-      delete pendingSavesRef.current[updated.id];
-      return doSave();
-    } else {
-      pendingSavesRef.current[updated.id] = setTimeout(doSave, REFACTOR_CONSTANTS.SAVE_PROJECT_DELAY_MS);
-      return Promise.resolve();
-    }
-  }, []);
+      if (pendingSavesRef.current[updated.id]) {
+        clearTimeout(pendingSavesRef.current[updated.id]);
+      }
+
+      const doSave = async () => {
+        try {
+          const response = await fetch(`${API_ROUTES.PROJECTS}/${updated.id}`, {
+            method: HTTP_METHODS.PUT,
+            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
+            body: jsonUtils.safeStringify(updated),
+          });
+          if (!response.ok) {
+            throw new Error(
+              `${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`,
+            );
+          }
+          delete pendingSavesRef.current[updated.id];
+        } catch (e) {
+          appError(ERROR_MESSAGES.AUTO_SAVE_ERR, e);
+        }
+      };
+
+      if (immediate) {
+        delete pendingSavesRef.current[updated.id];
+        return doSave();
+      } else {
+        pendingSavesRef.current[updated.id] = setTimeout(
+          doSave,
+          REFACTOR_CONSTANTS.SAVE_PROJECT_DELAY_MS,
+        );
+        return Promise.resolve();
+      }
+    },
+    [],
+  );
 
   const handleDeleteProject = async (id: string) => {
     try {
-      const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, { method: HTTP_METHODS.DELETE });
+      const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
+        method: HTTP_METHODS.DELETE,
+      });
       if (res.ok) {
         setProjects((prev) => _.filter(prev, (p) => !_.isEqual(p.id, id)));
         if (_.isEqual(selectedProjectId, id)) {
@@ -556,29 +708,46 @@ export default function App() {
 
   const activeProject = _.find(projects, { id: selectedProjectId });
 
-  const handleActiveTabChange = useCallback((tab: string) => {
-    if (_.some([
-      isSwitchingWorkspaceTab,
-      _.isEqual(tab, activeTab),
-      _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean),
-    ], Boolean)) {
-      return;
-    }
+  const handleActiveTabChange = useCallback(
+    (tab: string) => {
+      if (
+        _.some(
+          [
+            isSwitchingWorkspaceTab,
+            _.isEqual(tab, activeTab),
+            _.every(
+              [_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)],
+              Boolean,
+            ),
+          ],
+          Boolean,
+        )
+      ) {
+        return;
+      }
 
-    const shouldShowLoading = _.every(
-      [activeTab, tab],
-      isProjectWorkspaceTab,
-    );
-    workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
-    setIsSwitchingWorkspaceTab(shouldShowLoading);
+      const shouldShowLoading = _.every(
+        [activeTab, tab],
+        isProjectWorkspaceTab,
+      );
+      workspaceTabLoadingStartedAtRef.current = shouldShowLoading
+        ? Date.now()
+        : null;
+      setIsSwitchingWorkspaceTab(shouldShowLoading);
 
-    if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
-      setSelectedProjectId(null);
-    }
-    setActiveTab(tab);
-  }, [activeTab, isSwitchingWorkspaceTab, selectedProjectId]);
+      if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
+        setSelectedProjectId(null);
+      }
+      setActiveTab(tab);
+    },
+    [activeTab, isSwitchingWorkspaceTab, selectedProjectId],
+  );
 
-  const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
+  const handleUpdateProjectDetails = async (
+    id: string,
+    name: string,
+    description: string,
+  ) => {
     const projToUpdate = _.find(projects, { id });
     if (!projToUpdate) return;
     const updated = {
@@ -587,7 +756,9 @@ export default function App() {
       description,
       updatedAt: new Date().toISOString(),
     };
-    setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
+    setProjects((prev) =>
+      _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)),
+    );
     try {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
         method: HTTP_METHODS.PUT,
@@ -598,14 +769,25 @@ export default function App() {
         const text = await res.text();
         const savedProject = jsonUtils.safeParse(text, null);
         if (savedProject) {
-          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
+          setProjects((prev) =>
+            _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)),
+          );
         }
       } else {
-        setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
-        appError(_.join([ERROR_MESSAGES.UPDATING_PROJECT, res.status], REFACTOR_CONSTANTS.VD_BLANK));
+        setProjects((prev) =>
+          _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)),
+        );
+        appError(
+          _.join(
+            [ERROR_MESSAGES.UPDATING_PROJECT, res.status],
+            REFACTOR_CONSTANTS.VD_BLANK,
+          ),
+        );
       }
     } catch (e) {
-      setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
+      setProjects((prev) =>
+        _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)),
+      );
       appError(ERROR_MESSAGES.UPDATING_PROJECT, e);
     }
   };
@@ -620,7 +802,7 @@ export default function App() {
         theme={theme as any}
         toggleTheme={toggleTheme}
       />
-      
+
       <Toaster position="top-right" theme={theme as any} richColors />
 
       <div className="flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955">
@@ -638,7 +820,9 @@ export default function App() {
           <Suspense fallback={<TabContentLoading />}>
             {isSwitchingWorkspaceTab ? (
               <TabContentLoading />
-            ) : _.isEqual(activeTab, AppTab.STUDIO) && selectedProjectId && activeProject ? (
+            ) : _.isEqual(activeTab, AppTab.STUDIO) &&
+              selectedProjectId &&
+              activeProject ? (
               <PipelineWizard
                 key={selectedProjectId}
                 theme={theme as any}

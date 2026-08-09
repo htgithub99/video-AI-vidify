@@ -14,7 +14,14 @@ const GENERIC_PROMPT_PREFIX_PATTERN = /^\s*(?:stunning\s+high-quality\s+design\s
 
 const createIssue = (sceneId: string, code: string, severity: ImagePromptQualityIssue["severity"]): ImagePromptQualityIssue => ({ sceneId, code, severity });
 
-export const sanitizeImagePrompt = (prompt: string): string => _.trim(_.replace(prompt, IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN, " ").replace(IMAGE_PROMPT_QA_CONFIG.WHITESPACE_PATTERN, " "));
+export const sanitizeImagePrompt = (prompt: string): string => {
+  const normalizedPrompt = _.trim(_.replace(prompt, IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN, " ").replace(IMAGE_PROMPT_QA_CONFIG.WHITESPACE_PATTERN, " "));
+  const segments = _.compact(_.map(_.split(normalizedPrompt, ","), segment => _.trim(segment)));
+  return _.join(_.uniqBy(
+    segments,
+    segment => _.toLower(segment),
+  ), ", ");
+};
 
 export const enforceImagePromptStyle = (prompt: string, targetStyle = "", narration = "", cameraMotion = "", textMode?: TextInImageMode): string => {
   const normalizedStyle = sanitizeImagePrompt(targetStyle);

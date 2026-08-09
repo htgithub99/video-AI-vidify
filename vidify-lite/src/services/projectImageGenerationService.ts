@@ -8,6 +8,7 @@ export interface ProjectImageItem {
   prompt: string;
   generateType?: GenerateType;
   idempotencyKey?: string;
+  referenceImages?: string[];
 }
 
 export interface ProjectImageResult {

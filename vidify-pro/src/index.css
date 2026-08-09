@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -17,17 +17,17 @@
   --color-slate-700: #52525b; /* Zinc 600 */
   --color-slate-650: #6b6b75;
   --color-slate-600: #525252;
-  --color-slate-550: #ACAFB5;
+  --color-slate-550: #acafb5;
   --color-slate-500: #737373;
-  --color-slate-450: #C7C9CD;
+  --color-slate-450: #c7c9cd;
   --color-slate-400: #a3a3a3;
-  --color-slate-355: #DFE1E5;
+  --color-slate-355: #dfe1e5;
   --color-slate-350: #e5e5e5;
   --color-slate-300: #ffffff;
-  --color-slate-250: #ECEFF1;
+  --color-slate-250: #eceff1;
   --color-slate-205: #ffffff;
   --color-slate-200: #ffffff;
-  --color-slate-100: #FFFFFF;
+  --color-slate-100: #ffffff;
 
   /* Redefine Rose for Amber / Gold Accent colors (1999 Earth Element) */
   --color-rose-955: #1f1406;
@@ -51,18 +51,32 @@
   --animate-shimmer: shimmer 1.6s infinite linear;
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.96) translateY(4px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   @keyframes shrinkWidth {
-    from { width: 100%; }
-    to { width: 0%; }
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
   }
 
   @keyframes shimmer {
-    from { background-position: -200% 0; }
-    to { background-position: 200% 0; }
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
   }
 }
 
@@ -93,21 +107,21 @@ body {
 
 :root.light {
   color-scheme: light;
-  
+
   /* Inverse for Light Mode - Premium High-Contrast Layout */
-  --color-slate-955: #F4F4F5;
-  --color-slate-950: #F4F4F5; /* Main Background - Zinc 100 */
-  --color-slate-900: #FFFFFF; /* Card Background - White */
-  --color-slate-880: #FAFAFA;
-  --color-slate-850: #E4E4E7; /* Zinc 200 */
-  --color-slate-800: #D4D4D8; /* Zinc 300 */
-  --color-slate-750: #A1A1AA; /* Zinc 400 */
-  --color-slate-700: #71717A; /* Zinc 500 */
-  --color-slate-650: #52525B; /* Zinc 600 */
-  --color-slate-600: #3F3F46; /* Zinc 700 */
-  --color-slate-550: #27272A; /* Zinc 800 */
-  --color-slate-500: #18181B; /* Zinc 900 */
-  --color-slate-450: #09090B; /* Zinc 950 */
+  --color-slate-955: #f4f4f5;
+  --color-slate-950: #f4f4f5; /* Main Background - Zinc 100 */
+  --color-slate-900: #ffffff; /* Card Background - White */
+  --color-slate-880: #fafafa;
+  --color-slate-850: #e4e4e7; /* Zinc 200 */
+  --color-slate-800: #d4d4d8; /* Zinc 300 */
+  --color-slate-750: #a1a1aa; /* Zinc 400 */
+  --color-slate-700: #71717a; /* Zinc 500 */
+  --color-slate-650: #52525b; /* Zinc 600 */
+  --color-slate-600: #3f3f46; /* Zinc 700 */
+  --color-slate-550: #27272a; /* Zinc 800 */
+  --color-slate-500: #18181b; /* Zinc 900 */
+  --color-slate-450: #09090b; /* Zinc 950 */
   --color-slate-400: #000000;
   --color-slate-355: #000000;
   --color-slate-350: #000000;
@@ -131,10 +145,10 @@ body {
 
   /* Adjust Rose mapped to Amber/Gold in Light Mode - High Contrast Text */
   --color-rose-955: #fffbeb;
-  --color-rose-950: #fffbeb; 
-  --color-rose-900: #fef3c7; 
+  --color-rose-950: #fffbeb;
+  --color-rose-900: #fef3c7;
   --color-rose-800: #78350f; /* Nâu thẫm hẳn */
-  --color-rose-705: #92400e; 
+  --color-rose-705: #92400e;
   --color-rose-700: #92400e; /* active state */
   --color-rose-600: #b45309; /* normal state */
   --color-rose-550: #78350f;
@@ -150,12 +164,22 @@ body {
 
 /* Shimmer Background Utility */
 .shimmer-bg {
-  background: linear-gradient(90deg, var(--color-slate-900) 25%, var(--color-slate-800) 50%, var(--color-slate-900) 75%) !important;
+  background: linear-gradient(
+    90deg,
+    var(--color-slate-900) 25%,
+    var(--color-slate-800) 50%,
+    var(--color-slate-900) 75%
+  ) !important;
   background-size: 200% 100% !important;
   animation: shimmer 1.6s infinite linear !important;
 }
 :root.light .shimmer-bg {
-  background: linear-gradient(90deg, #f1f3f4 25%, #e8eaed 50%, #f1f3f4 75%) !important;
+  background: linear-gradient(
+    90deg,
+    #f1f3f4 25%,
+    #e8eaed 50%,
+    #f1f3f4 75%
+  ) !important;
   background-size: 200% 100% !important;
 }
 
@@ -167,14 +191,14 @@ body {
   --color-emerald-500: #059669;
   --color-emerald-400: #047857;
   --color-emerald-300: #064e3b;
-  
+
   --color-amber-950: #fffbeb;
   --color-amber-900: #fef3c7;
   --color-amber-800: #fbbf24;
   --color-amber-500: #d97706;
   --color-amber-400: #b45309;
   --color-amber-300: #78350f;
-  
+
   --color-purple-950: #faf5ff;
   --color-purple-900: #f3e8ff;
   --color-purple-800: #c084fc;
@@ -203,45 +227,65 @@ body {
   .uppercase {
     text-transform: none !important;
   }
-  .tracking-wider, .tracking-widest, .tracking-tight {
+  .tracking-wider,
+  .tracking-widest,
+  .tracking-tight {
     letter-spacing: normal !important;
   }
 }
 
 /* Micro-interactions: Ensure interactive elements have cursor pointers and hover states */
-button, a, [role="button"], input[type="submit"], input[type="reset"], input[type="button"], select {
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="button"],
+select {
   cursor: pointer !important;
   transition: all 0.2s ease-in-out !important;
 }
 
-button:active, a:active, [role="button"]:active {
+button:active,
+a:active,
+[role="button"]:active {
   /* Removed global hardcoded scale to let base Button component handle active scale gracefully */
 }
 
-button:disabled, a:disabled, [role="button"]:disabled {
+button:disabled,
+a:disabled,
+[role="button"]:disabled {
   cursor: not-allowed !important;
   opacity: 0.5 !important;
   transform: none !important;
 }
 
 /* Unify Focus and Hover Styles for Inputs, Textareas, and Selects */
-input, textarea, select {
+input,
+textarea,
+select {
   transition: all 0.2s ease-in-out !important;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):hover,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="submit"]
+  ):not([type="button"]):hover,
 textarea:hover {
   border-color: rgba(245, 158, 11, 0.45) !important;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="submit"]
+  ):not([type="button"]):focus,
 textarea:focus {
   outline: none !important;
   border-color: var(--color-rose-600) !important;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important; /* Amber-500 ring shadow */
 }
 
-button:focus-visible, a:focus-visible, [role="button"]:focus-visible {
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
   outline: 2px solid var(--color-rose-600) !important;
   outline-offset: 2px !important;
 }
@@ -262,12 +306,22 @@ a:hover {
 /* Modal and layout border radiuses reset to default (Tailwind xl = 12px) */
 
 /* Clean up shadows */
-.shadow-2xl, .shadow-xl, .shadow-lg, .shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+.shadow-2xl,
+.shadow-xl,
+.shadow-lg,
+.shadow-md {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
 }
 
-:root.light .shadow-2xl, :root.light .shadow-xl, :root.light .shadow-lg, :root.light .shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
+:root.light .shadow-2xl,
+:root.light .shadow-xl,
+:root.light .shadow-lg,
+:root.light .shadow-md {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
 }
 :root.light body {
   background-color: var(--color-slate-950);
@@ -326,7 +380,9 @@ input[type="range"]::-webkit-slider-runnable-track {
   background: #121824; /* deeper track in dark mode */
   border: 1.5px solid #2d3748;
   border-radius: 9999px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 input[type="range"]:hover::-webkit-slider-runnable-track {
@@ -351,8 +407,12 @@ input[type="range"]::-webkit-slider-thumb {
   height: 19px;
   width: 19px;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.5px #1a202c, 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s ease, background-color 0.15s ease;
+  box-shadow:
+    0 0 0 1.5px #1a202c,
+    0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.1s ease,
+    background-color 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
@@ -365,7 +425,9 @@ input[type="range"]::-moz-range-thumb {
   height: 19px;
   width: 19px;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.5px #1a202c, 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 0 1.5px #1a202c,
+    0 4px 6px -1px rgba(0, 0, 0, 0.4);
   transition: transform 0.1s ease;
 }
 
@@ -391,12 +453,16 @@ input[type="range"]::-moz-range-thumb:hover {
 
 :root.light input[type="range"]::-webkit-slider-thumb {
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px #475569, 0 3px 6px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 0 0 2px #475569,
+    0 3px 6px rgba(0, 0, 0, 0.22);
 }
 
 :root.light input[type="range"]::-moz-range-thumb {
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px #475569, 0 3px 6px rgba(0, 0, 0, 0.22);
+  box-shadow:
+    0 0 0 2px #475569,
+    0 3px 6px rgba(0, 0, 0, 0.22);
 }
 
 /* Map direct colors depending on accent overrides */
@@ -438,7 +504,9 @@ input.accent-amber-500::-moz-range-thumb {
   box-shadow: none !important;
 }
 
-:not(input):not(textarea):not(select):not(.animate-spin):not([class*="focus-within"])[class*="border"] {
+:not(input):not(textarea):not(select):not(.animate-spin):not(
+    [class*="focus-within"]
+  )[class*="border"] {
   border-color: transparent !important;
 }
 
@@ -460,18 +528,27 @@ input.accent-amber-500::-moz-range-thumb {
 }
 
 /* Global Input Styles: Đảm bảo có lớp nền phân biệt và text đen/trắng cho mọi node/sidebar */
-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent), textarea:not(.bg-transparent) {
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
+    [type="submit"]
+  ):not([type="button"]):not(.bg-transparent),
+textarea:not(.bg-transparent) {
   background-color: var(--color-slate-850) !important;
   color: var(--color-slate-200) !important;
   border: 1px solid transparent !important;
 }
 
-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not(.bg-transparent):hover, textarea:not(.bg-transparent):hover {
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
+    [type="submit"]
+  ):not([type="button"]):not(.bg-transparent):hover,
+textarea:not(.bg-transparent):hover {
   background-color: var(--color-slate-800) !important;
 }
 
 /* CHỈ thêm border khi focus, KHÔNG đổi nền hay thêm hiệu ứng khác */
-input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):focus, textarea:focus {
+input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
+    [type="submit"]
+  ):not([type="button"]):focus,
+textarea:focus {
   border-color: var(--color-rose-500) !important;
   box-shadow: none !important;
   outline: none !important;
@@ -557,7 +634,7 @@ select option:checked {
 :root.light .advanced-config-panel {
   --advanced-panel-content: #fafafa;
   --advanced-panel-muted: #52525b;
-  --advanced-panel-icon: rgba(37, 99, 235, 0.10);
+  --advanced-panel-icon: rgba(37, 99, 235, 0.1);
   --advanced-panel-control: #f4f4f5;
 }
 
@@ -602,15 +679,23 @@ select option:checked {
 }
 
 /* Tắt box shadow, outline mặc định, và Tailwind ring shadow của form elements */
-*, ::before, ::after {
+*,
+::before,
+::after {
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
   --tw-shadow: 0 0 #0000 !important;
 }
 
-input, select, textarea,
-input:hover, select:hover, textarea:hover,
-input:active, select:active, textarea:active {
+input,
+select,
+textarea,
+input:hover,
+select:hover,
+textarea:hover,
+input:active,
+select:active,
+textarea:active {
   box-shadow: none !important;
   outline: none !important;
 }
@@ -623,4 +708,3 @@ input:active, select:active, textarea:active {
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
-

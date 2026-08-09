@@ -75,6 +75,8 @@ import { createSafeFallbackHook } from "../services/hookResilienceService";
 import { enforceImagePromptStyle, evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
 import { isSceneVisualQualityUsable, validateSceneImage, VISUAL_QA_CONFIG } from "../services/sceneVisualQualityService";
+import { createCanonicalCharacterPrompt, createSceneGenerationContext, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
+import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../services/thumbnailPromptService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
@@ -169,7 +171,8 @@ const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: Array<{ id:
   return alignment ? { ...scene, duration: alignment.duration, startTime: formatTimeHelper(alignment.start), endTime: formatTimeHelper(alignment.end), _start: alignment.start, _end: alignment.end, audioBase64: alignment.audioBase64, audioUrl: alignment.audioUrl } : scene;
 });
 const CHARACTER_SUBJECT_PATTERN = /\b(man|woman|person|people|character|boy|girl|portrait|face)\b|người|đàn ông|phụ nữ|nhân vật/i;
-const hasCharacterSubject = (scene: StoryboardScene): boolean => CHARACTER_SUBJECT_PATTERN.test(_.join([scene.script, scene.prompt], " "));
+const hasCharacterSubject = (scene: StoryboardScene): boolean => !_.isEmpty(scene.characterIds)
+  || CHARACTER_SUBJECT_PATTERN.test(_.join([scene.script, scene.prompt], " "));
 
 export function useAutoVideoPipeline(
   projects: VideoProject[],
@@ -325,7 +328,11 @@ export function useAutoVideoPipeline(
         config,
         getPipelineInvalidationState(existingTargetProj, config, referenceChangeState),
       );
-      let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets;
+      const requiresVisualReferenceMigration = _.some([
+        _.some(existingTargetProj?.visualConfig?.characters, character => _.isEmpty(character.images)),
+        _.some(existingTargetProj?.storyboard, scene => _.isEmpty(scene.layout) || _.isNil(scene.textAllowed)),
+      ], Boolean);
+      let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets || requiresVisualReferenceMigration;
       const requiresImagePromptQaMigration = !existingTargetProj?.imagePromptQa?.passed;
 
       if (config.resumeMode && existingTargetProj) {
@@ -457,7 +464,7 @@ export function useAutoVideoPipeline(
             thumbnailReferencePrompt: config.thumbnailStylePreset,
             styleReferenceImages: config.referenceImages,
             sceneReferenceImages: config.sceneReferenceImages,
-            referenceImages: config.sceneReferenceImages,
+            referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
             referencePrompt: config.stylePreset,
             characters: [],
           },
@@ -478,7 +485,7 @@ export function useAutoVideoPipeline(
       }));
       const canonicalReferences=_.fromPairs(referenceGroups);
       canonicalCharacterReferences=canonicalReferences.character;
-      newProj={...newProj,visualConfig:{...newProj.visualConfig,styleReferenceImages:canonicalReferences.style,sceneReferenceImages:canonicalReferences.scene,referenceImages:canonicalReferences.scene,thumbnailReferenceImages:canonicalReferences.thumbnail,characterImages:canonicalCharacterReferences}};
+      newProj={...newProj,visualConfig:{...newProj.visualConfig,styleReferenceImages:canonicalReferences.style,sceneReferenceImages:canonicalReferences.scene,referenceImages:_.take(_.uniq(_.concat(canonicalReferences.style,canonicalReferences.scene)),SCENE_REFERENCE_CONFIG.MAX_IMAGES),thumbnailReferenceImages:canonicalReferences.thumbnail,characterImages:canonicalCharacterReferences}};
       newProj={...newProj,rollout:resolveRolloutConfig(newProjectId)};
       await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
       setActiveCreatedProject(newProj);
@@ -805,7 +812,7 @@ export function useAutoVideoPipeline(
         _.size(config.characterImages),
       ));
 
-      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresImagePromptQaMigration) {
+      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresImagePromptQaMigration || requiresVisualReferenceMigration) {
         if (!_.isEmpty(config.referenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
         if (!_.isEmpty(config.thumbnailReferenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
 
@@ -850,7 +857,7 @@ export function useAutoVideoPipeline(
             style: currentStylePreset,
             styleReferenceImages: config.referenceImages,
             sceneReferenceImages: config.sceneReferenceImages,
-            referenceImages: config.sceneReferenceImages,
+            referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
             styleBackgroundMode: config.styleBackgroundMode,
@@ -904,6 +911,59 @@ export function useAutoVideoPipeline(
           }
         }
 
+        const charactersMissingReferences = _.filter(analyzedCharacters, character => _.isEmpty(character.images));
+        if (!_.isEmpty(charactersMissingReferences)) {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_CREATE);
+          for (const character of charactersMissingReferences) {
+            try {
+              const referenceResponse = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+                prompt: createCanonicalCharacterPrompt(character, currentStylePreset),
+                style: currentStylePreset,
+                resolution: voiceUpdatedProj.visualConfig.quality,
+                bypassCache: false,
+                engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
+                sandboxConfig: { projectId: voiceUpdatedProj.id },
+                visualConfig: {
+                  ...voiceUpdatedProj.visualConfig,
+                  referenceImages: config.referenceImages,
+                  generateType: GenerateType.Image,
+                  generateCount: SecurityConstants.DEFAULT_AMOUNT,
+                },
+              }, requestSignal);
+              const generatedReference = createProjectImageUrl({
+                sceneId: character.id,
+                success: referenceResponse.success,
+                base64: referenceResponse.data?.base64,
+                fallbackUrl: referenceResponse.data?.fallbackUrl,
+                assetType: GenerateType.Image,
+              });
+              if (_.isEmpty(generatedReference)) throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_FAILED);
+              const persistedReference = await safeSystemFetch(`${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${voiceUpdatedProj.id}/${REFERENCE_ASSET_GROUP.CHARACTER}`, { images: [generatedReference] }, requestSignal);
+              const canonicalImage = _.toString(_.first(_.castArray(persistedReference.data?.assets)));
+              if (!persistedReference.success || _.isEmpty(canonicalImage)) throw new Error(persistedReference.error || REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_FAILED);
+              analyzedCharacters = _.map(analyzedCharacters, item => _.isEqual(item.id, character.id)
+                ? { ...item, images: [canonicalImage], extracted: true, referenceViews: ["front"] }
+                : item);
+              appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_SUCCESS, SecurityConstants.PLACEHOLDER_0, character.name));
+            } catch (referenceError) {
+              logger.warn(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_WARNING, referenceError);
+              appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_WARNING, SecurityConstants.PLACEHOLDER_0, character.name));
+            }
+          }
+          const generatedCharacterImages = _.flatMap(analyzedCharacters, character => character.images);
+          voiceUpdatedProj = {
+            ...voiceUpdatedProj,
+            visualConfig: {
+              ...voiceUpdatedProj.visualConfig,
+              characters: analyzedCharacters,
+              characterImages: generatedCharacterImages,
+              characterExtracted: !_.isEmpty(generatedCharacterImages),
+              characterConsistency: !_.isEmpty(analyzedCharacters),
+            },
+          };
+          await syncProject(voiceUpdatedProj);
+        }
+
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
         const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
           storyboard: realScenes,
@@ -914,7 +974,7 @@ export function useAutoVideoPipeline(
         if (optimizeRes.success && optimizeRes.data?.storyboard) {
           realScenes = optimizeRes.data.storyboard;
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
-          shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresImagePromptQaMigration || didAnalyzeCharacters || styleIdentityChanged;
+          shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresImagePromptQaMigration || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
         }
       } else {
@@ -971,7 +1031,7 @@ export function useAutoVideoPipeline(
         qualityMode: _.defaultTo(voiceUpdatedProj.visualConfig.qualityMode, QualityMode.Balanced),
         generateCount: resolveQualityProfile(voiceUpdatedProj.visualConfig.qualityMode).draftCandidates,
         sceneReferenceImages: config.sceneReferenceImages,
-        referenceImages: config.sceneReferenceImages,
+        referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
         contentLanguage: config.language,
       };
 
@@ -1036,15 +1096,37 @@ export function useAutoVideoPipeline(
         return imageCheckpointQueue;
       };
 
+      const createSceneRequestContext = (scene: StoryboardScene) => {
+        const generationContext = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
+        return {
+          ...generationContext,
+          prompt: applyImageFocusMode(
+            applyTextInImageMode(
+              applyBackgroundMode(
+                applyGeneratedMediaLanguage(generationContext.prompt, generatedMediaLanguageDirective),
+                executionVisualConfig.styleBackgroundMode,
+              ),
+              executionVisualConfig.styleTextInImageMode,
+            ),
+            executionVisualConfig.imageFocusMode,
+            executionVisualConfig.styleBackgroundMode,
+          ),
+        };
+      };
+
       if (targetScenesToGen && targetScenesToGen.length > 0) {
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
-          const batchItems = _.map(targetScenesToGen, (scene) => ({
-            sceneId: scene.id,
-            idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], ":"),
-            prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(scene, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(scene, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), executionVisualConfig.styleBackgroundMode), executionVisualConfig.styleTextInImageMode), executionVisualConfig.imageFocusMode, executionVisualConfig.styleBackgroundMode),
-            generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
-          }));
+          const batchItems = _.map(targetScenesToGen, (scene) => {
+            const requestContext = createSceneRequestContext(scene);
+            return {
+              sceneId: scene.id,
+              idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], ":"),
+              prompt: requestContext.prompt,
+              referenceImages: requestContext.referenceImages,
+              generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
+            };
+          });
           let completedCount = SecurityConstants.ZERO;
           let batchFailureCount = SecurityConstants.ZERO;
           let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -1087,7 +1169,7 @@ export function useAutoVideoPipeline(
                 bypassCache: false,
                 engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
                 sandboxConfig: sandboxConfigPayload,
-                visualConfig: { ...visualConfigPayload, generateType: item.generateType },
+                visualConfig: { ...visualConfigPayload, referenceImages: item.referenceImages, generateType: item.generateType },
               }),
               onBatchResult: (result) => {
                 if (result.success) { applyResult(result); return; }
@@ -1143,19 +1225,20 @@ export function useAutoVideoPipeline(
         } else {
           for (let i = 0; i < targetScenesToGen.length; i++) {
             const sc = targetScenesToGen[i];
+            const requestContext = createSceneRequestContext(sc);
             const sceneGenerateType = resolveSceneGenerateType(sc.id, executionVisualConfig.generateType, videoSceneIds);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
               .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
               const imgRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(applyGeneratedMediaLanguage(_.get(sc, REFACTOR_CONSTANTS.AVG_PROMPT_KEY) || _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY), generatedMediaLanguageDirective), executionVisualConfig.styleBackgroundMode), executionVisualConfig.styleTextInImageMode), executionVisualConfig.imageFocusMode, executionVisualConfig.styleBackgroundMode),
+                prompt: requestContext.prompt,
                 style: currentStylePreset,
                 resolution: voiceUpdatedProj.visualConfig?.quality || "Standard",
                 bypassCache: false,
                 engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
                 sandboxConfig: sandboxConfigPayload,
-                visualConfig: visualConfigPayload ? { ...visualConfigPayload, generateType: sceneGenerateType } : visualConfigPayload,
+                visualConfig: visualConfigPayload ? { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: sceneGenerateType } : visualConfigPayload,
               }, requestSignal);
               const hasImageFallback = _.every([
                 _.isEqual(sceneGenerateType, GenerateType.Image),
@@ -1210,6 +1293,7 @@ export function useAutoVideoPipeline(
 
       for (const scene of imageScenesToValidate) {
         scene.assetStatus = SceneAssetStatus.Validating;
+        const sceneReferenceContext = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
         const canonicalReferenceUrl = hasCharacterSubject(scene) ? _.get(_.find(realScenes, candidate => _.every([
           candidate.id !== scene.id,
           candidate.assetStatus === SceneAssetStatus.Approved,
@@ -1217,7 +1301,11 @@ export function useAutoVideoPipeline(
           !_.isEmpty(candidate.assetUrl),
           hasCharacterSubject(candidate),
         ], Boolean)), "assetUrl") : undefined;
-        let qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl);
+        const qualityReferenceUrls = _.take(_.uniq(_.compact([
+          ...sceneReferenceContext.referenceImages,
+          canonicalReferenceUrl,
+        ])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
+        let qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl, qualityReferenceUrls);
         let retryCount = SecurityConstants.ZERO;
         while (_.every([
           !qualityResult.approved,
@@ -1226,14 +1314,18 @@ export function useAutoVideoPipeline(
         ], Boolean)) {
           retryCount = _.add(retryCount, SecurityConstants.DEFAULT_AMOUNT);
           scene.assetStatus = SceneAssetStatus.Retrying;
-          const retryResponse = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+          const retryReferenceContext = createSceneGenerationContext({
+            ...scene,
             prompt: qualityResult.quality!.correctivePrompt,
+          }, voiceUpdatedProj.visualConfig);
+          const retryResponse = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+            prompt: retryReferenceContext.prompt,
             style: currentStylePreset,
             resolution: voiceUpdatedProj.visualConfig.quality,
             bypassCache: true,
             engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
             sandboxConfig: sandboxConfigPayload,
-            visualConfig: { ...visualConfigPayload, generateType: GenerateType.Image },
+            visualConfig: { ...visualConfigPayload, referenceImages: retryReferenceContext.referenceImages, generateType: GenerateType.Image },
           }, requestSignal);
           const retryImageUrl = createProjectImageUrl({
             sceneId: scene.id,
@@ -1248,7 +1340,7 @@ export function useAutoVideoPipeline(
           appendAssetRevision(scene, retryImageUrl, SceneAssetStatus.Generated);
           scene.assetStatus = SceneAssetStatus.Validating;
           await persistImageCheckpoint();
-          qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl);
+          qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl, qualityReferenceUrls);
         }
         if (qualityResult.approved) {
           scene.assetStatus = SceneAssetStatus.Approved;
@@ -1407,6 +1499,7 @@ export function useAutoVideoPipeline(
             if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
             return true;
           });
+          const thumbnailReferenceImages = resolveThumbnailReferenceImages(imageUpdatedProj.visualConfig);
 
           if (config.resumeMode && !invalidationState.regenerateThumbnails) {
             _.forEach(parsedThumbs, (thumb, idx) => {
@@ -1421,16 +1514,15 @@ export function useAutoVideoPipeline(
               appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_START);
 
               const batchThumbItems = _.map(targetThumbsToGen, (thumb) => {
-                const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-                const thumbPrompt = _.replace(
-                  _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
-                  SecurityConstants.PLACEHOLDER_1,
-                  _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
-                );
+                const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
+                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages));
+                const generationPrompt = applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode);
+                thumb.generationPrompt = generationPrompt;
                 return {
                   sceneId: thumb.id,
-                  prompt: applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode),
+                  prompt: generationPrompt,
                   generateType: GenerateType.Image,
+                  referenceImages: thumbnailReferenceImages,
                 };
               });
 
@@ -1457,7 +1549,7 @@ export function useAutoVideoPipeline(
 
               const thumbnailGenerationSummary = await generateProjectImages({
                 items: batchThumbItems,
-                visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset },
+                visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, referenceImages: thumbnailReferenceImages, batchTabCount: _.size(targetThumbsToGen) },
                 style: currentThumbnailStyle || currentStylePreset,
                 sandboxConfig: sandboxConfigPayload,
                 cancelRef: cancellationRef,
@@ -1468,7 +1560,7 @@ export function useAutoVideoPipeline(
                   bypassCache: false,
                   engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
                   sandboxConfig: sandboxConfigPayload,
-                  visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, generateType: item.generateType },
+                  visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, referenceImages: item.referenceImages, generateType: item.generateType },
                 }),
                 onBatchResult: (result) => {
                   if (result.success) { applyThumbResult(result); return; }
@@ -1505,13 +1597,10 @@ export function useAutoVideoPipeline(
                   SecurityConstants.PLACEHOLDER_1,
                   _.toString(targetThumbsToGen.length),
                 ));
-                const cleanPromptText = _.replace(_.defaultTo(thumb.prompt, REFACTOR_CONSTANTS.VD_EMPTY_STRING), REFACTOR_CONSTANTS.AVG_AR_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-                const thumbPrompt = _.replace(
-                  _.replace(REFACTOR_CONSTANTS.AVG_THUMB_PROMPT_TEMPLATE, SecurityConstants.PLACEHOLDER_0, cleanPromptText),
-                  SecurityConstants.PLACEHOLDER_1,
-                  _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset))),
-                );
+                const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
+                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages));
                 const finalThumbPrompt = applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode);
+                thumb.generationPrompt = finalThumbPrompt;
 
                 try {
                   const renderThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
@@ -1521,7 +1610,7 @@ export function useAutoVideoPipeline(
                     bypassCache: true,
                     engine: _.defaultTo(voiceUpdatedProj.visualConfig.imageGeneratorEngine, ImageGeneratorEngine.Imagen),
                     sandboxConfig: sandboxConfigPayload,
-                    visualConfig: { ...visualConfigPayload, style: _.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)) },
+                    visualConfig: { ...visualConfigPayload, style: thumbnailStyle, referenceImages: thumbnailReferenceImages },
                   }, requestSignal);
                   let imgUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
                   if (renderThumbRes.success && renderThumbRes.data?.base64) {
@@ -1571,9 +1660,9 @@ export function useAutoVideoPipeline(
         const qualityResult = await validateSceneImage(imageUpdatedProj.id, {
           id: thumbnail.id,
           script: _.toString(_.get(_.first(_.get(seoData, "titles", [])), "text", imageUpdatedProj.name)),
-          prompt: thumbnail.prompt,
+          prompt: thumbnail.generationPrompt || thumbnail.prompt,
           assetUrl: thumbnail.imageUrl,
-        });
+        }, undefined, resolveThumbnailReferenceImages(imageUpdatedProj.visualConfig));
         if (!qualityResult.success || !qualityResult.quality) {
           thumbnail.approved = true;
           appendLog(`[Thumbnail QA] ${thumbnail.id}: unavailable; technically valid thumbnail retained.`);

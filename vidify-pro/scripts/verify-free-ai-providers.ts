@@ -1,1 +1,48 @@
-import { generateWithFreeProviders } from "../src/server/services/freeAiProviderService.ts";const assert=(value:unknown,message:string):void=>{if(!value)throw new Error(message)};const originalFetch=globalThis.fetch;let requestedUrl="";let requestedModel="";globalThis.fetch=(async(url:any,init:any)=>{requestedUrl=String(url);requestedModel=JSON.parse(init.body).model;return new Response(JSON.stringify({choices:[{message:{content:"{\"passed\":true}"}}],usage:{prompt_tokens:12,completion_tokens:6}}),{status:200,headers:{"Content-Type":"application/json"}})})as typeof fetch;try{const result=await generateWithFreeProviders({contents:"Return JSON",config:{responseMimeType:"application/json"}},{cerebrasKey:"test-cerebras",groqKey:"test-groq"});assert(requestedUrl.includes("groq.com"),"Groq was not first");assert(requestedModel==="llama-3.3-70b-versatile","Unexpected primary model");assert(result.response?.aiMetadata?.provider==="groq","Provider metadata missing");const researched=await generateWithFreeProviders({contents:"Research",config:{tools:[{googleSearch:{}}]}},{cerebrasKey:"test-cerebras",groqKey:"test-groq"});assert(researched.response?.aiMetadata?.model==="groq/compound-mini","Free tool model was not used");console.log("Free AI provider assertions passed")}finally{globalThis.fetch=originalFetch}
+import { generateWithFreeProviders } from "../src/server/services/freeAiProviderService.ts";
+import { writeVerificationLog } from "./verificationLogger.ts";
+const assert = (value: unknown, message: string): void => {
+  if (!value) throw new Error(message);
+};
+const originalFetch = globalThis.fetch;
+let requestedUrl = "";
+let requestedModel = "";
+globalThis.fetch = (async (url: any, init: any) => {
+  requestedUrl = String(url);
+  requestedModel = JSON.parse(init.body).model;
+  return new Response(
+    JSON.stringify({
+      choices: [{ message: { content: '{"passed":true}' } }],
+      usage: { prompt_tokens: 12, completion_tokens: 6 },
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  );
+}) as typeof fetch;
+try {
+  const result = await generateWithFreeProviders(
+    {
+      contents: "Return JSON",
+      config: { responseMimeType: "application/json" },
+    },
+    { cerebrasKey: "test-cerebras", groqKey: "test-groq" },
+  );
+  assert(requestedUrl.includes("groq.com"), "Groq was not first");
+  assert(
+    requestedModel === "llama-3.3-70b-versatile",
+    "Unexpected primary model",
+  );
+  assert(
+    result.response?.aiMetadata?.provider === "groq",
+    "Provider metadata missing",
+  );
+  const researched = await generateWithFreeProviders(
+    { contents: "Research", config: { tools: [{ googleSearch: {} }] } },
+    { cerebrasKey: "test-cerebras", groqKey: "test-groq" },
+  );
+  assert(
+    researched.response?.aiMetadata?.model === "groq/compound-mini",
+    "Free tool model was not used",
+  );
+  writeVerificationLog("Free AI provider assertions passed");
+} finally {
+  globalThis.fetch = originalFetch;
+}

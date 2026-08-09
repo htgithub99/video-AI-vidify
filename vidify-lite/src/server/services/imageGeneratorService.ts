@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, STICKMAN_STYLE_MODIFIERS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -18,6 +18,8 @@ import _ from "lodash";
 import { removeVideoAudioTrack } from "../utils/videoAssetProcessor.js";
 import { captureDomDiagnostics } from "./domDiagnosticsService.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
+import { readEncodedProjectImage } from "./imageAssetService.js";
+import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 
 interface BrowserSession {
   context: BrowserContext;
@@ -425,11 +427,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
   const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
-  let finalPrompt = _.defaultTo(prompt, "");
-  if (isStickman) {
-    const stickmanStyleModifiers = STICKMAN_STYLE_MODIFIERS;
-    finalPrompt = `${finalPrompt}, ${stickmanStyleModifiers}`;
-  }
+  const finalPrompt = _.defaultTo(prompt, "");
 
   const kws = extractKeywords(prompt);
   const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(_.defaultTo(kws, "cinematic,landscape"))}`;
@@ -821,10 +819,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
   const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
-  let finalPrompt = prompt || "";
-  if (isStickman) {
-    finalPrompt = `${finalPrompt}, ${STICKMAN_STYLE_MODIFIERS}`;
-  }
+  const finalPrompt = prompt || "";
 
   const kws = extractKeywords(prompt);
   const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
@@ -936,7 +931,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
           await configureGeminiModel(activePage!, visualConfig, forceSetting);
           await configureGeminiGenerateType(activePage!, visualConfig, forceSetting);
-          await configureGeminiVideoInput(activePage!, visualConfig);
+          await configureGeminiMediaInput(activePage!, visualConfig);
 
           if (forceSetting) {
             lastGeminiConfigState = currentConfigState;
@@ -1008,6 +1003,7 @@ export interface BatchImageItem {
   sceneId: string;
   prompt: string;
   generateType?: GenerateType;
+  referenceImages?: string[];
 }
 
 export interface BatchImageResult {
@@ -1030,6 +1026,9 @@ const resolveBatchAssetType = (
 const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisualConfig): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => ({
   ...visualConfig,
   generateType: resolveBatchAssetType(item),
+  referenceImages: _.isEmpty(item.referenceImages)
+    ? visualConfig.referenceImages
+    : item.referenceImages,
 });
 
 export async function closeAllBatchPages() {
@@ -1096,7 +1095,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Normal;
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
-  const maxTabs = Math.min(concurrency, items.length);
+  const maxTabs = resolveBatchTabCount(items.length, concurrency, visualConfig.batchTabCount);
 
   if (maxTabs === 1) {
     const results: BatchImageResult[] = [];
@@ -1169,10 +1168,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
       const isStickman = !!_.some([style, item.prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
 
-      let finalPrompt = item.prompt || "";
-      if (isStickman) {
-        finalPrompt = `${finalPrompt}, ${STICKMAN_STYLE_MODIFIERS}`;
-      }
+      const finalPrompt = item.prompt || "";
 
       const kws = extractKeywords(item.prompt);
       const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`;
@@ -1255,7 +1251,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
               await configureGeminiModel(page, itemVisualConfig, forceSetting);
               await configureGeminiGenerateType(page, itemVisualConfig, forceSetting);
-              await configureGeminiVideoInput(page, itemVisualConfig);
+              await configureGeminiMediaInput(page, itemVisualConfig);
 
               if (forceSetting) {
                 batchPagesConfigs.set(page, currentConfigState);
@@ -1511,18 +1507,20 @@ async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisua
   }
 }
 
-const createGeminiReferenceFiles = (referenceImages: unknown) => (
+export const createGeminiReferenceFiles = (referenceImages: unknown) => (
   _.chain(_.isArray(referenceImages) ? referenceImages : [])
     .filter(_.isString)
     .take(GEMINI_CHAT_VIDEO_INPUT_CONFIG.MAX_REFERENCE_IMAGES)
     .map((source, index) => {
       const match = _.toString(source).match(BASE64_IMAGE_MIME_REGEX);
-      const extension = _.get(match, SecurityConstants.DEFAULT_AMOUNT);
-      const base64 = _.get(
-        match,
-        GEMINI_CHAT_VIDEO_INPUT_CONFIG.BASE64_CAPTURE_INDEX,
-      );
-      if (!_.every([match, extension, base64], Boolean)) return null;
+      const encodedAsset = match
+        ? {
+          mimeType: _.join([GEMINI_CHAT_VIDEO_INPUT_CONFIG.MIME_PREFIX, _.get(match, SecurityConstants.DEFAULT_AMOUNT)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+          data: _.get(match, GEMINI_CHAT_VIDEO_INPUT_CONFIG.BASE64_CAPTURE_INDEX),
+        }
+        : readEncodedProjectImage(source);
+      if (!encodedAsset?.data || !encodedAsset.mimeType) return null;
+      const extension = _.last(_.split(encodedAsset.mimeType, GEMINI_CHAT_VIDEO_INPUT_CONFIG.MIME_PREFIX)) || "png";
       return {
         name: _.join(
           [
@@ -1533,66 +1531,63 @@ const createGeminiReferenceFiles = (referenceImages: unknown) => (
           ],
           REFACTOR_CONSTANTS.VD_EMPTY_STRING,
         ),
-        mimeType: _.join(
-          [GEMINI_CHAT_VIDEO_INPUT_CONFIG.MIME_PREFIX, extension],
-          REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-        ),
-        buffer: Buffer.from(base64, REFACTOR_CONSTANTS.ENCODING_BASE64),
+        mimeType: encodedAsset.mimeType,
+        buffer: Buffer.from(encodedAsset.data, REFACTOR_CONSTANTS.ENCODING_BASE64),
       };
     })
     .compact()
     .value()
 );
 
-async function configureGeminiVideoInput(page: Page, visualConfig: GeminiVisualConfig) {
+async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
   const isVideoGeneration = _.some(
     [visualConfig?.generateType],
     (generateType) => _.isEqual(generateType, GenerateType.Video),
   );
-  if (!isVideoGeneration) return;
+  if (isVideoGeneration) {
+    const targetRatio = _.includes(
+      [AspectRatio.SixteenNine, AspectRatio.NineSixteen],
+      visualConfig?.aspectRatio,
+    )
+      ? visualConfig.aspectRatio
+      : AspectRatio.SixteenNine;
+    const aspectButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_BUTTON).first();
 
-  const targetRatio = _.includes(
-    [AspectRatio.SixteenNine, AspectRatio.NineSixteen],
-    visualConfig?.aspectRatio,
-  )
-    ? visualConfig.aspectRatio
-    : AspectRatio.SixteenNine;
-  const aspectButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_BUTTON).first();
-
-  if (await aspectButton.isVisible()) {
-    const currentLabel = await aspectButton.getAttribute(
-      GEMINI_CHAT_VIDEO_INPUT_CONFIG.ARIA_LABEL_ATTRIBUTE,
-    );
-    if (!_.includes(currentLabel, targetRatio)) {
-      await aspectButton.click();
-      await randomDelay(
-        GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS,
-        GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS,
+    if (await aspectButton.isVisible()) {
+      const currentLabel = await aspectButton.getAttribute(
+        GEMINI_CHAT_VIDEO_INPUT_CONFIG.ARIA_LABEL_ATTRIBUTE,
       );
-      const ratioOption = page
-        .locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_OPTIONS)
-        .filter({ hasText: new RegExp(_.escapeRegExp(targetRatio)) })
-        .first();
-      if (await ratioOption.isVisible()) {
-        await ratioOption.click();
+      if (!_.includes(currentLabel, targetRatio)) {
+        await aspectButton.click();
         await randomDelay(
           GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS,
           GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS,
         );
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_SUCCESS.replace(
-          SecurityConstants.PLACEHOLDER_0,
-          targetRatio,
-        ));
-      } else {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND.replace(
-          SecurityConstants.PLACEHOLDER_0,
-          targetRatio,
-        ));
-        await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY);
+        const ratioOption = page
+          .locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_OPTIONS)
+          .filter({ hasText: new RegExp(_.escapeRegExp(targetRatio)) })
+          .first();
+        if (await ratioOption.isVisible()) {
+          await ratioOption.click();
+          await randomDelay(
+            GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS,
+            GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS,
+          );
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_SUCCESS.replace(
+            SecurityConstants.PLACEHOLDER_0,
+            targetRatio,
+          ));
+        } else {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_OPTION_NOT_FOUND.replace(
+            SecurityConstants.PLACEHOLDER_0,
+            targetRatio,
+          ));
+          await page.keyboard.press(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ESCAPE_KEY);
+        }
       }
+    } else {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND);
     }
-  } else {
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_ASPECT_BUTTON_NOT_FOUND);
   }
 
   const referenceFiles = createGeminiReferenceFiles(visualConfig?.referenceImages);

@@ -9,12 +9,12 @@ import {
   AspectRatio,
   ImageGenerationMode,
   GenerateType,
-  VoiceConfig,
   BackgroundMode,
   TextInImageMode,
   ImageFocusMode,
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
+import { applyVoiceSelection } from "../lib/voiceRouting";
 import { AppTab, AppTheme, AppLanguage } from "../constants/enums";
 import {
   API_ROUTES,
@@ -326,15 +326,11 @@ export default function AutoVideoGenerator({
 
     const targetProject = activeCreatedProject || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
     if (targetProject) {
-      const updatedProject = {
-        ...targetProject,
-        voiceConfig: {
-          ...(targetProject.voiceConfig || {} as VoiceConfig),
+      const updatedProject = applyVoiceSelection(targetProject, {
           voiceURI: selectedVoiceURI,
           voiceName: selectedVoiceName,
           provider: selectedVoiceProvider,
-        } as VoiceConfig,
-      };
+      });
       setActiveCreatedProject(updatedProject);
       void onUpdateProject(updatedProject, true);
     }
@@ -507,7 +503,7 @@ export default function AutoVideoGenerator({
             T={T}
           />
 
-          <LogPanelSection logs={logs} theme={theme} T={T} />
+          <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
 
           <PreviewPanelSection
             renderedVideoUrl={renderedVideoUrl}

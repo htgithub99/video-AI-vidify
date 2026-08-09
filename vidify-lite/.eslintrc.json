@@ -39,6 +39,18 @@
     "prefer-const": "off",
     "no-empty": "off",
     "@typescript-eslint/ban-ts-comment": "off",
-    "@typescript-eslint/no-empty-function": "off"
+    "@typescript-eslint/no-empty-function": "off",
+    "max-len": [
+      "error",
+      {
+        "code": 400,
+        "tabWidth": 2,
+        "ignoreComments": true,
+        "ignoreStrings": true,
+        "ignoreTemplateLiterals": true,
+        "ignoreRegExpLiterals": true,
+        "ignoreUrls": true
+      }
+    ]
   }
 }

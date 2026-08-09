@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { API_ROUTES, REFACTOR_CONSTANTS } from '../constants';
+import { useQuery } from "@tanstack/react-query";
+import { API_ROUTES, REFACTOR_CONSTANTS } from "../constants";
 
 const QUERY_KEY = REFACTOR_CONSTANTS.PRESETS_QUERY_KEY;
 const STALE_TIME = 5 * 60 * 1000;

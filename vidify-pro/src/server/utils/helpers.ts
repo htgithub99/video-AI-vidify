@@ -1,14 +1,19 @@
 import { appLog } from "../../lib/logger.js";
-import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
-import _ from 'lodash';
+import {
+  JSON_CLEANUP_CURLY_REGEX,
+  JSON_CLEANUP_SQUARE_REGEX,
+} from "../../constants/index.js";
+import _ from "lodash";
 import { jsonUtils } from "../../lib/json.js";
-
 
 export const extractBalancedJSON = (text: string): string | null => {
   const firstBrace = text.indexOf("{");
   const firstBracket = text.indexOf("[");
   let startIdx = -1;
-  if (!_.eq(firstBrace, -1) && (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))) {
+  if (
+    !_.eq(firstBrace, -1) &&
+    (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))
+  ) {
     startIdx = firstBrace;
   } else if (!_.eq(firstBracket, -1)) {
     startIdx = firstBracket;
@@ -189,7 +194,11 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     let res = jsonUtils.safeParse<any>(str, undefined);
     if (!_.isUndefined(res)) return res;
 
-    const cleanCommas = _.replace(_.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
+    const cleanCommas = _.replace(
+      _.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"),
+      JSON_CLEANUP_SQUARE_REGEX,
+      "]",
+    );
     res = jsonUtils.safeParse<any>(cleanCommas, undefined);
     if (!_.isUndefined(res)) return res;
 
@@ -232,7 +241,10 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   let startIdx = -1;
   let endIdx = -1;
 
-  if (!_.eq(firstBrace, -1) && (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))) {
+  if (
+    !_.eq(firstBrace, -1) &&
+    (_.eq(firstBracket, -1) || _.lt(firstBrace, firstBracket))
+  ) {
     startIdx = firstBrace;
     endIdx = trimmed.lastIndexOf("}");
   } else if (!_.eq(firstBracket, -1)) {

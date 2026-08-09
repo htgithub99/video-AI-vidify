@@ -1,5 +1,10 @@
 import _ from "lodash";
-import { API_ROUTES, EXTERNAL_URLS, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import {
+  API_ROUTES,
+  EXTERNAL_URLS,
+  REFACTOR_CONSTANTS,
+  SecurityConstants,
+} from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -8,6 +13,7 @@ export interface ProjectImageItem {
   prompt: string;
   generateType?: GenerateType;
   idempotencyKey?: string;
+  referenceImages?: string[];
 }
 
 export interface ProjectImageResult {
@@ -30,7 +36,11 @@ interface ProjectImageGenerationConfig {
   createFallbackPayload: FallbackPayloadFactory;
   onBatchResult: (result: ProjectImageResult) => void;
   onFallbackStart?: (error: Error, items: ProjectImageItem[]) => void;
-  onFallbackItemStart?: (item: ProjectImageItem, index: number, total: number) => void;
+  onFallbackItemStart?: (
+    item: ProjectImageItem,
+    index: number,
+    total: number,
+  ) => void;
   onFallbackResult?: (result: ProjectImageResult) => void;
 }
 
@@ -48,22 +58,32 @@ export interface SceneAssetSummary {
   complete: boolean;
 }
 
-export const hasSceneAsset = (scene: Pick<StoryboardScene, "assetUrl" | "assetUrls">): boolean => (
+export const hasSceneAsset = (
+  scene: Pick<StoryboardScene, "assetUrl" | "assetUrls">,
+): boolean =>
   _.some(
     [scene.assetUrl, ..._.castArray(_.defaultTo(scene.assetUrls, []))],
     (assetUrl) => !_.isEmpty(assetUrl),
-  )
-);
+  );
 
-export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSummary => {
+export const getSceneAssetSummary = (
+  scenes: StoryboardScene[],
+): SceneAssetSummary => {
   const rejectedSceneIds = _.map(
-    _.filter(scenes, (scene) => _.includes(
-      [SceneAssetStatus.Rejected, SceneAssetStatus.Failed],
-      scene.assetStatus,
-    )),
+    _.filter(scenes, (scene) =>
+      _.includes(
+        [SceneAssetStatus.Rejected, SceneAssetStatus.Failed],
+        scene.assetStatus,
+      ),
+    ),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
   );
-  const missingSceneIds = _.uniq(_.concat(_.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY), rejectedSceneIds));
+  const missingSceneIds = _.uniq(
+    _.concat(
+      _.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY),
+      rejectedSceneIds,
+    ),
+  );
   const total = _.size(scenes);
   const completed = _.subtract(total, _.size(missingSceneIds));
 
@@ -72,31 +92,38 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
     completed,
     missingSceneIds,
     rejectedSceneIds,
-    complete: _.every([_.isEqual(completed, total), _.isEmpty(rejectedSceneIds)], Boolean),
+    complete: _.every(
+      [_.isEqual(completed, total), _.isEmpty(rejectedSceneIds)],
+      Boolean,
+    ),
   };
 };
 
-export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value) && !_.startsWith(_.toLower(value), _.toLower(EXTERNAL_URLS.LOREM_FLICKR));
+export const isUsableGeneratedAssetUrl = (value?: string): boolean =>
+  !_.isEmpty(value) &&
+  !_.startsWith(_.toLower(value), _.toLower(EXTERNAL_URLS.LOREM_FLICKR));
 
-const hasImageResult = (result?: ProjectImageResult): boolean => (
-  _.every([
-    result?.success,
-    _.some([result?.base64, result?.fallbackUrl], isUsableGeneratedAssetUrl),
-  ], Boolean)
-);
+const hasImageResult = (result?: ProjectImageResult): boolean =>
+  _.every(
+    [
+      result?.success,
+      _.some([result?.base64, result?.fallbackUrl], isUsableGeneratedAssetUrl),
+    ],
+    Boolean,
+  );
 
-const isGenerationCancelled = (cancelRef?: { current: boolean }): boolean => (
-  _.includes([true], Boolean(cancelRef?.current))
-);
-const ADAPTIVE_CONCURRENCY = { INITIAL: 3, MIN: 1, THROTTLE_PATTERN: /429|quota|timeout|rate.?limit/i } as const;
+const isGenerationCancelled = (cancelRef?: { current: boolean }): boolean =>
+  _.includes([true], Boolean(cancelRef?.current));
+const ADAPTIVE_CONCURRENCY = {
+  INITIAL: 3,
+  MIN: 1,
+  THROTTLE_PATTERN: /429|quota|timeout|rate.?limit/i,
+} as const;
 
-const createCountError = (template: string, count: number): Error => new Error(
-  _.replace(
-    template,
-    SecurityConstants.PLACEHOLDER_0,
-    _.toString(count),
-  ),
-);
+const createCountError = (template: string, count: number): Error =>
+  new Error(
+    _.replace(template, SecurityConstants.PLACEHOLDER_0, _.toString(count)),
+  );
 
 const cleanBatchSession = async (): Promise<void> => {
   await safeSystemFetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {});
@@ -114,7 +141,10 @@ const generateFallbackImage = async (
     _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
     _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
   );
-  const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+  const fallbackUrl = _.get(
+    response.data,
+    REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY,
+  );
   const generationSucceeded = _.get(
     response.data,
     REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
@@ -123,20 +153,27 @@ const generateFallbackImage = async (
 
   return {
     sceneId: item.sceneId,
-    success: _.every([
-      response.success,
-      _.some([
-        generationSucceeded,
-        _.isEqual(item.generateType, GenerateType.Image),
-      ], Boolean),
-      _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
-    ], Boolean),
+    success: _.every(
+      [
+        response.success,
+        _.some(
+          [
+            generationSucceeded,
+            _.isEqual(item.generateType, GenerateType.Image),
+          ],
+          Boolean,
+        ),
+        _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
+      ],
+      Boolean,
+    ),
     base64,
     fallbackUrl,
     warning: response.error,
-    assetType: item.generateType === GenerateType.Video
-      ? GenerateType.Video
-      : GenerateType.Image,
+    assetType:
+      item.generateType === GenerateType.Video
+        ? GenerateType.Video
+        : GenerateType.Image,
   };
 };
 
@@ -152,7 +189,9 @@ export const createProjectImageUrl = (result: ProjectImageResult): string => {
       REFACTOR_CONSTANTS.VD_EMPTY_STRING,
     );
   }
-  return isUsableGeneratedAssetUrl(result.fallbackUrl) ? result.fallbackUrl! : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  return isUsableGeneratedAssetUrl(result.fallbackUrl)
+    ? result.fallbackUrl!
+    : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 
 export const selectVideoSceneIds = async (
@@ -170,15 +209,18 @@ export const selectVideoSceneIds = async (
     return [];
   }
 
-  const response = await safeSystemFetch(API_ROUTES.PIPELINE_SELECT_VIDEO_SCENES, {
-    storyboard: _.map(scenes, (scene) => ({
-      id: scene.id,
-      script: scene.script,
-      prompt: scene.prompt,
-      cameraMotion: scene.cameraMotion,
-    })),
-    maxVideoScenes,
-  });
+  const response = await safeSystemFetch(
+    API_ROUTES.PIPELINE_SELECT_VIDEO_SCENES,
+    {
+      storyboard: _.map(scenes, (scene) => ({
+        id: scene.id,
+        script: scene.script,
+        prompt: scene.prompt,
+        cameraMotion: scene.cameraMotion,
+      })),
+      maxVideoScenes,
+    },
+  );
   return _.take(
     _.uniq(_.get(response.data, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, [])),
     maxVideoScenes,
@@ -189,17 +231,22 @@ export const resolveSceneGenerateType = (
   sceneId: string,
   generateType: GenerateType,
   videoSceneIds: string[],
-): GenerateType.Image | GenerateType.Video => (
-  _.some([
-    _.isEqual(generateType, GenerateType.Video),
-    _.every([
-      _.isEqual(generateType, GenerateType.Mixed),
-      _.includes(videoSceneIds, sceneId),
-    ], Boolean),
-  ], Boolean)
+): GenerateType.Image | GenerateType.Video =>
+  _.some(
+    [
+      _.isEqual(generateType, GenerateType.Video),
+      _.every(
+        [
+          _.isEqual(generateType, GenerateType.Mixed),
+          _.includes(videoSceneIds, sceneId),
+        ],
+        Boolean,
+      ),
+    ],
+    Boolean,
+  )
     ? GenerateType.Video
-    : GenerateType.Image
-);
+    : GenerateType.Image;
 
 export const generateProjectImages = async ({
   items,
@@ -213,7 +260,10 @@ export const generateProjectImages = async ({
   onFallbackItemStart,
   onFallbackResult,
 }: ProjectImageGenerationConfig): Promise<ProjectImageGenerationSummary> => {
-  const uniqueItems = _.uniqBy(items, item => item.idempotencyKey || item.sceneId);
+  const uniqueItems = _.uniqBy(
+    items,
+    (item) => item.idempotencyKey || item.sceneId,
+  );
   const resultsBySceneId = new Map<string, ProjectImageResult>();
   let batchError: Error | undefined;
 
@@ -236,19 +286,25 @@ export const generateProjectImages = async ({
         cancelRef,
       );
     } catch (error) {
-      batchError = error instanceof Error
-        ? error
-        : new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR);
+      batchError =
+        error instanceof Error
+          ? error
+          : new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR);
     }
 
     if (isGenerationCancelled(cancelRef)) {
       const completedSceneIds = _.map(
-        _.filter(uniqueItems, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
+        _.filter(uniqueItems, (item) =>
+          hasImageResult(resultsBySceneId.get(item.sceneId)),
+        ),
         (item) => item.sceneId,
       );
       return {
         completedSceneIds,
-        failedSceneIds: _.difference(_.map(uniqueItems, "sceneId"), completedSceneIds),
+        failedSceneIds: _.difference(
+          _.map(uniqueItems, "sceneId"),
+          completedSceneIds,
+        ),
         cancelled: true,
       };
     }
@@ -259,23 +315,72 @@ export const generateProjectImages = async ({
     );
 
     if (!_.isEmpty(fallbackItems)) {
-      const fallbackReason = _.defaultTo(batchError, createCountError(
-        REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_INCOMPLETE,
-        _.size(fallbackItems),
-      ));
+      const fallbackReason = _.defaultTo(
+        batchError,
+        createCountError(
+          REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_INCOMPLETE,
+          _.size(fallbackItems),
+        ),
+      );
       onFallbackStart?.(fallbackReason, fallbackItems);
 
-      let nextIndex=0;let targetConcurrency=_.min([ADAPTIVE_CONCURRENCY.INITIAL,_.size(fallbackItems)]);
-      const worker=async(workerIndex:number):Promise<void>=>{while(!isGenerationCancelled(cancelRef)&&workerIndex<targetConcurrency){const index=nextIndex++;if(index>=_.size(fallbackItems))return;const item=fallbackItems[index];onFallbackItemStart?.(item,index,_.size(fallbackItems));try{const result=await generateFallbackImage(item,createFallbackPayload);resultsBySceneId.set(item.sceneId,result);onFallbackResult?.(result);if(!result.success&&ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(result.warning||""))targetConcurrency=_.max([1,targetConcurrency-1])!}catch(error){const warning=error instanceof Error?error.message:REFACTOR_CONSTANTS.UNKNOWN_WARNING;if(ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(warning))targetConcurrency=_.max([1,targetConcurrency-1])!;const failedResult:ProjectImageResult={sceneId:item.sceneId,success:false,warning};resultsBySceneId.set(item.sceneId,failedResult);onFallbackResult?.(failedResult)}}};
-      await Promise.all(_.map(_.range(targetConcurrency),worker));
+      let nextIndex = 0;
+      let targetConcurrency = _.min([
+        ADAPTIVE_CONCURRENCY.INITIAL,
+        _.size(fallbackItems),
+      ]);
+      const worker = async (workerIndex: number): Promise<void> => {
+        while (
+          !isGenerationCancelled(cancelRef) &&
+          workerIndex < targetConcurrency
+        ) {
+          const index = nextIndex++;
+          if (index >= _.size(fallbackItems)) return;
+          const item = fallbackItems[index];
+          onFallbackItemStart?.(item, index, _.size(fallbackItems));
+          try {
+            const result = await generateFallbackImage(
+              item,
+              createFallbackPayload,
+            );
+            resultsBySceneId.set(item.sceneId, result);
+            onFallbackResult?.(result);
+            if (
+              !result.success &&
+              ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(result.warning || "")
+            )
+              targetConcurrency = _.max([1, targetConcurrency - 1])!;
+          } catch (error) {
+            const warning =
+              error instanceof Error
+                ? error.message
+                : REFACTOR_CONSTANTS.UNKNOWN_WARNING;
+            if (ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(warning))
+              targetConcurrency = _.max([1, targetConcurrency - 1])!;
+            const failedResult: ProjectImageResult = {
+              sceneId: item.sceneId,
+              success: false,
+              warning,
+            };
+            resultsBySceneId.set(item.sceneId, failedResult);
+            onFallbackResult?.(failedResult);
+          }
+        }
+      };
+      await Promise.all(_.map(_.range(targetConcurrency), worker));
     }
 
     const completedSceneIds = _.map(
-      _.filter(uniqueItems, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
+      _.filter(uniqueItems, (item) =>
+        hasImageResult(resultsBySceneId.get(item.sceneId)),
+      ),
       (item) => item.sceneId,
     );
     const failedSceneIds = _.map(
-      _.filter(uniqueItems, (item) => !hasImageResult(resultsBySceneId.get(item.sceneId))),
+      _.filter(
+        uniqueItems,
+        (item) => !hasImageResult(resultsBySceneId.get(item.sceneId)),
+      ),
       (item) => item.sceneId,
     );
 

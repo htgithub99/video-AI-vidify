@@ -1,15 +1,21 @@
-import { AI_MOTION_EFFECT_IDS, ErrorMessage, supportedTypes, RENDER_LOGIC_CONSTANTS } from "../constants/index.js";
+import {
+  AI_MOTION_EFFECT_IDS,
+  ErrorMessage,
+  supportedTypes,
+  RENDER_LOGIC_CONSTANTS,
+} from "../constants/index.js";
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
-import _ from 'lodash';
+import _ from "lodash";
 
 const easeCubicInOut = (t: number): number => {
   if (t < 0.5) return 4.0 * t * t * t;
   return 1.0 - Math.pow(-2.0 * t + 2.0, 3) / 2.0;
 };
 
-const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
+const easeSineInOut = (t: number): number =>
+  -(Math.cos(Math.PI * t) - 1.0) / 2.0;
 
 const easeExpoOut = (t: number): number =>
   t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);
@@ -96,11 +102,19 @@ const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
   },
   [AI_MOTION_EFFECT_IDS[15]]: (p) => {
     const t = easeSineInOut(p);
-    return { scale: 1.045 + 0.012 * Math.sin(t * Math.PI), dx: 12 * Math.sin(t * Math.PI * 1.2), dy: 7 * Math.cos(t * Math.PI) };
+    return {
+      scale: 1.045 + 0.012 * Math.sin(t * Math.PI),
+      dx: 12 * Math.sin(t * Math.PI * 1.2),
+      dy: 7 * Math.cos(t * Math.PI),
+    };
   },
   [AI_MOTION_EFFECT_IDS[16]]: (p) => {
     const t = easeSineInOut(p);
-    return { scale: 1.055, dx: 8 * Math.sin(t * Math.PI * 2), dy: 5 * Math.sin(t * Math.PI * 1.5) };
+    return {
+      scale: 1.055,
+      dx: 8 * Math.sin(t * Math.PI * 2),
+      dy: 5 * Math.sin(t * Math.PI * 1.5),
+    };
   },
   [AI_MOTION_EFFECT_IDS[17]]: (p) => {
     const t = easeSineInOut(p);
@@ -126,8 +140,14 @@ const MOTION_ID_ALIASES: Record<string, string> = {
   [AI_MOTION_EFFECT_IDS[19]]: RENDER_LOGIC_CONSTANTS.MOTION_STATIC,
 };
 
-const getMotionForScene = (cameraMotion: string, progress: number): MotionResult => {
-  const motionKey = _.defaultTo(_.get(MOTION_ID_ALIASES, cameraMotion), cameraMotion);
+const getMotionForScene = (
+  cameraMotion: string,
+  progress: number,
+): MotionResult => {
+  const motionKey = _.defaultTo(
+    _.get(MOTION_ID_ALIASES, cameraMotion),
+    cameraMotion,
+  );
   const motionFn = _.get(MOTION_STYLES, motionKey);
   if (motionFn) return motionFn(progress);
   return MOTION_STYLES[RENDER_LOGIC_CONSTANTS.MOTION_STATIC](progress);
@@ -136,11 +156,17 @@ const getMotionForScene = (cameraMotion: string, progress: number): MotionResult
 export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
   let elapsed = 0;
   return _.map(storyboard, (sc) => {
-    const startSec = parseTimeToSeconds(sc.startTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
-    const endSec = parseTimeToSeconds(sc.endTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
+    const startSec = parseTimeToSeconds(
+      sc.startTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING,
+    );
+    const endSec = parseTimeToSeconds(
+      sc.endTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING,
+    );
 
     const start =
-      sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0) ? startSec : elapsed;
+      sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0)
+        ? startSec
+        : elapsed;
     const duration = sc.duration || 5;
     const end =
       sc.endTime && !_.isNil(endSec) && _.gt(endSec, start)
@@ -195,9 +221,24 @@ export const drawSceneFrameToContext = (
     ctx.drawImage(imgElement, -w / 2, -h / 2, w, h);
   } else {
     const grad = ctx.createLinearGradient(0, 0, w, h);
-    const isAlt = _.eq((sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).charCodeAt((sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).length - 1) % 2, 0);
-    grad.addColorStop(0, isAlt ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_START : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_START);
-    grad.addColorStop(1, isAlt ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_END : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_END);
+    const isAlt = _.eq(
+      (sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).charCodeAt(
+        (sc.id || RENDER_LOGIC_CONSTANTS.EMPTY_STRING).length - 1,
+      ) % 2,
+      0,
+    );
+    grad.addColorStop(
+      0,
+      isAlt
+        ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_START
+        : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_START,
+    );
+    grad.addColorStop(
+      1,
+      isAlt
+        ? RENDER_LOGIC_CONSTANTS.COLOR_ALT_END
+        : RENDER_LOGIC_CONSTANTS.COLOR_DEFAULT_END,
+    );
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
@@ -228,7 +269,10 @@ export const drawSceneFrameToContext = (
     ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_ROSE;
     ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBHEADER;
     ctx.fillText(
-      RENDER_LOGIC_CONSTANTS.PROMPT_LABEL.replace("{0}", sc.id).replace("{1}", formatCleanDuration(sc.duration || 5)),
+      RENDER_LOGIC_CONSTANTS.PROMPT_LABEL.replace("{0}", sc.id).replace(
+        "{1}",
+        formatCleanDuration(sc.duration || 5),
+      ),
       80,
       160,
     );
@@ -271,7 +315,8 @@ export const drawSceneFrameToContext = (
   ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_YELLOW;
   ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBTITLE;
   ctx.textAlign = "center";
-  const subText = sc.subtitle || sc.script || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
+  const subText =
+    sc.subtitle || sc.script || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
 
   let currentSubLine: string = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
   let subLines: string[] = [];
@@ -317,14 +362,20 @@ export const compileVideoToBlob = async (
           loadedImages[sc.id] = img;
           loadedCount++;
           onProgress(
-            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
+            _.add(
+              5,
+              _.round(_.multiply(_.divide(loadedCount, scenes.length), 15)),
+            ),
           );
           resolve();
         };
         img.onerror = () => {
           loadedCount++;
           onProgress(
-            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
+            _.add(
+              5,
+              _.round(_.multiply(_.divide(loadedCount, scenes.length), 15)),
+            ),
           );
           resolve();
         };
@@ -337,7 +388,8 @@ export const compileVideoToBlob = async (
   canvas.width = 1280;
   canvas.height = 720;
   const ctx = canvas.getContext(RENDER_LOGIC_CONSTANTS.CONTEXT_2D);
-  if (_.isNil(ctx)) throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
+  if (_.isNil(ctx))
+    throw new Error(ErrorMessage.COULD_NOT_INITIALIZE_2D_CONTEXT);
 
   let mixedStream = new MediaStream();
   const canvasStream = canvas.captureStream(30);
@@ -352,14 +404,20 @@ export const compileVideoToBlob = async (
   const hasSceneVoices = _.some(scenes, (sc) => !!sc.audioUrl);
   const voiceUrl = voiceConfig?.audioUrl || ttsAudioUrl;
   const hasGlobalAudio =
-    voiceUrl && !_.includes([RENDER_LOGIC_CONSTANTS.SIMULATED, RENDER_LOGIC_CONSTANTS.SIMULATED_SPEECH], voiceUrl);
+    voiceUrl &&
+    !_.includes(
+      [
+        RENDER_LOGIC_CONSTANTS.SIMULATED,
+        RENDER_LOGIC_CONSTANTS.SIMULATED_SPEECH,
+      ],
+      voiceUrl,
+    );
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
   if (hasAudioRecording) {
     try {
-      audioCtx = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )();
+      audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       destNode = audioCtx.createMediaStreamDestination();
 
       audioEl = new Audio();
@@ -432,7 +490,10 @@ export const compileVideoToBlob = async (
       const realElapsed = (now - startTime) / 1000;
       const elapsed = realElapsed * speedFactor;
 
-      if (_.gte(elapsed, totalDuration) || _.gte(realElapsed, MAX_EXPORT_TIME)) {
+      if (
+        _.gte(elapsed, totalDuration) ||
+        _.gte(realElapsed, MAX_EXPORT_TIME)
+      ) {
         recorder.stop();
         if (audioEl) audioEl.pause();
         if (audioCtx) audioCtx.close();
@@ -465,7 +526,9 @@ export const compileVideoToBlob = async (
       let transitionProgress = 0;
       let nextImgEl: HTMLImageElement | undefined;
 
-      const matchingIdx = _.findIndex(ranges, (r) => _.eq(r.id, matchingRange.id));
+      const matchingIdx = _.findIndex(ranges, (r) =>
+        _.eq(r.id, matchingRange.id),
+      );
       if (matchingIdx >= 0 && matchingIdx < ranges.length - 1) {
         const timeRemaining = sceneDuration - timeInScene;
         if (timeRemaining <= TRANSITION_DURATION && timeRemaining >= 0) {
@@ -488,7 +551,10 @@ export const compileVideoToBlob = async (
         transitionProgress,
       );
 
-      const prog = _.add(20, _.round(_.multiply(_.divide(elapsed, totalDuration), 80)));
+      const prog = _.add(
+        20,
+        _.round(_.multiply(_.divide(elapsed, totalDuration), 80)),
+      );
       onProgress(_.min([prog, 99]) || prog);
 
       requestAnimationFrame(renderFrame);

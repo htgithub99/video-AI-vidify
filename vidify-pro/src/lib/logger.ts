@@ -1,4 +1,9 @@
-import { LogLang, getFriendlyActionName, LOG_DICTIONARY, LogKey } from "../constants";
+import {
+  LogLang,
+  getFriendlyActionName,
+  LOG_DICTIONARY,
+  LogKey,
+} from "../constants";
 import { logger as systemLogger } from "../utils/logger";
 
 let currentLang: LogLang = "vi";
@@ -20,11 +25,17 @@ export const formatLogMessage = (template: string, ...args: any[]): string => {
   return result;
 };
 
-export const getMessage = (key: LogKey | string, lang?: LogLang, ...args: any[]): string => {
+export const getMessage = (
+  key: LogKey | string,
+  lang?: LogLang,
+  ...args: any[]
+): string => {
   const dictionaryKey = key as LogKey;
   if (LOG_DICTIONARY[dictionaryKey]) {
     const activeLang = lang || currentLang;
-    const template = LOG_DICTIONARY[dictionaryKey][activeLang] || LOG_DICTIONARY[dictionaryKey]["en"];
+    const template =
+      LOG_DICTIONARY[dictionaryKey][activeLang] ||
+      LOG_DICTIONARY[dictionaryKey]["en"];
 
     if (dictionaryKey === "SYSTEM_ACTION_START" && args.length > 0) {
       const friendlyAction = getFriendlyActionName(args[0], activeLang);
@@ -36,18 +47,33 @@ export const getMessage = (key: LogKey | string, lang?: LogLang, ...args: any[])
   return formatLogMessage(String(key), ...args);
 };
 
-export const getBilingualMessage = (key: LogKey | string, ...args: any[]): string => {
+export const getBilingualMessage = (
+  key: LogKey | string,
+  ...args: any[]
+): string => {
   const dictionaryKey = key as LogKey;
   if (LOG_DICTIONARY[dictionaryKey]) {
     if (dictionaryKey === "SYSTEM_ACTION_START" && args.length > 0) {
-      const viMsg = formatLogMessage(LOG_DICTIONARY[dictionaryKey]["vi"], getFriendlyActionName(args[0], "vi"));
-      const enMsg = formatLogMessage(LOG_DICTIONARY[dictionaryKey]["en"], getFriendlyActionName(args[0], "en"));
+      const viMsg = formatLogMessage(
+        LOG_DICTIONARY[dictionaryKey]["vi"],
+        getFriendlyActionName(args[0], "vi"),
+      );
+      const enMsg = formatLogMessage(
+        LOG_DICTIONARY[dictionaryKey]["en"],
+        getFriendlyActionName(args[0], "en"),
+      );
       if (viMsg === enMsg) return viMsg;
       return `${viMsg} | ${enMsg}`;
     }
 
-    const viMsg = formatLogMessage(LOG_DICTIONARY[dictionaryKey]["vi"], ...args);
-    const enMsg = formatLogMessage(LOG_DICTIONARY[dictionaryKey]["en"], ...args);
+    const viMsg = formatLogMessage(
+      LOG_DICTIONARY[dictionaryKey]["vi"],
+      ...args,
+    );
+    const enMsg = formatLogMessage(
+      LOG_DICTIONARY[dictionaryKey]["en"],
+      ...args,
+    );
     if (viMsg === enMsg) return viMsg;
     return `${viMsg} | ${enMsg}`;
   }
@@ -97,11 +123,17 @@ export const appLog = (keyOrMessage: LogKey | string, ...args: any[]): void => {
   logger.log(keyOrMessage, ...args);
 };
 
-export const appError = (keyOrMessage: LogKey | string, ...args: any[]): void => {
+export const appError = (
+  keyOrMessage: LogKey | string,
+  ...args: any[]
+): void => {
   logger.error(keyOrMessage, ...args);
 };
 
-export const appWarn = (keyOrMessage: LogKey | string, ...args: any[]): void => {
+export const appWarn = (
+  keyOrMessage: LogKey | string,
+  ...args: any[]
+): void => {
   logger.warn(keyOrMessage, ...args);
 };
 
@@ -112,8 +144,14 @@ export const appLogStep = (message: string, logsArray?: string[]): void => {
   }
 };
 
-export const createAppError = (keyOrMessage: LogKey | string, ...args: any[]): Error => {
-  const errMsg = typeof keyOrMessage === "string" && LOG_DICTIONARY[keyOrMessage as LogKey] ? getMessage(keyOrMessage, undefined, ...args) : formatLogMessage(String(keyOrMessage), ...args);
+export const createAppError = (
+  keyOrMessage: LogKey | string,
+  ...args: any[]
+): Error => {
+  const errMsg =
+    typeof keyOrMessage === "string" && LOG_DICTIONARY[keyOrMessage as LogKey]
+      ? getMessage(keyOrMessage, undefined, ...args)
+      : formatLogMessage(String(keyOrMessage), ...args);
 
   appError(errMsg);
   return new Error(errMsg);

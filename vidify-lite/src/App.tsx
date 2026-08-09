@@ -37,7 +37,22 @@ const convertToSlug = (text: string): string => {
   ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
 };
 
-const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([_.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(project?.projectKind, ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean), _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(project?.projectKind, ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean)], Boolean);
+const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([
+  _.every([
+    _.isEqual(tab, AppTab.AUTO_GENERATOR),
+    _.some([
+      _.isEqual(project?.projectKind, ProjectKind.Auto),
+      _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
+    ]),
+  ], Boolean),
+  _.every([
+    _.isEqual(tab, AppTab.STUDIO),
+    _.some([
+      _.isEqual(project?.projectKind, ProjectKind.Studio),
+      _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
+    ]),
+  ], Boolean),
+], Boolean);
 
 const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
   const response = await fetch(API_ROUTES.PROJECTS, {

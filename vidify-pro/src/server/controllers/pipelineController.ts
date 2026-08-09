@@ -1,24 +1,66 @@
 import express, { NextFunction, Request, Response } from "express";
 import fs from "fs";
 import path from "path";
-import _ from 'lodash';
+import _ from "lodash";
 import { renderQueueService } from "../services/renderQueueService.js";
-import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/profileManagerService.js";
-import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
+import {
+  getProfiles,
+  launchLoginBrowser,
+  deleteProfile,
+} from "../services/profileManagerService.js";
+import {
+  getLocalAccounts,
+  saveLocalAccounts,
+} from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
-import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
-import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
-import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
+import {
+  generateContentWithRetry,
+  isAiProviderAvailable,
+} from "../services/geminiService.js";
+import {
+  classifyGeminiError,
+  getGeminiUserMessage,
+} from "../services/geminiErrorClassifier.js";
+import {
+  assertResponseContract,
+  ResponseContractName,
+} from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
-import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_TTS_CONFIG, STYLE_EXTRACTION_CONFIG, IMAGE_PROMPT_QA_CONFIG } from "../../constants/config.js";
-import { evaluateImagePrompts, sanitizeImagePrompt } from "../../services/imagePromptQualityService.js";
+import {
+  listTemplates,
+  saveTemplate,
+  deleteTemplate,
+  renameTemplate,
+} from "../utils/capcutTemplateManager.js";
+import {
+  PIPELINE_CONFIG,
+  FFMPEG_RENDER_CONSTANTS,
+  PROJECT_ASSET_GROUP,
+  REFERENCE_ASSET_GROUP,
+  PROJECT_ASSET_ROUTE,
+  PROJECT_ASSET_INVALID_REQUEST,
+  BACKGROUND_MODE_CONFIG,
+  TEXT_IN_IMAGE_MODE_CONFIG,
+  FREE_TTS_CONFIG,
+  STYLE_EXTRACTION_CONFIG,
+  IMAGE_PROMPT_QA_CONFIG,
+  IMAGE_PROMPT_METADATA_CONFIG,
+} from "../../constants/config.js";
+import {
+  enforceImagePromptStyle,
+  evaluateImagePrompts,
+  sanitizeImagePrompt,
+} from "../../services/imagePromptQualityService.js";
+import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
+import { normalizeExtractedStyle } from "../../services/styleReferenceService.js";
+import { normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
+import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
 import {
   EXTERNAL_URLS,
@@ -50,12 +92,12 @@ import {
   getGlobalVisualBiblePrompt,
   getVideoSceneSelectionPrompt,
   getSceneImageQualityPrompt,
+  SCENE_QA_REFERENCE_DIRECTIVE,
   getCharacterAnalysisPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
   getCharacterRewriteThumbnailsBatchPrompt,
   STYLE_EXTRACTION_PROMPT,
-  STICKMAN_STYLE_MODIFIERS,
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
   getScriptEditorQaPrompt,
@@ -64,7 +106,6 @@ import {
   getStoryboardDirectorQaPrompt,
   getFinalVideoQualityPrompt,
   getContentSafetyPrompt,
-  STICKMAN_KEYWORDS,
   MARKDOWN_REGEX,
   EMOJI_REGEX,
   REGEX_AUTO_MODE_PATH,
@@ -126,29 +167,72 @@ import {
   SCRIPT_PROMPT_CONFIG,
 } from "../../constants";
 
-import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
+import {
+  logger,
+  getMessage,
+  appLogStep,
+  getBilingualMessage,
+  appWarn,
+  createAppError,
+  appError,
+} from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
 
-import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
-import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
+import {
+  generateImageWithPlaywright,
+  generateBatchImagesWithGeminiChat,
+  closeAllBatchPages,
+} from "../services/imageGeneratorService.js";
+import {
+  resolveApiKeys,
+  getResolvedLicenseKey,
+} from "../services/apiKeyResolver.js";
 import { createFreeTtsResponse } from "../services/freeTtsService.js";
+import {
+  readEncodedProjectImage,
+  readStyleReferenceImage,
+} from "../services/imageAssetService.js";
 
-import { AspectRatio, GenerateType, HookVersion, ProjectLanguage } from "../../types.js";
+import {
+  AspectRatio,
+  GenerateType,
+  HookVersion,
+  ProjectLanguage,
+} from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
-import { evaluateFallbackStoryboardQuality, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
+import {
+  evaluateFallbackStoryboardQuality,
+  normalizeStoryboardQuality,
+} from "../../services/storyboardQualityService.js";
 import { normalizeContentSafety } from "../../services/contentSafetyService.js";
-import { getTargetWordRange, normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions, validateScriptRepair } from "../../services/scriptQualityService.js";
-import { createSafeFallbackHook, resolveUsableHooks } from "../../services/hookResilienceService.js";
+import {
+  getTargetWordRange,
+  normalizeScriptQualityReport,
+  parseTargetDurationSeconds,
+  rankHookVersions,
+  validateScriptRepair,
+} from "../../services/scriptQualityService.js";
+import {
+  createSafeFallbackHook,
+  resolveUsableHooks,
+} from "../../services/hookResilienceService.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { createHash, randomUUID } from "crypto";
 import os from "os";
 import { exec, spawn } from "child_process";
 import { StepLogger } from "../../lib/stepLogger.js";
-import { generateMockStoryboard, smartSplitSentences } from "../../lib/textProcessor.js";
+import {
+  generateMockStoryboard,
+  smartSplitSentences,
+} from "../../lib/textProcessor.js";
 import { assignStoryboardChapterIds } from "../../utils/storyboardChapterUtils.js";
-import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "../utils/paths.js";
+import {
+  getDataDirectory,
+  getStaticResourcePath,
+  getPythonCommand,
+} from "../utils/paths.js";
 import { delayAsync } from "../../lib/shared-utils.js";
 
 const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
@@ -169,7 +253,11 @@ import { requestContext } from "../utils/requestContext.js";
 
 const router = express.Router();
 
-async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
+async function incrementFeatureUsage(
+  req: Request,
+  feature: FeatureType,
+  amount: number = SecurityConstants.DEFAULT_AMOUNT,
+) {
   const licenseKey = getResolvedLicenseKey(req);
 
   if (!_.isEmpty(licenseKey)) {
@@ -181,10 +269,19 @@ async function incrementFeatureUsage(req: Request, feature: FeatureType, amount:
   }
 }
 
-const requireBatchVisualLicense = async (req: Request, res: Response, next: NextFunction) => {
+const requireBatchVisualLicense = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   const items = _.get(req, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH, []);
-  const hasVideoItems = _.some(items, (item) => _.isEqual(item.generateType, GenerateType.Video));
-  const hasImageItems = _.some(items, (item) => !_.isEqual(item.generateType, GenerateType.Video));
+  const hasVideoItems = _.some(items, (item) =>
+    _.isEqual(item.generateType, GenerateType.Video),
+  );
+  const hasImageItems = _.some(
+    items,
+    (item) => !_.isEqual(item.generateType, GenerateType.Video),
+  );
   const features = _.compact([
     hasImageItems ? FeatureType.IMAGE : undefined,
     hasVideoItems ? FeatureType.VIDEO : undefined,
@@ -195,54 +292,49 @@ const requireBatchVisualLicense = async (req: Request, res: Response, next: Next
       next();
       return;
     }
-    requireLicense(feature)(req, res, () => validateFeature(_.add(index, SecurityConstants.DEFAULT_AMOUNT)));
+    requireLicense(feature)(req, res, () =>
+      validateFeature(_.add(index, SecurityConstants.DEFAULT_AMOUNT)),
+    );
   };
   validateFeature(SecurityConstants.ZERO);
 };
 
-const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunction) => {
-  const generateType = _.get(req.body, REFACTOR_CONSTANTS.AVG_VISUAL_CONFIG_GENERATE_TYPE_PATH);
+const requireSingleVisualLicense = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const generateType = _.get(
+    req.body,
+    REFACTOR_CONSTANTS.AVG_VISUAL_CONFIG_GENERATE_TYPE_PATH,
+  );
   const feature = _.isEqual(generateType, GenerateType.Video)
     ? FeatureType.VIDEO
     : FeatureType.IMAGE;
   requireLicense(feature)(req, res, next);
 };
 
-async function parseBase64Image(imgBase64: string): Promise<{ data: string; mimeType: string }> {
-  let base64Data = imgBase64;
-  let mimeType = CONTENT_TYPES.JPEG || "image/jpeg"; 
-
-  if (imgBase64.startsWith("data:")) {
-    const match = imgBase64.match(BASE64_DATA_URL_REGEX);
-    if (match) {
-      mimeType = match[1];
-      base64Data = match[2];
-    }
-  } else if (_.startsWith(imgBase64, STYLE_EXTRACTION_CONFIG.ASSET_PREFIX)) {
-    const filePath = path.resolve(getDataDirectory(), _.trimStart(imgBase64, "/\\"));const assetRoot = path.resolve(getDataDirectory(), "assets");
-    if (!_.startsWith(_.toLower(filePath), _.toLower(`${assetRoot}${path.sep}`)) || !fs.existsSync(filePath)) throw new Error(getBackendMsg("IMAGES_REQUIRED", true));
-    base64Data = fs.readFileSync(filePath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);mimeType = _.get(STYLE_EXTRACTION_CONFIG.MIME_BY_EXTENSION, _.toLower(path.extname(filePath)), CONTENT_TYPES.JPEG);
-  } else if (_.some(STYLE_EXTRACTION_CONFIG.HTTP_PREFIXES, prefix => _.startsWith(imgBase64, prefix))) {
-    const imageResponse = await fetch(imgBase64);if (!imageResponse.ok) throw new Error(getBackendMsg("IMAGES_REQUIRED", true));base64Data = Buffer.from(await imageResponse.arrayBuffer()).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);mimeType = imageResponse.headers.get(CONTENT_TYPE_HEADER) || CONTENT_TYPES.JPEG;
-  }
-  return { data: base64Data, mimeType };
-}
-
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi =
+    req.body?.language === ProjectLanguage.VI ||
+    req.query?.lang !== ProjectLanguage.EN;
   try {
     const { images } = req.body;
     if (!images || !_.isArray(images) || _.isEmpty(images)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
-  if (!(await isAiProviderAvailable())) {
-      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+    if (!(await isAiProviderAvailable())) {
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
     const parts: any[] = [];
     for (const imgBase64 of images) {
-      const { data, mimeType } = await parseBase64Image(imgBase64);
+      const { data, mimeType } = await readStyleReferenceImage(imgBase64);
       parts.push({
         inlineData: {
           data,
@@ -252,12 +344,19 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     }
 
     parts.push({
-      text: _.join([
-        STYLE_EXTRACTION_PROMPT,
-        BACKGROUND_MODE_CONFIG.EXTRACTION_PREFIX,
-        _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, req.body.backgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
-        BACKGROUND_MODE_CONFIG.EXTRACTION_SUFFIX,
-      ], REFACTOR_CONSTANTS.VD_BLANK),
+      text: _.join(
+        [
+          STYLE_EXTRACTION_PROMPT,
+          BACKGROUND_MODE_CONFIG.EXTRACTION_PREFIX,
+          _.get(
+            BACKGROUND_MODE_CONFIG.DIRECTIVES,
+            req.body.backgroundMode,
+            BACKGROUND_MODE_CONFIG.DIRECTIVES.auto,
+          ),
+          BACKGROUND_MODE_CONFIG.EXTRACTION_SUFFIX,
+        ],
+        REFACTOR_CONSTANTS.VD_BLANK,
+      ),
     });
 
     const response = await generateContentWithRetry({
@@ -265,494 +364,795 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     });
 
     if (response && response.text) {
-      let extracted = response.text.trim();
-
-      const lower = extracted.toLowerCase();
-      if (_.some(STICKMAN_KEYWORDS, (kw) => _.includes(lower, kw))) {
-        extracted = STICKMAN_STYLE_MODIFIERS;
-      }
+      const extracted = normalizeExtractedStyle(response.text);
       return res.json({ style: extracted });
     } else {
       throw new Error(getBackendMsg("STYLE_EXTRACTION_ERR", isVi));
     }
   } catch (error: any) {
     logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
-    return res.json({ style: _.trim(_.toString(req.body?.fallbackStyle)) || STYLE_EXTRACTION_CONFIG.DEFAULT_STYLE, warning: STYLE_EXTRACTION_CONFIG.FALLBACK_WARNING, rotationLogs: error.rotationLogs });
-  }
-});
-
-router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { storyboard, newStyle, aspectRatio, visualConfig } = req.body;
-  if (!storyboard || !_.isArray(storyboard)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
-  }
-  if (!newStyle) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
-  }
-
-  if (!(await isAiProviderAvailable())) {
-    return res.json({ storyboard });
-  }
-
-  try {
-    const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({
-        id: s.id,
-        prompt: s.prompt || s.script || "",
-      })),
-      (s: any) => s.prompt
-    );
-
-    if (_.isEmpty(scenesToRewrite)) {
-      return res.json({ success: true, storyboard });
-    }
-
-    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE;
-    const chunks = _.chunk(scenesToRewrite, chunkSize);
-
-    const rewrittenMap = new Map<string, string>();
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkItem = chunks[i];
-      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
-      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
-
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
-            }
-          }
-        }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
-      }
-
-      if (i < chunks.length - 1) {
-        await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
-      }
-    }
-
-    const updatedStoryboard = _.map(storyboard, (scene: any) => {
-      const rewritten = rewrittenMap.get(scene.id);
-      if (rewritten) {
-        return { ...scene, prompt: rewritten };
-      }
-      return {
-        ...scene,
-        prompt: scene.prompt || "",
-      };
-    });
-
-    res.json({ success: true, storyboard: updatedStoryboard });
-  } catch (error: any) {
-    logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
-  }
-});
-
-router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { storyboard, visualConfig, aspectRatio } = req.body;
-  if (!storyboard || !_.isArray(storyboard)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
-  }
-
-  if (!(await isAiProviderAvailable())) {
-    return res.json({ storyboard });
-  }
-
-  try {
-    const scenesToOptimize = _.filter(
-      _.map(storyboard, (s: any) => ({
-        id: s.id,
-        prompt: s.prompt || "",
-        script: s.script || s.subtitle || "",
-      })),
-      (s: any) => s.prompt || s.script
-    );
-
-    if (_.isEmpty(scenesToOptimize)) {
-      return res.json({ success: true, storyboard });
-    }
-
-    const visualStyle = visualConfig?.style || "Cinematic";
-    const referenceStyle = visualConfig?.referencePrompt || "";
-    const charactersJson = visualConfig?.characters && visualConfig.characters.length > 0 ? jsonUtils.safeStringify(visualConfig.characters) : undefined;
-
-    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
-    const chunks = _.chunk(scenesToOptimize, chunkSize);
-    const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
-    const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
-    const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-    const optimizedMap = new Map<string, string>();
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkItem = chunks[i];
-      const prompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi, backgroundDirective, textDirective, focusDirective);
-
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) {
-              optimizedMap.set(item.id, sanitizeImagePrompt(item.prompt));
-            }
-          }
-        }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, err);
-      }
-
-      if (i < chunks.length - 1) {
-        await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
-      }
-    }
-
-    let updatedStoryboard = _.map(storyboard, (scene: any) => {
-      const optimized = optimizedMap.get(scene.id);
-      if (optimized) {
-        return { ...scene, prompt: optimized };
-      }
-      return {
-        ...scene,
-        prompt: sanitizeImagePrompt(scene.prompt || ""),
-      };
-    });
-    let promptQa = evaluateImagePrompts(updatedStoryboard, { backgroundMode: visualConfig?.styleBackgroundMode, textMode: visualConfig?.styleTextInImageMode });
-
-    for (let repairRound = 0; repairRound < IMAGE_PROMPT_QA_CONFIG.MAX_REPAIR_ROUNDS && !promptQa.passed; repairRound++) {
-      const blockingSceneIds = new Set(_.map(promptQa.blockingErrors, "sceneId"));
-      const repairScenes = _.filter(updatedStoryboard, scene => blockingSceneIds.has(scene.id));
-      if (_.isEmpty(repairScenes)) break;
-      const repairPrompt = getOptimizePromptsBatchPrompt(visualStyle, referenceStyle, jsonUtils.safeStringify(repairScenes), aspectRatio || AspectRatio.SixteenNine, charactersJson, isVi, backgroundDirective, textDirective, focusDirective);
-      try {
-        const repairResponse = await generateContentWithRetry({ contents: repairPrompt, config: { responseMimeType: "application/json" } });
-        const repairedItems = safeParseJSON(repairResponse.text, []);
-        const repairedMap = new Map<string, string>(_.map(_.filter(repairedItems, item => item?.id && item?.prompt), item => [item.id, sanitizeImagePrompt(item.prompt)]));
-        updatedStoryboard = _.map(updatedStoryboard, scene => repairedMap.has(scene.id) ? { ...scene, prompt: repairedMap.get(scene.id) } : scene);
-        promptQa = evaluateImagePrompts(updatedStoryboard, { backgroundMode: visualConfig?.styleBackgroundMode, textMode: visualConfig?.styleTextInImageMode });
-      } catch (error) {
-        logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, error);
-      }
-    }
-
-    res.json({ success: true, storyboard: updatedStoryboard, promptQa });
-  } catch (error: any) {
-    logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
-  }
-});
-
-router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { thumbnails, newStyle, aspectRatio, visualConfig } = req.body;
-  if (!thumbnails || !_.isArray(thumbnails)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
-  }
-  if (!newStyle) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
-  }
-
-  if (!(await isAiProviderAvailable())) {
-    return res.json({ thumbnails });
-  }
-
-  try {
-    const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
-    const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
-
-    if (thumbsToRewrite.length > 0) {
-      const rewrittenMap = new Map<string, string>();
-      const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
-      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
-      const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
-
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
-            }
-          }
-        }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_THUMBNAILS, err);
-      }
-
-      for (let i = 0; i < updatedThumbnails.length; i++) {
-        const thumb = updatedThumbnails[i];
-        if (rewrittenMap.has(thumb.id)) {
-          thumb.prompt = rewrittenMap.get(thumb.id);
-        }
-      }
-    }
-
-    res.json({ success: true, thumbnails: updatedThumbnails });
-  } catch (error: any) {
-    logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
-  }
-});
-router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { thumbnails, characters, aspectRatio, visualConfig } = req.body;
-  if (!thumbnails || !_.isArray(thumbnails)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
-  }
-
-  let finalCharacters = characters;
-  if (!finalCharacters || !_.isArray(finalCharacters) || _.isEmpty(finalCharacters)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
-  }
-
-  if (!(await isAiProviderAvailable())) {
-    return res.json({ thumbnails });
-  }
-
-  try {
-    const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
-    const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
-
-    if (thumbsToRewrite.length > 0) {
-      const rewrittenMap = new Map<string, string>();
-      const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
-      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
-      const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
-
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item && item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
-            }
-          }
-        }
-      } catch (err: any) {
-        logger.error(`Error rewriting batch character thumbnails: ${err.message}`);
-      }
-
-      for (const rawThumb of updatedThumbnails) {
-        if (rewrittenMap.has(rawThumb.id)) {
-          rawThumb.prompt = rewrittenMap.get(rawThumb.id);
-        }
-      }
-    }
-
-    return res.json({ success: true, thumbnails: updatedThumbnails });
-  } catch (err: any) {
-    logger.error(`Error in /rewrite-thumbnails-character: ${err.message}`);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: err.message });
-  }
-});
-router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  try {
-    const { script } = req.body;
-    if (!script) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
-    }
-
-  if (!(await isAiProviderAvailable())) {
-      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
-    }
-
-    const prompt = getCharacterAnalysisPrompt(script);
-
-    const response = await generateContentWithRetry({
-      contents: prompt,
-      config: { responseMimeType: "application/json" },
-    });
-
-    const parsed = safeParseJSON(response.text, []);
-    const characters = _.take(_.isArray(parsed) ? parsed : [], REFACTOR_CONSTANTS.HOOK_COUNT);
-    return res.json({ characters });
-  } catch (error: any) {
-    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-    logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
+    return res.json({
+      style:
+        _.trim(_.toString(req.body?.fallbackStyle)) ||
+        STYLE_EXTRACTION_CONFIG.DEFAULT_STYLE,
+      warning: STYLE_EXTRACTION_CONFIG.FALLBACK_WARNING,
       rotationLogs: error.rotationLogs,
     });
   }
 });
 
-router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  try {
-    const { images, characterDescription } = req.body;
-    if (!images || !_.isArray(images) || _.isEmpty(images)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
+router.post(
+  ROUTER_PATHS.REWRITE_PROMPTS,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    const { storyboard, newStyle, aspectRatio, visualConfig } = req.body;
+    if (!storyboard || !_.isArray(storyboard)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    }
+    if (!newStyle) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
     }
 
-  if (!(await isAiProviderAvailable())) {
-      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+    if (!(await isAiProviderAvailable())) {
+      return res.json({ storyboard });
     }
 
-    const parts: any[] = [];
-    for (const imgBase64 of images) {
-      let base64Data = imgBase64;
-      let mimeType = "image/jpeg";
+    try {
+      const scenesToRewrite = _.filter(
+        _.map(storyboard, (s: any) => ({
+          id: s.id,
+          prompt: s.prompt || s.script || "",
+        })),
+        (s: any) => s.prompt,
+      );
 
-      if (imgBase64.startsWith("data:")) {
-        const match = imgBase64.match(BASE64_DATA_URL_REGEX);
-        if (match) {
-          mimeType = match[1];
-          base64Data = match[2];
+      if (_.isEmpty(scenesToRewrite)) {
+        return res.json({ success: true, storyboard });
+      }
+
+      const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE;
+      const chunks = _.chunk(scenesToRewrite, chunkSize);
+
+      const rewrittenMap = new Map<string, string>();
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkItem = chunks[i];
+        const backgroundDirective = visualConfig?.styleBackgroundMode
+          ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.styleBackgroundMode
+            ]
+          : undefined;
+        const textDirective = visualConfig?.styleTextInImageMode
+          ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.styleTextInImageMode
+            ]
+          : undefined;
+        const focusDirective = visualConfig?.imageFocusMode
+          ? resolveImageFocusDirective(
+              visualConfig.imageFocusMode,
+              visualConfig.styleBackgroundMode,
+            )
+          : undefined;
+        const prompt = getStyleRewriteBatchPrompt(
+          newStyle,
+          jsonUtils.safeStringify(chunkItem),
+          aspectRatio || AspectRatio.SixteenNine,
+          isVi,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
+        );
+
+        try {
+          const response = await generateContentWithRetry({
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const parsed = safeParseJSON(response.text, []);
+          if (_.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item.id && item.prompt) {
+                rewrittenMap.set(item.id, item.prompt);
+              }
+            }
+          }
+        } catch (err) {
+          logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_CHUNK, err);
+        }
+
+        if (i < chunks.length - 1) {
+          await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
         }
       }
-      parts.push({
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType,
-        },
+
+      const updatedStoryboard = _.map(storyboard, (scene: any) => {
+        const rewritten = rewrittenMap.get(scene.id);
+        if (rewritten) {
+          return { ...scene, prompt: rewritten };
+        }
+        return {
+          ...scene,
+          prompt: scene.prompt || "",
+        };
+      });
+
+      res.json({ success: true, storyboard: updatedStoryboard });
+    } catch (error: any) {
+      logger.error(LogEvent.REWRITE_PROMPTS_ERROR, error);
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message, rotationLogs: error.rotationLogs });
+    }
+  },
+);
+
+router.post(
+  ROUTER_PATHS.OPTIMIZE_PROMPTS,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    const { storyboard, visualConfig, aspectRatio } = req.body;
+    if (!storyboard || !_.isArray(storyboard)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("STORYBOARD_REQUIRED", isVi) });
+    }
+
+    if (!(await isAiProviderAvailable())) {
+      return res.json({ storyboard });
+    }
+
+    try {
+      const scenesToOptimize = _.filter(
+        _.map(storyboard, (s: any) => ({
+          id: s.id,
+          prompt: s.prompt || "",
+          script: s.script || s.subtitle || "",
+        })),
+        (s: any) => s.prompt || s.script,
+      );
+
+      if (_.isEmpty(scenesToOptimize)) {
+        return res.json({ success: true, storyboard });
+      }
+
+      const visualStyle = visualConfig?.style || "Cinematic";
+      const referenceStyle = visualConfig?.referencePrompt || "";
+      const charactersJson =
+        visualConfig?.characters && visualConfig.characters.length > 0
+          ? jsonUtils.safeStringify(visualConfig.characters)
+          : undefined;
+
+      const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
+      const chunks = _.chunk(scenesToOptimize, chunkSize);
+      const backgroundDirective = visualConfig?.styleBackgroundMode
+        ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+            visualConfig.styleBackgroundMode
+          ]
+        : undefined;
+      const textDirective = visualConfig?.styleTextInImageMode
+        ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+            visualConfig.styleTextInImageMode
+          ]
+        : undefined;
+      const focusDirective = visualConfig?.imageFocusMode
+        ? resolveImageFocusDirective(
+            visualConfig.imageFocusMode,
+            visualConfig.styleBackgroundMode,
+          )
+        : undefined;
+      const validCharacterIds = new Set(
+        _.map(_.defaultTo(visualConfig?.characters, []), "id"),
+      );
+      const normalizeOptimizedItem = (item: any) => ({
+        prompt: sanitizeImagePrompt(item.prompt),
+        characterIds: _.filter(
+          _.uniq(_.castArray(item.characterIds)),
+          (characterId) => validCharacterIds.has(characterId),
+        ),
+        expectedSubjectCount: _.clamp(
+          _.toInteger(item.expectedSubjectCount),
+          IMAGE_PROMPT_METADATA_CONFIG.MIN_SUBJECT_COUNT,
+          IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT,
+        ),
+        allowBackgroundPeople: Boolean(item.allowBackgroundPeople),
+        layout: _.includes(
+          IMAGE_PROMPT_METADATA_CONFIG.ALLOWED_LAYOUTS,
+          item.layout,
+        )
+          ? item.layout
+          : IMAGE_PROMPT_METADATA_CONFIG.DEFAULT_LAYOUT,
+        textAllowed:
+          _.includes(
+            TEXT_IN_IMAGE_MODE_CONFIG.TEXT_ALLOWED_MODES,
+            visualConfig?.styleTextInImageMode,
+          ) || Boolean(item.textAllowed),
+      });
+      const optimizedMap = new Map<
+        string,
+        ReturnType<typeof normalizeOptimizedItem>
+      >();
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkItem = chunks[i];
+        const prompt = getOptimizePromptsBatchPrompt(
+          visualStyle,
+          referenceStyle,
+          jsonUtils.safeStringify(chunkItem),
+          aspectRatio || AspectRatio.SixteenNine,
+          charactersJson,
+          isVi,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
+        );
+
+        try {
+          const response = await generateContentWithRetry({
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const parsed = safeParseJSON(response.text, []);
+          if (_.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item.id && item.prompt) {
+                optimizedMap.set(item.id, normalizeOptimizedItem(item));
+              }
+            }
+          }
+        } catch (err) {
+          logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, err);
+        }
+
+        if (i < chunks.length - 1) {
+          await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
+        }
+      }
+
+      const targetStyle = referenceStyle || visualStyle;
+      let updatedStoryboard = _.map(storyboard, (scene: any) => {
+        const optimized = optimizedMap.get(scene.id);
+        return {
+          ...scene,
+          ...optimized,
+          prompt: enforceImagePromptStyle(
+            optimized?.prompt || scene.prompt || "",
+            targetStyle,
+            scene.script || scene.subtitle || "",
+            scene.cameraMotion || "",
+            visualConfig?.styleTextInImageMode,
+          ),
+        };
+      });
+      let promptQa = evaluateImagePrompts(updatedStoryboard, {
+        backgroundMode: visualConfig?.styleBackgroundMode,
+        textMode: visualConfig?.styleTextInImageMode,
+        targetStyle,
+      });
+
+      for (
+        let repairRound = 0;
+        repairRound < IMAGE_PROMPT_QA_CONFIG.MAX_REPAIR_ROUNDS &&
+        !promptQa.passed;
+        repairRound++
+      ) {
+        const blockingSceneIds = new Set(
+          _.map(promptQa.blockingErrors, "sceneId"),
+        );
+        const repairScenes = _.filter(updatedStoryboard, (scene) =>
+          blockingSceneIds.has(scene.id),
+        );
+        if (_.isEmpty(repairScenes)) break;
+        const repairPrompt = getOptimizePromptsBatchPrompt(
+          visualStyle,
+          referenceStyle,
+          jsonUtils.safeStringify(repairScenes),
+          aspectRatio || AspectRatio.SixteenNine,
+          charactersJson,
+          isVi,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
+        );
+        try {
+          const repairResponse = await generateContentWithRetry({
+            contents: repairPrompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const repairedItems = safeParseJSON(repairResponse.text, []);
+          const repairedMap = new Map<
+            string,
+            ReturnType<typeof normalizeOptimizedItem>
+          >(
+            _.map(
+              _.filter(repairedItems, (item) => item?.id && item?.prompt),
+              (item) => [item.id, normalizeOptimizedItem(item)],
+            ),
+          );
+          updatedStoryboard = _.map(updatedStoryboard, (scene) => {
+            const repaired = repairedMap.get(scene.id);
+            return {
+              ...scene,
+              ...repaired,
+              prompt: enforceImagePromptStyle(
+                repaired?.prompt || scene.prompt || "",
+                targetStyle,
+                scene.script || scene.subtitle || "",
+                scene.cameraMotion || "",
+                visualConfig?.styleTextInImageMode,
+              ),
+            };
+          });
+          promptQa = evaluateImagePrompts(updatedStoryboard, {
+            backgroundMode: visualConfig?.styleBackgroundMode,
+            textMode: visualConfig?.styleTextInImageMode,
+            targetStyle,
+          });
+        } catch (error) {
+          logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, error);
+        }
+      }
+
+      res.json({ success: true, storyboard: updatedStoryboard, promptQa });
+    } catch (error: any) {
+      logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message, rotationLogs: error.rotationLogs });
+    }
+  },
+);
+
+router.post(
+  ROUTER_PATHS.REWRITE_THUMBNAILS,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    const { thumbnails, newStyle, aspectRatio, visualConfig } = req.body;
+    if (!thumbnails || !_.isArray(thumbnails)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+    }
+    if (!newStyle) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("NEW_STYLE_REQUIRED", isVi) });
+    }
+
+    if (!(await isAiProviderAvailable())) {
+      return res.json({ thumbnails });
+    }
+
+    try {
+      const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
+      const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
+
+      if (thumbsToRewrite.length > 0) {
+        const rewrittenMap = new Map<string, string>();
+        const backgroundDirective = visualConfig?.thumbnailBackgroundMode
+          ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.thumbnailBackgroundMode
+            ]
+          : undefined;
+        const textDirective = visualConfig?.thumbnailTextInImageMode
+          ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.thumbnailTextInImageMode
+            ]
+          : undefined;
+        const focusDirective = visualConfig?.thumbnailImageFocusMode
+          ? resolveImageFocusDirective(
+              visualConfig.thumbnailImageFocusMode,
+              visualConfig.thumbnailBackgroundMode,
+            )
+          : undefined;
+        const prompt = getStyleRewriteBatchPrompt(
+          newStyle,
+          jsonUtils.safeStringify(thumbsToRewrite),
+          aspectRatio || AspectRatio.SixteenNine,
+          isVi,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
+          true,
+        );
+
+        try {
+          const response = await generateContentWithRetry({
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const parsed = safeParseJSON(response.text, []);
+          if (_.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item.id && item.prompt) {
+                rewrittenMap.set(item.id, item.prompt);
+              }
+            }
+          }
+        } catch (err) {
+          logger.error(LogEvent.BATCH_STYLE_REWRITE_FAILED_THUMBNAILS, err);
+        }
+
+        for (let i = 0; i < updatedThumbnails.length; i++) {
+          const thumb = updatedThumbnails[i];
+          if (rewrittenMap.has(thumb.id)) {
+            thumb.prompt = rewrittenMap.get(thumb.id);
+          }
+        }
+      }
+
+      res.json({ success: true, thumbnails: updatedThumbnails });
+    } catch (error: any) {
+      logger.error(LogEvent.REWRITE_THUMBNAILS_ERROR, error);
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message, rotationLogs: error.rotationLogs });
+    }
+  },
+);
+router.post(
+  ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    const { thumbnails, characters, aspectRatio, visualConfig } = req.body;
+    if (!thumbnails || !_.isArray(thumbnails)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("THUMBNAILS_REQUIRED", isVi) });
+    }
+
+    let finalCharacters = characters;
+    if (
+      !finalCharacters ||
+      !_.isArray(finalCharacters) ||
+      _.isEmpty(finalCharacters)
+    ) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
+    }
+
+    if (!(await isAiProviderAvailable())) {
+      return res.json({ thumbnails });
+    }
+
+    try {
+      const thumbsToRewrite = _.filter(thumbnails, (t: any) => t.prompt);
+      const updatedThumbnails = _.map(thumbnails, (t: any) => ({ ...t }));
+
+      if (thumbsToRewrite.length > 0) {
+        const rewrittenMap = new Map<string, string>();
+        const backgroundDirective = visualConfig?.thumbnailBackgroundMode
+          ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.thumbnailBackgroundMode
+            ]
+          : undefined;
+        const textDirective = visualConfig?.thumbnailTextInImageMode
+          ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.thumbnailTextInImageMode
+            ]
+          : undefined;
+        const focusDirective = visualConfig?.thumbnailImageFocusMode
+          ? resolveImageFocusDirective(
+              visualConfig.thumbnailImageFocusMode,
+              visualConfig.thumbnailBackgroundMode,
+            )
+          : undefined;
+        const prompt = getCharacterRewriteThumbnailsBatchPrompt(
+          jsonUtils.safeStringify(finalCharacters),
+          jsonUtils.safeStringify(thumbsToRewrite),
+          aspectRatio || AspectRatio.SixteenNine,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
+        );
+
+        try {
+          const response = await generateContentWithRetry({
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const parsed = safeParseJSON(response.text, []);
+          if (_.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item && item.id && item.prompt) {
+                rewrittenMap.set(item.id, item.prompt);
+              }
+            }
+          }
+        } catch (err: any) {
+          logger.error(
+            `Error rewriting batch character thumbnails: ${err.message}`,
+          );
+        }
+
+        for (const rawThumb of updatedThumbnails) {
+          if (rewrittenMap.has(rawThumb.id)) {
+            rawThumb.prompt = rewrittenMap.get(rawThumb.id);
+          }
+        }
+      }
+
+      return res.json({ success: true, thumbnails: updatedThumbnails });
+    } catch (err: any) {
+      logger.error(`Error in /rewrite-thumbnails-character: ${err.message}`);
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: err.message });
+    }
+  },
+);
+router.post(
+  ROUTER_PATHS.ANALYZE_CHARACTER,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    try {
+      const { script } = req.body;
+      if (!script) {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
+      }
+
+      if (!(await isAiProviderAvailable())) {
+        return res
+          .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+          .json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+      }
+
+      const prompt = getCharacterAnalysisPrompt(script);
+
+      const response = await generateContentWithRetry({
+        contents: prompt,
+        config: { responseMimeType: "application/json" },
+      });
+
+      const parsed = safeParseJSON(response.text, []);
+      const characters = _.take(
+        _.isArray(parsed) ? parsed : [],
+        REFACTOR_CONSTANTS.HOOK_COUNT,
+      );
+      return res.json({ characters });
+    } catch (error: any) {
+      const isVi =
+        req.body?.language === ProjectLanguage.VI ||
+        req.query?.lang !== ProjectLanguage.EN;
+      logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        error: error.message || getBackendMsg("CHARACTER_ANALYZE_FAIL", isVi),
+        rotationLogs: error.rotationLogs,
       });
     }
+  },
+);
 
-    parts.push({
-      text: getCharacterExtractPrompt(characterDescription),
-    });
+router.post(
+  ROUTER_PATHS.EXTRACT_CHARACTER,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    try {
+      const { images, characterDescription } = req.body;
+      if (!images || !_.isArray(images) || _.isEmpty(images)) {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
+      }
 
-    const response = await generateContentWithRetry({
-      contents: parts,
-    });
+      if (!(await isAiProviderAvailable())) {
+        return res
+          .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+          .json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+      }
 
-    if (response && response.text) {
-      return res.json({ characterPrompt: response.text.trim() });
-    } else {
-      throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
-    }
-  } catch (error: any) {
-    const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-    logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
-      rotationLogs: error.rotationLogs,
-    });
-  }
-});
+      const parts: any[] = [];
+      for (const imgBase64 of images) {
+        let base64Data = imgBase64;
+        let mimeType = "image/jpeg";
 
-router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { storyboard, characterPrompt, characters, aspectRatio, visualConfig } = req.body;
-  if (!storyboard || !_.isArray(storyboard)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
-  }
-
-  let finalCharacters = characters;
-  if (!finalCharacters || !_.isArray(finalCharacters) || _.isEmpty(finalCharacters)) {
-    if (characterPrompt) {
-      finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
-    } else {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
-    }
-  }
-
-  if (!(await isAiProviderAvailable())) {
-    return res.json({ storyboard });
-  }
-
-  try {
-    const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({
-        id: s.id,
-        prompt: s.prompt || s.script || "",
-      })),
-      (s) => s.prompt
-    );
-
-    if (_.isEmpty(scenesToRewrite)) {
-      return res.json({ success: true, storyboard });
-    }
-
-    const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER;
-    const chunks = _.chunk(scenesToRewrite, chunkSize);
-
-    const rewrittenMap = new Map<string, string>();
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunkItem = chunks[i];
-      const backgroundDirective = visualConfig?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleBackgroundMode] : undefined;
-      const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
-      const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
-      const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
-
-      try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: "application/json" },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        if (_.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
-            }
+        if (imgBase64.startsWith("data:")) {
+          const match = imgBase64.match(BASE64_DATA_URL_REGEX);
+          if (match) {
+            mimeType = match[1];
+            base64Data = match[2];
           }
         }
-      } catch (err) {
-        logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
+        parts.push({
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType,
+          },
+        });
       }
 
-      if (i < chunks.length - 1) {
-        await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
+      parts.push({
+        text: getCharacterExtractPrompt(characterDescription),
+      });
+
+      const response = await generateContentWithRetry({
+        contents: parts,
+      });
+
+      if (response && response.text) {
+        return res.json({ characterPrompt: response.text.trim() });
+      } else {
+        throw new Error(getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi));
+      }
+    } catch (error: any) {
+      const isVi =
+        req.body?.language === ProjectLanguage.VI ||
+        req.query?.lang !== ProjectLanguage.EN;
+      logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        error: error.message || getBackendMsg("CHARACTER_EXTRACT_FAIL", isVi),
+        rotationLogs: error.rotationLogs,
+      });
+    }
+  },
+);
+
+router.post(
+  ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER,
+  async (req: Request, res: Response) => {
+    const isVi =
+      req.body?.language === ProjectLanguage.VI ||
+      req.query?.lang !== ProjectLanguage.EN;
+    const {
+      storyboard,
+      characterPrompt,
+      characters,
+      aspectRatio,
+      visualConfig,
+    } = req.body;
+    if (!storyboard || !_.isArray(storyboard)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("STORYBOARD_INVALID", isVi) });
+    }
+
+    let finalCharacters = characters;
+    if (
+      !finalCharacters ||
+      !_.isArray(finalCharacters) ||
+      _.isEmpty(finalCharacters)
+    ) {
+      if (characterPrompt) {
+        finalCharacters = [{ name: "Main Character", prompt: characterPrompt }];
+      } else {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({ error: getBackendMsg("CHARACTER_PROMPT_REQUIRED", isVi) });
       }
     }
 
-    const updatedStoryboard = _.map(storyboard, (scene: any) => {
-      const rewritten = rewrittenMap.get(scene.id);
-      if (rewritten) {
-        return { ...scene, prompt: rewritten };
+    if (!(await isAiProviderAvailable())) {
+      return res.json({ storyboard });
+    }
+
+    try {
+      const scenesToRewrite = _.filter(
+        _.map(storyboard, (s: any) => ({
+          id: s.id,
+          prompt: s.prompt || s.script || "",
+        })),
+        (s) => s.prompt,
+      );
+
+      if (_.isEmpty(scenesToRewrite)) {
+        return res.json({ success: true, storyboard });
       }
-      if (scene.prompt) {
-        const combinedPrompt = _.join(
-          _.filter(_.map(finalCharacters, (c: any) => c.prompt), Boolean),
-          ", "
+
+      const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_REWRITE_CHARACTER;
+      const chunks = _.chunk(scenesToRewrite, chunkSize);
+
+      const rewrittenMap = new Map<string, string>();
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkItem = chunks[i];
+        const backgroundDirective = visualConfig?.styleBackgroundMode
+          ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.styleBackgroundMode
+            ]
+          : undefined;
+        const textDirective = visualConfig?.styleTextInImageMode
+          ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+              visualConfig.styleTextInImageMode
+            ]
+          : undefined;
+        const focusDirective = visualConfig?.imageFocusMode
+          ? resolveImageFocusDirective(
+              visualConfig.imageFocusMode,
+              visualConfig.styleBackgroundMode,
+            )
+          : undefined;
+        const prompt = getCharacterRewriteBatchPrompt(
+          jsonUtils.safeStringify(finalCharacters),
+          jsonUtils.safeStringify(chunkItem),
+          aspectRatio || AspectRatio.SixteenNine,
+          backgroundDirective,
+          textDirective,
+          focusDirective,
         );
-        if (combinedPrompt) {
-          return {
-            ...scene,
-            prompt: scene.prompt,
-          };
+
+        try {
+          const response = await generateContentWithRetry({
+            contents: prompt,
+            config: { responseMimeType: "application/json" },
+          });
+          const parsed = safeParseJSON(response.text, []);
+          if (_.isArray(parsed)) {
+            for (const item of parsed) {
+              if (item.id && item.prompt) {
+                rewrittenMap.set(item.id, item.prompt);
+              }
+            }
+          }
+        } catch (err) {
+          logger.error(LogEvent.BATCH_CHARACTER_REWRITE_FAILED_CHUNK, err);
+        }
+
+        if (i < chunks.length - 1) {
+          await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
         }
       }
-      return scene;
-    });
 
-    res.json({ success: true, storyboard: updatedStoryboard });
-  } catch (error: any) {
-    logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
-  }
-});
+      const updatedStoryboard = _.map(storyboard, (scene: any) => {
+        const rewritten = rewrittenMap.get(scene.id);
+        if (rewritten) {
+          return { ...scene, prompt: rewritten };
+        }
+        if (scene.prompt) {
+          const combinedPrompt = _.join(
+            _.filter(
+              _.map(finalCharacters, (c: any) => c.prompt),
+              Boolean,
+            ),
+            ", ",
+          );
+          if (combinedPrompt) {
+            return {
+              ...scene,
+              prompt: scene.prompt,
+            };
+          }
+        }
+        return scene;
+      });
+
+      res.json({ success: true, storyboard: updatedStoryboard });
+    } catch (error: any) {
+      logger.error(LogEvent.REWRITE_PROMPTS_CHARACTER_ERROR, error);
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message, rotationLogs: error.rotationLogs });
+    }
+  },
+);
 
 router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
-  const { originalInput, config = {}, hookType, duration, count, language, bypassCache } = req.body;
+  const {
+    originalInput,
+    config = {},
+    hookType,
+    duration,
+    count,
+    language,
+    bypassCache,
+  } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_HOOKS, req.body, bypassCache);
   if (cached) {
@@ -766,7 +1166,8 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   }
 
   const multiStepLogs: string[] = [];
-  const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
+  const isVi =
+    language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
   const logStep = (msg: string) => {
     appLogStep(msg, multiStepLogs);
   };
@@ -774,7 +1175,14 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   try {
     logStep(getPipelineLog("HOOK_STEP1", isVi));
 
-    const combinedPrompt = getMultiStepHookPrompt(originalInput, config.genre, hookType, duration, language, count);
+    const combinedPrompt = getMultiStepHookPrompt(
+      originalInput,
+      config.genre,
+      hookType,
+      duration,
+      language,
+      count,
+    );
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedPrompt,
@@ -788,32 +1196,55 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
       versions: [],
     });
 
-    logStep(`${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`);
-    if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
+    logStep(
+      `${getPipelineLog("HOOK_STEP1_DONE", isVi)} ${combinedResult.audience || "General Audience"}. Triggers: ${(combinedResult.triggers || []).join(", ")}.`,
+    );
+    if (combinedResponse.rotationLogs)
+      multiStepLogs.push(...combinedResponse.rotationLogs);
 
     logStep(getPipelineLog("HOOK_STEP2", isVi));
-    logStep(`${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`);
+    logStep(
+      `${getPipelineLog("HOOK_STEP2_DONE", isVi)} ${(combinedResult.versions || []).length || 0} hooks.`,
+    );
 
     logStep(getPipelineLog("HOOK_STEP3", isVi));
     let versions = combinedResult.versions || [];
     if (_.isArray(versions)) {
-      versions = rankHookVersions(_.map(versions, (v: any, idx: number): HookVersion => ({
-        id: v.id || `hk_${idx + 1}`,
-        content: v.content || "",
-        type: v.type || hookType || "StyleName",
-        selected: idx === 0,
-        score: v.score,
-      })));
+      versions = rankHookVersions(
+        _.map(
+          versions,
+          (v: any, idx: number): HookVersion => ({
+            id: v.id || `hk_${idx + 1}`,
+            content: v.content || "",
+            type: v.type || hookType || "StyleName",
+            selected: idx === 0,
+            score: v.score,
+          }),
+        ),
+      );
     }
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
-    const output = { versions: resolveUsableHooks(versions, originalInput, language, hookType, count), rotationLogs: multiStepLogs };
+    const output = {
+      versions: resolveUsableHooks(
+        versions,
+        originalInput,
+        language,
+        hookType,
+        count,
+      ),
+      rotationLogs: multiStepLogs,
+    };
     setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
     res.json(output);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_HOOKS, error);
-    const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
-    const errorLogs = error.rotationLogs ? [...multiStepLogs, ...error.rotationLogs] : multiStepLogs;
+    const isVi =
+      language === ProjectLanguage.VI ||
+      config?.language === ProjectLanguage.VI;
+    const errorLogs = error.rotationLogs
+      ? [...multiStepLogs, ...error.rotationLogs]
+      : multiStepLogs;
     res.json({
       warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
       rotationLogs: errorLogs,
@@ -823,14 +1254,25 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
 });
 
 router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
-  const { originalInput, inputType = "idea", config = {}, selectedHookText, bypassCache } = req.body;
+  const {
+    originalInput,
+    inputType = "idea",
+    config = {},
+    selectedHookText,
+    bypassCache,
+  } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
 
-  if (!(await isAiProviderAvailable())) {const isVi=config.language===ProjectLanguage.VI;return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:getBackendMsg("GEMINI_NOT_INIT",isVi)})}
+  if (!(await isAiProviderAvailable())) {
+    const isVi = config.language === ProjectLanguage.VI;
+    return res
+      .status(HTTP_STATUS_CODES.BAD_REQUEST)
+      .json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
+  }
 
   let activeHookText = selectedHookText || "";
   let generatedHookVersions: any[] = [];
@@ -851,21 +1293,47 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let audienceGuideline = "";
 
     if (isVi) {
-      genreGuideline = VI_GENRE_GUIDELINES[config.genre] || PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Storytelling");
-      styleGuideline = VI_STYLE_GUIDELINES[config.writingStyle] || PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Default");
-      audienceGuideline = VI_AUDIENCE_GUIDELINES[config.audience] || PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "General");
+      genreGuideline =
+        VI_GENRE_GUIDELINES[config.genre] ||
+        PROMPT_CONTEXT.VI_GENRE_DEFAULT(config.genre || "Storytelling");
+      styleGuideline =
+        VI_STYLE_GUIDELINES[config.writingStyle] ||
+        PROMPT_CONTEXT.VI_STYLE_DEFAULT(config.writingStyle || "Default");
+      audienceGuideline =
+        VI_AUDIENCE_GUIDELINES[config.audience] ||
+        PROMPT_CONTEXT.VI_AUDIENCE_DEFAULT(config.audience || "General");
     } else {
-      genreGuideline = EN_GENRE_GUIDELINES[config.genre] || PROMPT_CONTEXT.EN_GENRE_DEFAULT(config.genre || "Storytelling");
-      styleGuideline = EN_STYLE_GUIDELINES[config.writingStyle] || PROMPT_CONTEXT.EN_STYLE_DEFAULT(config.writingStyle || "Default");
-      audienceGuideline = EN_AUDIENCE_GUIDELINES[config.audience] || PROMPT_CONTEXT.EN_AUDIENCE_DEFAULT(config.audience || "General");
+      genreGuideline =
+        EN_GENRE_GUIDELINES[config.genre] ||
+        PROMPT_CONTEXT.EN_GENRE_DEFAULT(config.genre || "Storytelling");
+      styleGuideline =
+        EN_STYLE_GUIDELINES[config.writingStyle] ||
+        PROMPT_CONTEXT.EN_STYLE_DEFAULT(config.writingStyle || "Default");
+      audienceGuideline =
+        EN_AUDIENCE_GUIDELINES[config.audience] ||
+        PROMPT_CONTEXT.EN_AUDIENCE_DEFAULT(config.audience || "General");
     }
 
     const multiStepLogs: string[] = [];
     const aiMetrics: any[] = [];
-    const safetyResponse=await generateContentWithRetry({contents:getContentSafetyPrompt(originalInput),config:{responseMimeType:CONTENT_TYPES.JSON,responseJsonSchema:CONTENT_SAFETY_RESPONSE_SCHEMA,maxOutputTokens:1024},task:{capability:AiTaskCapability.FactualReview}});
-    const contentSafety=normalizeContentSafety(safeParseJSON(safetyResponse.text,{}));
-    if(safetyResponse.aiMetadata)aiMetrics.push(safetyResponse.aiMetadata);
-    if(!contentSafety.allowed)throw new Error(_.join(contentSafety.blockingErrors,", ")||"Content safety review rejected this production.");
+    const safetyResponse = await generateContentWithRetry({
+      contents: getContentSafetyPrompt(originalInput),
+      config: {
+        responseMimeType: CONTENT_TYPES.JSON,
+        responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
+        maxOutputTokens: 1024,
+      },
+      task: { capability: AiTaskCapability.FactualReview },
+    });
+    const contentSafety = normalizeContentSafety(
+      safeParseJSON(safetyResponse.text, {}),
+    );
+    if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
+    if (!contentSafety.allowed)
+      throw new Error(
+        _.join(contentSafety.blockingErrors, ", ") ||
+          "Content safety review rejected this production.",
+      );
     const logStep = (msg: string) => {
       appLogStep(msg, multiStepLogs);
     };
@@ -876,35 +1344,61 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       try {
         const hookType = config.hookConfig.type || "Auto";
         const hookDuration = config.hookConfig.duration || 10;
-        const hookCount = _.clamp(_.toInteger(config.hookConfig.count) || REFACTOR_CONSTANTS.HOOK_COUNT, 1, 5);
-        const hookPrompt = getMultiStepHookPrompt(originalInput, config.genre || "Storytelling", hookType, hookDuration, isVi ? "vi" : "en", hookCount);
+        const hookCount = _.clamp(
+          _.toInteger(config.hookConfig.count) || REFACTOR_CONSTANTS.HOOK_COUNT,
+          1,
+          5,
+        );
+        const hookPrompt = getMultiStepHookPrompt(
+          originalInput,
+          config.genre || "Storytelling",
+          hookType,
+          hookDuration,
+          isVi ? "vi" : "en",
+          hookCount,
+        );
         const hookResponse = await generateContentWithRetry({
           contents: hookPrompt,
-          config: { responseMimeType: "application/json", responseJsonSchema: HOOK_RESPONSE_SCHEMA },
+          config: {
+            responseMimeType: "application/json",
+            responseJsonSchema: HOOK_RESPONSE_SCHEMA,
+          },
           task: { capability: AiTaskCapability.TextPlanning },
         });
         const hookResult = safeParseJSON(hookResponse.text, { versions: [] });
         assertResponseContract(hookResult, ResponseContractName.Hook);
         if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          generatedHookVersions = rankHookVersions(_.map(
-            _.take(hookResult.versions, hookCount),
-            (version: any, index: number): HookVersion => ({
-              id: version.id || `hk_${index + 1}`,
-              content: version.content || "",
-              type: version.type || hookType,
-              selected: false,
-              score: version.score,
-            }),
-          ));
+          generatedHookVersions = rankHookVersions(
+            _.map(
+              _.take(hookResult.versions, hookCount),
+              (version: any, index: number): HookVersion => ({
+                id: version.id || `hk_${index + 1}`,
+                content: version.content || "",
+                type: version.type || hookType,
+                selected: false,
+                score: version.score,
+              }),
+            ),
+          );
           const selectedHook = _.find(generatedHookVersions, "selected");
-          if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
+          if (!selectedHook)
+            throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
           activeHookText = selectedHook.content;
-          logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
+          logStep(
+            `${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`,
+          );
         }
       } catch (hookErr: any) {
-        logger.error(LogEvent.AUTO_HOOK_GENERATION_FAILED_FALLING_BACK, hookErr);
-        const fallbackHook = createSafeFallbackHook(originalInput, isVi ? ProjectLanguage.VI : ProjectLanguage.EN, config.hookConfig.type);
+        logger.error(
+          LogEvent.AUTO_HOOK_GENERATION_FAILED_FALLING_BACK,
+          hookErr,
+        );
+        const fallbackHook = createSafeFallbackHook(
+          originalInput,
+          isVi ? ProjectLanguage.VI : ProjectLanguage.EN,
+          config.hookConfig.type,
+        );
         generatedHookVersions = [fallbackHook];
         activeHookText = fallbackHook.content;
         logStep(`${getPipelineLog("HOOK_EMBEDDED", isVi)}"${activeHookText}"`);
@@ -913,15 +1407,21 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
 
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
-    const targetChapterCount = _.max([3, _.floor(targetWordCountMin / 100)]) || 3;
+    const targetChapterCount =
+      _.max([3, _.floor(targetWordCountMin / 100)]) || 3;
 
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
     const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${contentControlDirective}`;
 
     const groundedResearchResponse = config.factCheck
-      ? await generateContentWithRetry({contents:`Research this topic for a source-backed video essay. Return concise findings with source titles, direct URLs, publication dates, jurisdictions, disputed points, and safe scope. Never invent a citation. Topic: ${originalInput}`,config:{tools:[{googleSearch:{}}],maxOutputTokens:2048},task:{capability:AiTaskCapability.FactualReview}})
+      ? await generateContentWithRetry({
+          contents: `Research this topic for a source-backed video essay. Return concise findings with source titles, direct URLs, publication dates, jurisdictions, disputed points, and safe scope. Never invent a citation. Topic: ${originalInput}`,
+          config: { tools: [{ googleSearch: {} }], maxOutputTokens: 2048 },
+          task: { capability: AiTaskCapability.FactualReview },
+        })
       : null;
-    if(groundedResearchResponse?.aiMetadata)aiMetrics.push(groundedResearchResponse.aiMetadata);
+    if (groundedResearchResponse?.aiMetadata)
+      aiMetrics.push(groundedResearchResponse.aiMetadata);
     const combinedResponse = await generateContentWithRetry({
       contents: groundedResearchResponse
         ? `${combinedScriptPrompt}\n\n[Grounded research evidence]:\n${groundedResearchResponse.text}`
@@ -931,7 +1431,11 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
         maxOutputTokens: 2048,
       },
-      task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
+      task: {
+        capability: config.factCheck
+          ? AiTaskCapability.FactualReview
+          : AiTaskCapability.TextPlanning,
+      },
     });
 
     const scriptResult = safeParseJSON(combinedResponse.text, {
@@ -943,26 +1447,38 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     });
     assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
 
-    if (combinedResponse.aiMetadata) aiMetrics.push(combinedResponse.aiMetadata);
-    logStep(`${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`);
-    if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
+    if (combinedResponse.aiMetadata)
+      aiMetrics.push(combinedResponse.aiMetadata);
+    logStep(
+      `${getPipelineLog("SCRIPT_STEP1_DONE", isVi)} ${(scriptResult.preferredTerms || []).join(", ") || "None"}. Spec: ${scriptResult.characterSpecs || "No character reference needed."}`,
+    );
+    if (combinedResponse.rotationLogs)
+      multiStepLogs.push(...combinedResponse.rotationLogs);
 
     logStep(getPipelineLog("SCRIPT_STEP2A", isVi));
-    logStep(`${getPipelineLog("SCRIPT_STEP2A_DONE", isVi)} ${(scriptResult.chapters || []).length} chapters.`);
+    logStep(
+      `${getPipelineLog("SCRIPT_STEP2A_DONE", isVi)} ${(scriptResult.chapters || []).length} chapters.`,
+    );
 
     logStep(getPipelineLog("SCRIPT_STEP2B", isVi));
-    logStep(`${getPipelineLog("SCRIPT_STEP2B_DONE", isVi)} ${(scriptResult.chapters || []).length}.`);
+    logStep(
+      `${getPipelineLog("SCRIPT_STEP2B_DONE", isVi)} ${(scriptResult.chapters || []).length}.`,
+    );
 
     logStep(getPipelineLog("SCRIPT_STEP3", isVi));
     const completedChapters: any[] = [];
     let fullScript = activeHookText ? activeHookText + "\n\n" : "";
 
     const chapters = scriptResult.chapters || [];
-    const chapterWordTarget = _.ceil(targetWordCount / (_.max([1, chapters.length]) || 1));
+    const chapterWordTarget = _.ceil(
+      targetWordCount / (_.max([1, chapters.length]) || 1),
+    );
 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
-      logStep(`${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`);
+      logStep(
+        `${getPipelineLog("SCRIPT_STEP3_PROGRESS", isVi)} ${i + 1}/${chapters.length}: ${chapter.title}...`,
+      );
 
       const splitStrategy = config.splitStrategy || SplitStrategy.LONG_SENTENCE;
       const chapterPrompt = getChapterWriterPrompt(
@@ -974,7 +1490,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         genreGuideline,
         styleGuideline,
         chapterWordTarget,
-        splitStrategy
+        splitStrategy,
       );
 
       const chapterResponse = await generateContentWithRetry({
@@ -992,14 +1508,55 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       });
       assertResponseContract(chapterData, ResponseContractName.Chapter);
 
-      if (chapterResponse.aiMetadata) aiMetrics.push(chapterResponse.aiMetadata);
+      if (chapterResponse.aiMetadata)
+        aiMetrics.push(chapterResponse.aiMetadata);
       let cleanedSegment = chapterData.scriptSegment || "";
-      cleanedSegment = cleanedSegment.replace(MARKDOWN_REGEX, "").replace(EMOJI_REGEX, "");
-      const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
-      for (let expansionIndex = 0; expansionIndex < REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT && _.size(_.words(cleanedSegment)) < chapterMinimumWords; expansionIndex++) {
-        const currentWordCount = _.size(_.words(cleanedSegment));const expansionResponse = await generateContentWithRetry({ contents: getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi), config: { responseMimeType: "application/json", responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: AiTaskCapability.ScriptWriting } });
-        if (expansionResponse.rotationLogs) multiStepLogs.push(...expansionResponse.rotationLogs);if (expansionResponse.aiMetadata) aiMetrics.push(expansionResponse.aiMetadata);
-        const continuation = _.trim(_.toString(safeParseJSON(expansionResponse.text, {}).scriptSegment)).replace(MARKDOWN_REGEX, "").replace(EMOJI_REGEX, "");if (_.isEmpty(continuation)) break;cleanedSegment = _.trim(`${cleanedSegment} ${continuation}`);
+      cleanedSegment = cleanedSegment
+        .replace(MARKDOWN_REGEX, "")
+        .replace(EMOJI_REGEX, "");
+      const chapterMinimumWords = _.floor(
+        chapterWordTarget *
+          (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO),
+      );
+      const chapterMaximumWords = _.ceil(
+        chapterWordTarget *
+          (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO),
+      );
+      for (
+        let expansionIndex = 0;
+        expansionIndex <
+          REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT &&
+        _.size(_.words(cleanedSegment)) < chapterMinimumWords;
+        expansionIndex++
+      ) {
+        const currentWordCount = _.size(_.words(cleanedSegment));
+        const expansionResponse = await generateContentWithRetry({
+          contents: getChapterExpansionPrompt(
+            originalInput,
+            chapter.title,
+            cleanedSegment,
+            chapterMinimumWords - currentWordCount,
+            chapterMaximumWords - currentWordCount,
+            isVi,
+          ),
+          config: {
+            responseMimeType: "application/json",
+            responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
+            maxOutputTokens: 2048,
+          },
+          task: { capability: AiTaskCapability.ScriptWriting },
+        });
+        if (expansionResponse.rotationLogs)
+          multiStepLogs.push(...expansionResponse.rotationLogs);
+        if (expansionResponse.aiMetadata)
+          aiMetrics.push(expansionResponse.aiMetadata);
+        const continuation = _.trim(
+          _.toString(safeParseJSON(expansionResponse.text, {}).scriptSegment),
+        )
+          .replace(MARKDOWN_REGEX, "")
+          .replace(EMOJI_REGEX, "");
+        if (_.isEmpty(continuation)) break;
+        cleanedSegment = _.trim(`${cleanedSegment} ${continuation}`);
       }
 
       completedChapters.push({
@@ -1009,7 +1566,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       });
 
       fullScript += cleanedSegment + "\n\n";
-      if (chapterResponse.rotationLogs) multiStepLogs.push(...chapterResponse.rotationLogs);
+      if (chapterResponse.rotationLogs)
+        multiStepLogs.push(...chapterResponse.rotationLogs);
     }
 
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
@@ -1018,28 +1576,92 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let finalCleanScript = fullScript.trim();
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     const evaluateScript = async () => {
-      const response = await generateContentWithRetry({ contents: getScriptEditorQaPrompt(finalCleanScript, activeHookText, jsonUtils.safeStringify(scriptResult.creativeBrief || {}), jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }), targetDurationSeconds, isVi), config: { responseMimeType: "application/json", responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning } });
+      const response = await generateContentWithRetry({
+        contents: getScriptEditorQaPrompt(
+          finalCleanScript,
+          activeHookText,
+          jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
+          jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
+          targetDurationSeconds,
+          isVi,
+        ),
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA,
+          maxOutputTokens: 2048,
+        },
+        task: {
+          capability: config.factCheck
+            ? AiTaskCapability.FactualReview
+            : AiTaskCapability.TextPlanning,
+        },
+      });
       if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
       if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
-      return normalizeScriptQualityReport(safeParseJSON(response.text, {}), _.size(_.words(finalCleanScript)), targetDurationSeconds);
+      return normalizeScriptQualityReport(
+        safeParseJSON(response.text, {}),
+        _.size(_.words(finalCleanScript)),
+        targetDurationSeconds,
+      );
     };
     let scriptQa = await evaluateScript();
     const repairWordRange = getTargetWordRange(targetDurationSeconds);
-    for (let retryIndex = 0; retryIndex < REFACTOR_CONSTANTS.SCRIPT_QA_CORRECTIVE_RETRY_COUNT && !scriptQa.passed; retryIndex++) {
-      const repairResponse = await generateContentWithRetry({ contents: getScriptCorrectivePrompt(finalCleanScript, jsonUtils.safeStringify(scriptQa), targetDurationSeconds, repairWordRange.minimumWords, repairWordRange.maximumWords, isVi), config: { responseMimeType: "application/json", responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 8192 }, task: { capability: AiTaskCapability.ScriptWriting } });
-      if (repairResponse.rotationLogs) multiStepLogs.push(...repairResponse.rotationLogs);
+    for (
+      let retryIndex = 0;
+      retryIndex < REFACTOR_CONSTANTS.SCRIPT_QA_CORRECTIVE_RETRY_COUNT &&
+      !scriptQa.passed;
+      retryIndex++
+    ) {
+      const repairResponse = await generateContentWithRetry({
+        contents: getScriptCorrectivePrompt(
+          finalCleanScript,
+          jsonUtils.safeStringify(scriptQa),
+          targetDurationSeconds,
+          repairWordRange.minimumWords,
+          repairWordRange.maximumWords,
+          isVi,
+        ),
+        config: {
+          responseMimeType: "application/json",
+          responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
+          maxOutputTokens: 8192,
+        },
+        task: { capability: AiTaskCapability.ScriptWriting },
+      });
+      if (repairResponse.rotationLogs)
+        multiStepLogs.push(...repairResponse.rotationLogs);
       if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
-      const rawRepairedScript = _.trim(_.toString(safeParseJSON(repairResponse.text, {}).scriptSegment));
-      const repairedScript = !_.isEmpty(activeHookText) && !_.startsWith(_.toLower(rawRepairedScript), _.toLower(_.trim(activeHookText))) ? _.trim(`${activeHookText}\n\n${rawRepairedScript}`) : rawRepairedScript;
-      const repairValidation = validateScriptRepair(repairedScript, targetDurationSeconds, activeHookText);
-      if (!repairValidation.accepted) { appWarn(REFACTOR_CONSTANTS.LOG_SCRIPT_REPAIR_REJECTED, jsonUtils.safeStringify(repairValidation));continue; }
+      const rawRepairedScript = _.trim(
+        _.toString(safeParseJSON(repairResponse.text, {}).scriptSegment),
+      );
+      const repairedScript =
+        !_.isEmpty(activeHookText) &&
+        !_.startsWith(
+          _.toLower(rawRepairedScript),
+          _.toLower(_.trim(activeHookText)),
+        )
+          ? _.trim(`${activeHookText}\n\n${rawRepairedScript}`)
+          : rawRepairedScript;
+      const repairValidation = validateScriptRepair(
+        repairedScript,
+        targetDurationSeconds,
+        activeHookText,
+      );
+      if (!repairValidation.accepted) {
+        appWarn(
+          REFACTOR_CONSTANTS.LOG_SCRIPT_REPAIR_REJECTED,
+          jsonUtils.safeStringify(repairValidation),
+        );
+        continue;
+      }
       finalCleanScript = repairedScript;
       scriptQa = await evaluateScript();
     }
 
     const parsedData = {
       rewrittenScript: finalCleanScript,
-      factCheckNotes: scriptResult.factCheckNotes || "✓ Verified: Content is consistent.",
+      factCheckNotes:
+        scriptResult.factCheckNotes || "✓ Verified: Content is consistent.",
       creativeBrief: scriptResult.creativeBrief || {},
       factPack: scriptResult.factPack || { claims: [] },
       scriptQa,
@@ -1049,16 +1671,25 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       aiMetrics,
       contentSafety,
     };
-    if (scriptQa.passed) setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
+    if (scriptQa.passed)
+      setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({error:getGeminiUserMessage(error,isVi),retryable:classifyGeminiError(error).retryable});
+    res
+      .status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE)
+      .json({
+        error: getGeminiUserMessage(error, isVi),
+        retryable: classifyGeminiError(error).retryable,
+      });
   }
 });
 
-function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[] {
+function syncChaptersWithScript(
+  rewrittenScript: string,
+  chapters: any[],
+): any[] {
   if (!chapters || _.isEmpty(chapters)) return [];
 
   const syncedChapters = _.map(chapters, (c: any) => ({ ...c }));
@@ -1081,12 +1712,17 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
     }
   }
 
-  const allFound = _.every(segmentsFound, s => s.index !== -1);
+  const allFound = _.every(segmentsFound, (s) => s.index !== -1);
   if (allFound) {
     for (let i = 0; i < syncedChapters.length; i++) {
-      const start = (i === 0) ? 0 : segmentsFound[i].index;
-      const end = (i === syncedChapters.length - 1) ? rewrittenScript.length : segmentsFound[i + 1].index;
-      syncedChapters[i].scriptSegment = rewrittenScript.substring(start, end).trim();
+      const start = i === 0 ? 0 : segmentsFound[i].index;
+      const end =
+        i === syncedChapters.length - 1
+          ? rewrittenScript.length
+          : segmentsFound[i + 1].index;
+      syncedChapters[i].scriptSegment = rewrittenScript
+        .substring(start, end)
+        .trim();
     }
     return syncedChapters;
   }
@@ -1095,8 +1731,12 @@ function syncChaptersWithScript(rewrittenScript: string, chapters: any[]): any[]
   const totalSentences = sentences.length;
   if (totalSentences === 0) return syncedChapters;
 
-  const originalLengths = _.map(chapters, (c: any) => (c.scriptSegment || "").length);
-  const totalOriginalLength = _.reduce(originalLengths, (a: number, b: number) => a + b, 0) || 1;
+  const originalLengths = _.map(
+    chapters,
+    (c: any) => (c.scriptSegment || "").length,
+  );
+  const totalOriginalLength =
+    _.reduce(originalLengths, (a: number, b: number) => a + b, 0) || 1;
 
   let sentenceCursor = 0;
   for (let i = 0; i < syncedChapters.length; i++) {
@@ -1124,18 +1764,26 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
   for (let i = 0; i < scenes.length; i++) {
     const currentPrompt = scenes[i].prompt?.trim();
     if (currentPrompt) {
-      const normCurrent = currentPrompt.toLowerCase().replace(ALPHANUMERIC_ONLY_REGEX, "");
+      const normCurrent = currentPrompt
+        .toLowerCase()
+        .replace(ALPHANUMERIC_ONLY_REGEX, "");
       const occurrenceCount = promptOccurrences.get(normCurrent) || 0;
       promptOccurrences.set(normCurrent, occurrenceCount + 1);
       if (occurrenceCount > 0) {
         const selectedAngle = cameraAngles[i % cameraAngles.length];
-        const duplicateDirective = getDuplicateScenePromptDirective(scenes[i].script || scenes[i].subtitle || "", selectedAngle);
+        const duplicateDirective = getDuplicateScenePromptDirective(
+          scenes[i].script || scenes[i].subtitle || "",
+          selectedAngle,
+        );
         const borderlessKeyword = BORDERLESS_KEYWORD;
         const lowerPrompt = currentPrompt.toLowerCase();
 
         if (_.includes(lowerPrompt, borderlessKeyword)) {
           const index = lowerPrompt.lastIndexOf(borderlessKeyword);
-          const basePart = currentPrompt.substring(0, index).trim().replace(/,+$/, "");
+          const basePart = currentPrompt
+            .substring(0, index)
+            .trim()
+            .replace(/,+$/, "");
           const endPart = currentPrompt.substring(index);
           scenes[i].prompt = `${basePart}, ${duplicateDirective}, ${endPart}`;
         } else {
@@ -1148,13 +1796,39 @@ function diversifyDuplicatePrompts(scenes: any[]): any[] {
 }
 
 router.post("/detailed-prompt", async (req: Request, res: Response) => {
-  const { sceneScript, setting, time, character, costume, camera, style, aspectRatio, characterPrompt, referencePrompt, currentPrompt } = req.body;
+  const {
+    sceneScript,
+    setting,
+    time,
+    character,
+    costume,
+    camera,
+    style,
+    aspectRatio,
+    characterPrompt,
+    referencePrompt,
+    currentPrompt,
+  } = req.body;
   if (!sceneScript) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
+    return res
+      .status(HTTP_STATUS_CODES.BAD_REQUEST)
+      .json({ error: ErrorMessage.MISSING_SCENE_SCRIPT });
   }
 
   try {
-    const prompt = getDetailedPromptBuilderPrompt(sceneScript, setting, time, character, costume, camera, style, aspectRatio || AspectRatio.SixteenNine, characterPrompt, referencePrompt, currentPrompt);
+    const prompt = getDetailedPromptBuilderPrompt(
+      sceneScript,
+      setting,
+      time,
+      character,
+      costume,
+      camera,
+      style,
+      aspectRatio || AspectRatio.SixteenNine,
+      characterPrompt,
+      referencePrompt,
+      currentPrompt,
+    );
 
     const response = await generateContentWithRetry({
       contents: prompt,
@@ -1164,106 +1838,165 @@ router.post("/detailed-prompt", async (req: Request, res: Response) => {
     res.json({ success: true, prompt: detailedPrompt });
   } catch (error: any) {
     logger.error(LogEvent.DETAILED_PROMPT_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 
-router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response) => {
-  const scenes = _.get(req.body, REFACTOR_CONSTANTS.AVG_STORYBOARD_KEY, []);
-  const requestedMax = _.toInteger(_.get(
-    req.body,
-    REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY,
-    SecurityConstants.DEFAULT_AMOUNT,
-  ));
-  const maxVideos = _.clamp(
-    requestedMax,
-    SecurityConstants.DEFAULT_AMOUNT,
-    _.max([_.size(scenes), SecurityConstants.DEFAULT_AMOUNT])!,
-  );
-
-  if (!_.isArray(scenes) || _.isEmpty(scenes)) {
-    return res.json({ videoSceneIds: [] });
-  }
-
-  try {
-    const response = await generateContentWithRetry({
-      contents: getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos),
-      config: { responseMimeType: CONTENT_TYPES.JSON },
-    });
-    const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
-    const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
-    const videoSceneIds = _.take(
-      _.uniq(_.filter(
-        _.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, []),
-        (sceneId) => _.includes(validSceneIds, sceneId),
-      )),
-      maxVideos,
+router.post(
+  ROUTER_PATHS.SELECT_VIDEO_SCENES,
+  async (req: Request, res: Response) => {
+    const scenes = _.get(req.body, REFACTOR_CONSTANTS.AVG_STORYBOARD_KEY, []);
+    const requestedMax = _.toInteger(
+      _.get(
+        req.body,
+        REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY,
+        SecurityConstants.DEFAULT_AMOUNT,
+      ),
     );
-    return res.json({ videoSceneIds });
-  } catch (error: any) {
-    logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
-    return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
-  }
-});
+    const maxVideos = _.clamp(
+      requestedMax,
+      SecurityConstants.DEFAULT_AMOUNT,
+      _.max([_.size(scenes), SecurityConstants.DEFAULT_AMOUNT])!,
+    );
 
-router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Response) => {
-  const assetUrl = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY));
-  const sceneId = _.toString(_.get(req.body, "sceneId", REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID));
-  const sceneScript = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY));
-  const imagePrompt = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY));
-  const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
-
-  if (_.isEmpty(assetUrl)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
-  }
-
-  try {
-    let mimeType: MimeType = MimeType.JPEG;
-    let imageBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-    const dataUrlMatch = assetUrl.match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);
-
-    if (dataUrlMatch) {
-      mimeType = dataUrlMatch[1] as MimeType;
-      imageBase64 = dataUrlMatch[2];
-    } else {
-      const relativeAssetPath = _.trimStart(_.first(_.split(assetUrl, "?")) || assetUrl, "/\\");
-      const dataRoot = path.resolve(getDataDirectory());
-      const assetPath = path.resolve(dataRoot, relativeAssetPath);
-      const normalizedRoot = _.toLower(_.join([dataRoot, path.sep], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-      const isInsideDataRoot = _.startsWith(_.toLower(assetPath), normalizedRoot);
-
-      if (!isInsideDataRoot || !fs.existsSync(assetPath)) {
-        return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
-      }
-
-      mimeType = _.isEqual(_.toLower(path.extname(assetPath)), ".png") ? MimeType.PNG : MimeType.JPEG;
-      imageBase64 = fs.readFileSync(assetPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+    if (!_.isArray(scenes) || _.isEmpty(scenes)) {
+      return res.json({ videoSceneIds: [] });
     }
 
-    const response = await generateContentWithRetry({
-      contents: [{
-        role: "user",
-        parts: [
-          { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount) },
-          { inlineData: { mimeType, data: imageBase64 } },
+    try {
+      const response = await generateContentWithRetry({
+        contents: getVideoSceneSelectionPrompt(
+          jsonUtils.safeStringify(scenes),
+          maxVideos,
+        ),
+        config: { responseMimeType: CONTENT_TYPES.JSON },
+      });
+      const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
+      const validSceneIds = _.map(scenes, REFACTOR_CONSTANTS.AVG_ID_KEY);
+      const videoSceneIds = _.take(
+        _.uniq(
+          _.filter(
+            _.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, []),
+            (sceneId) => _.includes(validSceneIds, sceneId),
+          ),
+        ),
+        maxVideos,
+      );
+      return res.json({ videoSceneIds });
+    } catch (error: any) {
+      logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
+      return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
+    }
+  },
+);
+
+router.post(
+  ROUTER_PATHS.VALIDATE_SCENE_IMAGE,
+  async (req: Request, res: Response) => {
+    const assetUrl = _.toString(
+      _.get(req.body, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY),
+    );
+    const sceneId = _.toString(
+      _.get(req.body, "sceneId", REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID),
+    );
+    const sceneScript = _.toString(
+      _.get(req.body, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+    );
+    const imagePrompt = _.toString(
+      _.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY),
+    );
+    const expectedSubjectCount =
+      _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
+    const referenceAssetUrl = _.toString(_.get(req.body, "referenceAssetUrl"));
+    const referenceAssetUrls = _.take(
+      _.filter(
+        _.castArray(_.get(req.body, "referenceAssetUrls", [])),
+        _.isString,
+      ),
+      SCENE_REFERENCE_CONFIG.MAX_IMAGES,
+    );
+
+    if (_.isEmpty(assetUrl)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
+    }
+
+    try {
+      const encodedImage = readEncodedProjectImage(assetUrl);
+      if (!encodedImage) {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
+      }
+      const parts: any[] = [
+        {
+          text: getSceneImageQualityPrompt(
+            sceneId,
+            sceneScript,
+            imagePrompt,
+            expectedSubjectCount,
+          ),
+        },
+        { inlineData: encodedImage },
+      ];
+      const qualityReferences = _.take(
+        _.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])),
+        SCENE_REFERENCE_CONFIG.MAX_IMAGES,
+      );
+      for (const qualityReference of qualityReferences) {
+        const encodedReference = readEncodedProjectImage(qualityReference);
+        if (encodedReference) {
+          parts.push({ text: SCENE_QA_REFERENCE_DIRECTIVE });
+          parts.push({ inlineData: encodedReference });
+        }
+      }
+
+      const response = await generateContentWithRetry({
+        contents: [
+          {
+            role: "user",
+            parts,
+          },
         ],
-      }],
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA },
-      task: { capability: AiTaskCapability.VisualQa },
-    });
-    const quality = safeParseJSON(response.text, {});
-    return res.json({ success: true, quality, rotationLogs: response.rotationLogs });
-  } catch (error: any) {
-    logger.error(LogEvent.VISUAL_QA_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message,
-      rotationLogs: error.rotationLogs,
-    });
-  }
-});
+        config: {
+          responseMimeType: CONTENT_TYPES.JSON,
+          responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA,
+        },
+        task: { capability: AiTaskCapability.VisualQa },
+      });
+      const quality = safeParseJSON(response.text, {});
+      return res.json({
+        success: true,
+        quality,
+        rotationLogs: response.rotationLogs,
+      });
+    } catch (error: any) {
+      logger.error(LogEvent.VISUAL_QA_ERROR, error);
+      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        error: error.message,
+        rotationLogs: error.rotationLogs,
+      });
+    }
+  },
+);
 
 router.post("/storyboard", async (req: Request, res: Response) => {
-  const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, visualDensity, bypassCache, voiceDuration } = req.body;
+  const {
+    rewrittenScript,
+    chapters,
+    config = {},
+    visualStyle,
+    referenceStyle,
+    referenceCharacter,
+    referenceCharacters,
+    referenceImages,
+    visualDensity,
+    bypassCache,
+    voiceDuration,
+  } = req.body;
 
   let syncedChapters = chapters;
   if (chapters && chapters.length > 0 && rewrittenScript) {
@@ -1285,35 +2018,77 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
-    const wordCount = _.filter((rewrittenScript || "").split(/\s+/), Boolean).length;
+    const wordCount = _.filter(
+      (rewrittenScript || "").split(/\s+/),
+      Boolean,
+    ).length;
     const speed = config?.speed || 1.0;
     chosenDuration = Math.round(wordCount / 2.5 / speed);
     if (chosenDuration < 10) chosenDuration = 10;
   }
 
   let activeStyle = referenceStyle || "";
-  if (!activeStyle && visualStyle && stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords]) {
-    activeStyle = stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords];
+  if (
+    !activeStyle &&
+    visualStyle &&
+    stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords]
+  ) {
+    activeStyle =
+      stylePresetsKeywords[visualStyle as keyof typeof stylePresetsKeywords];
   }
 
-  const cached = checkCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, bypassCache);
+  const cached = checkCache(
+    API_ROUTES.PIPELINE_STORYBOARD,
+    req.body,
+    bypassCache,
+  );
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
 
   if (!(await isAiProviderAvailable())) {
-    return res.json(generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine));
+    return res.json(
+      generateMockStoryboard(
+        rewrittenScript,
+        syncedChapters,
+        isVi,
+        activeStyle || visualStyle,
+        density,
+        chosenDuration,
+        splitStrategy,
+        config?.aspectRatio || AspectRatio.SixteenNine,
+      ),
+    );
   }
 
   try {
     let mappedDensity: SceneDensity = SceneDensity.CAU_DAI;
-    if (_.includes([SplitStrategy.WORD, SplitStrategy.ULTRADENSE], splitStrategy as SplitStrategy)) {
+    if (
+      _.includes(
+        [SplitStrategy.WORD, SplitStrategy.ULTRADENSE],
+        splitStrategy as SplitStrategy,
+      )
+    ) {
       mappedDensity = SceneDensity.THEO_TU;
-    } else if (_.includes([SplitStrategy.SHORT_SENTENCE, SplitStrategy.HYPERDENSE, SplitStrategy.HIGHPACED], splitStrategy as SplitStrategy)) {
+    } else if (
+      _.includes(
+        [
+          SplitStrategy.SHORT_SENTENCE,
+          SplitStrategy.HYPERDENSE,
+          SplitStrategy.HIGHPACED,
+        ],
+        splitStrategy as SplitStrategy,
+      )
+    ) {
       mappedDensity = SceneDensity.CAU_NGAN;
     } else if (splitStrategy === SplitStrategy.MIXED_SENTENCES) {
       mappedDensity = SceneDensity.CAU_KET_HOP;
-    } else if (_.includes([SplitStrategy.SENTENCE, SplitStrategy.LONG_SENTENCE], splitStrategy as SplitStrategy)) {
+    } else if (
+      _.includes(
+        [SplitStrategy.SENTENCE, SplitStrategy.LONG_SENTENCE],
+        splitStrategy as SplitStrategy,
+      )
+    ) {
       mappedDensity = SceneDensity.CAU_DAI;
     } else {
       mappedDensity = SceneDensity.THEO_DOAN;
@@ -1330,12 +2105,22 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     const logStoryboardStep = (msg: string) => storyboardLogger.log(msg);
 
     logStoryboardStep(getPipelineLog("STORY_STEP1", isVi));
-    const visualBiblePrompt = getGlobalVisualBiblePrompt(rewrittenScript, genre, visualStyle, activeStyle, characterRef);
+    const visualBiblePrompt = getGlobalVisualBiblePrompt(
+      rewrittenScript,
+      genre,
+      visualStyle,
+      activeStyle,
+      characterRef,
+    );
 
     const bibleParts: any[] = [];
-    if (referenceImages && _.isArray(referenceImages) && (!_.isEmpty(referenceImages))) {
+    if (
+      referenceImages &&
+      _.isArray(referenceImages) &&
+      !_.isEmpty(referenceImages)
+    ) {
       for (const imgBase64 of referenceImages.slice(0, 3)) {
-        const { data, mimeType } = await parseBase64Image(imgBase64);
+        const { data, mimeType } = await readStyleReferenceImage(imgBase64);
         bibleParts.push({
           inlineData: {
             data,
@@ -1346,7 +2131,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     bibleParts.push({
-      text: visualBiblePrompt + (referenceImages && (!_.isEmpty(referenceImages)) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
+      text:
+        visualBiblePrompt +
+        (referenceImages && !_.isEmpty(referenceImages)
+          ? VISUAL_BIBLE_REFERENCE_PROMPT
+          : ""),
     });
 
     const bibleResponse = await generateContentWithRetry({
@@ -1359,10 +2148,15 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       landscapeSpecs: "",
       lightingMood: "",
     });
-    logStoryboardStep(`${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`);
-    if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
+    logStoryboardStep(
+      `${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`,
+    );
+    if (bibleResponse.rotationLogs)
+      storyboardLogs.push(...bibleResponse.rotationLogs);
 
-    logStoryboardStep(`${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`);
+    logStoryboardStep(
+      `${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`,
+    );
     let allScenes: any[] = [];
 
     try {
@@ -1372,7 +2166,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         rewrittenScript,
         jsonUtils.safeStringify(syncedChapters),
         splitStrategy,
-        isVi
+        isVi,
       );
 
       const splitResponse = await generateContentWithRetry({
@@ -1388,9 +2182,15 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         storyboardLogs.push(...splitResponse.rotationLogs);
       }
 
-      if (!_.isArray(splitScenes) || _.isEmpty(splitScenes) || !_.every(splitScenes, (s: any) => s.script)) {
+      if (
+        !_.isArray(splitScenes) ||
+        _.isEmpty(splitScenes) ||
+        !_.every(splitScenes, (s: any) => s.script)
+      ) {
         appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
-        logStoryboardStep(getBilingualMessage("STORYBOARD_GEMINI_SPLIT_FALLBACK"));
+        logStoryboardStep(
+          getBilingualMessage("STORYBOARD_GEMINI_SPLIT_FALLBACK"),
+        );
         const fallbackRes = generateMockStoryboard(
           rewrittenScript,
           syncedChapters,
@@ -1399,7 +2199,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           density,
           chosenDuration,
           splitStrategy,
-          config?.aspectRatio || AspectRatio.SixteenNine
+          config?.aspectRatio || AspectRatio.SixteenNine,
         );
         splitScenes = fallbackRes.scenes || [];
       } else {
@@ -1411,7 +2211,12 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         }));
       }
 
-      logStoryboardStep(getBilingualMessage("STORYBOARD_GENERATING_DETAILS_BATCH", splitScenes.length));
+      logStoryboardStep(
+        getBilingualMessage(
+          "STORYBOARD_GENERATING_DETAILS_BATCH",
+          splitScenes.length,
+        ),
+      );
 
       const batchSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
       const chunks = _.chunk(splitScenes, batchSize);
@@ -1419,13 +2224,23 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
       for (let i = 0; i < chunks.length; i++) {
         const chunkScenes = chunks[i];
-        logStoryboardStep(getBilingualMessage("STORYBOARD_PROCESSING_BATCH", i + 1, chunks.length));
+        logStoryboardStep(
+          getBilingualMessage(
+            "STORYBOARD_PROCESSING_BATCH",
+            i + 1,
+            chunks.length,
+          ),
+        );
 
-        const minimalScenesJson = jsonUtils.safeStringify(_.map(chunkScenes, (s: any) => ({
-          id: s.id,
-          script: s.script,
-          subtitle: s.subtitle
-        })), null, 2);
+        const minimalScenesJson = jsonUtils.safeStringify(
+          _.map(chunkScenes, (s: any) => ({
+            id: s.id,
+            script: s.script,
+            subtitle: s.subtitle,
+          })),
+          null,
+          2,
+        );
 
         const batchPrompt = getSceneDetailBatchPrompt(
           minimalScenesJson,
@@ -1438,9 +2253,22 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           genre,
           genreVisualGuideline,
           config?.aspectRatio || AspectRatio.SixteenNine,
-          config?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[config.styleBackgroundMode] : undefined,
-          config?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[config.styleTextInImageMode] : undefined,
-          config?.imageFocusMode ? resolveImageFocusDirective(config.imageFocusMode, config.styleBackgroundMode) : undefined,
+          config?.styleBackgroundMode
+            ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[
+                config.styleBackgroundMode
+              ]
+            : undefined,
+          config?.styleTextInImageMode
+            ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[
+                config.styleTextInImageMode
+              ]
+            : undefined,
+          config?.imageFocusMode
+            ? resolveImageFocusDirective(
+                config.imageFocusMode,
+                config.styleBackgroundMode,
+              )
+            : undefined,
         );
 
         try {
@@ -1478,14 +2306,16 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         const details = detailedScenesMap.get(scene.id) || {};
         return {
           ...scene,
-          prompt: details.prompt || `${DEFAULT_SCENE_PROMPT_PREFIX}${scene.script}. --ar ${config?.aspectRatio || AspectRatio.SixteenNine}`,
+          prompt:
+            details.prompt ||
+            `${DEFAULT_SCENE_PROMPT_PREFIX}${scene.script}. --ar ${config?.aspectRatio || AspectRatio.SixteenNine}`,
           cameraMotion: details.cameraMotion || DEFAULT_SCENE_CAMERA_MOTION,
           effects: details.effects || DEFAULT_SCENE_EFFECTS,
-          lightingEffect: details.lightingEffect || DEFAULT_SCENE_LIGHTING_EFFECT,
+          lightingEffect:
+            details.lightingEffect || DEFAULT_SCENE_LIGHTING_EFFECT,
           transition: details.transition || DEFAULT_SCENE_TRANSITION,
         };
       });
-
     } catch (e: any) {
       logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_CHUNKING, e);
       if (e.rotationLogs) storyboardLogs.push(...e.rotationLogs);
@@ -1494,30 +2324,57 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     logStoryboardStep(getPipelineLog("STORY_STEP3", isVi));
     if (allScenes.length > 0) {
       try {
-        logStoryboardStep(`${getPipelineLog("STORY_REFINE_SUCCESS", isVi)} ${allScenes.length} prompts.`);
+        logStoryboardStep(
+          `${getPipelineLog("STORY_REFINE_SUCCESS", isVi)} ${allScenes.length} prompts.`,
+        );
       } catch (refineErr: any) {
-        logStoryboardStep(`${getPipelineLog("STORY_REFINE_ERROR", isVi)} ${refineErr.message}.`);
+        logStoryboardStep(
+          `${getPipelineLog("STORY_REFINE_ERROR", isVi)} ${refineErr.message}.`,
+        );
       }
     }
 
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
-    let data: any = { scenes: allScenes, visualBible, rotationLogs: storyboardLogs };
+    let data: any = {
+      scenes: allScenes,
+      visualBible,
+      rotationLogs: storyboardLogs,
+    };
 
     if (!data || !data.scenes || _.isEmpty(data.scenes)) {
       appWarn("STORYBOARD_GEMINI_SPLIT_FALLBACK");
       const oldLogs = data?.rotationLogs;
-      data = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+      data = generateMockStoryboard(
+        rewrittenScript,
+        syncedChapters,
+        isVi,
+        activeStyle || visualStyle,
+        density,
+        chosenDuration,
+        splitStrategy,
+        config?.aspectRatio || AspectRatio.SixteenNine,
+      );
       if (oldLogs) data.rotationLogs = oldLogs;
     }
 
     if (data?.scenes?.length) {
-      data.scenes = assignStoryboardChapterIds(diversifyDuplicatePrompts(data.scenes), syncedChapters);
+      data.scenes = assignStoryboardChapterIds(
+        diversifyDuplicatePrompts(data.scenes),
+        syncedChapters,
+      );
     }
 
     if (chosenDuration && data.scenes && data.scenes.length > 0) {
       const scenes = data.scenes;
-      const wordCounts = _.map(scenes, (s: any) => _.filter((s.script || "").split(/\s+/), Boolean).length);
-      const totalWords = _.reduce(wordCounts, (a: number, b: number) => a + b, 0);
+      const wordCounts = _.map(
+        scenes,
+        (s: any) => _.filter((s.script || "").split(/\s+/), Boolean).length,
+      );
+      const totalWords = _.reduce(
+        wordCounts,
+        (a: number, b: number) => a + b,
+        0,
+      );
 
       let currentSecs = 0;
       for (let i = 0; i < scenes.length; i++) {
@@ -1542,23 +2399,47 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     const directorQaResponse = await generateContentWithRetry({
-      contents: getStoryboardDirectorQaPrompt(jsonUtils.safeStringify(data.scenes), jsonUtils.safeStringify(visualBible)),
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: STORYBOARD_QA_RESPONSE_SCHEMA, maxOutputTokens: 1024 },
+      contents: getStoryboardDirectorQaPrompt(
+        jsonUtils.safeStringify(data.scenes),
+        jsonUtils.safeStringify(visualBible),
+      ),
+      config: {
+        responseMimeType: CONTENT_TYPES.JSON,
+        responseJsonSchema: STORYBOARD_QA_RESPONSE_SCHEMA,
+        maxOutputTokens: 1024,
+      },
       task: { capability: AiTaskCapability.VisualQa },
     });
-    data.storyboardQa = normalizeStoryboardQuality(safeParseJSON(directorQaResponse.text, {}));
-    if (directorQaResponse.rotationLogs) data.rotationLogs.push(...directorQaResponse.rotationLogs);
+    data.storyboardQa = normalizeStoryboardQuality(
+      safeParseJSON(directorQaResponse.text, {}),
+    );
+    if (directorQaResponse.rotationLogs)
+      data.rotationLogs.push(...directorQaResponse.rotationLogs);
 
     setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
 
-    const fallbackData: any = generateMockStoryboard(rewrittenScript, syncedChapters, isVi, activeStyle || visualStyle, density, chosenDuration, splitStrategy, config?.aspectRatio || AspectRatio.SixteenNine);
+    const fallbackData: any = generateMockStoryboard(
+      rewrittenScript,
+      syncedChapters,
+      isVi,
+      activeStyle || visualStyle,
+      density,
+      chosenDuration,
+      splitStrategy,
+      config?.aspectRatio || AspectRatio.SixteenNine,
+    );
     if (fallbackData?.scenes?.length) {
-      fallbackData.scenes = assignStoryboardChapterIds(diversifyDuplicatePrompts(fallbackData.scenes), syncedChapters);
+      fallbackData.scenes = assignStoryboardChapterIds(
+        diversifyDuplicatePrompts(fallbackData.scenes),
+        syncedChapters,
+      );
     }
-    fallbackData.storyboardQa = evaluateFallbackStoryboardQuality(fallbackData?.scenes || []);
+    fallbackData.storyboardQa = evaluateFallbackStoryboardQuality(
+      fallbackData?.scenes || [],
+    );
     if (error.rotationLogs) {
       fallbackData.rotationLogs = error.rotationLogs;
     }
@@ -1567,7 +2448,12 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 });
 
 router.post("/seo", async (req: Request, res: Response) => {
-  const { config = {}, seoConfig = {}, rewrittenScript, bypassCache } = req.body;
+  const {
+    config = {},
+    seoConfig = {},
+    rewrittenScript,
+    bypassCache,
+  } = req.body;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SEO, req.body, bypassCache);
   if (cached) {
@@ -1594,7 +2480,14 @@ router.post("/seo", async (req: Request, res: Response) => {
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
-    const combinedSeoPrompt = getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags);
+    const combinedSeoPrompt = getSeoOptimizationPrompt(
+      rewrittenScript,
+      isVi,
+      numTitles,
+      numDescriptions,
+      numHashtags,
+      numTags,
+    );
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,
@@ -1609,8 +2502,11 @@ router.post("/seo", async (req: Request, res: Response) => {
       tags: [],
     });
 
-    logSeoStep(`${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`);
-    if (combinedResponse.rotationLogs) seoLogs.push(...combinedResponse.rotationLogs);
+    logSeoStep(
+      `${PIPELINE_LOGS.SEO_STEP1_DONE} ${(seoResult.keywords || []).join(", ") || "None"}`,
+    );
+    if (combinedResponse.rotationLogs)
+      seoLogs.push(...combinedResponse.rotationLogs);
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP2);
     logSeoStep(PIPELINE_LOGS.SEO_STEP2_DONE);
@@ -1621,7 +2517,9 @@ router.post("/seo", async (req: Request, res: Response) => {
     const parsedData = {
       titles: seoResult.titles || [],
       descriptions: seoResult.descriptions || [],
-      hashtags: _.map(seoResult.hashtags || [], (tag: string) => tag.replace(/^#+/, "")),
+      hashtags: _.map(seoResult.hashtags || [], (tag: string) =>
+        tag.replace(/^#+/, ""),
+      ),
       tags: seoResult.tags || [],
       rotationLogs: seoLogs,
     };
@@ -1639,23 +2537,47 @@ router.post("/seo", async (req: Request, res: Response) => {
 });
 
 router.post("/thumbnails", async (req: Request, res: Response) => {
-  const { rewrittenScript, config = {}, visualConfig = {}, bypassCache } = req.body;
+  const {
+    rewrittenScript,
+    config = {},
+    visualConfig = {},
+    bypassCache,
+  } = req.body;
 
-  const cached = checkCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, bypassCache);
+  const cached = checkCache(
+    API_ROUTES.PIPELINE_THUMBNAILS,
+    req.body,
+    bypassCache,
+  );
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
 
-  const thumbnailCount = visualConfig.thumbnailCount || 2;
-  const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
+  const thumbnailCount =
+    _.toInteger(visualConfig.thumbnailCount) ||
+    THUMBNAIL_PROMPT_CONFIG.DEFAULT_COUNT;
+  const refImageStr =
+    visualConfig.thumbnailReferencePrompt ||
+    visualConfig.thumbnailReferenceImage
+      ? THUMBNAIL_REFERENCE_PROMPT(
+          visualConfig.thumbnailReferencePrompt ||
+            visualConfig.thumbnailReferenceImage,
+        )
+      : "";
 
   if (!(await isAiProviderAvailable())) {
-    const dummyThumbs = getDummyThumbs(config.language === ProjectLanguage.VI, false);
+    const dummyThumbs = getDummyThumbs(
+      config.language === ProjectLanguage.VI,
+      false,
+      rewrittenScript,
+    );
     return res.json({
-      thumbnails: Array.from({ length: thumbnailCount }).map((_, i) => ({
-        ...dummyThumbs[i % dummyThumbs.length],
-        id: `th_${i}`,
-      })),
+      thumbnails: normalizeThumbnailIdeas(
+        [],
+        dummyThumbs,
+        thumbnailCount,
+        visualConfig.thumbnailTextInImageMode,
+      ),
     });
   }
 
@@ -1668,12 +2590,26 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP1);
 
-    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(rewrittenScript, thumbnailCount, refImageStr, isVi, visualConfig.aspectRatio || "16:9");
+    const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(
+      rewrittenScript,
+      thumbnailCount,
+      refImageStr,
+      isVi,
+      visualConfig.aspectRatio || "16:9",
+      visualConfig.thumbnailTextInImageMode,
+    );
 
     const thumbParts: any[] = [];
-    if (visualConfig.thumbnailReferenceImages && _.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
-      for (const imgBase64 of visualConfig.thumbnailReferenceImages.slice(0, 3)) {
-        const { data, mimeType } = await parseBase64Image(imgBase64);
+    if (
+      visualConfig.thumbnailReferenceImages &&
+      _.isArray(visualConfig.thumbnailReferenceImages) &&
+      visualConfig.thumbnailReferenceImages.length > 0
+    ) {
+      for (const imgBase64 of visualConfig.thumbnailReferenceImages.slice(
+        0,
+        3,
+      )) {
+        const { data, mimeType } = await readStyleReferenceImage(imgBase64);
         thumbParts.push({
           inlineData: {
             data,
@@ -1686,7 +2622,10 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     thumbParts.push({
       text:
         combinedThumbnailsPrompt +
-        (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : ""),
+        (visualConfig.thumbnailReferenceImages &&
+        visualConfig.thumbnailReferenceImages.length > 0
+          ? THUMBNAIL_IMAGE_REFERENCE_PROMPT
+          : ""),
     });
 
     const combinedResponse = await generateContentWithRetry({
@@ -1699,17 +2638,28 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       thumbnails: [],
     });
 
-    logThumbStep(`${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`);
-    if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
+    logThumbStep(
+      `${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`,
+    );
+    if (combinedResponse.rotationLogs)
+      thumbLogs.push(...combinedResponse.rotationLogs);
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP2);
-    logThumbStep(`${PIPELINE_LOGS.THUMB_STEP2_DONE} ${(thumbsResult.thumbnails || []).length || 0} thumbnails.`);
+    logThumbStep(
+      `${PIPELINE_LOGS.THUMB_STEP2_DONE} ${(thumbsResult.thumbnails || []).length || 0} thumbnails.`,
+    );
 
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
 
+    const normalizedThumbnails = normalizeThumbnailIdeas(
+      _.castArray(thumbsResult.thumbnails || []),
+      getDummyThumbs(isVi, true, rewrittenScript),
+      thumbnailCount,
+      visualConfig.thumbnailTextInImageMode,
+    );
     const parsedData = {
-      thumbnails: thumbsResult.thumbnails || [],
+      thumbnails: normalizedThumbnails,
       rotationLogs: thumbLogs,
     };
 
@@ -1720,217 +2670,315 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     const isVi = config?.language === ProjectLanguage.VI;
     res.json({
       warning: error.message || BACKEND_MESSAGES.API_RATE_LIMITS_TRIGGERED,
-      thumbnails: getDummyThumbs(isVi, true),
+      thumbnails: normalizeThumbnailIdeas(
+        [],
+        getDummyThumbs(isVi, true, rewrittenScript),
+        thumbnailCount,
+        visualConfig.thumbnailTextInImageMode,
+      ),
     });
   }
 });
 
-router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, res: Response) => {
-  try {
-    let { text, speed, voice_id, voiceURI } = req.body;
-    let finalVoiceId = voice_id || voiceURI || "";
+router.post(
+  "/voice",
+  requireLicense(FeatureType.VOICE),
+  async (req: Request, res: Response) => {
+    try {
+      let { text, speed, voice_id, voiceURI } = req.body;
+      let finalVoiceId = voice_id || voiceURI || "";
 
-    if (!_.isEmpty(finalVoiceId) && VOICE_PRESET_MAP[finalVoiceId]) {
-      finalVoiceId = VOICE_PRESET_MAP[finalVoiceId];
-    }
-
-    const validPrefixes = REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES;
-    const hasValidPrefix = _.some(validPrefixes, (prefix) => _.startsWith(finalVoiceId, prefix));
-
-    if (!hasValidPrefix) {
-      if (!_.isEmpty(finalVoiceId)) {
-        finalVoiceId = `${REFACTOR_CONSTANTS.EDGE_PREFIX}${finalVoiceId}`;
-      } else {
-        finalVoiceId = REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID;
-      }
-    }
-
-    if (!text || !text.trim()) {
-      text = BACKEND_MESSAGES.TTS_DEFAULT_TEST;
-    }
-
-    try { const freeTtsResponse = await createFreeTtsResponse(text, finalVoiceId);await incrementFeatureUsage(req, FeatureType.VOICE, _.size(text));return res.json(freeTtsResponse); } catch (error) { appWarn(FREE_TTS_CONFIG.FALLBACK_LOG, error);if (FREE_TTS_CONFIG.STRICT_FREE_MODE) throw error; }
-
-    const keys = await resolveApiKeys();
-    const apiKey = _.get(keys, 'ai33Key', '');
-
-    if (_.isEmpty(apiKey)) {
-      throw createAppError(SecurityMessages.MISSING_AI33_KEY);
-    }
-
-    const formData = new FormData();
-    formData.append(REFACTOR_CONSTANTS.FORM_KEY_TEXT, text);
-    formData.append(REFACTOR_CONSTANTS.FORM_KEY_VOICE_ID, finalVoiceId);
-    formData.append(REFACTOR_CONSTANTS.FORM_KEY_SPEED, (speed || 1).toString());
-    formData.append(REFACTOR_CONSTANTS.FORM_KEY_WITH_TRANSCRIPT, REFACTOR_CONSTANTS.VALUE_FALSE);
-
-    const ttsRes = await fetch(EXTERNAL_URLS.AI33_TTS, {
-      method: HTTP_METHODS.POST,
-      headers: {
-        [HTTP_HEADERS.XI_API_KEY]: apiKey,
-      },
-      body: formData,
-    });
-
-    if (!ttsRes.ok) {
-      const err = await ttsRes.text();
-      throw new Error(getMessage("TTS_API_ERROR_MSG", undefined, err));
-    }
-
-    const ttsData = await ttsRes.json();
-    if (!ttsData.success || !ttsData.task_id) {
-      throw new Error(getMessage("TTS_NO_TASK_ID", undefined, jsonUtils.safeStringify(ttsData)));
-    }
-
-    const taskId = ttsData.task_id;
-
-    let audioUrl = null;
-    let attempts = 0;
-    while (attempts < TTS_POLLING_CONFIG.MAX_ATTEMPTS) {
-      let pollRes;
-      try {
-        pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
-          headers: {
-            [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
-            [HTTP_HEADERS.XI_API_KEY]: apiKey,
-          },
-        });
-      } catch (fetchErr: any) {
-        logger.warn(getMessage("TTS_FETCH_POLLING_ERROR", undefined, fetchErr.message));
-        attempts++;
-        await waitForNextTtsPoll(attempts);
-        continue;
+      if (!_.isEmpty(finalVoiceId) && VOICE_PRESET_MAP[finalVoiceId]) {
+        finalVoiceId = VOICE_PRESET_MAP[finalVoiceId];
       }
 
-      if (!pollRes.ok) {
-        const errText = await pollRes.text();
-        if (_.includes([HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.FORBIDDEN], pollRes.status)) {
-          throw new Error(getMessage("TTS_POLL_FAILED", undefined, errText));
-        }
-        logger.warn(getMessage("TTS_POLLING_FAILED_RETRYING", undefined, `${pollRes.status} - ${errText}`));
-        attempts++;
-        await waitForNextTtsPoll(attempts);
-        continue;
-      }
+      const validPrefixes = REFACTOR_CONSTANTS.VALID_VOICE_PREFIXES;
+      const hasValidPrefix = _.some(validPrefixes, (prefix) =>
+        _.startsWith(finalVoiceId, prefix),
+      );
 
-      const pollData = await pollRes.json();
-
-      if (_.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_DONE)) {
-        audioUrl = pollData.metadata?.audio_url;
-        break;
-      } else if (_.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_ERROR)) {
-        throw new Error(getMessage("TTS_TASK_ERROR_MSG", undefined, pollData.error_message));
-      }
-      attempts++;
-      await waitForNextTtsPoll(attempts);
-    }
-
-    if (!audioUrl) {
-      throw new Error(getMessage("TTS_TASK_TIMED_OUT"));
-    }
-
-    const audioRes = await fetch(audioUrl);
-    if (!audioRes.ok) throw new Error(getMessage("FAILED_DOWNLOAD_AUDIO"));
-
-    const arrayBuffer = await audioRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const audioBase64 = buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
-    const mimeType = audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) || MimeType.MPEG;
-
-    const generatedCharacterCount = _.size(text);
-    await incrementFeatureUsage(req, FeatureType.VOICE, generatedCharacterCount);
-
-    res.json({
-      success: true,
-      audioBase64,
-      mimeType,
-      audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
-    });
-  } catch (error: any) {
-    logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: error.message,
-      rotationLogs: error.rotationLogs,
-    });
-  }
-});
-router.post("/generate-image", requireSingleVisualLicense, async (req: Request, res: Response) => {
-  try {
-    const { prompt, style, visualConfig, sandboxConfig } = req.body;
-
-    const result = await generateImageWithPlaywright({
-      prompt,
-      style,
-      visualConfig,
-      sandboxConfig,
-    });
-
-    if (result && result.success) {
-      const feature = _.isEqual(visualConfig?.generateType, GenerateType.Video)
-        ? FeatureType.VIDEO
-        : FeatureType.IMAGE;
-      await incrementFeatureUsage(req, feature, SecurityConstants.DEFAULT_AMOUNT);
-    }
-
-    return res.json(result);
-  } catch (error: any) {
-    logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
-    return res.json({
-      success: false,
-      base64: null,
-      fallbackUrl: "",
-      warning: getMessage("SYSTEM_ERROR", undefined, error.message),
-    });
-  }
-});
-
-router.post("/generate-batch-images", requireBatchVisualLicense, async (req: Request, res: Response) => {
-  try {
-    const { items, visualConfig, style } = req.body;
-
-    if (!items || !_.isArray(items) || _.isEmpty(items)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS });
-    }
-
-    res.setHeader("Content-Type", "application/x-ndjson");
-    res.setHeader("Transfer-Encoding", "chunked");
-
-    let successfulImageCount = SecurityConstants.ZERO;
-    let successfulVideoCount = SecurityConstants.ZERO;
-    await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
-      if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
-        if (_.isEqual(progressResult.assetType, GenerateType.Video)) {
-          successfulVideoCount = _.add(successfulVideoCount, SecurityConstants.DEFAULT_AMOUNT);
+      if (!hasValidPrefix) {
+        if (!_.isEmpty(finalVoiceId)) {
+          finalVoiceId = `${REFACTOR_CONSTANTS.EDGE_PREFIX}${finalVoiceId}`;
         } else {
-          successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
+          finalVoiceId = REFACTOR_CONSTANTS.DEFAULT_EDGE_VOICE_ID;
         }
       }
-      res.write(jsonUtils.safeStringify(progressResult) + "\n");
-    });
 
-    if (_.gt(successfulImageCount, SecurityConstants.ZERO)) {
-      await incrementFeatureUsage(req, FeatureType.IMAGE, successfulImageCount);
+      if (!text || !text.trim()) {
+        text = BACKEND_MESSAGES.TTS_DEFAULT_TEST;
+      }
+
+      try {
+        const freeTtsResponse = await createFreeTtsResponse(text, finalVoiceId);
+        await incrementFeatureUsage(req, FeatureType.VOICE, _.size(text));
+        return res.json(freeTtsResponse);
+      } catch (error) {
+        appWarn(FREE_TTS_CONFIG.FALLBACK_LOG, error);
+        if (FREE_TTS_CONFIG.STRICT_FREE_MODE) throw error;
+      }
+
+      const keys = await resolveApiKeys();
+      const apiKey = _.get(keys, "ai33Key", "");
+
+      if (_.isEmpty(apiKey)) {
+        throw createAppError(SecurityMessages.MISSING_AI33_KEY);
+      }
+
+      const formData = new FormData();
+      formData.append(REFACTOR_CONSTANTS.FORM_KEY_TEXT, text);
+      formData.append(REFACTOR_CONSTANTS.FORM_KEY_VOICE_ID, finalVoiceId);
+      formData.append(
+        REFACTOR_CONSTANTS.FORM_KEY_SPEED,
+        (speed || 1).toString(),
+      );
+      formData.append(
+        REFACTOR_CONSTANTS.FORM_KEY_WITH_TRANSCRIPT,
+        REFACTOR_CONSTANTS.VALUE_FALSE,
+      );
+
+      const ttsRes = await fetch(EXTERNAL_URLS.AI33_TTS, {
+        method: HTTP_METHODS.POST,
+        headers: {
+          [HTTP_HEADERS.XI_API_KEY]: apiKey,
+        },
+        body: formData,
+      });
+
+      if (!ttsRes.ok) {
+        const err = await ttsRes.text();
+        throw new Error(getMessage("TTS_API_ERROR_MSG", undefined, err));
+      }
+
+      const ttsData = await ttsRes.json();
+      if (!ttsData.success || !ttsData.task_id) {
+        throw new Error(
+          getMessage(
+            "TTS_NO_TASK_ID",
+            undefined,
+            jsonUtils.safeStringify(ttsData),
+          ),
+        );
+      }
+
+      const taskId = ttsData.task_id;
+
+      let audioUrl = null;
+      let attempts = 0;
+      while (attempts < TTS_POLLING_CONFIG.MAX_ATTEMPTS) {
+        let pollRes;
+        try {
+          pollRes = await fetch(`${EXTERNAL_URLS.AI33_TASK}/${taskId}`, {
+            headers: {
+              [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON,
+              [HTTP_HEADERS.XI_API_KEY]: apiKey,
+            },
+          });
+        } catch (fetchErr: any) {
+          logger.warn(
+            getMessage("TTS_FETCH_POLLING_ERROR", undefined, fetchErr.message),
+          );
+          attempts++;
+          await waitForNextTtsPoll(attempts);
+          continue;
+        }
+
+        if (!pollRes.ok) {
+          const errText = await pollRes.text();
+          if (
+            _.includes(
+              [HTTP_STATUS.UNAUTHORIZED, HTTP_STATUS.FORBIDDEN],
+              pollRes.status,
+            )
+          ) {
+            throw new Error(getMessage("TTS_POLL_FAILED", undefined, errText));
+          }
+          logger.warn(
+            getMessage(
+              "TTS_POLLING_FAILED_RETRYING",
+              undefined,
+              `${pollRes.status} - ${errText}`,
+            ),
+          );
+          attempts++;
+          await waitForNextTtsPoll(attempts);
+          continue;
+        }
+
+        const pollData = await pollRes.json();
+
+        if (_.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_DONE)) {
+          audioUrl = pollData.metadata?.audio_url;
+          break;
+        } else if (
+          _.isEqual(pollData.status, TTS_POLLING_CONFIG.STATUS_ERROR)
+        ) {
+          throw new Error(
+            getMessage("TTS_TASK_ERROR_MSG", undefined, pollData.error_message),
+          );
+        }
+        attempts++;
+        await waitForNextTtsPoll(attempts);
+      }
+
+      if (!audioUrl) {
+        throw new Error(getMessage("TTS_TASK_TIMED_OUT"));
+      }
+
+      const audioRes = await fetch(audioUrl);
+      if (!audioRes.ok) throw new Error(getMessage("FAILED_DOWNLOAD_AUDIO"));
+
+      const arrayBuffer = await audioRes.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const audioBase64 = buffer.toString(
+        REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding,
+      );
+      const mimeType =
+        audioRes.headers.get(SecurityConstants.HEADER_CONTENT_TYPE) ||
+        MimeType.MPEG;
+
+      const generatedCharacterCount = _.size(text);
+      await incrementFeatureUsage(
+        req,
+        FeatureType.VOICE,
+        generatedCharacterCount,
+      );
+
+      res.json({
+        success: true,
+        audioBase64,
+        mimeType,
+        audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+        provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
+      });
+    } catch (error: any) {
+      logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
+      res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: error.message,
+        rotationLogs: error.rotationLogs,
+      });
     }
-    if (_.gt(successfulVideoCount, SecurityConstants.ZERO)) {
-      await incrementFeatureUsage(req, FeatureType.VIDEO, successfulVideoCount);
-    }
-    res.end();
-  } catch (error: any) {
-    logger.error(LogEvent.GENERATE_BATCH_IMAGES_ROUTE_ERROR, error);
-    if (!res.headersSent) {
+  },
+);
+router.post(
+  "/generate-image",
+  requireSingleVisualLicense,
+  async (req: Request, res: Response) => {
+    try {
+      const { prompt, style, visualConfig, sandboxConfig } = req.body;
+
+      const result = await generateImageWithPlaywright({
+        prompt,
+        style,
+        visualConfig,
+        sandboxConfig,
+      });
+
+      if (result && result.success) {
+        const feature = _.isEqual(
+          visualConfig?.generateType,
+          GenerateType.Video,
+        )
+          ? FeatureType.VIDEO
+          : FeatureType.IMAGE;
+        await incrementFeatureUsage(
+          req,
+          feature,
+          SecurityConstants.DEFAULT_AMOUNT,
+        );
+      }
+
+      return res.json(result);
+    } catch (error: any) {
+      logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
       return res.json({
         success: false,
-        results: [],
-        warning: BACKEND_MESSAGES.BATCH_GEN_SYSTEM_ERROR.replace("{0}", error.message),
+        base64: null,
+        fallbackUrl: "",
+        warning: getMessage("SYSTEM_ERROR", undefined, error.message),
       });
-    } else {
-      res.end();
     }
-  }
-});
+  },
+);
+
+router.post(
+  "/generate-batch-images",
+  requireBatchVisualLicense,
+  async (req: Request, res: Response) => {
+    try {
+      const { items, visualConfig, style } = req.body;
+
+      if (!items || !_.isArray(items) || _.isEmpty(items)) {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({
+            success: false,
+            results: [],
+            warning: BACKEND_MESSAGES.BATCH_GEN_NO_ITEMS,
+          });
+      }
+
+      res.setHeader("Content-Type", "application/x-ndjson");
+      res.setHeader("Transfer-Encoding", "chunked");
+
+      let successfulImageCount = SecurityConstants.ZERO;
+      let successfulVideoCount = SecurityConstants.ZERO;
+      await generateBatchImagesWithGeminiChat(
+        items,
+        visualConfig,
+        style,
+        (progressResult) => {
+          if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
+            if (_.isEqual(progressResult.assetType, GenerateType.Video)) {
+              successfulVideoCount = _.add(
+                successfulVideoCount,
+                SecurityConstants.DEFAULT_AMOUNT,
+              );
+            } else {
+              successfulImageCount = _.add(
+                successfulImageCount,
+                SecurityConstants.DEFAULT_AMOUNT,
+              );
+            }
+          }
+          res.write(jsonUtils.safeStringify(progressResult) + "\n");
+        },
+      );
+
+      if (_.gt(successfulImageCount, SecurityConstants.ZERO)) {
+        await incrementFeatureUsage(
+          req,
+          FeatureType.IMAGE,
+          successfulImageCount,
+        );
+      }
+      if (_.gt(successfulVideoCount, SecurityConstants.ZERO)) {
+        await incrementFeatureUsage(
+          req,
+          FeatureType.VIDEO,
+          successfulVideoCount,
+        );
+      }
+      res.end();
+    } catch (error: any) {
+      logger.error(LogEvent.GENERATE_BATCH_IMAGES_ROUTE_ERROR, error);
+      if (!res.headersSent) {
+        return res.json({
+          success: false,
+          results: [],
+          warning: BACKEND_MESSAGES.BATCH_GEN_SYSTEM_ERROR.replace(
+            "{0}",
+            error.message,
+          ),
+        });
+      } else {
+        res.end();
+      }
+    }
+  },
+);
 
 router.post("/clean-batch-images", async (req: Request, res: Response) => {
   try {
@@ -1946,7 +2994,9 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
   try {
     const { chunks } = req.body;
     if (!chunks || !_.isArray(chunks) || _.isEmpty(chunks)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: ErrorMessage.NO_AUDIO_CHUNKS_PROVIDED });
     }
 
     const tempDir = os.tmpdir();
@@ -1964,11 +3014,16 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
     }
 
     if (_.isEmpty(filePaths)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "No valid base64 audio data found in chunks" });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: "No valid base64 audio data found in chunks" });
     }
 
     const listPath = path.join(tempDir, `list_${sessionId}.txt`);
-    const fileListContent = _.map(filePaths, (p) => `file '${p.replace(SINGLE_QUOTE_REGEX, "'\\''")}'`).join("\n");
+    const fileListContent = _.map(
+      filePaths,
+      (p) => `file '${p.replace(SINGLE_QUOTE_REGEX, "'\\''")}'`,
+    ).join("\n");
     fs.writeFileSync(listPath, fileListContent, FileEncoding.UTF8);
 
     const outputPath = path.join(tempDir, `merged_${sessionId}.mp3`);
@@ -1989,7 +3044,9 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
           res.json({ success: true, audioBase64: base64Audio });
         } catch (e) {
           logger.error(LogEvent.ERROR_READ_MERGED_AUDIO, e);
-          res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.FAILED_TO_READ_MERGED_AUDIO_FILE });
+          res
+            .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+            .json({ error: ErrorMessage.FAILED_TO_READ_MERGED_AUDIO_FILE });
         }
       })
       .on("error", (err) => {
@@ -1998,73 +3055,172 @@ router.post("/merge-audio", async (req: Request, res: Response) => {
         filePaths.forEach((p) => fs.existsSync(p) && fs.unlinkSync(p));
         fs.existsSync(listPath) && fs.unlinkSync(listPath);
         fs.existsSync(outputPath) && fs.unlinkSync(outputPath);
-        res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: "FFmpeg processing error: " + err.message });
+        res
+          .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+          .json({ error: "FFmpeg processing error: " + err.message });
       })
       .save(outputPath);
   } catch (err: any) {
     logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, err);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 
-router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Response) => {
-  const videoUrl = _.toString(req.body?.videoUrl);
-  const relativePath = _.trimStart(_.first(_.split(videoUrl, "?")) || videoUrl, "/\\");
-  const dataRoot = path.resolve(getDataDirectory());
-  const videoPath = path.resolve(dataRoot, relativePath);
-  const isInsideDataRoot = _.startsWith(_.toLower(videoPath), _.toLower(_.join([dataRoot, path.sep], "")));
-  if (!isInsideDataRoot || !fs.existsSync(videoPath)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Rendered video is outside the Vidify data root or missing." });
-  const tempDir = path.join(dataRoot, `final-qc-${randomUUID()}`);
-  fs.mkdirSync(tempDir, { recursive: true });
-  try {
-    const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : "ffmpeg";
-    await new Promise<void>((resolve, reject) => {
-      const process = spawn(executable, ["-y", "-i", videoPath, "-vf", "fps=1/15,scale=640:-2", "-frames:v", "12", path.join(tempDir, "frame_%02d.jpg")], { windowsHide: true, stdio: "ignore" });
-      process.once("error", reject);
-      process.once("exit", code => code === 0 ? resolve() : reject(new Error(`Final QC frame extraction failed (${code}).`)));
-    });
-    const frameFiles = _.take(_.sortBy(_.filter(fs.readdirSync(tempDir), file => _.endsWith(file, ".jpg"))), 12);
-    if (_.isEmpty(frameFiles)) throw new Error("Final QC could not extract representative frames.");
-    const parts:any[]=[{text:getFinalVideoQualityPrompt(_.toString(req.body?.script),_.toString(req.body?.viewerPromise))}];
-    _.forEach(frameFiles,file=>parts.push({inlineData:{mimeType:"image/jpeg",data:fs.readFileSync(path.join(tempDir,file)).toString("base64")}}));
-    const response=await generateContentWithRetry({contents:[{role:"user",parts}],config:{responseMimeType:CONTENT_TYPES.JSON,responseJsonSchema:FINAL_VIDEO_QA_RESPONSE_SCHEMA,maxOutputTokens:1024},task:{capability:AiTaskCapability.VisualQa}});
-    return res.json({success:true,quality:safeParseJSON(response.text,{}),aiMetadata:response.aiMetadata,rotationLogs:response.rotationLogs});
-  } catch(error:any) {
-    logger.error(LogEvent.VISUAL_QA_ERROR,error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({error:error.message});
-  } finally {
-    if (fs.existsSync(tempDir)) fs.rmSync(tempDir,{recursive:true,force:true});
-  }
-});
+router.post(
+  ROUTER_PATHS.VALIDATE_FINAL_VIDEO,
+  async (req: Request, res: Response) => {
+    const videoUrl = _.toString(req.body?.videoUrl);
+    const relativePath = _.trimStart(
+      _.first(_.split(videoUrl, "?")) || videoUrl,
+      "/\\",
+    );
+    const dataRoot = path.resolve(getDataDirectory());
+    const videoPath = path.resolve(dataRoot, relativePath);
+    const isInsideDataRoot = _.startsWith(
+      _.toLower(videoPath),
+      _.toLower(_.join([dataRoot, path.sep], "")),
+    );
+    if (!isInsideDataRoot || !fs.existsSync(videoPath))
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({
+          error: "Rendered video is outside the Vidify data root or missing.",
+        });
+    const tempDir = path.join(dataRoot, `final-qc-${randomUUID()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+    try {
+      const executable = fs.existsSync(ffmpegBinary) ? ffmpegBinary : "ffmpeg";
+      await new Promise<void>((resolve, reject) => {
+        const process = spawn(
+          executable,
+          [
+            "-y",
+            "-i",
+            videoPath,
+            "-vf",
+            "fps=1/15,scale=640:-2",
+            "-frames:v",
+            "12",
+            path.join(tempDir, "frame_%02d.jpg"),
+          ],
+          { windowsHide: true, stdio: "ignore" },
+        );
+        process.once("error", reject);
+        process.once("exit", (code) =>
+          code === 0
+            ? resolve()
+            : reject(new Error(`Final QC frame extraction failed (${code}).`)),
+        );
+      });
+      const frameFiles = _.take(
+        _.sortBy(
+          _.filter(fs.readdirSync(tempDir), (file) => _.endsWith(file, ".jpg")),
+        ),
+        12,
+      );
+      if (_.isEmpty(frameFiles))
+        throw new Error("Final QC could not extract representative frames.");
+      const parts: any[] = [
+        {
+          text: getFinalVideoQualityPrompt(
+            _.toString(req.body?.script),
+            _.toString(req.body?.viewerPromise),
+          ),
+        },
+      ];
+      _.forEach(frameFiles, (file) =>
+        parts.push({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: fs.readFileSync(path.join(tempDir, file)).toString("base64"),
+          },
+        }),
+      );
+      const response = await generateContentWithRetry({
+        contents: [{ role: "user", parts }],
+        config: {
+          responseMimeType: CONTENT_TYPES.JSON,
+          responseJsonSchema: FINAL_VIDEO_QA_RESPONSE_SCHEMA,
+          maxOutputTokens: 1024,
+        },
+        task: { capability: AiTaskCapability.VisualQa },
+      });
+      return res.json({
+        success: true,
+        quality: safeParseJSON(response.text, {}),
+        aiMetadata: response.aiMetadata,
+        rotationLogs: response.rotationLogs,
+      });
+    } catch (error: any) {
+      logger.error(LogEvent.VISUAL_QA_ERROR, error);
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    } finally {
+      if (fs.existsSync(tempDir))
+        fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  },
+);
 
-router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => {
-  const audioBase64 = _.toString(req.body?.audioBase64);
-  if (_.isEmpty(audioBase64)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: "Audio is required for quality validation." });
-  try {
-    const response = await generateContentWithRetry({
-      contents: [{ role: "user", parts: [
-        { text: getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds)) },
-        { inlineData: { mimeType: "audio/mpeg", data: audioBase64 } },
-      ] }],
-      config: { responseMimeType: CONTENT_TYPES.JSON },
-      task: { capability: AiTaskCapability.AudioQa },
-    });
-    return res.json({ success: true, quality: safeParseJSON(response.text, {}), rotationLogs: response.rotationLogs });
-  } catch (error: any) {
-    logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
-  }
-});
+router.post(
+  ROUTER_PATHS.VALIDATE_AUDIO,
+  async (req: Request, res: Response) => {
+    const audioBase64 = _.toString(req.body?.audioBase64);
+    if (_.isEmpty(audioBase64))
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: "Audio is required for quality validation." });
+    try {
+      const response = await generateContentWithRetry({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: getAudioQualityPrompt(
+                  _.toString(req.body?.script),
+                  _.toNumber(req.body?.targetDurationSeconds),
+                ),
+              },
+              { inlineData: { mimeType: "audio/mpeg", data: audioBase64 } },
+            ],
+          },
+        ],
+        config: { responseMimeType: CONTENT_TYPES.JSON },
+        task: { capability: AiTaskCapability.AudioQa },
+      });
+      return res.json({
+        success: true,
+        quality: safeParseJSON(response.text, {}),
+        rotationLogs: response.rotationLogs,
+      });
+    } catch (error: any) {
+      logger.error(LogEvent.UNEXPECTED_ERROR_MERGE_AUDIO, error);
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message, rotationLogs: error.rotationLogs });
+    }
+  },
+);
 
 router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi =
+    req.body?.language === ProjectLanguage.VI ||
+    req.query?.lang !== ProjectLanguage.EN;
   try {
     const { audioBase64, scenes, segment, projectId, projectName } = req.body;
     if (!audioBase64) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("VOICE_ALIGN_NO_AUDIO", isVi) });
     }
     if (_.isEmpty(scenes) || !_.isArray(scenes)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("VOICE_ALIGN_NO_SCENES", isVi) });
     }
 
     const tempDir = path.join(getDataDirectory(), ALIGN_CONFIG.TEMP_DIR);
@@ -2073,36 +3229,63 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
     }
 
     const sessionId = randomUUID();
-    const audioPath = path.join(tempDir, `${ALIGN_CONFIG.AUDIO_PREFIX}${sessionId}${ALIGN_CONFIG.WAV_EXT}`);
-    const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
-    const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
+    const audioPath = path.join(
+      tempDir,
+      `${ALIGN_CONFIG.AUDIO_PREFIX}${sessionId}${ALIGN_CONFIG.WAV_EXT}`,
+    );
+    const scenesPath = path.join(
+      tempDir,
+      `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`,
+    );
+    const outputPath = path.join(
+      tempDir,
+      `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`,
+    );
 
-    const audioBuffer = Buffer.from(audioBase64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+    const audioBuffer = Buffer.from(
+      audioBase64,
+      REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding,
+    );
     fs.writeFileSync(audioPath, audioBuffer);
 
-    fs.writeFileSync(scenesPath, jsonUtils.safeStringify(scenes, null, 2), ENCODING_UTF8);
+    fs.writeFileSync(
+      scenesPath,
+      jsonUtils.safeStringify(scenes, null, 2),
+      ENCODING_UTF8,
+    );
 
     const scriptPath = getStaticResourcePath(ALIGN_CONFIG.SCRIPT_FILE);
 
     const pyCmd = getPythonCommand();
-    const checkCmd = ALIGN_CONFIG.CHECK_FASTER_WHISPER_CMD.replace("{0}", pyCmd);
+    const checkCmd = ALIGN_CONFIG.CHECK_FASTER_WHISPER_CMD.replace(
+      "{0}",
+      pyCmd,
+    );
     logger.log(VOICE_ALIGN_LOGS.CHECK_WHISPER);
 
     exec(checkCmd, (checkError) => {
       if (checkError) {
         logger.log(VOICE_ALIGN_LOGS.WHISPER_NOT_INSTALLED);
-        const installCmd = ALIGN_CONFIG.INSTALL_FASTER_WHISPER_CMD.replace("{0}", pyCmd);
+        const installCmd = ALIGN_CONFIG.INSTALL_FASTER_WHISPER_CMD.replace(
+          "{0}",
+          pyCmd,
+        );
 
         exec(installCmd, (installError, installStdout, installStderr) => {
           if (installError) {
-            logger.error(`Failed to install faster-whisper: ${installError.message}`);
+            logger.error(
+              `Failed to install faster-whisper: ${installError.message}`,
+            );
             try {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
-            } catch (cleanupErr) { }
+            } catch (cleanupErr) {}
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
               success: false,
-              error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message),
+              error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace(
+                "{0}",
+                installError.message,
+              ),
             });
           }
 
@@ -2116,28 +3299,34 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
     });
 
     const runAligner = async () => {
-      let folderName = projectId || (projectName ? getSafeFolderName(projectName) : "default_project");
+      let folderName =
+        projectId ||
+        (projectName ? getSafeFolderName(projectName) : "default_project");
 
       const pyCmd = getPythonCommand();
       let cmd = `"${pyCmd}" "${scriptPath}" "${audioPath}" "${scenesPath}" "${outputPath}"`;
       if (segment && projectId) {
-        const outputDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, folderName, ALIGN_CONFIG.VOICES_DIR);
+        const outputDir = path.join(
+          getDataDirectory(),
+          ASSETS_DIR_NAME,
+          PROJECTS_DIR_NAME,
+          folderName,
+          ALIGN_CONFIG.VOICES_DIR,
+        );
         if (!fs.existsSync(outputDir)) {
           fs.mkdirSync(outputDir, { recursive: true });
         }
         _.forEach(
-          _.filter(
-            fs.readdirSync(outputDir),
-            (fileName) => {
-              if (!ALIGN_CONFIG.LEGACY_SEGMENT_FILE_REGEX.test(fileName)) return false;
-              const canonicalFileName = _.replace(
-                fileName,
-                ALIGN_CONFIG.LEGACY_SEGMENT_PREFIX,
-                REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-              );
-              return fs.existsSync(path.join(outputDir, canonicalFileName));
-            },
-          ),
+          _.filter(fs.readdirSync(outputDir), (fileName) => {
+            if (!ALIGN_CONFIG.LEGACY_SEGMENT_FILE_REGEX.test(fileName))
+              return false;
+            const canonicalFileName = _.replace(
+              fileName,
+              ALIGN_CONFIG.LEGACY_SEGMENT_PREFIX,
+              REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+            );
+            return fs.existsSync(path.join(outputDir, canonicalFileName));
+          }),
           (fileName) => {
             try {
               fs.unlinkSync(path.join(outputDir, fileName));
@@ -2161,9 +3350,13 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
 
         if (error) {
           cleanup();
-          logger.error(`${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`);
-          if (stdout) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
-          if (stderr) logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
+          logger.error(
+            `${VOICE_ALIGN_LOGS.ERR_RUNNING_SCRIPT}${error.message}`,
+          );
+          if (stdout)
+            logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}${stdout}`);
+          if (stderr)
+            logger.error(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}${stderr}`);
 
           const pythonError = stderr || stdout;
           return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
@@ -2183,11 +3376,25 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
 
           fs.unlinkSync(outputPath);
 
-          if (segment && projectId && result.success && _.isArray(result.alignments)) {
-            const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
+          if (
+            segment &&
+            projectId &&
+            result.success &&
+            _.isArray(result.alignments)
+          ) {
+            const cutAudioSegment = (
+              src: string,
+              dest: string,
+              start: number,
+              end: number,
+            ): Promise<void> => {
               return new Promise<void>((resolve) => {
-                const ffmpegBinary = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME);
-                const ffmpegCmd = fs.existsSync(ffmpegBinary) ? `"${ffmpegBinary}"` : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
+                const ffmpegBinary = getStaticResourcePath(
+                  FFMPEG_RENDER_CONSTANTS.FFMPEG_BINARY_NAME,
+                );
+                const ffmpegCmd = fs.existsSync(ffmpegBinary)
+                  ? `"${ffmpegBinary}"`
+                  : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD;
                 const cmdRun = `${ffmpegCmd} -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
                 exec(cmdRun, (err) => {
                   if (err) {
@@ -2203,13 +3410,25 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               const endVal = align.end;
               if (!_.isNil(startVal) && !_.isNil(endVal)) {
                 const idStr = String(align.id);
-                const cleanId = _.startsWith(idStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? idStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : idStr;
+                const cleanId = _.startsWith(
+                  idStr,
+                  EXPORT_ZIP_CONFIG.SCENE_PREFIX,
+                )
+                  ? idStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length)
+                  : idStr;
                 const fileName = `${ALIGN_CONFIG.SEGMENT_PREFIX}${sessionId}_${cleanId}${ALIGN_CONFIG.WAV_EXT}`;
                 const outPath = path.join(tempDir, fileName);
-                await cutAudioSegment(audioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+                await cutAudioSegment(
+                  audioPath,
+                  outPath,
+                  _.toNumber(startVal),
+                  _.toNumber(endVal),
+                );
                 if (fs.existsSync(outPath)) {
                   const slicedBuffer = fs.readFileSync(outPath);
-                  align.audioBase64 = slicedBuffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
+                  align.audioBase64 = slicedBuffer.toString(
+                    REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding,
+                  );
                   fs.unlinkSync(outPath);
                 }
               }
@@ -2220,28 +3439,52 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           return res.json(result);
         } catch (err: any) {
           cleanup();
-          logger.error(`Error parsing python_scripts/voice_aligner.py output: ${err.message}`);
+          logger.error(
+            `Error parsing python_scripts/voice_aligner.py output: ${err.message}`,
+          );
           if (fs.existsSync(outputPath)) {
             try {
               fs.unlinkSync(outputPath);
-            } catch (e) { }
+            } catch (e) {}
           }
           return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
             success: false,
-            error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace("{0}", err.message),
+            error: getBackendMsg("VOICE_ALIGN_PARSE_ERR", isVi).replace(
+              "{0}",
+              err.message,
+            ),
           });
         }
       });
-    }
+    };
   } catch (err: any) {
     logger.error(VOICE_ALIGN_LOGS.ERR_UNEXPECTED_ALIGN, err);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: ErrorMessage.INTERNAL_SERVER_ERROR + err.message });
   }
 });
 
 router.post("/run-ultra", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName, autoExportVideo, videoOutputDir, projectId } = req.body;
+  const isVi =
+    req.body?.language === ProjectLanguage.VI ||
+    req.query?.lang !== ProjectLanguage.EN;
+  const {
+    filePath,
+    geminiApiKey,
+    sfxFolder,
+    opts,
+    isAutoMode,
+    templateId,
+    parentFolder,
+    imagesDir,
+    voicesDir,
+    projectStyle,
+    projectName,
+    autoExportVideo,
+    videoOutputDir,
+    projectId,
+  } = req.body;
 
   if (!isAutoMode && !filePath) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
@@ -2259,22 +3502,30 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
   const tempOutputPath = filePath + ".ultra_tmp";
   const uniqueId = randomUUID().substring(0, 8);
-  const optsJsonPath = path.join(getDataDirectory(), `ultra_opts_${uniqueId}.json`);
+  const optsJsonPath = path.join(
+    getDataDirectory(),
+    `ultra_opts_${uniqueId}.json`,
+  );
 
   let finalProjectName = projectName;
   if (_.isEmpty(_.trim(finalProjectName))) {
     const d = new Date();
-    const pad = (n: number) => _.padStart(n.toString(), 2, '0');
+    const pad = (n: number) => _.padStart(n.toString(), 2, "0");
     finalProjectName = `AI_CAPCUT_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear().toString().substring(2)}`;
   }
 
   let realTemplateId = templateId || "";
   if (isAutoMode && realTemplateId && fs.existsSync(realTemplateId)) {
     try {
-      const rawContent = fs.readFileSync(realTemplateId, FileEncoding.UTF8 as any).toString();
+      const rawContent = fs
+        .readFileSync(realTemplateId, FileEncoding.UTF8 as any)
+        .toString();
       const templateContent = jsonUtils.safeParse<any>(rawContent, {});
       if (templateContent.folderPath) {
-        realTemplateId = path.join(templateContent.folderPath, "draft_content.json");
+        realTemplateId = path.join(
+          templateContent.folderPath,
+          "draft_content.json",
+        );
       }
     } catch (e) {
       logger.error("Error reading template file:", e);
@@ -2285,8 +3536,20 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
   let finalVoicesDir = voicesDir || "";
 
   if (projectId) {
-    finalImagesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, "images");
-    finalVoicesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, "voices");
+    finalImagesDir = path.join(
+      getDataDirectory(),
+      ASSETS_DIR_NAME,
+      PROJECTS_DIR_NAME,
+      projectId,
+      "images",
+    );
+    finalVoicesDir = path.join(
+      getDataDirectory(),
+      ASSETS_DIR_NAME,
+      PROJECTS_DIR_NAME,
+      projectId,
+      "voices",
+    );
   }
 
   const cmdOpts = {
@@ -2301,30 +3564,48 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     project_style: projectStyle || {},
     project_name: finalProjectName,
     auto_export_video: autoExportVideo || false,
-    video_output_dir: videoOutputDir || ""
+    video_output_dir: videoOutputDir || "",
   };
 
   try {
-    fs.writeFileSync(optsJsonPath, jsonUtils.safeStringify(cmdOpts, null, 2), FileEncoding.UTF8 as any);
+    fs.writeFileSync(
+      optsJsonPath,
+      jsonUtils.safeStringify(cmdOpts, null, 2),
+      FileEncoding.UTF8 as any,
+    );
 
     res.setHeader(HTTP_HEADERS.CONTENT_TYPE, CONTENT_TYPES.NDJSON);
     res.setHeader(HTTP_HEADERS.TRANSFER_ENCODING, TRANSFER_ENCODINGS.CHUNKED);
 
     const pyCmd = getPythonCommand();
-    const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
+    const scriptPath = getStaticResourcePath(
+      "python_scripts/capcut_ultra_tool.py",
+    );
     const safeFilePath = filePath || "AUTO_MODE_PLACEHOLDER";
-    logger.log(`${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${safeFilePath}" "${tempOutputPath}" "${optsJsonPath}"`);
-    const pythonProcess = spawn(pyCmd, ["-u", scriptPath, safeFilePath, tempOutputPath, optsJsonPath]);
-    
+    logger.log(
+      `${getBackendMsg("ULTRA_SPAWN_LOG", isVi)} "${pyCmd}" -u "${scriptPath}" "${safeFilePath}" "${tempOutputPath}" "${optsJsonPath}"`,
+    );
+    const pythonProcess = spawn(pyCmd, [
+      "-u",
+      scriptPath,
+      safeFilePath,
+      tempOutputPath,
+      optsJsonPath,
+    ]);
+
     pythonProcess.stdout.on("data", (data) => {
       _.forEach(_.split(data.toString(), "\n"), (line) => {
         const trimmed = _.trim(line);
         if (!_.isEmpty(trimmed)) {
           const autoPathMatch = trimmed.match(REGEX_AUTO_MODE_PATH);
           if (autoPathMatch && autoPathMatch[1]) {
-            
           }
-          res.write(jsonUtils.safeStringify({ type: UltraStreamLogType.LOG, message: trimmed }) + "\n");
+          res.write(
+            jsonUtils.safeStringify({
+              type: UltraStreamLogType.LOG,
+              message: trimmed,
+            }) + "\n",
+          );
         }
       });
     });
@@ -2333,7 +3614,12 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
       _.forEach(_.split(data.toString(), "\n"), (line) => {
         const trimmed = _.trim(line);
         if (!_.isEmpty(trimmed)) {
-          res.write(jsonUtils.safeStringify({ type: UltraStreamLogType.ERROR_LOG, message: trimmed }) + "\n");
+          res.write(
+            jsonUtils.safeStringify({
+              type: UltraStreamLogType.ERROR_LOG,
+              message: trimmed,
+            }) + "\n",
+          );
         }
       });
     });
@@ -2341,18 +3627,23 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
     pythonProcess.on("close", async (code) => {
       try {
         if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
-      } catch (cleanupErr) { }
+      } catch (cleanupErr) {}
 
       if (code !== 0) {
         try {
           if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
-        } catch (cleanupErr) { }
+        } catch (cleanupErr) {}
 
         logger.error(`CapCut Ultra process failed with exit code ${code}`);
-        res.write(jsonUtils.safeStringify({
-          success: false,
-          error: getBackendMsg("ULTRA_EXIT_ERROR", isVi).replace("{0}", code.toString()),
-        }) + "\n");
+        res.write(
+          jsonUtils.safeStringify({
+            success: false,
+            error: getBackendMsg("ULTRA_EXIT_ERROR", isVi).replace(
+              "{0}",
+              code.toString(),
+            ),
+          }) + "\n",
+        );
         res.end();
         return;
       }
@@ -2383,75 +3674,121 @@ router.post("/run-ultra", async (req: Request, res: Response) => {
 
           if (fs.existsSync(metaFilePath)) {
             try {
-              const metaContent = fs.readFileSync(metaFilePath, FileEncoding.UTF8 as any).toString();
+              const metaContent = fs
+                .readFileSync(metaFilePath, FileEncoding.UTF8 as any)
+                .toString();
               const metaObj = jsonUtils.safeParse<any>(metaContent, {});
               const now = Date.now();
               metaObj.modify_time = now;
               metaObj.tm_draft_modified = Math.floor(now / 1000);
 
-              fs.writeFileSync(metaFilePath, jsonUtils.safeStringify(metaObj), FileEncoding.UTF8 as any);
+              fs.writeFileSync(
+                metaFilePath,
+                jsonUtils.safeStringify(metaObj),
+                FileEncoding.UTF8 as any,
+              );
               logger.log(getBackendMsg("ULTRA_UPDATED_META", isVi));
             } catch (metaErr: any) {
-              logger.error(`Failed to update draft_meta_info.json: ${metaErr.message}`);
+              logger.error(
+                `Failed to update draft_meta_info.json: ${metaErr.message}`,
+              );
             }
           }
         }
-        res.write(jsonUtils.safeStringify({
-          success: true,
-          message: getBackendMsg("ULTRA_SUCCESS", isVi),
-        }) + "\n");
+        res.write(
+          jsonUtils.safeStringify({
+            success: true,
+            message: getBackendMsg("ULTRA_SUCCESS", isVi),
+          }) + "\n",
+        );
       } catch (fsErr: any) {
         logger.error(`File copy/rename/update failed: ${fsErr.message}`);
-        res.write(jsonUtils.safeStringify({
-          success: false,
-          error: fsErr.message,
-        }) + "\n");
+        res.write(
+          jsonUtils.safeStringify({
+            success: false,
+            error: fsErr.message,
+          }) + "\n",
+        );
       }
       res.end();
     });
   } catch (err: any) {
     try {
       if (fs.existsSync(optsJsonPath)) fs.unlinkSync(optsJsonPath);
-    } catch (cleanupErr) { }
+    } catch (cleanupErr) {}
     try {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
-    } catch (cleanupErr) { }
-    logger.error(getBackendMsg("ULTRA_UNEXPECTED_ERR", isVi).replace("{0}", err.message));
-    res.write(jsonUtils.safeStringify({
-      success: false,
-      error: err.message,
-    }) + "\n");
+    } catch (cleanupErr) {}
+    logger.error(
+      getBackendMsg("ULTRA_UNEXPECTED_ERR", isVi).replace("{0}", err.message),
+    );
+    res.write(
+      jsonUtils.safeStringify({
+        success: false,
+        error: err.message,
+      }) + "\n",
+    );
     res.end();
   }
 });
 
 router.post("/select-file", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi =
+    req.body?.language === ProjectLanguage.VI ||
+    req.query?.lang !== ProjectLanguage.EN;
   const pyCmd = getPythonCommand();
-  const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
+  const scriptPath = getStaticResourcePath(
+    "python_scripts/capcut_ultra_tool.py",
+  );
   const cmd = `"${pyCmd}" "${scriptPath}" select-file`;
   logger.log(getBackendMsg("ULTRA_RUN_SELECT_FILE", isVi).replace("{0}", cmd));
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      logger.error(getBackendMsg("ULTRA_SELECT_FILE_FAIL", isVi).replace("{0}", error.message));
-      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg("SELECT_FILE_FAILED", isVi) });
+      logger.error(
+        getBackendMsg("ULTRA_SELECT_FILE_FAIL", isVi).replace(
+          "{0}",
+          error.message,
+        ),
+      );
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({
+          success: false,
+          error: getBackendMsg("SELECT_FILE_FAILED", isVi),
+        });
     }
     return res.json({ success: true, filePath: stdout.trim() });
   });
 });
 
 router.post("/select-folder", async (req: Request, res: Response) => {
-  const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
+  const isVi =
+    req.body?.language === ProjectLanguage.VI ||
+    req.query?.lang !== ProjectLanguage.EN;
   const pyCmd = getPythonCommand();
-  const scriptPath = getStaticResourcePath("python_scripts/capcut_ultra_tool.py");
+  const scriptPath = getStaticResourcePath(
+    "python_scripts/capcut_ultra_tool.py",
+  );
   const cmd = `"${pyCmd}" "${scriptPath}" select-folder`;
-  logger.log(getBackendMsg("ULTRA_RUN_SELECT_FOLDER", isVi).replace("{0}", cmd));
+  logger.log(
+    getBackendMsg("ULTRA_RUN_SELECT_FOLDER", isVi).replace("{0}", cmd),
+  );
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
-      logger.error(getBackendMsg("ULTRA_SELECT_FOLDER_FAIL", isVi).replace("{0}", error.message));
-      return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg("SELECT_FOLDER_FAILED", isVi) });
+      logger.error(
+        getBackendMsg("ULTRA_SELECT_FOLDER_FAIL", isVi).replace(
+          "{0}",
+          error.message,
+        ),
+      );
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({
+          success: false,
+          error: getBackendMsg("SELECT_FOLDER_FAILED", isVi),
+        });
     }
     return res.json({ success: true, folderPath: stdout.trim() });
   });
@@ -2461,31 +3798,50 @@ router.post("/export-zip", async (req: Request, res: Response) => {
   try {
     const { projectId } = req.body;
     if (!projectId) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: EXPORT_ZIP_CONFIG.ERR_MISSING_PROJECT });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: EXPORT_ZIP_CONFIG.ERR_MISSING_PROJECT });
     }
 
     const project = await getProjectDetailFromDb(projectId);
     if (!project) {
-      return res.status(404).json({ error: EXPORT_ZIP_CONFIG.ERR_PROJECT_NOT_FOUND });
+      return res
+        .status(404)
+        .json({ error: EXPORT_ZIP_CONFIG.ERR_PROJECT_NOT_FOUND });
     }
 
-    const scenes = _.get(project, 'storyboard', []);
-    const voiceUrl = _.get(project, 'voiceConfig.audioUrl');
+    const scenes = _.get(project, "storyboard", []);
+    const voiceUrl = _.get(project, "voiceConfig.audioUrl");
 
     if (!_.isEmpty(voiceUrl) && !_.isEmpty(scenes)) {
-      const relativeAudioPath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
+      const relativeAudioPath = _.startsWith(voiceUrl, "/")
+        ? voiceUrl.slice(1)
+        : voiceUrl;
       const fullAudioPath = path.join(getDataDirectory(), relativeAudioPath);
-      const voicesDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, EXPORT_ZIP_CONFIG.VOICES_DIR);
+      const voicesDir = path.join(
+        getDataDirectory(),
+        ASSETS_DIR_NAME,
+        PROJECTS_DIR_NAME,
+        projectId,
+        EXPORT_ZIP_CONFIG.VOICES_DIR,
+      );
 
       if (!fs.existsSync(voicesDir)) {
         fs.mkdirSync(voicesDir, { recursive: true });
       }
 
       if (fs.existsSync(fullAudioPath)) {
-        const cutAudioSegment = (src: string, dest: string, start: number, end: number): Promise<void> => {
+        const cutAudioSegment = (
+          src: string,
+          dest: string,
+          start: number,
+          end: number,
+        ): Promise<void> => {
           return new Promise((resolve) => {
             const ffmpegBinary = getStaticResourcePath("ffmpeg.exe");
-            const ffmpegCmd = fs.existsSync(ffmpegBinary) ? `"${ffmpegBinary}"` : "ffmpeg";
+            const ffmpegCmd = fs.existsSync(ffmpegBinary)
+              ? `"${ffmpegBinary}"`
+              : "ffmpeg";
             const cmd = `${ffmpegCmd} -y -ss ${start} -to ${end} -i "${src}" "${dest}"`;
             exec(cmd, (err) => {
               if (err) {
@@ -2497,15 +3853,28 @@ router.post("/export-zip", async (req: Request, res: Response) => {
         };
 
         for (const sc of scenes) {
-          const startVal = _.get(sc, '_start');
-          const endVal = _.get(sc, '_end');
+          const startVal = _.get(sc, "_start");
+          const endVal = _.get(sc, "_end");
           if (!_.isNil(startVal) && !_.isNil(endVal)) {
             const scIdStr = String(sc.id);
-            const cleanId = _.startsWith(scIdStr, EXPORT_ZIP_CONFIG.SCENE_PREFIX) ? scIdStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length) : scIdStr;
-            const outPath = path.join(voicesDir, `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`);
+            const cleanId = _.startsWith(
+              scIdStr,
+              EXPORT_ZIP_CONFIG.SCENE_PREFIX,
+            )
+              ? scIdStr.slice(EXPORT_ZIP_CONFIG.SCENE_PREFIX.length)
+              : scIdStr;
+            const outPath = path.join(
+              voicesDir,
+              `${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`,
+            );
             const slash = COMMON_STRINGS.SLASH_PREFIX;
             sc.audioUrl = `${slash}${ASSETS_DIR_NAME}${slash}${PROJECTS_DIR_NAME}${slash}${projectId}${slash}${EXPORT_ZIP_CONFIG.VOICES_DIR}${slash}${EXPORT_ZIP_CONFIG.SCENE_PREFIX}${cleanId}${EXPORT_ZIP_CONFIG.WAV_EXT}`;
-            await cutAudioSegment(fullAudioPath, outPath, _.toNumber(startVal), _.toNumber(endVal));
+            await cutAudioSegment(
+              fullAudioPath,
+              outPath,
+              _.toNumber(startVal),
+              _.toNumber(endVal),
+            );
           }
         }
       }
@@ -2529,18 +3898,32 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     zip.folder(`${folderKey}/Timelines`);
 
     zip.file(CAPCUT_CONFIG.COVER_FILENAME, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
-    zip.file(`${folderKey}/${CAPCUT_CONFIG.COVER_FILENAME}`, CAPCUT_CONFIG.COVER_MOCK_CONTENT);
+    zip.file(
+      `${folderKey}/${CAPCUT_CONFIG.COVER_FILENAME}`,
+      CAPCUT_CONFIG.COVER_MOCK_CONTENT,
+    );
 
     _.forEach(scenes, (sc, index) => {
       const filename = `${index + 1}_image.jpg`;
       if (sc.assetUrl) {
-        const relativePath = _.startsWith(sc.assetUrl, '/') ? sc.assetUrl.slice(1) : sc.assetUrl;
+        const relativePath = _.startsWith(sc.assetUrl, "/")
+          ? sc.assetUrl.slice(1)
+          : sc.assetUrl;
         const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const imgBuffer = fs.readFileSync(fullPath);
-          zip.file(`${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`, imgBuffer);
-          zip.file(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`, imgBuffer);
-          zip.file(`${folderKey}/Resources/voice_images/${filename}`, imgBuffer);
+          zip.file(
+            `${folderKey}/${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`,
+            imgBuffer,
+          );
+          zip.file(
+            `${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}/${filename}`,
+            imgBuffer,
+          );
+          zip.file(
+            `${folderKey}/Resources/voice_images/${filename}`,
+            imgBuffer,
+          );
           zip.file(`Resources/voice_images/${filename}`, imgBuffer);
         }
       }
@@ -2549,33 +3932,61 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     _.forEach(scenes, (sc, index) => {
       const filename = `${index + 1}_voice.wav`;
       if (sc.audioUrl) {
-        const relativePath = _.startsWith(sc.audioUrl, '/') ? sc.audioUrl.slice(1) : sc.audioUrl;
+        const relativePath = _.startsWith(sc.audioUrl, "/")
+          ? sc.audioUrl.slice(1)
+          : sc.audioUrl;
         const fullPath = path.join(getDataDirectory(), relativePath);
         if (fs.existsSync(fullPath)) {
           const audioBuffer = fs.readFileSync(fullPath);
           zip.file(`${folderKey}/Resources/voices/${filename}`, audioBuffer);
           zip.file(`Resources/voices/${filename}`, audioBuffer);
-          zip.file(`${folderKey}/Resources/voice_images/${filename}`, audioBuffer);
+          zip.file(
+            `${folderKey}/Resources/voice_images/${filename}`,
+            audioBuffer,
+          );
           zip.file(`Resources/voice_images/${filename}`, audioBuffer);
         }
       }
     });
 
     if (voiceUrl) {
-      const relativePath = _.startsWith(voiceUrl, '/') ? voiceUrl.slice(1) : voiceUrl;
+      const relativePath = _.startsWith(voiceUrl, "/")
+        ? voiceUrl.slice(1)
+        : voiceUrl;
       const fullPath = path.join(getDataDirectory(), relativePath);
       if (fs.existsSync(fullPath)) {
         const fullAudioBuffer = fs.readFileSync(fullPath);
-        zip.file(`${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`, fullAudioBuffer);
+        zip.file(
+          `${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`,
+          fullAudioBuffer,
+        );
         zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, fullAudioBuffer);
-        zip.file(`${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, fullAudioBuffer);
-        zip.file(`Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, fullAudioBuffer);
+        zip.file(
+          `${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`,
+          fullAudioBuffer,
+        );
+        zip.file(
+          `Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`,
+          fullAudioBuffer,
+        );
       }
     } else {
-      zip.file(`${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
-      zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
-      zip.file(`${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
-      zip.file(`Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`, CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT);
+      zip.file(
+        `${folderKey}/${CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME}`,
+        CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT,
+      );
+      zip.file(
+        CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME,
+        CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT,
+      );
+      zip.file(
+        `${folderKey}/Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`,
+        CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT,
+      );
+      zip.file(
+        `Resources/original_voices/${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`,
+        CAPCUT_CONFIG.AUDIO_NARRATION_MOCK_CONTENT,
+      );
     }
 
     const capcutMaterials: any = {
@@ -2611,7 +4022,10 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       const parts = _.split(timeStr.trim(), ":");
       let secs = 0;
       if (parts.length === 3) {
-        secs = parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+        secs =
+          parseFloat(parts[0]) * 3600 +
+          parseFloat(parts[1]) * 60 +
+          parseFloat(parts[2]);
       } else if (parts.length === 2) {
         secs = parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
       } else if (parts.length === 1) {
@@ -2640,7 +4054,9 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       };
     });
 
-    const totalDurationUs = !_.isEmpty(sceneRanges) ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000) : 0;
+    const totalDurationUs = !_.isEmpty(sceneRanges)
+      ? Math.round(sceneRanges[sceneRanges.length - 1].end * 1000000)
+      : 0;
 
     _.forEach(sceneRanges, (scRange, idx) => {
       const startUs = Math.round(scRange.start * 1000000);
@@ -2765,11 +4181,50 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_FILENAME, draftContentStr);
     writeDraftFile(CAPCUT_CONFIG.DRAFT_CONTENT_BAK_FILENAME, draftContentStr);
 
-    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME, jsonUtils.safeStringify({ editing_items: [], version: 1 }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME, jsonUtils.safeStringify({ device_id: CAPCUT_CONFIG.DEVICE_ID, client_version: CAPCUT_CONFIG.CLIENT_VERSION, system_info: CAPCUT_CONFIG.SYSTEM_INFO }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, jsonUtils.safeStringify({ client_os: "win", author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, jsonUtils.safeStringify({ agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, jsonUtils.safeStringify({ commercial_use: false, music_copyright_check: true }, null, 2));
+    writeDraftFile(
+      CAPCUT_CONFIG.ATTACHMENT_EDITING_FILENAME,
+      jsonUtils.safeStringify({ editing_items: [], version: 1 }, null, 2),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.ATTACHMENT_PC_COMMON_FILENAME,
+      jsonUtils.safeStringify(
+        {
+          device_id: CAPCUT_CONFIG.DEVICE_ID,
+          client_version: CAPCUT_CONFIG.CLIENT_VERSION,
+          system_info: CAPCUT_CONFIG.SYSTEM_INFO,
+        },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME,
+      jsonUtils.safeStringify(
+        {
+          client_os: "win",
+          author: CAPCUT_CONFIG.AUTHOR,
+          sync_time: Math.floor(Date.now() / 1000),
+        },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME,
+      jsonUtils.safeStringify(
+        { agency_id: "", org_id: "", user_id: CAPCUT_CONFIG.USER_ID },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME,
+      jsonUtils.safeStringify(
+        { commercial_use: false, music_copyright_check: true },
+        null,
+        2,
+      ),
+    );
 
     const draftMetaInfoObj = {
       draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID,
@@ -2782,14 +4237,67 @@ router.post("/export-zip", async (req: Request, res: Response) => {
       draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME,
       draft_fold_path: "",
     };
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, jsonUtils.safeStringify(draftMetaInfoObj, null, 2));
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME,
+      jsonUtils.safeStringify(draftMetaInfoObj, null, 2),
+    );
 
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, jsonUtils.safeStringify({ project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, jsonUtils.safeStringify({ cache_items: [], local_res_map: [] }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, jsonUtils.safeStringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, jsonUtils.safeStringify({ enable_proxy: false, render_quality: 100 }, null, 2));
-    writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, TEMPLATE_TMP_CONTENT(project.name));
-    writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, jsonUtils.safeStringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME,
+      jsonUtils.safeStringify(
+        {
+          project_setting: {
+            fps: CAPCUT_CONFIG.FPS,
+            ratio: CAPCUT_CONFIG.CANVAS_RATIO,
+            width: CAPCUT_CONFIG.CANVAS_WIDTH,
+            height: CAPCUT_CONFIG.CANVAS_HEIGHT,
+          },
+          export_setting: {
+            resolution: CAPCUT_CONFIG.RESOLUTION,
+            fps: CAPCUT_CONFIG.FPS,
+            rate_control: CAPCUT_CONFIG.RATE_CONTROL,
+            bit_rate: CAPCUT_CONFIG.BIT_RATE,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME,
+      jsonUtils.safeStringify({ cache_items: [], local_res_map: [] }, null, 2),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.KEY_VALUE_FILENAME,
+      jsonUtils.safeStringify(
+        {
+          draft_opened_count: 1,
+          last_open_time: Math.floor(Date.now() / 1000),
+        },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME,
+      jsonUtils.safeStringify(
+        { enable_proxy: false, render_quality: 100 },
+        null,
+        2,
+      ),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME,
+      TEMPLATE_TMP_CONTENT(project.name),
+    );
+    writeDraftFile(
+      CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME,
+      jsonUtils.safeStringify(
+        { track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 },
+        null,
+        2,
+      ),
+    );
 
     const content = await zip.generateAsync({
       type: "nodebuffer",
@@ -2797,13 +4305,19 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     });
 
     res.setHeader("Content-Type", "application/zip");
-    const safeFileName = encodeURIComponent(project.name.replace(WHITESPACE_REGEX, "_"));
-    res.setHeader("Content-Disposition", `attachment; filename=${safeFileName}_CapCut_Project_Bundle.zip`);
+    const safeFileName = encodeURIComponent(
+      project.name.replace(WHITESPACE_REGEX, "_"),
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${safeFileName}_CapCut_Project_Bundle.zip`,
+    );
     return res.send(content);
-
   } catch (error: any) {
     logger.error("Lỗi xuất CapCut ZIP ở server:", error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    return res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
   }
 });
 
@@ -2814,30 +4328,44 @@ router.get("/templates", (req: Request, res: Response) => {
     res.json(templates);
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_LIST_FAILED", isVi), error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_LIST_FAILED", isVi) });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: getBackendMsg("TEMPLATE_LIST_FAILED", isVi) });
   }
 });
 
-router.post("/templates", express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT }), (req: Request, res: Response) => {
-  const isVi = req.query?.lang !== ProjectLanguage.EN;
-  try {
-    const { name, folderPath } = req.body;
-    if (_.isEmpty(_.trim(name)) || _.isEmpty(_.trim(folderPath))) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_NAME_REQUIRED", isVi) });
+router.post(
+  "/templates",
+  express.json({ limit: TEMPLATE_CONFIG.PAYLOAD_LIMIT }),
+  (req: Request, res: Response) => {
+    const isVi = req.query?.lang !== ProjectLanguage.EN;
+    try {
+      const { name, folderPath } = req.body;
+      if (_.isEmpty(_.trim(name)) || _.isEmpty(_.trim(folderPath))) {
+        return res
+          .status(HTTP_STATUS_CODES.BAD_REQUEST)
+          .json({ error: getBackendMsg("TEMPLATE_NAME_REQUIRED", isVi) });
+      }
+      const template = saveTemplate(name, folderPath);
+      res.json(template);
+    } catch (error: any) {
+      logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
+      let errorMsg = getBackendMsg("TEMPLATE_SAVE_FAILED", isVi);
+      if (error.message === "EXCEED_MAX_TEMPLATES") {
+        errorMsg = isVi
+          ? "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới."
+          : "Maximum 2 templates allowed. Please delete one to add a new template.";
+      } else if (error.message === "INVALID_CAPCUT_TEMPLATE") {
+        errorMsg = isVi
+          ? "Thư mục bạn chọn không phải là dự án Capcut hợp lệ (Thiếu file draft_content.json)."
+          : "The selected folder is not a valid Capcut project (Missing draft_content.json).";
+      }
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: errorMsg });
     }
-    const template = saveTemplate(name, folderPath);
-    res.json(template);
-  } catch (error: any) {
-    logger.error(getBackendMsg("TEMPLATE_SAVE_FAILED", isVi), error);
-    let errorMsg = getBackendMsg("TEMPLATE_SAVE_FAILED", isVi);
-    if (error.message === "EXCEED_MAX_TEMPLATES") {
-      errorMsg = isVi ? "Bạn chỉ được lưu tối đa 2 dự án mẫu. Vui lòng xoá bớt để thêm mới." : "Maximum 2 templates allowed. Please delete one to add a new template.";
-    } else if (error.message === "INVALID_CAPCUT_TEMPLATE") {
-      errorMsg = isVi ? "Thư mục bạn chọn không phải là dự án Capcut hợp lệ (Thiếu file draft_content.json)." : "The selected folder is not a valid Capcut project (Missing draft_content.json).";
-    }
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: errorMsg });
-  }
-});
+  },
+);
 
 router.delete("/templates/:id", (req: Request, res: Response) => {
   const isVi = req.query?.lang !== ProjectLanguage.EN;
@@ -2847,11 +4375,15 @@ router.delete("/templates/:id", (req: Request, res: Response) => {
     if (deleted) {
       res.json({ success: true });
     } else {
-      res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: getBackendMsg("TEMPLATE_NOT_FOUND", isVi) });
+      res
+        .status(HTTP_STATUS_CODES.NOT_FOUND)
+        .json({ error: getBackendMsg("TEMPLATE_NOT_FOUND", isVi) });
     }
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_DELETE_FAILED", isVi), error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_DELETE_FAILED", isVi) });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: getBackendMsg("TEMPLATE_DELETE_FAILED", isVi) });
   }
 });
 router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
@@ -2860,112 +4392,233 @@ router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
     const { id } = req.params;
     const { newName } = req.body;
     if (_.isEmpty(_.trim(newName))) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("TEMPLATE_RENAME_REQUIRED", isVi) });
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: getBackendMsg("TEMPLATE_RENAME_REQUIRED", isVi) });
     }
     const updated = renameTemplate(id, newName);
     if (updated) {
       res.json(updated);
     } else {
-      res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: getBackendMsg("TEMPLATE_RENAME_NOT_FOUND", isVi) });
+      res
+        .status(HTTP_STATUS_CODES.NOT_FOUND)
+        .json({ error: getBackendMsg("TEMPLATE_RENAME_NOT_FOUND", isVi) });
     }
   } catch (error: any) {
     logger.error(getBackendMsg("TEMPLATE_RENAME_FAILED", isVi), error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: getBackendMsg("TEMPLATE_RENAME_FAILED", isVi) });
   }
 });
 
-router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) => {
-  const projectId=path.basename(_.toString(req.params.projectId));const group=_.toString(req.params.group);const allowed=_.values(REFERENCE_ASSET_GROUP);
-  if(!_.includes(allowed,group)||_.isEmpty(projectId))return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:PROJECT_ASSET_INVALID_REQUEST});
-  const directory=path.resolve(getDataDirectory(),ASSETS_DIR_NAME,PROJECTS_DIR_NAME,projectId,"references",group);const projectRoot=path.resolve(getDataDirectory(),ASSETS_DIR_NAME,PROJECTS_DIR_NAME,projectId);
-  if(!_.startsWith(_.toLower(directory),_.toLower(_.join([projectRoot,path.sep],""))))return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:PROJECT_ASSET_INVALID_REQUEST});
-  fs.mkdirSync(directory,{recursive:true});const assets:string[]=[];
-  try{_.forEach(_.take(_.castArray(req.body?.images),10),(image,index)=>{const match=_.toString(image).match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);if(!match){if(_.startsWith(_.toString(image),`/${ASSETS_DIR_NAME}/`))assets.push(_.toString(image));return}const extension=_.includes(match[1],"png")?"png":_.includes(match[1],"webp")?"webp":"jpg";const filename=`ref_${index+1}_${createHash("sha256").update(match[2]).digest("hex").slice(0,12)}.${extension}`;const filePath=path.join(directory,filename);if(!fs.existsSync(filePath))fs.writeFileSync(filePath,Buffer.from(match[2],"base64"));assets.push(`/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/references/${group}/${filename}`)});return res.json({success:true,assets})}catch(error:any){return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({error:error.message})}
-});
+router.post(
+  ROUTER_PATHS.REFERENCE_ASSETS,
+  async (req: Request, res: Response) => {
+    const projectId = path.basename(_.toString(req.params.projectId));
+    const group = _.toString(req.params.group);
+    const allowed = _.values(REFERENCE_ASSET_GROUP);
+    if (!_.includes(allowed, group) || _.isEmpty(projectId))
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: PROJECT_ASSET_INVALID_REQUEST });
+    const directory = path.resolve(
+      getDataDirectory(),
+      ASSETS_DIR_NAME,
+      PROJECTS_DIR_NAME,
+      projectId,
+      "references",
+      group,
+    );
+    const projectRoot = path.resolve(
+      getDataDirectory(),
+      ASSETS_DIR_NAME,
+      PROJECTS_DIR_NAME,
+      projectId,
+    );
+    if (
+      !_.startsWith(
+        _.toLower(directory),
+        _.toLower(_.join([projectRoot, path.sep], "")),
+      )
+    )
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: PROJECT_ASSET_INVALID_REQUEST });
+    fs.mkdirSync(directory, { recursive: true });
+    const assets: string[] = [];
+    try {
+      _.forEach(_.take(_.castArray(req.body?.images), 10), (image, index) => {
+        const match = _.toString(image).match(
+          REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX,
+        );
+        if (!match) {
+          if (_.startsWith(_.toString(image), `/${ASSETS_DIR_NAME}/`))
+            assets.push(_.toString(image));
+          return;
+        }
+        const extension = _.includes(match[1], "png")
+          ? "png"
+          : _.includes(match[1], "webp")
+            ? "webp"
+            : "jpg";
+        const filename = `ref_${index + 1}_${createHash("sha256").update(match[2]).digest("hex").slice(0, 12)}.${extension}`;
+        const filePath = path.join(directory, filename);
+        if (!fs.existsSync(filePath))
+          fs.writeFileSync(filePath, Buffer.from(match[2], "base64"));
+        assets.push(
+          `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/references/${group}/${filename}`,
+        );
+      });
+      return res.json({ success: true, assets });
+    } catch (error: any) {
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    }
+  },
+);
 
-router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
-  const { projectId, group } = req.params;
-  const allowedGroups = _.values(PROJECT_ASSET_GROUP);
-  if (!_.includes(allowedGroups, group)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
-  }
-
-  const projectsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
-  const projectRoot = path.resolve(projectsRoot, projectId);
-  const assetDirectory = path.resolve(projectRoot, group);
-  if (!_.isEqual(path.dirname(projectRoot), projectsRoot) || !_.isEqual(path.dirname(assetDirectory), projectRoot)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
-  }
-
-  try {
-    fs.rmSync(assetDirectory, { recursive: true, force: true });
-    fs.mkdirSync(assetDirectory, { recursive: true });
-
-    const project = await getProjectDetailFromDb(projectId);
-    if (project) {
-      let changed = false;
-      const isImagesOrVideos = _.includes([PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS], group);
-
-      if (isImagesOrVideos && !_.isEmpty(project.storyboard)) {
-        _.forEach(project.storyboard, (scene) => {
-          const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
-          if ((_.isEqual(group, PROJECT_ASSET_GROUP.IMAGES) && !isVideoScene) || (_.isEqual(group, PROJECT_ASSET_GROUP.VIDEOS) && isVideoScene)) {
-            _.set(scene, "assetUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-            changed = true;
-          }
-        });
-      } else if (_.isEqual(group, PROJECT_ASSET_GROUP.VOICES) && !_.isEmpty(project.voiceConfig)) {
-        _.set(project.voiceConfig, "audioBase64", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        _.set(project.voiceConfig, "audioUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        changed = true;
-      }
-
-      if (changed) {
-        await saveProjectDetailToDb(project);
-      }
+router.delete(
+  PROJECT_ASSET_ROUTE,
+  requireLicense(FeatureType.VIDEO),
+  async (req: Request, res: Response) => {
+    const { projectId, group } = req.params;
+    const allowedGroups = _.values(PROJECT_ASSET_GROUP);
+    if (!_.includes(allowedGroups, group)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: PROJECT_ASSET_INVALID_REQUEST });
     }
 
-    return res.json({ success: true });
-  } catch (error: any) {
-    logger.error(getBackendMsg("SQLITE_DELETE_ERR", true), error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("SQLITE_DELETE_ERR", true) });
-  }
-});
+    const projectsRoot = path.resolve(
+      getDataDirectory(),
+      ASSETS_DIR_NAME,
+      PROJECTS_DIR_NAME,
+    );
+    const projectRoot = path.resolve(projectsRoot, projectId);
+    const assetDirectory = path.resolve(projectRoot, group);
+    if (
+      !_.isEqual(path.dirname(projectRoot), projectsRoot) ||
+      !_.isEqual(path.dirname(assetDirectory), projectRoot)
+    ) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: PROJECT_ASSET_INVALID_REQUEST });
+    }
 
-router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
-  try {
-    const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId } = req.body;
-    const jobId = randomUUID();
+    try {
+      fs.rmSync(assetDirectory, { recursive: true, force: true });
+      fs.mkdirSync(assetDirectory, { recursive: true });
 
-    const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
+      const project = await getProjectDetailFromDb(projectId);
+      if (project) {
+        let changed = false;
+        const isImagesOrVideos = _.includes(
+          [PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS],
+          group,
+        );
 
-    renderQueueService.addJob(
-      jobId,
-      {
+        if (isImagesOrVideos && !_.isEmpty(project.storyboard)) {
+          _.forEach(project.storyboard, (scene) => {
+            const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
+            if (
+              (_.isEqual(group, PROJECT_ASSET_GROUP.IMAGES) && !isVideoScene) ||
+              (_.isEqual(group, PROJECT_ASSET_GROUP.VIDEOS) && isVideoScene)
+            ) {
+              _.set(scene, "assetUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+              changed = true;
+            }
+          });
+        } else if (
+          _.isEqual(group, PROJECT_ASSET_GROUP.VOICES) &&
+          !_.isEmpty(project.voiceConfig)
+        ) {
+          _.set(
+            project.voiceConfig,
+            "audioBase64",
+            REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          );
+          _.set(
+            project.voiceConfig,
+            "audioUrl",
+            REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          );
+          changed = true;
+        }
+
+        if (changed) {
+          await saveProjectDetailToDb(project);
+        }
+      }
+
+      return res.json({ success: true });
+    } catch (error: any) {
+      logger.error(getBackendMsg("SQLITE_DELETE_ERR", true), error);
+      return res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: getBackendMsg("SQLITE_DELETE_ERR", true) });
+    }
+  },
+);
+
+router.post(
+  "/ffmpeg-render",
+  express.json({ limit: SecurityConstants.LIMIT_500MB }),
+  requireLicense(FeatureType.VIDEO),
+  async (req: Request, res: Response) => {
+    try {
+      const {
         scenes,
         globalAudioUrl,
         globalAudioBase64,
-        quality: quality as VideoQuality,
-        aspectRatio: aspectRatio as string,
-        projectId: projectId as string
-      },
-      licenseKey
-    );
+        quality,
+        aspectRatio,
+        projectId,
+      } = req.body;
+      const jobId = randomUUID();
 
-    res.json({ success: true, jobId });
-  } catch (error: any) {
-    const isVi = req.headers[SecurityConstants.HEADER_ACCEPT_LANGUAGE]?.includes(COMMON_STRINGS.VI);
-    logger.error(getBackendMsg("FFMPEG_RENDER_ERROR", isVi), error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
-  }
-});
+      const licenseKey =
+        (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) ||
+        (_.get(
+          requestContext.getStore(),
+          SecurityConstants.STORE_LICENSE_KEY,
+        ) as string);
+
+      renderQueueService.addJob(
+        jobId,
+        {
+          scenes,
+          globalAudioUrl,
+          globalAudioBase64,
+          quality: quality as VideoQuality,
+          aspectRatio: aspectRatio as string,
+          projectId: projectId as string,
+        },
+        licenseKey,
+      );
+
+      res.json({ success: true, jobId });
+    } catch (error: any) {
+      const isVi = req.headers[
+        SecurityConstants.HEADER_ACCEPT_LANGUAGE
+      ]?.includes(COMMON_STRINGS.VI);
+      logger.error(getBackendMsg("FFMPEG_RENDER_ERROR", isVi), error);
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    }
+  },
+);
 
 router.get("/ffmpeg-render/status/:jobId", (req: Request, res: Response) => {
   const { jobId } = req.params;
   const job = renderQueueService.getJob(jobId);
 
   if (!job) {
-    return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
+    return res
+      .status(HTTP_STATUS_CODES.NOT_FOUND)
+      .json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
   }
 
   res.json({
@@ -2973,7 +4626,7 @@ router.get("/ffmpeg-render/status/:jobId", (req: Request, res: Response) => {
     status: job.status,
     progress: job.progress,
     url: job.url,
-    error: job.error
+    error: job.error,
   });
 });
 
@@ -2982,56 +4635,81 @@ router.get("/profiles", (req: Request, res: Response) => {
     const list = getProfiles();
     res.json({ success: true, profiles: list });
   } catch (error: any) {
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
   }
 });
 
-router.post(REFACTOR_CONSTANTS.ROUTE_PROFILES_LOGIN, async (req: Request, res: Response) => {
-  const { profileId } = req.body;
-  if (_.isEmpty(profileId)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
-  }
-  try {
-    await launchLoginBrowser(profileId);
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
-  }
-});
+router.post(
+  REFACTOR_CONSTANTS.ROUTE_PROFILES_LOGIN,
+  async (req: Request, res: Response) => {
+    const { profileId } = req.body;
+    if (_.isEmpty(profileId)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
+    }
+    try {
+      await launchLoginBrowser(profileId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    }
+  },
+);
 
-router.delete(REFACTOR_CONSTANTS.ROUTE_PROFILES_ID, (req: Request, res: Response) => {
-  const { profileId } = req.params;
-  if (_.isEmpty(profileId)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
-  }
-  try {
-    deleteProfile(profileId);
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
-  }
-});
+router.delete(
+  REFACTOR_CONSTANTS.ROUTE_PROFILES_ID,
+  (req: Request, res: Response) => {
+    const { profileId } = req.params;
+    if (_.isEmpty(profileId)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: REFACTOR_CONSTANTS.MSG_PROFILE_ID_REQ });
+    }
+    try {
+      deleteProfile(profileId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    }
+  },
+);
 
 router.get(REFACTOR_CONSTANTS.ROUTE_ACCOUNTS, (req: Request, res: Response) => {
   try {
     const list = getLocalAccounts();
     res.json({ success: true, accounts: list });
   } catch (error: any) {
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    res
+      .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
   }
 });
 
-router.post(REFACTOR_CONSTANTS.ROUTE_ACCOUNTS, (req: Request, res: Response) => {
-  const { accounts } = req.body;
-  if (!_.isArray(accounts)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.MSG_ACC_LIST_ARRAY });
-  }
-  try {
-    saveLocalAccounts(accounts);
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
-  }
-});
+router.post(
+  REFACTOR_CONSTANTS.ROUTE_ACCOUNTS,
+  (req: Request, res: Response) => {
+    const { accounts } = req.body;
+    if (!_.isArray(accounts)) {
+      return res
+        .status(HTTP_STATUS_CODES.BAD_REQUEST)
+        .json({ error: REFACTOR_CONSTANTS.MSG_ACC_LIST_ARRAY });
+    }
+    try {
+      saveLocalAccounts(accounts);
+      res.json({ success: true });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR)
+        .json({ error: error.message });
+    }
+  },
+);
 
 export default router;

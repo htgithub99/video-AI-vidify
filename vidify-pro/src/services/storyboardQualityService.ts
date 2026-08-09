@@ -1,11 +1,81 @@
-import _ from "lodash";import { StoryboardQualityReport } from "../types.js";
-export const STORYBOARD_QUALITY_CONFIG = { MIN_SCORE: 85, DIVERSITY_SAMPLE_SIZE: 8, MIN_SCENE_DURATION_SECONDS: 3, FALLBACK_WARNING: "AI storyboard QA unavailable; deterministic structural QA was used.", EMPTY_STORYBOARD_ERROR: "storyboard_has_no_scenes", INCOMPLETE_SCENE_ERROR: "storyboard_contains_incomplete_scenes" } as const;
+import _ from "lodash";
+import { StoryboardQualityReport } from "../types.js";
+export const STORYBOARD_QUALITY_CONFIG = {
+  MIN_SCORE: 85,
+  DIVERSITY_SAMPLE_SIZE: 8,
+  MIN_SCENE_DURATION_SECONDS: 3,
+  FALLBACK_WARNING:
+    "AI storyboard QA unavailable; deterministic structural QA was used.",
+  EMPTY_STORYBOARD_ERROR: "storyboard_has_no_scenes",
+  INCOMPLETE_SCENE_ERROR: "storyboard_contains_incomplete_scenes",
+} as const;
 const score = (input: unknown): number => _.clamp(_.toNumber(input), 0, 100);
-const percentage = (matched: number, total: number): number => total > 0 ? _.round(matched / total * 100) : 0;
-const diversityScore = (scenes: any[]): number => { const sampleSize = _.min([_.size(scenes), STORYBOARD_QUALITY_CONFIG.DIVERSITY_SAMPLE_SIZE]) || 1;const values = _.flatMap(["cameraAngle", "cameraMotion", "transition"], key => _.uniq(_.compact(_.map(scenes, key))));return score(percentage(_.size(_.uniq(values)), sampleSize)); };
-export const normalizeStoryboardQuality = (value: Partial<StoryboardQualityReport>): StoryboardQualityReport => { const report={continuityScore:score(value.continuityScore),shotDiversityScore:score(value.shotDiversityScore),visibleActionScore:score(value.visibleActionScore),editabilityScore:score(value.editabilityScore),blockingErrors:_.uniq(_.compact(_.castArray(value.blockingErrors))),warnings:_.uniq(_.compact(_.castArray(value.warnings))),passed:false};report.passed=_.isEmpty(report.blockingErrors)&&_.every([report.continuityScore,report.shotDiversityScore,report.visibleActionScore,report.editabilityScore],item=>item>=STORYBOARD_QUALITY_CONFIG.MIN_SCORE);return report; };
-export const evaluateFallbackStoryboardQuality = (scenes: any[]): StoryboardQualityReport => {
-  const sceneCount = _.size(scenes);const completeScenes = _.filter(scenes, scene => !_.isEmpty(_.trim(_.toString(scene?.script || scene?.scriptSegment))) && !_.isEmpty(_.trim(_.toString(scene?.prompt || scene?.imagePrompt))));const editableScenes = _.filter(completeScenes, scene => _.toNumber(scene?.duration) >= STORYBOARD_QUALITY_CONFIG.MIN_SCENE_DURATION_SECONDS && (!_.isEmpty(scene?.cameraMotion) || !_.isEmpty(scene?.transition)));
-  const blockingErrors = _.compact([sceneCount === 0 && STORYBOARD_QUALITY_CONFIG.EMPTY_STORYBOARD_ERROR, sceneCount > 0 && _.size(completeScenes) < sceneCount && STORYBOARD_QUALITY_CONFIG.INCOMPLETE_SCENE_ERROR]) as string[];
-  return normalizeStoryboardQuality({ continuityScore: percentage(_.size(completeScenes), sceneCount), shotDiversityScore: diversityScore(scenes), visibleActionScore: percentage(_.size(completeScenes), sceneCount), editabilityScore: percentage(_.size(editableScenes), sceneCount), blockingErrors, warnings: [STORYBOARD_QUALITY_CONFIG.FALLBACK_WARNING] });
+const percentage = (matched: number, total: number): number =>
+  total > 0 ? _.round((matched / total) * 100) : 0;
+const diversityScore = (scenes: any[]): number => {
+  const sampleSize =
+    _.min([_.size(scenes), STORYBOARD_QUALITY_CONFIG.DIVERSITY_SAMPLE_SIZE]) ||
+    1;
+  const values = _.flatMap(
+    ["cameraAngle", "cameraMotion", "transition"],
+    (key) => _.uniq(_.compact(_.map(scenes, key))),
+  );
+  return score(percentage(_.size(_.uniq(values)), sampleSize));
+};
+export const normalizeStoryboardQuality = (
+  value: Partial<StoryboardQualityReport>,
+): StoryboardQualityReport => {
+  const report = {
+    continuityScore: score(value.continuityScore),
+    shotDiversityScore: score(value.shotDiversityScore),
+    visibleActionScore: score(value.visibleActionScore),
+    editabilityScore: score(value.editabilityScore),
+    blockingErrors: _.uniq(_.compact(_.castArray(value.blockingErrors))),
+    warnings: _.uniq(_.compact(_.castArray(value.warnings))),
+    passed: false,
+  };
+  report.passed =
+    _.isEmpty(report.blockingErrors) &&
+    _.every(
+      [
+        report.continuityScore,
+        report.shotDiversityScore,
+        report.visibleActionScore,
+        report.editabilityScore,
+      ],
+      (item) => item >= STORYBOARD_QUALITY_CONFIG.MIN_SCORE,
+    );
+  return report;
+};
+export const evaluateFallbackStoryboardQuality = (
+  scenes: any[],
+): StoryboardQualityReport => {
+  const sceneCount = _.size(scenes);
+  const completeScenes = _.filter(
+    scenes,
+    (scene) =>
+      !_.isEmpty(_.trim(_.toString(scene?.script || scene?.scriptSegment))) &&
+      !_.isEmpty(_.trim(_.toString(scene?.prompt || scene?.imagePrompt))),
+  );
+  const editableScenes = _.filter(
+    completeScenes,
+    (scene) =>
+      _.toNumber(scene?.duration) >=
+        STORYBOARD_QUALITY_CONFIG.MIN_SCENE_DURATION_SECONDS &&
+      (!_.isEmpty(scene?.cameraMotion) || !_.isEmpty(scene?.transition)),
+  );
+  const blockingErrors = _.compact([
+    sceneCount === 0 && STORYBOARD_QUALITY_CONFIG.EMPTY_STORYBOARD_ERROR,
+    sceneCount > 0 &&
+      _.size(completeScenes) < sceneCount &&
+      STORYBOARD_QUALITY_CONFIG.INCOMPLETE_SCENE_ERROR,
+  ]) as string[];
+  return normalizeStoryboardQuality({
+    continuityScore: percentage(_.size(completeScenes), sceneCount),
+    shotDiversityScore: diversityScore(scenes),
+    visibleActionScore: percentage(_.size(completeScenes), sceneCount),
+    editabilityScore: percentage(_.size(editableScenes), sceneCount),
+    blockingErrors,
+    warnings: [STORYBOARD_QUALITY_CONFIG.FALLBACK_WARNING],
+  });
 };

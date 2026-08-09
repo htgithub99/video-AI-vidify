@@ -27,7 +27,25 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [groqKey, setGroqKey] = useState(() => getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY));
   const [ai33Key, setAi33Key] = useState(() => getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
   const [isSavingKeys, setIsSavingKeys] = useState(false);
-  useEffect(() => { const migrateKeys = async () => { for (const key of [STORAGE_KEYS.GEMINI_API_KEY, STORAGE_KEYS.CEREBRAS_API_KEY, STORAGE_KEYS.GROQ_API_KEY, STORAGE_KEYS.AI33_API_KEY]) { const value = await storageUtils.getAsync(key); if (!_.isEmpty(value)) storageUtils.set(key, value as string); } setGeminiKey(getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY)); setCerebrasKey(getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY)); setGroqKey(getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY)); setAi33Key(getStoredApiKey(STORAGE_KEYS.AI33_API_KEY)); }; void migrateKeys(); }, []);
+  useEffect(() => {
+    const migrateKeys = async () => {
+      const apiKeyStorageKeys = [
+        STORAGE_KEYS.GEMINI_API_KEY,
+        STORAGE_KEYS.CEREBRAS_API_KEY,
+        STORAGE_KEYS.GROQ_API_KEY,
+        STORAGE_KEYS.AI33_API_KEY,
+      ];
+      for (const key of apiKeyStorageKeys) {
+        const value = await storageUtils.getAsync(key);
+        if (!_.isEmpty(value)) storageUtils.set(key, value as string);
+      }
+      setGeminiKey(getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY));
+      setCerebrasKey(getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY));
+      setGroqKey(getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY));
+      setAi33Key(getStoredApiKey(STORAGE_KEYS.AI33_API_KEY));
+    };
+    void migrateKeys();
+  }, []);
   
   const [accounts, setAccounts] = useState<any[]>([]);
   useEffect(() => {
@@ -52,7 +70,26 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
   const [newPassword, setNewPassword] = useState(SecurityConstants.EMPTY_STRING);
   const [newRecovery, setNewRecovery] = useState(SecurityConstants.EMPTY_STRING);
 
-  const handleSaveKeys = async () => { setIsSavingKeys(true); try { const entries = [[STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey)], [STORAGE_KEYS.CEREBRAS_API_KEY, _.trim(cerebrasKey)], [STORAGE_KEYS.GROQ_API_KEY, _.trim(groqKey)], [STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key)]] as const; for (const [key, value] of entries) { storageUtils.set(key, value); await storageUtils.setAsync(key, value); } toast.success(SecurityMessages.SAVE_API_KEYS_SUCCESS); } catch { toast.error(SecurityMessages.SAVE_API_KEYS_ERROR); } finally { setIsSavingKeys(false); } };
+  const handleSaveKeys = async () => {
+    setIsSavingKeys(true);
+    try {
+      const entries = [
+        [STORAGE_KEYS.GEMINI_API_KEY, _.trim(geminiKey)],
+        [STORAGE_KEYS.CEREBRAS_API_KEY, _.trim(cerebrasKey)],
+        [STORAGE_KEYS.GROQ_API_KEY, _.trim(groqKey)],
+        [STORAGE_KEYS.AI33_API_KEY, _.trim(ai33Key)],
+      ] as const;
+      for (const [key, value] of entries) {
+        storageUtils.set(key, value);
+        await storageUtils.setAsync(key, value);
+      }
+      toast.success(SecurityMessages.SAVE_API_KEYS_SUCCESS);
+    } catch {
+      toast.error(SecurityMessages.SAVE_API_KEYS_ERROR);
+    } finally {
+      setIsSavingKeys(false);
+    }
+  };
 
   const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;

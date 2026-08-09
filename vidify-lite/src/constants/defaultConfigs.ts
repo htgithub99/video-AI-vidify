@@ -1,5 +1,4 @@
 import { VoicePresetId, SceneDensity } from "./enums";
-import { EXTERNAL_URLS } from "./apiRoutes";
 
 export const SCENE_DENSITY_MAP = {
   [SceneDensity.THEO_TU]: { maxChars: 65, label: "Word-based (Ultra-dense)" },
@@ -14,24 +13,6 @@ export const boundaries = [".", "!", "?", "\n"];
 export const pauseChars = [" ", ",", "."];
 export const closedKeywords = ["closed", "close", "context"];
 
-export const FALLBACK_VOICES = [
-  {
-    id: "elevenlabs-cloud-vi",
-    name: "AI Cao Cấp",
-    voiceId: "cgSgspJ2msm6clMCkdW9",
-    provider: "elevenlabs",
-    gender: "female",
-    previewUrl: EXTERNAL_URLS.ELEVENLABS_PROJECTS,
-    language: "vi",
-  },
-  { id: VoicePresetId.PRESET_VI_BAC_FEMALE, name: "Hoài My (Nữ Bắc)", provider: "ttsfree", gender: "female", voiceId: "vi-VN-Standard-A", language: "vi" },
-  { id: VoicePresetId.PRESET_VI_BAC_MALE, name: "Nam Minh (Nam Bắc)", provider: "ttsfree", gender: "male", voiceId: "vi-VN-Standard-B", language: "vi" },
-  { id: VoicePresetId.PRESET_VI_TRUNG_FEMALE, name: "Thùy Vy (Nữ Trung)", provider: "ttsfree", gender: "female", voiceId: "vi-VN-Standard-C", language: "vi" },
-  { id: VoicePresetId.PRESET_VI_TRUNG_MALE, name: "Gia Bảo (Nam Trung)", provider: "ttsfree", gender: "male", voiceId: "vi-VN-Standard-D", language: "vi" },
-  { id: VoicePresetId.PRESET_VI_NAM_FEMALE, name: "Lan Trinh (Nữ Nam)", provider: "ttsfree", gender: "female", voiceId: "vi-VN-Standard-E", language: "vi" },
-  { id: VoicePresetId.PRESET_VI_NAM_MALE, name: "Minh Quang (Nam Nam)", provider: "ttsfree", gender: "male", voiceId: "vi-VN-Standard-F", language: "vi" },
-];
-
 export const supportedTypes = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
 
 export const SYSTEM_STATUS = {
@@ -42,6 +23,7 @@ export const SYSTEM_STATUS = {
 };
 
 export const defaultVoiceConfig = {
+  provider: "AI33Pro",
   voiceURI: VoicePresetId.PRESET_VI_BAC_FEMALE,
   speed: 1.0,
   pitch: 1.0,

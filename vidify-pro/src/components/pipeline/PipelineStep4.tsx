@@ -5,8 +5,17 @@ import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
-import { GenerateType, ManualReviewStatus, SceneAssetStatus, WizardStep } from "../../types";
-import { EXPORT_TYPES, EXPORT_URLS, PLAYER_SIMULATION_CONFIG } from "../../constants";
+import {
+  GenerateType,
+  ManualReviewStatus,
+  SceneAssetStatus,
+  WizardStep,
+} from "../../types";
+import {
+  EXPORT_TYPES,
+  EXPORT_URLS,
+  PLAYER_SIMULATION_CONFIG,
+} from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { OFFLINE_RENDER_ID } from "../../constants/enums";
 import { logger } from "../../utils/logger";
@@ -14,23 +23,44 @@ import _ from "lodash";
 import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
 
-const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
+const { Eye, Download, Video, ArrowLeft, Play, Pause, Maximize, Settings2 } =
+  LucideIcons as any;
 
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, setCurrentStep, setInfoMsg, getMotionLabel, isOfflineRendering, isPlayingSim, simActiveScene, handleOfflineRenderWebM, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, handleDownloadSRT, handleDownloadCapcutLink, handleDownloadPremiereXML, loadingExportType } = props as any;
+  const {
+    t,
+    setCurrentStep,
+    setInfoMsg,
+    getMotionLabel,
+    isOfflineRendering,
+    isPlayingSim,
+    simActiveScene,
+    handleOfflineRenderWebM,
+    startPlaybackSim,
+    stopPlaybackSim,
+    getSceneImageUrl,
+    handleDownloadJSONProject,
+    handleDownloadSRT,
+    handleDownloadCapcutLink,
+    handleDownloadPremiereXML,
+    loadingExportType,
+  } = props as any;
   const currentLang = (props as any).currentLang === "en" ? "en" : "vi";
   const shortTexts = PIPELINE_STEP4_SHORT_TEXTS[currentLang];
 
   const playerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fakeProgress, setFakeProgress] = useState<number>(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
+  const [fakeProgress, setFakeProgress] = useState<number>(
+    PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
+  );
 
   useEffect(() => {
     let interval: any;
     if (isPlayingSim) {
       interval = setInterval(() => {
         setFakeProgress((prev) => {
-          if (prev >= PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT) return PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
+          if (prev >= PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT)
+            return PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
           return prev + PLAYER_SIMULATION_CONFIG.PROGRESS_STEP;
         });
       }, PLAYER_SIMULATION_CONFIG.PROGRESS_INTERVAL_MS);
@@ -45,7 +75,10 @@ export default function PipelineStep4(props: PipelineWizardState) {
     const x = e.clientX - rect.left;
     const percentage = Math.max(
       PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
-      Math.min(PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT)
+      Math.min(
+        PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT,
+        (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT,
+      ),
     );
     setFakeProgress(percentage);
   };
@@ -55,7 +88,8 @@ export default function PipelineStep4(props: PipelineWizardState) {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = () => {
@@ -70,14 +104,47 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   const getZoomClass = (motion: string) => {
     if (!isPlayingSim) return "";
-    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS, motion)) return "scale-110";
-    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS, motion)) return "scale-90";
+    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_IN_MOTIONS, motion))
+      return "scale-110";
+    if (_.includes(PLAYER_SIMULATION_CONFIG.ZOOM_OUT_MOTIONS, motion))
+      return "scale-90";
     return "";
   };
-  const qualityBlocked = _.some(props.project.storyboard, (scene) => scene.assetStatus !== SceneAssetStatus.Approved) || _.some(props.project.thumbnails, (thumbnail) => !thumbnail.approved) || !props.project.voiceConfig.audioQa?.passed || !props.project.subtitleQa?.passed || !props.project.editorQa?.passed || _.some(props.project.manualReviewItems, { status: ManualReviewStatus.Pending });
-  const handleQualityGatedRender = () => qualityBlocked ? setInfoMsg("Quality review is incomplete. Resolve every blocking QA/manual-review item before rendering.") : handleOfflineRenderWebM();
-  const handleReview = (id: string, status: ManualReviewStatus) => props.setProject(resolveManualReview(props.project, id, status));
-  const handleRollback = (sceneId: string) => { const scene=_.find(props.project.storyboard,{id:sceneId});const revision=_.findLast(scene?.assetRevisions,{status:SceneAssetStatus.Approved});if(scene&&revision)props.setProject({...props.project,storyboard:_.map(props.project.storyboard,item=>item.id===sceneId?rollbackSceneAssetRevision(item,revision.id):item)}); };
+  const qualityBlocked =
+    _.some(
+      props.project.storyboard,
+      (scene) => scene.assetStatus !== SceneAssetStatus.Approved,
+    ) ||
+    _.some(props.project.thumbnails, (thumbnail) => !thumbnail.approved) ||
+    !props.project.voiceConfig.audioQa?.passed ||
+    !props.project.subtitleQa?.passed ||
+    !props.project.editorQa?.passed ||
+    _.some(props.project.manualReviewItems, {
+      status: ManualReviewStatus.Pending,
+    });
+  const handleQualityGatedRender = () =>
+    qualityBlocked
+      ? setInfoMsg(
+          "Quality review is incomplete. Resolve every blocking QA/manual-review item before rendering.",
+        )
+      : handleOfflineRenderWebM();
+  const handleReview = (id: string, status: ManualReviewStatus) =>
+    props.setProject(resolveManualReview(props.project, id, status));
+  const handleRollback = (sceneId: string) => {
+    const scene = _.find(props.project.storyboard, { id: sceneId });
+    const revision = _.findLast(scene?.assetRevisions, {
+      status: SceneAssetStatus.Approved,
+    });
+    if (scene && revision)
+      props.setProject({
+        ...props.project,
+        storyboard: _.map(props.project.storyboard, (item) =>
+          item.id === sceneId
+            ? rollbackSceneAssetRevision(item, revision.id)
+            : item,
+        ),
+      });
+  };
 
   const exportButtons = [
     {
@@ -139,12 +206,59 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   return (
     <div className="bg-gradient-to-b from-slate-900/90 to-slate-950/95 border border-slate-800/85 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6 relative overflow-hidden">
-      {!_.isEmpty(props.project.manualReviewItems) && <div className="relative z-20 rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200"><div className="font-bold mb-2">Manual review</div>{_.map(props.project.manualReviewItems, (item) => <div key={item.id} className="flex items-center gap-2"><span>{item.scope}: {item.targetId || "project"} - {item.reason} [{item.status}]</span>{item.status === ManualReviewStatus.Pending && <><Button size="xs" variant="secondary" onClick={() => handleReview(item.id, ManualReviewStatus.Approved)}>Approve</Button><Button size="xs" variant="danger" onClick={() => handleReview(item.id, ManualReviewStatus.Rejected)}>Reject</Button>{item.scope === "scene" && item.targetId && <Button size="xs" variant="ghost" onClick={() => handleRollback(item.targetId!)}>Restore approved revision</Button>}</>}</div>)}</div>}
+      {!_.isEmpty(props.project.manualReviewItems) && (
+        <div className="relative z-20 rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 text-xs text-amber-200">
+          <div className="font-bold mb-2">Manual review</div>
+          {_.map(props.project.manualReviewItems, (item) => (
+            <div key={item.id} className="flex items-center gap-2">
+              <span>
+                {item.scope}: {item.targetId || "project"} - {item.reason} [
+                {item.status}]
+              </span>
+              {item.status === ManualReviewStatus.Pending && (
+                <>
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={() =>
+                      handleReview(item.id, ManualReviewStatus.Approved)
+                    }
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="danger"
+                    onClick={() =>
+                      handleReview(item.id, ManualReviewStatus.Rejected)
+                    }
+                  >
+                    Reject
+                  </Button>
+                  {item.scope === "scene" && item.targetId && (
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => handleRollback(item.targetId!)}
+                    >
+                      Restore approved revision
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/[0.03] rounded-full blur-3xl pointer-events-none" />
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-hidden">
           <h3 className="font-bold text-slate-100 text-base flex items-center gap-2 relative z-10">
-            <Tooltip content={shortTexts.RENDER_TITLE_TOOLTIP} position="bottom" align="start">
+            <Tooltip
+              content={shortTexts.RENDER_TITLE_TOOLTIP}
+              position="bottom"
+              align="start"
+            >
               <span className="flex items-center gap-2 cursor-help">
                 <Eye className="w-5 h-5 text-rose-500" />
                 {shortTexts.RENDER_TITLE}
@@ -152,30 +266,61 @@ export default function PipelineStep4(props: PipelineWizardState) {
             </Tooltip>
           </h3>
 
-          <div 
-            ref={playerRef} 
-            className={cn("bg-black border border-slate-800/80 relative overflow-hidden group shadow-2xl flex flex-col", isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen flex items-center justify-center" : "aspect-[16/9] rounded-xl ring-1 ring-white/5")}
+          <div
+            ref={playerRef}
+            className={cn(
+              "bg-black border border-slate-800/80 relative overflow-hidden group shadow-2xl flex flex-col",
+              isFullscreen
+                ? "fixed inset-0 z-50 rounded-none w-screen h-screen flex items-center justify-center"
+                : "aspect-[16/9] rounded-xl ring-1 ring-white/5",
+            )}
           >
             <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/80 to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            
+
             <div className="absolute inset-0 flex items-center justify-center z-0">
               {simActiveScene ? (
                 <>
                   {getSceneImageUrl(simActiveScene) ? (
                     <div className="w-full h-full relative bg-slate-900">
-                      {_.isEqual(simActiveScene.assetType, GenerateType.Video) ? (
-                        <video src={getSceneImageUrl(simActiveScene)} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                      {_.isEqual(
+                        simActiveScene.assetType,
+                        GenerateType.Video,
+                      ) ? (
+                        <video
+                          src={getSceneImageUrl(simActiveScene)}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <img referrerPolicy="no-referrer" src={getSceneImageUrl(simActiveScene)} alt={t.rendering_visual} className={cn(`w-full h-full object-cover transition-transform duration-1000 ${getZoomClass(simActiveScene.cameraMotion)}`)} />
+                        <img
+                          referrerPolicy="no-referrer"
+                          src={getSceneImageUrl(simActiveScene)}
+                          alt={t.rendering_visual}
+                          className={cn(
+                            `w-full h-full object-cover transition-transform duration-1000 ${getZoomClass(simActiveScene.cameraMotion)}`,
+                          )}
+                        />
                       )}
-                      {!simActiveScene.assetUrl && <div className="absolute top-4 right-4 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20">{t.Default_Timeline_Image}</div>}
+                      {!simActiveScene.assetUrl && (
+                        <div className="absolute top-4 right-4 bg-rose-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg z-20">
+                          {t.Default_Timeline_Image}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex items-center justify-center bg-slate-950">{t.noPhotoRenderedYet?.replace("{sceneId}", simActiveScene.id)}</div>
+                    <div className="text-center p-6 text-slate-500 font-mono text-xs w-full h-full flex items-center justify-center bg-slate-950">
+                      {t.noPhotoRenderedYet?.replace(
+                        "{sceneId}",
+                        simActiveScene.id,
+                      )}
+                    </div>
                   )}
 
                   <div className="absolute bottom-16 left-4 right-4 text-center z-20 pointer-events-none">
-                    <span 
+                    <span
                       className="bg-black/60 backdrop-blur-sm text-yellow-400 font-bold px-5 py-2 rounded-md border border-white/5 text-sm sm:text-base md:text-lg font-sans tracking-wide drop-shadow-2xl inline-block max-w-[90%] pointer-events-auto"
                       style={{ textShadow: "1px 1px 3px rgba(0,0,0,0.9)" }}
                     >
@@ -188,18 +333,24 @@ export default function PipelineStep4(props: PipelineWizardState) {
                       {t.Scene}: {simActiveScene.id}
                     </span>
                     <span className="text-slate-300 text-xs md:text-sm drop-shadow-md font-medium mt-1">
-                      {t.Camera_VFX}: {getMotionLabel(simActiveScene.cameraMotion)}
+                      {t.Camera_VFX}:{" "}
+                      {getMotionLabel(simActiveScene.cameraMotion)}
                     </span>
                   </div>
                 </>
               ) : (
-                <div className="text-center text-slate-500 text-xs w-full h-full flex items-center justify-center bg-slate-950">{t.Nothing_to_simulate}</div>
+                <div className="text-center text-slate-500 text-xs w-full h-full flex items-center justify-center bg-slate-950">
+                  {t.Nothing_to_simulate}
+                </div>
               )}
             </div>
 
             {!isPlayingSim && simActiveScene && (
               <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
-                <div className="w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500" onClick={startPlaybackSim}>
+                <div
+                  className="w-16 h-16 rounded-full bg-black/60 flex items-center justify-center text-white backdrop-blur-md border border-white/10 shadow-2xl opacity-80 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all pointer-events-auto cursor-pointer hover:bg-rose-600 hover:border-rose-500"
+                  onClick={startPlaybackSim}
+                >
                   <Play className="w-8 h-8 fill-current ml-1" />
                 </div>
               </div>
@@ -208,12 +359,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
             <div className="absolute bottom-0 left-0 right-0 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end px-3 pb-2 pt-6">
-              
-              <div 
+              <div
                 className="w-full h-[3px] group-hover/progress:h-[5px] bg-white/20 cursor-pointer mb-3 relative group/progress flex items-center transition-all duration-150 ease-out"
                 onClick={handleSeek}
               >
-                <div 
+                <div
                   className="h-full bg-rose-600 relative z-10 transition-none"
                   style={{ width: `${fakeProgress}%` }}
                 >
@@ -223,7 +373,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button 
+                  <button
                     onClick={isPlayingSim ? stopPlaybackSim : startPlaybackSim}
                     className="text-white hover:text-rose-500 transition-colors outline-none focus:outline-none p-1"
                     title={isPlayingSim ? t.Stop_Simulation : t.Play_Simulation}
@@ -234,28 +384,46 @@ export default function PipelineStep4(props: PipelineWizardState) {
                       <Play className="w-6 h-6 fill-current" />
                     )}
                   </button>
-                  
+
                   <div className="text-[12px] md:text-sm font-bold font-sans text-white flex items-center gap-1.5 drop-shadow-md">
                     {simActiveScene ? (
                       <>
-                        <span className="tracking-wide">{formatCleanTime(simActiveScene.startTime)}</span>
+                        <span className="tracking-wide">
+                          {formatCleanTime(simActiveScene.startTime)}
+                        </span>
                         <span className="text-white/60 mx-0.5">/</span>
-                        <span className="text-white/80 tracking-wide">{formatCleanTime(simActiveScene.endTime)}</span>
+                        <span className="text-white/80 tracking-wide">
+                          {formatCleanTime(simActiveScene.endTime)}
+                        </span>
                       </>
                     ) : (
                       <span className="text-white/60">{t.PAUSED}</span>
                     )}
-                    <span className={cn("ml-4 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm", isPlayingSim ? "bg-rose-600 text-white" : "bg-white/20 text-white")}>
+                    <span
+                      className={cn(
+                        "ml-4 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider shadow-sm",
+                        isPlayingSim
+                          ? "bg-rose-600 text-white"
+                          : "bg-white/20 text-white",
+                      )}
+                    >
                       {isPlayingSim ? t.ACTIVE_RUNNING : t.PAUSED}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4 text-white">
-                  <button className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Settings || "Cấu hình"}>
+                  <button
+                    className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none"
+                    title={t.Settings || "Cấu hình"}
+                  >
                     <Settings2 className="w-5 h-5 cursor-pointer" />
                   </button>
-                  <button onClick={toggleFullscreen} className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none" title={t.Fullscreen || "Toàn màn hình"}>
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-1 hover:bg-white/10 rounded-full transition-colors outline-none"
+                    title={t.Fullscreen || "Toàn màn hình"}
+                  >
                     <Maximize className="w-5 h-5 cursor-pointer" />
                   </button>
                 </div>
@@ -265,51 +433,90 @@ export default function PipelineStep4(props: PipelineWizardState) {
         </div>
 
         <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-6 shadow-xl relative overflow-hidden">
-          <h3 className="font-bold text-slate-100 text-base relative z-10">{t.Professional_Project_Pack}</h3>
+          <h3 className="font-bold text-slate-100 text-base relative z-10">
+            {t.Professional_Project_Pack}
+          </h3>
 
           <div className="grid grid-cols-1 gap-3.5 text-xs">
             {_.map(exportButtons, (btn, index) => {
               const Icon = btn.icon;
               return (
-                <Button 
+                <Button
                   key={index}
-                  variant="ghost" 
-                  onClick={btn.handler} 
-                  disabled={btn.isLoading} 
-                  className={cn("w-full flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border", 
-                    btn.isPrimary 
-                      ? (btn.isLoading ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950" : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100") 
-                      : "bg-slate-950 hover:bg-slate-850 border-slate-800 text-slate-200 hover:text-slate-100")}
+                  variant="ghost"
+                  onClick={btn.handler}
+                  disabled={btn.isLoading}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3.5 rounded-xl text-left h-auto shrink-0 shadow-none flex-row gap-4 border",
+                    btn.isPrimary
+                      ? btn.isLoading
+                        ? "bg-slate-950 border-slate-900 text-slate-500 hover:bg-slate-950"
+                        : "bg-gradient-to-r from-rose-950/30 to-slate-950 hover:to-slate-850 border-rose-950 text-slate-200 hover:text-slate-100"
+                      : "bg-slate-950 hover:bg-slate-850 border-slate-800 text-slate-200 hover:text-slate-100",
+                  )}
                   title={btn.desc}
                 >
                   <div className="text-left flex-1">
-                    <span className={cn("font-bold block flex items-center gap-1.5", btn.isPrimary && !btn.isLoading ? "text-rose-400" : "")}>
-                      {btn.isLoading ? <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> : (btn.isPrimary && <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />)}
+                    <span
+                      className={cn(
+                        "font-bold block flex items-center gap-1.5",
+                        btn.isPrimary && !btn.isLoading ? "text-rose-400" : "",
+                      )}
+                    >
+                      {btn.isLoading ? (
+                        <span className="inline-block w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      ) : (
+                        btn.isPrimary && (
+                          <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
+                        )
+                      )}
                       {btn.isLoading ? btn.loadingLabel : btn.label}
                     </span>
-                    <span className="text-[10px] text-slate-500 block mt-0.5 font-normal text-left">{btn.desc}</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5 font-normal text-left">
+                      {btn.desc}
+                    </span>
                   </div>
-                  {btn.isLoading ? <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" /> : <Icon className={cn("w-5 h-5 shrink-0", btn.isPrimary ? "text-rose-500" : "text-slate-400")} />}
+                  {btn.isLoading ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-rose-500 border-t-transparent animate-spin shrink-0" />
+                  ) : (
+                    <Icon
+                      className={cn(
+                        "w-5 h-5 shrink-0",
+                        btn.isPrimary ? "text-rose-500" : "text-slate-400",
+                      )}
+                    />
+                  )}
                 </Button>
-              )
+              );
             })}
           </div>
 
           <div className="bg-slate-900 border border-slate-850 p-4 rounded-xl space-y-2">
-            <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">{t.Cloud_Exporter_Sync_Setup}</span>
+            <span className="text-[10px] text-slate-500 font-mono font-bold block uppercase">
+              {t.Cloud_Exporter_Sync_Setup}
+            </span>
             <div className="flex gap-2">
-              <input type="text" placeholder={EXPORT_URLS.DEFAULT_S3_BUCKET} className="w-full bg-slate-900 text-slate-350 text-[11px] p-2 rounded focus:outline-none placeholder-slate-600 border border-slate-800" />
-              <Button variant="primary" size="xs" onClick={() => setInfoMsg(t.Configured_bucket_coordin)} title={t.Save}>
+              <input
+                type="text"
+                placeholder={EXPORT_URLS.DEFAULT_S3_BUCKET}
+                className="w-full bg-slate-900 text-slate-350 text-[11px] p-2 rounded focus:outline-none placeholder-slate-600 border border-slate-800"
+              />
+              <Button
+                variant="primary"
+                size="xs"
+                onClick={() => setInfoMsg(t.Configured_bucket_coordin)}
+                title={t.Save}
+              >
                 {t.Save}
               </Button>
             </div>
           </div>
 
           <div className="pt-4 border-t border-slate-800 flex items-center justify-start mt-6">
-            <Button 
-              variant="secondary" 
-              size="md" 
-              onClick={() => setCurrentStep(WizardStep.SEOBoost)} 
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentStep(WizardStep.SEOBoost)}
               className="flex items-center gap-1.5 px-5 py-3 shadow"
               title={t.Back}
             >

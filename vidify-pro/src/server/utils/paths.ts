@@ -35,19 +35,21 @@ export function getDataDirectory(): string {
 export function getStaticResourcePath(filename: string): string {
   const isElectronRunning = process.env[CONFIG_KEYS.ELECTRON_RUNNING];
   const resourcesPath = process.resourcesPath;
-  
+
   if (!_.isEmpty(isElectronRunning) && !_.isEmpty(resourcesPath)) {
     const resourcePath = path.join(resourcesPath!, filename);
     if (fs.existsSync(resourcePath)) {
       return resourcePath;
     }
   }
-  
+
   return path.join(process.cwd(), filename);
 }
 
 export function getPythonCommand(): string {
-  const portablePythonPath = getStaticResourcePath(path.join("python_scripts", "python_runtime", "python.exe"));
+  const portablePythonPath = getStaticResourcePath(
+    path.join("python_scripts", "python_runtime", "python.exe"),
+  );
   if (fs.existsSync(portablePythonPath)) {
     return portablePythonPath;
   }

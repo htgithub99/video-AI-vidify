@@ -157,7 +157,6 @@ export const REFACTOR_CONSTANTS = {
   SIZE_SM: "sm",
   SIZE_LG: "lg",
   ERR_SAVE_CONFIG_LOCAL_STORAGE: "Không thể lưu cấu hình của bạn. Vui lòng kiểm tra lại bộ nhớ trình duyệt.",
-  AVG_THUMB_PROMPT_TEMPLATE: "{0}. Designed in rich high-CTR {1} layout.",
   AVG_ELLIPSIS: "...",
   AVG_DOUBLE_QUOTE: "\"",
   AVG_DEFAULT_AR: "16:9",
@@ -307,7 +306,7 @@ export const REFACTOR_CONSTANTS = {
   FORM_KEY_SPEED: "speed",
   FORM_KEY_WITH_TRANSCRIPT: "with_transcript",
   VALUE_FALSE: "false",
-  PROVIDER_AI33: "AI33",
+  PROVIDER_AI33: "AI33Pro",
 
   DELAY_SAVE_KEYS_MS: 500,
   RECOVERY_PLACEHOLDER_SHORT_VI: "Email khôi phục...",

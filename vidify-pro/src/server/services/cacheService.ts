@@ -1,7 +1,6 @@
 import { jsonUtils } from "../../lib/json.js";
 import { appLog } from "../../lib/logger.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 interface CacheEntry {
   timestamp: number;
@@ -16,7 +15,11 @@ const getCacheKey = (endpoint: string, body: any): string => {
   return `${endpoint}:${jsonUtils.safeStringify(clone)}`;
 };
 
-export const checkCache = (endpoint: string, body: any, bypass = false): any | null => {
+export const checkCache = (
+  endpoint: string,
+  body: any,
+  bypass = false,
+): any | null => {
   if (_.eq(bypass, true)) {
     appLog("CACHE_BYPASS", endpoint);
     return null;
