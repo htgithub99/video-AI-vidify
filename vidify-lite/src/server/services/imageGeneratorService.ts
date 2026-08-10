@@ -20,6 +20,7 @@ import { captureDomDiagnostics } from "./domDiagnosticsService.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
+import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 
 interface BrowserSession {
   context: BrowserContext;
@@ -960,6 +961,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           await randomDelay(1200, 2200);
 
           base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
+          if (base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video)
+            && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio)) {
+            throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
+          }
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -1052,15 +1057,20 @@ async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number
 
 const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => {
   const page = await context.newPage();
-  await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
-    waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
-    timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-  });
-  await randomDelay(
-    GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
-    GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
-  );
-  return page;
+  try {
+    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+      waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
+      timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+    });
+    await randomDelay(
+      GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
+      GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
+    );
+    return page;
+  } catch (error) {
+    await page.close().catch(() => {});
+    throw error;
+  }
 };
 
 const prepareGeminiBatchPage = async (page: Page, index: number): Promise<void> => {
@@ -1085,6 +1095,7 @@ const prepareGeminiBatchPage = async (page: Page, index: number): Promise<void> 
         .replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber))
         .replace(SecurityConstants.PLACEHOLDER_1, error.message),
     );
+    throw error;
   }
 };
 
@@ -1138,31 +1149,39 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       globalBatchPages.unshift(browserInstance.page);
     }
 
-    if (_.size(globalBatchPages) < maxTabs) {
-      const needed = maxTabs - _.size(globalBatchPages);
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", needed.toString()));
-      const newPages = await Promise.all(_.map(
-        _.range(needed),
-        async () => createGeminiBatchPage(context),
-      ));
-      const existingPageCount = _.size(globalBatchPages);
-      globalBatchPages.push(...newPages);
-      _.forEach(newPages, (_page, index) => {
-        const tabNumber = _.add(
-          _.add(existingPageCount, index),
-          SecurityConstants.DEFAULT_AMOUNT,
-        );
+    const readyPages: Page[] = [];
+    const candidates = globalBatchPages.slice(0, maxTabs);
+    const preparationResults = await Promise.allSettled(_.map(candidates, prepareGeminiBatchPage));
+    _.forEach(preparationResults, (result, index) => {
+      const page = candidates[index];
+      if (_.isEqual(result.status, "fulfilled")) {
+        readyPages.push(page);
+        return;
+      }
+      page.close().catch(() => {});
+    });
+
+    const maximumReplacementAttempts = _.multiply(maxTabs, 2);
+    let replacementAttempts = SecurityConstants.ZERO;
+    while (_.lt(_.size(readyPages), maxTabs) && _.lt(replacementAttempts, maximumReplacementAttempts)) {
+      replacementAttempts = _.add(replacementAttempts, SecurityConstants.DEFAULT_AMOUNT);
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", _.toString(_.subtract(maxTabs, _.size(readyPages)))));
+      try {
+        const page = await createGeminiBatchPage(context);
+        await prepareGeminiBatchPage(page, _.size(readyPages));
+        readyPages.push(page);
         appLog(
           BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT
-            .replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber))
+            .replace(SecurityConstants.PLACEHOLDER_0, _.toString(_.size(readyPages)))
             .replace(SecurityConstants.PLACEHOLDER_1, _.toString(maxTabs)),
         );
-      });
+      } catch (error) {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
+      }
     }
-
-    const activePages = globalBatchPages.slice(0, maxTabs);
-
-    await Promise.all(_.map(activePages, prepareGeminiBatchPage));
+    if (_.isEmpty(readyPages)) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", BACKEND_MESSAGES.UNKNOWN_ERROR));
+    globalBatchPages = readyPages;
+    const activePages = readyPages.slice(0, maxTabs);
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
@@ -1280,6 +1299,10 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               await randomDelay(1200, 2200);
 
               base64Result = await waitForDownloadAndGetBase64(page, itemVisualConfig, initialResponseCount);
+              if (base64Result && !_.isEqual(itemVisualConfig.generateType, GenerateType.Video)
+                && !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio)) {
+                throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
+              }
               if (base64Result) {
                 success = true;
                 batchPagesErrors.set(page, 0);

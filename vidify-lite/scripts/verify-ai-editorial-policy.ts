@@ -17,7 +17,6 @@ const lowScoreAiDecision = {
   usableForVideo: true,
   blockingErrors: [],
   warnings: ["composition could be stronger"],
-  correctivePrompt: "Improve focal separation.",
 };
 
 assert.equal(isSceneVisualQualityApproved(lowScoreAiDecision), true, "AI usable decision must not be overridden by a rigid score threshold");

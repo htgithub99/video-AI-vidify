@@ -27,6 +27,7 @@ import {
 } from "../constants";
 import { MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
 import { REGENERATION_TARGET, REGENERATION_TEXTS, PROJECT_ASSET_GROUP } from "../constants/config";
+import { clearAllProjectVisualOutputs, clearProjectVideoOutputs } from "../services/projectRegenerationService";
 import { Lang } from "../lib/lang";
 import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords } from "./auto-video/autoVideoGeneratorUtils";
 import { jsonUtils } from "../lib/json";
@@ -272,7 +273,7 @@ export default function AutoVideoGenerator({
       return;
     }
 
-    const updatedProject = _.cloneDeep(project);
+    let updatedProject = _.cloneDeep(project);
     let changed = false;
     const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
     const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
@@ -282,14 +283,12 @@ export default function AutoVideoGenerator({
       _.set(updatedProject.voiceConfig, "audioBase64", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       _.set(updatedProject.voiceConfig, "audioUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       changed = true;
-    } else if ((isImages || isVideos) && !_.isEmpty(updatedProject.storyboard)) {
-      _.forEach(updatedProject.storyboard, (scene) => {
-        const isVideoScene = _.isEqual(scene.assetType, GenerateType.Video);
-        if ((isImages && !isVideoScene) || (isVideos && isVideoScene)) {
-          _.set(scene, "assetUrl", REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-          changed = true;
-        }
-      });
+    } else if (isImages) {
+      updatedProject = clearAllProjectVisualOutputs(updatedProject);
+      changed = true;
+    } else if (isVideos) {
+      updatedProject = clearProjectVideoOutputs(updatedProject);
+      changed = true;
     }
 
     if (changed) {

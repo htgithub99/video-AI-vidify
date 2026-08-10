@@ -1,17 +1,12 @@
 import _ from "lodash";
 import { QualityMode, StoryboardScene } from "../types";
-export interface QualityProfile { draftCandidates:number; visionQa:"suspicious_and_key"|"all_character_scenes"|"all"; visionSampleStride:number; characterSampleLimit:number; finalCandidates:number; upscale:"key_only"|"approved"|"all_approved"; finalMultimodalReview:boolean; }
+export interface QualityProfile { draftCandidates:number; visionQa:"suspicious_and_key"|"all_character_scenes"|"all"; visionSampleStride:number; characterSampleLimit:number; upscale:"key_only"|"approved"|"all_approved"; finalMultimodalReview:boolean; }
 export const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
-  [QualityMode.Economy]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:6, characterSampleLimit:2, finalCandidates:1, upscale:"key_only", finalMultimodalReview:false },
-  [QualityMode.Balanced]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:4, characterSampleLimit:5, finalCandidates:2, upscale:"key_only", finalMultimodalReview:true },
-  [QualityMode.Premium]: { draftCandidates:2, visionQa:"all", visionSampleStride:1, characterSampleLimit:Number.MAX_SAFE_INTEGER, finalCandidates:3, upscale:"all_approved", finalMultimodalReview:true },
+  [QualityMode.Economy]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:6, characterSampleLimit:2, upscale:"key_only", finalMultimodalReview:false },
+  [QualityMode.Balanced]: { draftCandidates:1, visionQa:"suspicious_and_key", visionSampleStride:4, characterSampleLimit:5, upscale:"key_only", finalMultimodalReview:true },
+  [QualityMode.Premium]: { draftCandidates:2, visionQa:"all", visionSampleStride:1, characterSampleLimit:Number.MAX_SAFE_INTEGER, upscale:"all_approved", finalMultimodalReview:true },
 };
 export const resolveQualityProfile = (mode?: QualityMode): QualityProfile => QUALITY_PROFILES[mode || QualityMode.Balanced];
-
-export const resolveCorrectiveRetryLimit = (mode?: QualityMode): number => {
-  const profile = resolveQualityProfile(mode);
-  return _.max([0, _.subtract(profile.finalCandidates, profile.draftCandidates)]) || 0;
-};
 
 const CHARACTER_SCENE_PATTERN = /\b(man|woman|boy|girl|person|people|character|prisoner|soldier|child|face|portrait|người|đàn ông|phụ nữ|nhân vật|tù nhân|lính|trẻ em|khuôn mặt)\b/i;
 

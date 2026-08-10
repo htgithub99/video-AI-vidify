@@ -42,6 +42,11 @@ export const sanitizeImagePrompt = (prompt: string): string => {
   );
 };
 
+export const appendImagePromptAspectRatio = (prompt: string, aspectRatio?: string): string => {
+  const promptWithoutAspectRatio = _.trim(_.replace(prompt, IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN, " ").replace(IMAGE_PROMPT_QA_CONFIG.WHITESPACE_PATTERN, " "));
+  return _.join(_.compact([promptWithoutAspectRatio, aspectRatio ? `--ar ${aspectRatio}` : ""]), " ");
+};
+
 export const enforceImagePromptStyle = (
   prompt: string,
   targetStyle = "",

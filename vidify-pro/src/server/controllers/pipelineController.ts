@@ -49,14 +49,16 @@ import {
   TEXT_IN_IMAGE_MODE_CONFIG,
   FREE_TTS_CONFIG,
   STYLE_EXTRACTION_CONFIG,
-  IMAGE_PROMPT_QA_CONFIG,
-  IMAGE_PROMPT_METADATA_CONFIG,
+  PIPELINE_SERVER_ERRORS,
+  PIPELINE_SERVER_LOGS,
 } from "../../constants/config.js";
 import {
-  enforceImagePromptStyle,
+  appendImagePromptAspectRatio,
   evaluateImagePrompts,
-  sanitizeImagePrompt,
 } from "../../services/imagePromptQualityService.js";
+import { createBatchContinuityContext, createPromptCharacterCards, normalizeAiImagePromptPlan } from "../services/imagePromptPlanningService.js";
+import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
+import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { normalizeExtractedStyle } from "../../services/styleReferenceService.js";
 import { normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
@@ -101,13 +103,10 @@ import {
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
   getScriptEditorQaPrompt,
-  getScriptCorrectivePrompt,
   getAudioQualityPrompt,
   getStoryboardDirectorQaPrompt,
   getFinalVideoQualityPrompt,
   getContentSafetyPrompt,
-  MARKDOWN_REGEX,
-  EMOJI_REGEX,
   REGEX_AUTO_MODE_PATH,
   LogEvent,
   ErrorMessage,
@@ -165,6 +164,7 @@ import {
   STORYBOARD_QA_RESPONSE_SCHEMA,
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
   SCRIPT_PROMPT_CONFIG,
+  VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
 } from "../../constants";
 
 import {
@@ -207,11 +207,9 @@ import {
 } from "../../services/storyboardQualityService.js";
 import { normalizeContentSafety } from "../../services/contentSafetyService.js";
 import {
-  getTargetWordRange,
   normalizeScriptQualityReport,
   parseTargetDurationSeconds,
   rankHookVersions,
-  validateScriptRepair,
 } from "../../services/scriptQualityService.js";
 import {
   createSafeFallbackHook,
@@ -498,7 +496,7 @@ router.post(
     const isVi =
       req.body?.language === ProjectLanguage.VI ||
       req.query?.lang !== ProjectLanguage.EN;
-    const { storyboard, visualConfig, aspectRatio } = req.body;
+    const { storyboard, visualConfig, visualBible, aspectRatio } = req.body;
     if (!storyboard || !_.isArray(storyboard)) {
       return res
         .status(HTTP_STATUS_CODES.BAD_REQUEST)
@@ -525,10 +523,8 @@ router.post(
 
       const visualStyle = visualConfig?.style || "Cinematic";
       const referenceStyle = visualConfig?.referencePrompt || "";
-      const charactersJson =
-        visualConfig?.characters && visualConfig.characters.length > 0
-          ? jsonUtils.safeStringify(visualConfig.characters)
-          : undefined;
+      const promptCharacters = createPromptCharacterCards(_.defaultTo(visualConfig?.characters, []));
+      const charactersJson = !_.isEmpty(promptCharacters) ? jsonUtils.safeStringify(promptCharacters) : undefined;
 
       const chunkSize = PIPELINE_CONFIG.BATCH_CHUNK_SIZE_OPTIMIZE;
       const chunks = _.chunk(scenesToOptimize, chunkSize);
@@ -551,37 +547,12 @@ router.post(
       const validCharacterIds = new Set(
         _.map(_.defaultTo(visualConfig?.characters, []), "id"),
       );
-      const normalizeOptimizedItem = (item: any) => ({
-        prompt: sanitizeImagePrompt(item.prompt),
-        characterIds: _.filter(
-          _.uniq(_.castArray(item.characterIds)),
-          (characterId) => validCharacterIds.has(characterId),
-        ),
-        expectedSubjectCount: _.clamp(
-          _.toInteger(item.expectedSubjectCount),
-          IMAGE_PROMPT_METADATA_CONFIG.MIN_SUBJECT_COUNT,
-          IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT,
-        ),
-        allowBackgroundPeople: Boolean(item.allowBackgroundPeople),
-        layout: _.includes(
-          IMAGE_PROMPT_METADATA_CONFIG.ALLOWED_LAYOUTS,
-          item.layout,
-        )
-          ? item.layout
-          : IMAGE_PROMPT_METADATA_CONFIG.DEFAULT_LAYOUT,
-        textAllowed:
-          _.includes(
-            TEXT_IN_IMAGE_MODE_CONFIG.TEXT_ALLOWED_MODES,
-            visualConfig?.styleTextInImageMode,
-          ) || Boolean(item.textAllowed),
-      });
-      const optimizedMap = new Map<
-        string,
-        ReturnType<typeof normalizeOptimizedItem>
-      >();
+      const optimizedMap = new Map<string, ReturnType<typeof normalizeAiImagePromptPlan>>();
 
       for (let i = 0; i < chunks.length; i++) {
         const chunkItem = chunks[i];
+        const chunkStartIndex = i * chunkSize;
+        const continuityContext = jsonUtils.safeStringify(createBatchContinuityContext(scenesToOptimize, chunkStartIndex, chunkItem.length));
         const prompt = getOptimizePromptsBatchPrompt(
           visualStyle,
           referenceStyle,
@@ -592,6 +563,12 @@ router.post(
           backgroundDirective,
           textDirective,
           focusDirective,
+          visualConfig?.styleBackgroundMode || "auto",
+          visualConfig?.styleTextInImageMode || "auto",
+          visualConfig?.imageFocusMode || "default",
+          !_.isEmpty(visualConfig?.styleReferenceImages) ? "A style-only reference image will be attached at generation time." : "No reference image will be attached.",
+          jsonUtils.safeStringify(visualBible || {}),
+          continuityContext,
         );
 
         try {
@@ -603,7 +580,7 @@ router.post(
           if (_.isArray(parsed)) {
             for (const item of parsed) {
               if (item.id && item.prompt) {
-                optimizedMap.set(item.id, normalizeOptimizedItem(item));
+                optimizedMap.set(item.id, normalizeAiImagePromptPlan(item, validCharacterIds, visualConfig?.styleTextInImageMode));
               }
             }
           }
@@ -617,88 +594,22 @@ router.post(
       }
 
       const targetStyle = referenceStyle || visualStyle;
-      let updatedStoryboard = _.map(storyboard, (scene: any) => {
+      const updatedStoryboard = _.map(storyboard, (scene: any) => {
         const optimized = optimizedMap.get(scene.id);
         return {
           ...scene,
           ...optimized,
-          prompt: enforceImagePromptStyle(
+          prompt: appendImagePromptAspectRatio(
             optimized?.prompt || scene.prompt || "",
-            targetStyle,
-            scene.script || scene.subtitle || "",
-            scene.cameraMotion || "",
-            visualConfig?.styleTextInImageMode,
+            aspectRatio || AspectRatio.SixteenNine,
           ),
         };
       });
-      let promptQa = evaluateImagePrompts(updatedStoryboard, {
+      const promptQa = evaluateImagePrompts(updatedStoryboard, {
         backgroundMode: visualConfig?.styleBackgroundMode,
         textMode: visualConfig?.styleTextInImageMode,
         targetStyle,
       });
-
-      for (
-        let repairRound = 0;
-        repairRound < IMAGE_PROMPT_QA_CONFIG.MAX_REPAIR_ROUNDS &&
-        !promptQa.passed;
-        repairRound++
-      ) {
-        const blockingSceneIds = new Set(
-          _.map(promptQa.blockingErrors, "sceneId"),
-        );
-        const repairScenes = _.filter(updatedStoryboard, (scene) =>
-          blockingSceneIds.has(scene.id),
-        );
-        if (_.isEmpty(repairScenes)) break;
-        const repairPrompt = getOptimizePromptsBatchPrompt(
-          visualStyle,
-          referenceStyle,
-          jsonUtils.safeStringify(repairScenes),
-          aspectRatio || AspectRatio.SixteenNine,
-          charactersJson,
-          isVi,
-          backgroundDirective,
-          textDirective,
-          focusDirective,
-        );
-        try {
-          const repairResponse = await generateContentWithRetry({
-            contents: repairPrompt,
-            config: { responseMimeType: "application/json" },
-          });
-          const repairedItems = safeParseJSON(repairResponse.text, []);
-          const repairedMap = new Map<
-            string,
-            ReturnType<typeof normalizeOptimizedItem>
-          >(
-            _.map(
-              _.filter(repairedItems, (item) => item?.id && item?.prompt),
-              (item) => [item.id, normalizeOptimizedItem(item)],
-            ),
-          );
-          updatedStoryboard = _.map(updatedStoryboard, (scene) => {
-            const repaired = repairedMap.get(scene.id);
-            return {
-              ...scene,
-              ...repaired,
-              prompt: enforceImagePromptStyle(
-                repaired?.prompt || scene.prompt || "",
-                targetStyle,
-                scene.script || scene.subtitle || "",
-                scene.cameraMotion || "",
-                visualConfig?.styleTextInImageMode,
-              ),
-            };
-          });
-          promptQa = evaluateImagePrompts(updatedStoryboard, {
-            backgroundMode: visualConfig?.styleBackgroundMode,
-            textMode: visualConfig?.styleTextInImageMode,
-            targetStyle,
-          });
-        } catch (error) {
-          logger.error(LogEvent.BATCH_PROMPT_OPTIMIZE_FAILED_CHUNK, error);
-        }
-      }
 
       res.json({ success: true, storyboard: updatedStoryboard, promptQa });
     } catch (error: any) {
@@ -900,7 +811,7 @@ router.post(
       req.body?.language === ProjectLanguage.VI ||
       req.query?.lang !== ProjectLanguage.EN;
     try {
-      const { script } = req.body;
+      const { script, visualStyle } = req.body;
       if (!script) {
         return res
           .status(HTTP_STATUS_CODES.BAD_REQUEST)
@@ -913,7 +824,7 @@ router.post(
           .json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
       }
 
-      const prompt = getCharacterAnalysisPrompt(script);
+      const prompt = getCharacterAnalysisPrompt(script, _.toString(visualStyle));
 
       const response = await generateContentWithRetry({
         contents: prompt,
@@ -1473,6 +1384,24 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const chapterWordTarget = _.ceil(
       targetWordCount / (_.max([1, chapters.length]) || 1),
     );
+    const requestValidChapterSegment = async (contents: string): Promise<string> => {
+      const languageFailureLogs: string[] = [];
+      for (let attemptIndex = 0; attemptIndex < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_GENERATION_ATTEMPTS; attemptIndex++) {
+        const response = await generateContentWithRetry({ contents: attemptIndex > 0 && isVi ? `${contents}\n\n${VIETNAMESE_CHAPTER_RETRY_DIRECTIVE}` : contents, config: { responseMimeType: "application/json", responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: AiTaskCapability.ScriptWriting } });
+        if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
+        if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
+        let cleanedSegment = "";
+        try { cleanedSegment = extractCleanChapterSegment(response.text); } catch (responseError) { languageFailureLogs.push("invalid_chapter_response_empty_script"); appWarn(PIPELINE_SERVER_LOGS.INVALID_CHAPTER_RESPONSE_DISCARDED, responseError); continue; }
+        const validation = validateChapterLanguage(cleanedSegment, isVi);
+        if (validation.valid) return cleanedSegment;
+        languageFailureLogs.push(...validation.issues);
+        appWarn(PIPELINE_SERVER_LOGS.INVALID_CHAPTER_LANGUAGE_DISCARDED, validation.issues);
+      }
+      const languageError: any = createAppError(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
+      languageError.rotationLogs = languageFailureLogs;
+      languageError.noRetry = true;
+      throw languageError;
+    };
 
     for (let i = 0; i < chapters.length; i++) {
       const chapter = chapters[i];
@@ -1493,27 +1422,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         splitStrategy,
       );
 
-      const chapterResponse = await generateContentWithRetry({
-        contents: `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`,
-        config: {
-          responseMimeType: "application/json",
-          responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-          maxOutputTokens: 2048,
-        },
-        task: { capability: AiTaskCapability.ScriptWriting },
-      });
-
-      const chapterData = safeParseJSON(chapterResponse.text, {
-        scriptSegment: "",
-      });
-      assertResponseContract(chapterData, ResponseContractName.Chapter);
-
-      if (chapterResponse.aiMetadata)
-        aiMetrics.push(chapterResponse.aiMetadata);
-      let cleanedSegment = chapterData.scriptSegment || "";
-      cleanedSegment = cleanedSegment
-        .replace(MARKDOWN_REGEX, "")
-        .replace(EMOJI_REGEX, "");
+      let cleanedSegment = await requestValidChapterSegment(`Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`);
       const chapterMinimumWords = _.floor(
         chapterWordTarget *
           (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO),
@@ -1530,31 +1439,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         expansionIndex++
       ) {
         const currentWordCount = _.size(_.words(cleanedSegment));
-        const expansionResponse = await generateContentWithRetry({
-          contents: getChapterExpansionPrompt(
-            originalInput,
-            chapter.title,
-            cleanedSegment,
-            chapterMinimumWords - currentWordCount,
-            chapterMaximumWords - currentWordCount,
-            isVi,
-          ),
-          config: {
-            responseMimeType: "application/json",
-            responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-            maxOutputTokens: 2048,
-          },
-          task: { capability: AiTaskCapability.ScriptWriting },
-        });
-        if (expansionResponse.rotationLogs)
-          multiStepLogs.push(...expansionResponse.rotationLogs);
-        if (expansionResponse.aiMetadata)
-          aiMetrics.push(expansionResponse.aiMetadata);
-        const continuation = _.trim(
-          _.toString(safeParseJSON(expansionResponse.text, {}).scriptSegment),
-        )
-          .replace(MARKDOWN_REGEX, "")
-          .replace(EMOJI_REGEX, "");
+        const continuation = await requestValidChapterSegment(getChapterExpansionPrompt(originalInput, chapter.title, cleanedSegment, chapterMinimumWords - currentWordCount, chapterMaximumWords - currentWordCount, isVi));
         if (_.isEmpty(continuation)) break;
         cleanedSegment = _.trim(`${cleanedSegment} ${continuation}`);
       }
@@ -1566,8 +1451,6 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       });
 
       fullScript += cleanedSegment + "\n\n";
-      if (chapterResponse.rotationLogs)
-        multiStepLogs.push(...chapterResponse.rotationLogs);
     }
 
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
@@ -1604,59 +1487,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         targetDurationSeconds,
       );
     };
-    let scriptQa = await evaluateScript();
-    const repairWordRange = getTargetWordRange(targetDurationSeconds);
-    for (
-      let retryIndex = 0;
-      retryIndex < REFACTOR_CONSTANTS.SCRIPT_QA_CORRECTIVE_RETRY_COUNT &&
-      !scriptQa.passed;
-      retryIndex++
-    ) {
-      const repairResponse = await generateContentWithRetry({
-        contents: getScriptCorrectivePrompt(
-          finalCleanScript,
-          jsonUtils.safeStringify(scriptQa),
-          targetDurationSeconds,
-          repairWordRange.minimumWords,
-          repairWordRange.maximumWords,
-          isVi,
-        ),
-        config: {
-          responseMimeType: "application/json",
-          responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-          maxOutputTokens: 8192,
-        },
-        task: { capability: AiTaskCapability.ScriptWriting },
-      });
-      if (repairResponse.rotationLogs)
-        multiStepLogs.push(...repairResponse.rotationLogs);
-      if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
-      const rawRepairedScript = _.trim(
-        _.toString(safeParseJSON(repairResponse.text, {}).scriptSegment),
-      );
-      const repairedScript =
-        !_.isEmpty(activeHookText) &&
-        !_.startsWith(
-          _.toLower(rawRepairedScript),
-          _.toLower(_.trim(activeHookText)),
-        )
-          ? _.trim(`${activeHookText}\n\n${rawRepairedScript}`)
-          : rawRepairedScript;
-      const repairValidation = validateScriptRepair(
-        repairedScript,
-        targetDurationSeconds,
-        activeHookText,
-      );
-      if (!repairValidation.accepted) {
-        appWarn(
-          REFACTOR_CONSTANTS.LOG_SCRIPT_REPAIR_REJECTED,
-          jsonUtils.safeStringify(repairValidation),
-        );
-        continue;
-      }
-      finalCleanScript = repairedScript;
-      scriptQa = await evaluateScript();
-    }
+    const scriptQa = await evaluateScript();
 
     const parsedData = {
       rewrittenScript: finalCleanScript,
@@ -1671,15 +1502,15 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       aiMetrics,
       contentSafety,
     };
-    if (scriptQa.passed)
-      setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
+    setCache(API_ROUTES.PIPELINE_SCRIPT, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
+    const languageIntegrityFailed = _.isEqual(error?.message, PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: getGeminiUserMessage(error, isVi),
-      retryable: classifyGeminiError(error).retryable,
+      error: languageIntegrityFailed ? (isVi ? PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_VI : PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_EN) : getGeminiUserMessage(error, isVi),
+      retryable: languageIntegrityFailed || classifyGeminiError(error).retryable,
     });
   }
 });

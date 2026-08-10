@@ -52,12 +52,6 @@ const NO_TEXT_NEGATIVE_PROMPT = [
 const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
   !_.isEmpty(config.characterPrompt),
   _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
-  _.every([config.characterExtracted, !_.isEmpty(config.characterImages)], Boolean),
-  _.some(config.characters, (character) => _.every([
-    character.referenceApproved,
-    !_.isEmpty(character.images),
-    _.every(["front", "side", "three_quarter", "expression"], view => _.includes(character.referenceViews, view)),
-  ], Boolean)),
 ], Boolean);
 
 export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig => {

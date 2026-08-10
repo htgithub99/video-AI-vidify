@@ -16,4 +16,5 @@ export * from "./refactor";
 export * from "./security";
 export * from "./dbConstants";
 export * from "./thumbnail";
+export * from "./imagePromptRules";
 export * from "./userLog";

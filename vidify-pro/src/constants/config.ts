@@ -4,7 +4,7 @@ export const APP_CONFIG = {
 
 export const PIPELINE_CONFIG = {
   BATCH_CHUNK_SIZE_REWRITE: 25,
-  BATCH_CHUNK_SIZE_OPTIMIZE: 12,
+  BATCH_CHUNK_SIZE_OPTIMIZE: 8,
   DELAY_BETWEEN_CHUNKS_MS: 1500,
   DELAY_LONG_CHUNKS_MS: 3000,
   STEP5_DELAY_MS: 2000,
@@ -61,6 +61,9 @@ export const AUTO_VIDEO_PIPELINE_PROGRESS = {
   ALIGN_DONE: 90,
   COMPLETE: 100,
 } as const;
+
+export const PIPELINE_SERVER_ERRORS = { SCRIPT_LANGUAGE_INVALID: "script_language_integrity_failed", SCRIPT_LANGUAGE_INVALID_VI: "Một phần kịch bản chưa hiển thị đúng tiếng Việt. Hệ thống đã thử tạo lại nhưng chưa thành công. Vui lòng thử lại bước kịch bản.", SCRIPT_LANGUAGE_INVALID_EN: "Part of the script was not generated in the selected language. Please retry the script step." } as const;
+export const PIPELINE_SERVER_LOGS = { INVALID_CHAPTER_RESPONSE_DISCARDED: "[Script] Discarded an invalid chapter response.", INVALID_CHAPTER_LANGUAGE_DISCARDED: "[Script] Discarded a chapter response with invalid language formatting." } as const;
 
 export const IMAGE_PROMPT_QA_CONFIG = {
   MIN_WORDS: 25,

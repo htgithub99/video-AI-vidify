@@ -31,6 +31,8 @@ import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../../services/thumbnailPromptService";
 import { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../../lib/imagePromptDirectives";
+import { createSceneGenerationContext } from "../../services/sceneReferenceService";
+import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -1488,12 +1490,27 @@ export function usePipelineWizard(props: any) {
       setErrorMsg("");
     }
     try {
+      const sourceScene = _.find(project.storyboard, { id: sceneId });
+      const generationContext = sourceScene
+        ? createSceneGenerationContext({ ...sourceScene, prompt: customPrompt }, project.visualConfig, { includeCharacterImages: true })
+        : { prompt: customPrompt, referenceImages: project.visualConfig.referenceImages || [] };
+      const finalPrompt = appendImagePromptAspectRatio(
+        applyImageFocusMode(
+          applyTextInImageMode(
+            applyBackgroundMode(generationContext.prompt, project.visualConfig.styleBackgroundMode),
+            project.visualConfig.styleTextInImageMode,
+          ),
+          project.visualConfig.imageFocusMode,
+          project.visualConfig.styleBackgroundMode,
+        ),
+        project.visualConfig.aspectRatio,
+      );
       const sceneGenerateType = requestedGenerateType
         || (_.isEqual(project.visualConfig.generateType, GenerateType.Video)
           ? GenerateType.Video
           : GenerateType.Image);
       const response = await fetchSystemApi(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-        prompt: customPrompt,
+        prompt: finalPrompt,
         style: project.visualConfig.style,
         resolution: project.visualConfig.quality,
         bypassCache: isForce,
@@ -1501,6 +1518,7 @@ export function usePipelineWizard(props: any) {
         sandboxConfig: sandboxConfig,
         visualConfig: {
           ...project.visualConfig,
+          referenceImages: generationContext.referenceImages,
           generateType: sceneGenerateType,
         },
       });
@@ -1543,6 +1561,7 @@ export function usePipelineWizard(props: any) {
             return {
               ...sc,
               prompt: customPrompt,
+              generationPrompt: finalPrompt,
               assetUrl: imageUrl,
               assetUrls: [imageUrl],
               isGenerated: true,
@@ -2601,15 +2620,32 @@ export function usePipelineWizard(props: any) {
           }));
         }
 
-        const batchItems = _.map(targetScenes, (s) => ({
-          sceneId: s.id,
-          prompt: s.prompt,
-          generateType: resolveSceneGenerateType(
-            s.id,
-            configuredGenerateType,
-            videoSceneIds,
-          ),
-        }));
+        const generationPrompts = new Map<string, string>();
+        const batchItems = _.map(targetScenes, (scene) => {
+          const generationContext = createSceneGenerationContext(scene, project.visualConfig, { includeCharacterImages: true });
+          const prompt = appendImagePromptAspectRatio(
+            applyImageFocusMode(
+              applyTextInImageMode(
+                applyBackgroundMode(generationContext.prompt, project.visualConfig.styleBackgroundMode),
+                project.visualConfig.styleTextInImageMode,
+              ),
+              project.visualConfig.imageFocusMode,
+              project.visualConfig.styleBackgroundMode,
+            ),
+            project.visualConfig.aspectRatio,
+          );
+          generationPrompts.set(scene.id, prompt);
+          return {
+            sceneId: scene.id,
+            prompt,
+            referenceImages: generationContext.referenceImages,
+            generateType: resolveSceneGenerateType(
+              scene.id,
+              configuredGenerateType,
+              videoSceneIds,
+            ),
+          };
+        });
         const applyResult = (result: ProjectImageResult) => {
           const imageUrl = createProjectImageUrl(result);
           if (_.isEmpty(imageUrl)) {
@@ -2620,6 +2656,7 @@ export function usePipelineWizard(props: any) {
               if (_.eq(sc.id, result.sceneId)) {
                 return {
                   ...sc,
+                  generationPrompt: generationPrompts.get(sc.id),
                   assetUrl: imageUrl,
                   assetUrls: [imageUrl],
                   isGenerated: true,
@@ -2650,6 +2687,7 @@ export function usePipelineWizard(props: any) {
             sandboxConfig,
             visualConfig: {
               ...project.visualConfig,
+              referenceImages: item.referenceImages,
               generateType: item.generateType,
             },
           }),
@@ -2778,7 +2816,7 @@ export function usePipelineWizard(props: any) {
     setActiveSceneId(scene.id);
     setSceneEditScript(scene.script);
     setSceneEditSubtitle(scene.subtitle);
-    setSceneEditPrompt(scene.prompt);
+    setSceneEditPrompt(scene.generationPrompt || scene.prompt);
     setSceneEditMotion(scene.cameraMotion);
     setSceneEditFx(scene.effects || "");
     setSceneEditTransition(scene.transition || "");
@@ -2967,11 +3005,8 @@ export function usePipelineWizard(props: any) {
         style: styleText,
         hasText: false,
       } as ThumbnailItem;
-      const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
-      let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, styleText, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
-      if (project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyBackgroundMode(generationPrompt, project.visualConfig.thumbnailBackgroundMode);
-      if (project.visualConfig.thumbnailTextInImageMode) generationPrompt = applyTextInImageMode(generationPrompt, project.visualConfig.thumbnailTextInImageMode);
-      if (project.visualConfig.thumbnailImageFocusMode && project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyImageFocusMode(generationPrompt, project.visualConfig.thumbnailImageFocusMode, project.visualConfig.thumbnailBackgroundMode);
+      const referenceImages = resolveThumbnailReferenceImages(project.visualConfig, true);
+      const generationPrompt = createThumbnailGenerationPrompt(thumbnail, styleText, currentAspectRatio, !_.isEmpty(referenceImages), project.visualConfig.characters);
 
       const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
         prompt: generationPrompt,
@@ -3055,13 +3090,10 @@ export function usePipelineWizard(props: any) {
     try {
       if (_.isEqual(project.visualConfig.generationMode, ImageGenerationMode.GeminiChat)) {
         const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
-        const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
+        const referenceImages = resolveThumbnailReferenceImages(project.visualConfig, true);
         const generationPrompts = new Map<string, string>();
         const items = _.map(targets, thumbnail => {
-          let generationPrompt = `${createThumbnailGenerationPrompt(thumbnail, thumbnail.style, currentAspectRatio, !_.isEmpty(referenceImages))} --ar ${currentAspectRatio}`;
-          if (project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyBackgroundMode(generationPrompt, project.visualConfig.thumbnailBackgroundMode);
-          if (project.visualConfig.thumbnailTextInImageMode) generationPrompt = applyTextInImageMode(generationPrompt, project.visualConfig.thumbnailTextInImageMode);
-          if (project.visualConfig.thumbnailImageFocusMode && project.visualConfig.thumbnailBackgroundMode) generationPrompt = applyImageFocusMode(generationPrompt, project.visualConfig.thumbnailImageFocusMode, project.visualConfig.thumbnailBackgroundMode);
+          const generationPrompt = createThumbnailGenerationPrompt(thumbnail, thumbnail.style, currentAspectRatio, !_.isEmpty(referenceImages), project.visualConfig.characters);
           generationPrompts.set(thumbnail.id, generationPrompt);
           return { sceneId: thumbnail.id, prompt: generationPrompt, generateType: GenerateType.Image, referenceImages };
         });

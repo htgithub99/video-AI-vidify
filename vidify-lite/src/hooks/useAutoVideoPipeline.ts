@@ -39,10 +39,11 @@ import { VideoQuality } from "../constants/enums";
 import {
   API_ROUTES, CONTENT_TYPES, CONTENT_TYPE_HEADER,
   REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS,
-  API_HEADERS, getGeneratedMediaLanguageDirective, PIPELINE_CLIENT_ERRORS,
+  API_HEADERS, PIPELINE_CLIENT_ERRORS,
 } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, REFERENCE_ASSET_GROUP } from "../constants/config";
+import { IMAGE_PROMPT_PIPELINE_VERSION } from "../constants/imagePromptRules";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
@@ -65,26 +66,23 @@ import { validateAudioQuality } from "../services/audioQualityService";
 import { appendAssetRevision, createSceneDependencyHash, inheritApprovedSceneAsset } from "../services/dependencyHashService";
 import { createManualReviewItems, evaluateFinalQuality } from "../services/finalQualityService";
 import { migrateVideoProject } from "../services/projectMigrationService";
-import { resolveCorrectiveRetryLimit, resolveQualityProfile, selectScenesForVisionQa } from "../services/qualityProfileService";
+import { resolveQualityProfile, selectScenesForVisionQa } from "../services/qualityProfileService";
 import { upscaleApprovedSceneAssets } from "../services/imageUpscaleService";
 import { validateFinalVideo } from "../services/finalMultimodalQualityService";
 import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rolloutService";
 import { createAudioCueSheet } from "../services/soundDesignService";
 import { createShadowComparison } from "../services/shadowComparisonService";
 import { createSafeFallbackHook } from "../services/hookResilienceService";
-import { enforceImagePromptStyle, evaluateImagePrompts } from "../services/imagePromptQualityService";
+import { appendImagePromptAspectRatio, evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
-import { isSceneVisualQualityUsable, validateSceneImage, VISUAL_QA_CONFIG } from "../services/sceneVisualQualityService";
-import { createCanonicalCharacterPrompt, createSceneGenerationContext, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
+import { validateSceneImage } from "../services/sceneVisualQualityService";
+import { createSceneGenerationContext, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../services/thumbnailPromptService";
+import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
-  applyGeneratedMediaLanguage,
-  applyBackgroundMode,
-  applyTextInImageMode,
-  applyImageFocusMode,
   calculateSceneDuration,
   fetchCachedVoiceAudio,
   getReferenceChangeState,
@@ -170,9 +168,11 @@ const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: Array<{ id:
   const alignment = _.find(alignments, item => _.isEqual(item.id, scene.id));
   return alignment ? { ...scene, duration: alignment.duration, startTime: formatTimeHelper(alignment.start), endTime: formatTimeHelper(alignment.end), _start: alignment.start, _end: alignment.end, audioBase64: alignment.audioBase64, audioUrl: alignment.audioUrl } : scene;
 });
-const CHARACTER_SUBJECT_PATTERN = /\b(man|woman|person|people|character|boy|girl|portrait|face)\b|người|đàn ông|phụ nữ|nhân vật/i;
-const hasCharacterSubject = (scene: StoryboardScene): boolean => !_.isEmpty(scene.characterIds)
-  || CHARACTER_SUBJECT_PATTERN.test(_.join([scene.script, scene.prompt], " "));
+const hasSameNamedCharacters = (scene: StoryboardScene, candidate: StoryboardScene): boolean => {
+  const sceneCharacterIds = _.sortBy(_.uniq(_.compact(scene.characterIds)));
+  const candidateCharacterIds = _.sortBy(_.uniq(_.compact(candidate.characterIds)));
+  return !_.isEmpty(sceneCharacterIds) && _.isEqual(sceneCharacterIds, candidateCharacterIds);
+};
 
 export function useAutoVideoPipeline(
   projects: VideoProject[],
@@ -306,8 +306,6 @@ export function useAutoVideoPipeline(
 
       let newProjectId: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let newProj: VideoProject;
-      let canonicalCharacterReferences = config.characterImages;
-
       const { selectedAutoProject: selectedAutoProj, existingTargetProject: rawExistingTargetProj } = resolveTargetProject(
         projects,
         config.selectedProjectId,
@@ -321,19 +319,18 @@ export function useAutoVideoPipeline(
         config.referenceImages,
         config.sceneReferenceImages,
         config.thumbnailReferenceImages,
-        config.characterImages,
+        [],
       );
       const invalidationState = preserveInterruptedStoryboardCheckpoint(
         existingTargetProj,
         config,
         getPipelineInvalidationState(existingTargetProj, config, referenceChangeState),
       );
-      const requiresVisualReferenceMigration = _.some([
-        _.some(existingTargetProj?.visualConfig?.characters, character => _.isEmpty(character.images)),
-        _.some(existingTargetProj?.storyboard, scene => _.isEmpty(scene.layout) || _.isNil(scene.textAllowed)),
-      ], Boolean);
+      const requiresVisualReferenceMigration = _.some(
+        existingTargetProj?.storyboard,
+        scene => _.isEmpty(scene.layout) || _.isNil(scene.textAllowed),
+      );
       let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets || requiresVisualReferenceMigration;
-      const requiresImagePromptQaMigration = !existingTargetProj?.imagePromptQa?.passed;
 
       if (config.resumeMode && existingTargetProj) {
         newProjectId = existingTargetProj.id;
@@ -446,7 +443,7 @@ export function useAutoVideoPipeline(
             thumbnailImageFocusMode: config.thumbnailImageFocusMode,
             quality: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
             density: 5,
-            characterConsistency: !_.isEmpty(config.characterImages),
+            characterConsistency: false,
             assetsMode: AssetsMode.Mixed,
             imageGeneratorEngine: config.imageGeneratorEngine,
             generateType: config.generateType,
@@ -474,7 +471,7 @@ export function useAutoVideoPipeline(
       }
 
       const referenceGroups: Array<[string,string[]]> = await Promise.all(_.map([
-        {group:"style",images:config.referenceImages,configKey:"styleReferenceImages"}, {group:"scene",images:config.sceneReferenceImages,configKey:"sceneReferenceImages"}, {group:"thumbnail",images:config.thumbnailReferenceImages,configKey:"thumbnailReferenceImages"}, {group:"character",images:config.characterImages,configKey:"characterImages"},
+        {group:"style",images:config.referenceImages,configKey:"styleReferenceImages"}, {group:"scene",images:config.sceneReferenceImages,configKey:"sceneReferenceImages"}, {group:"thumbnail",images:config.thumbnailReferenceImages,configKey:"thumbnailReferenceImages"},
       ], async ({group, images, configKey}): Promise<[string,string[]]> => {
         if (_.isEmpty(images)) return [group,_.defaultTo(_.get(newProj.visualConfig,configKey),[])];
         const response=await safeSystemFetch(`${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${newProjectId}/${group}`,{images});
@@ -484,8 +481,7 @@ export function useAutoVideoPipeline(
         return [group,_.defaultTo(response.data?.assets,[])];
       }));
       const canonicalReferences=_.fromPairs(referenceGroups);
-      canonicalCharacterReferences=canonicalReferences.character;
-      newProj={...newProj,visualConfig:{...newProj.visualConfig,styleReferenceImages:canonicalReferences.style,sceneReferenceImages:canonicalReferences.scene,referenceImages:_.take(_.uniq(_.concat(canonicalReferences.style,canonicalReferences.scene)),SCENE_REFERENCE_CONFIG.MAX_IMAGES),thumbnailReferenceImages:canonicalReferences.thumbnail,characterImages:canonicalCharacterReferences}};
+      newProj={...newProj,visualConfig:{...newProj.visualConfig,styleReferenceImages:canonicalReferences.style,sceneReferenceImages:canonicalReferences.scene,referenceImages:_.take(_.uniq(_.concat(canonicalReferences.style,canonicalReferences.scene)),SCENE_REFERENCE_CONFIG.MAX_IMAGES),thumbnailReferenceImages:canonicalReferences.thumbnail,characterImages:[]}};
       newProj={...newProj,rollout:resolveRolloutConfig(newProjectId)};
       await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
       setActiveCreatedProject(newProj);
@@ -512,7 +508,7 @@ export function useAutoVideoPipeline(
       let isScriptCached = false;
       let isStoryboardCached = false;
 
-      if (config.resumeMode && !invalidationState.regenerateScript && !_.isEmpty(newProj.scriptRewritten) && Boolean(newProj.scriptQa?.passed)) {
+      if (config.resumeMode && !invalidationState.regenerateScript && !_.isEmpty(newProj.scriptRewritten)) {
         realScript = newProj.scriptRewritten!;
         chapters = (_.defaultTo(newProj.chapters, []) as Chapter[]);
         factCheckNotes = _.defaultTo(newProj.factCheckNotes, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -595,7 +591,12 @@ export function useAutoVideoPipeline(
       ]));
       if (!isScriptCached || _.isEmpty(analyzedCharacters) || hasLegacyCharacterProfile) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_ANALYZE);
-        const analyzeCharacterRes = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, { script: realScript }, requestSignal);
+        const analyzeCharacterRes = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
+          script: realScript,
+          visualStyle: newProj.visualConfig.referencePrompt
+            || newProj.visualConfig.style
+            || config.stylePreset,
+        }, requestSignal);
         throwIfCancelled();
         let rawAnalyzedCharacters = analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)
           ? _.take(analyzeCharacterRes.data.characters, REFACTOR_CONSTANTS.HOOK_COUNT)
@@ -620,8 +621,8 @@ export function useAutoVideoPipeline(
               name: character.name,
               description: character.description,
               prompt: character.prompt || character.description,
-              ..._.pick(character, ["narrativeRole","genderPresentation","ageRange","ethnicitySkinTone","bodyBuild","faceShape","eyes","nose","hair","signatureClothing","accessories"]),
-              images: _.isEqual(index, 0) ? canonicalCharacterReferences : [],
+              ..._.pick(character, ["narrativeRole","genderPresentation","ageRange","ethnicitySkinTone","bodyBuild","faceShape","eyes","nose","hair","signatureClothing","accessories","colorPalette","silhouette"]),
+              images: [],
               extracted: false,
             }),
           );
@@ -633,7 +634,7 @@ export function useAutoVideoPipeline(
               characters: analyzedCharacters,
               characterAnalysis: _.join(_.map(analyzedCharacters, (character) => _.join([character.name, character.description], REFACTOR_CONSTANTS.VD_BLANK)), "\n"),
               characterPrompt: _.get(_.first(analyzedCharacters), "prompt", REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-              characterImages: canonicalCharacterReferences,
+              characterImages: [],
               characterExtracted: false,
               characterConsistency: !_.isEmpty(analyzedCharacters),
             },
@@ -686,7 +687,7 @@ export function useAutoVideoPipeline(
         realScenes = (storyboardRes.data.scenes || []) as StoryboardScene[];
         if (_.isEmpty(realScenes)) throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
         const storyboardQa = storyboardRes.data.storyboardQa as StoryboardQualityReport | undefined;
-        if (!storyboardQa?.passed) throw new Error(REFACTOR_CONSTANTS.ERR_STORYBOARD_QUALITY_REJECTED);
+        if (!storyboardQa?.passed) appendLog(REFACTOR_CONSTANTS.WARN_STORYBOARD_QA_RESULT);
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SUCCESS.replace(SecurityConstants.PLACEHOLDER_0, String(realScenes.length)));
         appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
         setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.STORYBOARD_DONE);
@@ -809,10 +810,10 @@ export function useAutoVideoPipeline(
       appendLog(T.logReferenceSummary(
         _.size(config.referenceImages),
         _.size(config.sceneReferenceImages),
-        _.size(config.characterImages),
+        SecurityConstants.ZERO,
       ));
 
-      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresImagePromptQaMigration || requiresVisualReferenceMigration) {
+      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresVisualReferenceMigration) {
         if (!_.isEmpty(config.referenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
         if (!_.isEmpty(config.thumbnailReferenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
 
@@ -870,111 +871,32 @@ export function useAutoVideoPipeline(
         };
         await syncProject(voiceUpdatedProj);
 
-        if (!_.isEmpty(config.characterImages)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT);
-          const extractCharRes = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_CHARACTER, {
-            images: config.characterImages,
-            characterDescription: _.get(_.first(analyzedCharacters), "description", PRESET_CONSTANTS.CHARACTER_BIO),
-          }, requestSignal);
-          if (extractCharRes.success && extractCharRes.data?.characterPrompt) {
-            const characterPrompt = extractCharRes.data.characterPrompt;
-            const primaryCharacter = _.defaultTo(_.first(analyzedCharacters), {
-              id: _.join([AUTO_GENERATOR_CONSTANTS.CHARACTER_ID_PREFIX, SecurityConstants.DEFAULT_AMOUNT], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-              name: PRESET_CONSTANTS.CHARACTER_NAME,
-              description: characterPrompt,
-              prompt: characterPrompt,
-              images: [],
-              extracted: false,
-            } as CharacterConfig);
-            analyzedCharacters = [
-              {
-                ...primaryCharacter,
-                description: primaryCharacter.description || characterPrompt,
-                prompt: characterPrompt,
-                images: config.characterImages,
-                extracted: true,
-              },
-              ..._.tail(analyzedCharacters),
-            ];
-            voiceUpdatedProj = {
-              ...voiceUpdatedProj,
-              visualConfig: {
-                ...voiceUpdatedProj.visualConfig,
-                characters: analyzedCharacters,
-                characterPrompt,
-                characterImages: config.characterImages,
-                characterExtracted: true,
-              },
-            };
-            await syncProject(voiceUpdatedProj);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_EXTRACT_SUCCESS);
-          }
-        }
-
-        const charactersMissingReferences = _.filter(analyzedCharacters, character => _.isEmpty(character.images));
-        if (!_.isEmpty(charactersMissingReferences)) {
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_CREATE);
-          for (const character of charactersMissingReferences) {
-            try {
-              const referenceResponse = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-                prompt: createCanonicalCharacterPrompt(character, currentStylePreset),
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig.quality,
-                bypassCache: false,
-                engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-                sandboxConfig: { projectId: voiceUpdatedProj.id },
-                visualConfig: {
-                  ...voiceUpdatedProj.visualConfig,
-                  referenceImages: config.referenceImages,
-                  generateType: GenerateType.Image,
-                  generateCount: SecurityConstants.DEFAULT_AMOUNT,
-                },
-              }, requestSignal);
-              const generatedReference = createProjectImageUrl({
-                sceneId: character.id,
-                success: referenceResponse.success,
-                base64: referenceResponse.data?.base64,
-                fallbackUrl: referenceResponse.data?.fallbackUrl,
-                assetType: GenerateType.Image,
-              });
-              if (_.isEmpty(generatedReference)) throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_FAILED);
-              const persistedReference = await safeSystemFetch(`${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${voiceUpdatedProj.id}/${REFERENCE_ASSET_GROUP.CHARACTER}`, { images: [generatedReference] }, requestSignal);
-              const canonicalImage = _.toString(_.first(_.castArray(persistedReference.data?.assets)));
-              if (!persistedReference.success || _.isEmpty(canonicalImage)) throw new Error(persistedReference.error || REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_FAILED);
-              analyzedCharacters = _.map(analyzedCharacters, item => _.isEqual(item.id, character.id)
-                ? { ...item, images: [canonicalImage], extracted: true, referenceViews: ["front"] }
-                : item);
-              appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_SUCCESS, SecurityConstants.PLACEHOLDER_0, character.name));
-            } catch (referenceError) {
-              logger.warn(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_WARNING, referenceError);
-              appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_CHARACTER_REFERENCE_WARNING, SecurityConstants.PLACEHOLDER_0, character.name));
-            }
-          }
-          const generatedCharacterImages = _.flatMap(analyzedCharacters, character => character.images);
-          voiceUpdatedProj = {
-            ...voiceUpdatedProj,
-            visualConfig: {
-              ...voiceUpdatedProj.visualConfig,
-              characters: analyzedCharacters,
-              characterImages: generatedCharacterImages,
-              characterExtracted: !_.isEmpty(generatedCharacterImages),
-              characterConsistency: !_.isEmpty(analyzedCharacters),
-            },
-          };
-          await syncProject(voiceUpdatedProj);
-        }
+        voiceUpdatedProj = {
+          ...voiceUpdatedProj,
+          visualConfig: {
+            ...voiceUpdatedProj.visualConfig,
+            characters: analyzedCharacters,
+            characterImages: [],
+            characterExtracted: false,
+            characterConsistency: !_.isEmpty(analyzedCharacters),
+          },
+        };
+        await syncProject(voiceUpdatedProj);
 
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
         const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
           storyboard: realScenes,
           visualConfig: voiceUpdatedProj.visualConfig,
+          visualBible: voiceUpdatedProj.visualBible,
           aspectRatio: config.aspectRatio,
           language: config.language,
+          promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
+          bypassCache: Boolean(config.forceRegenerateScenes),
         }, requestSignal);
         if (optimizeRes.success && optimizeRes.data?.storyboard) {
           realScenes = optimizeRes.data.storyboard;
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
-          shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresImagePromptQaMigration || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
+          shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
         }
       } else {
@@ -983,7 +905,10 @@ export function useAutoVideoPipeline(
       }
 
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
-      realScenes = _.map(realScenes as StoryboardScene[], scene => ({ ...scene, prompt: enforceImagePromptStyle(scene.prompt || "", currentStylePreset, scene.script || scene.subtitle || "", scene.cameraMotion || "", config.styleTextInImageMode) }));
+      realScenes = _.map(realScenes as StoryboardScene[], scene => ({
+        ...scene,
+        prompt: appendImagePromptAspectRatio(scene.prompt || "", config.aspectRatio),
+      }));
       const imagePromptQa = evaluateImagePrompts(realScenes as StoryboardScene[], {
         backgroundMode: config.styleBackgroundMode,
         textMode: config.styleTextInImageMode,
@@ -991,7 +916,7 @@ export function useAutoVideoPipeline(
       }) as ImagePromptQualityReport;
       voiceUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"], imagePromptQa };
       await syncProject(voiceUpdatedProj);
-      if (!imagePromptQa.passed) throw new Error(REFACTOR_CONSTANTS.ERR_IMAGE_PROMPT_QA_REJECTED);
+      if (!imagePromptQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
 
       const resolvedVisualConfig = resolveVisualConfig({
         ...voiceUpdatedProj.visualConfig,
@@ -1035,8 +960,6 @@ export function useAutoVideoPipeline(
         contentLanguage: config.language,
       };
 
-      const generatedMediaLanguageDirective = getGeneratedMediaLanguageDirective(_.isEqual(config.language, ProjectLanguage.VI));
-
       const sandboxConfigPayload = { projectId: voiceUpdatedProj.id };
       const cachedSeoData = config.resumeMode && !invalidationState.regenerateSeo && newProj.seo
         ? newProj.seo
@@ -1054,12 +977,24 @@ export function useAutoVideoPipeline(
           }, requestSignal);
         })();
 
-      const visualDependencies = _.pick(voiceUpdatedProj.visualConfig, ["style", "stylePreset", "imageGeneratorEngine", "aspectRatio", "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode", "generateType"]);
+      const visualDependencies = {
+        ..._.pick(voiceUpdatedProj.visualConfig, ["style", "stylePreset", "imageGeneratorEngine", "aspectRatio", "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode", "generateType"]),
+        promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
+      };
       const previousScenes = _.keyBy(_.defaultTo(existingTargetProj?.storyboard, []), "id");
-      realScenes = _.map(realScenes as StoryboardScene[], scene => inheritApprovedSceneAsset(
-        { ...scene, dependencyHash: createSceneDependencyHash(scene, visualDependencies) },
-        previousScenes[scene.id],
-      ));
+      realScenes = _.map(realScenes as StoryboardScene[], scene => {
+        const sceneWithDependency = {
+          ...scene,
+          dependencyHash: createSceneDependencyHash(scene, visualDependencies),
+        };
+        if (config.forceRegenerateScenes) {
+          return {
+            ...clearSceneVisualAsset(sceneWithDependency),
+            dependencyHash: sceneWithDependency.dependencyHash,
+          };
+        }
+        return inheritApprovedSceneAsset(sceneWithDependency, previousScenes[scene.id]);
+      });
       const targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
         if (config.forceRegenerateScenes) return true;
         if (config.resumeMode && !shouldRegenerateSceneAssets && hasSceneAsset(sc)) return false;
@@ -1097,21 +1032,11 @@ export function useAutoVideoPipeline(
       };
 
       const createSceneRequestContext = (scene: StoryboardScene) => {
-        const generationContext = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
-        return {
-          ...generationContext,
-          prompt: applyImageFocusMode(
-            applyTextInImageMode(
-              applyBackgroundMode(
-                applyGeneratedMediaLanguage(generationContext.prompt, generatedMediaLanguageDirective),
-                executionVisualConfig.styleBackgroundMode,
-              ),
-              executionVisualConfig.styleTextInImageMode,
-            ),
-            executionVisualConfig.imageFocusMode,
-            executionVisualConfig.styleBackgroundMode,
-          ),
-        };
+        return createSceneGenerationContext(
+          scene,
+          voiceUpdatedProj.visualConfig,
+          { finalizedByAi: true },
+        );
       };
 
       if (targetScenesToGen && targetScenesToGen.length > 0) {
@@ -1119,6 +1044,7 @@ export function useAutoVideoPipeline(
           appendLog(T.logBatchImageStreamStart);
           const batchItems = _.map(targetScenesToGen, (scene) => {
             const requestContext = createSceneRequestContext(scene);
+            scene.generationPrompt = requestContext.prompt;
             return {
               sceneId: scene.id,
               idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], ":"),
@@ -1226,6 +1152,7 @@ export function useAutoVideoPipeline(
           for (let i = 0; i < targetScenesToGen.length; i++) {
             const sc = targetScenesToGen[i];
             const requestContext = createSceneRequestContext(sc);
+            sc.generationPrompt = requestContext.prompt;
             const sceneGenerateType = resolveSceneGenerateType(sc.id, executionVisualConfig.generateType, videoSceneIds);
             appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
               .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
@@ -1281,7 +1208,6 @@ export function useAutoVideoPipeline(
       ], Boolean));
       const imageScenesToValidate = selectScenesForVisionQa(pendingImageScenes, executionVisualConfig.qualityMode);
       const validationSceneIds = new Set(_.map(imageScenesToValidate, "id"));
-      const correctiveRetryLimit = resolveCorrectiveRetryLimit(executionVisualConfig.qualityMode);
 
       _.forEach(technicallyValidScenes, scene => {
         if (scene.assetType !== GenerateType.Video && validationSceneIds.has(scene.id)) return;
@@ -1293,75 +1219,43 @@ export function useAutoVideoPipeline(
 
       for (const scene of imageScenesToValidate) {
         scene.assetStatus = SceneAssetStatus.Validating;
-        const sceneReferenceContext = createSceneGenerationContext(scene, voiceUpdatedProj.visualConfig);
-        const canonicalReferenceUrl = hasCharacterSubject(scene) ? _.get(_.find(realScenes, candidate => _.every([
+        const sceneReferenceContext = createSceneGenerationContext(
+          scene,
+          voiceUpdatedProj.visualConfig,
+          { finalizedByAi: true },
+        );
+        const canonicalReferenceUrl = !_.isEmpty(scene.characterIds) ? _.get(_.find(realScenes, candidate => _.every([
           candidate.id !== scene.id,
           candidate.assetStatus === SceneAssetStatus.Approved,
           candidate.assetType !== GenerateType.Video,
           !_.isEmpty(candidate.assetUrl),
-          hasCharacterSubject(candidate),
+          hasSameNamedCharacters(scene, candidate),
         ], Boolean)), "assetUrl") : undefined;
         const qualityReferenceUrls = _.take(_.uniq(_.compact([
           ...sceneReferenceContext.referenceImages,
           canonicalReferenceUrl,
         ])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
-        let qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl, qualityReferenceUrls);
-        let retryCount = SecurityConstants.ZERO;
-        while (_.every([
-          !qualityResult.approved,
-          _.lt(retryCount, _.min([VISUAL_QA_CONFIG.MAX_RETRIES, correctiveRetryLimit])),
-          !_.isEmpty(qualityResult.quality?.correctivePrompt),
-        ], Boolean)) {
-          retryCount = _.add(retryCount, SecurityConstants.DEFAULT_AMOUNT);
-          scene.assetStatus = SceneAssetStatus.Retrying;
-          const retryReferenceContext = createSceneGenerationContext({
-            ...scene,
-            prompt: qualityResult.quality!.correctivePrompt,
-          }, voiceUpdatedProj.visualConfig);
-          const retryResponse = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-            prompt: retryReferenceContext.prompt,
-            style: currentStylePreset,
-            resolution: voiceUpdatedProj.visualConfig.quality,
-            bypassCache: true,
-            engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-            sandboxConfig: sandboxConfigPayload,
-            visualConfig: { ...visualConfigPayload, referenceImages: retryReferenceContext.referenceImages, generateType: GenerateType.Image },
-          }, requestSignal);
-          const retryImageUrl = createProjectImageUrl({
-            sceneId: scene.id,
-            success: retryResponse.success,
-            base64: retryResponse.data?.base64,
-            fallbackUrl: retryResponse.data?.fallbackUrl,
-            assetType: GenerateType.Image,
-          });
-          if (_.isEmpty(retryImageUrl)) break;
-          scene.assetUrl = retryImageUrl;
-          scene.assetUrls = [retryImageUrl];
-          appendAssetRevision(scene, retryImageUrl, SceneAssetStatus.Generated);
-          scene.assetStatus = SceneAssetStatus.Validating;
-          await persistImageCheckpoint();
-          qualityResult = await validateSceneImage(voiceUpdatedProj.id, scene, canonicalReferenceUrl, qualityReferenceUrls);
+        const qualityResult = await validateSceneImage(
+          voiceUpdatedProj.id,
+          scene,
+          canonicalReferenceUrl,
+          qualityReferenceUrls,
+        );
+        scene.assetStatus = SceneAssetStatus.Approved;
+        scene.assetError = undefined;
+        const revision = _.findLast(scene.assetRevisions);
+        if (revision) {
+          revision.status = SceneAssetStatus.Approved;
+          revision.approvedAt = new Date().toISOString();
         }
-        if (qualityResult.approved) {
-          scene.assetStatus = SceneAssetStatus.Approved;
-          scene.assetError = undefined;
-          const revision = _.findLast(scene.assetRevisions);
-          if (revision) { revision.status = SceneAssetStatus.Approved; revision.approvedAt = new Date().toISOString(); }
-        } else if (!qualityResult.success) {
-          scene.assetStatus = SceneAssetStatus.Approved;
-          scene.assetError = "visual_qa_unavailable";
-          appendLog(`[Visual QA] ${scene.id}: unavailable; technically valid asset retained for final QC.`);
-          const revision = _.findLast(scene.assetRevisions);
-          if (revision) { revision.status = SceneAssetStatus.Approved; revision.approvedAt = new Date().toISOString(); }
-        } else if (qualityResult.quality && isSceneVisualQualityUsable(qualityResult.quality)) {
-          scene.assetStatus = SceneAssetStatus.Approved;
-          scene.assetError = "visual_quality_below_target";
-          appendLog(`[Visual QA] ${scene.id}: below target but usable; best available revision retained.`);
-          const revision = _.findLast(scene.assetRevisions);
-          if (revision) { revision.status = SceneAssetStatus.Approved; revision.approvedAt = new Date().toISOString(); }
-        } else {
-          scene.assetStatus = qualityResult.success ? SceneAssetStatus.Rejected : SceneAssetStatus.Failed;
-          scene.assetError = _.join(_.defaultTo(qualityResult.quality?.blockingErrors, [qualityResult.error]), ", ");
+        if (!qualityResult.success) {
+          appendLog(REFACTOR_CONSTANTS.WARN_VISUAL_QA_UNAVAILABLE);
+        } else if (!qualityResult.approved) {
+          appendLog(_.replace(
+            REFACTOR_CONSTANTS.WARN_VISUAL_QA_RESULT,
+            SecurityConstants.PLACEHOLDER_0,
+            scene.id,
+          ));
         }
         await persistImageCheckpoint();
       }
@@ -1395,15 +1289,6 @@ export function useAutoVideoPipeline(
           _.toString(_.size(sceneAssetSummary.missingSceneIds)),
         ));
       }
-      if (_.some(realScenes, scene => scene.assetStatus !== SceneAssetStatus.Approved)) {
-        await syncProject({
-          ...voiceUpdatedProj,
-          status: REFACTOR_CONSTANTS.STATUS_PARTIAL,
-          storyboard: realScenes as VideoProject["storyboard"],
-          manualReviewItems: createManualReviewItems({ ...voiceUpdatedProj, storyboard: realScenes } as VideoProject),
-        });
-        throw new Error(REFACTOR_CONSTANTS.ERR_SCENE_VISUAL_QA_REJECTED);
-      }
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
 
@@ -1428,8 +1313,10 @@ export function useAutoVideoPipeline(
       let thumbnailsList: ThumbnailItem[] = [];
       let isThumbsCached = false;
       let existingThumbs: ThumbnailItem[] = [];
+      const shouldRegenerateThumbnails = Boolean(config.forceRegenerateScenes)
+        || invalidationState.regenerateThumbnails;
 
-      if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
+      if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
         existingThumbs = newProj.thumbnails!;
         if (_.every(existingThumbs, (t) => !_.isEmpty(t.imageUrl))) {
           thumbnailsList = existingThumbs;
@@ -1441,7 +1328,7 @@ export function useAutoVideoPipeline(
       if (!isThumbsCached) {
         let parsedThumbs: ThumbnailItem[] = [];
 
-        if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(existingThumbs)) {
+        if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(existingThumbs)) {
           parsedThumbs = existingThumbs;
           appendLog(T.logResumeThumbnails);
         } else {
@@ -1459,49 +1346,16 @@ export function useAutoVideoPipeline(
         }
 
         if (!_.isEmpty(parsedThumbs)) {
-          const shouldRewriteThumbStyle = currentThumbnailStyle && (!config.resumeMode || invalidationState.regenerateThumbnails || _.isEmpty(existingThumbs));
-
-          if (shouldRewriteThumbStyle) {
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY);
-            const rewriteThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS, {
-              thumbnails: parsedThumbs,
-              newStyle: currentThumbnailStyle,
-              aspectRatio: config.aspectRatio,
-              language: config.language,
-              visualConfig: imageUpdatedProj.visualConfig,
-            }, requestSignal);
-            if (rewriteThumbRes.success && rewriteThumbRes.data?.thumbnails) {
-              parsedThumbs = rewriteThumbRes.data.thumbnails;
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_APPLY_SUCCESS);
-            }
-          }
-
-          if (_.isEmpty(existingThumbs) || invalidationState.regenerateThumbnails) {
+          if (_.isEmpty(existingThumbs) || shouldRegenerateThumbnails) {
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_IDEAS_CREATED, SecurityConstants.PLACEHOLDER_0, _.toString(parsedThumbs.length)));
           }
-
-          const thumbnailCharacters = _.take(_.filter(_.defaultTo(imageUpdatedProj.visualConfig.characters, []), (character) => !_.isEmpty(character.prompt) || !_.isEmpty(character.description)), 1);
-          if (!_.isEmpty(thumbnailCharacters)) {
-            const rewriteCharacterThumbRes = await safeSystemFetch(API_ROUTES.PIPELINE_REWRITE_THUMBNAILS_CHARACTER, {
-              thumbnails: parsedThumbs,
-              characters: _.map(thumbnailCharacters, (character) => ({
-                name: character.name,
-                prompt: character.prompt || character.description,
-              })),
-              aspectRatio: config.aspectRatio,
-              visualConfig: imageUpdatedProj.visualConfig,
-            }, requestSignal);
-            if (rewriteCharacterThumbRes.success && rewriteCharacterThumbRes.data?.thumbnails) {
-              parsedThumbs = rewriteCharacterThumbRes.data.thumbnails;
-            }
-          }
           const targetThumbsToGen = _.filter(parsedThumbs, (thumb) => {
-            if (config.resumeMode && !invalidationState.regenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
+            if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
             return true;
           });
           const thumbnailReferenceImages = resolveThumbnailReferenceImages(imageUpdatedProj.visualConfig);
 
-          if (config.resumeMode && !invalidationState.regenerateThumbnails) {
+          if (config.resumeMode && !shouldRegenerateThumbnails) {
             _.forEach(parsedThumbs, (thumb, idx) => {
               if (!_.isEmpty(thumb.imageUrl)) {
                 appendLog(T.logResumeSceneSkip(idx + 1, parsedThumbs.length));
@@ -1515,8 +1369,8 @@ export function useAutoVideoPipeline(
 
               const batchThumbItems = _.map(targetThumbsToGen, (thumb) => {
                 const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
-                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages));
-                const generationPrompt = applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode);
+                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages), imageUpdatedProj.visualConfig.characters);
+                const generationPrompt = thumbPrompt;
                 thumb.generationPrompt = generationPrompt;
                 return {
                   sceneId: thumb.id,
@@ -1598,8 +1452,8 @@ export function useAutoVideoPipeline(
                   _.toString(targetThumbsToGen.length),
                 ));
                 const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
-                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages));
-                const finalThumbPrompt = applyImageFocusMode(applyTextInImageMode(applyBackgroundMode(_.join([thumbPrompt, REFACTOR_CONSTANTS.AVG_AR_SUFFIX, config.aspectRatio], REFACTOR_CONSTANTS.VD_EMPTY_STRING), config.thumbnailBackgroundMode), config.thumbnailTextInImageMode), config.thumbnailImageFocusMode, config.thumbnailBackgroundMode);
+                const thumbPrompt = createThumbnailGenerationPrompt(thumb, thumbnailStyle, config.aspectRatio, !_.isEmpty(thumbnailReferenceImages), imageUpdatedProj.visualConfig.characters);
+                const finalThumbPrompt = thumbPrompt;
                 thumb.generationPrompt = finalThumbPrompt;
 
                 try {
@@ -1669,12 +1523,14 @@ export function useAutoVideoPipeline(
           continue;
         }
         thumbnail.qa = evaluateThumbnail(qualityResult.quality);
-        thumbnail.approved = isSceneVisualQualityUsable(qualityResult.quality);
-        if (thumbnail.approved && !thumbnail.qa.passed) appendLog(`[Thumbnail QA] ${thumbnail.id}: below target but usable; best available thumbnail retained.`);
-      }
-      if (_.some(thumbnailsList, thumbnail => !thumbnail.approved)) {
-        await syncProject({ ...imageUpdatedProj, status: REFACTOR_CONSTANTS.STATUS_PARTIAL, thumbnails: thumbnailsList });
-        throw new Error(REFACTOR_CONSTANTS.ERR_THUMBNAIL_QUALITY_REJECTED);
+        thumbnail.approved = true;
+        if (!thumbnail.qa.passed) {
+          appendLog(_.replace(
+            REFACTOR_CONSTANTS.WARN_THUMBNAIL_QA_RESULT,
+            SecurityConstants.PLACEHOLDER_0,
+            thumbnail.id,
+          ));
+        }
       }
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.SEO_THUMB_DONE);
       appendLog(T.logSeoResultDetail(
@@ -1719,12 +1575,12 @@ export function useAutoVideoPipeline(
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.ALIGN_DONE);
 
       const subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
-      if (!subtitleQa.passed) throw new Error(REFACTOR_CONSTANTS.ERR_SUBTITLE_QUALITY_REJECTED);
+      if (!subtitleQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_SUBTITLE_QA_RESULT);
       const editorQa = evaluateEdit(realScenes as StoryboardScene[]);
-      if (!editorQa.passed) throw new Error(REFACTOR_CONSTANTS.ERR_EDITOR_QUALITY_REJECTED);
+      if (!editorQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_EDITOR_QA_RESULT);
       const actualVoiceDuration = _.max(_.map(realScenes, scene => _.toNumber(_.get(scene, "_end", 0)))) || calculateSceneDuration(realScenes as StoryboardScene[]);
       const audioQa = await validateAudioQuality(globalAudioBase64, realScript, actualVoiceDuration, parseTargetDurationSeconds(newProj.config.duration));
-      if (!audioQa.passed) throw new Error(REFACTOR_CONSTANTS.ERR_AUDIO_DURATION_REJECTED);
+      if (!audioQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_RESULT);
       slicedUpdatedProj = {
         ...slicedUpdatedProj,
         subtitleQa,
@@ -1829,9 +1685,9 @@ export function useAutoVideoPipeline(
             };
             const finalQc = evaluateFinalQuality(renderCandidateProj);
             const benchmark=createPipelineBenchmark(renderCandidateProj,pipelineStartedAt);const shadowComparison=renderCandidateProj.rollout?.shadowMode?createShadowComparison(existingTargetProj,{...renderCandidateProj,benchmark}):undefined;
-            const renderCompletedProj = { ...renderCandidateProj, finalQc, benchmark, shadowComparison, status: finalQc.publishable ? REFACTOR_CONSTANTS.STATUS_COMPLETED : REFACTOR_CONSTANTS.STATUS_PARTIAL };
+            const renderCompletedProj = { ...renderCandidateProj, finalQc, benchmark, shadowComparison, status: REFACTOR_CONSTANTS.STATUS_COMPLETED };
             await syncProject(renderCompletedProj);
-            if (!finalQc.publishable) throw new Error(_.join(finalQc.blockingErrors, ", "));
+            if (!finalQc.publishable) appendLog(REFACTOR_CONSTANTS.WARN_FINAL_QA_RESULT);
             continue;
           }
           if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) throw new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED);

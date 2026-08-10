@@ -208,8 +208,8 @@ export const getPipelineInvalidationState = (
     _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
     _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
   );
-  const regenerateScript = inputChanged || scriptConfigChanged || !project.scriptQa?.passed || !project.contentSafety?.allowed || _.isEmpty(project.creativeBrief) || _.isEmpty(project.factPack);
-  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || !project.storyboardQa?.passed || _.isEmpty(project.visualBible);
+  const regenerateScript = inputChanged || scriptConfigChanged || !project.contentSafety?.allowed || _.isEmpty(project.creativeBrief) || _.isEmpty(project.factPack);
+  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || _.isEmpty(project.visualBible);
   const regenerateVoice = regenerateScript || voiceConfigChanged;
   const regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
 

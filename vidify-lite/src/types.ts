@@ -297,6 +297,8 @@ export interface CharacterConfig {
   hair?: string;
   signatureClothing?: string;
   accessories?: string;
+  colorPalette?: string;
+  silhouette?: string;
   referenceViews?: Array<"front"|"side"|"three_quarter"|"expression">;
   referenceApproved?: boolean;
 }
@@ -316,6 +318,7 @@ export interface StoryboardScene {
   script: string;
   subtitle: string;
   prompt: string;
+  generationPrompt?: string;
   assetName?: string;
   assetType?: AssetType;
   assetUrl?: string;

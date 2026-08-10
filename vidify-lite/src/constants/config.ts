@@ -4,7 +4,7 @@ export const APP_CONFIG = {
 
 export const PIPELINE_CONFIG = {
   BATCH_CHUNK_SIZE_REWRITE: 25,
-  BATCH_CHUNK_SIZE_OPTIMIZE: 12,
+  BATCH_CHUNK_SIZE_OPTIMIZE: 8,
   DELAY_BETWEEN_CHUNKS_MS: 1500,
   DELAY_LONG_CHUNKS_MS: 3000,
   STEP5_DELAY_MS: 2000,
@@ -75,7 +75,7 @@ export const BACKGROUND_MODE_CONFIG = {
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
-    white: "CRITICAL BACKGROUND OVERRIDE: Use a pure white (#FFFFFF) seamless canvas while preserving every narrative subject, supporting character, prop, and spatial relationship required by the scene. Build a complete editorial composition on the white canvas with subtle contact shadows for grounding. Do not reduce the scene to a single isolated cutout unless the narration explicitly requires one subject only. No environmental scenery or colored backdrop.",
+    white: "Use a pure white (#FFFFFF) editorial canvas. Preserve the complete narrative situation with a few style-matched contextual props, furniture, architectural line cues, layered scale, overlap, and contact shadows where the scene needs them. Keep the canvas visually clean and mostly white, but never erase a story-critical location, action, relationship, or atmosphere.",
     contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
     blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
     gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
@@ -136,12 +136,12 @@ export const PROJECT_ASSET_GROUP = {
 export const IMAGE_PROMPT_QA_CONFIG = {
   MIN_WORDS: 25,
   MAX_WORDS: 140,
-  MAX_REPAIR_ROUNDS: 1,
   MAX_ADJACENT_SIMILARITY: 0.88,
   CAMERA_PATTERN: /\b(?:shot|angle|composition|view|framing)\b/i,
   ASPECT_FLAG_PATTERN: /\s*--ar\s+\d+(?:\.\d+)?:\d+(?:\.\d+)?\s*/gi,
-  READABLE_TEXT_REQUEST_PATTERN: /\b(?:with|showing|displaying|containing)\s+(?:clear\s+|readable\s+)?(?:vietnamese\s+)?text\b/i,
+  READABLE_TEXT_REQUEST_PATTERN: /\b(?:(?:with|showing|displaying|containing|bearing)\s+(?:a\s+)?(?:clear\s+|readable\s+)?(?:vietnamese\s+)?(?:text|caption|label|lettering|words?)|(?:labeled|labelled|reading|saying)\s+['"])/i,
   WHITESPACE_PATTERN: /\s+/g,
+  PUNCTUATION_WHITESPACE_PATTERN: /\s+([,.;:])/g,
   BACKGROUND_KEYWORDS: {
     white: ["white background", "white canvas", "white seamless"],
     transparent: ["transparent background"],
@@ -152,6 +152,8 @@ export const IMAGE_PROMPT_QA_CONFIG = {
     MISSING_CAMERA: "missing_camera_direction",
     READABLE_TEXT: "ai_generated_readable_text_requested",
     STYLE_CONFLICT: "image_prompt_style_conflict",
+    PEOPLE_CONFLICT: "image_prompt_people_conflict",
+    TEXT_CONFLICT: "image_prompt_text_conflict",
   },
   WARNING_CODES: {
     PROMPT_TOO_SHORT: "image_prompt_too_short",
@@ -543,14 +545,9 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_STYLE_EXTRACT_SKIP: "Bước 3: Không có ảnh mẫu phong cách, bỏ qua bước học hỏi nghệ thuật.",
   LOG_STYLE_APPLY: "Đang áp dụng phong cách thiết kế và viết lại mô tả phân cảnh...",
   LOG_STYLE_APPLY_SUCCESS: "✓ Áp dụng phong cách hình ảnh vào kịch bản thành công.",
-  LOG_CHAR_EXTRACT: "Bước 4: Phát hiện ảnh mẫu nhân vật. Đang phân tích đặc điểm nhân vật...",
   LOG_CHAR_ANALYZE: "Đang phân tích nhân vật chính và nhân vật phụ từ kịch bản...",
   LOG_CHAR_ANALYZE_SUCCESS: "Đã tạo hồ sơ nhận diện nhân vật thành công.",
-  LOG_CHARACTER_REFERENCE_CREATE: "Đang tạo hình mẫu để giữ nhân vật đồng nhất trong các cảnh.",
-  LOG_CHARACTER_REFERENCE_SUCCESS: "Đã tạo hình mẫu cho nhân vật {0}.",
-  LOG_CHARACTER_REFERENCE_WARNING: "Chưa thể tạo hình mẫu cho nhân vật {0}; video vẫn tiếp tục bằng mô tả ngoại hình.",
   CHARACTER_ID_PREFIX: "char_",
-  LOG_CHAR_EXTRACT_SKIP: "Bước 4: Không có ảnh mẫu nhân vật, bỏ qua phân tích nhân vật.",
   LOG_CHAR_REWRITE: "Đang viết lại mô tả phân cảnh đồng nhất nhân vật chính...",
   LOG_CHAR_REWRITE_SUCCESS: "✓ Viết lại mô tả đồng nhất nhân vật chính thành công.",
   LOG_PROMPT_OPTIMIZE: "Bước 5: Đang thực hiện tối ưu hóa câu lệnh tạo ảnh...",
@@ -567,7 +564,6 @@ export const AUTO_GENERATOR_CONSTANTS = {
   ERR_VOICE_TTS_FAILED: "Lỗi khi gọi API sinh giọng nói TTS.",
   LOG_STORYBOARD_SUCCESS: "✓ Tạo kịch bản phân cảnh thành công với {0} phân cảnh.",
   LOG_STYLE_EXTRACT_SUCCESS: "✓ Trích xuất phong cách thành công: {0}",
-  LOG_CHAR_EXTRACT_SUCCESS: "✓ Trích xuất visual nhân vật thành công.",
   LOG_THUMBNAILS_IDEAS_CREATED: "✓ Tạo {0} ý tưởng ảnh bìa. Bắt đầu vẽ ảnh bìa hàng loạt...",
   LOG_THUMBNAILS_SCENE_GEN: "Đang vẽ ảnh bìa {0}/{1}...",
   LOG_VOICE_GEN_TTS: "Đang tạo giọng đọc AI (TTS) với giọng đọc \"{0}\"...",
@@ -758,6 +754,14 @@ export const PIPELINE_CLIENT_ERRORS = {
 export const PIPELINE_SERVER_ERRORS = {
   CONTENT_SAFETY_REJECTED: "Content safety review rejected this production.",
   FINAL_QA_FRAMES_MISSING: "Final QC could not extract representative frames.",
+  SCRIPT_LANGUAGE_INVALID: "script_language_integrity_failed",
+  SCRIPT_LANGUAGE_INVALID_VI: "Một phần kịch bản chưa hiển thị đúng tiếng Việt. Hệ thống đã thử tạo lại nhưng chưa thành công. Vui lòng thử lại bước kịch bản.",
+  SCRIPT_LANGUAGE_INVALID_EN: "Part of the script was not generated in the selected language. Please retry the script step.",
+} as const;
+
+export const PIPELINE_SERVER_LOGS = {
+  INVALID_CHAPTER_RESPONSE_DISCARDED: "[Script] Discarded an invalid chapter response.",
+  INVALID_CHAPTER_LANGUAGE_DISCARDED: "[Script] Discarded a chapter response with invalid language formatting.",
 } as const;
 
 export const GEMINI_MEDIA_ERRORS = {

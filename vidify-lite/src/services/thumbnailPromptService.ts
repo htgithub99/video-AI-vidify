@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, ThumbnailLayoutId } from "../constants/thumbnail";
-import { ThumbnailItem, VisualConfig } from "../types";
-import { sanitizeImagePrompt } from "./imagePromptQualityService";
+import { CharacterConfig, ThumbnailItem, VisualConfig } from "../types";
+import { appendImagePromptAspectRatio } from "./imagePromptQualityService";
 
 const validLayoutIds = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
 
@@ -59,31 +59,18 @@ export const normalizeThumbnailIdeas = (
 
 export const createThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
-  style: string,
+  _style: string,
   aspectRatio: string,
-  hasReferences: boolean = false,
-): string => {
-  const layoutDefinition = _.find(THUMBNAIL_LAYOUT_CATALOG, layout => _.isEqual(layout.id, thumbnail.layoutId));
-  const textDirective = thumbnail.hasText && !_.isEmpty(thumbnail.textText)
-    ? `${THUMBNAIL_PROMPT_CONFIG.TEXT_DIRECTIVE}: "${thumbnail.textText}"`
-    : THUMBNAIL_PROMPT_CONFIG.NO_TEXT_DIRECTIVE;
-  return sanitizeImagePrompt(_.join(_.compact([
-    `${THUMBNAIL_PROMPT_CONFIG.GENERATION_PREFIX} for ${aspectRatio}`,
-    thumbnail.prompt,
-    `${THUMBNAIL_PROMPT_CONFIG.LAYOUT_LABEL}: ${layoutDefinition?.composition || thumbnail.layout}`,
-    `${THUMBNAIL_PROMPT_CONFIG.SUBJECT_LABEL}: ${thumbnail.subjectFocus}`,
-    `${THUMBNAIL_PROMPT_CONFIG.TEXT_LABEL}: ${textDirective}`,
-    THUMBNAIL_PROMPT_CONFIG.PHONE_READABILITY,
-    THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE,
-    THUMBNAIL_PROMPT_CONFIG.FULL_BLEED,
-    hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_DIRECTIVE : "",
-    style,
-  ]), ", "));
-};
+  _hasReferences: boolean = false,
+  _characters: CharacterConfig[] = [],
+): string => appendImagePromptAspectRatio(thumbnail.prompt, aspectRatio);
 
 export const resolveThumbnailReferenceImages = (
   visualConfig: Pick<VisualConfig, "characters" | "thumbnailReferenceImages">,
+  includeCharacterImages: boolean = false,
 ): string[] => _.take(_.uniq(_.concat(
   _.defaultTo(visualConfig.thumbnailReferenceImages, []),
-  _.flatMap(_.defaultTo(visualConfig.characters, []), character => character.images),
+  includeCharacterImages
+    ? _.flatMap(_.defaultTo(visualConfig.characters, []), character => character.images)
+    : [],
 )), THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES);

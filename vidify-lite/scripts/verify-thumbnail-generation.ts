@@ -42,19 +42,22 @@ assert.equal(noTextThumbnails[0].hasText, false);
 assert.equal(noTextThumbnails[0].textText, "");
 
 const prompt = createThumbnailGenerationPrompt(thumbnails[0], thumbnails[0].style, "16:9", true);
-assert.match(prompt, /Selected layout/i);
-assert.match(prompt, /bottom-right timestamp zone/i);
-assert.match(prompt, /attached thumbnail reference images/i);
-assert.match(prompt, /TIỀN MẸ BAY/);
+assert.ok(prompt.endsWith("--ar 16:9"));
+assert.equal(prompt.replace(/\s*--ar 16:9$/, ""), thumbnails[0].prompt);
 
 const references = resolveThumbnailReferenceImages({
+  thumbnailReferenceImages: ["thumb-style.png"],
+});
+assert.deepEqual(references, ["thumb-style.png"]);
+
+const nodeReferences = resolveThumbnailReferenceImages({
   thumbnailReferenceImages: ["thumb-style.png"],
   characters: [
     { id: "char_1", name: "Player", description: "Player", images: ["player.png"] },
     { id: "char_2", name: "Hostess", description: "Hostess", images: ["hostess.png"] },
   ],
-});
-assert.deepEqual(references, ["thumb-style.png", "player.png", "hostess.png"]);
+}, true);
+assert.deepEqual(nodeReferences, ["thumb-style.png", "player.png", "hostess.png"]);
 
 assert.equal(resolveBatchTabCount(3, 1, 3), 3);
 assert.equal(resolveBatchTabCount(4, 2), 2);
@@ -65,5 +68,7 @@ assert.match(directorPrompt, /EXACTLY 3/);
 assert.match(directorPrompt, /subject_left_text_right/);
 assert.doesNotMatch(directorPrompt, /EVERY single design.*hasText: true/i);
 assert.doesNotMatch(directorPrompt, /overall image style must be highly cinematic/i);
+assert.match(directorPrompt, /application appends only one aspect-ratio suffix/i);
+assert.match(directorPrompt, /complete standalone generation-ready prompt/i);
 
 writeVerificationLog("Thumbnail generation assertions passed");

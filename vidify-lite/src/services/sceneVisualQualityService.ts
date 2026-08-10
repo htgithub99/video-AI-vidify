@@ -17,7 +17,6 @@ export interface SceneVisualQuality {
   usableForVideo: boolean;
   blockingErrors: string[];
   warnings: string[];
-  correctivePrompt: string;
 }
 
 export interface SceneVisualQualityResult {
@@ -26,13 +25,6 @@ export interface SceneVisualQualityResult {
   quality?: SceneVisualQuality;
   error?: string;
 }
-
-export const VISUAL_QA_CONFIG = {
-  MIN_GENERAL_SCORE: 80,
-  MIN_CHARACTER_SCORE: 85,
-  HARD_MIN_SCORE: 60,
-  MAX_RETRIES: 2,
-} as const;
 
 const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuality => ({
   anatomy: _.clamp(_.toNumber(source.anatomy), 0, 100),
@@ -48,7 +40,6 @@ const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuali
   usableForVideo: Boolean(source.usableForVideo),
   blockingErrors: _.uniq(_.compact(_.castArray(source.blockingErrors))),
   warnings: _.uniq(_.compact(_.castArray(source.warnings))),
-  correctivePrompt: _.trim(_.toString(source.correctivePrompt)),
 });
 
 export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boolean => _.every([
@@ -56,11 +47,9 @@ export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boole
   _.isEmpty(quality.blockingErrors),
 ], Boolean);
 
-export const isSceneVisualQualityUsable = isSceneVisualQualityApproved;
-
 export const validateSceneImage = async (
   projectId: string,
-  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "assetUrl" | "expectedSubjectCount">,
+  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "generationPrompt" | "assetUrl" | "expectedSubjectCount">,
   referenceAssetUrl?: string,
   referenceAssetUrls: string[] = [],
 ): Promise<SceneVisualQualityResult> => {
@@ -68,7 +57,7 @@ export const validateSceneImage = async (
     projectId,
     sceneId: scene.id,
     script: scene.script,
-    prompt: scene.prompt,
+    prompt: scene.generationPrompt || scene.prompt,
     assetUrl: scene.assetUrl,
     referenceAssetUrl,
     referenceAssetUrls,
