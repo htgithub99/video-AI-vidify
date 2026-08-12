@@ -34,12 +34,31 @@ export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.State
     await dbInstance.exec(SQL_STATEMENTS.PRAGMA_WAL);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PROJECTS_TABLE);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PRESETS_TABLE);
+    await dbInstance.exec(SQL_STATEMENTS.CREATE_RENDER_JOBS_TABLE);
 
     return dbInstance;
   } catch (error) {
     appError(getBackendMsg("SQLITE_INIT_ERR"), error);
     throw error;
   }
+}
+
+export async function getRenderJobsFromDb<T>(): Promise<T[]> {
+  const db = await initDb();
+  const rows = await db.all(SQL_STATEMENTS.SELECT_RENDER_JOBS);
+  return _.compact(_.map(rows, row => jsonUtils.safeParse<T>(row.data, null)));
+}
+
+export async function getRenderJobFromDb<T>(id: string): Promise<T | null> {
+  const db = await initDb();
+  const row = await db.get(SQL_STATEMENTS.SELECT_RENDER_JOB, [id]);
+  return row?.data ? jsonUtils.safeParse<T>(row.data, null) : null;
+}
+
+export async function saveRenderJobToDb(job: { id: string; status: string; updatedAt: Date | string }): Promise<void> {
+  const db = await initDb();
+  const updatedAt = job.updatedAt instanceof Date ? job.updatedAt.toISOString() : job.updatedAt;
+  await db.run(SQL_STATEMENTS.INSERT_RENDER_JOB, [job.id, job.status, updatedAt, jsonUtils.safeStringify(job)]);
 }
 
 export async function getPresetsFromDb(): Promise<any[]> {

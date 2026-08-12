@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, EXTERNAL_URLS, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -77,7 +77,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
   };
 };
 
-export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value) && !_.startsWith(_.toLower(value), _.toLower(EXTERNAL_URLS.LOREM_FLICKR));
+export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value);
 
 const hasImageResult = (result?: ProjectImageResult): boolean => (
   _.every([

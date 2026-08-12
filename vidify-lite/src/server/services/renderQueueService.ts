@@ -1,7 +1,8 @@
-import { renderFFmpegVideo, FFmpegRenderOptions } from "../utils/ffmpegRender.js";
-import { logger } from "../../lib/logger.js";
 import _ from "lodash";
-import { REFACTOR_CONSTANTS } from "../../constants/index.js";
+import { RENDER_QUEUE_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
+import { logger } from "../../lib/logger.js";
+import { getRenderJobFromDb, getRenderJobsFromDb, saveRenderJobToDb } from "../utils/db.js";
+import { FFmpegRenderOptions, renderFFmpegVideo } from "../utils/ffmpegRender.js";
 import { LicenseService } from "./licenseService.js";
 import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
 
@@ -10,6 +11,7 @@ export enum JobStatus {
   PROCESSING = "processing",
   COMPLETED = "completed",
   FAILED = "failed",
+  CANCELLED = "cancelled",
 }
 
 export interface RenderJob {
@@ -20,93 +22,166 @@ export interface RenderJob {
   url?: string;
   error?: string;
   createdAt: Date;
+  updatedAt: Date;
   startedAt?: Date;
   completedAt?: Date;
+  heartbeatAt?: Date;
   licenseKey?: string;
 }
+
+type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & {
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  heartbeatAt?: string;
+};
+
+const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
+  ...job,
+  createdAt: new Date(job.createdAt),
+  updatedAt: new Date(job.updatedAt),
+  startedAt: job.startedAt ? new Date(job.startedAt) : undefined,
+  completedAt: job.completedAt ? new Date(job.completedAt) : undefined,
+  heartbeatAt: job.heartbeatAt ? new Date(job.heartbeatAt) : undefined,
+});
 
 class RenderQueueService {
   private queue: RenderJob[] = [];
   private isProcessing = false;
   private jobsMap = new Map<string, RenderJob>();
+  private initialized = false;
+  private abortControllers = new Map<string, AbortController>();
 
-  public addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): RenderJob {
+  public async initialize(): Promise<void> {
+    if (this.initialized) return;
+    const storedJobs = await getRenderJobsFromDb<StoredRenderJob>();
+    _.forEach(storedJobs, storedJob => {
+      const job = hydrateRenderJob(storedJob);
+      if (_.some(RENDER_QUEUE_CONFIG.RECOVERABLE_STATUSES, status => _.isEqual(status, job.status))) {
+        job.status = JobStatus.PENDING;
+        job.error = undefined;
+        this.queue.push(job);
+      }
+      this.jobsMap.set(job.id, job);
+    });
+    this.initialized = true;
+    void this.processQueue();
+  }
+
+  public async addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): Promise<RenderJob> {
+    await this.initialize();
+    const now = new Date();
     const job: RenderJob = {
       id: jobId,
       payload,
       status: JobStatus.PENDING,
       progress: SecurityConstants.ZERO,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       licenseKey,
     };
     this.queue.push(job);
     this.jobsMap.set(jobId, job);
-    
+    await this.persist(job);
     logger.info(
       REFACTOR_CONSTANTS.RENDER_LOG_ADDED
         .replace(SecurityConstants.PLACEHOLDER_0, jobId)
-        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue)))
+        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue))),
     );
-    this.processQueue();
+    void this.processQueue();
     return job;
   }
 
-  public getJob(jobId: string): RenderJob | undefined {
-    return this.jobsMap.get(jobId);
+  public async getJob(jobId: string): Promise<RenderJob | undefined> {
+    await this.initialize();
+    const memoryJob = this.jobsMap.get(jobId);
+    if (memoryJob) return memoryJob;
+    const storedJob = await getRenderJobFromDb<StoredRenderJob>(jobId);
+    if (!storedJob) return undefined;
+    const job = hydrateRenderJob(storedJob);
+    this.jobsMap.set(jobId, job);
+    return job;
   }
 
-  private async processQueue() {
-    if (this.isProcessing) return;
-    if (_.isEmpty(this.queue)) return;
+  public async cancelJob(jobId: string): Promise<boolean> {
+    const job = await this.getJob(jobId);
+    if (!job || _.includes([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED], job.status)) return false;
+    job.status = JobStatus.CANCELLED;
+    job.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
+    job.completedAt = new Date();
+    job.updatedAt = job.completedAt;
+    this.abortControllers.get(jobId)?.abort();
+    this.queue = _.reject(this.queue, { id: jobId });
+    await this.persist(job);
+    return true;
+  }
 
+  private async persist(job: RenderJob): Promise<void> {
+    await saveRenderJobToDb(job);
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing || _.isEmpty(this.queue)) return;
     this.isProcessing = true;
     const job = this.queue.shift()!;
     job.status = JobStatus.PROCESSING;
     job.startedAt = new Date();
-    
-    logger.info(
-      REFACTOR_CONSTANTS.RENDER_LOG_PROCESSING
-        .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-    );
-
+    job.updatedAt = job.startedAt;
+    job.heartbeatAt = job.startedAt;
+    await this.persist(job);
+    let lastPersistedAt = Date.now();
+    const abortController = new AbortController();
+    this.abortControllers.set(job.id, abortController);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const url = await renderFFmpegVideo(job.payload, (progress) => {
+      const renderPromise = renderFFmpegVideo(job.payload, progress => {
+        if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
         job.progress = progress;
+        job.heartbeatAt = new Date();
+        job.updatedAt = job.heartbeatAt;
+        if (_.subtract(Date.now(), lastPersistedAt) >= RENDER_QUEUE_CONFIG.PROGRESS_PERSIST_INTERVAL_MS) {
+          lastPersistedAt = Date.now();
+          void this.persist(job);
+        }
+      }, abortController.signal);
+      const timeoutPromise = new Promise<never>((_resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          abortController.abort();
+          reject(new Error(RENDER_QUEUE_CONFIG.TIMEOUT_ERROR));
+        }, RENDER_QUEUE_CONFIG.JOB_TIMEOUT_MS);
       });
-
+      const url = await Promise.race([renderPromise, timeoutPromise]);
+      if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
       job.url = url;
-
       if (!_.isEmpty(job.licenseKey)) {
         try {
           await LicenseService.incrementUsage(job.licenseKey, FeatureType.VIDEO, SecurityConstants.DEFAULT_AMOUNT);
-        } catch (e) {
-          logger.error(SecurityMessages.USAGE_UPDATE_ERROR, e);
+        } catch (error) {
+          logger.error(SecurityMessages.USAGE_UPDATE_ERROR, error);
         }
       }
-
       job.status = JobStatus.COMPLETED;
       job.progress = REFACTOR_CONSTANTS.RENDER_PROGRESS_COMPLETE;
       job.completedAt = new Date();
-      
-      logger.info(
-        REFACTOR_CONSTANTS.RENDER_LOG_COMPLETED
+      job.updatedAt = job.completedAt;
+      await this.persist(job);
+    } catch (error: unknown) {
+      if (!_.isEqual(job.status, JobStatus.CANCELLED)) {
+        job.status = JobStatus.FAILED;
+        job.error = error instanceof Error ? error.message : REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT;
+        job.completedAt = new Date();
+        job.updatedAt = job.completedAt;
+        await this.persist(job);
+        logger.error(REFACTOR_CONSTANTS.RENDER_LOG_FAILED
           .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-          .replace(SecurityConstants.PLACEHOLDER_1, url)
-      );
-    } catch (error: any) {
-      job.status = JobStatus.FAILED;
-      job.error = _.defaultTo(error?.message, REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT);
-      job.completedAt = new Date();
-      
-      logger.error(
-        REFACTOR_CONSTANTS.RENDER_LOG_FAILED
-          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-          .replace(SecurityConstants.PLACEHOLDER_1, job.error),
-        error
-      );
+          .replace(SecurityConstants.PLACEHOLDER_1, job.error), error);
+      }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      this.abortControllers.delete(job.id);
       this.isProcessing = false;
-      this.processQueue();
+      void this.processQueue();
     }
   }
 }

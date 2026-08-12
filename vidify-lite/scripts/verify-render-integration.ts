@@ -4,6 +4,8 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { renderFFmpegVideo } from "../src/server/utils/ffmpegRender.ts";
 import { VideoQuality } from "../src/constants/enums.ts";
+import { SubtitleMode } from "../src/types.ts";
+import { readVisualQaAssets } from "../src/server/services/visualQaMediaService.ts";
 
 const execFileAsync = promisify(execFile);
 const PROJECT_ID = "integration_video2_test";
@@ -30,6 +32,7 @@ const createBmpDataUrl = (): string => {
   return `data:image/bmp;base64,${buffer.toString("base64")}`;
 };
 const IMAGE_DATA_URL = createBmpDataUrl();
+const EXPECTED_AUDIO_REJECTION_COUNT = 2;
 const createSilentWav = (durationSeconds: number): string => {
   const sampleRate = 44100;
   const dataSize = sampleRate * durationSeconds * 2;
@@ -38,7 +41,18 @@ const createSilentWav = (durationSeconds: number): string => {
   return buffer.toString("base64");
 };
 
-const outputUrl = await renderFFmpegVideo({ projectId: PROJECT_ID, quality: VideoQuality.LOW, aspectRatio: "16:9", globalAudioBase64: createSilentWav(3), scenes: [1, 2, 3].map(index => ({ id: `sc_${index}`, imageBase64: IMAGE_DATA_URL, duration: 1, cameraMotion: "static", transition: "cut" })) });
+const renderScenes = [1, 2, 3].map(index => ({ id: `sc_${index}`, imageBase64: IMAGE_DATA_URL, duration: 1, subtitle: `Subtitle ${index}`, cameraMotion: "static", transition: "cut" }));
+const rejectedAudioSources = [undefined, "simulated_speech"];
+const rejectedAudioResults = await Promise.all(rejectedAudioSources.map(async globalAudioUrl => {
+  try {
+    await renderFFmpegVideo({ projectId: PROJECT_ID, quality: VideoQuality.LOW, aspectRatio: "16:9", globalAudioUrl, scenes: renderScenes });
+    return false;
+  } catch {
+    return true;
+  }
+}));
+if (rejectedAudioResults.filter(Boolean).length !== EXPECTED_AUDIO_REJECTION_COUNT) throw new Error("Renderer accepted a missing or blocked narration source");
+const outputUrl = await renderFFmpegVideo({ projectId: PROJECT_ID, quality: VideoQuality.LOW, aspectRatio: "16:9", globalAudioBase64: createSilentWav(3), subtitleMode: SubtitleMode.Both, scenes: renderScenes });
 const outputPath = path.resolve(process.cwd(), outputUrl.replace(/^\//, ""));
 if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) throw new Error("Rendered MP4 is missing or empty");
 const outputBytes = fs.statSync(outputPath).size;
@@ -48,5 +62,8 @@ const duration = Number(probe.format?.duration || 0);
 if (duration < 2.8 || duration > 3.2) throw new Error(`Unexpected rendered duration: ${duration}`);
 if (!probe.streams?.some((stream: any) => stream.codec_type === "video" && stream.width === 854 && stream.height === 480)) throw new Error("Rendered video stream is invalid");
 if (!probe.streams?.some((stream: any) => stream.codec_type === "audio")) throw new Error("Rendered audio stream is missing");
+if (!probe.streams?.some((stream: any) => stream.codec_type === "subtitle" && stream.codec_name === "mov_text")) throw new Error("Rendered subtitle track is missing");
+const visualQaFrames = await readVisualQaAssets(outputUrl);
+if (visualQaFrames.length === 0 || visualQaFrames.some(frame => frame.mimeType !== "image/jpeg" || frame.data.length === 0)) throw new Error("Rendered video frames are unavailable for Vision QA");
 fs.rmSync(path.dirname(outputPath), { recursive: true, force: true });
-process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, streams: probe.streams, passed: true }, null, 2));
+process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));

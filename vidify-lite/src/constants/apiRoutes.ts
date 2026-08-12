@@ -24,13 +24,16 @@ export const API_ROUTES = {
   PIPELINE_GENERATE_IMAGE: "/api/pipeline/generate-image",
   PIPELINE_GENERATE_BATCH_IMAGES: "/api/pipeline/generate-batch-images",
   PIPELINE_VALIDATE_SCENE_IMAGE: "/api/pipeline/validate-scene-image",
+  PIPELINE_VALIDATE_CHARACTER_REFERENCE: "/api/pipeline/validate-character-reference",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
   PIPELINE_PROJECT_ASSETS: "/api/pipeline/project-assets",
   PIPELINE_REFERENCE_ASSETS: "/api/pipeline/reference-assets",
+  PIPELINE_REFERENCE_AUDIO: "/api/pipeline/reference-audio",
   PIPELINE_DETAILED_PROMPT: "/api/pipeline/detailed-prompt",
   PIPELINE_VOICE: "/api/pipeline/voice",
   PIPELINE_ALIGN_VOICE: "/api/pipeline/align-voice",
+  PIPELINE_MERGE_AUDIO: "/api/pipeline/merge-audio",
   PIPELINE_VALIDATE_AUDIO: "/api/pipeline/validate-audio",
   PIPELINE_VALIDATE_FINAL_VIDEO: "/api/pipeline/validate-final-video",
   PIPELINE_RUN_ULTRA: "/api/pipeline/run-ultra",
@@ -39,6 +42,7 @@ export const API_ROUTES = {
   PIPELINE_SELECT_FOLDER: "/api/pipeline/select-folder",
   PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
   PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
+  PIPELINE_FFMPEG_RENDER_CANCEL: "/api/pipeline/ffmpeg-render/cancel/",
 } as const;
 
 export const EXTERNAL_URLS = {
@@ -57,8 +61,6 @@ export const EXTERNAL_URLS = {
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",
-  LOREM_FLICKR: "https://loremflickr.com",
-  PLACEHOLD_CO: "https://placehold.co",
   ELEVENLABS_PROJECTS: "https://elevenlabs.io/api/v1/projects",
 } as const;
 
@@ -81,6 +83,12 @@ export const ALIGN_CONFIG = {
 export const EXPORT_ZIP_CONFIG = {
   ERR_MISSING_PROJECT: "Missing projectId",
   ERR_PROJECT_NOT_FOUND: "Project not found",
+  ERR_SCENE_ASSETS_REQUIRED: "Chưa đủ ảnh phân cảnh để xuất dự án. Hãy hoàn tất và duyệt toàn bộ ảnh rồi thử lại.",
+  ERR_VOICE_REQUIRED: "Chưa có giọng đọc hợp lệ để xuất dự án. Hãy tạo lại giọng đọc rồi thử lại.",
+  ERR_COVER_REQUIRED: "Chưa có ảnh bìa hợp lệ để xuất dự án. Hãy hoàn tất ảnh bìa rồi thử lại.",
+  ERR_AUDIO_SPLIT_FAILED: "Chưa thể chuẩn bị giọng đọc theo phân cảnh. Hãy tạo lại giọng đọc rồi thử xuất lại.",
+  ERR_EXPORT_FAILED: "Chưa thể xuất dự án lúc này. Hãy kiểm tra tài nguyên rồi thử lại.",
+  LOG_EXPORT_FAILED: "CapCut project export failed",
   VOICES_DIR: "voices",
   SCENE_PREFIX: "scene_",
   WAV_EXT: ".wav",

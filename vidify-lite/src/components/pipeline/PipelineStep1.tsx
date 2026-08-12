@@ -9,8 +9,6 @@ import {
   motionLabels,
   LOADING_KEYS,
   BASE64_DATA_URL_REGEX,
-  COMMON_STRINGS,
-  SIMULATED_SPEECH_VAL,
 } from "../../constants";
 
 import {
@@ -97,11 +95,6 @@ export default function PipelineStep1(props: PipelineWizardState) {
     }
   };
 
-  const createSpeechUtterance = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    return utterance;
-  };
-
   const {
     t,
     project,
@@ -154,12 +147,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
     ttsAudioUrl,
 
 
-    isPlayingTts,
-    setIsPlayingTts,
-
     audioPreviewRef,
     voicePlayerSectionRef,
-    voiceAudioDuration,
     storyboardSourceMode,
     setStoryboardSourceMode,
     isAudioDragging,
@@ -171,18 +160,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
     setStep2CurrentTime,
     step2Duration,
     setStep2Duration,
-    step2IsSimulatedPlaying,
-    setStep2IsSimulatedPlaying,
-    step2SimulatedCurrentTime,
-    setStep2SimulatedCurrentTime,
     audioCurrentTime,
     setAudioCurrentTime,
     audioDurationState,
     setAudioDurationState,
     isPlayingRealAudio,
     setIsPlayingRealAudio,
-    simulatedCurrentTime,
-    setSimulatedCurrentTime,
     handleTriggerStoryboardSplit,
     handleRenderSceneImage,
     handleUploadSceneImage,
@@ -515,9 +498,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </span>
                   <span className="text-[9px] text-slate-500 font-sans flex items-center gap-1.5">
                     <span
-                      className={cn(`w-1.5 h-1.5 rounded-full ${isPlayingTts || isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`)}
+                      className={cn(`w-1.5 h-1.5 rounded-full ${isPlayingRealAudio ? "bg-emerald-500 animate-ping" : "bg-slate-600"}`)}
                     />
-                    {isPlayingTts || isPlayingRealAudio
+                    {isPlayingRealAudio
                       ? t.Live_playing
                       : t.Deck_ready}
                   </span>
@@ -550,25 +533,19 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   </div>
                 ) : (
                   <div className="space-y-3.5">
-                    {ttsAudioUrl !== COMMON_STRINGS.SIMULATED && (
-                      <audio
-                        ref={audioPreviewRef}
-                        src={ttsAudioUrl}
-                        onTimeUpdate={(e) =>
-                          setAudioCurrentTime(e.currentTarget.currentTime)
-                        }
-                        onDurationChange={(e) =>
-                          setAudioDurationState(e.currentTarget.duration)
-                        }
-                        onPlay={() => setIsPlayingRealAudio(true)}
-                        onPause={() => setIsPlayingRealAudio(false)}
-                        onEnded={() => {
-                          setIsPlayingRealAudio(false);
-                          setAudioCurrentTime(0);
-                        }}
-                        className="hidden"
-                      />
-                    )}
+                    <audio
+                      ref={audioPreviewRef}
+                      src={ttsAudioUrl}
+                      onTimeUpdate={(e) => setAudioCurrentTime(e.currentTarget.currentTime)}
+                      onDurationChange={(e) => setAudioDurationState(e.currentTarget.duration)}
+                      onPlay={() => setIsPlayingRealAudio(true)}
+                      onPause={() => setIsPlayingRealAudio(false)}
+                      onEnded={() => {
+                        setIsPlayingRealAudio(false);
+                        setAudioCurrentTime(0);
+                      }}
+                      className="hidden"
+                    />
 
                     
 
@@ -577,10 +554,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
 
                       {Array.from({ length: 44 }).map((_, i) => {
-                        const isMainPlaying =
-                          ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                            ? isPlayingTts
-                            : isPlayingRealAudio;
+                        const isMainPlaying = isPlayingRealAudio;
                         const baseCurve =
                           3 + Math.floor(Math.abs(Math.sin(i * 0.15)) * 14);
 
@@ -611,25 +585,13 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <input
                           type="range"
                           min={0}
-                          max={
-                            ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? voiceAudioDuration || 10
-                              : audioDurationState || 10
-                          }
-                          value={
-                            ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? simulatedCurrentTime
-                              : audioCurrentTime
-                          }
+                          max={audioDurationState || 10}
+                          value={audioCurrentTime}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
-                            if (ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
-                              setSimulatedCurrentTime(val);
-                            } else {
-                              if (audioPreviewRef.current) {
-                                audioPreviewRef.current.currentTime = val;
-                                setAudioCurrentTime(val);
-                              }
+                            if (audioPreviewRef.current) {
+                              audioPreviewRef.current.currentTime = val;
+                              setAudioCurrentTime(val);
                             }
                           }}
                           className="seeker-input w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer focus:outline-none relative z-10"
@@ -637,25 +599,17 @@ export default function PipelineStep1(props: PipelineWizardState) {
                         <div
                           className="absolute top-1/2 -translate-y-1/2 left-0 h-1 bg-gradient-to-r from-amber-500 to-rose-500 rounded-lg pointer-events-none z-0"
                           style={{
-                            width: `${Math.min(100, Math.max(0, ((ttsAudioUrl === COMMON_STRINGS.SIMULATED ? simulatedCurrentTime : audioCurrentTime) / (ttsAudioUrl === COMMON_STRINGS.SIMULATED ? voiceAudioDuration || 10 : audioDurationState || 10)) * 100))}%`,
+                            width: `${Math.min(100, Math.max(0, (audioCurrentTime / (audioDurationState || 10)) * 100))}%`,
                           }}
                         />
                       </div>
 
                       <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 px-0.5">
                         <span className="font-bold text-slate-400">
-                          {formatAudioTime(
-                            ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? simulatedCurrentTime
-                              : audioCurrentTime,
-                          )}
+                          {formatAudioTime(audioCurrentTime)}
                         </span>
                         <span>
-                          {formatAudioTime(
-                            ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? voiceAudioDuration || 0
-                              : audioDurationState || 0,
-                          )}
+                          {formatAudioTime(audioDurationState || 0)}
                         </span>
                       </div>
                     </div>
@@ -690,23 +644,12 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       </Button>
 
                       <div className="flex items-center justify-center">
-                        {(
-                          ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                            ? isPlayingTts
-                            : isPlayingRealAudio
-                        ) ? (
+                        {isPlayingRealAudio ? (
                           <Button
                             variant="ghost"
                             type="button"
                             onClick={() => {
-                              if (ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
-                                if ("speechSynthesis" in window) {
-                                  window.speechSynthesis.cancel();
-                                  setIsPlayingTts(false);
-                                }
-                              } else {
-                                audioPreviewRef.current?.pause();
-                              }
+                              audioPreviewRef.current?.pause();
                             }}
                             className="w-8.5 h-8.5 rounded-full bg-gradient-to-r from-amber-500 to-rose-500 hover:scale-105 hover:text-white active:scale-95 text-white font-bold flex items-center justify-center shadow-none active:opacity-90 transition-all border border-rose-400/20 relative p-0 min-w-0"
                           >
@@ -721,32 +664,9 @@ export default function PipelineStep1(props: PipelineWizardState) {
                             variant="primary"
                             type="button"
                             onClick={() => {
-                              if (ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
-                                if ("speechSynthesis" in window) {
-                                  window.speechSynthesis.cancel();
-                                  const textToSpeak =
-                                    project.scriptRewritten || "";
-                                  if (!textToSpeak) return;
-
-                                  const utterance =
-                                    createSpeechUtterance(textToSpeak);
-                                  utterance.onstart = () =>
-                                    setIsPlayingTts(true);
-                                  utterance.onend = () => {
-                                    setIsPlayingTts(false);
-                                    setSimulatedCurrentTime(0);
-                                  };
-                                  utterance.onerror = () =>
-                                    setIsPlayingTts(false);
-                                  window.speechSynthesis.speak(utterance);
-                                }
-                              } else {
-                                audioPreviewRef.current
-                                  ?.play()
-                                  .catch((e) =>
-                                    appWarn("AUDIO_PLAYBACK_FAILED", e),
-                                  );
-                              }
+                              audioPreviewRef.current
+                                ?.play()
+                                .catch((e) => appWarn("AUDIO_PLAYBACK_FAILED", e));
                             }}
                             className="w-8.5 h-8.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 hover:scale-105 active:scale-95 hover:text-white text-white font-bold flex items-center justify-center shadow-lg shadow-rose-500/20 active:opacity-90 transition-all border border-rose-500/10 p-0 min-w-0"
                           >
@@ -760,10 +680,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           variant="ghost"
                           type="button"
                           onClick={handleDownloadVoice}
-                          className={cn(`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto ${ttsAudioUrl === COMMON_STRINGS.SIMULATED
-                              ? "bg-slate-900 border-slate-800 hover:bg-slate-850 hover:border-slate-700 hover:text-slate-100 text-slate-300"
-                              : "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
-                            }`)}
+                          className="flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase tracking-wider transition-all shadow-none h-8 font-bold w-auto bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-550 hover:to-rose-700 hover:text-white text-white border-rose-500/10"
                           title={t.Download_voiceover_file}
                         >
                           <Download className="w-3.5 h-3.5 text-current shrink-0" />
@@ -932,7 +849,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="relative z-10 min-h-[110px] font-sans">
                 {project.voiceConfig.audioType !== AudioType.Upload ? (
                   <div className="space-y-3">
-                    {ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED ? (
+                    {ttsAudioUrl ? (
                       <div className="bg-slate-950/45 border border-slate-850 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.015] rounded-full blur-2xl pointer-events-none" />
 
@@ -1083,168 +1000,6 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </div>
                         </div>
                       </div>
-                    ) : project.voiceConfig.audioUrl === SIMULATED_SPEECH_VAL ? (
-                      <div className="bg-slate-950/45 border border-slate-855 p-3 rounded-xl space-y-2.5 shadow-md relative overflow-hidden text-left">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.015] rounded-full blur-2xl pointer-events-none" />
-
-                        <div className="flex items-center justify-between gap-3 relative z-10">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            {step2IsSimulatedPlaying ? (
-                              <Button
-                                variant="ghost"
-                                type="button"
-                                onClick={() => {
-                                  if ("speechSynthesis" in window) {
-                                    window.speechSynthesis.cancel();
-                                  }
-                                  setStep2IsSimulatedPlaying(false);
-                                }}
-                                className="w-8.5 h-8.5 rounded-full bg-amber-500 hover:bg-amber-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none relative active:scale-95 p-0 min-w-0"
-                              >
-                                <span className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping pointer-events-none" />
-                                <div className="flex gap-[1.5px] items-center justify-center font-bold">
-                                  <span className="w-0.5 h-2.5 bg-slate-950 rounded-sm" />
-                                  <span className="w-0.5 h-2.5 bg-slate-950 rounded-sm" />
-                                </div>
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                type="button"
-                                onClick={() => {
-                                  if ("speechSynthesis" in window) {
-                                    window.speechSynthesis.cancel();
-                                    const textToSpeak =
-                                      project.scriptRewritten || "";
-                                    if (!textToSpeak) return;
-
-                                    const utterance =
-                                      createSpeechUtterance(textToSpeak);
-                                    utterance.onstart = () =>
-                                      setStep2IsSimulatedPlaying(true);
-                                    utterance.onend = () => {
-                                      setStep2IsSimulatedPlaying(false);
-                                      setStep2SimulatedCurrentTime(0);
-                                    };
-                                    utterance.onerror = () =>
-                                      setStep2IsSimulatedPlaying(false);
-                                    window.speechSynthesis.speak(utterance);
-                                  }
-                                }}
-                                className="w-8.5 h-8.5 rounded-full bg-amber-500 hover:bg-amber-400 hover:text-slate-950 text-slate-950 flex items-center justify-center transition-all shrink-0 shadow-none active:scale-95 p-0 min-w-0"
-                              >
-                                <Play className="w-3 h-3 fill-current ml-0.5 shrink-0" />
-                              </Button>
-                            )}
-
-                            <div className="truncate shrink-1">
-                              <span className="text-xs font-bold text-slate-200 truncate">
-                                {t.Simulated_Voice}
-                              </span>
-                              <div className="text-[10px] text-slate-500 leading-none mt-0.5">
-                                {t.Synthesized_audio_demo}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-right shrink-0">
-                            <Button
-                              variant="ghost"
-                              type="button"
-                              onClick={() => {
-                                if ("speechSynthesis" in window) {
-                                  window.speechSynthesis.cancel();
-                                }
-                                setStep2IsSimulatedPlaying(false);
-                                setStep2SimulatedCurrentTime(0);
-                              }}
-                              className="px-2 py-0.5 text-[9px] uppercase font-mono font-bold tracking-wider rounded bg-slate-900 border border-slate-850 text-slate-400 hover:text-slate-200 transition-colors shadow-none h-auto w-auto"
-                            >
-                              {t.Reset}
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              type="button"
-                              onClick={() => {
-                                if ("speechSynthesis" in window) {
-                                  window.speechSynthesis.cancel();
-                                }
-                                setStep2IsSimulatedPlaying(false);
-                                setProject((prev) => ({
-                                  ...prev,
-                                  voiceConfig: {
-                                    ...prev.voiceConfig,
-                                    audioUrl: undefined,
-                                    audioType: AudioType.Generated,
-                                  },
-                                }));
-                              }}
-                              className="px-2 py-0.5 text-[9px] font-mono tracking-wider font-bold rounded border border-rose-950 text-rose-400 hover:bg-rose-955/25 transition-colors shadow-none h-auto w-auto"
-                            >
-                              {t.Exit_synth}
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 relative z-10 pt-2 border-t border-slate-900/60">
-                          <span className="text-[10px] font-mono font-bold text-amber-500 min-w-[32px] text-left">
-                            {formatAudioTime(step2SimulatedCurrentTime)}
-                          </span>
-
-                          <div className="flex-1 relative select-none">
-                            <input
-                              type="range"
-                              min={0}
-                              max={voiceAudioDuration || 10}
-                              value={step2SimulatedCurrentTime}
-                              onChange={(e) =>
-                                setStep2SimulatedCurrentTime(
-                                  parseFloat(e.target.value),
-                                )
-                              }
-                              className="compact-seeker w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer focus:outline-none relative z-10"
-                            />
-                            <div
-                              className="absolute top-1/2 -translate-y-1/2 left-0 h-1 bg-gradient-to-r from-amber-500 to-rose-400 rounded-lg pointer-events-none z-0"
-                              style={{
-                                width: `${Math.min(100, Math.max(0, (step2SimulatedCurrentTime / (voiceAudioDuration || 10)) * 100))}%`,
-                              }}
-                            />
-                          </div>
-
-                          <span className="text-[10px] font-mono text-slate-500 min-w-[32px] text-right">
-                            {formatAudioTime(voiceAudioDuration || 0)}
-                          </span>
-
-                          <div className="flex items-end gap-0.5 h-3.5 w-3.5 shrink-0">
-                            <span
-                              style={{
-                                height: step2IsSimulatedPlaying
-                                  ? "auto"
-                                  : "3px",
-                              }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.6s_infinite_alternate]" : ""}`)}
-                            />
-                            <span
-                              style={{
-                                height: step2IsSimulatedPlaying
-                                  ? "auto"
-                                  : "2px",
-                              }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.8s_infinite_alternate_0.15s]" : ""}`)}
-                            />
-                            <span
-                              style={{
-                                height: step2IsSimulatedPlaying
-                                  ? "auto"
-                                  : "4px",
-                              }}
-                              className={cn(`w-[1.5px] rounded-sm bg-amber-400 ${step2IsSimulatedPlaying ? "animate-[bounce-bar_0.5s_infinite_alternate_0.3s]" : ""}`)}
-                            />
-                          </div>
-                        </div>
-                      </div>
                     ) : (
                       <div className="p-4 bg-slate-950/45 border border-slate-900 rounded-xl text-center space-y-3 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/[0.01] rounded-full blur-2xl pointer-events-none" />
@@ -1262,26 +1017,6 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           </div>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          type="button"
-                          onClick={() => {
-                            setProject((prev) => ({
-                              ...prev,
-                              voiceConfig: {
-                                ...prev.voiceConfig,
-                                audioType: AudioType.Simulated,
-                                uploadedAudioName: t.Sample_Speech,
-                                audioUrl: SIMULATED_SPEECH_VAL,
-                              },
-                            }));
-                            setInfoMsg(t.Activated_simulated_speec);
-                          }}
-                          className="w-full max-w-[170px] mx-auto py-1.5 bg-gradient-to-r from-purple-600 to-rose-500 hover:from-purple-500 hover:to-rose-450 hover:text-white text-white font-bold text-[10px] uppercase tracking-wider rounded-lg shadow-none flex items-center justify-center gap-1 h-auto"
-                        >
-                          <Sparkles className="w-3 h-3 animate-pulse text-amber-200" />
-                          <span>{t.Simulated_Voice_5}</span>
-                        </Button>
                       </div>
                     )}
                   </div>
@@ -2459,7 +2194,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           #{scene.id}
                         </span>
                         <span className="bg-rose-600/90 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shadow-sm">
-                          {ttsAudioUrl && ttsAudioUrl !== "simulated" && ttsAudioUrl !== "simulated_speech"
+                          {ttsAudioUrl
                             ? `${formatCleanTime(scene.startTime)} - ${formatCleanTime(scene.endTime)}`
                             : "--:-- - --:--"}
                         </span>
@@ -2576,7 +2311,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       {t.Scene_Inspector} - {activeScene.id}
                     </span>
                     <span className="text-slate-400 font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded-full ml-2">
-                      {ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED && ttsAudioUrl !== SIMULATED_SPEECH_VAL
+                      {ttsAudioUrl
                         ? `${formatCleanTime(activeScene.startTime)} - ${formatCleanTime(activeScene.endTime)} (${Math.round(activeScene.duration || 0)}${t.s_6 || "s"})`
                         : "--:-- - --:--"}
                     </span>

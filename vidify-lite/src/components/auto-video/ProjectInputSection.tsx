@@ -3,7 +3,7 @@ import { Check, Clock, FileText, Globe, Layers, Sliders, Sparkles, ChevronDown }
 import { Button } from "../ui/Button";
 import { cn } from "../../lib/utils";
 import { ProjectInputType, ProjectLanguage } from "../../types";
-import { DURATION_OPTIONS, GENRE_OPTIONS, PROJECT_LANGUAGE_OPTIONS, REFACTOR_CONSTANTS, SPLIT_STRATEGY_OPTIONS, genreLabels } from "../../constants";
+import { DURATION_OPTIONS, GENRE_OPTION_GROUPS, PROJECT_LANGUAGE_OPTIONS, REFACTOR_CONSTANTS, SPLIT_STRATEGY_OPTIONS, genreLabels } from "../../constants";
 
 interface ProjectInputSectionProps {
   inputType: ProjectInputType;
@@ -81,17 +81,23 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: T.lblGenre, icon: <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: genre, onChange: setGenre, options: _.map(GENRE_OPTIONS, (g) => ({ value: g, label: genreLabels[g as keyof typeof genreLabels] || g })) },
+          { label: T.lblGenre, icon: <Layers className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: genre, onChange: setGenre, optionGroups: GENRE_OPTION_GROUPS },
           { label: T.lblLanguage, icon: <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: language, onChange: (v: string) => setLanguage(v as ProjectLanguage), options: _.map(PROJECT_LANGUAGE_OPTIONS, (l) => ({ value: l.value, label: _.isEqual(l.value, "vi") ? T.langVi : T.langEn })) },
           { label: T.lblDuration, icon: <Clock className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: duration, onChange: setDuration, options: _.map(DURATION_OPTIONS, (d) => ({ value: d.val, label: d.label })) },
           { label: T.lblSplitStrategy, icon: <Sliders className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />, value: splitStrategy, onChange: setSplitStrategy, options: _.map(SPLIT_STRATEGY_OPTIONS, (s) => ({ value: s.value, label: _.get(splitLabelMap, s.value, s.value) })) },
-        ].map(({ label, icon, value, onChange, options }) => (
+        ].map(({ label, icon, value, onChange, options, optionGroups }) => (
           <div key={label} className="space-y-1">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{label}</span>
             <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-rose-500/50 transition-colors">
               {icon}
               <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                {_.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
+                {optionGroups
+                  ? _.map(optionGroups, (group) => (
+                    <optgroup key={group.label} label={group.label} className="bg-slate-955 text-slate-400">
+                      {_.map(group.options, (option) => <option key={option} value={option} className="bg-slate-955 text-slate-300">{genreLabels[option as keyof typeof genreLabels] || option}</option>)}
+                    </optgroup>
+                  ))
+                  : _.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
             </div>

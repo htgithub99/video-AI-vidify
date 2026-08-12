@@ -1,4 +1,5 @@
 import { SplitStrategy, VideoGenre } from "./enums";
+import _ from "lodash";
 
 export interface PipelineNode {
   id: string;
@@ -42,6 +43,11 @@ export const pipelineNodes = [
 export const genreLabels = {
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Video essay kể chuyện",
   [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay giải thích",
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: "AI tự chọn",
+  [VideoGenre.TRANSFORMATION_TIMELINE]: "Biến đổi theo thời gian",
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: "Góc tối nghề nghiệp",
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: "Sa ngã và trả giá",
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: "Bi kịch hài đen",
   Storytelling: "Kể chuyện",
   History: "Lịch sử",
   Documentary: "Phim tài liệu",
@@ -55,6 +61,31 @@ export const genreLabels = {
   Psychology: "Tâm lý học",
   Philosophy: "Triết học",
 } as const;
+
+export const GENRE_OPTION_GROUPS = [
+  {
+    label: "Kể chuyện châm biếm",
+    options: [
+      VideoGenre.SATIRICAL_LIFE_AUTO,
+      VideoGenre.TRANSFORMATION_TIMELINE,
+      VideoGenre.CAREER_SOCIAL_DARKSIDE,
+      VideoGenre.DOWNFALL_CONSEQUENCE,
+      VideoGenre.DARK_COMEDY_TRAGEDY,
+    ],
+  },
+  {
+    label: "Kể chuyện – phân tích",
+    options: ["Storytelling", VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER],
+  },
+  {
+    label: "Tài liệu – kiến thức",
+    options: ["History", "Documentary", "Explanation", "Education", "Science", "Psychology", "Philosophy"],
+  },
+  {
+    label: "YouTube phổ biến",
+    options: ["Review", "News", "Top List", "True Crime"],
+  },
+] as const;
 
 export const audLabels = {
   "General Audience": "Khán giả đại chúng",
@@ -165,7 +196,7 @@ export const GEMINI_USER_MESSAGES = {
 
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
 
-export const GENRE_OPTIONS = ["Storytelling", VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER, "History", "Documentary", "Explanation", "Review", "Education", "News", "Top List", "True Crime", "Science", "Psychology", "Philosophy"] as const;
+export const GENRE_OPTIONS = _.flatMap(GENRE_OPTION_GROUPS, "options");
 
 export const AUDIENCE_OPTIONS = ["General Audience", "Kids", "Teenagers", "Adults", "Seniors"] as const;
 
@@ -311,95 +342,6 @@ export const VOICE_PRESET_MAP: Record<string, string> = {
   "gemini-cloud-vi": "edge_vi-VN-HoaiMyNeural",
 };
 
-export const getDummyThumbs = (isVi: boolean, isFallback: boolean = false, topic: string = "") => {
-  const normalizedTopic = topic.replace(/\s+/g, " ").trim().slice(0, 240) || (isVi ? "câu chuyện chính của video" : "the video's central story");
-  return [
-  {
-    id: isFallback ? "th_fallback_1" : "th_1",
-    prompt: `High-retention documentary thumbnail directly illustrating this video topic: ${normalizedTopic}. One expressive main subject, clear emotional conflict, simple split composition showing before versus after, strong focal separation, clean background, no symbols unrelated to the topic, no generated letters, no logo, no watermark.`,
-    style: "Clean documentary illustration",
-    hasText: false,
-    textText: "",
-    layout: "One expressive subject with a clear before-versus-after split",
-    typography: "Text is added later by the editor",
-    colorSuggestion: "Controlled dark-to-warm contrast",
-    subjectFocus: normalizedTopic,
-  },
-  {
-    id: isFallback ? "th_fallback_2" : "th_2",
-    prompt: `Emotion-led video thumbnail directly matching this topic: ${normalizedTopic}. Tight portrait of the central subject at the decisive moment, one meaningful environment cue from the story, uncluttered composition readable at phone size, strong eyes and facial expression, no clickbait object unrelated to the script, no generated letters, no logo, no watermark.`,
-    style: "Emotion-led editorial illustration",
-    hasText: false,
-    textText: "",
-    layout: "Tight emotional portrait with one story-specific environment cue",
-    typography: "Text is added later by the editor",
-    colorSuggestion: "High subject contrast with a restrained palette",
-    subjectFocus: normalizedTopic,
-  },
-  ];
-};
-
-export const getDummyHooks = (isVi: boolean, isFallback: boolean = false, hookType?: string) => [
-  {
-    id: "hk_fallback_1",
-    content: isVi ? `[Mở đầu Thần bí - ${isFallback ? "Dự phòng" : "Thử nghiệm"}] Bí mật kinh ngạc làm đảo lộn dòng lịch sử mà không ai kể bạn nghe...` : `[Mystery Hook - ${isFallback ? "Fallback" : "Preview"}] The shocking secret that changed the records of history forever...`,
-    type: hookType || "Mystery",
-    selected: true,
-  },
-  {
-    id: "hk_fallback_2",
-    content: isVi ? `[Gây Shock - ${isFallback ? "Dự phòng" : "Thử nghiệm"}] Dừng lại ngay! Đây chính là lý do video của bạn liên tục bị bỏ lỡ.` : `[Shock Hook - ${isFallback ? "Fallback" : "Preview"}] Stop scrolling! This is the exact reason you are missing out.`,
-    type: hookType || "Shock",
-    selected: false,
-  },
-];
-
-export const getDummyScript = (isVi: boolean, fallbackHook: string, config: any, isApiError: boolean = false) => {
-  const defaultHookVi = "Có một câu chuyện kỳ bí.";
-  const defaultHookEn = "There is a mysterious story.";
-
-  const scriptVi = isApiError
-    ? `${fallbackHook || defaultHookVi} \n\nTrong dòng lịch sử bao la, những nhà nghiên cứu luôn tìm kiếm mảnh ghép bị lãng quên của thời đại. Các di chỉ khảo cổ gần đây đã mang lại bằng chứng đáng tin cậy hỗ trợ lý thuyết này. Nó chứng minh mối liên kết sâu xa giữa các hiện tượng trước đó. (Dự phòng tự động do lỗi API)`
-    : `${fallbackHook || defaultHookVi} \n\nTrong dòng lịch sử bao la, chúng ta không thể phủ nhận tầm quan trọng của bối cảnh và sự kiện liên quan. Các nhà nghiên cứu tin rằng mọi việc xảy ra đều chứa đựng ý nghĩa ẩn sau. Hãy phân tích ví dụ tiêu biểu mà chúng xuất hiện.\n\nKết luận lại, câu chuyện này mở ra góc nhìn mới đầy chiều sâu cho độc giả.`;
-
-  const scriptEn = isApiError
-    ? `${fallbackHook || defaultHookEn} \n\nThroughout the pages of history, researchers search for the forgotten fragments of the age. Modern archaeological findings have contributed compelling evidence supporting this system, revealing deep connections to past events. (Auto-fallback preview)`
-    : `${fallbackHook || defaultHookEn} \n\nThroughout the pages of history, background details and historical analysis paint a clear scene. Modern research suggests these variables correlate directly. Let us dive deeper into the core mechanics of this story.\n\nIn conclusion, this opens an entirely new perspective.`;
-
-  const factCheckVi = isApiError ? "✓ [Dự phòng] Đã xác minh: Các sự kiện cơ bản phù hợp với dữ kiện lịch sử tiêu chuẩn." : "✓ Đã kiểm chứng: Các dòng mốc lịch sử tương thích và dữ kiện nhất quán trong kịch bản.";
-
-  const factCheckEn = isApiError ? "✓ [Fallback] Verified: The core plot parameters align with standard historical data." : "✓ Verified: Historical timelines and database coordinates are fully consistent.";
-
-  return {
-    rewrittenScript: isVi ? scriptVi : scriptEn,
-    factCheckNotes: config?.factCheck ? (isVi ? factCheckVi : factCheckEn) : "Fact Check disabled",
-    chapters: [
-      {
-        id: "ch_1",
-        title: isVi ? "Chương I: Sự khởi đầu" : "Chapter I: The Arrival",
-        scriptSegment: isVi ? "Giới thiệu về nhân vật chính và bối cảnh xảy ra sự kiện đầu tiên." : "Introduction to the main characters and initial settings of the event.",
-      },
-      {
-        id: "ch_2",
-        title: isVi ? "Chương II: Phân tích sâu" : "Chapter II: Deep Exploration",
-        scriptSegment: isVi ? "Cung cấp những dữ kiện và diễn biến kịch tính để mở rộng nội dung." : "Providing critical events and dramatic facts to expand the content duration.",
-      },
-      {
-        id: "ch_3",
-        title: isVi ? "Chương III: Bài học & Đúc kết" : "Chapter III: Synthesis",
-        scriptSegment: isVi ? "Tóm lược kết quả và truyền tải thông điệp cuối cùng." : "Synthesizing the lessons and conveying the core takeaway.",
-      },
-    ],
-  };
-};
-
-export const getDummyHookTitle = (isVi: boolean, type: string = "Auto", isApiError: boolean = false) => {
-  if (isApiError) {
-    return isVi ? `[Mở đầu ${type}] Bạn có biết bí mật lớn nhất đằng sau câu chuyện này?` : `[${type} Hook] Did you know the biggest secret behind this story?`;
-  }
-  return isVi ? `[Mở đầu ${type}] Bạn đã từng nghe về câu chuyện kỳ lạ này chưa?` : `[${type} Hook] Have you ever heard about this strange story?`;
-};
-
 export const getDurationText = (isVi: boolean, durStr: string) => {
   if (durStr === "30s") {
     return {
@@ -419,38 +361,6 @@ export const getDurationText = (isVi: boolean, durStr: string) => {
     targetWordCount: 300,
     durationText: isVi ? "2 phút (2 minutes)" : "2 minutes",
     targetWordCountMin: Math.floor(300 * 0.95),
-  };
-};
-
-export const getDummySeoData = (isVi: boolean, isApiError: boolean = false) => {
-  return {
-    titles: [
-      {
-        text: isVi ? `Bí Ẩn Lịch Sử Bị Lãng Quên Có Thể Bạn Chưa Biết${isApiError ? " (Dự Phòng)" : ""}` : `The Untold Secret of History - Documentary Special${isApiError ? " (Fallback Preview)" : ""}`,
-        searchScore: 92,
-        ctrScore: 89,
-        compScore: 35,
-        seoScore: 93,
-      },
-      {
-        text: isVi ? `Phân cảnh kinh hoàng chưa kể về lịch sử dòng chảy` : `The Untold Secrets & Historical Truths Special`,
-        searchScore: 88,
-        ctrScore: 95,
-        compScore: 40,
-        seoScore: 90,
-      },
-    ],
-    descriptions: [
-      {
-        text: isVi ? `Khám phá câu chuyện đằng sau những dữ kiện ít người biết đến, thông tin được xâu chuỗi một cách logic theo phong cách phim tài liệu khoa học chân thật nhất.` : `Explore the captivating narrative behind hidden historical logs meticulously gathered for high click rates.`,
-        searchScore: 90,
-        ctrScore: 85,
-        compScore: 20,
-        seoScore: 89,
-      },
-    ],
-    hashtags: ["xuhuong", "learning", "lichsu", "biandocla", "aivideos"],
-    tags: ["ai story rewriter", "tao video tu dong", "tin tuc lich su", "documentary creation"],
   };
 };
 

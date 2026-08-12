@@ -56,6 +56,7 @@ interface CachedGeneratorConfig {
   thumbnailReferenceImages?: string[];
   resumeMode?: boolean;
   chromeHeadless?: boolean;
+  musicAssetUrl?: string;
 }
 
 export interface AutoVideoFormState {
@@ -110,6 +111,7 @@ export interface AutoVideoFormState {
   showAdvancedImageSettings: boolean;
   ffmpegQuality: VideoQuality;
   isConfigLoaded: boolean;
+  musicAssetUrl: string;
 }
 
 export interface AutoVideoFormActions {
@@ -144,6 +146,7 @@ export interface AutoVideoFormActions {
   setProjectName: (v: string) => void;
   setResumeMode: (v: boolean) => void;
   setShowAdvancedImageSettings: (v: boolean) => void;
+  setMusicAssetUrl: (v: string) => void;
 }
 
 const buildInitialProjectName = () =>
@@ -161,6 +164,7 @@ const applyProjectToState = (
     | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode" | "setStyleTextInImageMode" | "setImageFocusMode" | "setThumbnailImageFocusMode"
     | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode" | "setThumbnailTextInImageMode"
     | "setReferenceImages" | "setSceneReferenceImages" | "setThumbnailReferenceImages" | "setProjectName"
+    | "setMusicAssetUrl"
   >,
 ) => {
   if (proj.input) {
@@ -172,6 +176,7 @@ const applyProjectToState = (
     if (proj.config.language) actions.setLanguage(proj.config.language);
     if (proj.config.duration) actions.setDuration(proj.config.duration);
     if (proj.config.splitStrategy) actions.setSplitStrategy(proj.config.splitStrategy);
+    actions.setMusicAssetUrl(_.defaultTo(proj.config.musicAssetUrl, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
   }
   if (proj.voiceConfig) {
     if (proj.voiceConfig.provider) actions.setVoiceProvider(proj.voiceConfig.provider);
@@ -268,6 +273,7 @@ export function useAutoVideoState(
   const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
   const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
+  const [musicAssetUrl, setMusicAssetUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   const actions: AutoVideoFormActions = {
@@ -302,6 +308,7 @@ export function useAutoVideoState(
     setProjectName,
     setResumeMode,
     setShowAdvancedImageSettings,
+    setMusicAssetUrl,
   };
 
   const loadConfig = async (projectId?: string | null) => {
@@ -340,6 +347,7 @@ export function useAutoVideoState(
         if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
         if (parsed.thumbnailTextInImageMode) setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
         if (parsed.projectName) setProjectName(parsed.projectName);
+        if (!_.isUndefined(parsed.musicAssetUrl)) setMusicAssetUrl(parsed.musicAssetUrl);
         setReferenceImages(!_.isEmpty(projectStyleReferenceImages)
           ? projectStyleReferenceImages
           : _.defaultTo(parsed.referenceImages, []));
@@ -408,6 +416,7 @@ export function useAutoVideoState(
       thumbnailReferenceImages,
       resumeMode,
       chromeHeadless,
+      musicAssetUrl,
     };
     storageUtils.setAsync(
       getAutoVideoConfigStorageKey(selectedProjectId),
@@ -418,7 +427,7 @@ export function useAutoVideoState(
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, maxVideoScenes, aspectRatio, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode,
-    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless,
+    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless, musicAssetUrl,
   ]);
 
   const state: AutoVideoFormState = {
@@ -431,7 +440,7 @@ export function useAutoVideoState(
     chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode,
     referenceImages, sceneReferenceImages, characterImages,
     thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
-    projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded,
+    projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded, musicAssetUrl,
   };
 
   return { state, actions };

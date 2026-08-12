@@ -5,7 +5,8 @@ export const SCRIPT_QUALITY_THRESHOLDS = {
   CONTINUITY: 80,
   FACTUALITY: 85,
   REPETITION: 80,
-  CONVERSATIONAL: 60,
+  EMOTIONAL_ARC: 80,
+  CONVERSATIONAL: 80,
   HOOK_PAYOFF: 80,
   HOOK_FACTUAL_SAFETY: 80,
   DURATION_TOLERANCE_RATIO: 0.15,
@@ -33,7 +34,7 @@ export const normalizeHookScore = (value: Partial<HookScore> = {}): HookScore =>
     factualSafety,
     weightedTotal,
     unsupportedClaim,
-    accepted: !unsupportedClaim,
+    accepted: !unsupportedClaim && factualSafety >= SCRIPT_QUALITY_THRESHOLDS.HOOK_FACTUAL_SAFETY,
     reasons: _.compact(_.map(value.reasons, _.toString)),
   };
 };
@@ -70,7 +71,11 @@ export const normalizeScriptQualityReport = (
     hookPayoffScore: score(value.hookPayoffScore),
     durationFit,
     estimatedDurationSeconds,
-    blockingErrors: _.uniq(_.compact([wordCount <= 0 && "script_missing_or_empty", ...hardBlockingErrors])) as string[],
+    blockingErrors: _.uniq(_.compact([
+      wordCount <= 0 && "script_missing_or_empty",
+      !durationFit && "script_duration_out_of_target",
+      ...hardBlockingErrors,
+    ])) as string[],
     warnings: _.uniq(_.compact([
       ..._.map(value.warnings, _.toString),
       ..._.map(editorialAdvisories, advisory => `editorial_advisory: ${advisory}`),
@@ -83,11 +88,12 @@ export const normalizeScriptQualityReport = (
     report.continuityScore < SCRIPT_QUALITY_THRESHOLDS.CONTINUITY && "script_continuity_below_target",
     report.factualityScore < SCRIPT_QUALITY_THRESHOLDS.FACTUALITY && "script_factuality_below_target",
     report.repetitionScore < SCRIPT_QUALITY_THRESHOLDS.REPETITION && "script_repetition_below_target",
+    report.emotionalArcScore < SCRIPT_QUALITY_THRESHOLDS.EMOTIONAL_ARC && "script_emotional_arc_below_target",
     report.conversationalScore < SCRIPT_QUALITY_THRESHOLDS.CONVERSATIONAL && "script_conversational_style_below_target",
     report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && "script_hook_payoff_below_target",
   ]);
   report.warnings = _.uniq([...report.warnings, ...belowTargetScores]);
-  report.passed = _.isEmpty(report.blockingErrors);
+  report.passed = _.isEmpty(report.blockingErrors) && _.isEmpty(belowTargetScores);
   return report;
 };
 

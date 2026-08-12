@@ -132,8 +132,6 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_EXTRACT_ERROR: "[Gemini Chat] Lỗi khi trích xuất dữ liệu: {0}",
     GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Lấy đa phương tiện thành công trực tiếp từ nguồn URL trình duyệt!",
     GEMINI_CHAT_EXTRACT_ERR_THROW: "Không thể trích xuất dữ liệu ảnh/video từ URL trình duyệt.",
-    GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Giả lập click kiểm tra menu Plus...",
     GEMINI_CHAT_BATCH_START: "[Batch Gemini] Mở {0} tab song song để tạo ảnh...",
     GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} đã mở thành công.",
     GEMINI_CHAT_BATCH_TAB_START: '[Batch Gemini] Tab {0}: Bắt đầu tạo ảnh cho scene "{1}"...',
@@ -344,8 +342,6 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_EXTRACT_ERROR: "[Gemini Chat] Error extracting data: {0}",
     GEMINI_CHAT_EXTRACT_SUCCESS: "[Gemini Chat] Successfully retrieved media directly from browser URL!",
     GEMINI_CHAT_EXTRACT_ERR_THROW: "Could not extract image/video data from browser URL.",
-    GEMINI_CHAT_MODEL_MOCK_CHECK: "[Gemini Chat] Simulating click to check Model Picker...",
-    GEMINI_CHAT_PLUS_MOCK_CHECK: "[Gemini Chat] Simulating click to check menu Plus...",
     GEMINI_CHAT_BATCH_START: "[Batch Gemini] Opening {0} parallel tabs to generate images...",
     GEMINI_CHAT_BATCH_TAB_INIT: "[Batch Gemini] Tab {0}/{1} opened successfully.",
     GEMINI_CHAT_BATCH_TAB_START: '[Batch Gemini] Tab {0}: Starting image generation for scene "{1}"...',
@@ -1140,8 +1136,8 @@ export const LOG_DICTIONARY = {
     vi: "Quá trình xuất video (render) ngoại tuyến gặp lỗi:",
   },
   COVER_IMAGE_CANVAS_CAPTURE_FAILED: {
-    en: "Thumbnail canvas capture failed. Applying automated graphic placeholder...",
-    vi: "Chụp ảnh bìa từ trình duyệt gặp sự cố, hệ thống sử dụng ảnh thay thế",
+    en: "Thumbnail capture failed. Regenerate the thumbnail, then try again.",
+    vi: "Không thể lưu ảnh bìa. Hãy tạo lại ảnh bìa rồi thử lại.",
   },
   FAILED_FETCH_SCENE_IMAGE: {
     en: "Failed to download image for Scene {0}:",

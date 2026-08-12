@@ -25,19 +25,19 @@ const generated = [
     subjectFocus: "Hostess and gaming mechanism",
   },
 ];
-const fallback = [{
+const thirdGenerated = [{
   prompt: "Player walks away from the gaming table",
   style: "flat editorial stickman illustration",
   hasText: false,
   subjectFocus: "Player leaving the table",
 }];
 
-const thumbnails = normalizeThumbnailIdeas(generated, fallback, 3);
+const thumbnails = normalizeThumbnailIdeas([...generated, ...thirdGenerated], 3);
 assert.equal(thumbnails.length, 3);
 assert.deepEqual(thumbnails.map(thumbnail => thumbnail.id), ["th_1", "th_2", "th_3"]);
 assert.equal(new Set(thumbnails.map(thumbnail => thumbnail.layoutId)).size, 3);
 
-const noTextThumbnails = normalizeThumbnailIdeas(generated, fallback, 2, "no_text");
+const noTextThumbnails = normalizeThumbnailIdeas(generated, 2, "no_text");
 assert.equal(noTextThumbnails[0].hasText, false);
 assert.equal(noTextThumbnails[0].textText, "");
 

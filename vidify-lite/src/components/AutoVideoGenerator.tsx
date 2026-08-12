@@ -85,7 +85,7 @@ export default function AutoVideoGenerator({
     rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
     hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
     promptInputMethod, sampleCount, videoDuration, geminiChatSpeed, batchDelay,
-    ffmpegQuality, isConfigLoaded,
+    ffmpegQuality, isConfigLoaded, musicAssetUrl,
   } = state;
 
   const {
@@ -95,7 +95,7 @@ export default function AutoVideoGenerator({
     setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode,
     setReferenceImages, setSceneReferenceImages,
     setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setThumbnailReferenceImages,
-    setProjectName, setResumeMode, setShowAdvancedImageSettings,
+    setProjectName, setResumeMode, setShowAdvancedImageSettings, setMusicAssetUrl,
   } = actions;
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
@@ -234,6 +234,14 @@ export default function AutoVideoGenerator({
   const handleStyleFilesUpload = createImageUploadHandler(setReferenceImages, T.logStyleUploaded);
   const handleSceneReferenceFilesUpload = createImageUploadHandler(setSceneReferenceImages, T.logSceneReferenceUploaded);
   const handleThumbnailStyleFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbUploaded);
+  const handleMusicUpload = (files: FileList) => {
+    const file = _.first(Array.from(files));
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setMusicAssetUrl(_.toString(reader.result));
+    reader.onerror = () => toast.error(T.musicUploadError);
+    reader.readAsDataURL(file);
+  };
 
   const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}) => {
     startPipeline({
@@ -249,6 +257,7 @@ export default function AutoVideoGenerator({
       projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
+      musicAssetUrl,
     });
   };
 
@@ -486,6 +495,8 @@ export default function AutoVideoGenerator({
               setImageFocusMode={setThumbnailImageFocusMode}
               language={currentLang as AppLanguage}
               T={T}
+              musicAssetUrl={musicAssetUrl}
+              onMusicUpload={handleMusicUpload}
             />
           </div>
         </div>

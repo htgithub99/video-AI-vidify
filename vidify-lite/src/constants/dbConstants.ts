@@ -21,6 +21,14 @@ export const SQL_STATEMENTS = {
       updated_at TEXT NOT NULL
     );
   `,
+  CREATE_RENDER_JOBS_TABLE: `
+    CREATE TABLE IF NOT EXISTS render_jobs (
+      id TEXT PRIMARY KEY,
+      status TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      data TEXT NOT NULL
+    );
+  `,
   SELECT_PROJECTS_LIST: `
     SELECT id, name, description, created_at as createdAt, updated_at as updatedAt, 
            current_step as currentStep, credits_used as creditsUsed, data 
@@ -43,6 +51,12 @@ export const SQL_STATEMENTS = {
   `,
   DELETE_PROJECT: "DELETE FROM projects WHERE id = ?",
   DELETE_PRESET: "DELETE FROM presets WHERE id = ?",
+  SELECT_RENDER_JOBS: "SELECT data FROM render_jobs ORDER BY updated_at ASC",
+  SELECT_RENDER_JOB: "SELECT data FROM render_jobs WHERE id = ?",
+  INSERT_RENDER_JOB: `
+    INSERT OR REPLACE INTO render_jobs (id, status, updated_at, data)
+    VALUES (?, ?, ?, ?)
+  `,
   BEGIN_TRANSACTION: "BEGIN TRANSACTION;",
   COMMIT: "COMMIT;",
   ROLLBACK: "ROLLBACK;",

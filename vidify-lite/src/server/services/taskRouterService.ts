@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { AI_TASK_ROUTER_CONFIG, AVAILABLE_MODELS } from "../../constants/index.js";
 
-export enum AiTaskCapability { TextPlanning = "text_planning", ScriptWriting = "script_writing", FactualReview = "factual_review", VisualQa = "visual_qa", AudioQa = "audio_qa", Thumbnail = "thumbnail" }
+export enum AiTaskCapability { TextPlanning = "text_planning", ScriptWriting = "script_writing", FactualReview = "factual_review", VisualPlanning = "visual_planning", VisualQa = "visual_qa", AudioQa = "audio_qa", Thumbnail = "thumbnail" }
 export interface AiTaskRequest { capability?: AiTaskCapability; estimatedInputTokens: number; maxOutputTokens: number; budgetUsd?: number; }
 export type AiProvider = "cerebras" | "groq" | "google";
 export interface AiCallMetadata { capability: AiTaskCapability; provider: AiProvider; model: string; modelVersion: string; promptVersion: string; estimatedCostUsd: number; actualCostUsd: number; latencyMs: number; inputTokens: number; outputTokens: number; fallbackIndex: number; }

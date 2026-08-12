@@ -1,6 +1,21 @@
 import { VideoGenre } from "./enums";
 
+const SATIRICAL_LIFE_GUIDELINE = `KỂ CHUYỆN CHÂM BIẾM ĐỜI SỐNG:
+- Ưu tiên ngôi thứ hai “bạn”. Mở bằng hậu quả, nghịch lý hoặc cái giá cụ thể rồi quay về nguyên nhân.
+- Xây chuỗi nhân quả qua thiếu hụt, cám dỗ, thỏa hiệp nhỏ, phần thưởng ngắn hạn, tự biện minh, escalation, false victory, collapse và payoff.
+- Mỗi beat phải có hành động nhìn thấy được và thay đổi trạng thái nhân vật. Cứ 25–45 giây phải có quyết định, phát hiện, punchline, open loop hoặc hậu quả mới.
+- Viết tiếng Việt nói tự nhiên, cụ thể và có nhịp; dùng châm biếm tình huống và dark humor có kiểm soát. Tránh văn giảng đạo, danh từ trừu tượng dày, meme gượng ép và bắt chước creator cụ thể.
+- Gieo callback bằng đồ vật, địa điểm, câu nói hoặc bố cục rồi trả lại với ý nghĩa thay đổi. Cao trào phải là hệ quả của lựa chọn trước đó.
+- Không bịa cáo buộc về người thật. Dùng nhân vật hư cấu hoặc tổng hợp khi không có bằng chứng.`;
+
+const getSatiricalLifeGuideline = (structure: string): string => `${SATIRICAL_LIFE_GUIDELINE}\n- Cấu trúc ưu tiên: ${structure}`;
+
 export const VI_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: getSatiricalLifeGuideline("AI chọn cấu trúc phù hợp nhất với chủ đề."),
+  [VideoGenre.TRANSFORMATION_TIMELINE]: getSatiricalLifeGuideline("Hành trình biến đổi theo ngày, tháng, năm hoặc giai đoạn; mỗi mốc phải tạo thay đổi thực."),
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: getSatiricalLifeGuideline("Theo nhân vật bước vào một nghề hoặc môi trường, khám phá luật ngầm và cái giá của sự thích nghi."),
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: getSatiricalLifeGuideline("Sa ngã và trả giá; từng thỏa hiệp phải tăng stakes và dẫn đến hậu quả không thể đảo ngược."),
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: getSatiricalLifeGuideline("Bi kịch hài đen; punchline làm rõ nghịch lý nhưng không phá cảnh tổn thương hoặc chế giễu nạn nhân."),
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `VIDEO ESSAY KỂ CHUYỆN / STORY-DRIVEN VIDEO ESSAY:
 - Mở giữa một cảnh cụ thể có căng thẳng, hậu quả hoặc sự bất thường. Trong 15 giây đầu phải tạo ít nhất một câu hỏi chưa được giải đáp. Không mở bằng lời chào, định nghĩa, lịch sử tổng quát hoặc danh sách nội dung.
 - Chọn một nhân vật trung tâm làm trục xuyên suốt. Ưu tiên ngôi thứ hai “bạn” để tạo nhập vai; dùng ngôi thứ ba gần nếu chủ đề nhạy cảm hoặc ngôi thứ hai gây cảm giác quy kết.
@@ -58,6 +73,11 @@ export const VI_AUDIENCE_GUIDELINES: Record<string, string> = {
 };
 
 export const EN_GENRE_GUIDELINES: Record<string, string> = {
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: SATIRICAL_LIFE_GUIDELINE,
+  [VideoGenre.TRANSFORMATION_TIMELINE]: SATIRICAL_LIFE_GUIDELINE,
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: SATIRICAL_LIFE_GUIDELINE,
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: SATIRICAL_LIFE_GUIDELINE,
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: SATIRICAL_LIFE_GUIDELINE,
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `Story-driven Video Essay: Open inside a concrete moment of tension, consequence, or abnormality and establish an unresolved question within 15 seconds. Follow one central character through a causal chain of emotional need, opportunity, small boundary crossings, short-term rewards, self-justification, deeper dependence, harm, reversal, consequence, and moral reckoning. Show concrete scenes before explaining the mechanism behind them. Introduce a meaningful decision, revelation, complication, power shift, open loop, or payoff every 30–60 seconds. Foreshadow reversals; never stack arbitrary twists. Use an intimate, intelligent conversational voice with varied rhythm and restrained humor, without imitating an identifiable creator. Distinguish sourced true cases from composites, reconstructions, and fiction. End with changed understanding, irreversible consequence, or a recurring visual motif rather than a list of lessons.`,
   [VideoGenre.NARRATIVE_EXPLAINER]: `Narrative Explainer / Video Essay Genre: Turn a complex topic into an evidence-led unfolding story for a general audience. Open with a concrete paradox, consequence, or unresolved question; follow one person, object, process, or question as the narrative spine; and advance through assumption -> reality -> evidence/example -> consequence -> next question. Explain mechanisms with accurate everyday analogies, cite the scope and uncertainty of evidence, and never invent facts or false precision. Escalate the stakes, introduce one fair counterargument or perspective shift around 60-75%, and resolve the opening question with a broader insight. Use an intelligent conversational voice with controlled humor, varied rhythm, and no imitation of an identifiable creator. Avoid list-like exposition, excessive filler, stacked shock twists, and unsupported claims.`,
   Storytelling: "Storytelling Genre: Focus on coherent plot, character development, vivid emotional descriptions, rich imagery, and dramatic narrative arcs.",

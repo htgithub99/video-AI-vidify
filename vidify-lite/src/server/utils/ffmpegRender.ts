@@ -6,10 +6,11 @@ import { getDataDirectory, getStaticResourcePath, getPythonCommand } from "./pat
 import { logger } from "../../lib/logger.js";
 import _ from "lodash";
 import { VideoQuality } from "../../constants/enums.js";
-import { GenerateType } from "../../types.js";
-import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS } from "../../constants/config.js";
+import { GenerateType, RenderAudioTrack, SubtitleCue, SubtitleMode } from "../../types.js";
+import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS, PRODUCTION_AUDIO_CONFIG } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
 import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
+import { hasProductionAudioSource, isBlockedAudioSource } from "../../services/productionAudioService.js";
 
 const cleanupDirectory = (directoryPath: string): void => {
   if (fs.existsSync(directoryPath)) {
@@ -50,6 +51,8 @@ export interface FFmpegRenderOptions {
     audioUrl?: string;
     duration: number;
     text?: string;
+    subtitle?: string;
+    subtitleCues?: SubtitleCue[];
     assetType?: GenerateType.Image | GenerateType.Video;
     cameraMotion?: string;
     effects?: string;
@@ -61,6 +64,8 @@ export interface FFmpegRenderOptions {
   globalAudioBase64?: string;
   aspectRatio?: string;
   projectId?: string;
+  subtitleMode?: SubtitleMode;
+  audioTracks?: RenderAudioTrack[];
 }
 
 const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
@@ -91,6 +96,7 @@ const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
 export const renderFFmpegVideo = async (
   options: FFmpegRenderOptions,
   onProgress?: (progress: number) => void,
+  signal?: AbortSignal,
 ): Promise<string> => {
   const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.HIGHEST);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
@@ -100,6 +106,21 @@ export const renderFFmpegVideo = async (
 
   if (_.isEmpty(scenesVal)) {
     throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_NO_SCENES);
+  }
+  const blockedAudioCandidates = [
+    globalAudioUrlVal,
+    ..._.map(scenesVal, scene => scene.audioUrl),
+  ];
+  if (_.some(blockedAudioCandidates, source => isBlockedAudioSource(_.toString(source)))) {
+    throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_BLOCKED_ERROR);
+  }
+  const audioSources = _.compact([
+    globalAudioUrlVal,
+    globalAudioBase64Val,
+    ..._.flatMap(scenesVal, scene => [scene.audioUrl, scene.audioBase64]),
+  ]);
+  if (!hasProductionAudioSource(_.map(audioSources, _.toString))) {
+    throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
   }
 
   const tempDir = path.join(getDataDirectory(), `${FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX}${uuidv4()}`);
@@ -173,6 +194,11 @@ export const renderFFmpegVideo = async (
       [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
     };
   });
+  const audioTracks = _.map(_.defaultTo(options.audioTracks, []), track => ({
+    ...track,
+    assetPath: resolveLocalAssetPath(track.assetUrl),
+  }));
+  if (_.some(audioTracks, track => _.isEmpty(track.assetPath))) throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_AUDIO_TRACK_MISSING);
   const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH)
     ? SecurityConstants.DEFAULT_AMOUNT
     : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;
@@ -191,6 +217,8 @@ export const renderFFmpegVideo = async (
     [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: _.min([maxSceneWorkers, _.size(renderScenes)]),
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
+    [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
+    [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
   };
 
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
@@ -207,6 +235,7 @@ export const renderFFmpegVideo = async (
     const renderer = execFile(pyCmd, [scriptPath, configPath], {
       windowsHide: true,
       maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
+      signal,
     });
     let stdout = SecurityConstants.EMPTY_STRING;
     let stderr = SecurityConstants.EMPTY_STRING;

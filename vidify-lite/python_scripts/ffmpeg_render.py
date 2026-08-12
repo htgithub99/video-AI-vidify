@@ -76,6 +76,26 @@ class FFMPEG_CONSTANTS:
     KEY_MAX_SCENE_WORKERS = "maxSceneWorkers"
     KEY_VIDEO_TRIM_START_SECONDS = "videoTrimStartSeconds"
     KEY_VIDEO_TRIM_END_SECONDS = "videoTrimEndSeconds"
+    KEY_SUBTITLE = "subtitle"
+    KEY_SUBTITLE_CUES = "subtitleCues"
+    KEY_SUBTITLE_CUE_TEXT = "text"
+    KEY_SUBTITLE_CUE_START = "startOffsetSeconds"
+    KEY_SUBTITLE_CUE_DURATION = "durationSeconds"
+    KEY_SUBTITLE_MODE = "subtitleMode"
+    KEY_AUDIO_TRACKS = "audioTracks"
+    SUBTITLE_MODE_BURN_IN = "burn_in"
+    SUBTITLE_MODE_TRACK = "track"
+    SUBTITLE_MODE_BOTH = "both"
+    SUBTITLE_FILE_NAME = "subtitles.srt"
+    SUBTITLE_CODEC = "mov_text"
+    SUBTITLE_STREAM_TITLE = "Vidify Subtitles"
+    KEY_TEXT = "text"
+    AUDIO_TRACK_VOLUME_FILTER = "volume={0}dB"
+    AUDIO_TRACK_DELAY_FILTER = "adelay={0}|{0}"
+    AUDIO_TRACK_TRIM_FILTER = "atrim=duration={0}"
+    AUDIO_TRACK_FADE_IN_FILTER = "afade=t=in:st=0:d={0}"
+    AUDIO_TRACK_FADE_OUT_FILTER = "afade=t=out:st={0}:d={1}"
+    AUDIO_MIX_FILTER = "amix=inputs={0}:duration=first:dropout_transition=2,loudnorm=I=-16:TP=-1:LRA=7"
     TEMP_MEDIA_TEMPLATE = "media_{0}{1}"
     TEMP_AUDIO_TEMPLATE = "audio_{0}.mp3"
     PART_FILE_TEMPLATE = "part_{0}.mp4"
@@ -144,6 +164,74 @@ class FFMPEG_CONSTANTS:
         "slide_left", "slide_right", "slide_up", "slide_down", "wipe_left", "wipe_right", "wipe_up", "wipe_down",
         "zoom_transition", "flash", "whip_left", "whip_right", "glitch_transition", "film_burn",
     }
+
+def format_srt_timestamp(seconds):
+    total_milliseconds = max(0, round(float(seconds) * 1000))
+    hours, remainder = divmod(total_milliseconds, 3600000)
+    minutes, remainder = divmod(remainder, 60000)
+    secs, milliseconds = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{milliseconds:03d}"
+
+def create_subtitle_file(temp_dir, scenes, durations):
+    subtitle_path = os.path.join(temp_dir, FFMPEG_CONSTANTS.SUBTITLE_FILE_NAME)
+    entries = []
+    cursor = 0.0
+    for index, scene in enumerate(scenes):
+        duration = float(durations[index])
+        subtitle_cues = scene.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_CUES) or []
+        if subtitle_cues:
+            for cue in subtitle_cues:
+                text = str(cue.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_CUE_TEXT) or "").strip()
+                start_seconds = cursor + max(0, float(cue.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_CUE_START) or 0))
+                cue_duration = max(0, float(cue.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_CUE_DURATION) or 0))
+                if text and cue_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                    entries.append(
+                        f"{len(entries) + 1}\n{format_srt_timestamp(start_seconds)} --> {format_srt_timestamp(start_seconds + cue_duration)}\n{text}\n"
+                    )
+        else:
+            text = str(scene.get(FFMPEG_CONSTANTS.KEY_SUBTITLE) or scene.get(FFMPEG_CONSTANTS.KEY_TEXT) or "").strip()
+            if text:
+                entries.append(
+                    f"{len(entries) + 1}\n{format_srt_timestamp(cursor)} --> {format_srt_timestamp(cursor + duration)}\n{text}\n"
+                )
+        cursor += duration
+    with open(subtitle_path, "w", encoding=FFMPEG_CONSTANTS.UTF8) as subtitle_file:
+        subtitle_file.write("\n".join(entries))
+    return subtitle_path if entries else None
+
+def create_subtitle_filter(subtitle_path):
+    return f"subtitles=filename='{os.path.basename(subtitle_path)}'"
+
+def add_subtitle_input(command, subtitle_path, subtitle_input_index):
+    if not subtitle_path:
+        return None
+    command.extend(["-i", subtitle_path])
+    return subtitle_input_index
+
+def add_subtitle_output(command, subtitle_path, subtitle_mode, subtitle_input_index):
+    burn_subtitles = subtitle_mode in (
+        FFMPEG_CONSTANTS.SUBTITLE_MODE_BURN_IN,
+        FFMPEG_CONSTANTS.SUBTITLE_MODE_BOTH,
+    )
+    include_track = subtitle_mode in (
+        FFMPEG_CONSTANTS.SUBTITLE_MODE_TRACK,
+        FFMPEG_CONSTANTS.SUBTITLE_MODE_BOTH,
+    )
+    if burn_subtitles:
+        command.extend([
+            "-vf", create_subtitle_filter(subtitle_path),
+            "-c:v", FFMPEG_CONSTANTS.LIBX264,
+            "-preset", FFMPEG_CONSTANTS.SLOW,
+            "-pix_fmt", FFMPEG_CONSTANTS.YUV420P,
+        ])
+    else:
+        command.extend(["-c:v", FFMPEG_CONSTANTS.COPY_CODEC])
+    if include_track:
+        command.extend([
+            "-map", f"{subtitle_input_index}:s:0",
+            "-c:s", FFMPEG_CONSTANTS.SUBTITLE_CODEC,
+            "-metadata:s:s:0", f"title={FFMPEG_CONSTANTS.SUBTITLE_STREAM_TITLE}",
+        ])
 
     COLOR_BLACK_RGB = (0, 0, 0)
     COLOR_WHITE_RGB = (255, 255, 255)
@@ -1240,6 +1328,9 @@ def main():
         emit_progress(94)
         
         globalAudioPath = config.get("globalAudioPath")
+        subtitle_mode = config.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_MODE, FFMPEG_CONSTANTS.SUBTITLE_MODE_BURN_IN)
+        subtitle_path = create_subtitle_file(tempDir, scenes, scene_durations)
+        audio_tracks = config.get(FFMPEG_CONSTANTS.KEY_AUDIO_TRACKS, [])
         scene_audio_present = any(scene_audio_paths)
         expected_output_duration = sum(scene_durations)
         if globalAudioPath and os.path.exists(globalAudioPath):
@@ -1248,30 +1339,80 @@ def main():
                 expected_output_duration = global_audio_duration
             mergeAudioCmd = [
                 ffmpegCmd, "-y", "-i", tempFinalPath, "-i", globalAudioPath,
-                "-map", "0:v:0", "-map", "1:a:0",
-                "-c:v", FFMPEG_CONSTANTS.COPY_CODEC,
-                "-af", "loudnorm=I=-16:TP=-1:LRA=7",
-                "-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000",
             ]
+            for track in audio_tracks:
+                if track.get("loop"):
+                    mergeAudioCmd.extend(["-stream_loop", "-1"])
+                mergeAudioCmd.extend(["-i", track.get("assetPath")])
+            subtitle_input_index = add_subtitle_input(
+                mergeAudioCmd,
+                subtitle_path,
+                2 + len(audio_tracks),
+            )
+            mix_filters = []
+            mix_inputs = ["[1:a]"]
+            for track_index, track in enumerate(audio_tracks):
+                input_index = track_index + 2
+                delay_milliseconds = max(0, round(float(track.get("startSeconds", 0)) * 1000))
+                track_duration = float(track.get("durationSeconds", expected_output_duration))
+                fade_in_seconds = min(max(0, float(track.get("fadeInSeconds", 0))), track_duration)
+                fade_out_seconds = min(max(0, float(track.get("fadeOutSeconds", 0))), track_duration)
+                filters = [
+                    FFMPEG_CONSTANTS.AUDIO_TRACK_TRIM_FILTER.format(track_duration),
+                    FFMPEG_CONSTANTS.AUDIO_TRACK_VOLUME_FILTER.format(float(track.get("volumeDb", -18))),
+                ]
+                if fade_in_seconds > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                    filters.append(FFMPEG_CONSTANTS.AUDIO_TRACK_FADE_IN_FILTER.format(fade_in_seconds))
+                if fade_out_seconds > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                    filters.append(FFMPEG_CONSTANTS.AUDIO_TRACK_FADE_OUT_FILTER.format(
+                        max(0, track_duration - fade_out_seconds),
+                        fade_out_seconds,
+                    ))
+                filters.append(FFMPEG_CONSTANTS.AUDIO_TRACK_DELAY_FILTER.format(delay_milliseconds))
+                output_label = f"mix{track_index}"
+                mix_filters.append(f"[{input_index}:a]{','.join(filters)}[{output_label}]")
+                mix_inputs.append(f"[{output_label}]")
+            if mix_filters:
+                mix_filters.append(f"{''.join(mix_inputs)}{FFMPEG_CONSTANTS.AUDIO_MIX_FILTER.format(len(mix_inputs))}[mixed]")
+                mergeAudioCmd.extend(["-filter_complex", ";".join(mix_filters), "-map", "0:v:0", "-map", "[mixed]"])
+            else:
+                mergeAudioCmd.extend(["-map", "0:v:0", "-map", "1:a:0", "-af", "loudnorm=I=-16:TP=-1:LRA=7"])
+            mergeAudioCmd.extend(["-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000"])
+            if subtitle_input_index is not None:
+                add_subtitle_output(mergeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
+            else:
+                mergeAudioCmd.extend(["-c:v", FFMPEG_CONSTANTS.COPY_CODEC])
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
                 mergeAudioCmd.extend(["-t", str(global_audio_duration)])
             mergeAudioCmd.extend(["-shortest", finalOutputPath])
-            subprocess.run(mergeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(mergeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
         else:
             if os.path.exists(finalOutputPath):
                 os.remove(finalOutputPath)
             if scene_audio_present:
                 normalizeAudioCmd = [
                     ffmpegCmd, "-y", "-i", tempFinalPath,
+                ]
+                subtitle_input_index = add_subtitle_input(normalizeAudioCmd, subtitle_path, 1)
+                normalizeAudioCmd.extend([
                     "-map", "0:v:0", "-map", "0:a:0",
-                    "-c:v", FFMPEG_CONSTANTS.COPY_CODEC,
                     "-af", "loudnorm=I=-16:TP=-1:LRA=7",
                     "-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000",
-                    finalOutputPath,
-                ]
-                subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                ])
+                if subtitle_input_index is not None:
+                    add_subtitle_output(normalizeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
+                else:
+                    normalizeAudioCmd.extend(["-c:v", FFMPEG_CONSTANTS.COPY_CODEC])
+                normalizeAudioCmd.append(finalOutputPath)
+                subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
             else:
-                os.rename(tempFinalPath, finalOutputPath)
+                if subtitle_path:
+                    subtitle_cmd = [ffmpegCmd, "-y", "-i", tempFinalPath, "-i", subtitle_path, "-map", "0:v:0"]
+                    add_subtitle_output(subtitle_cmd, subtitle_path, subtitle_mode, 1)
+                    subtitle_cmd.append(finalOutputPath)
+                    subprocess.run(subtitle_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
+                else:
+                    os.rename(tempFinalPath, finalOutputPath)
         validate_rendered_output(
             ffmpegCmd,
             finalOutputPath,

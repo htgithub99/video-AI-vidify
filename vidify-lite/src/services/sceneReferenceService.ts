@@ -43,7 +43,6 @@ export interface SceneGenerationContext {
 
 export interface SceneGenerationOptions {
   includeCharacterImages?: boolean;
-  finalizedByAi?: boolean;
 }
 
 const normalizeTokens = (value: string): string[] => _.uniq(_.filter(
@@ -107,6 +106,7 @@ export const createCharacterIdentityBlocks = (characters: CharacterConfig[]): st
 };
 
 const isCharacterMentioned = (sceneText: string, character: CharacterConfig): boolean => {
+  if (_.isEqual(character.narrativeRole, "second_person_protagonist") && /\b(?:you|your|yours)\b|\bbạn\b|\bcủa bạn\b/i.test(sceneText)) return true;
   const sceneTokens = normalizeTokens(sceneText);
   const sceneNameTokens = _.uniq(_.words(_.toLower(sceneText)));
   const nameTokens = _.uniq(_.words(_.toLower(character.name)));
@@ -206,14 +206,12 @@ export const createSceneGenerationContext = (
     _.toUpper(scene.prompt || ""),
     SCENE_REFERENCE_CONFIG.CHARACTER_SECTION,
   );
-  const prompt = options.finalizedByAi
-    ? appendImagePromptAspectRatio(scene.prompt || scene.script, aspectRatio)
-    : appendImagePromptAspectRatio(_.join(_.compact([
-      promptContainsIdentityBlocks ? "" : identityBlocks,
-      scene.prompt || scene.script,
-      ...createConstraintDirectives(scene, !_.isEmpty(referencedCharacters)),
-      referenceDirective,
-    ]), ", "), aspectRatio);
+  const prompt = appendImagePromptAspectRatio(_.join(_.compact([
+    promptContainsIdentityBlocks ? "" : identityBlocks,
+    scene.prompt || scene.script,
+    ...createConstraintDirectives(scene, !_.isEmpty(referencedCharacters)),
+    referenceDirective,
+  ]), ", "), aspectRatio);
 
   return {
     characterIds,

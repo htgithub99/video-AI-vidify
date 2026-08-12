@@ -3,6 +3,7 @@ import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
 import _ from 'lodash';
+import { hasProductionAudioSource } from "../services/productionAudioService.js";
 
 const easeCubicInOut = (t: number): number => {
   if (t < 0.5) return 4.0 * t * t * t;
@@ -349,10 +350,9 @@ export const compileVideoToBlob = async (
   let destNode: any = null;
   let audioEl: HTMLAudioElement | null = null;
 
-  const hasSceneVoices = _.some(scenes, (sc) => !!sc.audioUrl);
+  const hasSceneVoices = _.some(scenes, (sc) => hasProductionAudioSource([sc.audioUrl]));
   const voiceUrl = voiceConfig?.audioUrl || ttsAudioUrl;
-  const hasGlobalAudio =
-    voiceUrl && !_.includes([RENDER_LOGIC_CONSTANTS.SIMULATED, RENDER_LOGIC_CONSTANTS.SIMULATED_SPEECH], voiceUrl);
+  const hasGlobalAudio = hasProductionAudioSource([voiceUrl]);
   const hasAudioRecording = hasSceneVoices || hasGlobalAudio;
 
   if (hasAudioRecording) {

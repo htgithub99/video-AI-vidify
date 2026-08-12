@@ -1,10 +1,10 @@
 import _ from "lodash";
+import { CONTENT_SAFETY_CONFIG } from "../constants/config";
 import { ContentSafetyReport } from "../types";
 
-const SENSITIVE_TOPIC_PATTERN = /gambl|betting|casino|xóc đĩa|cờ bạc|prison|tù|violence|bạo lực|drug|ma túy/i;
-const SEXUAL_EXPLOITATION_PATTERN = /child sexual|sexual abuse of (?:a )?minor|ấu dâm|xâm hại tình dục trẻ|bóc lột tình dục trẻ/i;
-
 export const normalizeContentSafety = (value: Partial<ContentSafetyReport>): ContentSafetyReport => {
+  const completeResponse = _.every(CONTENT_SAFETY_CONFIG.REQUIRED_BOOLEAN_FIELDS, field => _.isBoolean(_.get(value, field)))
+    && _.every(CONTENT_SAFETY_CONFIG.REQUIRED_ARRAY_FIELDS, field => _.isArray(_.get(value, field)));
   const report = {
     sensitiveTopic: Boolean(value.sensitiveTopic),
     trueCase: Boolean(value.trueCase),
@@ -15,22 +15,13 @@ export const normalizeContentSafety = (value: Partial<ContentSafetyReport>): Con
     likenessRisk: Boolean(value.likenessRisk),
     copyrightRisk: Boolean(value.copyrightRisk),
     requiredDisclosures: _.uniq(_.compact(_.castArray(value.requiredDisclosures))),
-    blockingErrors: _.uniq(_.compact(_.castArray(value.blockingErrors))),
+    blockingErrors: _.uniq(_.compact([
+      ..._.castArray(value.blockingErrors),
+      !completeResponse && CONTENT_SAFETY_CONFIG.INCOMPLETE_RESPONSE_ERROR,
+    ])),
     warnings: _.uniq(_.compact(_.castArray(value.warnings))),
     allowed: false,
   };
-  report.allowed = _.isEmpty(report.blockingErrors) && !report.sexualExploitationRisk;
+  report.allowed = completeResponse && _.isEmpty(report.blockingErrors) && !report.sexualExploitationRisk;
   return report;
-};
-
-export const createLocalContentSafetyFallback = (input: unknown): ContentSafetyReport => {
-  const text = _.toString(input);
-  const sexualExploitationRisk = SEXUAL_EXPLOITATION_PATTERN.test(text);
-  return normalizeContentSafety({
-    sensitiveTopic: SENSITIVE_TOPIC_PATTERN.test(text) || sexualExploitationRisk,
-    minorsInvolved: sexualExploitationRisk,
-    sexualExploitationRisk,
-    blockingErrors: sexualExploitationRisk ? ["sexual_exploitation_risk"] : [],
-    warnings: ["content_safety_ai_unavailable_local_policy_applied"],
-  });
 };

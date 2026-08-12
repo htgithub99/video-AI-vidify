@@ -5,26 +5,17 @@ import { ProjectKind, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, EXTERNAL_URLS, UNSPLASH_IMAGE_REGEX, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, URL_ENCODED_COMMA_REGEX, URL_ENCODED_PLUS_REGEX, URL_ENCODED_LITERAL_COMMA_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
-import { jsonUtils } from "../../lib/json.js";
 
 async function getProjectDetail(id: string): Promise<VideoProject | null> {
   try {
     const project = await getProjectDetailFromDb(id);
     if (!project) return null;
 
-    const projectStr = jsonUtils.safeStringify(project);
-    const cleaned = _.replace(projectStr, UNSPLASH_IMAGE_REGEX, (_match, query) => {
-      const decoded = decodeURIComponent(query)
-        .replace(URL_ENCODED_COMMA_REGEX, ",")
-        .replace(URL_ENCODED_PLUS_REGEX, ",")
-        .replace(URL_ENCODED_LITERAL_COMMA_REGEX, ",");
-      return `${EXTERNAL_URLS.LOREM_FLICKR}/${COMMON_STRINGS.LOREM_FLICKR_SIZE}/${decoded}`;
-    });
-    return jsonUtils.safeParse<VideoProject>(cleaned, null);
+    return project;
   } catch (error) {
     appError(`${getBackendMsg("SQLITE_DETAIL_ERR")} ${id}`, error);
     return null;

@@ -1,12 +1,13 @@
 import { cn } from "../../lib/utils";
 import { formatCleanTime } from "../../lib/timeUtils";
+import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { PipelineWizardState } from "./usePipelineWizard";
 import * as LucideIcons from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { ManualReviewStatus, SceneAssetStatus, WizardStep } from "../../types";
-import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS } from "../../constants";
+import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS, FFMPEG_RENDER_CONSTANTS } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
@@ -14,11 +15,16 @@ import { safeSystemFetch, getStoredApiKey } from "../../lib/shared-utils";
 import _ from "lodash";
 import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
+import { hasProductionAudioSource } from "../../services/productionAudioService";
+import { createRenderAudioTracks, validateAudioCueAssets } from "../../services/audioMixService";
+import { createSubtitleCues } from "../../services/subtitleService";
+import { validateFinalVideo } from "../../services/finalMultimodalQualityService";
+import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
 
 const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
 export default function PipelineStep4(props: PipelineWizardState) {
-  const { t, setCurrentStep, isPlayingSim, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
+  const { t, setCurrentStep, isPlayingSim, currentSimTime, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
   const currentLang = (props as any).currentLang === "en" ? "en" : "vi";
   const shortTexts = PIPELINE_STEP4_SHORT_TEXTS[currentLang];
 
@@ -70,10 +76,14 @@ export default function PipelineStep4(props: PipelineWizardState) {
       || !props.project.subtitleQa?.passed
       || !props.project.editorQa?.passed
       || _.some(props.project.manualReviewItems, { status: ManualReviewStatus.Pending })) {
-      props.setInfoMsg("Quality review is incomplete. Resolve every blocking QA/manual-review item before rendering.");
+      props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_QA);
       return false;
     }
-    const hasVoice = !!props.project?.voiceConfig?.audioBase64 || _.some(props.project.storyboard, sc => !!sc.audioBase64);
+    const hasVoice = hasProductionAudioSource([
+      props.project?.voiceConfig?.audioBase64,
+      props.project?.voiceConfig?.audioUrl,
+      ..._.flatMap(props.project.storyboard, scene => [scene.audioBase64, scene.audioUrl]),
+    ]);
     if (!hasVoice) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_AUDIO);
       return false;
@@ -83,23 +93,38 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
   const handleOfflineRenderFFmpeg = async () => {
     if (!isValidToRender()) return;
+    const scenesWithSubtitles = createSubtitleCues(props.project.storyboard);
+    const missingAudioCueIds = validateAudioCueAssets(props.project.audioCueSheet);
+    if (!_.isEmpty(missingAudioCueIds)) {
+      props.setInfoMsg(REFACTOR_CONSTANTS.ERR_SOUND_ASSET_MISSING);
+      return;
+    }
     setIsRenderLoading(true);
     props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDERING_WAIT);
     try {
       const payload = {
         projectId: props.project.id,
-        scenes: _.map(props.project.storyboard, sc => ({
+        scenes: _.map(scenesWithSubtitles, sc => ({
             id: sc.id,
             duration: sc.duration,
-            imageBase64: getSceneImageUrl(sc),
+            imageUrl: getSceneImageUrl(sc),
             audioBase64: sc.audioBase64,
+            audioUrl: sc.audioUrl,
+            text: sc.script,
+            subtitle: sc.subtitle || sc.script,
+            subtitleCues: sc.subtitleCues,
             assetType: sc.assetType,
             cameraMotion: sc.cameraMotion,
             effects: sc.effects,
+            lightingEffect: sc.lightingEffect,
             transition: sc.transition
         })),
         globalAudioUrl: props.project?.voiceConfig?.audioUrl,
-        quality: ffmpegQuality
+        globalAudioBase64: props.project?.voiceConfig?.audioBase64,
+        quality: ffmpegQuality,
+        aspectRatio: props.project.visualConfig.aspectRatio,
+        subtitleMode: FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
+        audioTracks: createRenderAudioTracks(props.project.audioCueSheet),
       };
       
       const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
@@ -123,10 +148,41 @@ export default function PipelineStep4(props: PipelineWizardState) {
              });
              const statusData = await statusRes.json();
              if (statusData.success) {
-               if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
-                 renderPending = false;
-                 setPreviewVideoUrl(statusData.url);
-                 props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
+                if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
+                  renderPending = false;
+                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.FINAL_QA_RUNNING);
+                  const finalMultimodalQa = await validateFinalVideo(
+                    statusData.url,
+                    props.project.scriptRewritten,
+                    _.toString(props.project.creativeBrief?.viewerPromise),
+                  );
+                  const renderedProject = {
+                    ...props.project,
+                    storyboard: scenesWithSubtitles,
+                    renderedVideoUrl: statusData.url,
+                    finalMultimodalQa,
+                  };
+                  const reviewedProject = {
+                    ...renderedProject,
+                    manualReviewItems: createManualReviewItems(renderedProject),
+                  };
+                  const finalQc = evaluateFinalQuality(reviewedProject);
+                  const completedProject = {
+                    ...reviewedProject,
+                    finalQc,
+                    status: finalMultimodalQa.passed && finalQc.publishable
+                      ? REFACTOR_CONSTANTS.STATUS_COMPLETED
+                      : REFACTOR_CONSTANTS.STATUS_PARTIAL,
+                  };
+                  props.setProject(completedProject);
+                  await props.onSaveProject(completedProject, true);
+                  if (!finalMultimodalQa.passed || !finalQc.publishable) {
+                    props.setInfoMsg(PIPELINE_STEP4_TEXTS.FINAL_QA_REJECTED);
+                    setIsRenderLoading(false);
+                    return;
+                  }
+                  setPreviewVideoUrl(statusData.url);
+                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
                  setIsRenderLoading(false);
                  return;
                } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {
@@ -163,22 +219,11 @@ export default function PipelineStep4(props: PipelineWizardState) {
       setIsRenderLoading(false);
     }
   };
-  const [fakeProgress, setFakeProgress] = useState<number>(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
-
-  useEffect(() => {
-    let interval: any;
-    if (isPlayingSim) {
-      interval = setInterval(() => {
-        setFakeProgress((prev) => {
-          if (prev >= PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT) return PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
-          return prev + PLAYER_SIMULATION_CONFIG.PROGRESS_STEP;
-        });
-      }, PLAYER_SIMULATION_CONFIG.PROGRESS_INTERVAL_MS);
-    } else {
-      setFakeProgress(PLAYER_SIMULATION_CONFIG.MIN_PROGRESS);
-    }
-    return () => clearInterval(interval);
-  }, [isPlayingSim]);
+  const sceneRanges = getSceneTimeRanges(props.project.storyboard || []);
+  const previewDuration = _.last(sceneRanges)?.end || PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
+  const playbackProgress = previewDuration > PLAYER_SIMULATION_CONFIG.MIN_PROGRESS
+    ? _.clamp(currentSimTime / previewDuration * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, PLAYER_SIMULATION_CONFIG.MIN_PROGRESS, PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT)
+    : PLAYER_SIMULATION_CONFIG.MIN_PROGRESS;
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -187,7 +232,12 @@ export default function PipelineStep4(props: PipelineWizardState) {
       PLAYER_SIMULATION_CONFIG.MIN_PROGRESS,
       Math.min(PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT, (x / rect.width) * PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT)
     );
-    setFakeProgress(percentage);
+    const targetTime = percentage / PLAYER_SIMULATION_CONFIG.MAX_PROGRESS_PERCENT * previewDuration;
+    props.setCurrentSimTime(targetTime);
+    if (props.simAudioRef.current) props.simAudioRef.current.currentTime = targetTime;
+    const activeRange = _.find(sceneRanges, range => targetTime >= range.start && targetTime < range.end);
+    const activeScene = _.find(props.project.storyboard, scene => scene.id === activeRange?.id);
+    if (activeScene) props.setSimActiveScene(activeScene);
   };
 
   useEffect(() => {
@@ -278,7 +328,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               >
                 <div 
                   className="h-full bg-rose-600 relative z-10 transition-none"
-                  style={{ width: `${fakeProgress}%` }}
+                  style={{ width: `${playbackProgress}%` }}
                 >
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-rose-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity translate-x-1/2 shadow-[0_0_5px_rgba(225,29,72,0.8)]"></div>
                 </div>

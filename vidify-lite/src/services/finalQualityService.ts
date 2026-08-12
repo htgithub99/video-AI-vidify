@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { FinalQualityReport, ManualReviewItem, ManualReviewStatus, SceneAssetStatus, VideoProject } from "../types";
+import { AudioCueStatus, FinalQualityReport, ManualReviewItem, ManualReviewStatus, SceneAssetStatus, VideoProject } from "../types";
 
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
@@ -26,17 +26,19 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
     audioBlockingErrors > 0 && "audio_qa_failed",
     subtitleBlockingErrors > 0 && "subtitle_qa_failed",
     !project.editorQa?.passed && "editor_qa_failed",
+    project.audioCueSheet && _.some(project.audioCueSheet.cues, cue => cue.required && (cue.status !== AudioCueStatus.Approved || _.isEmpty(cue.assetUrl))) && "required_sound_assets_missing",
     !project.scriptQa?.passed && "script_qa_failed",
     !project.storyboardQa?.passed && "storyboard_qa_failed",
     !project.contentSafety?.allowed && "content_safety_not_approved",
     _.isEmpty(project.renderedVideoUrl) && "final_render_missing",
-    project.finalMultimodalQa?.reviewAvailable !== false && project.finalMultimodalQa && !project.finalMultimodalQa.passed && "final_multimodal_qa_failed",
+    !project.finalMultimodalQa?.reviewAvailable && "final_multimodal_qa_required",
+    project.finalMultimodalQa && !project.finalMultimodalQa.passed && "final_multimodal_qa_failed",
     _.some(project.manualReviewItems, { status: ManualReviewStatus.Pending }) && "manual_review_pending",
   ]);
   const warnings = _.uniq(_.compact(_.flatMap([
     project.scriptQa?.warnings,
     project.storyboardQa?.warnings,
-    project.audioCueSheet && _.some(project.audioCueSheet.cues, { status: "planned" }) ? ["sound_design_cues_not_mixed"] : [],
+    project.audioCueSheet && _.some(project.audioCueSheet.cues, { status: AudioCueStatus.Planned }) ? ["sound_design_cues_not_mixed"] : [],
     project.voiceConfig.audioQa?.warnings,
     project.subtitleQa?.warnings,
     project.editorQa?.warnings,

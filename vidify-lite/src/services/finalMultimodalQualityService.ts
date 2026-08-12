@@ -10,7 +10,9 @@ const createUnavailableReport = (error?: string): FinalMultimodalQualityReport =
   pacingScore: 0,
   transitionVarietyScore: 0,
   promiseAlignmentScore: 0,
-  blockingErrors: [],
+  audioMixScore: 0,
+  subtitleLegibilityScore: 0,
+  blockingErrors: [FINAL_MULTIMODAL_QA_CONFIG.UNAVAILABLE_ERROR],
   warnings: [
     error || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
     FINAL_MULTIMODAL_QA_CONFIG.UNAVAILABLE_WARNING,
@@ -41,6 +43,8 @@ export const validateFinalVideo = async (
     pacingScore,
     transitionVarietyScore,
     promiseAlignmentScore,
+    audioMixScore,
+    subtitleLegibilityScore,
   ] = scores;
   const report: FinalMultimodalQualityReport = {
     visualScore,
@@ -49,6 +53,8 @@ export const validateFinalVideo = async (
     pacingScore,
     transitionVarietyScore,
     promiseAlignmentScore,
+    audioMixScore,
+    subtitleLegibilityScore,
     blockingErrors: _.uniq(_.compact(_.castArray(quality.blockingErrors))),
     warnings: _.uniq(_.compact(_.castArray(quality.warnings))),
     passed: false,
@@ -60,6 +66,7 @@ export const validateFinalVideo = async (
       FINAL_MULTIMODAL_QA_CONFIG.BELOW_TARGET_WARNING,
     ]);
   }
-  report.passed = _.isEmpty(report.blockingErrors);
+  report.passed = _.isEmpty(report.blockingErrors)
+    && _.every(scores, score => score >= FINAL_MULTIMODAL_QA_CONFIG.TARGET_SCORE);
   return report;
 };

@@ -1,7 +1,6 @@
 import { writeVerificationLog } from "./verificationLogger.ts";
-import { createSafeFallbackHook, resolveUsableHooks } from "../src/services/hookResilienceService.ts";
+import { resolveUsableHooks } from "../src/services/hookResilienceService.ts";
 import { acquirePipelineRunLease, releasePipelineRunLease } from "../src/services/pipelineRunLockService.ts";
-import { ProjectLanguage } from "../src/types.ts";
 import { applyProfessionalEditingPolicy } from "../src/services/editingPolicyService.ts";
 import { createAudioCueSheet } from "../src/services/soundDesignService.ts";
 
@@ -17,10 +16,8 @@ const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
 
-const fallback = createSafeFallbackHook("kiểm thử", ProjectLanguage.VI, "Auto");
-assert(fallback.selected && fallback.content.length > 0, "hook fallback failed");
-const fallbackHooks = resolveUsableHooks([], "kiểm thử", ProjectLanguage.VI, "Auto", 3);
-assert(fallbackHooks.length === 3 && fallbackHooks[0].selected, "empty hooks were not recovered with enough variants");
+const fallbackHooks = resolveUsableHooks([], "Auto", 3);
+assert(fallbackHooks.length === 0, "empty hooks must fail instead of returning synthetic content");
 const first = acquirePipelineRunLease("project_1");
 const duplicate = acquirePipelineRunLease("project_1");
 assert(first.acquired && !duplicate.acquired, "duplicate pipeline run was accepted");

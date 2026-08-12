@@ -154,7 +154,6 @@ export const TEMPLATE_CONFIG = {
 };
 
 export const AUDIO_MIME_TYPE = "audio/wav";
-export const SIMULATED_SPEECH_VAL = "simulated_speech";
 export const BLOB_PREFIX = "blob:";
 export const RESTORE_SCENE_BLOB_ERR = "FAILED_RESTORE_SCENE_BLOB";
 export const RESTORE_BLOB_ERR = "FAILED_RESTORE_BLOB";
@@ -182,7 +181,6 @@ export const COMMON_STRINGS = {
   UNDEFINED: "undefined",
   NULL: "null",
   PROJECT_PREFIX: "proj_",
-  SIMULATED: "simulated",
   EN: "en",
   VI: "vi",
   BASE64_IMAGE_PREFIX: "data:image/",
@@ -206,13 +204,12 @@ export const COMMON_STRINGS = {
   BASE64: "base64",
   WAV_EXT: ".wav",
   THUMB_PREFIX: "thumb_",
-  LOREM_FLICKR_SIZE: "800/450",
   IMAGE_DIFF_THRESHOLD: 1,
   REGEX_REPLACE_GROUP_1: "$1",
   BASE64_JPEG_PREFIX: "data:image/jpeg;base64,",
   ARTWORK_PREFIX: "artwork_",
   MP4_EXT: "mp4",
-  DUMMY_URL_BASE: "http://dummy.com",
+  RELATIVE_URL_PARSE_BASE: "http://local.invalid",
   STUDIO_CHILD_SUFFIX: " - Biên tập",
   AUTO_CHILD_SUFFIX: " - Tự động",
 } as const;
@@ -327,7 +324,19 @@ export const EXTERNAL_AUDIO_TEXTS = {
   },
 } as const;
 
+const SATIRICAL_LIFE_VISUAL_GUIDELINE = `CRITICAL VISUAL DIRECTIVE - SATIRICAL LIFE STORY:
+- Use an original minimalist 2D editorial-cartoon language by default: clean black outlines, flat colors, restrained shading, readable silhouettes and simple reusable backgrounds.
+- Preserve hard identity anchors, timeline-stage outfits, recurring locations, props and screen direction. Change pose, expression, blocking and shot purpose rather than redesigning the world.
+- Show concrete action, reaction, power shift or consequence. Do not translate abstract emotion into a generic centered sad portrait or a stock symbolic crossroads.
+- Use setup, action, reaction, punchline, reveal, callback, montage and emotional-hold shots deliberately. Reuse motifs only when their meaning evolves.
+- Keep generated assets free of readable text, logos and watermarks. Reserve exact typography for the editing compositor.`;
+
 export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
+  [VideoGenre.TRANSFORMATION_TIMELINE]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: `CRITICAL VISUAL DIRECTIVE - STORY-DRIVEN VIDEO ESSAY:
 - Follow one central character and preserve character, costume, signature props, screen direction, geography, time, and emotional continuity.
 - Visualize concrete actions and human-scale consequences before abstract explanation. Alternate establishing, medium, close-up, insert, reaction, environment, and symbolic shots; avoid repetitive centered figures on empty backgrounds.
@@ -559,12 +568,8 @@ export const SIDEBAR_TEXTS = {
 } as const;
 
 export const PLAYER_SIMULATION_CONFIG = {
-  ZOOM_IN_MOTIONS: ["Zoom In"] as string[],
-  ZOOM_OUT_MOTIONS: ["Zoom Out"] as string[],
   MIN_PROGRESS: 0,
   MAX_PROGRESS_PERCENT: 100,
-  PROGRESS_STEP: 0.5,
-  PROGRESS_INTERVAL_MS: 100,
 } as const;
 
 export const BUTTON_TOOLTIP_PREFIX = {
@@ -782,6 +787,9 @@ export const PIPELINE_STEP4_TEXTS = {
   ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi render.",
   ERR_REQUIRE_IMAGES: "Vui lòng tạo và chờ hoàn tất hình ảnh cho tất cả các phân cảnh (Node 3) trước khi tạo video.",
   ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc (Node 1 hoặc tải lên) trước khi tạo video.",
+  ERR_REQUIRE_QA: "Kiểm tra chất lượng chưa hoàn tất. Hãy xử lý toàn bộ mục bị chặn rồi thử lại.",
+  FINAL_QA_RUNNING: "Đang kiểm tra bản dựng cuối...",
+  FINAL_QA_REJECTED: "Bản dựng chưa đạt chuẩn. Hãy mở mục kiểm tra cuối và xử lý các lỗi được chỉ ra.",
   RENDERING_WAIT: "Đang render video FFmpeg, vui lòng chờ...",
   RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!",
   RENDER_FFMPEG_ERR: "Lỗi render: ",
@@ -929,6 +937,9 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     thumbnailBgModeLabel: "Nền ảnh bìa",
     thumbnailTextModeLabel: "Chữ trong ảnh bìa",
     lblThumbCount: "Số lượng ý tưởng",
+    musicUploadLabel: "Nhạc nền",
+    musicUploadTooltip: "Tải nhạc nền có quyền sử dụng để hệ thống hòa âm cùng giọng đọc.",
+    musicUploadError: "Chưa thể đọc tệp nhạc. Hãy chọn tệp âm thanh khác.",
     thumbCountOption: (n: number) => `${n} ý tưởng`,
     thumbUploadTitle: "Tải bìa mẫu",
     thumbUploadSub: "Tự học phong cách bìa",
@@ -1105,6 +1116,9 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     thumbnailBgModeLabel: "Thumbnail bg",
     thumbnailTextModeLabel: "Thumbnail text",
     lblThumbCount: "Thumbnail Count",
+    musicUploadLabel: "Music",
+    musicUploadTooltip: "Upload licensed background music for the final narration mix.",
+    musicUploadError: "The music file could not be read. Choose another audio file.",
     thumbCountOption: (n: number) => `${n} ideas`,
     thumbUploadTitle: "Upload Cover Style Image",
     thumbUploadSub: "Learn thumbnail style",

@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { cn } from "../../lib/utils";
-import { genreLabels, audLabels, styleLabels, GENRE_OPTIONS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
+import { genreLabels, audLabels, styleLabels, GENRE_OPTION_GROUPS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 
@@ -127,13 +127,11 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     }
                     className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
                   >
-                    {GENRE_OPTIONS.map((genre) => {
-                      return (
-                        <option key={genre} value={genre} className="bg-slate-950 text-slate-300">
-                          {genreLabels[genre] || genre}
-                        </option>
-                      );
-                    })}
+                    {GENRE_OPTION_GROUPS.map((group) => (
+                      <optgroup key={group.label} label={group.label} className="bg-slate-950 text-slate-400">
+                        {group.options.map((genre) => <option key={genre} value={genre} className="bg-slate-950 text-slate-300">{genreLabels[genre] || genre}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 text-slate-500 w-4 h-4" />
                 </div>

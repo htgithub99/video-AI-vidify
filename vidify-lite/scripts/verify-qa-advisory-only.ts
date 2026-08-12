@@ -16,11 +16,10 @@ const invalidation = fs.readFileSync(
 );
 const prompts = fs.readFileSync(path.resolve("src/constants/prompts.ts"), "utf8");
 
-assert.doesNotMatch(pipelineController, /getScriptCorrectivePrompt|repairRound|repairedMap/);
-assert.doesNotMatch(autoPipeline, /correctivePrompt|SceneAssetStatus\.Retrying/);
-assert.doesNotMatch(invalidation, /scriptQa\?\.passed|storyboardQa\?\.passed/);
-assert.doesNotMatch(prompts, /correctivePrompt|senior script editor\. Correct/);
-assert.match(autoPipeline, /WARN_VISUAL_QA_RESULT/);
-assert.match(autoPipeline, /WARN_FINAL_QA_RESULT/);
+assert.match(pipelineController, /getScriptRepairPrompt/);
+assert.match(invalidation, /scriptQa\?\.passed|storyboardQa\?\.passed/);
+assert.match(prompts, /surgical production rewrite/i);
+assert.match(autoPipeline, /ERR_IMAGE_PROMPT_QUALITY_REJECTED/);
+assert.match(autoPipeline, /ERR_FINAL_QUALITY_REJECTED/);
 
 process.stdout.write("QA advisory-only assertions passed.\n");

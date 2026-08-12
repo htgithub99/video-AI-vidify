@@ -3,6 +3,11 @@ import { createCharacterIdentityBlocks, createSceneGenerationContext, resolveSce
 import { CharacterConfig, StoryboardScene } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { normalizeExtractedStyle } from "../src/services/styleReferenceService.ts";
+import fs from "node:fs";
+import path from "node:path";
+
+const autoPipelineSource = fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8");
+assert.doesNotMatch(autoPipelineSource, /response\.data\??\.urls/, "Character references read the wrong persistence field");
 
 const characters: CharacterConfig[] = [
   {
@@ -77,8 +82,8 @@ const finalizedContext = createSceneGenerationContext({
   characters,
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
   sceneReferenceImages: [],
-}, { finalizedByAi: true });
-assert.equal(finalizedContext.prompt, `${finalizedPrompt} --ar 16:9`);
+});
+assert.match(finalizedContext.prompt, /Attached reference roles in upload order/i);
 assert.deepEqual(finalizedContext.referenceImages, ["/assets/projects/test/references/style/style.png"]);
 
 const multiCharacterContext = createSceneGenerationContext({

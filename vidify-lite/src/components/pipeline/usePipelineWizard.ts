@@ -10,13 +10,13 @@ import _ from 'lodash';
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, EXTERNAL_URLS, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS, PRODUCTION_AUDIO_CONFIG } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
-import { fetchSystemApi, formatRoundedTime, getTargetDurationSeconds, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
+import { fetchSystemApi, formatRoundedTime, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
 import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
-import { APP_TEXTS, AUDIO_MIME_TYPE, SIMULATED_SPEECH_VAL, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
+import { APP_TEXTS, AUDIO_MIME_TYPE, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
 import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
@@ -33,10 +33,10 @@ import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from
 import { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../../lib/imagePromptDirectives";
 import { createSceneGenerationContext } from "../../services/sceneReferenceService";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
+import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
-const fallbackImageCache = new Map<string, string>();
 let handleNextStep = () => { };
 let handlePrevStep = () => { };
 let audioRef: any = null;
@@ -56,7 +56,7 @@ export function usePipelineWizard(props: any) {
     if (!initialProject) return initialProject;
     return {
       ...initialProject,
-      voiceConfig: _.defaultTo(initialProject.voiceConfig, PipelineConstants.DEFAULT_VOICE_CONFIG),
+      voiceConfig: clearBlockedAudioSource(_.defaultTo(initialProject.voiceConfig, PipelineConstants.DEFAULT_VOICE_CONFIG)),
       input: _.defaultTo(initialProject.input, PipelineConstants.DEFAULT_PROJECT_INPUT),
       config: _.defaultTo(initialProject.config, PipelineConstants.DEFAULT_PROJECT_CONFIG),
       hookConfig: _.defaultTo(initialProject.hookConfig, PipelineConstants.DEFAULT_HOOK_CONFIG),
@@ -629,8 +629,6 @@ export function usePipelineWizard(props: any) {
 
   const [bulkVoiceStatus, setBulkVoiceStatus] = useState<string>("");
 
-  const [isPlayingTts, setIsPlayingTts] = useState(false);
-
   const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
 
   const voicePlayerSectionRef = useRef<HTMLDivElement | null>(null);
@@ -646,7 +644,6 @@ export function usePipelineWizard(props: any) {
       activeCloudPreviewAudio.currentTime = 0;
       activeCloudPreviewAudio = null;
     }
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlayingVoiceURI(null);
     setVoiceDropdownOpen(false);
   };
@@ -679,44 +676,12 @@ export function usePipelineWizard(props: any) {
 
   const [step2Duration, setStep2Duration] = useState(0);
 
-  const [step2IsSimulatedPlaying, setStep2IsSimulatedPlaying] = useState(false);
-
-  const [step2SimulatedCurrentTime, setStep2SimulatedCurrentTime] = useState(0);
-
-  useEffect(() => {
-    let interval: any = null;
-    if (step2IsSimulatedPlaying && project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL) {
-      interval = setInterval(() => {
-        setStep2SimulatedCurrentTime((prev) => {
-          const maxDur = voiceAudioDuration || 10;
-          if (prev >= maxDur) {
-            setStep2IsSimulatedPlaying(false);
-            if ("speechSynthesis" in window) {
-              window.speechSynthesis.cancel();
-            }
-            clearInterval(interval);
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } else if (!step2IsSimulatedPlaying) {
-      clearInterval(interval);
-      setStep2SimulatedCurrentTime(0);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [step2IsSimulatedPlaying, project.voiceConfig?.audioUrl, voiceAudioDuration]);
-
   useEffect(() => {
     if (step2AudioRef.current) {
       step2AudioRef.current.pause();
     }
     setStep2IsPlaying(false);
     setStep2CurrentTime(0);
-    setStep2IsSimulatedPlaying(false);
-    setStep2SimulatedCurrentTime(0);
   }, [project.voiceConfig?.audioUrl]);
 
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
@@ -726,34 +691,6 @@ export function usePipelineWizard(props: any) {
   const [isPlayingRealAudio, setIsPlayingRealAudio] = useState(false);
 
   const [audioVolume, setAudioVolume] = useState(1.0);
-
-  const [simulatedCurrentTime, setSimulatedCurrentTime] = useState(0);
-
-  useEffect(() => {
-    let interval: any = null;
-    if (isPlayingTts && ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
-      interval = setInterval(() => {
-        setSimulatedCurrentTime((prev) => {
-          const maxDur = voiceAudioDuration || 10;
-          if (prev >= maxDur) {
-            setIsPlayingTts(false);
-            if ("speechSynthesis" in window) {
-              window.speechSynthesis.cancel();
-            }
-            clearInterval(interval);
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } else if (!isPlayingTts) {
-      clearInterval(interval);
-      setSimulatedCurrentTime(0);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlayingTts, ttsAudioUrl, voiceAudioDuration]);
 
   useEffect(() => {
     if (audioPreviewRef.current) {
@@ -770,7 +707,7 @@ export function usePipelineWizard(props: any) {
   const [renderedVideoBlob, setRenderedVideoBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
-    if (ttsAudioUrl && !([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
+    if (isProductionAudioSource(ttsAudioUrl || undefined)) {
       const audio = new Audio(ttsAudioUrl);
       const onLoadedMetadata = () => {
         setVoiceAudioDuration(audio.duration);
@@ -779,9 +716,6 @@ export function usePipelineWizard(props: any) {
       return () => {
         audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       };
-    } else if (ttsAudioUrl && ([COMMON_STRINGS.SIMULATED, SIMULATED_SPEECH_VAL] as string[]).includes(ttsAudioUrl)) {
-      const estimatedDuration = getTargetDurationSeconds();
-      setVoiceAudioDuration(estimatedDuration);
     } else {
       setVoiceAudioDuration(null);
     }
@@ -790,45 +724,6 @@ export function usePipelineWizard(props: any) {
   useEffect(() => {
     setRenderedVideoBlob(null);
   }, [project.storyboard, project.voiceConfig?.audioUrl, project.voiceConfig?.speed, project.voiceConfig?.pitch, project.voiceConfig?.volume, project.scriptRewritten, ttsAudioUrl, activeSlideIndices]);
-
-  const createSpeechUtterance = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = project.config.language === "vi" ? "vi-VN" : "en-US";
-    utterance.rate = project.voiceConfig?.speed || 1.0;
-    utterance.pitch = project.voiceConfig?.pitch !== undefined ? project.voiceConfig?.pitch : 1.0;
-    utterance.volume = project.voiceConfig?.volume !== undefined ? project.voiceConfig?.volume : 1.0;
-
-    if ("speechSynthesis" in window) {
-      const voices = window.speechSynthesis.getVoices();
-      const isVi = project.config.language === "vi";
-      const gender = project.voiceConfig?.gender || "neutral";
-      const selectedUri = project.voiceConfig?.voiceURI;
-
-      let matchedVoice = null;
-      if (selectedUri) {
-        matchedVoice = voices.find((v) => v.voiceURI === selectedUri);
-      }
-
-      if (!matchedVoice) {
-        const langVoices = voices.filter((v) => (isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en")));
-        if (langVoices.length > 0) {
-          if (gender === "female") {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "female") || langVoices[0];
-          } else if (gender === "male") {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "male") || langVoices[0];
-          } else {
-            matchedVoice = langVoices.find((v) => getVoiceGender(v) === "neutral") || langVoices[0];
-          }
-        }
-      }
-
-      if (matchedVoice) {
-        utterance.voice = matchedVoice;
-        utterance.lang = matchedVoice.lang;
-      }
-    }
-    return utterance;
-  };
 
   const playVoicePreview = async (voiceURI: string, gender: string, lang: string, speed?: number, pitch?: number, previewUrl?: string) => {
     activePreviewToken = Date.now();
@@ -841,13 +736,11 @@ export function usePipelineWizard(props: any) {
     }
 
     if (playingVoiceURI === voiceURI) {
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
       setPlayingVoiceURI(null);
       activePreviewToken = 0;
       return;
     }
 
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlayingVoiceURI(voiceURI);
 
     if (previewUrl) {
@@ -950,51 +843,7 @@ export function usePipelineWizard(props: any) {
       }
     }
 
-    if (activePreviewToken !== currentToken) return;
-
-    if (!("speechSynthesis" in window)) {
-      setPlayingVoiceURI(null);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(sampleText);
-    utterance.lang = isVi ? "vi-VN" : "en-US";
-    utterance.rate = speed !== undefined ? speed : 1.0;
-    utterance.pitch = pitch !== undefined ? pitch : 1.0;
-    utterance.volume = project.voiceConfig?.volume !== undefined ? project.voiceConfig?.volume : 1.0;
-
-    utterance.onstart = () => {
-      setPlayingVoiceURI(voiceURI);
-    };
-    utterance.onend = () => {
-      setPlayingVoiceURI((prev) => (prev === voiceURI ? null : prev));
-    };
-    utterance.onerror = () => {
-      setPlayingVoiceURI((prev) => (prev === voiceURI ? null : prev));
-    };
-
-    const voices = window.speechSynthesis.getVoices();
-    let matchedVoice = voices.find((v) => v.voiceURI === voiceURI);
-
-    if (!matchedVoice) {
-      const langVoices = voices.filter((v) => (isVi ? v.lang.startsWith("vi") : v.lang.startsWith("en")));
-      if (langVoices.length > 0) {
-        if (gender === "female") {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "female") || langVoices[0];
-        } else if (gender === "male") {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "male") || langVoices[0];
-        } else {
-          matchedVoice = langVoices.find((v) => getVoiceGender(v) === "neutral") || langVoices[0];
-        }
-      }
-    }
-
-    if (matchedVoice) {
-      utterance.voice = matchedVoice;
-      utterance.lang = matchedVoice.lang;
-    }
-
-    window.speechSynthesis.speak(utterance);
+    if (activePreviewToken === currentToken) setPlayingVoiceURI(null);
   };
 
   useEffect(() => {
@@ -1041,8 +890,6 @@ export function usePipelineWizard(props: any) {
 
   const [simActiveScene, setSimActiveScene] = useState<StoryboardScene | null>(null);
 
-  const simTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   const simAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const isRestoringRef = useRef(false);
@@ -1062,7 +909,7 @@ export function usePipelineWizard(props: any) {
   }, [project, normalizedInitialProject, onSaveProject]);
 
   useEffect(() => {
-    if (project?.voiceConfig?.audioUrl) {
+    if (isProductionAudioSource(project?.voiceConfig?.audioUrl)) {
       setTtsAudioUrl(project.voiceConfig.audioUrl);
     } else {
       setTtsAudioUrl(null);
@@ -1167,13 +1014,13 @@ export function usePipelineWizard(props: any) {
         setHooksDraft([]);
       }
 
-      let restoredVoiceConfig = initialProject.voiceConfig ? { ...initialProject.voiceConfig } : undefined;
+      let restoredVoiceConfig = initialProject.voiceConfig ? clearBlockedAudioSource({ ...initialProject.voiceConfig }) : undefined;
       let restoredTtsUrl: string | null = null;
 
       if (restoredVoiceConfig) {
         if (restoredVoiceConfig.audioUrl) {
           restoredTtsUrl = restoredVoiceConfig.audioUrl;
-          if (restoredTtsUrl === SIMULATED_SPEECH_VAL || restoredTtsUrl.startsWith(BLOB_PREFIX)) {
+          if (restoredTtsUrl.startsWith(BLOB_PREFIX)) {
             if (restoredVoiceConfig.audioBase64) {
               try {
                 const arr = base64ToArrayBuffer(restoredVoiceConfig.audioBase64);
@@ -1181,13 +1028,13 @@ export function usePipelineWizard(props: any) {
                 restoredTtsUrl = URL.createObjectURL(blob);
               } catch (e) {
                 logger.error(RESTORE_BLOB_ERR, e);
-                restoredTtsUrl = COMMON_STRINGS.SIMULATED;
+                restoredTtsUrl = null;
               }
             } else {
-              restoredTtsUrl = COMMON_STRINGS.SIMULATED;
+              restoredTtsUrl = null;
             }
           }
-          restoredVoiceConfig.audioUrl = restoredTtsUrl;
+          restoredVoiceConfig.audioUrl = restoredTtsUrl || undefined;
           setTtsAudioUrl(restoredTtsUrl);
         } else {
           setTtsAudioUrl(null);
@@ -1206,7 +1053,8 @@ export function usePipelineWizard(props: any) {
       }
 
       const restoredStoryboard = (initialProject.storyboard || []).map((scene) => {
-        if (scene.audioUrl && (scene.audioUrl.startsWith(BLOB_PREFIX) || scene.audioUrl === SIMULATED_SPEECH_VAL)) {
+        if (isBlockedAudioSource(scene.audioUrl)) return { ...scene, audioUrl: undefined };
+        if (scene.audioUrl?.startsWith(BLOB_PREFIX)) {
           if (scene.audioBase64) {
             try {
               const arr = base64ToArrayBuffer(scene.audioBase64);
@@ -1216,7 +1064,7 @@ export function usePipelineWizard(props: any) {
               logger.error(RESTORE_SCENE_BLOB_ERR, e);
             }
           }
-          return scene;
+          return { ...scene, audioUrl: undefined };
         }
         return scene;
       });
@@ -1379,7 +1227,7 @@ export function usePipelineWizard(props: any) {
         let audioUrl = project.voiceConfig?.audioUrl;
         let audioBase64 = project.voiceConfig?.audioBase64;
 
-        const hasVoiceSource = !_.isEmpty(audioBase64) || !_.isEmpty(audioUrl);
+        const hasVoiceSource = hasProductionAudioSource([audioBase64, audioUrl]);
 
         let finalScenes = updatedScenes;
         let syncLogText = "";
@@ -3037,8 +2885,7 @@ export function usePipelineWizard(props: any) {
         imgUrl = data.fallbackUrl;
         trackOperationCost(5, 0.0002);
       } else {
-        imgUrl = `${EXTERNAL_URLS.PLACEHOLD_CO}/600x338/0369a1/ffffff?text=${encodeURIComponent(styleText)}&bg=gradient`;
-        trackOperationCost(2, 0.0001);
+        throw new Error(REFACTOR_CONSTANTS.ERR_THUMBNAIL_QUALITY_REJECTED);
       }
 
       setProject((prev) => {
@@ -3146,44 +2993,13 @@ export function usePipelineWizard(props: any) {
 
   const handleDownloadVoice = async () => {
     logAction("handleDownloadVoice");
-    if (!ttsAudioUrl) return;
-
-    if (ttsAudioUrl === COMMON_STRINGS.SIMULATED) {
-      setInfoMsg(t.Generating_and_preparing_);
-      try {
-        setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: true }));
-        if (!project.storyboard || _.isEmpty(project.storyboard)) {
-          throw new Error(t.You_must_generate_the_sto);
-        }
-        const mergedUrl = await handleTriggerAllSceneVoices(project.storyboard, true);
-
-        if (mergedUrl) {
-          const a = document.createElement("a");
-          a.href = mergedUrl;
-          a.download = `voiceover_${project.voiceConfig?.gender || "speaker"}.wav`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          const successMsg = t.Voiceover_downloaded_succ || "Tải file giọng nói thành công.";
-          setInfoMsg(successMsg);
-          logger.info(`[TTS] ✅ Thành công: ${successMsg}`);
-        } else {
-          throw new Error(PIPELINE_CLIENT_ERRORS.AUDIO_URL_MISSING);
-        }
-      } catch (err: any) {
-        logger.error("SYNTHESIZE_ON_THE_FLY_FAILED", err);
-        setErrorMsg(t.voiceSynthError.replace("{error}", err.message));
-      } finally {
-        setLoadingStates((prev) => ({ ...prev, voiceGenerate_loading: false }));
-      }
-    } else {
-      const a = document.createElement("a");
-      a.href = ttsAudioUrl;
-      a.download = `voiceover_${project.voiceConfig?.gender || "speaker"}.wav`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
+    if (!isProductionAudioSource(ttsAudioUrl || undefined)) return;
+    const a = document.createElement("a");
+    a.href = ttsAudioUrl!;
+    a.download = `voiceover_${project.voiceConfig?.gender || "speaker"}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleRegenerateUnifiedVoice = async (voiceConfigOverride?: any) => {
@@ -3195,11 +3011,6 @@ export function usePipelineWizard(props: any) {
       activeCloudPreviewAudio = null;
     }
 
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsPlayingTts(false);
     setIsPlayingRealAudio(false);
 
     setLoadingStates((prev) => ({
@@ -3252,11 +3063,6 @@ export function usePipelineWizard(props: any) {
       audioPreviewRef.current.currentTime = 0;
     }
 
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    setIsPlayingTts(false);
     setIsPlayingRealAudio(false);
 
     setLoadingStates((prev) => ({
@@ -3692,7 +3498,7 @@ export function usePipelineWizard(props: any) {
     setCurrentSimTime(0);
     setSimActiveScene(project.storyboard[0]);
 
-    if (ttsAudioUrl && ttsAudioUrl !== COMMON_STRINGS.SIMULATED) {
+    if (isProductionAudioSource(ttsAudioUrl || undefined)) {
       if (simAudioRef.current) {
         simAudioRef.current.pause();
         simAudioRef.current = null;
@@ -3724,221 +3530,34 @@ export function usePipelineWizard(props: any) {
 
       audio.play().catch((err) => {
         logger.warn("AUDIO_PLAYBACK_FAILED", err);
-        startTimerBasedSim();
+        setErrorMsg(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
+        setIsPlayingSim(false);
       });
     } else {
-      startTimerBasedSim();
+      setErrorMsg(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
+      setIsPlayingSim(false);
     }
-  };
-
-  const startTimerBasedSim = () => {
-    let secondsElapsed = 0;
-    const ranges = getSceneTimeRanges(project.storyboard || []);
-    const totalDuration = ranges.length > 0 ? ranges[ranges.length - 1].end : 30;
-
-    simTimerRef.current = setInterval(() => {
-      secondsElapsed += 1;
-      setCurrentSimTime(secondsElapsed);
-
-      if (secondsElapsed >= totalDuration) {
-        stopPlaybackSim();
-        return;
-      }
-
-      const matchingRange = ranges.find((r) => secondsElapsed >= r.start && secondsElapsed < r.end);
-      if (matchingRange) {
-        const matchingScene = project.storyboard?.find((sc) => sc.id === matchingRange.id);
-        if (matchingScene && (!simActiveScene || simActiveScene.id !== matchingScene.id)) {
-          setSimActiveScene(matchingScene);
-          if (project.voiceConfig?.audioUrl === SIMULATED_SPEECH_VAL && "speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
-            const utterance = createSpeechUtterance(matchingScene.script);
-            window.speechSynthesis.speak(utterance);
-          }
-        }
-      }
-    }, 1000);
   };
 
   const stopPlaybackSim = () => {
     setIsPlayingSim(false);
-    if (simTimerRef.current) {
-      clearInterval(simTimerRef.current);
-      simTimerRef.current = null;
-    }
     if (simAudioRef.current) {
       simAudioRef.current.pause();
       simAudioRef.current = null;
-    }
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
     }
   };
 
   useEffect(() => {
     return () => {
-      if (simTimerRef.current) {
-        clearInterval(simTimerRef.current);
-      }
       if (simAudioRef.current) {
         simAudioRef.current.pause();
         simAudioRef.current = null;
       }
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
     };
   }, []);
 
-  const renderFallbackSceneImage = (sc: any): string => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1280;
-    canvas.height = 720;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "#f8fafc";
-      ctx.fillRect(0, 0, 1280, 720);
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 12px monospace";
-      ctx.textAlign = "center";
-      const topLabel = `SCENE ID: ${sc.id || "N/A"} | DURATION: ${Math.round(sc.duration || 5)}s`;
-      ctx.fillText(topLabel.toUpperCase(), 640, 45);
-
-      const rect_w = 280;
-      const rect_h = 170;
-      const x = 640 - rect_w / 2;
-      const y = 310 - rect_h / 2;
-      const r = 24;
-
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + rect_w - r, y);
-      ctx.quadraticCurveTo(x + rect_w, y, x + rect_w, y + r);
-      ctx.lineTo(x + rect_w, y + rect_h - r);
-      ctx.quadraticCurveTo(x + rect_w, y + rect_h, x + rect_w - r, y + rect_h);
-      ctx.lineTo(x + r, y + rect_h);
-      ctx.quadraticCurveTo(x, y + rect_h, x, y + rect_h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.stroke();
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + rect_w - r, y);
-      ctx.quadraticCurveTo(x + rect_w, y, x + rect_w, y + r);
-      ctx.lineTo(x + rect_w, y + rect_h - r);
-      ctx.quadraticCurveTo(x + rect_w, y + rect_h, x + rect_w - r, y + rect_h);
-      ctx.lineTo(x + r, y + rect_h);
-      ctx.quadraticCurveTo(x, y + rect_h, x, y + rect_h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.clip();
-
-      ctx.beginPath();
-      ctx.moveTo(x + 5, y + rect_h + 10);
-      ctx.lineTo(x + 90, y + 60);
-      ctx.lineTo(x + 185, y + rect_h + 10);
-      ctx.closePath();
-      ctx.fillStyle = "#cbd5e1";
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(x + 130, y + rect_h + 10);
-      ctx.lineTo(x + 205, y + 100);
-      ctx.lineTo(x + 275, y + rect_h + 10);
-      ctx.closePath();
-
-      ctx.strokeStyle = "#f8fafc";
-      ctx.lineWidth = 10;
-      ctx.stroke();
-
-      ctx.fillStyle = "#cbd5e1";
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(x + 175, y + 55, 18, 0, Math.PI * 2);
-      ctx.fillStyle = "#cbd5e1";
-      ctx.fill();
-
-      ctx.restore();
-
-      const subtitleText = sc.subtitle || sc.script || "";
-      if (subtitleText.trim()) {
-        ctx.font = "bold 24px sans-serif";
-        ctx.textAlign = "center";
-
-        const words = subtitleText.split(" ");
-        const lines: string[] = [];
-        let currentLine = "";
-        const maxSubWidth = 900;
-
-        for (let i = 0; i < words.length; i++) {
-          const testLine = currentLine + words[i] + " ";
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxSubWidth && i > 0) {
-            lines.push(currentLine.trim());
-            currentLine = words[i] + " ";
-          } else {
-            currentLine = testLine;
-          }
-        }
-        lines.push(currentLine.trim());
-
-        const subLineHeight = 32;
-        const totalHeight = lines.length * subLineHeight + 24;
-        const pillY = 580 - totalHeight / 2;
-
-        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-
-        const pillW = 1000;
-        const pillX = 640 - pillW / 2;
-        const pillR = 16;
-        ctx.beginPath();
-        ctx.moveTo(pillX + pillR, pillY);
-        ctx.lineTo(pillX + pillW - pillR, pillY);
-        ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
-        ctx.lineTo(pillX + pillW, pillY + totalHeight - pillR);
-        ctx.quadraticCurveTo(pillX + pillW, pillY + totalHeight, pillX + pillW - pillR, pillY + totalHeight);
-        ctx.lineTo(pillX + pillR, pillY + totalHeight);
-        ctx.quadraticCurveTo(pillX, pillY + totalHeight, pillX, pillY + totalHeight - pillR);
-        ctx.lineTo(pillX, pillY + pillR);
-        ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = "#ffffff";
-        lines.forEach((lineText, idx) => {
-          ctx.fillText(lineText, 640, pillY + 16 + (idx + 0.75) * subLineHeight);
-        });
-      } else {
-        ctx.fillStyle = "#94a3b8";
-        ctx.font = "italic 16px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(t.No_subtitles_or_descripti, 640, 560);
-      }
-    }
-    return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
-  };
-
   const getSceneImageUrl = (scene: any): string => {
-    if (!scene) return "";
-    if (scene.assetUrl) {
-      return scene.assetUrl;
-    }
-    const cacheKey = `${scene.id}_${scene.duration || 5}_${scene.subtitle || ""}_${scene.script || ""}`;
-    if (fallbackImageCache.has(cacheKey)) {
-      return fallbackImageCache.get(cacheKey)!;
-    }
-    const base64 = renderFallbackSceneImage(scene);
-    const dataUrl = `data:image/jpeg;base64,${base64}`;
-    fallbackImageCache.set(cacheKey, dataUrl);
-    return dataUrl;
+    return _.toString(scene?.assetUrl);
   };
 
   const handleDownloadJSONProject = async () => {
@@ -4077,8 +3696,6 @@ export function usePipelineWizard(props: any) {
     setAlignmentsLog,
     bulkVoiceStatus,
     setBulkVoiceStatus,
-    isPlayingTts,
-    setIsPlayingTts,
     audioPreviewRef,
     voicePlayerSectionRef,
     systemVoices,
@@ -4111,10 +3728,6 @@ export function usePipelineWizard(props: any) {
     setStep2CurrentTime,
     step2Duration,
     setStep2Duration,
-    step2IsSimulatedPlaying,
-    setStep2IsSimulatedPlaying,
-    step2SimulatedCurrentTime,
-    setStep2SimulatedCurrentTime,
     audioCurrentTime,
     setAudioCurrentTime,
     audioDurationState,
@@ -4123,8 +3736,6 @@ export function usePipelineWizard(props: any) {
     setIsPlayingRealAudio,
     audioVolume,
     setAudioVolume,
-    simulatedCurrentTime,
-    setSimulatedCurrentTime,
     isOfflineRendering,
     setIsOfflineRendering,
     offlineRenderProgress,
@@ -4133,7 +3744,6 @@ export function usePipelineWizard(props: any) {
     setLoadingExportType,
     renderedVideoBlob,
     setRenderedVideoBlob,
-    createSpeechUtterance,
     playVoicePreview,
     isPlayingSim,
     setIsPlayingSim,
@@ -4141,7 +3751,6 @@ export function usePipelineWizard(props: any) {
     setCurrentSimTime,
     simActiveScene,
     setSimActiveScene,
-    simTimerRef,
     simAudioRef,
     lastProjectIdRef,
     trackOperationCost,
@@ -4184,9 +3793,7 @@ export function usePipelineWizard(props: any) {
     onSaveProject,
     handleOpenExportCenter,
     startPlaybackSim,
-    startTimerBasedSim,
     stopPlaybackSim,
-    renderFallbackSceneImage,
     getSceneImageUrl,
     handleDownloadJSONProject,
     handleAnalyzeCharacter,

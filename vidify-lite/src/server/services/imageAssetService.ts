@@ -33,10 +33,14 @@ const resolveContainedAssetPath = (assetUrl: string, rootDirectory: string): str
   ], Boolean) ? resolvedPath : undefined;
 };
 
+export const resolveLocalProjectAssetPath = (assetUrl: string): string | undefined => (
+  resolveContainedAssetPath(assetUrl, getDataDirectory())
+);
+
 export const readEncodedProjectImage = (assetUrl: string): EncodedImageAsset | undefined => {
   const dataUrlMatch = assetUrl.match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);
   if (dataUrlMatch) return { mimeType: dataUrlMatch[1], data: dataUrlMatch[2] };
-  const assetPath = resolveContainedAssetPath(assetUrl, getDataDirectory());
+  const assetPath = resolveLocalProjectAssetPath(assetUrl);
   if (!assetPath) return undefined;
   return {
     mimeType: getImageMimeType(assetPath),

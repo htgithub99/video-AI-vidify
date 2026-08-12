@@ -42,15 +42,14 @@ const normalizeThumbnail = (
 
 export const normalizeThumbnailIdeas = (
   generatedItems: Partial<ThumbnailItem>[],
-  fallbackItems: Partial<ThumbnailItem>[],
   requestedCount: number,
   textMode: string = "auto",
 ): ThumbnailItem[] => {
   const validGeneratedItems = _.filter(generatedItems, item => !_.isEmpty(_.trim(_.toString(item.prompt))));
-  const sourceItems = _.take(_.concat(validGeneratedItems, fallbackItems), requestedCount);
+  const sourceItems = _.take(validGeneratedItems, requestedCount);
   const usedLayoutIds = new Set<string>();
-  return _.map(_.range(requestedCount), index => normalizeThumbnail(
-    sourceItems[index] || fallbackItems[index % _.max([_.size(fallbackItems), 1])!] || {},
+  return _.map(sourceItems, (item, index) => normalizeThumbnail(
+    item,
     index,
     usedLayoutIds,
     textMode,

@@ -1,3 +1,5 @@
+import { SubtitleMode } from "../types";
+
 export const APP_CONFIG = {
   TOAST_DURATION: 3000,
 };
@@ -137,7 +139,12 @@ export const IMAGE_PROMPT_QA_CONFIG = {
   MIN_WORDS: 25,
   MAX_WORDS: 140,
   MAX_ADJACENT_SIMILARITY: 0.88,
+  MAX_CORRECTION_ATTEMPTS: 2,
   CAMERA_PATTERN: /\b(?:shot|angle|composition|view|framing)\b/i,
+  VISIBLE_ACTION_PATTERN: /\b(?:opens?|closes?|holds?|drops?|lifts?|pushes?|pulls?|walks?|runs?|sits?|stands?|turns?|looks?|reaches?|takes?|gives?|hides?|reveals?|enters?|leaves?|points?|watches?|reacts?|moves?|drives?|falls?|breaks?|builds?|counts?|pays?|signs?|drinks?|eats?|works?|fights?|cries?|laughs?|smiles?|stares?|grips?|places?|removes?|wears?|shows?)\b/i,
+  ABSTRACT_ONLY_PATTERN: /^(?:an?\s+)?(?:feeling|emotion|concept|idea|sense|symbol|metaphor|mood)\b/i,
+  GENERIC_PORTRAIT_PATTERN: /\b(?:centered|isolated)\s+(?:portrait|character|person)|\bportrait\s+(?:of|shot)\b/i,
+  ENGINE_PARAMETER_PATTERN: /\s+--(?:stylize|style|seed|quality|q|chaos|no)\s+\S+/gi,
   ASPECT_FLAG_PATTERN: /\s*--ar\s+\d+(?:\.\d+)?:\d+(?:\.\d+)?\s*/gi,
   READABLE_TEXT_REQUEST_PATTERN: /\b(?:(?:with|showing|displaying|containing|bearing)\s+(?:a\s+)?(?:clear\s+|readable\s+)?(?:vietnamese\s+)?(?:text|caption|label|lettering|words?)|(?:labeled|labelled|reading|saying)\s+['"])/i,
   WHITESPACE_PATTERN: /\s+/g,
@@ -154,6 +161,19 @@ export const IMAGE_PROMPT_QA_CONFIG = {
     STYLE_CONFLICT: "image_prompt_style_conflict",
     PEOPLE_CONFLICT: "image_prompt_people_conflict",
     TEXT_CONFLICT: "image_prompt_text_conflict",
+    MISSING_VISUAL_INTENT: "missing_visual_intent",
+    MISSING_VISIBLE_ACTION: "missing_visible_action",
+    ABSTRACT_ACTION: "abstract_visual_action",
+    MISSING_SUBJECT_COUNT: "missing_subject_count",
+    MISSING_LOCATION_ID: "missing_location_id",
+    UNKNOWN_LOCATION_ID: "unknown_location_id",
+    UNKNOWN_PROP_ID: "unknown_prop_id",
+    MISSING_SHOT_PLAN: "missing_shot_plan",
+    MISSING_CHARACTER_ID: "missing_recurring_character_id",
+    UNKNOWN_CHARACTER_ID: "unknown_character_id",
+    ADJACENT_COMPOSITION_DUPLICATE: "adjacent_composition_duplicate",
+    GENERIC_CENTERED_PORTRAIT: "generic_centered_portrait",
+    ENGINE_SYNTAX_CONFLICT: "engine_syntax_conflict",
   },
   WARNING_CODES: {
     PROMPT_TOO_SHORT: "image_prompt_too_short",
@@ -161,6 +181,53 @@ export const IMAGE_PROMPT_QA_CONFIG = {
     BACKGROUND_POLICY: "background_policy_not_explicit",
     ADJACENT_REPETITION: "adjacent_prompts_too_similar",
   },
+} as const;
+
+export const IMAGE_PROMPT_COMPILER_CONFIG = {
+  CLAUSE_SEPARATOR: ". ",
+  LIST_SEPARATOR: ", ",
+  CHARACTER_SEPARATOR: "; ",
+  DEFAULT_LIGHTING: "clear style-compatible lighting",
+  DEFAULT_LAYOUT: "single_frame",
+  NO_TEXT_DIRECTIVE: "No readable text, letters, numbers, logos, or watermarks",
+  NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
+  SINGLE_FRAME_DIRECTIVE: "one continuous frame without panels or collage",
+  SUBJECT_COUNT_TEMPLATE: "exactly {count} primary visual subject{plural}",
+  CHARACTER_TEMPLATE: "{name}: {identity}",
+  LOCATION_TEMPLATE: "{name}, {anchors}",
+  PROP_TEMPLATE: "{name}: {anchors}",
+  CONTINUITY_TEMPLATE: "Continuity: {value}",
+  BEFORE_AFTER_TEMPLATE: "Visible change from {before} to {after}",
+  REACTION_TEMPLATE: "Visible reaction: {value}",
+  STYLE_TEMPLATE: "Visual style: {value}",
+  COMPOSITION_TEMPLATE: "{shotSize}, {cameraAngle}, {composition}",
+  ASPECT_RATIO_PREFIX: "--ar",
+} as const;
+
+export const VISUAL_CONTINUITY_CONFIG = {
+  PROTAGONIST_SECOND_PERSON_NAMES: ["bạn", "you", "viewer protagonist"],
+  PROTAGONIST_DEFAULT_NAME: "You",
+  PROTAGONIST_ROLE: "second_person_protagonist",
+  LOCATION_ID_PREFIX: "loc_",
+  PROP_ID_PREFIX: "prop_",
+  CHARACTER_ID_PREFIX: "char_",
+  EMPTY_STAGE_ID: "base",
+  REQUIRED_REFERENCE_VIEWS: ["front", "side", "three_quarter", "expression"],
+} as const;
+
+export const CHARACTER_REFERENCE_CONFIG = {
+  MODEL_SHEET_PREFIX: "Character model sheet for",
+  VIEW_DIRECTIVE: "show the same character in front, side, three-quarter, and expression views",
+  IDENTITY_DIRECTIVE: "preserve one identical face, silhouette, proportions, hair, outfit colors, and accessories in every view",
+  LAYOUT_DIRECTIVE: "clean evenly spaced reference poses on one plain background",
+  TEXT_DIRECTIVE: "no text, labels, logos, watermarks, scenery, or extra people",
+  STYLE_TEMPLATE: "Render faithfully in this visual style: {style}",
+  DEFAULT_STYLE: "coherent 2D editorial illustration",
+  GENERATION_FAILED: "Chưa thể tạo ảnh chuẩn cho nhân vật {name}. Hãy kiểm tra công cụ tạo ảnh rồi tiếp tục dự án.",
+  REFERENCE_REQUIRED: "Nhân vật lặp lại chưa có ảnh chuẩn được duyệt. Hãy tạo lại ảnh nhân vật trước khi tạo cảnh.",
+  MIN_QA_SCORE: 85,
+  QA_REQUIRED: "Chưa thể kiểm tra ảnh chuẩn nhân vật. Hãy kiểm tra kết nối rồi thử lại.",
+  QA_REJECTED: "Ảnh chuẩn nhân vật chưa đạt độ nhất quán. Hãy tạo lại ảnh nhân vật.",
 } as const;
 
 export const IMAGE_PROMPT_METADATA_CONFIG = {
@@ -212,8 +279,8 @@ export const VOICE_TTS_ROUTING_CONFIG = {
   GENERATED_AUDIO_KEYS: ["audioBase64", "audioUrl", "audioQa", "timingLog"],
   SCENE_AUDIO_KEYS: ["audioBase64", "audioUrl"],
 } as const;
-export const STYLE_EXTRACTION_CONFIG = { ASSET_PREFIX: "/assets/", HTTP_PREFIXES: ["http://", "https://"], DEFAULT_STYLE: "Realistic cinematic, balanced composition, coherent color palette, natural depth, professional editorial lighting", FALLBACK_WARNING: "Không thể phân tích ảnh bằng AI lúc này. Hệ thống tiếp tục dùng phong cách đã chọn.", MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" } } as const;
-export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled" } as const;
+export const STYLE_EXTRACTION_CONFIG = { ASSET_PREFIX: "/assets/", HTTP_PREFIXES: ["http://", "https://"], UNAVAILABLE_ERROR: "Chưa thể phân tích phong cách từ ảnh tham chiếu. Hãy kiểm tra kết nối rồi thử lại.", MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" } } as const;
+export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled",AUDIO:"audio" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
 
@@ -260,6 +327,8 @@ export const FFMPEG_RENDER_CONSTANTS = {
   CLEANUP_MAX_RETRIES: 8,
   CLEANUP_RETRY_DELAY_MS: 150,
   LOG_CLEANUP_WARNING: "FFmpeg temporary directory cleanup deferred",
+  DEFAULT_SUBTITLE_MODE: SubtitleMode.BurnIn,
+  ERR_AUDIO_TRACK_MISSING: "A required music or sound asset is missing.",
 } as const;
 
 export const FFMPEG_RENDER_KEYS = {
@@ -286,6 +355,8 @@ export const FFMPEG_RENDER_KEYS = {
   MAX_SCENE_WORKERS: "maxSceneWorkers",
   VIDEO_TRIM_START_SECONDS: "videoTrimStartSeconds",
   VIDEO_TRIM_END_SECONDS: "videoTrimEndSeconds",
+  SUBTITLE_MODE: "subtitleMode",
+  AUDIO_TRACKS: "audioTracks",
   SUCCESS: "success",
   PROGRESS: "progress",
   URL: "url",
@@ -604,8 +675,6 @@ export const RENDER_LOGIC_CONSTANTS = {
   CONTEXT_2D: "2d",
   DEFAULT_VIDEO_TYPE: "video/webm",
   AUDIO_TYPE: "audio",
-  SIMULATED: "simulated",
-  SIMULATED_SPEECH: "simulated_speech",
   MIME_WEBM: "video/webm",
   FONT_HEADER: "bold 36px monospace",
   FONT_SUBHEADER: "bold 18px monospace",
@@ -666,18 +735,90 @@ export const DEPENDENCY_HASH_CONFIG = {
 
 export const STORYBOARD_QUALITY_CONFIG = {
   MIN_SCORE: 85,
-  DIVERSITY_SAMPLE_SIZE: 8,
-  MIN_SCENE_DURATION_SECONDS: 3,
-  FALLBACK_WARNING: "AI storyboard QA unavailable; deterministic structural QA was used.",
-  EMPTY_STORYBOARD_ERROR: "storyboard_has_no_scenes",
-  INCOMPLETE_SCENE_ERROR: "storyboard_contains_incomplete_scenes",
   BELOW_TARGET_WARNING: "storyboard_quality_below_target",
-  DIVERSITY_FIELDS: ["cameraAngle", "cameraMotion", "transition"],
+  MAX_REPAIR_ATTEMPTS: 2,
+} as const;
+
+export const PRODUCTION_AUDIO_CONFIG = {
+  BLOCKED_SOURCE_VALUES: ["simulated", "simulated_speech"],
+  SOURCE_REQUIRED_ERROR: "Video cần giọng đọc thật. Hãy tạo hoặc tải lên giọng đọc rồi thử lại.",
+  SOURCE_BLOCKED_ERROR: "Giọng đọc mẫu không thể dùng để dựng video. Hãy tạo hoặc tải lên giọng đọc thật.",
+} as const;
+
+export const SCRIPT_REPAIR_CONFIG = {
+  MAX_ATTEMPTS: 2,
+  MAX_OUTPUT_TOKENS: 8_192,
+  EMPTY_REPAIR_ERROR: "script_repair_returned_empty_content",
+} as const;
+
+export const VOICE_DIRECTION_CONFIG = {
+  SEGMENT_COUNT: 6,
+  MIN_SPEED: 0.8,
+  MAX_SPEED: 1.2,
+  DEFAULT_EMOTION: "neutral",
+  MERGE_FAILED: "Chưa thể ghép các đoạn giọng đọc. Hãy thử lại bước giọng đọc.",
+} as const;
+
+export const SOUND_DESIGN_CONFIG = {
+  MAIN_MUSIC_CUE_ID: "cue_music_main",
+  TIMELINE_SCENE_ID: "timeline",
+  MUSIC_DESCRIPTION: "restrained editorial score following the complete emotional arc",
+  MUSIC_INTENT: "build tension without overpowering narration, then resolve with changed meaning",
+  AMBIENCE_DESCRIPTION: "subtle location ambience matching the visible environment",
+  AMBIENCE_TENSION_INTENT: "restrained tension",
+  AMBIENCE_RESOLUTION_INTENT: "reflective resolution",
+  SOUND_EFFECT_INTENT: "reinforce visible action without masking narration",
+  MAX_SOUND_EFFECT_DURATION_SECONDS: 1.2,
+  NARRATION_LUFS: -16,
+  MUSIC_UNDER_VOICE_DB: -18,
+  PEAK_DB: -1,
+  SECONDARY_AUDIO_VOLUME_DIVISOR: 2,
+  DEFAULT_FADE_IN_SECONDS: 0.5,
+  DEFAULT_FADE_OUT_SECONDS: 0.75,
+  NO_FADE_SECONDS: 0,
+  MUSIC_ARC: [
+    "restrained sparse opening",
+    "controlled tension build",
+    "intimate low point",
+    "urgent but restrained climax",
+    "warm reflective resolution",
+  ],
+  VISIBLE_ACTIONS: [
+    { pattern: /\bdoor\b|cửa/i, description: "door movement or latch" },
+    { pattern: /\bfootsteps?\b|\bwalk(?:s|ing|ed)?\b|chạy|bước chân/i, description: "character footsteps" },
+    { pattern: /\bphone\b|điện thoại/i, description: "phone interaction" },
+    { pattern: /\bcar\b|\bvehicle\b|\bxe(?:\s|$)/i, description: "vehicle movement" },
+  ],
+} as const;
+
+export const RENDER_QUEUE_CONFIG = {
+  JOB_TIMEOUT_MS: 7_200_000,
+  PROGRESS_PERSIST_INTERVAL_MS: 2_000,
+  RECOVERABLE_STATUSES: ["pending", "processing"],
+  CANCELLED_ERROR: "render_cancelled",
+  TIMEOUT_ERROR: "render_timeout",
+  CANCEL_ROUTE: "/ffmpeg-render/cancel/:jobId",
 } as const;
 
 export const FINAL_MULTIMODAL_QA_CONFIG = {
   TARGET_SCORE: 85,
+  FRAME_COUNT: 12,
+  MIN_SAMPLE_INTERVAL_SECONDS: 1,
+  DEFAULT_SAMPLE_INTERVAL_SECONDS: 6,
+  FRAME_SCALE_WIDTH: 512,
+  FRAME_FILE_PATTERN: "frame_%02d.jpg",
+  FRAME_EXTENSION: ".jpg",
+  FRAME_MIME_TYPE: "image/jpeg",
+  AUDIO_FILE_NAME: "final_mix.mp3",
+  AUDIO_MIME_TYPE: "audio/mpeg",
+  AUDIO_BITRATE: "64k",
+  AUDIO_CHANNELS: 1,
+  MAX_AUDIO_REVIEW_SECONDS: 120,
+  MAX_OUTPUT_TOKENS: 1536,
+  TEMP_DIR_PREFIX: "final-qc-",
+  FFMPEG_FALLBACK_COMMAND: "ffmpeg",
   UNAVAILABLE_WARNING: "final_multimodal_qa_unavailable",
+  UNAVAILABLE_ERROR: "final_multimodal_qa_required",
   BELOW_TARGET_WARNING: "final_quality_below_target",
   SCORE_FIELDS: [
     "visualScore",
@@ -686,7 +827,32 @@ export const FINAL_MULTIMODAL_QA_CONFIG = {
     "pacingScore",
     "transitionVarietyScore",
     "promiseAlignmentScore",
+    "audioMixScore",
+    "subtitleLegibilityScore",
   ],
+} as const;
+
+export const VISUAL_QA_MEDIA_CONFIG = {
+  TEMP_DIR_PREFIX: "visual-qa-",
+  INPUT_FILE_NAME: "candidate.mp4",
+  FRAME_FILE_PATTERN: "frame_%02d.jpg",
+  FRAME_EXTENSION: ".jpg",
+  FRAME_MIME_TYPE: "image/jpeg",
+  VIDEO_EXTENSION_PATTERN: /\.(?:mp4|webm|mov|mkv)$/i,
+  FRAME_FILTER: "fps=1/2,scale=512:-2",
+  MAX_FRAMES: 3,
+  FFMPEG_FALLBACK_COMMAND: "ffmpeg",
+  EXTRACTION_FAILED: "Chưa thể đọc khung hình video để kiểm tra chất lượng. Hãy tạo lại cảnh video rồi thử lại.",
+} as const;
+
+export const VISUAL_ASSET_REPAIR_CONFIG = {
+  MAX_ATTEMPTS: 2,
+  PROMPT_TEMPLATE: "{prompt}. Correct every rejected visual defect from the previous candidate: {feedback}. Preserve the required identity, action, subject count, composition, continuity, and style. Produce one clean production-ready frame only.",
+  PROMPT_TOKEN: "{prompt}",
+  FEEDBACK_TOKEN: "{feedback}",
+  FEEDBACK_SEPARATOR: ", ",
+  GENERATION_FAILED: "Chưa thể tạo lại hình ảnh đạt chuẩn. Hãy kiểm tra công cụ tạo ảnh rồi thử lại.",
+  QUALITY_REJECTED: "Hình ảnh vẫn chưa đạt chuẩn sau khi đã tự tạo lại. Hãy xem các lỗi chất lượng rồi thử lại.",
 } as const;
 
 export const AI_TASK_ROUTER_CONFIG = {
@@ -706,7 +872,7 @@ export const AI_TASK_ROUTER_CONFIG = {
 export const RESPONSE_CONTRACT_CONFIG = {
   REQUIRED_PATHS: {
     hook: ["audience", "versions"],
-    script_plan: ["theme", "creativeBrief", "factPack", "chapters"],
+    script_plan: ["theme", "creativeBrief", "narrativePlan", "factPack", "chapters"],
     chapter: ["scriptSegment"],
   },
   MIN_SCRIPT_PLAN_CHAPTERS: 3,
@@ -746,6 +912,8 @@ export const PIPELINE_CLIENT_ERRORS = {
   STYLE_EXTRACTION_FAILED: "Style extraction failed",
   CHARACTER_ANALYSIS_FAILED: "Character analysis failed",
   CHARACTER_EXTRACTION_FAILED: "Character extraction failed",
+  CHARACTER_REFERENCE_PERSIST_FAILED: "Chưa thể lưu ảnh chuẩn nhân vật. Hãy kiểm tra dung lượng lưu trữ rồi thử lại.",
+  AUDIO_REFERENCE_PERSIST_FAILED: "Chưa thể lưu tệp nhạc. Hãy kiểm tra định dạng hoặc dung lượng rồi thử lại.",
   PROMPT_GENERATION_FAILED: "Prompt generation failed",
   AUDIO_URL_MISSING: "Missing audio URL from synthesis",
   AUDIO_MISSING: "No audio returned",
@@ -753,10 +921,50 @@ export const PIPELINE_CLIENT_ERRORS = {
 
 export const PIPELINE_SERVER_ERRORS = {
   CONTENT_SAFETY_REJECTED: "Content safety review rejected this production.",
+  CONTENT_SAFETY_UNAVAILABLE: "Chưa thể kiểm tra an toàn nội dung. Hãy kiểm tra kết nối rồi thử lại bước kịch bản.",
+  FACT_RESEARCH_UNAVAILABLE: "Chưa thể hoàn tất nghiên cứu nguồn cho nội dung này. Hãy kiểm tra kết nối hoặc tắt kiểm chứng dữ kiện rồi thử lại.",
   FINAL_QA_FRAMES_MISSING: "Final QC could not extract representative frames.",
+  FINAL_QA_AUDIO_MISSING: "Chưa thể đọc bản hòa âm cuối để kiểm tra chất lượng. Hãy dựng lại video rồi thử lại.",
   SCRIPT_LANGUAGE_INVALID: "script_language_integrity_failed",
   SCRIPT_LANGUAGE_INVALID_VI: "Một phần kịch bản chưa hiển thị đúng tiếng Việt. Hệ thống đã thử tạo lại nhưng chưa thành công. Vui lòng thử lại bước kịch bản.",
   SCRIPT_LANGUAGE_INVALID_EN: "Part of the script was not generated in the selected language. Please retry the script step.",
+  STORYBOARD_STRUCTURE_INVALID: "Phân cảnh chưa có đủ dữ liệu để dựng video. Hãy thử lại bước phân cảnh.",
+  STORYBOARD_QUALITY_REJECTED: "Phân cảnh chưa đạt chất lượng biên tập. Hãy thử tạo lại phân cảnh.",
+  STORYBOARD_GENERATION_FAILED: "Chưa thể tạo phân cảnh hoàn chỉnh. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
+  IMAGE_PROMPT_INPUT_INVALID: "Phân cảnh chưa có đủ nội dung để lập kế hoạch hình ảnh. Hãy tạo lại phân cảnh.",
+  IMAGE_PROMPT_PLANNING_UNAVAILABLE: "Chưa thể lập kế hoạch hình ảnh lúc này. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
+  IMAGE_PROMPT_QUALITY_REJECTED: "Mô tả hình ảnh chưa đạt chuẩn sau khi tự sửa. Hãy xem lại phân cảnh rồi thử lại.",
+  IMAGE_PROMPT_GENERATION_FAILED: "Chưa thể tạo mô tả hình ảnh đạt chuẩn. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
+  SEO_GENERATION_UNAVAILABLE: "Chưa thể tạo nội dung đăng video lúc này. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
+  SEO_GENERATION_FAILED: "Nội dung đăng video chưa được tạo đầy đủ. Hãy thử lại bước tối ưu đăng tải.",
+  THUMBNAIL_PLANNING_UNAVAILABLE: "Chưa thể lập ý tưởng ảnh bìa lúc này. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
+  THUMBNAIL_PLANNING_FAILED: "Ý tưởng ảnh bìa chưa được tạo đầy đủ. Hãy thử lại bước ảnh bìa.",
+  VOICE_TEXT_REQUIRED: "Chưa có nội dung để tạo giọng đọc. Hãy hoàn tất kịch bản rồi thử lại.",
+  VISUAL_BIBLE_INVALID: "Bộ nhận diện hình ảnh chưa đầy đủ. Hãy thử lại bước phân cảnh.",
+} as const;
+
+export const CONTENT_SAFETY_CONFIG = {
+  MAX_OUTPUT_TOKENS: 1024,
+  REVIEW_FAILED_LOG: "Content safety review unavailable",
+  INCOMPLETE_RESPONSE_ERROR: "content_safety_response_incomplete",
+  REQUIRED_BOOLEAN_FIELDS: [
+    "sensitiveTopic",
+    "trueCase",
+    "minorsInvolved",
+    "sexualExploitationRisk",
+    "victimExploitationRisk",
+    "privacyRisk",
+    "likenessRisk",
+    "copyrightRisk",
+  ],
+  REQUIRED_ARRAY_FIELDS: ["requiredDisclosures", "blockingErrors", "warnings"],
+} as const;
+
+export const FACT_RESEARCH_CONFIG = {
+  MAX_OUTPUT_TOKENS: 2048,
+  FAILED_LOG: "Fact research unavailable",
+  PROMPT_TEMPLATE: "Research this topic for a source-backed video essay. Return concise findings with source titles, direct URLs, publication dates, jurisdictions, disputed points, and safe scope. Never invent a citation. Topic: {topic}",
+  TOPIC_TOKEN: "{topic}",
 } as const;
 
 export const PIPELINE_SERVER_LOGS = {

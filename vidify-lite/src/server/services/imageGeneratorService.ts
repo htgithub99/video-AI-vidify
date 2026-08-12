@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, STICKMAN_KEYWORDS, DEFAULT_IMAGE_KEYWORDS, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -87,7 +87,7 @@ export async function humanType(page: Page, text: string) {
 export const getImgIdSafe = (url: string): string => {
   if (!url) return "";
   try {
-    const baseUrl = _.startsWith(url, COMMON_STRINGS.SLASH_PREFIX) ? COMMON_STRINGS.DUMMY_URL_BASE : undefined;
+    const baseUrl = _.startsWith(url, COMMON_STRINGS.SLASH_PREFIX) ? COMMON_STRINGS.RELATIVE_URL_PARSE_BASE : undefined;
     const u = new URL(url, baseUrl);
 
     let foundId = "";
@@ -115,7 +115,7 @@ export const getImgIdSafe = (url: string): string => {
 export const browserGetImgIdSafeStr = `function(url) {
   if (!url) return "";
   try {
-    var baseUrl = url.startsWith("${COMMON_STRINGS.SLASH_PREFIX}") ? "${COMMON_STRINGS.DUMMY_URL_BASE}" : undefined;
+    var baseUrl = url.startsWith("${COMMON_STRINGS.SLASH_PREFIX}") ? "${COMMON_STRINGS.RELATIVE_URL_PARSE_BASE}" : undefined;
     var u = new URL(url, baseUrl);
     var idParams = ${jsonUtils.safeStringify(URL_CONSTANTS.ID_PARAMS)};
     var id = "";
@@ -420,18 +420,13 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean): Promis
 }
 
 export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
-  const { prompt, style, visualConfig, sandboxConfig = {} } = options;
+  const { prompt, visualConfig, sandboxConfig = {} } = options;
 
   if (visualConfig?.generationMode === ImageGenerationMode.GeminiChat) {
     return generateImageWithGeminiChat(options);
   }
 
-  const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
-
   const finalPrompt = _.defaultTo(prompt, "");
-
-  const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(_.defaultTo(kws, "cinematic,landscape"))}`;
 
   const projectId = sandboxConfig.projectId;
   let cleanProjectId = projectId;
@@ -810,20 +805,15 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   return {
     success: false,
     base64: null,
-    fallbackUrl,
+    fallbackUrl: SecurityConstants.EMPTY_STRING,
     warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
   };
 }
 
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
-  const { prompt, style, visualConfig } = options;
-
-  const isStickman = !!_.some([style, prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
+  const { prompt, visualConfig } = options;
 
   const finalPrompt = prompt || "";
-
-  const kws = extractKeywords(prompt);
-  const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || "cinematic,landscape")}`;
 
   const release = await imageGenMutex.acquire();
   await randomDelay(1000, 4000);
@@ -999,7 +989,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   return {
     success: false,
     base64: null,
-    fallbackUrl,
+    fallbackUrl: SecurityConstants.EMPTY_STRING,
     warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
   };
 }
@@ -1185,12 +1175,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
-      const isStickman = !!_.some([style, item.prompt], (str) => str && _.some(STICKMAN_KEYWORDS, (kw) => _.includes(str.toLowerCase(), kw)));
-
       const finalPrompt = item.prompt || "";
-
-      const kws = extractKeywords(item.prompt);
-      const fallbackUrl = isStickman ? `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/stickman,cartoon` : `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`;
 
       let success = false;
       let base64Result: string | null = null;
@@ -1338,7 +1323,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
         sceneId: item.sceneId,
         success: false,
         base64: null,
-        fallbackUrl,
+        fallbackUrl: SecurityConstants.EMPTY_STRING,
         warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
         assetType: itemVisualConfig.generateType,
       };
@@ -1358,12 +1343,11 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
             onProgress(res);
           }
         } catch (err: any) {
-          const kws = extractKeywords(item.prompt);
           const res = {
             sceneId: item.sceneId,
             success: false,
             base64: null,
-            fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`,
+            fallbackUrl: SecurityConstants.EMPTY_STRING,
             warning: err.message || BACKEND_MESSAGES.UNKNOWN_ERROR,
             assetType: resolveBatchAssetType(item),
           };
@@ -1388,12 +1372,11 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", err.message));
     _.forEach(items, (item) => {
       if (!_.find(results, (r) => _.eq(r.sceneId, item.sceneId))) {
-        const kws = extractKeywords(item.prompt);
         const res = {
           sceneId: item.sceneId,
           success: false,
           base64: null,
-          fallbackUrl: `${EXTERNAL_URLS.LOREM_FLICKR}/800/450/${encodeURIComponent(kws || DEFAULT_IMAGE_KEYWORDS)}`,
+          fallbackUrl: SecurityConstants.EMPTY_STRING,
           warning: err.message,
           assetType: resolveBatchAssetType(item),
         };
@@ -1461,17 +1444,6 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
       await page.keyboard.press("Escape");
       await randomDelay(500, 800);
     }
-  } else {
-    if (Math.random() < 0.3) {
-      try {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_MOCK_CHECK);
-        await randomDelay(600, 1200);
-        await modelPickerBtn.click();
-        await randomDelay(1000, 1800);
-        await page.keyboard.press("Escape");
-        await randomDelay(600, 1200);
-      } catch (e) { }
-    }
   }
 }
 
@@ -1515,17 +1487,6 @@ async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisua
         await page.keyboard.press("Escape");
         await randomDelay(500, 800);
       }
-    }
-  } else {
-    if (Math.random() < 0.3) {
-      try {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_MOCK_CHECK);
-        await randomDelay(600, 1200);
-        await plusBtn.click();
-        await randomDelay(1200, 2000);
-        await page.keyboard.press("Escape");
-        await randomDelay(600, 1200);
-      } catch (e) { }
     }
   }
 }

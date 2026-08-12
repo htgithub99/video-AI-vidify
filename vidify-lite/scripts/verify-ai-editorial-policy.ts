@@ -1,10 +1,11 @@
 import { writeVerificationLog } from "./verificationLogger.ts";
 import assert from "node:assert/strict";
-import { evaluateThumbnail } from "../src/services/productionQualityService";
+import { evaluateEdit, evaluateSubtitles, evaluateThumbnail } from "../src/services/productionQualityService";
 import { selectScenesForVisionQa } from "../src/services/qualityProfileService";
 import { isSceneVisualQualityApproved } from "../src/services/sceneVisualQualityService";
 import { normalizeStoryboardQuality } from "../src/services/storyboardQualityService";
-import { QualityMode } from "../src/types";
+import { normalizeContentSafety } from "../src/services/contentSafetyService";
+import { QualityMode, SceneAssetStatus } from "../src/types";
 
 const lowScoreAiDecision = {
   anatomy: 45,
@@ -19,10 +20,44 @@ const lowScoreAiDecision = {
   warnings: ["composition could be stronger"],
 };
 
-assert.equal(isSceneVisualQualityApproved(lowScoreAiDecision), true, "AI usable decision must not be overridden by a rigid score threshold");
+assert.equal(isSceneVisualQualityApproved(lowScoreAiDecision), false, "Low-quality image passed the professional quality gate");
 const thumbnail = evaluateThumbnail(lowScoreAiDecision);
-assert.equal(thumbnail.passed, true);
+assert.equal(thumbnail.passed, false);
 assert.ok(thumbnail.warnings.some(warning => warning.includes("below_target")));
+
+const invalidSubtitleReport = evaluateSubtitles([{
+  id: "sc_subtitle",
+  script: "A long subtitle",
+  subtitle: "A long subtitle",
+  duration: 1,
+  subtitleCues: [{ text: "This subtitle cue contains far too many characters for one second", startOffsetSeconds: 0, durationSeconds: 1 }],
+} as any]);
+assert.equal(invalidSubtitleReport.passed, false);
+assert.ok(invalidSubtitleReport.blockingErrors.includes("subtitle_reading_time_insufficient"));
+
+const repetitiveEditReport = evaluateEdit(Array.from({ length: 8 }, (_, index) => ({
+  id: `sc_edit_${index}`,
+  cameraMotion: "push_in",
+  transition: "cut",
+  assetStatus: SceneAssetStatus.Approved,
+})) as any[]);
+assert.equal(repetitiveEditReport.passed, false);
+assert.ok(repetitiveEditReport.blockingErrors.includes("edit_pattern_too_repetitive"));
+
+assert.equal(normalizeContentSafety({}).allowed, false);
+assert.equal(normalizeContentSafety({
+  sensitiveTopic: false,
+  trueCase: false,
+  minorsInvolved: false,
+  sexualExploitationRisk: false,
+  victimExploitationRisk: false,
+  privacyRisk: false,
+  likenessRisk: false,
+  copyrightRisk: false,
+  requiredDisclosures: [],
+  blockingErrors: [],
+  warnings: [],
+}).allowed, true);
 
 const storyboard = normalizeStoryboardQuality({
   continuityScore: 55,
@@ -32,7 +67,7 @@ const storyboard = normalizeStoryboardQuality({
   blockingErrors: [],
   warnings: [],
 });
-assert.equal(storyboard.passed, true);
+assert.equal(storyboard.passed, false);
 assert.ok(storyboard.warnings.includes("storyboard_quality_below_target"));
 
 const scenes = Array.from({ length: 24 }, (_, index) => ({

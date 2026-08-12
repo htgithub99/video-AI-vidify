@@ -1,11 +1,14 @@
 import _ from "lodash";
-import { BackgroundMode, ImagePromptQualityIssue, ImagePromptQualityReport, StoryboardScene, TextInImageMode } from "../types";
+import { BackgroundMode, CharacterConfig, ImagePromptQualityIssue, ImagePromptQualityReport, StoryboardScene, TextInImageMode, VisualBible } from "../types";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 
 export interface ImagePromptQualityOptions {
   backgroundMode?: BackgroundMode;
   textMode?: TextInImageMode;
   targetStyle?: string;
+  characters?: CharacterConfig[];
+  visualBible?: VisualBible;
+  requireStructuredPlan?: boolean;
 }
 
 const STICKMAN_STYLE_PATTERN = /\b(?:stickman|stick\s+figure|chibi\s+stick)/i;
@@ -112,6 +115,26 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
     if (PEOPLE_REQUEST_PATTERN.test(scene.prompt) && PEOPLE_FORBIDDEN_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.PEOPLE_CONFLICT, "blocking"));
     if (IMAGE_PROMPT_QA_CONFIG.READABLE_TEXT_REQUEST_PATTERN.test(scene.prompt) && TEXT_FORBIDDEN_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.TEXT_CONFLICT, "blocking"));
     if (STICKMAN_STYLE_PATTERN.test(options.targetStyle || "") && (!STICKMAN_STYLE_PATTERN.test(scene.prompt) || REALISTIC_STYLE_CONFLICT_PATTERN.test(scene.prompt))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.STYLE_CONFLICT, "blocking"));
+    if (IMAGE_PROMPT_QA_CONFIG.ENGINE_PARAMETER_PATTERN.test(_.replace(scene.prompt, IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN, ""))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ENGINE_SYNTAX_CONFLICT, "blocking"));
+    if (IMAGE_PROMPT_QA_CONFIG.GENERIC_PORTRAIT_PATTERN.test(scene.prompt) && !_.includes(["reaction", "emotional_hold"], scene.shotPurpose)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.GENERIC_CENTERED_PORTRAIT, "warning"));
+    if (options.requireStructuredPlan) {
+      const characterIds = new Set(_.map(options.characters, "id"));
+      const locationIds = new Set(_.map(options.visualBible?.locations, "id"));
+      const propIds = new Set(_.map(options.visualBible?.props, "id"));
+      if (_.isEmpty(_.trim(scene.visualIntent))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_VISUAL_INTENT, "blocking"));
+      if (_.isEmpty(_.trim(scene.visibleAction))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_VISIBLE_ACTION, "blocking"));
+      if (!_.isEmpty(scene.visibleAction) && IMAGE_PROMPT_QA_CONFIG.ABSTRACT_ONLY_PATTERN.test(_.trim(scene.visibleAction))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ABSTRACT_ACTION, "blocking"));
+      if (!_.isNumber(scene.expectedSubjectCount)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_SUBJECT_COUNT, "blocking"));
+      if (_.some(scene.characterIds, id => !characterIds.has(id))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_CHARACTER_ID, "blocking"));
+      if (PEOPLE_REQUEST_PATTERN.test(_.join([scene.prompt, scene.visibleAction], " ")) && _.isEmpty(scene.characterIds) && !scene.allowBackgroundPeople) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_CHARACTER_ID, "blocking"));
+      if (!_.isEmpty(locationIds) && _.isEmpty(scene.locationId)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_LOCATION_ID, "blocking"));
+      if (!_.isEmpty(scene.locationId) && !locationIds.has(scene.locationId)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_LOCATION_ID, "blocking"));
+      if (_.some(scene.propIds, id => !propIds.has(id))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_PROP_ID, "blocking"));
+      if (_.some([scene.shotPurpose, scene.shotSize, scene.cameraAngle, scene.composition], value => _.isEmpty(_.trim(_.toString(value))))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_SHOT_PLAN, "blocking"));
+      const previousScene = sanitizedScenes[index - 1];
+      const compositionKeys = ["shotSize", "cameraAngle", "composition"] as const;
+      if (previousScene && _.every(compositionKeys, key => _.isEqual(_.toLower(_.trim(_.toString(previousScene[key]))), _.toLower(_.trim(_.toString(scene[key])))))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ADJACENT_COMPOSITION_DUPLICATE, "blocking"));
+    }
     if (_.lt(wordCount, IMAGE_PROMPT_QA_CONFIG.MIN_WORDS)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.WARNING_CODES.PROMPT_TOO_SHORT, "warning"));
     if (_.gt(wordCount, IMAGE_PROMPT_QA_CONFIG.MAX_WORDS)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.WARNING_CODES.PROMPT_TOO_LONG, "warning"));
     if (!hasBackgroundPolicy(scene.prompt, options.backgroundMode)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.WARNING_CODES.BACKGROUND_POLICY, "warning"));

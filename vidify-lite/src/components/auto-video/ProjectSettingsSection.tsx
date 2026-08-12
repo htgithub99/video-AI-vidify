@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { ChevronDown, ImageIcon, Layout } from "lucide-react";
+import { ChevronDown, ImageIcon, Layout, Music } from "lucide-react";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageDeleteOverlay, ImageUploadZone } from "./ImageUploadZone";
 import { REFACTOR_CONSTANTS } from "../../constants";
@@ -25,6 +25,8 @@ interface ProjectSettingsSectionProps {
   setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
   T: any;
+  musicAssetUrl: string;
+  onMusicUpload: (files: FileList) => void;
 }
 
 export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
@@ -43,6 +45,8 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   setImageFocusMode,
   language,
   T,
+  musicAssetUrl,
+  onMusicUpload,
 }) => {
   return (
     <div className="space-y-4">
@@ -82,6 +86,16 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+        <Tooltip content={T.musicUploadTooltip} position="top" className="w-full block">
+          <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-950 text-slate-400 hover:border-purple-500/50 hover:text-purple-300">
+            <Music className="mb-2 h-5 w-5" />
+            <span className="text-[10px] font-bold uppercase">{T.musicUploadLabel}</span>
+            <input type="file" accept="audio/*" className="hidden" onChange={event => event.target.files && onMusicUpload(event.target.files)} />
+          </label>
+        </Tooltip>
+        {!_.isEmpty(musicAssetUrl) && (
+          <audio controls src={musicAssetUrl} className="w-full self-center" />
+        )}
         <Tooltip content={T.thumbUploadSub} position="top" className="w-full block">
           <ImageUploadZone
             onUpload={handleThumbnailStyleFilesUpload}

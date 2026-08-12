@@ -36,7 +36,6 @@ export enum AudioType {
   Clone = "clone",
   Upload = "upload",
   Generated = "generated",
-  Simulated = "simulated",
 }
 
 export enum Gender {
@@ -103,6 +102,24 @@ export enum SceneAssetStatus {
   Retrying = "retrying",
   Failed = "failed",
 }
+
+export enum AudioCueType {
+  Music = "music",
+  SoundEffect = "sfx",
+  Ambience = "ambience",
+}
+
+export enum AudioCueStatus {
+  Planned = "planned",
+  Available = "available",
+  Approved = "approved",
+}
+
+export enum SubtitleMode {
+  BurnIn = "burn_in",
+  Track = "track",
+  Both = "both",
+}
 export enum QualityMode { Economy="economy", Balanced="balanced", Premium="premium" }
 export enum ManualReviewStatus { Pending="pending", Approved="approved", Rejected="rejected" }
 
@@ -128,6 +145,7 @@ export interface ProjectConfig {
   writingStyle: string;
   format?: string;
   splitStrategy?: string;
+  musicAssetUrl?: string;
 }
 
 export interface HookVersion {
@@ -159,6 +177,77 @@ export interface CreativeBrief {
   emotionalArc: string;
   visualMotifs: string[];
   forbiddenDirections: string[];
+}
+
+export enum NarrativeBeatType {
+  Hook = "hook",
+  Setup = "setup",
+  Temptation = "temptation",
+  Decision = "decision",
+  Reward = "reward",
+  Escalation = "escalation",
+  Reversal = "reversal",
+  FalseVictory = "false_victory",
+  Collapse = "collapse",
+  Payoff = "payoff",
+}
+
+export interface CharacterArc {
+  initialState: string;
+  emotionalLack: string;
+  externalGoal: string;
+  internalNeed: string;
+  temptation: string;
+  firstCompromise: string;
+  escalatingChoices: string[];
+  pointOfNoReturn: string;
+  falseVictory: string;
+  collapse: string;
+  finalCost: string;
+  realization: string;
+}
+
+export interface NarrativeBeat {
+  id: string;
+  type: NarrativeBeatType;
+  event: string;
+  characterStateBefore: string;
+  characterStateAfter: string;
+  visibleAction: string;
+  retentionPurpose: string;
+  targetDurationSeconds: number;
+  callbackId?: string;
+}
+
+export interface CallbackPlan {
+  id: string;
+  setupBeatId: string;
+  payoffBeatId: string;
+  motif: string;
+  changedMeaning: string;
+}
+
+export interface NarrativePlan {
+  viewerPromise: string;
+  centralQuestion: string;
+  protagonist: CharacterArc;
+  beats: NarrativeBeat[];
+  callbacks: CallbackPlan[];
+  endingPayoff: string;
+}
+
+export interface ChapterPlan {
+  id: string;
+  title: string;
+  description: string;
+  purpose: string;
+  requiredBeatIds: string[];
+  characterStartState: string;
+  characterEndState: string;
+  callbackSetupIds: string[];
+  callbackPayoffIds: string[];
+  forbiddenRepetition: string[];
+  handoffToNextChapter: string;
 }
 
 export interface FactClaim {
@@ -301,12 +390,48 @@ export interface CharacterConfig {
   silhouette?: string;
   referenceViews?: Array<"front"|"side"|"three_quarter"|"expression">;
   referenceApproved?: boolean;
+  timelineStages?: CharacterTimelineStage[];
+}
+
+export interface CharacterTimelineStage {
+  id: string;
+  label: string;
+  outfit: string;
+  expressionRange: string;
+  posture: string;
+  visibleCondition: string;
+}
+
+export interface VisualLocation {
+  id: string;
+  name: string;
+  visualAnchors: string[];
+  geography: string;
+  timeProgression: string;
+}
+
+export interface VisualProp {
+  id: string;
+  name: string;
+  visualAnchors: string[];
+  narrativeFunction: string;
 }
 
 export interface Chapter {
   id: string;
   title: string;
   scriptSegment: string;
+}
+
+export enum ShotPurpose {
+  Setup = "setup",
+  Action = "action",
+  Reaction = "reaction",
+  Punchline = "punchline",
+  Reveal = "reveal",
+  Callback = "callback",
+  Montage = "montage",
+  EmotionalHold = "emotional_hold",
 }
 
 export interface StoryboardScene {
@@ -317,6 +442,7 @@ export interface StoryboardScene {
   duration: number;
   script: string;
   subtitle: string;
+  subtitleCues?: SubtitleCue[];
   prompt: string;
   generationPrompt?: string;
   assetName?: string;
@@ -339,6 +465,30 @@ export interface StoryboardScene {
   allowBackgroundPeople?: boolean;
   layout?: "single_frame" | "split_screen" | "collage";
   textAllowed?: boolean;
+  narrativeBeatId?: string;
+  shotPurpose?: ShotPurpose;
+  characterStage?: string;
+  locationId?: string;
+  propIds?: string[];
+  visualIntent?: string;
+  visibleAction?: string;
+  reaction?: string;
+  characterStateBefore?: string;
+  characterStateAfter?: string;
+  shotSize?: string;
+  cameraAngle?: string;
+  composition?: string;
+  continuityFrom?: string;
+  continuityNotes?: string;
+  lighting?: string;
+  callbackId?: string;
+  textOverlay?: string;
+}
+
+export interface SubtitleCue {
+  text: string;
+  startOffsetSeconds: number;
+  durationSeconds: number;
 }
 
 export interface ThumbnailItem {
@@ -363,22 +513,23 @@ export interface AssetRevision { id: string; parentRevisionId?: string; createdA
 export interface ProjectDependencyHashes { script?: string; storyboard?: string; voice?: string; seo?: string; thumbnails?: string; }
 export interface ManualReviewItem { id:string; scope:"scene"|"audio"|"subtitle"|"thumbnail"|"final"; targetId?:string; reason:string; status:ManualReviewStatus; createdAt:string; resolvedAt?:string; note?:string; }
 export interface FinalQualityReport { visualBlockingErrors:number; audioBlockingErrors:number; subtitleBlockingErrors:number; missingAssets:number; continuityScore:number; emotionalArcScore:number; pacingScore:number; promiseAlignmentScore:number; blockingErrors:string[]; warnings:string[]; publishable:boolean; }
-export interface FinalMultimodalQualityReport { visualScore:number; cropScore:number; continuityScore:number; pacingScore:number; transitionVarietyScore:number; promiseAlignmentScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; reviewAvailable?:boolean; }
+export interface FinalMultimodalQualityReport { visualScore:number; cropScore:number; continuityScore:number; pacingScore:number; transitionVarietyScore:number; promiseAlignmentScore:number; audioMixScore:number; subtitleLegibilityScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; reviewAvailable?:boolean; }
 
 export interface VoiceDirection { emotion: string; speed: number; pauseScale: number; }
 export interface VoiceArc { setup: VoiceDirection; descent: VoiceDirection; isolation: VoiceDirection; climax: VoiceDirection; reckoning: VoiceDirection; resolution: VoiceDirection; }
 export interface AudioQualityReport { pronunciationScore: number; pauseScore: number; loudnessScore: number; naturalnessScore: number; emotionTransitionScore: number; durationFit: boolean; actualDurationSeconds: number; targetDurationSeconds: number; blockingErrors: string[]; warnings: string[]; passed: boolean; }
-export interface SubtitleQualityReport { maxTwoLines: boolean; semanticBreaks: boolean; readingTimeFit: boolean; focalSubjectSafe: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
-export interface EditorQualityReport { approvedAssetsOnly: boolean; intentionalTransitions: boolean; motionSafeCrop: boolean; noCompensatoryZoom: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
-export interface VisualBible { colorPalette:string; characterSpecs:string; landscapeSpecs:string; lightingMood:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; }
+export interface SubtitleQualityReport { maxTwoLines: boolean; semanticBreaks: boolean; readingTimeFit: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
+export interface EditorQualityReport { approvedAssetsOnly: boolean; intentionalTransitions: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
+export interface VisualBible { colorPalette:string; characterSpecs:string; landscapeSpecs:string; lightingMood:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; locations?:VisualLocation[]; props?:VisualProp[]; }
 export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
 export interface ImagePromptQualityIssue { sceneId:string; code:string; severity:"blocking"|"warning"; }
 export interface ImagePromptQualityReport { totalPrompts:number; validPrompts:number; blockingErrors:ImagePromptQualityIssue[]; warnings:ImagePromptQualityIssue[]; passed:boolean; }
 export interface ContentSafetyReport { sensitiveTopic:boolean; trueCase:boolean; minorsInvolved:boolean; sexualExploitationRisk:boolean; victimExploitationRisk:boolean; privacyRisk:boolean; likenessRisk:boolean; copyrightRisk:boolean; requiredDisclosures:string[]; blockingErrors:string[]; warnings:string[]; allowed:boolean; }
 export interface PipelineRolloutConfig { releaseChannel:"stable"|"canary"; canaryEnabled:boolean; shadowMode:boolean; flags:{creativeBrief:boolean;scriptQa:boolean;visualQa:boolean;audioQa:boolean;thumbnailQa:boolean;finalQc:boolean}; }
 export interface PipelineBenchmark { totalLatencyMs:number; aiLatencyMs:number; estimatedCostUsd:number; actualCostUsd:number; retryCount:number; rejectCount:number; generatedAt:string; }
-export interface AudioCue { id:string; sceneId:string; type:"music"|"sfx"|"ambience"; description:string; emotionalIntent:string; startOffsetSeconds:number; durationSeconds:number; required:boolean; assetUrl?:string; status:"planned"|"available"|"approved"; }
+export interface AudioCue { id:string; sceneId:string; type:AudioCueType; description:string; emotionalIntent:string; startOffsetSeconds:number; durationSeconds:number; required:boolean; assetUrl?:string; status:AudioCueStatus; }
 export interface AudioCueSheet { musicArc:string[]; cues:AudioCue[]; mixTargets:{narrationLufs:number; musicUnderVoiceDb:number; peakDb:number}; }
+export interface RenderAudioTrack { id:string; type:AudioCueType; assetUrl:string; startSeconds:number; durationSeconds:number; volumeDb:number; loop?:boolean; fadeInSeconds?:number; fadeOutSeconds?:number; }
 export interface PipelineShadowComparison { baselineProjectId?:string; comparedAt:string; sceneCountDelta:number; approvedSceneDelta:number; scriptContinuityDelta:number; hookPayoffDelta:number; durationDeltaSeconds:number; estimatedCostUsd:number; regressions:string[]; improved:boolean; }
 export interface ThumbnailQualityReport { anatomyScore: number; characterConsistencyScore: number; focalClarityScore: number; smallSizeLegibilityScore: number; titlePromiseAlignmentScore: number; estimatedCtrScore: number; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 
@@ -441,6 +592,8 @@ export interface VideoProject {
   scriptRewritten?: string;
   factCheckNotes?: string;
   creativeBrief?: CreativeBrief;
+  narrativePlan?: NarrativePlan;
+  chapterPlans?: ChapterPlan[];
   factPack?: FactPack;
   scriptQa?: ScriptQualityReport;
   subtitleQa?: SubtitleQualityReport;

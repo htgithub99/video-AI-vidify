@@ -3,6 +3,11 @@ import { API_ROUTES, REFACTOR_CONSTANTS } from "../constants";
 import { safeSystemFetch } from "../lib/shared-utils";
 import { StoryboardScene } from "../types";
 
+export const SCENE_VISUAL_QUALITY_CONFIG = {
+  TARGET_SCORE: 85,
+  SCORE_FIELDS: ["anatomy", "subjectCount", "promptAlignment", "characterConsistency", "composition", "styleConsistency", "editability"],
+} as const;
+
 export interface SceneVisualQuality {
   anatomy: number;
   subjectCount: number;
@@ -45,6 +50,7 @@ const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuali
 export const isSceneVisualQualityApproved = (quality: SceneVisualQuality): boolean => _.every([
   quality.usableForVideo,
   _.isEmpty(quality.blockingErrors),
+  _.every(SCENE_VISUAL_QUALITY_CONFIG.SCORE_FIELDS, field => _.get(quality, field) >= SCENE_VISUAL_QUALITY_CONFIG.TARGET_SCORE),
 ], Boolean);
 
 export const validateSceneImage = async (
