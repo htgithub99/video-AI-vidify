@@ -1,4 +1,5 @@
 import { MEDIA_MIX_CONFIG } from "./loading";
+import { VideoGenre } from "./enums";
 
 export const PipelineConstants = {
   DEFAULT_VOICE_CONFIG: {
@@ -17,7 +18,7 @@ export const PipelineConstants = {
     content: "",
   },
   DEFAULT_PROJECT_CONFIG: {
-    genre: "Tâm lý",
+    genre: VideoGenre.PSYCHOLOGY,
     language: "vi",
     duration: "15",
     rewriteLevel: 50,

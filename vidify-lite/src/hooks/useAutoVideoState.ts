@@ -16,7 +16,7 @@ import {
   ImageFocusMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG } from "../constants";
+import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -172,7 +172,7 @@ const applyProjectToState = (
     actions.setScriptContent(_.defaultTo(proj.input.content, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
   }
   if (proj.config) {
-    if (proj.config.genre) actions.setGenre(proj.config.genre);
+    if (proj.config.genre) actions.setGenre(normalizeGenreValue(proj.config.genre));
     if (proj.config.language) actions.setLanguage(proj.config.language);
     if (proj.config.duration) actions.setDuration(proj.config.duration);
     if (proj.config.splitStrategy) actions.setSplitStrategy(proj.config.splitStrategy);
@@ -325,7 +325,7 @@ export function useAutoVideoState(
         else if (parsed.inputType) setInputType(parsed.inputType);
         if (!_.isUndefined(foundProj?.input?.content)) setScriptContent(foundProj.input.content);
         else if (!_.isUndefined(parsed.scriptContent)) setScriptContent(parsed.scriptContent);
-        if (parsed.genre) setGenre(parsed.genre);
+        if (parsed.genre) setGenre(normalizeGenreValue(parsed.genre));
         if (parsed.language) setLanguage(parsed.language);
         if (parsed.duration) setDuration(parsed.duration);
         if (parsed.splitStrategy) setSplitStrategy(parsed.splitStrategy);

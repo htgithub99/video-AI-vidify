@@ -261,7 +261,7 @@ export const LOG_MESSAGES = {
 } as const;
 
 export const DEFAULT_PROJECT_CONFIGS = {
-  GENRE: "Storytelling",
+  GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
   DURATION: "2m",
   AUDIENCE: "General Audience",
   WRITING_STYLE: "Professional",

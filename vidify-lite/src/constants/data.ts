@@ -41,7 +41,7 @@ export const pipelineNodes = [
 ] as const;
 
 export const genreLabels = {
-  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Video essay kể chuyện",
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Kể chuyện",
   [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay giải thích",
   [VideoGenre.SATIRICAL_LIFE_AUTO]: "AI tự chọn",
   [VideoGenre.TRANSFORMATION_TIMELINE]: "Biến đổi theo thời gian",
@@ -49,7 +49,7 @@ export const genreLabels = {
   [VideoGenre.DOWNFALL_CONSEQUENCE]: "Sa ngã và trả giá",
   [VideoGenre.DARK_COMEDY_TRAGEDY]: "Bi kịch hài đen",
   Storytelling: "Kể chuyện",
-  History: "Lịch sử",
+  History: "Lịch sử & tài liệu",
   Documentary: "Phim tài liệu",
   Explanation: "Giải thích",
   Review: "Đánh giá / Review",
@@ -58,7 +58,7 @@ export const genreLabels = {
   "Top List": "Bảng xếp hạng / Top list",
   "True Crime": "Trinh thám / Thám án",
   Science: "Khoa học",
-  Psychology: "Tâm lý học",
+  Psychology: "Tâm lý & triết học",
   Philosophy: "Triết học",
 } as const;
 
@@ -74,18 +74,33 @@ export const GENRE_OPTION_GROUPS = [
     ],
   },
   {
-    label: "Kể chuyện – phân tích",
-    options: ["Storytelling", VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER],
+    label: "Kể chuyện – giải thích",
+    options: [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER],
   },
   {
     label: "Tài liệu – kiến thức",
-    options: ["History", "Documentary", "Explanation", "Education", "Science", "Psychology", "Philosophy"],
+    options: ["History", "Science", "Psychology"],
   },
   {
     label: "YouTube phổ biến",
     options: ["Review", "News", "Top List", "True Crime"],
   },
 ] as const;
+
+export const GENRE_VALUE_ALIASES: Record<string, string> = {
+  Storytelling: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
+  Documentary: "History",
+  Explanation: VideoGenre.NARRATIVE_EXPLAINER,
+  Education: VideoGenre.NARRATIVE_EXPLAINER,
+  Philosophy: "Psychology",
+  "Tâm lý": "Psychology",
+};
+
+export const normalizeGenreValue = (genre?: string): string => _.get(
+  GENRE_VALUE_ALIASES,
+  genre || "",
+  genre || VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
+);
 
 export const audLabels = {
   "General Audience": "Khán giả đại chúng",

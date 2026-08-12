@@ -10,7 +10,7 @@ import _ from 'lodash';
 import { formatTimeHelper } from "../../utils/helpers";
 import { translations } from "../../lib/lang";
 
-import { APP_LOCALES, DEFAULT_PROVIDER, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS, PRODUCTION_AUDIO_CONFIG } from "../../constants";
+import { APP_LOCALES, DEFAULT_PROVIDER, API_QUERY_PARAMS, API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VOICE_GENDER, MEDIA_MIX_CONFIG, UI_MESSAGE_DURATION, PIPELINE_CLIENT_ERRORS, PRODUCTION_AUDIO_CONFIG, normalizeGenreValue } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
 import { fetchSystemApi, formatRoundedTime, getVoiceGender, getVoiceModifiers, isPremiumVoice, isProjectContentEqual, safeFetchJsonWithAuth, safeResponseJson } from "./pipeline-business-utils";
 import { LOADING_KEYS } from "../../constants/loading";
@@ -58,7 +58,10 @@ export function usePipelineWizard(props: any) {
       ...initialProject,
       voiceConfig: clearBlockedAudioSource(_.defaultTo(initialProject.voiceConfig, PipelineConstants.DEFAULT_VOICE_CONFIG)),
       input: _.defaultTo(initialProject.input, PipelineConstants.DEFAULT_PROJECT_INPUT),
-      config: _.defaultTo(initialProject.config, PipelineConstants.DEFAULT_PROJECT_CONFIG),
+      config: {
+        ..._.defaultTo(initialProject.config, PipelineConstants.DEFAULT_PROJECT_CONFIG),
+        genre: normalizeGenreValue(initialProject.config?.genre),
+      },
       hookConfig: _.defaultTo(initialProject.hookConfig, PipelineConstants.DEFAULT_HOOK_CONFIG),
       visualConfig: _.defaultTo(initialProject.visualConfig, PipelineConstants.DEFAULT_VISUAL_CONFIG),
     };

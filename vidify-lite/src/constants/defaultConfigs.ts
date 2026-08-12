@@ -1,4 +1,4 @@
-import { VoicePresetId, SceneDensity } from "./enums";
+import { VoicePresetId, SceneDensity, VideoGenre } from "./enums";
 
 export const SCENE_DENSITY_MAP = {
   [SceneDensity.THEO_TU]: { maxChars: 65, label: "Word-based (Ultra-dense)" },
@@ -33,7 +33,7 @@ export const defaultVoiceConfig = {
 
 export const defaultProjectInput = {
   topic: "",
-  genre: "Storytelling",
+  genre: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
   duration: 60,
   writingStyle: "Documentary",
 };
