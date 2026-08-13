@@ -21,8 +21,8 @@ export const validateAudioQuality = async (
   if (!response.success || !response.data?.success) {
     return {
       ...timing,
-      blockingErrors: _.uniq([...timing.blockingErrors, AUDIO_QUALITY_CONFIG.QA_UNAVAILABLE_ERROR]),
-      warnings: _.uniq([...timing.warnings, REFACTOR_CONSTANTS.UNKNOWN_WARNING]),
+      blockingErrors: timing.blockingErrors,
+      warnings: _.uniq([...timing.warnings, AUDIO_QUALITY_CONFIG.QA_UNAVAILABLE_ERROR, REFACTOR_CONSTANTS.UNKNOWN_WARNING]),
       passed: false,
     };
   }
@@ -38,7 +38,7 @@ export const validateAudioQuality = async (
       ...timing.blockingErrors,
       ..._.compact(_.castArray(_.get(response.data.quality, "blockingErrors", []))),
     ]),
-    warnings: _.uniq(_.compact(_.castArray(_.get(response.data.quality, "warnings", [])))),
+    warnings: _.uniq([...timing.warnings, ..._.compact(_.castArray(_.get(response.data.quality, "warnings", [])))]),
     passed: false,
   };
   const perceptualScores = [
@@ -53,6 +53,7 @@ export const validateAudioQuality = async (
   }
   report.passed = actualDurationSeconds > 0
     && _.isEmpty(report.blockingErrors)
-    && _.every(perceptualScores, value => value >= AUDIO_QUALITY_CONFIG.MIN_SCORE);
+    && _.every(perceptualScores, value => value >= AUDIO_QUALITY_CONFIG.MIN_SCORE)
+    && report.durationFit;
   return report;
 };

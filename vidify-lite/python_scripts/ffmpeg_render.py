@@ -36,6 +36,13 @@ class FFMPEG_CONSTANTS:
     IMAGE_EXTENSION = ".jpg"
     VIDEO_EXTENSION = ".mp4"
     VIDEO_SCALE_FILTER = "scale={0}:{1}:force_original_aspect_ratio=increase,crop={0}:{1},fps={2},setsar=1"
+    IMAGE_SCALE_FILTER = "scale={0}:{1}:force_original_aspect_ratio=increase,crop={0}:{1},setsar=1"
+    ZOOM_IN_FILTER = "zoompan=z='min(zoom+{0},1.08)':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d={1}:s={2}x{3}:fps={4}"
+    ZOOM_OUT_FILTER = "zoompan=z='if(eq(on,1),1.08,max(1,zoom-{0}))':x='iw/2-iw/zoom/2':y='ih/2-ih/zoom/2':d={1}:s={2}x{3}:fps={4}"
+    PAN_LEFT_FILTER = "zoompan=z=1.08:x='(iw-iw/zoom)*(1-on/{0})':y='ih/2-ih/zoom/2':d={0}:s={1}x{2}:fps={3}"
+    PAN_RIGHT_FILTER = "zoompan=z=1.08:x='(iw-iw/zoom)*on/{0}':y='ih/2-ih/zoom/2':d={0}:s={1}x{2}:fps={3}"
+    PAN_UP_FILTER = "zoompan=z=1.08:x='iw/2-iw/zoom/2':y='(ih-ih/zoom)*(1-on/{0})':d={0}:s={1}x{2}:fps={3}"
+    PAN_DOWN_FILTER = "zoompan=z=1.08:x='iw/2-iw/zoom/2':y='(ih-ih/zoom)*on/{0}':d={0}:s={1}x{2}:fps={3}"
     VIDEO_TRIM_FILTER = "trim=start={0}:end={1},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={2}"
     VIDEO_TRIM_START_FILTER = "trim=start={0},setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration={1}"
     FFPROBE_NAME = "ffprobe"
@@ -83,6 +90,7 @@ class FFMPEG_CONSTANTS:
     KEY_SUBTITLE_CUE_DURATION = "durationSeconds"
     KEY_SUBTITLE_MODE = "subtitleMode"
     KEY_AUDIO_TRACKS = "audioTracks"
+    KEY_SAFE_PROFILE = "safeProfile"
     SUBTITLE_MODE_BURN_IN = "burn_in"
     SUBTITLE_MODE_TRACK = "track"
     SUBTITLE_MODE_BOTH = "both"
@@ -99,7 +107,7 @@ class FFMPEG_CONSTANTS:
     TEMP_MEDIA_TEMPLATE = "media_{0}{1}"
     TEMP_AUDIO_TEMPLATE = "audio_{0}.mp3"
     PART_FILE_TEMPLATE = "part_{0}.mp4"
-    PART_ERROR_TEMPLATE = "FFmpeg part generation failed with code {0}"
+    PART_ERROR_TEMPLATE = "FFmpeg scene {0} failed with code {1}: {2}"
     
     ZOOM_IN = "zoom in"
     ZOOM_OUT = "zoom out"
@@ -353,6 +361,28 @@ def get_video_trim_filter(ffmpeg_cmd, media_path, trim_start, trim_end, output_d
         end_position,
         output_duration,
     )
+
+def get_native_image_filter(style_index, width, height, fps, total_frames, safe_profile, fade_filter):
+    filters = [FFMPEG_CONSTANTS.IMAGE_SCALE_FILTER.format(width, height)]
+    if not safe_profile and style_index != 12:
+        zoom_step = max(0.0001, 0.08 / max(total_frames, 1))
+        if style_index == 1:
+            motion_filter = FFMPEG_CONSTANTS.ZOOM_OUT_FILTER.format(zoom_step, total_frames, width, height, fps)
+        elif style_index == 2:
+            motion_filter = FFMPEG_CONSTANTS.PAN_LEFT_FILTER.format(total_frames, width, height, fps)
+        elif style_index == 3:
+            motion_filter = FFMPEG_CONSTANTS.PAN_RIGHT_FILTER.format(total_frames, width, height, fps)
+        elif style_index == 4:
+            motion_filter = FFMPEG_CONSTANTS.PAN_UP_FILTER.format(total_frames, width, height, fps)
+        elif style_index == 5:
+            motion_filter = FFMPEG_CONSTANTS.PAN_DOWN_FILTER.format(total_frames, width, height, fps)
+        else:
+            motion_filter = FFMPEG_CONSTANTS.ZOOM_IN_FILTER.format(zoom_step, total_frames, width, height, fps)
+        filters.append(motion_filter)
+    else:
+        filters.append(f"fps={fps}")
+    filters.extend([fade_filter, "format=yuv420p"])
+    return ",".join(filters)
 
 def ease_hermite(t):
     return t * t * (3.0 - 2.0 * t)
@@ -1060,6 +1090,7 @@ def main():
         finalOutputPath = config.get("finalOutputPath")
         finalOutputUrl = config.get("finalOutputUrl")
         scenes = config.get("scenes", [])
+        safe_profile = bool(config.get(FFMPEG_CONSTANTS.KEY_SAFE_PROFILE, False))
         video_trim_start = config.get(
             FFMPEG_CONSTANTS.KEY_VIDEO_TRIM_START_SECONDS,
             FFMPEG_CONSTANTS.DEFAULT_TRIM_SECONDS,
@@ -1122,13 +1153,8 @@ def main():
                     f.write(base64.b64decode(img_data))
                 media_owned = True
             else:
-                is_video = False
-                mediaPath = os.path.join(
-                    tempDir,
-                    FFMPEG_CONSTANTS.TEMP_MEDIA_TEMPLATE.format(idx, FFMPEG_CONSTANTS.IMAGE_EXTENSION),
-                )
-                Image.new(FFMPEG_CONSTANTS.RGB_MODE, (width, height), color=FFMPEG_CONSTANTS.BLACK_COLOR).save(mediaPath, FFMPEG_CONSTANTS.JPEG_FORMAT)
-                media_owned = True
+                scene_id = scene.get("id") or idx
+                raise Exception(f"Scene {scene_id} has no real visual asset")
             
             hasAudio = False
             audio_owned = False
@@ -1164,13 +1190,13 @@ def main():
 
         for i, scene in enumerate(scenes):
             camera_motion = scene.get(FFMPEG_CONSTANTS.KEY_CAMERA_MOTION, FFMPEG_CONSTANTS.EMPTY_STRING)
-            style_idx = 12 if scene_durations[i] < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION else map_motion_to_style(camera_motion, i, prev_style, num_styles=20)
+            style_idx = 12 if safe_profile or scene_durations[i] < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION else map_motion_to_style(camera_motion, i, prev_style, num_styles=20)
             chosen_styles.append(style_idx)
             if style_idx != 12:
                 prev_style = style_idx
 
             transition_meta = scene_transitions[i]
-            trans_type = get_transition_type(i, transition_meta, prev_trans)
+            trans_type = FFMPEG_CONSTANTS.TRANS_CUT if safe_profile else get_transition_type(i, transition_meta, prev_trans)
             if scene_durations[i] < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION and trans_type in (FFMPEG_CONSTANTS.TRANS_FLASH, FFMPEG_CONSTANTS.TRANS_WHIP_LEFT, FFMPEG_CONSTANTS.TRANS_WHIP_RIGHT, FFMPEG_CONSTANTS.TRANS_GLITCH):
                 trans_type = FFMPEG_CONSTANTS.TRANS_CUT
             if scene_is_video[i] or (i + 1 < len(scenes) and scene_is_video[i + 1]):
@@ -1186,6 +1212,8 @@ def main():
 
         def render_scene(i):
             idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
+            scene_id = scenes[i].get("id") or idx
+            diagnostic_path = os.path.join(tempDir, f"scene_{idx}_ffmpeg.log")
             outPath = os.path.join(tempDir, FFMPEG_CONSTANTS.PART_FILE_TEMPLATE.format(idx))
             mediaPath = scene_media_paths[i]
             audioPath = scene_audio_paths[i]
@@ -1198,21 +1226,12 @@ def main():
             transition_dur = min(0.65, duration / 4.0) if i < len(scenes) - 1 else 0
             
             total_frames = math.ceil(duration * fps)
-            transition_frames = max(int(transition_dur * fps), 2) if (transition_dur > 0 and i < len(scenes) - 1 and chosen_transitions[i] != FFMPEG_CONSTANTS.TRANS_CUT) else 0
-            content_frames = max(total_frames - transition_frames, 1)
             actual_duration = total_frames / fps
             
             if is_video:
                 cmd = [ffmpegCmd, "-y", "-i", mediaPath]
             else:
-                cmd = [
-                    ffmpegCmd, "-y",
-                    "-f", FFMPEG_CONSTANTS.RAW_VIDEO,
-                    "-pix_fmt", FFMPEG_CONSTANTS.RGB24,
-                    "-s", f"{width}x{height}",
-                    "-r", str(fps),
-                    "-i", "-"
-                ]
+                cmd = [ffmpegCmd, "-y", "-loop", "1", "-i", mediaPath]
             
             if audioPath:
                 cmd.extend(["-i", audioPath])
@@ -1241,6 +1260,16 @@ def main():
                     FFMPEG_CONSTANTS.VIDEO_SCALE_FILTER.format(width, height, fps),
                     vf_effect,
                 ])
+            else:
+                video_filter = get_native_image_filter(
+                    chosen_styles[i],
+                    width,
+                    height,
+                    fps,
+                    total_frames,
+                    safe_profile,
+                    vf_effect,
+                )
 
             cmd.extend([
                 "-map", "0:v:0",
@@ -1256,33 +1285,16 @@ def main():
                 outPath
             ])
 
-            if is_video:
-                completed = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            stderr_text = ""
+            with open(diagnostic_path, "w+", encoding=FFMPEG_CONSTANTS.UTF8) as diagnostic_file:
+                completed = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=diagnostic_file, text=True)
                 return_code = completed.returncode
-            else:
-                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-                write_ken_burns_frames_to_pipe(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), scenes[i].get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT, FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT), proc, content_frames)
-
-                if transition_dur > 0 and i < len(scenes) - 1:
-                    transition_type = chosen_transitions[i]
-
-                    if transition_type != FFMPEG_CONSTANTS.TRANS_CUT:
-                        img_prev = get_last_frame_from_scene(mediaPath, width, height, duration, fps, chosen_styles[i], scenes[i].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), scenes[i].get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT, FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT))
-                        img_next = get_first_frame_from_scene(scene_media_paths[i + 1], width, height, chosen_styles[i + 1], scenes[i + 1].get(FFMPEG_CONSTANTS.KEY_EFFECTS, FFMPEG_CONSTANTS.EMPTY_STRING), scenes[i + 1].get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT, FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT))
-
-                        generate_crossfade_frames(
-                            img_prev, img_next,
-                            width, height, fps,
-                            transition_dur, transition_type, proc
-                        )
-
-                proc.stdin.close()
-                proc.wait()
-                return_code = proc.returncode
+                diagnostic_file.seek(0)
+                stderr_text = diagnostic_file.read()
 
             if return_code != 0:
-                raise Exception(FFMPEG_CONSTANTS.PART_ERROR_TEMPLATE.format(return_code))
+                diagnostic = " ".join(stderr_text.strip().splitlines()[-6:])
+                raise Exception(FFMPEG_CONSTANTS.PART_ERROR_TEMPLATE.format(scene_id, return_code, diagnostic))
 
             nonlocal completed_scene_count
             with progress_lock:
@@ -1324,7 +1336,7 @@ def main():
             
         tempFinalPath = os.path.join(tempDir, "temp_final.mp4")
         concatCmd = [ffmpegCmd, "-y", "-f", FFMPEG_CONSTANTS.CONCAT_FORMAT, "-safe", "0", "-i", listPath, "-c", FFMPEG_CONSTANTS.COPY_CODEC, tempFinalPath]
-        subprocess.run(concatCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(concatCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
         emit_progress(94)
         
         globalAudioPath = config.get("globalAudioPath")
@@ -1385,7 +1397,7 @@ def main():
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
                 mergeAudioCmd.extend(["-t", str(global_audio_duration)])
             mergeAudioCmd.extend(["-shortest", finalOutputPath])
-            subprocess.run(mergeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
+            subprocess.run(mergeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, cwd=tempDir)
         else:
             if os.path.exists(finalOutputPath):
                 os.remove(finalOutputPath)
@@ -1404,13 +1416,13 @@ def main():
                 else:
                     normalizeAudioCmd.extend(["-c:v", FFMPEG_CONSTANTS.COPY_CODEC])
                 normalizeAudioCmd.append(finalOutputPath)
-                subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
+                subprocess.run(normalizeAudioCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, cwd=tempDir)
             else:
                 if subtitle_path:
                     subtitle_cmd = [ffmpegCmd, "-y", "-i", tempFinalPath, "-i", subtitle_path, "-map", "0:v:0"]
                     add_subtitle_output(subtitle_cmd, subtitle_path, subtitle_mode, 1)
                     subtitle_cmd.append(finalOutputPath)
-                    subprocess.run(subtitle_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=tempDir)
+                    subprocess.run(subtitle_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, cwd=tempDir)
                 else:
                     os.rename(tempFinalPath, finalOutputPath)
         validate_rendered_output(

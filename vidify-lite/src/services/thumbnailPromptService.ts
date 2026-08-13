@@ -94,11 +94,24 @@ export const createSourceGroundedThumbnailIdeas = (
 
 export const createThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
-  _style: string,
+  style: string,
   aspectRatio: string,
-  _hasReferences: boolean = false,
+  hasReferences: boolean = false,
   _characters: CharacterConfig[] = [],
-): string => appendImagePromptAspectRatio(thumbnail.prompt, aspectRatio);
+): string => appendImagePromptAspectRatio(_.join(_.compact([
+  THUMBNAIL_PROMPT_CONFIG.GENERATION_PREFIX,
+  thumbnail.prompt,
+  `${THUMBNAIL_PROMPT_CONFIG.LAYOUT_LABEL}: ${thumbnail.layout}`,
+  `${THUMBNAIL_PROMPT_CONFIG.SUBJECT_LABEL}: ${thumbnail.subjectFocus}`,
+  THUMBNAIL_PROMPT_CONFIG.FULL_BLEED,
+  THUMBNAIL_PROMPT_CONFIG.PHONE_READABILITY,
+  THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE,
+  thumbnail.hasText && !_.isEmpty(thumbnail.textText)
+    ? THUMBNAIL_PROMPT_CONFIG.NO_TEXT_BACKGROUND_DIRECTIVE
+    : THUMBNAIL_PROMPT_CONFIG.NO_TEXT_DIRECTIVE,
+  hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_DIRECTIVE : "",
+  style,
+]), ". "), aspectRatio);
 
 export const resolveThumbnailReferenceImages = (
   visualConfig: Pick<VisualConfig, "characters" | "thumbnailReferenceImages">,

@@ -48,7 +48,10 @@ assert.equal(noTextThumbnails[0].textText, "");
 
 const prompt = createThumbnailGenerationPrompt(thumbnails[0], thumbnails[0].style, "16:9", true);
 assert.ok(prompt.endsWith("--ar 16:9"));
-assert.equal(prompt.replace(/\s*--ar 16:9$/, ""), thumbnails[0].prompt);
+assert.match(prompt, /background without typography/i);
+assert.match(prompt, /attached thumbnail reference images/i);
+assert.match(prompt, /flat editorial stickman illustration/i);
+assert.doesNotMatch(prompt, new RegExp(thumbnails[0].textText || "", "i"));
 
 const references = resolveThumbnailReferenceImages({
   thumbnailReferenceImages: ["thumb-style.png"],

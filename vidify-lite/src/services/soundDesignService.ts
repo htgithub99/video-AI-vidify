@@ -2,11 +2,7 @@ import _ from "lodash";
 import { AudioCue, AudioCueSheet, AudioCueStatus, AudioCueType, StoryboardScene } from "../types";
 import { SOUND_DESIGN_CONFIG } from "../constants/config";
 
-const visibleActionText = (scene: StoryboardScene): string => _.join([
-  scene.script,
-  scene.subtitle,
-  _.replace(scene.prompt || "", /character/gi, "subject"),
-], " ");
+const visibleActionText = (scene: StoryboardScene): string => _.toString(scene.visibleAction);
 
 export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet => {
   const cues: AudioCue[] = [];

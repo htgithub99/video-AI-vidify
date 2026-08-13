@@ -158,7 +158,7 @@ export const PROJECT_ASSET_GROUP = {
 } as const;
 
 export const IMAGE_PROMPT_QA_CONFIG = {
-  MIN_WORDS: 25,
+  MIN_WORDS: 70,
   MAX_WORDS: 140,
   MAX_ADJACENT_SIMILARITY: 0.88,
   MAX_CORRECTION_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
@@ -205,6 +205,11 @@ export const IMAGE_PROMPT_QA_CONFIG = {
   },
 } as const;
 
+export const FLEXIBLE_DURATION_CONFIG = {
+  MINIMUM_RATIO: 0.65,
+  MAXIMUM_RATIO: 1.35,
+} as const;
+
 export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CLAUSE_SEPARATOR: ". ",
   LIST_SEPARATOR: ", ",
@@ -224,6 +229,12 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   STYLE_TEMPLATE: "Visual style: {value}",
   COMPOSITION_TEMPLATE: "{shotSize}, {cameraAngle}, {composition}",
   ASPECT_RATIO_PREFIX: "--ar",
+  MIN_TARGET_WORDS: 70,
+  MAX_TARGET_WORDS: 140,
+  LOCKED_REFERENCE_STYLE: "Match the attached style reference faithfully: preserve its medium, line work, proportions, palette, shading, texture, and background treatment without introducing another visual medium",
+  CONFLICTING_STYLE_PATTERN: /\b(?:photorealistic|hyperrealistic|3d\s+render|octane\s+render|cinematic\s+realism|realistic\s+cinematic|dramatic\s+lighting|volumetric\s+lighting|shot\s+on\s+\d+mm)\b/gi,
+  REDUNDANT_STATE_PATTERN: /^\s*(\S[\s\S]*?)\s*$/i,
+  CHARACTER_IDENTITY_MAX_WORDS: 38,
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {
@@ -235,6 +246,14 @@ export const VISUAL_CONTINUITY_CONFIG = {
   CHARACTER_ID_PREFIX: "char_",
   EMPTY_STAGE_ID: "base",
   REQUIRED_REFERENCE_VIEWS: ["front", "side", "three_quarter", "expression"],
+  TIMELINE_STAGES: [
+    { id: "hopeful", label: "hopeful", expressionRange: "open and hopeful", posture: "upright", visibleCondition: "composed" },
+    { id: "pressured", label: "pressured", expressionRange: "tense focus", posture: "slightly guarded", visibleCondition: "under pressure" },
+    { id: "compromised", label: "compromised", expressionRange: "uneasy resolve", posture: "closed shoulders", visibleCondition: "morally conflicted" },
+    { id: "exhausted", label: "exhausted", expressionRange: "heavy eyes", posture: "slumped", visibleCondition: "visibly tired" },
+    { id: "collapsed", label: "collapsed", expressionRange: "shock and grief", posture: "physically diminished", visibleCondition: "at the lowest point" },
+    { id: "resolved", label: "resolved", expressionRange: "quiet conviction", posture: "grounded upright stance", visibleCondition: "changed but steady" },
+  ],
 } as const;
 
 export const CHARACTER_REFERENCE_CONFIG = {
@@ -276,10 +295,10 @@ export const JSON_UTILS_CONFIG = {
 } as const;
 
 export const GEMINI_REQUEST_POLICY = {
-  DEFAULT_RETRIES: 2,
+  DEFAULT_RETRIES: 1,
   BASE_DELAY_MS: 1_200,
   MODEL_SWITCH_DELAY_MS: 500,
-  TRANSIENT_RETRY_LIMIT: 2,
+  TRANSIENT_RETRY_LIMIT: 1,
   RATE_LIMIT_RETRY_LIMIT: 1,
   UNSUPPORTED_COOLDOWN_MS: 86_400_000,
   ZERO_QUOTA_COOLDOWN_MS: 86_400_000,
@@ -351,6 +370,8 @@ export const FFMPEG_RENDER_CONSTANTS = {
   CLEANUP_RETRY_DELAY_MS: 150,
   LOG_CLEANUP_WARNING: "FFmpeg temporary directory cleanup deferred",
   DEFAULT_SUBTITLE_MODE: SubtitleMode.BurnIn,
+  MAX_RENDER_ATTEMPTS: 2,
+  SAFE_PROFILE_ATTEMPT: 1,
 } as const;
 
 export const FFMPEG_RENDER_KEYS = {
@@ -379,6 +400,7 @@ export const FFMPEG_RENDER_KEYS = {
   VIDEO_TRIM_END_SECONDS: "videoTrimEndSeconds",
   SUBTITLE_MODE: "subtitleMode",
   AUDIO_TRACKS: "audioTracks",
+  SAFE_PROFILE: "safeProfile",
   SUCCESS: "success",
   PROGRESS: "progress",
   URL: "url",
@@ -404,6 +426,7 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   ASPECT_DELAY_MAX_MS: 900,
   UPLOAD_DELAY_MIN_MS: 1200,
   UPLOAD_DELAY_MAX_MS: 2000,
+  UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   PROCESSING_APPEAR_TIMEOUT_MS: 15000,
   MEDIA_READY_TIMEOUT_MS: 45000,
   VIDEO_READY_TIMEOUT_MS: 600000,
@@ -415,6 +438,7 @@ export const GEMINI_CHAT_VIDEO_SELECTORS = {
   ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
   ASPECT_OPTIONS: '[role="menuitemradio"]',
   REFERENCE_INPUT: 'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+  REFERENCE_CHIPS: 'input-companion-uploader .attachment-container, input-companion-uploader [data-test-id*="attachment"], input-companion-uploader async-processing-chip',
   PROCESSING: "async-processing-chip",
   GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
 } as const;
@@ -816,6 +840,7 @@ export const SCRIPT_PLAN_CONFIG = {
   SOURCE_CHAPTER_ID_PREFIX: "source_chapter_",
   SOURCE_TITLE_MAX_LENGTH: 72,
   SOURCE_TITLE_OMISSION: "...",
+  SOURCE_BEAT_DURATION_SECONDS: 15,
 } as const;
 
 export const VOICE_DIRECTION_CONFIG = {
@@ -891,6 +916,10 @@ export const RENDER_QUEUE_CONFIG = {
   CANCELLED_ERROR: "render_cancelled",
   TIMEOUT_ERROR: "render_timeout",
   CANCEL_ROUTE: "/ffmpeg-render/cancel/:jobId",
+  RETRY_WARNING: "[Render] Lần dựng đầu chưa hoàn tất; đang thử lại với chế độ an toàn.",
+  PUBLIC_ERROR_TEMPLATE: "Chưa thể dựng video tại cảnh {sceneId}. Hệ thống đã thử lại ở chế độ an toàn. Hãy kiểm tra ảnh hoặc video của cảnh này rồi thử lại.",
+  UNKNOWN_SCENE_ID: "không xác định",
+  SCENE_ID_PATTERN: /(?:scene|cảnh)\s+([^\s:]+)/i,
 } as const;
 
 export const FINAL_MULTIMODAL_QA_CONFIG = {
@@ -959,6 +988,7 @@ export const AI_TASK_ROUTER_CONFIG = {
   OUTPUT_USD_PER_MILLION: 2,
   COST_DECIMAL_PLACES: 6,
   PROMPT_VERSION: "vidify-baseline-v2",
+  MEDIA_INPUT_COST_USD: 0,
   COST_EXCEEDED_TEMPLATE: "AI task cost estimate ${estimatedCostUsd} exceeds budget ${budgetUsd}.",
   NO_MODEL_TEMPLATE: "No healthy provider/model supports capability {capability}.",
 } as const;

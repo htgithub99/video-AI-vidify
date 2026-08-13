@@ -1,6 +1,7 @@
 import _ from "lodash";
-import { AudioQualityReport, EditorQualityReport, SceneAssetStatus, StoryboardScene, SubtitleQualityReport, ThumbnailQualityReport, VoiceArc } from "../types.js";
+import { AssetAcceptance, AudioQualityReport, EditorQualityReport, SceneAssetStatus, StoryboardScene, SubtitleQualityReport, ThumbnailQualityReport, VoiceArc } from "../types.js";
 import { SceneVisualQuality } from "./sceneVisualQualityService.js";
+import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
 
 export const DEFAULT_VOICE_ARC: VoiceArc = {
   setup: { emotion: "restrained_unease", speed: 0.94, pauseScale: 1.15 },
@@ -12,17 +13,21 @@ export const DEFAULT_VOICE_ARC: VoiceArc = {
 };
 
 export const PRODUCTION_QA_THRESHOLDS = {
-  DURATION_TOLERANCE_RATIO: 0.1,
+  MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
+  MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
   MAX_SUBTITLE_LINES: 2,
   MAX_SUBTITLE_CHARS_PER_LINE: 42,
   MAX_SUBTITLE_CHARS_PER_SECOND: 18,
-  MIN_SUBTITLE_DURATION_SECONDS: 0.25,
+  MIN_SUBTITLE_DURATION_SECONDS: 1.2,
   MAX_TRANSITION_REPETITION_RATIO: 0.75,
   MIN_THUMBNAIL_SCORE: 80,
 } as const;
 
 export const evaluateAudioTiming = (actual: number, target: number): AudioQualityReport => {
-  const durationFit = target > 0 && Math.abs(actual - target) <= target * PRODUCTION_QA_THRESHOLDS.DURATION_TOLERANCE_RATIO;
+  const durationRatio = target > 0 ? actual / target : 0;
+  const durationFit = target > 0
+    && durationRatio >= PRODUCTION_QA_THRESHOLDS.MINIMUM_DURATION_RATIO
+    && durationRatio <= PRODUCTION_QA_THRESHOLDS.MAXIMUM_DURATION_RATIO;
   const hasAudioDuration = actual > 0;
   return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false };
 };
@@ -52,7 +57,7 @@ export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityRep
 };
 
 export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => {
-  const assetsApproved = _.every(scenes, scene => scene.assetStatus === SceneAssetStatus.Approved);
+  const assetsApproved = _.every(scenes, scene => scene.assetStatus === SceneAssetStatus.Approved && scene.acceptance !== AssetAcceptance.Rejected);
   const transitionsIntentional = _.every(scenes, scene => !_.isEmpty(scene.cameraMotion) && !_.isEmpty(scene.transition));
   const editPatterns = _.map(scenes, scene => _.join([
     _.toLower(scene.cameraMotion || ""),

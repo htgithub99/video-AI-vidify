@@ -103,6 +103,18 @@ export enum SceneAssetStatus {
   Failed = "failed",
 }
 
+export enum QaStatus {
+  Passed = "passed",
+  Failed = "failed",
+  Unavailable = "unavailable",
+}
+
+export enum AssetAcceptance {
+  Approved = "approved",
+  AcceptedWithWarning = "accepted_with_warning",
+  Rejected = "rejected",
+}
+
 export enum AudioCueType {
   Music = "music",
   SoundEffect = "sfx",
@@ -350,6 +362,8 @@ export interface VisualConfig {
   referenceImage?: string;
   referenceImages?: string[];
   referencePrompt?: string;
+  styleFingerprint?: string;
+  styleReferenceLocked?: boolean;
   generateType?: GenerateType;
   maxVideoScenes?: number;
   generateCount?: number;
@@ -450,6 +464,8 @@ export interface StoryboardScene {
   assetUrl?: string;
   assetUrls?: string[];
   assetStatus?: SceneAssetStatus;
+  qaStatus?: QaStatus;
+  acceptance?: AssetAcceptance;
   assetError?: string;
   dependencyHash?: string;
   assetRevisionId?: string;
@@ -507,6 +523,8 @@ export interface ThumbnailItem {
   imageUrl?: string;
   qa?: ThumbnailQualityReport;
   approved?: boolean;
+  qaStatus?: QaStatus;
+  acceptance?: AssetAcceptance;
 }
 
 export interface AssetRevision { id: string; parentRevisionId?: string; createdAt: string; promptHash: string; assetUrl: string; status: SceneAssetStatus; provider?: string; model?: string; approvedAt?: string; operation?: "generated"|"retry"|"rollback"|"upscale"; }
@@ -520,7 +538,7 @@ export interface VoiceArc { setup: VoiceDirection; descent: VoiceDirection; isol
 export interface AudioQualityReport { pronunciationScore: number; pauseScore: number; loudnessScore: number; naturalnessScore: number; emotionTransitionScore: number; durationFit: boolean; actualDurationSeconds: number; targetDurationSeconds: number; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 export interface SubtitleQualityReport { maxTwoLines: boolean; semanticBreaks: boolean; readingTimeFit: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 export interface EditorQualityReport { approvedAssetsOnly: boolean; intentionalTransitions: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
-export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; locations?:VisualLocation[]; props?:VisualProp[]; }
+export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; styleFingerprint?:string; styleReferenceLocked?:boolean; locations?:VisualLocation[]; props?:VisualProp[]; }
 export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
 export interface ImagePromptQualityIssue { sceneId:string; code:string; severity:"blocking"|"warning"; }
 export interface ImagePromptQualityReport { totalPrompts:number; validPrompts:number; blockingErrors:ImagePromptQualityIssue[]; warnings:ImagePromptQualityIssue[]; passed:boolean; }

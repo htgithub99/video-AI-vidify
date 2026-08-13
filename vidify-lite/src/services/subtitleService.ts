@@ -28,16 +28,23 @@ export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] =
     _.chunk(createSubtitleLines(scene.subtitle || scene.script), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES),
     lines => _.join(lines, "\n"),
   );
-  const characterCount = _.sumBy(cueTexts, text => _.size(_.replace(text, /\s/g, "")));
+  const cueWeights = _.map(cueTexts, text => _.max([
+    _.size(_.replace(text, /\s/g, "")),
+    PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND,
+  ]) || 0);
+  const totalWeight = _.sum(cueWeights);
   let cursor = 0;
   return _.map(cueTexts, (text, index) => {
     const isLastCue = _.isEqual(index, _.subtract(_.size(cueTexts), 1));
-    const proportionalDuration = characterCount > 0
-      ? _.multiply(scene.duration, _.divide(_.size(_.replace(text, /\s/g, "")), characterCount))
+    const proportionalDuration = totalWeight > 0
+      ? _.multiply(scene.duration, _.divide(cueWeights[index], totalWeight))
       : 0;
+    const remainingCues = _.subtract(_.size(cueTexts), _.add(index, 1));
+    const reservedDuration = remainingCues * PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS;
+    const availableDuration = _.max([0, _.subtract(_.subtract(scene.duration, cursor), reservedDuration)]) || 0;
     const durationSeconds = isLastCue
       ? _.max([0, _.subtract(scene.duration, cursor)]) || 0
-      : proportionalDuration;
+      : _.min([_.max([PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS, proportionalDuration]) || proportionalDuration, availableDuration]) || 0;
     const cue = { text, startOffsetSeconds: cursor, durationSeconds };
     cursor = _.add(cursor, durationSeconds);
     return cue;

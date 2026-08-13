@@ -21,6 +21,9 @@ export const normalizeCharacterLibrary = (characters: CharacterConfig[]): Charac
   _.uniqBy(_.compact(characters), character => _.toLower(_.trim(character.name))),
   (character, index) => {
     const secondPersonProtagonist = isSecondPersonProtagonist(character);
+    const sourceTimelineStages = (_.isEmpty(character.timelineStages)
+      ? VISUAL_CONTINUITY_CONFIG.TIMELINE_STAGES
+      : character.timelineStages) as ReadonlyArray<Partial<NonNullable<CharacterConfig["timelineStages"]>[number]>>;
     return {
       ...character,
       id: _.trim(character.id) || normalizeIdentifier(character.name, VISUAL_CONTINUITY_CONFIG.CHARACTER_ID_PREFIX, index),
@@ -28,9 +31,13 @@ export const normalizeCharacterLibrary = (characters: CharacterConfig[]): Charac
       narrativeRole: secondPersonProtagonist ? VISUAL_CONTINUITY_CONFIG.PROTAGONIST_ROLE : character.narrativeRole,
       images: _.uniq(_.compact(character.images)),
       referenceViews: _.uniq(_.defaultTo(character.referenceViews, [])),
-      timelineStages: _.map(_.defaultTo(character.timelineStages, []), stage => ({
-        ...stage,
+      timelineStages: _.map(sourceTimelineStages, stage => ({
         id: _.trim(stage.id) || VISUAL_CONTINUITY_CONFIG.EMPTY_STAGE_ID,
+        label: _.trim(_.toString(stage.label)),
+        outfit: _.trim(_.toString(stage.outfit)) || _.trim(_.toString(character.signatureClothing)),
+        expressionRange: _.trim(_.toString(stage.expressionRange)),
+        posture: _.trim(_.toString(stage.posture)),
+        visibleCondition: _.trim(_.toString(stage.visibleCondition)),
       })),
     };
   },

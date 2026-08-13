@@ -75,6 +75,38 @@ const createSourceScopes = (sourceText: string, chapterCount: number): string[] 
   return _.times(chapterCount, () => _.trim(sourceText));
 };
 
+const createSourceNarrativePlan = (normalizedSource: string, scopes: string[]) => ({
+  viewerPromise: normalizedSource,
+  centralQuestion: normalizedSource,
+  protagonist: {
+    initialState: _.first(scopes) || normalizedSource,
+    emotionalLack: "",
+    externalGoal: normalizedSource,
+    internalNeed: "",
+    temptation: "",
+    firstCompromise: "",
+    escalatingChoices: [],
+    pointOfNoReturn: "",
+    falseVictory: "",
+    collapse: "",
+    finalCost: "",
+    realization: _.last(scopes) || normalizedSource,
+  },
+  beats: _.map(scopes, (scope, index) => ({
+    id: `source_beat_${_.add(index, SecurityConstants.DEFAULT_AMOUNT)}`,
+    type: index === 0 ? "hook" : index === _.subtract(_.size(scopes), 1) ? "payoff" : "escalation",
+    event: scope,
+    characterStateBefore: index === 0 ? "" : scopes[index - 1],
+    characterStateAfter: scope,
+    visibleAction: scope,
+    retentionPurpose: scope,
+    targetDurationSeconds: SCRIPT_PLAN_CONFIG.SOURCE_BEAT_DURATION_SECONDS,
+    callbackId: "",
+  })),
+  callbacks: [],
+  endingPayoff: _.last(scopes) || normalizedSource,
+});
+
 export const createSourceGroundedScriptPlan = (
   sourceText: string,
   chapterCount: number,
@@ -88,7 +120,7 @@ export const createSourceGroundedScriptPlan = (
     preferredTerms: [],
     factCheckNotes: "",
     creativeBrief: { viewerPromise: normalizedSource },
-    narrativePlan: {},
+    narrativePlan: createSourceNarrativePlan(normalizedSource, scopes),
     factPack: { claims: [] },
     chapters: _.map(scopes, (scope, index) => ({
       id: _.join([SCRIPT_PLAN_CONFIG.SOURCE_CHAPTER_ID_PREFIX, _.add(index, SecurityConstants.DEFAULT_AMOUNT)], ""),

@@ -1583,10 +1583,19 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     return;
   }
   await referenceInput.setInputFiles(referenceFiles);
+  await page.waitForFunction(
+    ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
+    { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: _.size(referenceFiles) },
+    { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
+  ).catch(() => undefined);
   await randomDelay(
     GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS,
     GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
   );
+  const uploadedReferenceCount = await page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS).count();
+  if (_.lt(uploadedReferenceCount, _.size(referenceFiles))) {
+    throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED);
+  }
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
     SecurityConstants.PLACEHOLDER_0,
     _.toString(_.size(referenceFiles)),

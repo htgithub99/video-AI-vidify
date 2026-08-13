@@ -55,7 +55,14 @@ export const validateAndRepairVoice = async ({
   let repaired = false;
   let repairError: string | undefined;
 
-  for (let attempt = 0; attempt < AUDIO_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS && !quality.passed; attempt++) {
+  const requiresPerceptualRepair = (): boolean => !_.isEmpty(quality.blockingErrors) || _.some([
+    quality.pronunciationScore,
+    quality.pauseScore,
+    quality.loudnessScore,
+    quality.naturalnessScore,
+    quality.emotionTransitionScore,
+  ], value => value > 0 && value < AUDIO_QUALITY_CONFIG.MIN_SCORE);
+  for (let attempt = 0; attempt < AUDIO_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS && requiresPerceptualRepair(); attempt++) {
     repairAttempted = true;
     try {
       const regeneratedVoice = await regenerateVoice();

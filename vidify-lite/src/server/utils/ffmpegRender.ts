@@ -66,6 +66,7 @@ export interface FFmpegRenderOptions {
   projectId?: string;
   subtitleMode?: SubtitleMode;
   audioTracks?: RenderAudioTrack[];
+  safeProfile?: boolean;
 }
 
 const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
@@ -213,11 +214,14 @@ export const renderFFmpegVideo = async (
     [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_URL]: finalOutputUrl,
     [FFMPEG_RENDER_KEYS.SCENES]: renderScenes,
     [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath,
-    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: _.min([maxSceneWorkers, _.size(renderScenes)]),
+    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile
+      ? SecurityConstants.DEFAULT_AMOUNT
+      : _.min([maxSceneWorkers, _.size(renderScenes)]),
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
     [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
+    [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
   };
 
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
@@ -254,7 +258,7 @@ export const renderFFmpegVideo = async (
     renderer.stderr?.on("data", (chunk: Buffer | string) => { stderr += _.toString(chunk); });
     await new Promise<void>((resolve, reject) => {
       renderer.once("error", reject);
-      renderer.once("exit", (code) => {
+      renderer.once("close", (code) => {
         if (_.isEqual(code, SecurityConstants.ZERO)) resolve();
         else reject(new Error(_.trim(stderr) || _.toString(_.get(parsePythonResult(stdout), FFMPEG_RENDER_KEYS.ERROR)) || FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON));
       });

@@ -34,6 +34,8 @@ import {
   QualityMode,
   ContentSafetyReport,
   ImagePromptQualityReport,
+  AssetAcceptance,
+  QaStatus,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -79,6 +81,7 @@ import { applyProfessionalEditingPolicy, repairEditingPlan } from "../services/e
 import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
 import { generateCharacterReferenceLibrary } from "../services/characterReferenceService";
+import { resolveReferenceLockedStyle } from "../services/styleReferenceService";
 import { normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline } from "../services/voiceTimelineService";
@@ -86,6 +89,8 @@ import { validateAndRepairVoice } from "../services/voiceQualityRepairService";
 import { createSubtitleCues, repairSubtitleCues } from "../services/subtitleService";
 import { validateAndRepairVisualAsset } from "../services/visualAssetRepairService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../services/thumbnailPromptService";
+import { renderThumbnailTextOverlay } from "../services/thumbnailOverlayService";
+import { THUMBNAIL_OVERLAY_CONFIG } from "../constants/thumbnail";
 import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
@@ -628,6 +633,68 @@ export function useAutoVideoPipeline(
         newProj = scriptUpdatedProj;
       }
 
+      let currentStylePreset = newProj.visualConfig.referencePrompt || newProj.visualConfig.style || config.stylePreset;
+      let currentThumbnailStyle = newProj.visualConfig.thumbnailReferencePrompt || config.thumbnailStylePreset;
+      const hasStyleReferences = !_.isEmpty(newProj.visualConfig.styleReferenceImages);
+      const hasThumbnailReferences = !_.isEmpty(newProj.visualConfig.thumbnailReferenceImages);
+      if (!isStoryboardCached || config.forceRegenerateScenes || requiresVisualReferenceMigration) {
+        if (hasStyleReferences) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
+        if (hasThumbnailReferences) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
+        const styleAnalysisRequest = hasStyleReferences
+          ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+              images: newProj.visualConfig.styleReferenceImages,
+              backgroundMode: config.styleBackgroundMode,
+            }, requestSignal)
+          : Promise.resolve(null);
+        const referencesAreShared = hasStyleReferences
+          && hasThumbnailReferences
+          && _.isEqual(
+            _.sortBy(newProj.visualConfig.styleReferenceImages),
+            _.sortBy(newProj.visualConfig.thumbnailReferenceImages),
+          );
+        const thumbnailStyleAnalysisRequest = referencesAreShared
+          ? styleAnalysisRequest
+          : hasThumbnailReferences
+            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+              images: newProj.visualConfig.thumbnailReferenceImages,
+              backgroundMode: config.thumbnailBackgroundMode,
+            }, requestSignal)
+            : Promise.resolve(null);
+        const [styleResponse, thumbnailStyleResponse] = await Promise.all([styleAnalysisRequest, thumbnailStyleAnalysisRequest]);
+        throwIfCancelled();
+        if (hasStyleReferences && (!styleResponse?.success || _.isEmpty(styleResponse.data?.style))) {
+          appendLog(styleResponse?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
+        }
+        if (hasThumbnailReferences && (!thumbnailStyleResponse?.success || _.isEmpty(thumbnailStyleResponse.data?.style))) {
+          appendLog(thumbnailStyleResponse?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
+        }
+        currentStylePreset = resolveReferenceLockedStyle(styleResponse?.success ? styleResponse.data?.style : "", hasStyleReferences)
+          || currentStylePreset;
+        currentThumbnailStyle = resolveReferenceLockedStyle(thumbnailStyleResponse?.success ? thumbnailStyleResponse.data?.style : "", hasThumbnailReferences)
+          || currentThumbnailStyle;
+        const styleFingerprint = _.toString(styleResponse?.data?.fingerprint) || currentStylePreset;
+        newProj = {
+          ...newProj,
+          visualConfig: {
+            ...newProj.visualConfig,
+            style: currentStylePreset,
+            referencePrompt: currentStylePreset,
+            thumbnailReferencePrompt: currentThumbnailStyle,
+            styleFingerprint,
+            styleReferenceLocked: hasStyleReferences,
+          },
+          visualBible: {
+            ...newProj.visualBible,
+            visualStyle: currentStylePreset,
+            styleFingerprint,
+            styleReferenceLocked: hasStyleReferences,
+            locations: _.defaultTo(newProj.visualBible?.locations, []),
+            props: _.defaultTo(newProj.visualBible?.props, []),
+          },
+        };
+        await syncProject(newProj);
+      }
+
       let analyzedCharacters = _.defaultTo(newProj.visualConfig.characters, [] as CharacterConfig[]);
       let didAnalyzeCharacters = false;
       const hasLegacyCharacterProfile = _.some(analyzedCharacters, (character) => _.some([
@@ -679,18 +746,7 @@ export function useAutoVideoPipeline(
       }
 
       if (!isStoryboardCached) {
-        let storyboardStyle = newProj.visualConfig.referencePrompt || newProj.visualConfig.style || config.stylePreset;
-        if (!_.isEmpty(config.referenceImages)) {
-          const styleResponse = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images: config.referenceImages, backgroundMode: config.styleBackgroundMode, fallbackStyle: storyboardStyle }, requestSignal);
-          throwIfCancelled();
-          if (!styleResponse.success || _.isEmpty(styleResponse.data?.style)) {
-            appendLog(styleResponse.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
-          } else {
-            storyboardStyle = styleResponse.data.style;
-            newProj = { ...newProj, visualConfig: { ...newProj.visualConfig, style: storyboardStyle, referencePrompt: storyboardStyle, styleReferenceImages: config.referenceImages } };
-            await syncProject(newProj);
-          }
-        }
+        const storyboardStyle = currentStylePreset;
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
         appendLog(T.logStoryboardRequestDetail(config.splitStrategy, !_.isEmpty(config.referenceImages)));
         const storyboardPayload = {
@@ -720,9 +776,17 @@ export function useAutoVideoPipeline(
         realScenes = storyboardAvailable
           ? (storyboardRes.data.scenes || []) as StoryboardScene[]
           : [];
-        const visualBible = storyboardAvailable
+        const generatedVisualBible = storyboardAvailable
           ? storyboardRes.data.visualBible as VisualBible
           : newProj.visualBible;
+        const visualBible: VisualBible = {
+          ...generatedVisualBible,
+          visualStyle: currentStylePreset,
+          styleFingerprint: newProj.visualConfig.styleFingerprint,
+          styleReferenceLocked: hasStyleReferences,
+          locations: _.defaultTo(generatedVisualBible?.locations, []),
+          props: _.defaultTo(generatedVisualBible?.props, []),
+        };
         if (_.isEmpty(realScenes)) {
           realScenes = createScriptGroundedStoryboard({
             rewrittenScript: realScript,
@@ -909,8 +973,6 @@ export function useAutoVideoPipeline(
         }
       }
 
-      let currentStylePreset = config.stylePreset;
-      let currentThumbnailStyle = config.thumbnailStylePreset;
       appendLog(T.logReferenceSummary(
         _.size(config.referenceImages),
         _.size(config.sceneReferenceImages),
@@ -918,54 +980,14 @@ export function useAutoVideoPipeline(
       ));
 
       if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresVisualReferenceMigration) {
-        if (!_.isEmpty(config.referenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-        if (!_.isEmpty(config.thumbnailReferenceImages)) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
-
-        const [extractStyleRes, extractThumbStyleRes] = await Promise.all([
-          !_.isEmpty(config.referenceImages)
-            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-              images: config.referenceImages,
-              backgroundMode: config.styleBackgroundMode,
-              fallbackStyle: currentStylePreset,
-            }, requestSignal)
-            : Promise.resolve(null),
-          !_.isEmpty(config.thumbnailReferenceImages)
-            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-              images: config.thumbnailReferenceImages,
-              backgroundMode: config.thumbnailBackgroundMode,
-              fallbackStyle: currentThumbnailStyle,
-            }, requestSignal)
-            : Promise.resolve(null),
-        ]);
-        throwIfCancelled();
-
-        if (!_.isEmpty(config.referenceImages) && (!extractStyleRes?.success || _.isEmpty(extractStyleRes.data?.style))) appendLog(extractStyleRes?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
-        if (!_.isEmpty(config.thumbnailReferenceImages) && (!extractThumbStyleRes?.success || _.isEmpty(extractThumbStyleRes.data?.style))) appendLog(extractThumbStyleRes?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
-
-        if (extractStyleRes?.success && extractStyleRes.data?.style) {
-          currentStylePreset = extractStyleRes.data.style;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT_SUCCESS.replace(
-            SecurityConstants.PLACEHOLDER_0,
-            _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(currentStylePreset, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          ));
-        }
-
-        if (extractThumbStyleRes?.success && extractThumbStyleRes.data?.style) {
-          currentThumbnailStyle = extractThumbStyleRes.data.style;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT_SUCCESS.replace(
-            SecurityConstants.PLACEHOLDER_0,
-            _.join([REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE, _.truncate(currentThumbnailStyle, { length: 60, omission: REFACTOR_CONSTANTS.AVG_ELLIPSIS }), REFACTOR_CONSTANTS.AVG_DOUBLE_QUOTE], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          ));
-        }
-
         voiceUpdatedProj = {
           ...voiceUpdatedProj,
           visualConfig: {
             ...voiceUpdatedProj.visualConfig,
             style: currentStylePreset,
-            styleReferenceImages: config.referenceImages,
-            sceneReferenceImages: config.sceneReferenceImages,
-            referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
+            styleReferenceImages: newProj.visualConfig.styleReferenceImages,
+            sceneReferenceImages: newProj.visualConfig.sceneReferenceImages,
+            referenceImages: _.take(_.uniq(_.concat(newProj.visualConfig.styleReferenceImages, newProj.visualConfig.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
             styleBackgroundMode: config.styleBackgroundMode,
@@ -1373,6 +1395,14 @@ export function useAutoVideoPipeline(
             appendAssetRevision(scene, validationResult.assetUrl, SceneAssetStatus.Approved);
           }
           scene.assetStatus = SceneAssetStatus.Approved;
+          scene.qaStatus = validationResult.approved
+            ? QaStatus.Passed
+            : validationResult.qaAvailable
+              ? QaStatus.Failed
+              : QaStatus.Unavailable;
+          scene.acceptance = validationResult.approved
+            ? AssetAcceptance.Approved
+            : AssetAcceptance.AcceptedWithWarning;
           scene.assetError = validationResult.approved
             ? undefined
             : validationResult.qaAvailable
@@ -1385,6 +1415,8 @@ export function useAutoVideoPipeline(
           }
         } catch (qualityError) {
           scene.assetStatus = SceneAssetStatus.Approved;
+          scene.qaStatus = QaStatus.Unavailable;
+          scene.acceptance = AssetAcceptance.AcceptedWithWarning;
           scene.assetError = qualityError instanceof Error
             && _.isEqual(qualityError.message, REFACTOR_CONSTANTS.ERR_VISUAL_QA_REQUIRED)
             ? "visual_qa_unavailable"
@@ -1663,11 +1695,33 @@ export function useAutoVideoPipeline(
           thumbnail.qa = validationResult.quality
             ? evaluateThumbnail(validationResult.quality)
             : undefined;
-          thumbnail.approved = isUsableGeneratedAssetUrl(thumbnail.imageUrl);
+          thumbnail.qaStatus = thumbnail.qa?.passed
+            ? QaStatus.Passed
+            : validationResult.qaAvailable
+              ? QaStatus.Failed
+              : QaStatus.Unavailable;
+          thumbnail.acceptance = thumbnail.qa?.passed
+            ? AssetAcceptance.Approved
+            : isUsableGeneratedAssetUrl(thumbnail.imageUrl)
+              ? AssetAcceptance.AcceptedWithWarning
+              : AssetAcceptance.Rejected;
+          thumbnail.approved = thumbnail.acceptance === AssetAcceptance.Approved;
         } catch {
-          thumbnail.approved = isUsableGeneratedAssetUrl(thumbnail.imageUrl);
+          thumbnail.qaStatus = QaStatus.Unavailable;
+          thumbnail.acceptance = isUsableGeneratedAssetUrl(thumbnail.imageUrl)
+            ? AssetAcceptance.AcceptedWithWarning
+            : AssetAcceptance.Rejected;
+          thumbnail.approved = false;
           appendLog(REFACTOR_CONSTANTS.ERR_THUMBNAIL_QA_REQUIRED);
-          continue;
+        }
+        if (thumbnail.hasText && !_.isEmpty(thumbnail.textText)) {
+          try {
+            thumbnail.imageUrl = await renderThumbnailTextOverlay(thumbnail.imageUrl!, thumbnail.textText!);
+          } catch (overlayError) {
+            logger.error(THUMBNAIL_OVERLAY_CONFIG.LOG_ERROR, overlayError);
+            thumbnail.hasText = false;
+            thumbnail.textText = "";
+          }
         }
         if (thumbnail.qa && !thumbnail.qa.passed) {
           appendLog(_.replace(
@@ -1722,6 +1776,11 @@ export function useAutoVideoPipeline(
       if (voiceQualityResult.repairError) appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_REPAIR_FAILED);
       if (!voiceQualityResult.quality.passed) appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_RESULT);
 
+      slicedUpdatedProj = {
+        ...slicedUpdatedProj,
+        audioCueSheet: applyOptionalMusicAsset(createAudioCueSheet(realScenes), config.musicAssetUrl),
+      };
+
       realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
       let subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
       if (!subtitleQa.passed) {
@@ -1766,7 +1825,6 @@ export function useAutoVideoPipeline(
         scenes: _.map(realScenes as VideoProject["storyboard"], (sc) => ({
           id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
           duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
-          imageBase64: _.get(sc, "assetUrl"),
           imageUrl: _.get(sc, "assetUrl"),
           audioBase64: _.get(sc, "audioBase64"),
           text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
@@ -1811,7 +1869,7 @@ export function useAutoVideoPipeline(
         let renderStatusFailureCount = SecurityConstants.ZERO;
         while (renderPending) {
           throwIfCancelled();
-          let statusData: { success: boolean; status: string; progress?: number; url?: string };
+          let statusData: { success: boolean; status: string; progress?: number; url?: string; error?: string };
           try {
             const statusRes = await fetch(`${API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS}${jobId}`, {
               headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
@@ -1858,7 +1916,7 @@ export function useAutoVideoPipeline(
             appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
             continue;
           }
-          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) throw new Error(REFACTOR_CONSTANTS.ERR_RENDER_FAILED);
+          if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) throw new Error(statusData.error || REFACTOR_CONSTANTS.ERR_RENDER_FAILED);
 
           const currentProgress = _.defaultTo(statusData.progress, SecurityConstants.ZERO);
           if (!_.isEqual(currentProgress, lastLoggedProgress)) {

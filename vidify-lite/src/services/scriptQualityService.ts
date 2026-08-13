@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
 export const SCRIPT_QUALITY_THRESHOLDS = {
@@ -9,7 +10,8 @@ export const SCRIPT_QUALITY_THRESHOLDS = {
   CONVERSATIONAL: 80,
   HOOK_PAYOFF: 80,
   HOOK_FACTUAL_SAFETY: 80,
-  DURATION_TOLERANCE_RATIO: 0.15,
+  MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
+  MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
   WORDS_PER_MINUTE: 150,
 } as const;
 
@@ -56,9 +58,10 @@ export const normalizeScriptQualityReport = (
   const estimatedDurationSeconds = _.round(
     (_.max([0, wordCount])! / SCRIPT_QUALITY_THRESHOLDS.WORDS_PER_MINUTE) * 60,
   );
-  const durationDelta = Math.abs(estimatedDurationSeconds - targetDurationSeconds);
+  const durationRatio = targetDurationSeconds > 0 ? estimatedDurationSeconds / targetDurationSeconds : 0;
   const durationFit = targetDurationSeconds > 0
-    && durationDelta <= targetDurationSeconds * SCRIPT_QUALITY_THRESHOLDS.DURATION_TOLERANCE_RATIO;
+    && durationRatio >= SCRIPT_QUALITY_THRESHOLDS.MINIMUM_DURATION_RATIO
+    && durationRatio <= SCRIPT_QUALITY_THRESHOLDS.MAXIMUM_DURATION_RATIO;
   const reportedBlockingErrors = _.compact(_.map(value.blockingErrors, _.toString));
   const hardBlockingErrors = _.filter(reportedBlockingErrors, error => HARD_SCRIPT_BLOCKER_PATTERN.test(error));
   const editorialAdvisories = _.reject(reportedBlockingErrors, error => HARD_SCRIPT_BLOCKER_PATTERN.test(error));
@@ -93,8 +96,7 @@ export const normalizeScriptQualityReport = (
   ]);
   report.warnings = _.uniq([...report.warnings, ...belowTargetScores]);
   report.passed = _.isEmpty(report.blockingErrors)
-    && _.isEmpty(belowTargetScores)
-    && durationFit;
+    && _.isEmpty(belowTargetScores);
   return report;
 };
 

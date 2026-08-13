@@ -2,12 +2,14 @@ import _ from "lodash";
 import { IMAGE_PROMPT_COMPILER_CONFIG } from "../constants/config";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
 import { appendImagePromptAspectRatio, sanitizeImagePrompt } from "./imagePromptQualityService";
+import { removeConflictingStyleTerms } from "./styleReferenceService";
 
 export interface ImagePromptCompilerOptions {
   aspectRatio?: string;
   targetStyle?: string;
   characters?: CharacterConfig[];
   visualBible?: VisualBible;
+  referenceLocked?: boolean;
 }
 
 const applyTemplate = (template: string, values: Record<string, string>): string => _.reduce(
@@ -16,18 +18,30 @@ const applyTemplate = (template: string, values: Record<string, string>): string
   template,
 );
 
+const compactWords = (value: string, maximumWords: number): string => _.join(
+  _.take(_.words(value, /[^\s]+/g), maximumWords),
+  " ",
+);
+
 const createCharacterClause = (scene: StoryboardScene, characters: CharacterConfig[]): string => _.join(
   _.map(
     _.filter(characters, character => _.includes(scene.characterIds, character.id)),
     character => {
       const stage = _.find(character.timelineStages, { id: scene.characterStage });
-      const identity = _.join(_.compact([
-        character.prompt || character.description,
+      const identityAnchors = _.join(_.compact([
+        character.hair,
+        character.signatureClothing,
+        character.accessories,
+        character.silhouette,
+        character.colorPalette,
+      ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
+      const identity = compactWords(_.join(_.compact([
+        identityAnchors || character.prompt || character.description,
         stage?.outfit,
         stage?.expressionRange,
         stage?.posture,
         stage?.visibleCondition,
-      ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
+      ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
       return applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_TEMPLATE, { name: character.name, identity });
     },
   ),
@@ -80,10 +94,12 @@ export const compileImagePrompt = (
     visualBible?.shading,
     visualBible?.colorPalette,
   ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
-  const stateChange = _.every([scene.characterStateBefore, scene.characterStateAfter], value => !_.isEmpty(value))
+  const beforeState = _.trim(_.toString(scene.characterStateBefore));
+  const afterState = _.trim(_.toString(scene.characterStateAfter));
+  const stateChange = !_.isEmpty(beforeState) && !_.isEmpty(afterState) && !_.isEqual(_.toLower(beforeState), _.toLower(afterState))
     ? applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.BEFORE_AFTER_TEMPLATE, {
-      before: scene.characterStateBefore!,
-      after: scene.characterStateAfter!,
+      before: beforeState,
+      after: afterState,
     })
     : "";
   const continuity = _.join(_.compact([scene.continuityFrom, scene.continuityNotes, scene.callbackId]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
@@ -106,7 +122,10 @@ export const compileImagePrompt = (
     ...createConstraintClauses(scene),
   ]);
   return appendImagePromptAspectRatio(
-    sanitizeImagePrompt(_.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR)),
+    sanitizeImagePrompt(removeConflictingStyleTerms(
+      _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR),
+      Boolean(options.referenceLocked || visualBible?.styleReferenceLocked),
+    )),
     options.aspectRatio,
   );
 };

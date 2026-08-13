@@ -7,7 +7,7 @@ import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/prof
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
-import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
+import { generateContentWithRetry, isAiProviderAvailable, isGeminiProviderAvailable } from "../services/geminiService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -226,27 +226,34 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
 
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
-  const cachedStyle = checkCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, req.body, Boolean(req.body?.bypassCache));
-  if (cachedStyle) return res.json(cachedStyle);
   try {
     const { images } = req.body;
     if (!images || !_.isArray(images) || _.isEmpty(images)) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
     }
 
-    if (!(await isAiProviderAvailable())) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, retryable: true });
-    }
-
     const parts: any[] = [];
+    const contentHashes: string[] = [];
     for (const imgBase64 of images) {
       const { data, mimeType } = await readStyleReferenceImage(imgBase64);
+      contentHashes.push(createHash("sha256").update(data).digest("hex"));
       parts.push({
         inlineData: {
           data,
           mimeType,
         },
       });
+    }
+
+    const cachePayload = {
+      ..._.omit(req.body, ["images", "bypassCache", "timestamp", "projectId"]),
+      contentHashes: _.sortBy(_.uniq(contentHashes)),
+    };
+    const cachedStyle = checkCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, Boolean(req.body?.bypassCache));
+    if (cachedStyle) return res.json(cachedStyle);
+
+    if (!(await isGeminiProviderAvailable())) {
+      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, retryable: true });
     }
 
     parts.push({
@@ -260,12 +267,16 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
 
     const response = await generateContentWithRetry({
       contents: parts,
-    });
+      task: { capability: AiTaskCapability.StyleExtraction },
+    }, 0);
 
     if (response && response.text) {
       const extracted = normalizeExtractedStyle(response.text);
-      const result = { style: extracted };
-      setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, req.body, result);
+      const result = {
+        style: extracted,
+        fingerprint: createHash("sha256").update(_.join(_.sortBy(_.uniq(contentHashes)), ":")).digest("hex"),
+      };
+      setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, result);
       return res.json(result);
     } else {
       throw new Error(getBackendMsg("STYLE_EXTRACTION_ERR", isVi));
@@ -1488,7 +1499,20 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       text: visualBiblePrompt + (referenceImages && (!_.isEmpty(referenceImages)) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
     });
 
-    let visualBible: VisualBible = {};
+    let visualBible: VisualBible = {
+      characterSpecs: characterRef || "Preserve recurring identity anchors",
+      landscapeSpecs: "Preserve story-grounded environments and geography",
+      visualStyle: activeStyle || visualStyle,
+      colorPalette: activeStyle || visualStyle,
+      lightingMood: "style-compatible natural light",
+      lineStyle: activeStyle || visualStyle,
+      colorMode: activeStyle || visualStyle,
+      shading: activeStyle || visualStyle,
+      background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
+      textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
+      locations: [],
+      props: [],
+    };
     if (aiProviderAvailable) {
       try {
         const bibleResponse = await generateContentWithRetry({

@@ -14,6 +14,45 @@ export const isAiProviderAvailable = async (): Promise<boolean> => {
   return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
 };
 
+export const isGeminiProviderAvailable = async (): Promise<boolean> => {
+  const keys = await resolveApiKeys();
+  return !_.isEmpty(keys.geminiKey);
+};
+
+interface GeminiContentEstimate {
+  textCharacters: number;
+  estimatedTextTokens: number;
+  mediaInputCount: number;
+}
+
+export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate => {
+  let textCharacters = 0;
+  let mediaInputCount = 0;
+  const visit = (value: unknown): void => {
+    if (_.isString(value)) {
+      textCharacters += _.size(value);
+      return;
+    }
+    if (_.isArray(value)) {
+      _.forEach(value, visit);
+      return;
+    }
+    if (!_.isPlainObject(value)) return;
+    const source = value as Record<string, unknown>;
+    if (_.has(source, "inlineData") || _.has(source, "fileData")) {
+      mediaInputCount += 1;
+      return;
+    }
+    _.forEach(_.values(source), visit);
+  };
+  visit(contents);
+  return {
+    textCharacters,
+    estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS),
+    mediaInputCount,
+  };
+};
+
 let currentModelIndex = 0;
 
 export const generateContentWithRetry = async (
@@ -49,10 +88,10 @@ export const generateContentWithRetry = async (
 
   let lastError: any = null;
   const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
-  const estimatedInputTokens = _.ceil(_.size(_.toString(typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents))) / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS);
+  const contentEstimate = estimateGeminiContents(params.contents);
   let route: ReturnType<typeof routeAiTask>;
   try {
-    route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
+    route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens: contentEstimate.estimatedTextTokens, mediaInputCount: contentEstimate.mediaInputCount, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
   } catch (routeError: any) {
     routeError.rotationLogs = rotationLogs;
     throw routeError;
@@ -121,7 +160,9 @@ export const generateContentWithRetry = async (
           logStep("GEMINI_UNSUPPORTED_FALLBACK", model);
           break;
         }
-        const retryLimit = _.min([retries, decision.retryLimit]) || 0;
+        const retryLimit = _.isEqual(route.models.length, 1)
+          ? _.min([retries, decision.retryLimit]) || 0
+          : 0;
         const waitTime = _.ceil(_.max([delayMs, decision.waitMs])! * (GEMINI_REQUEST_POLICY.RETRY_JITTER_MIN + Math.random() * GEMINI_REQUEST_POLICY.RETRY_JITTER_RANGE));
         if (_.lte(attempt, retryLimit)) {
           logStep("GEMINI_RETRYABLE_ERROR", model, waitTime);

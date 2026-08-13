@@ -41,7 +41,7 @@ assert(!getSceneAssetSummary(scenes).complete && getSceneAssetSummary(scenes).mi
 assert(!normalizeHookScore({ factualSafety: 40, retention: 100, clarity: 100, emotion: 100 }).accepted, "unsafe hook was accepted");
 assert(!normalizeHookScore({ factualSafety: 100, retention: 100, clarity: 100, emotion: 100, unsupportedClaim: true }).accepted, "unsupported factual hook accepted");
 
-const durationAdvisory = normalizeScriptQualityReport({
+const flexibleDuration = normalizeScriptQualityReport({
   continuityScore: 100,
   repetitionScore: 100,
   factualityScore: 100,
@@ -53,11 +53,23 @@ const durationAdvisory = normalizeScriptQualityReport({
   suggestedPatches: [],
 }, 948, 300);
 assert(
-  !durationAdvisory.passed
-    && durationAdvisory.blockingErrors.length === 0
-    && durationAdvisory.warnings.includes("script_duration_out_of_target"),
-  "duration mismatch did not remain advisory",
+  flexibleDuration.passed
+    && flexibleDuration.durationFit
+    && flexibleDuration.blockingErrors.length === 0,
+  "reasonable flexible duration was rejected",
 );
+const shortDurationAdvisory = normalizeScriptQualityReport({
+  continuityScore: 100,
+  repetitionScore: 100,
+  factualityScore: 100,
+  emotionalArcScore: 100,
+  conversationalScore: 100,
+  hookPayoffScore: 100,
+  blockingErrors: [],
+  warnings: [],
+  suggestedPatches: [],
+}, 118, 120);
+assert(shortDurationAdvisory.passed && !shortDurationAdvisory.durationFit && shortDurationAdvisory.warnings.includes("script_duration_out_of_target"), "short duration did not remain advisory");
 
 const strongLanguageAdvisory = normalizeScriptQualityReport({
   continuityScore: 85,
@@ -72,7 +84,7 @@ const strongLanguageAdvisory = normalizeScriptQualityReport({
 }, 300, 120);
 assert(strongLanguageAdvisory.passed && strongLanguageAdvisory.blockingErrors.length === 0, "strong editorial language blocked the script");
 
-const audioTiming = evaluateAudioTiming(379, parseTargetDurationSeconds("5m"));
+const audioTiming = evaluateAudioTiming(140, parseTargetDurationSeconds("5m"));
 assert(!audioTiming.passed && !audioTiming.durationFit && audioTiming.warnings.includes("audio_perceptual_qa_pending"), "audio perceptual quality gate failed");
 const badThumbnail = evaluateThumbnail({ anatomy: 20, subjectCount: 90, promptAlignment: 90, characterConsistency: 90, composition: 90, styleConsistency: 90, editability: 90, usableForVideo: false, blockingErrors: ["missing_head"], warnings: [] });
 assert(!badThumbnail.passed, "headless thumbnail accepted");

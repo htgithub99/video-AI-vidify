@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { RENDER_QUEUE_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
+import { FFMPEG_RENDER_CONSTANTS, RENDER_QUEUE_CONFIG, REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { logger } from "../../lib/logger.js";
 import { getRenderJobFromDb, getRenderJobsFromDb, saveRenderJobToDb } from "../utils/db.js";
 import { FFmpegRenderOptions, renderFFmpegVideo } from "../utils/ffmpegRender.js";
@@ -45,6 +45,12 @@ const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   completedAt: job.completedAt ? new Date(job.completedAt) : undefined,
   heartbeatAt: job.heartbeatAt ? new Date(job.heartbeatAt) : undefined,
 });
+
+const createPublicRenderError = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : _.toString(error);
+  const sceneId = _.get(message.match(RENDER_QUEUE_CONFIG.SCENE_ID_PATTERN), SecurityConstants.DEFAULT_AMOUNT, RENDER_QUEUE_CONFIG.UNKNOWN_SCENE_ID);
+  return RENDER_QUEUE_CONFIG.PUBLIC_ERROR_TEMPLATE.replace("{sceneId}", sceneId);
+};
 
 class RenderQueueService {
   private queue: RenderJob[] = [];
@@ -135,16 +141,30 @@ class RenderQueueService {
     this.abortControllers.set(job.id, abortController);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const renderPromise = renderFFmpegVideo(job.payload, progress => {
-        if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
-        job.progress = progress;
-        job.heartbeatAt = new Date();
-        job.updatedAt = job.heartbeatAt;
-        if (_.subtract(Date.now(), lastPersistedAt) >= RENDER_QUEUE_CONFIG.PROGRESS_PERSIST_INTERVAL_MS) {
-          lastPersistedAt = Date.now();
-          void this.persist(job);
+      const renderPromise = (async (): Promise<string> => {
+        let lastError: unknown;
+        for (let attempt = 0; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt++) {
+          try {
+            return await renderFFmpegVideo({
+              ...job.payload,
+              safeProfile: attempt === FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT,
+            }, progress => {
+              if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
+              job.progress = progress;
+              job.heartbeatAt = new Date();
+              job.updatedAt = job.heartbeatAt;
+              if (_.subtract(Date.now(), lastPersistedAt) >= RENDER_QUEUE_CONFIG.PROGRESS_PERSIST_INTERVAL_MS) {
+                lastPersistedAt = Date.now();
+                void this.persist(job);
+              }
+            }, abortController.signal);
+          } catch (error) {
+            lastError = error;
+            if (attempt < FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT) logger.warn(RENDER_QUEUE_CONFIG.RETRY_WARNING, error);
+          }
         }
-      }, abortController.signal);
+        throw lastError;
+      })();
       const timeoutPromise = new Promise<never>((_resolve, reject) => {
         timeoutId = setTimeout(() => {
           abortController.abort();
@@ -169,7 +189,7 @@ class RenderQueueService {
     } catch (error: unknown) {
       if (!_.isEqual(job.status, JobStatus.CANCELLED)) {
         job.status = JobStatus.FAILED;
-        job.error = error instanceof Error ? error.message : REFACTOR_CONSTANTS.RENDER_ERR_DEFAULT;
+        job.error = createPublicRenderError(error);
         job.completedAt = new Date();
         job.updatedAt = job.completedAt;
         await this.persist(job);

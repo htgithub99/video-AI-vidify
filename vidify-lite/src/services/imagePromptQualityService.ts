@@ -11,7 +11,7 @@ export interface ImagePromptQualityOptions {
   requireStructuredPlan?: boolean;
 }
 
-const STICKMAN_STYLE_PATTERN = /\b(?:stickman|stick\s+figure|chibi\s+stick)/i;
+const ILLUSTRATED_STYLE_PATTERN = /\b(?:2d|cartoon|illustration|illustrated|hand[- ]?drawn|vector|flat\s+color|chibi|stickman|comic|ink|line\s+art)\b/i;
 const REALISTIC_STYLE_CONFLICT_PATTERN = /\b(?:realistic\s+cinematic|photorealistic|hyperrealistic|3d\s+render|dramatic\s+lighting|volumetric\s+lighting|award-winning\s+masterpiece|shot\s+on\s+\d+mm)\b/i;
 const GENERIC_PROMPT_PREFIX_PATTERN = /^\s*(?:stunning\s+high-quality\s+design\s+depicting\s*:\s*|a\s+clean\s+cinematic\s+visual\s+illustrating\s*:\s*)/i;
 const LEADING_STYLE_CONNECTOR_PATTERN = /^\s*(?:[.]\s*)?of\s+/i;
@@ -65,8 +65,8 @@ export const enforceImagePromptStyle = (prompt: string, targetStyle = "", narrat
     ).replace(LEADING_STYLE_CONNECTOR_PATTERN, ""));
   }
   normalizedPrompt = normalizedPrompt.replace(PARTIAL_STICKMAN_STYLE_PREFIX_PATTERN, "");
-  const stickmanTarget = STICKMAN_STYLE_PATTERN.test(normalizedStyle);
-  if (stickmanTarget) {
+  const illustratedTarget = ILLUSTRATED_STYLE_PATTERN.test(normalizedStyle);
+  if (illustratedTarget) {
     normalizedPrompt = normalizedPrompt.replace(new RegExp(REALISTIC_STYLE_CONFLICT_PATTERN.source, "gi"), "").replace(/\s*,\s*,+/g, ", ");
   }
   const subject = _.trim(normalizedPrompt) || _.trim(narration) || "the narrated action";
@@ -114,7 +114,7 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
     if (_.isEqual(TextInImageMode.NoText, options.textMode) && IMAGE_PROMPT_QA_CONFIG.READABLE_TEXT_REQUEST_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.READABLE_TEXT, "blocking"));
     if (PEOPLE_REQUEST_PATTERN.test(scene.prompt) && PEOPLE_FORBIDDEN_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.PEOPLE_CONFLICT, "blocking"));
     if (IMAGE_PROMPT_QA_CONFIG.READABLE_TEXT_REQUEST_PATTERN.test(scene.prompt) && TEXT_FORBIDDEN_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.TEXT_CONFLICT, "blocking"));
-    if (STICKMAN_STYLE_PATTERN.test(options.targetStyle || "") && (!STICKMAN_STYLE_PATTERN.test(scene.prompt) || REALISTIC_STYLE_CONFLICT_PATTERN.test(scene.prompt))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.STYLE_CONFLICT, "blocking"));
+    if (ILLUSTRATED_STYLE_PATTERN.test(options.targetStyle || "") && (!ILLUSTRATED_STYLE_PATTERN.test(scene.prompt) || REALISTIC_STYLE_CONFLICT_PATTERN.test(scene.prompt))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.STYLE_CONFLICT, "blocking"));
     if (IMAGE_PROMPT_QA_CONFIG.ENGINE_PARAMETER_PATTERN.test(_.replace(scene.prompt, IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN, ""))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ENGINE_SYNTAX_CONFLICT, "blocking"));
     if (IMAGE_PROMPT_QA_CONFIG.GENERIC_PORTRAIT_PATTERN.test(scene.prompt) && !_.includes(["reaction", "emotional_hold"], scene.shotPurpose)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.GENERIC_CENTERED_PORTRAIT, "warning"));
     if (options.requireStructuredPlan) {
@@ -126,7 +126,8 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
       if (!_.isEmpty(scene.visibleAction) && IMAGE_PROMPT_QA_CONFIG.ABSTRACT_ONLY_PATTERN.test(_.trim(scene.visibleAction))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ABSTRACT_ACTION, "blocking"));
       if (!_.isNumber(scene.expectedSubjectCount)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_SUBJECT_COUNT, "blocking"));
       if (_.some(scene.characterIds, id => !characterIds.has(id))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_CHARACTER_ID, "blocking"));
-      if (PEOPLE_REQUEST_PATTERN.test(_.join([scene.prompt, scene.visibleAction], " ")) && _.isEmpty(scene.characterIds) && !scene.allowBackgroundPeople) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_CHARACTER_ID, "blocking"));
+      const namedCharacterRequested = _.some(options.characters, character => new RegExp(`\\b${_.escapeRegExp(character.name)}\\b`, "i").test(_.join([scene.prompt, scene.visibleAction], " ")));
+      if (namedCharacterRequested && _.isEmpty(scene.characterIds)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_CHARACTER_ID, "blocking"));
       if (!_.isEmpty(locationIds) && _.isEmpty(scene.locationId)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_LOCATION_ID, "blocking"));
       if (!_.isEmpty(scene.locationId) && !locationIds.has(scene.locationId)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_LOCATION_ID, "blocking"));
       if (_.some(scene.propIds, id => !propIds.has(id))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_PROP_ID, "blocking"));

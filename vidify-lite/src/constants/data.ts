@@ -276,8 +276,30 @@ export const AI_TRANSITION_EFFECT_IDS = ["cut", "cross_dissolve", "blur_dissolve
 export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitch", "warm", "cold", "noir", "horror_fog", "vhs", "neon", "film_grain", "sharpen", "chromatic_aberration", "pixelate", "soft_focus"] as const;
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 
-export const AI_MODEL_REGISTRY = [{ id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1 }] as const;
-export const AVAILABLE_MODELS = AI_MODEL_REGISTRY.filter((model) => model.freeEligible).map((model) => model.id);
+export const AI_MODEL_CAPABILITY = {
+  TEXT: "text",
+  VISUAL: "visual",
+  AUDIO: "audio",
+} as const;
+
+export const AI_MODEL_REGISTRY = [
+  {
+    id: "gemini-3-flash",
+    freeEligible: true,
+    priority: 1,
+    capabilities: [AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
+  },
+  {
+    id: "gemini-3.5-flash-lite",
+    freeEligible: true,
+    priority: 2,
+    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
+  },
+] as const;
+export const AVAILABLE_MODELS = _.map(
+  _.sortBy(_.filter(AI_MODEL_REGISTRY, "freeEligible"), "priority"),
+  "id",
+);
 export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;
 export const GEMINI_ZERO_QUOTA_PATTERNS = ["limit: 0", "limit=0", "free_tier_requests, limit: 0", "free_tier_input_token_count, limit: 0"] as const;
 export const GEMINI_DAILY_QUOTA_PATTERNS = ["perday", "per day", "requestsperday", "tokensperday"] as const;
