@@ -4,6 +4,28 @@ export const APP_CONFIG = {
   TOAST_DURATION: 3000,
 };
 
+export const QUALITY_RETRY_CONFIG = {
+  MAX_REPAIR_ATTEMPTS: 1,
+  MAX_EVALUATION_ATTEMPTS: 2,
+} as const;
+
+export const EDITOR_REPAIR_CONFIG = {
+  CAMERA_MOTIONS: ["drift", "push_in", "pull_out", "pan_left", "pan_right"],
+  TRANSITIONS: ["cut", "cross_dissolve", "cut", "fade_black"],
+} as const;
+
+export const SEO_FALLBACK_CONFIG = {
+  DEFAULT_TITLE_COUNT: 3,
+  DEFAULT_DESCRIPTION_COUNT: 2,
+  DEFAULT_HASHTAG_COUNT: 5,
+  DEFAULT_TAG_COUNT: 6,
+  TITLE_MAX_LENGTH: 100,
+  DESCRIPTION_MAX_LENGTH: 500,
+  TAG_MIN_LENGTH: 4,
+  UNKNOWN_SCORE: 0,
+  WARNING: "seo_source_fallback_used",
+} as const;
+
 export const PIPELINE_CONFIG = {
   BATCH_CHUNK_SIZE_REWRITE: 25,
   BATCH_CHUNK_SIZE_OPTIMIZE: 8,
@@ -139,7 +161,7 @@ export const IMAGE_PROMPT_QA_CONFIG = {
   MIN_WORDS: 25,
   MAX_WORDS: 140,
   MAX_ADJACENT_SIMILARITY: 0.88,
-  MAX_CORRECTION_ATTEMPTS: 2,
+  MAX_CORRECTION_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
   CAMERA_PATTERN: /\b(?:shot|angle|composition|view|framing)\b/i,
   VISIBLE_ACTION_PATTERN: /\b(?:opens?|closes?|holds?|drops?|lifts?|pushes?|pulls?|walks?|runs?|sits?|stands?|turns?|looks?|reaches?|takes?|gives?|hides?|reveals?|enters?|leaves?|points?|watches?|reacts?|moves?|drives?|falls?|breaks?|builds?|counts?|pays?|signs?|drinks?|eats?|works?|fights?|cries?|laughs?|smiles?|stares?|grips?|places?|removes?|wears?|shows?)\b/i,
   ABSTRACT_ONLY_PATTERN: /^(?:an?\s+)?(?:feeling|emotion|concept|idea|sense|symbol|metaphor|mood)\b/i,
@@ -226,6 +248,7 @@ export const CHARACTER_REFERENCE_CONFIG = {
   GENERATION_FAILED: "Chưa thể tạo ảnh chuẩn cho nhân vật {name}. Hãy kiểm tra công cụ tạo ảnh rồi tiếp tục dự án.",
   REFERENCE_REQUIRED: "Nhân vật lặp lại chưa có ảnh chuẩn được duyệt. Hãy tạo lại ảnh nhân vật trước khi tạo cảnh.",
   MIN_QA_SCORE: 85,
+  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
   QA_REQUIRED: "Chưa thể kiểm tra ảnh chuẩn nhân vật. Hãy kiểm tra kết nối rồi thử lại.",
   QA_REJECTED: "Ảnh chuẩn nhân vật chưa đạt độ nhất quán. Hãy tạo lại ảnh nhân vật.",
 } as const;
@@ -328,7 +351,6 @@ export const FFMPEG_RENDER_CONSTANTS = {
   CLEANUP_RETRY_DELAY_MS: 150,
   LOG_CLEANUP_WARNING: "FFmpeg temporary directory cleanup deferred",
   DEFAULT_SUBTITLE_MODE: SubtitleMode.BurnIn,
-  ERR_AUDIO_TRACK_MISSING: "A required music or sound asset is missing.",
 } as const;
 
 export const FFMPEG_RENDER_KEYS = {
@@ -705,6 +727,14 @@ export const SYSTEM_FETCH_CONFIG = {
   NDJSON_LINE_SEPARATOR: "\n",
 } as const;
 
+export const PIPELINE_COMPLETION_CONFIG = {
+  STORYBOARD_MISSING: "storyboard_missing",
+  SCENE_ASSETS_MISSING: "scene_assets_missing",
+  NARRATION_MISSING: "narration_missing",
+  CONTENT_SAFETY_BLOCKED: "content_safety_blocked",
+  FINAL_RENDER_MISSING: "final_render_missing",
+} as const;
+
 export const MANUAL_REVIEW_CONFIG = {
   ITEM_NOT_FOUND_ERROR: "Manual review item was not found.",
   SCOPE_SCENE: "scene",
@@ -736,7 +766,27 @@ export const DEPENDENCY_HASH_CONFIG = {
 export const STORYBOARD_QUALITY_CONFIG = {
   MIN_SCORE: 85,
   BELOW_TARGET_WARNING: "storyboard_quality_below_target",
-  MAX_REPAIR_ATTEMPTS: 2,
+  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
+} as const;
+
+export const STORYBOARD_FALLBACK_CONFIG = {
+  SCENE_ID_PREFIX: "sc_",
+  DEFAULT_CHAPTER_ID: "",
+  MIN_SCENE_DURATION_SECONDS: 3,
+  ESTIMATED_WORDS_PER_SECOND: 2.5,
+  DEFAULT_VOICE_SPEED: 1,
+  MIN_TOTAL_DURATION_SECONDS: 10,
+  SHORT_SCENE_MAX_WORDS: 12,
+  LONG_SCENE_MAX_WORDS: 28,
+  PARAGRAPH_SCENE_SENTENCE_COUNT: 3,
+  STANDARD_SCENE_SENTENCE_COUNT: 2,
+  FALLBACK_WARNING: "storyboard_ai_fallback_used",
+  VISUAL_BIBLE_WARNING: "visual_bible_unavailable",
+  VISUAL_INTENT_TEMPLATE: "Editorial visual grounded only in this narration: {script}",
+  SCRIPT_TOKEN: "{script}",
+  SHOT_SIZES: ["wide shot", "medium shot", "close-up"],
+  CAMERA_ANGLES: ["eye level", "three-quarter angle", "side angle"],
+  COMPOSITIONS: ["rule of thirds", "centered emphasis", "layered depth"],
 } as const;
 
 export const PRODUCTION_AUDIO_CONFIG = {
@@ -746,9 +796,26 @@ export const PRODUCTION_AUDIO_CONFIG = {
 } as const;
 
 export const SCRIPT_REPAIR_CONFIG = {
-  MAX_ATTEMPTS: 2,
+  MAX_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
   MAX_OUTPUT_TOKENS: 8_192,
   EMPTY_REPAIR_ERROR: "script_repair_returned_empty_content",
+} as const;
+
+export const SCRIPT_PLAN_CONFIG = {
+  MIN_CHAPTERS: 3,
+  MAX_CHAPTERS: 8,
+  TARGET_WORDS_PER_CHAPTER: 300,
+  MAX_OUTPUT_TOKENS: 8_192,
+  MAX_RESPONSE_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_EVALUATION_ATTEMPTS,
+  INVALID_RESPONSE_ERROR: "invalid_script_plan_response",
+  INVALID_CHAPTERS_ERROR: "invalid_script_plan_response_invalid_chapters",
+  REQUIRED_CHAPTER_CONTENT_FIELDS: ["id", "title", "description", "purpose"],
+  RETRY_DIRECTIVE: "The previous response was invalid, incomplete, or truncated. Generate the entire JSON object again from the beginning. Include every required schema field and exactly {chapterCount} concise chapters. Do not continue the previous response. Output only raw JSON.",
+  CHAPTER_COUNT_TOKEN: "{chapterCount}",
+  SOURCE_FALLBACK_WARNING: "script_plan_source_fallback_used",
+  SOURCE_CHAPTER_ID_PREFIX: "source_chapter_",
+  SOURCE_TITLE_MAX_LENGTH: 72,
+  SOURCE_TITLE_OMISSION: "...",
 } as const;
 
 export const VOICE_DIRECTION_CONFIG = {
@@ -756,7 +823,33 @@ export const VOICE_DIRECTION_CONFIG = {
   MIN_SPEED: 0.8,
   MAX_SPEED: 1.2,
   DEFAULT_EMOTION: "neutral",
+  MAX_REQUEST_ATTEMPTS: 3,
+  RETRY_DELAY_MS: 1_000,
   MERGE_FAILED: "Chưa thể ghép các đoạn giọng đọc. Hãy thử lại bước giọng đọc.",
+} as const;
+
+export const AUDIO_QUALITY_CONFIG = {
+  MIN_SCORE: 85,
+  QA_UNAVAILABLE_ERROR: "audio_perceptual_qa_unavailable",
+  BELOW_TARGET_WARNING: "audio_quality_below_target",
+  REPAIR_FAILED_WARNING: "audio_quality_repair_unavailable",
+  GENERATED_AUDIO_REQUIRED_ERROR: "voice_repair_returned_empty_audio",
+  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
+} as const;
+
+export const VOICE_ALIGNMENT_CONFIG = {
+  BASE64_DELIMITER: "base64,",
+  MIN_AUDIO_DURATION_SECONDS: 0.1,
+  WORD_PATTERN: /\S+/g,
+  SCENE_VOICE_RESET_FIELDS: ["audioBase64", "audioUrl", "subtitleCues", "_start", "_end"],
+  BACKEND_WARNING: "voice_alignment_backend_unavailable",
+  DURATION_WARNING: "voice_duration_decode_unavailable",
+} as const;
+
+export const IMAGE_GENERATION_RETRY_CONFIG = {
+  MAX_ATTEMPTS: 3,
+  BASE_DELAY_MS: 1_000,
+  BACKOFF_MULTIPLIER: 2,
 } as const;
 
 export const SOUND_DESIGN_CONFIG = {
@@ -820,6 +913,7 @@ export const FINAL_MULTIMODAL_QA_CONFIG = {
   UNAVAILABLE_WARNING: "final_multimodal_qa_unavailable",
   UNAVAILABLE_ERROR: "final_multimodal_qa_required",
   BELOW_TARGET_WARNING: "final_quality_below_target",
+  MAX_EVALUATION_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_EVALUATION_ATTEMPTS,
   SCORE_FIELDS: [
     "visualScore",
     "cropScore",
@@ -846,7 +940,7 @@ export const VISUAL_QA_MEDIA_CONFIG = {
 } as const;
 
 export const VISUAL_ASSET_REPAIR_CONFIG = {
-  MAX_ATTEMPTS: 2,
+  MAX_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
   PROMPT_TEMPLATE: "{prompt}. Correct every rejected visual defect from the previous candidate: {feedback}. Preserve the required identity, action, subject count, composition, continuity, and style. Produce one clean production-ready frame only.",
   PROMPT_TOKEN: "{prompt}",
   FEEDBACK_TOKEN: "{feedback}",
@@ -872,7 +966,7 @@ export const AI_TASK_ROUTER_CONFIG = {
 export const RESPONSE_CONTRACT_CONFIG = {
   REQUIRED_PATHS: {
     hook: ["audience", "versions"],
-    script_plan: ["theme", "creativeBrief", "narrativePlan", "factPack", "chapters"],
+    script_plan: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan.viewerPromise", "narrativePlan.centralQuestion", "narrativePlan.protagonist", "narrativePlan.beats", "narrativePlan.callbacks", "narrativePlan.endingPayoff", "factPack", "chapters"],
     chapter: ["scriptSegment"],
   },
   MIN_SCRIPT_PLAN_CHAPTERS: 3,
@@ -907,6 +1001,8 @@ export const IMAGE_UPSCALE_CONFIG = {
 
 export const PIPELINE_CLIENT_ERRORS = {
   REFERENCE_PERSIST_TEMPLATE: "Failed to persist {group} references.",
+  REFERENCE_PERSIST_CONTINUED: "Chưa thể lưu ảnh tham chiếu {group}; hệ thống tiếp tục dùng ảnh thật trong phiên này.",
+  REFERENCE_GROUP_TOKEN: "{group}",
   REQUEST_REJECTED: "System pipeline rejected the request.",
   HOOK_GENERATION_FAILED: "Failed to generate hooks.",
   STYLE_EXTRACTION_FAILED: "Style extraction failed",
@@ -914,6 +1010,7 @@ export const PIPELINE_CLIENT_ERRORS = {
   CHARACTER_EXTRACTION_FAILED: "Character extraction failed",
   CHARACTER_REFERENCE_PERSIST_FAILED: "Chưa thể lưu ảnh chuẩn nhân vật. Hãy kiểm tra dung lượng lưu trữ rồi thử lại.",
   AUDIO_REFERENCE_PERSIST_FAILED: "Chưa thể lưu tệp nhạc. Hãy kiểm tra định dạng hoặc dung lượng rồi thử lại.",
+  AUDIO_REFERENCE_SKIPPED: "Chưa thể lưu nhạc nền nên hệ thống tiếp tục không có nhạc. Bạn có thể thêm lại sau.",
   PROMPT_GENERATION_FAILED: "Prompt generation failed",
   AUDIO_URL_MISSING: "Missing audio URL from synthesis",
   AUDIO_MISSING: "No audio returned",
@@ -928,6 +1025,8 @@ export const PIPELINE_SERVER_ERRORS = {
   SCRIPT_LANGUAGE_INVALID: "script_language_integrity_failed",
   SCRIPT_LANGUAGE_INVALID_VI: "Một phần kịch bản chưa hiển thị đúng tiếng Việt. Hệ thống đã thử tạo lại nhưng chưa thành công. Vui lòng thử lại bước kịch bản.",
   SCRIPT_LANGUAGE_INVALID_EN: "Part of the script was not generated in the selected language. Please retry the script step.",
+  SCRIPT_PLAN_INVALID_VI: "Kế hoạch kịch bản nhận được chưa đầy đủ. Hệ thống đã tự thử lại nhưng chưa thành công. Hãy tiếp tục lại dự án để tạo lại bước kịch bản.",
+  SCRIPT_PLAN_INVALID_EN: "The received script plan was incomplete. Automatic retries did not succeed. Resume the project to generate the script step again.",
   STORYBOARD_STRUCTURE_INVALID: "Phân cảnh chưa có đủ dữ liệu để dựng video. Hãy thử lại bước phân cảnh.",
   STORYBOARD_QUALITY_REJECTED: "Phân cảnh chưa đạt chất lượng biên tập. Hãy thử tạo lại phân cảnh.",
   STORYBOARD_GENERATION_FAILED: "Chưa thể tạo phân cảnh hoàn chỉnh. Hãy kiểm tra kết nối rồi tiếp tục dự án.",
@@ -947,6 +1046,7 @@ export const CONTENT_SAFETY_CONFIG = {
   MAX_OUTPUT_TOKENS: 1024,
   REVIEW_FAILED_LOG: "Content safety review unavailable",
   INCOMPLETE_RESPONSE_ERROR: "content_safety_response_incomplete",
+  UNAVAILABLE_WARNING: "content_safety_review_unavailable",
   REQUIRED_BOOLEAN_FIELDS: [
     "sensitiveTopic",
     "trueCase",
@@ -970,6 +1070,7 @@ export const FACT_RESEARCH_CONFIG = {
 export const PIPELINE_SERVER_LOGS = {
   INVALID_CHAPTER_RESPONSE_DISCARDED: "[Script] Discarded an invalid chapter response.",
   INVALID_CHAPTER_LANGUAGE_DISCARDED: "[Script] Discarded a chapter response with invalid language formatting.",
+  INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED: "[Script] Discarded invalid script plan response {0}/{1}.",
 } as const;
 
 export const GEMINI_MEDIA_ERRORS = {

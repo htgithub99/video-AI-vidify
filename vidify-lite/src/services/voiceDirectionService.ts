@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, VOICE_DIRECTION_CONFIG } from "../constants";
-import { safeSystemFetch } from "../lib/shared-utils";
+import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTION_CONFIG } from "../constants";
+import { delayAsync, safeSystemFetch } from "../lib/shared-utils";
 import { VoiceArc, VoiceDirection } from "../types";
 
 export interface DirectedVoiceOptions {
@@ -46,6 +46,49 @@ const createDirectedPayload = (
   pauseScale: direction.pauseScale,
 });
 
+const requestVoiceChunk = async (
+  text: string,
+  direction: VoiceDirection,
+  basePayload: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<{ audioBase64: string; provider: string }> => {
+  let lastError: string = AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED;
+  for (let attempt = 0; attempt < VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS; attempt++) {
+    const response = await safeSystemFetch(
+      API_ROUTES.PIPELINE_VOICE,
+      createDirectedPayload(text, direction, basePayload),
+      signal,
+    );
+    const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
+    if (response.success && !_.isEmpty(audioBase64)) {
+      return {
+        audioBase64,
+        provider: _.toString(_.get(response.data, "provider", _.get(basePayload, "provider"))),
+      };
+    }
+    lastError = _.toString(response.error || _.get(response.data, "error") || lastError);
+    if (_.lt(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT), VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS)) {
+      await delayAsync(VOICE_DIRECTION_CONFIG.RETRY_DELAY_MS * _.add(attempt, SecurityConstants.DEFAULT_AMOUNT));
+    }
+  }
+  throw new Error(lastError);
+};
+
+const mergeVoiceChunks = async (
+  chunks: Array<{ audioBase64: string }>,
+  signal?: AbortSignal,
+): Promise<string> => {
+  for (let attempt = 0; attempt < VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS; attempt++) {
+    const response = await safeSystemFetch(API_ROUTES.PIPELINE_MERGE_AUDIO, { chunks }, signal);
+    const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
+    if (response.success && !_.isEmpty(audioBase64)) return audioBase64;
+    if (_.lt(_.add(attempt, SecurityConstants.DEFAULT_AMOUNT), VOICE_DIRECTION_CONFIG.MAX_REQUEST_ATTEMPTS)) {
+      await delayAsync(VOICE_DIRECTION_CONFIG.RETRY_DELAY_MS * _.add(attempt, SecurityConstants.DEFAULT_AMOUNT));
+    }
+  }
+  throw new Error(VOICE_DIRECTION_CONFIG.MERGE_FAILED);
+};
+
 export const generateDirectedVoice = async ({
   text,
   voiceArc,
@@ -58,19 +101,11 @@ export const generateDirectedVoice = async ({
   for (let index = 0; index < narrationSegments.length; index++) {
     const directionKey = _.get(VOICE_ARC_ORDER, index, _.last(VOICE_ARC_ORDER));
     const direction = voiceArc[directionKey];
-    const response = await safeSystemFetch(
-      API_ROUTES.PIPELINE_VOICE,
-      createDirectedPayload(narrationSegments[index], direction, basePayload),
-      signal,
-    );
-    const audioBase64 = _.toString(_.get(response.data, "audioBase64"));
-    if (!response.success || _.isEmpty(audioBase64)) throw new Error(_.toString(response.error || _.get(response.data, "error") || AUTO_GENERATOR_CONSTANTS.ERR_VOICE_TTS_FAILED));
-    chunks.push({ audioBase64 });
-    provider = _.toString(_.get(response.data, "provider", provider));
+    const chunk = await requestVoiceChunk(narrationSegments[index], direction, basePayload, signal);
+    chunks.push({ audioBase64: chunk.audioBase64 });
+    provider = chunk.provider || provider;
   }
   if (_.isEqual(_.size(chunks), 1)) return { audioBase64: chunks[0].audioBase64, provider };
-  const mergeResponse = await safeSystemFetch(API_ROUTES.PIPELINE_MERGE_AUDIO, { chunks }, signal);
-  const audioBase64 = _.toString(_.get(mergeResponse.data, "audioBase64"));
-  if (!mergeResponse.success || _.isEmpty(audioBase64)) throw new Error(VOICE_DIRECTION_CONFIG.MERGE_FAILED);
+  const audioBase64 = await mergeVoiceChunks(chunks, signal);
   return { audioBase64, provider };
 };

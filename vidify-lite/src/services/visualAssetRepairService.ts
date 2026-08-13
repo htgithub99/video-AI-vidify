@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, VISUAL_ASSET_REPAIR_CONFIG } from "../constants";
+import { API_ROUTES, VISUAL_ASSET_REPAIR_CONFIG } from "../constants";
 import { safeSystemFetch } from "../lib/shared-utils";
 import { GenerateType, ImageGeneratorEngine, StoryboardScene } from "../types";
 import { createProjectImageUrl, ProjectImageResult } from "./projectImageGenerationService";
@@ -67,7 +67,7 @@ const generateReplacement = async (
 
 export const validateAndRepairVisualAsset = async (
   options: VisualAssetRepairOptions,
-): Promise<{ assetUrl: string; assetType: GenerateType.Image | GenerateType.Video; generationPrompt: string; quality: NonNullable<SceneVisualQualityResult["quality"]>; repaired: boolean }> => {
+): Promise<{ assetUrl: string; assetType: GenerateType.Image | GenerateType.Video; generationPrompt: string; quality?: SceneVisualQualityResult["quality"]; repaired: boolean; approved: boolean; qaAvailable: boolean }> => {
   let assetUrl = _.toString(options.target.assetUrl);
   const assetType = _.isEqual(options.target.assetType, GenerateType.Video)
     ? GenerateType.Video
@@ -80,11 +80,23 @@ export const validateAndRepairVisualAsset = async (
       options.referenceAssetUrl,
       options.referenceAssetUrls,
     );
-    if (!result.success || !result.quality) throw new Error(REFACTOR_CONSTANTS.ERR_VISUAL_QA_REQUIRED);
-    if (result.approved) return { assetUrl, assetType, generationPrompt, quality: result.quality, repaired: attempt > 0 };
-    if (_.isEqual(attempt, VISUAL_ASSET_REPAIR_CONFIG.MAX_ATTEMPTS)) break;
+    if (!result.success || !result.quality) {
+      if (_.lt(attempt, VISUAL_ASSET_REPAIR_CONFIG.MAX_ATTEMPTS)) continue;
+      return { assetUrl, assetType, generationPrompt, repaired: attempt > 0, approved: false, qaAvailable: false };
+    }
+    if (result.approved || _.isEqual(attempt, VISUAL_ASSET_REPAIR_CONFIG.MAX_ATTEMPTS)) {
+      return {
+        assetUrl,
+        assetType,
+        generationPrompt,
+        quality: result.quality,
+        repaired: attempt > 0,
+        approved: result.approved,
+        qaAvailable: true,
+      };
+    }
     generationPrompt = createRepairPrompt(generationPrompt, result);
     assetUrl = await generateReplacement(options, generationPrompt);
   }
-  throw new Error(VISUAL_ASSET_REPAIR_CONFIG.QUALITY_REJECTED);
+  return { assetUrl, assetType, generationPrompt, repaired: false, approved: false, qaAvailable: false };
 };

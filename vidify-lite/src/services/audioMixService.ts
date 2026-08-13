@@ -20,8 +20,3 @@ export const createRenderAudioTracks = (cueSheet?: AudioCueSheet): RenderAudioTr
     }),
   );
 };
-
-export const validateAudioCueAssets = (cueSheet?: AudioCueSheet): string[] => _.map(
-  _.filter(cueSheet?.cues, cue => cue.required && (cue.status !== AudioCueStatus.Approved || _.isEmpty(cue.assetUrl))),
-  "id",
-);

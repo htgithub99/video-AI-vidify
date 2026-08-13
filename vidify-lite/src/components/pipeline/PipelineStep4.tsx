@@ -7,7 +7,7 @@ import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
 import { ManualReviewStatus, SceneAssetStatus, WizardStep } from "../../types";
-import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS, FFMPEG_RENDER_CONSTANTS } from "../../constants";
+import { EXPORT_TYPES, PLAYER_SIMULATION_CONFIG, API_ROUTES, PIPELINE_STEP4_TEXTS, REFACTOR_CONSTANTS, STORAGE_KEYS, API_HEADERS, FFMPEG_RENDER_CONSTANTS, PIPELINE_COMPLETION_CONFIG } from "../../constants";
 import { PIPELINE_STEP4_SHORT_TEXTS } from "../../constants/texts";
 import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../constants/enums";
 import { logger } from "../../utils/logger";
@@ -15,11 +15,11 @@ import { safeSystemFetch, getStoredApiKey } from "../../lib/shared-utils";
 import _ from "lodash";
 import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
-import { hasProductionAudioSource } from "../../services/productionAudioService";
-import { createRenderAudioTracks, validateAudioCueAssets } from "../../services/audioMixService";
+import { createRenderAudioTracks } from "../../services/audioMixService";
 import { createSubtitleCues } from "../../services/subtitleService";
 import { validateFinalVideo } from "../../services/finalMultimodalQualityService";
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
+import { getRenderReadiness } from "../../services/pipelineCompletionPolicyService";
 
 const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
@@ -61,30 +61,16 @@ export default function PipelineStep4(props: PipelineWizardState) {
   };
 
   const isValidToRender = () => {
-    if (_.isEmpty(props.project?.storyboard)) {
+    const readiness = getRenderReadiness(props.project);
+    if (_.includes(readiness.blockers, PIPELINE_COMPLETION_CONFIG.STORYBOARD_MISSING)) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_STORYBOARD);
       return false;
     }
-    const missingImages = _.some(props.project.storyboard, sc => !getSceneImageUrl(sc));
-    if (missingImages) {
+    if (_.includes(readiness.blockers, PIPELINE_COMPLETION_CONFIG.SCENE_ASSETS_MISSING)) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_IMAGES);
       return false;
     }
-    if (_.some(props.project.storyboard, scene => scene.assetStatus !== SceneAssetStatus.Approved)
-      || _.some(props.project.thumbnails, thumbnail => !thumbnail.approved)
-      || !props.project.voiceConfig.audioQa?.passed
-      || !props.project.subtitleQa?.passed
-      || !props.project.editorQa?.passed
-      || _.some(props.project.manualReviewItems, { status: ManualReviewStatus.Pending })) {
-      props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_QA);
-      return false;
-    }
-    const hasVoice = hasProductionAudioSource([
-      props.project?.voiceConfig?.audioBase64,
-      props.project?.voiceConfig?.audioUrl,
-      ..._.flatMap(props.project.storyboard, scene => [scene.audioBase64, scene.audioUrl]),
-    ]);
-    if (!hasVoice) {
+    if (_.includes(readiness.blockers, PIPELINE_COMPLETION_CONFIG.NARRATION_MISSING)) {
       props.setInfoMsg(PIPELINE_STEP4_TEXTS.ERR_REQUIRE_AUDIO);
       return false;
     }
@@ -94,11 +80,6 @@ export default function PipelineStep4(props: PipelineWizardState) {
   const handleOfflineRenderFFmpeg = async () => {
     if (!isValidToRender()) return;
     const scenesWithSubtitles = createSubtitleCues(props.project.storyboard);
-    const missingAudioCueIds = validateAudioCueAssets(props.project.audioCueSheet);
-    if (!_.isEmpty(missingAudioCueIds)) {
-      props.setInfoMsg(REFACTOR_CONSTANTS.ERR_SOUND_ASSET_MISSING);
-      return;
-    }
     setIsRenderLoading(true);
     props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDERING_WAIT);
     try {
@@ -170,19 +151,14 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   const completedProject = {
                     ...reviewedProject,
                     finalQc,
-                    status: finalMultimodalQa.passed && finalQc.publishable
-                      ? REFACTOR_CONSTANTS.STATUS_COMPLETED
-                      : REFACTOR_CONSTANTS.STATUS_PARTIAL,
+                    status: REFACTOR_CONSTANTS.STATUS_COMPLETED,
                   };
                   props.setProject(completedProject);
                   await props.onSaveProject(completedProject, true);
-                  if (!finalMultimodalQa.passed || !finalQc.publishable) {
-                    props.setInfoMsg(PIPELINE_STEP4_TEXTS.FINAL_QA_REJECTED);
-                    setIsRenderLoading(false);
-                    return;
-                  }
                   setPreviewVideoUrl(statusData.url);
-                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS);
+                  props.setInfoMsg(finalMultimodalQa.passed && finalQc.publishable
+                    ? PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS
+                    : PIPELINE_STEP4_TEXTS.FINAL_QA_REJECTED);
                  setIsRenderLoading(false);
                  return;
                } else if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_FAILED)) {

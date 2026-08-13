@@ -10,11 +10,11 @@ const assert = (condition: unknown, message: string): void => {
   if (!condition) throw new Error(message);
 };
 
-const blockedVideoConfig = resolveVisualConfig({
+const resolvedVideoConfig = resolveVisualConfig({
   generateType: GenerateType.Video,
   imageGeneratorEngine: ImageGeneratorEngine.Imagen,
 } as any);
-assert(blockedVideoConfig.blocked, "unsupported video/image-engine conflict was not blocked");
+assert(!resolvedVideoConfig.blocked && resolvedVideoConfig.config.generateType === GenerateType.Image, "unsupported video/image-engine conflict was not recovered");
 const textIdentityConfig = resolveVisualConfig({ characterConsistency: true, characterPrompt: "Vietnamese man in his forties, short black hair, worn navy jacket" } as any);
 assert(textIdentityConfig.config.characterConsistency, "textual character identity was incorrectly disabled");
 

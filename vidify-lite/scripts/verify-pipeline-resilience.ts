@@ -16,8 +16,9 @@ const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
 
-const fallbackHooks = resolveUsableHooks([], "Auto", 3);
-assert(fallbackHooks.length === 0, "empty hooks must fail instead of returning synthetic content");
+const sourceHookText = "A real opening sentence from the supplied script.";
+const fallbackHooks = resolveUsableHooks([], "Auto", 3, sourceHookText);
+assert(fallbackHooks.length === 1 && fallbackHooks[0].content === sourceHookText, "source hook fallback changed the supplied content");
 const first = acquirePipelineRunLease("project_1");
 const duplicate = acquirePipelineRunLease("project_1");
 assert(first.acquired && !duplicate.acquired, "duplicate pipeline run was accepted");

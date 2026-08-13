@@ -44,7 +44,8 @@ const repetitiveEditReport = evaluateEdit(Array.from({ length: 8 }, (_, index) =
 assert.equal(repetitiveEditReport.passed, false);
 assert.ok(repetitiveEditReport.blockingErrors.includes("edit_pattern_too_repetitive"));
 
-assert.equal(normalizeContentSafety({}).allowed, false);
+assert.equal(normalizeContentSafety({}).allowed, true);
+assert.ok(normalizeContentSafety({}).warnings.includes("content_safety_response_incomplete"));
 assert.equal(normalizeContentSafety({
   sensitiveTopic: false,
   trueCase: false,

@@ -4,7 +4,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { renderFFmpegVideo } from "../src/server/utils/ffmpegRender.ts";
 import { VideoQuality } from "../src/constants/enums.ts";
-import { SubtitleMode } from "../src/types.ts";
+import { AudioCueType, SubtitleMode } from "../src/types.ts";
 import { readVisualQaAssets } from "../src/server/services/visualQaMediaService.ts";
 
 const execFileAsync = promisify(execFile);
@@ -52,7 +52,22 @@ const rejectedAudioResults = await Promise.all(rejectedAudioSources.map(async gl
   }
 }));
 if (rejectedAudioResults.filter(Boolean).length !== EXPECTED_AUDIO_REJECTION_COUNT) throw new Error("Renderer accepted a missing or blocked narration source");
-const outputUrl = await renderFFmpegVideo({ projectId: PROJECT_ID, quality: VideoQuality.LOW, aspectRatio: "16:9", globalAudioBase64: createSilentWav(3), subtitleMode: SubtitleMode.Both, scenes: renderScenes });
+const outputUrl = await renderFFmpegVideo({
+  projectId: PROJECT_ID,
+  quality: VideoQuality.LOW,
+  aspectRatio: "16:9",
+  globalAudioBase64: createSilentWav(3),
+  subtitleMode: SubtitleMode.Both,
+  scenes: renderScenes,
+  audioTracks: [{
+    id: "optional_missing_music",
+    type: AudioCueType.Music,
+    assetUrl: "/assets/projects/missing/music.mp3",
+    startSeconds: 0,
+    durationSeconds: 3,
+    volumeDb: -18,
+  }],
+});
 const outputPath = path.resolve(process.cwd(), outputUrl.replace(/^\//, ""));
 if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) throw new Error("Rendered MP4 is missing or empty");
 const outputBytes = fs.statSync(outputPath).size;

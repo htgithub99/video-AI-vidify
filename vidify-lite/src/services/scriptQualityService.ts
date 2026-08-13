@@ -73,7 +73,6 @@ export const normalizeScriptQualityReport = (
     estimatedDurationSeconds,
     blockingErrors: _.uniq(_.compact([
       wordCount <= 0 && "script_missing_or_empty",
-      !durationFit && "script_duration_out_of_target",
       ...hardBlockingErrors,
     ])) as string[],
     warnings: _.uniq(_.compact([
@@ -93,7 +92,9 @@ export const normalizeScriptQualityReport = (
     report.hookPayoffScore < SCRIPT_QUALITY_THRESHOLDS.HOOK_PAYOFF && "script_hook_payoff_below_target",
   ]);
   report.warnings = _.uniq([...report.warnings, ...belowTargetScores]);
-  report.passed = _.isEmpty(report.blockingErrors) && _.isEmpty(belowTargetScores);
+  report.passed = _.isEmpty(report.blockingErrors)
+    && _.isEmpty(belowTargetScores)
+    && durationFit;
   return report;
 };
 

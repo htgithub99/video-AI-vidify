@@ -1,7 +1,6 @@
 import { appLog } from "../../lib/logger.js";
 import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
 import _ from 'lodash';
-import { jsonUtils } from "../../lib/json.js";
 
 
 export const extractBalancedJSON = (text: string): string | null => {
@@ -178,7 +177,7 @@ export const completeCutoffJSON = (jsonStr: string): string => {
   return out;
 };
 
-export const safeParseJSON = (text: string, defaultVal: any): any => {
+const parseJSON = (text: string, defaultVal: any, logFailure: boolean): any => {
   if (_.isEmpty(text)) return defaultVal;
   let trimmed = _.trim(text);
   if (_.includes(["", "undefined", "null"], trimmed)) {
@@ -186,27 +185,31 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
   }
 
   const tryParseClean = (str: string): any => {
-    let res = jsonUtils.safeParse<any>(str, undefined);
+    const parseQuietly = (value: string): any => {
+      const result = _.attempt(JSON.parse, value);
+      return _.isError(result) ? undefined : result;
+    };
+    let res = parseQuietly(str);
     if (!_.isUndefined(res)) return res;
 
     const cleanCommas = _.replace(_.replace(str, JSON_CLEANUP_CURLY_REGEX, "}"), JSON_CLEANUP_SQUARE_REGEX, "]");
-    res = jsonUtils.safeParse<any>(cleanCommas, undefined);
+    res = parseQuietly(cleanCommas);
     if (!_.isUndefined(res)) return res;
 
     const repaired = repairUnescapedDoubleQuotes(str);
-    res = jsonUtils.safeParse<any>(repaired, undefined);
+    res = parseQuietly(repaired);
     if (!_.isUndefined(res)) return res;
 
     const repairedCommas = repairUnescapedDoubleQuotes(cleanCommas);
-    res = jsonUtils.safeParse<any>(repairedCommas, undefined);
+    res = parseQuietly(repairedCommas);
     if (!_.isUndefined(res)) return res;
 
     const completed = completeCutoffJSON(str);
-    res = jsonUtils.safeParse<any>(completed, undefined);
+    res = parseQuietly(completed);
     if (!_.isUndefined(res)) return res;
 
     const completedCommas = completeCutoffJSON(cleanCommas);
-    res = jsonUtils.safeParse<any>(completedCommas, undefined);
+    res = parseQuietly(completedCommas);
     if (!_.isUndefined(res)) return res;
 
     return null;
@@ -246,9 +249,13 @@ export const safeParseJSON = (text: string, defaultVal: any): any => {
     if (!_.isNil(parsed)) return parsed;
   }
 
-  appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
+  if (logFailure) appLog("JSON_PARSE_WARNING", text.substring(0, 150) + "...");
   return defaultVal;
 };
+
+export const safeParseJSON = (text: string, defaultVal: any): any => parseJSON(text, defaultVal, true);
+
+export const tryParseJSON = (text: string): unknown => parseJSON(text, undefined, false);
 
 export const formatTime = (secs: number): string => {
   const totalSecs = _.round(secs);

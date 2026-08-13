@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
-import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
+import { API_ROUTES, IMAGE_GENERATION_RETRY_CONFIG, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { delayAsync, safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
 export interface ProjectImageItem {
@@ -64,7 +64,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
     )),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
   );
-  const missingSceneIds = _.uniq(_.concat(_.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY), rejectedSceneIds));
+  const missingSceneIds = _.uniq(_.map(_.reject(scenes, hasSceneAsset), REFACTOR_CONSTANTS.AVG_ID_KEY));
   const total = _.size(scenes);
   const completed = _.subtract(total, _.size(missingSceneIds));
 
@@ -73,7 +73,7 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
     completed,
     missingSceneIds,
     rejectedSceneIds,
-    complete: _.every([_.isEqual(completed, total), _.isEmpty(rejectedSceneIds)], Boolean),
+    complete: _.isEqual(completed, total),
   };
 };
 
@@ -103,42 +103,55 @@ const cleanBatchSession = async (): Promise<void> => {
   await safeSystemFetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {});
 };
 
-const generateFallbackImage = async (
+export const generateProjectImageWithRetry = async (
   item: ProjectImageItem,
   createPayload: FallbackPayloadFactory,
+  signal?: AbortSignal,
 ): Promise<ProjectImageResult> => {
-  const response = await safeSystemFetch(
-    API_ROUTES.PIPELINE_GENERATE_IMAGE,
-    createPayload(item),
-  );
-  const base64 = _.defaultTo(
-    _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
-    _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
-  );
-  const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
-  const generationSucceeded = _.get(
-    response.data,
-    REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
-    response.success,
-  );
-
-  return {
-    sceneId: item.sceneId,
-    success: _.every([
+  let latestResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
+  for (let attempt = 0; attempt < IMAGE_GENERATION_RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
+    if (signal?.aborted) return latestResult;
+    const response = await safeSystemFetch(
+      API_ROUTES.PIPELINE_GENERATE_IMAGE,
+      createPayload(item),
+      signal,
+    );
+    const base64 = _.defaultTo(
+      _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
+      _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
+    );
+    const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+    const generationSucceeded = _.get(
+      response.data,
+      REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
       response.success,
-      _.some([
-        generationSucceeded,
-        _.isEqual(item.generateType, GenerateType.Image),
+    );
+    latestResult = {
+      sceneId: item.sceneId,
+      success: _.every([
+        response.success,
+        _.some([
+          generationSucceeded,
+          _.isEqual(item.generateType, GenerateType.Image),
+        ], Boolean),
+        _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
       ], Boolean),
-      _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
-    ], Boolean),
-    base64,
-    fallbackUrl,
-    warning: response.error,
-    assetType: item.generateType === GenerateType.Video
-      ? GenerateType.Video
-      : GenerateType.Image,
-  };
+      base64,
+      fallbackUrl,
+      warning: response.error,
+      assetType: item.generateType === GenerateType.Video
+        ? GenerateType.Video
+        : GenerateType.Image,
+    };
+    if (latestResult.success) return latestResult;
+    if (_.lt(_.add(attempt, 1), IMAGE_GENERATION_RETRY_CONFIG.MAX_ATTEMPTS)) {
+      await delayAsync(_.multiply(
+        IMAGE_GENERATION_RETRY_CONFIG.BASE_DELAY_MS,
+        IMAGE_GENERATION_RETRY_CONFIG.BACKOFF_MULTIPLIER ** attempt,
+      ));
+    }
+  }
+  return latestResult;
 };
 
 export const createProjectImageUrl = (result: ProjectImageResult): string => {
@@ -275,7 +288,7 @@ export const generateProjectImages = async ({
           const item = fallbackItems[index];
           onFallbackItemStart?.(item, index, _.size(fallbackItems));
           try {
-            const result = await generateFallbackImage(item, createFallbackPayload);
+            const result = await generateProjectImageWithRetry(item, createFallbackPayload);
             resultsBySceneId.set(item.sceneId, result);
             onFallbackResult?.(result);
             if (!result.success && ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(result.warning || "")) targetConcurrency = _.max([ADAPTIVE_CONCURRENCY.MIN, targetConcurrency - 1])!;

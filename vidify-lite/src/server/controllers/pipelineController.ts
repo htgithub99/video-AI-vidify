@@ -17,10 +17,10 @@ import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, IMAGE_PROMPT_QA_CONFIG, STORYBOARD_QUALITY_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG } from "../../constants/config.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, IMAGE_PROMPT_QA_CONFIG, STORYBOARD_QUALITY_CONFIG, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG } from "../../constants/config.js";
 import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
 import { normalizeExtractedStyle } from "../../services/styleReferenceService.js";
-import { normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
+import { createSourceGroundedThumbnailIdeas, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
@@ -145,14 +145,17 @@ import { AspectRatio, ContentSafetyReport, GenerateType, HookVersion, ProjectLan
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
-import { normalizeContentSafety } from "../../services/contentSafetyService.js";
+import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
+import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
 import { compileStoryboardPrompts } from "../../services/imagePromptCompilerService.js";
 import { createImagePromptCorrectionPayload, validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
+import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails } from "../../services/storyboardFallbackService.js";
+import { createSourceGroundedSeo } from "../../services/seoFallbackService.js";
 
 import ffmpeg from "fluent-ffmpeg";
 import { createHash, randomUUID } from "crypto";
@@ -394,6 +397,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const targetStyle = referenceStyle || visualStyle;
     let plannedScenes = _.cloneDeep(sourceScenes);
     let correctionIssues: Record<string, unknown>[] = [];
+    let latestCompiledScenes = _.cloneDeep(sourceScenes);
+    let latestPromptQa: ReturnType<typeof validateCompiledImagePrompts> | undefined;
     for (let attempt = 0; attempt <= IMAGE_PROMPT_QA_CONFIG.MAX_CORRECTION_ATTEMPTS; attempt++) {
       const planningPayload = createVisualPlanningPayload(plannedScenes);
       const chunks = _.chunk(planningPayload, chunkSize);
@@ -451,6 +456,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         characters,
         visualBible: resolvedVisualBible,
       });
+      latestCompiledScenes = compiledScenes;
+      latestPromptQa = promptQa;
       if (promptQa.passed) {
         const scenesById = _.keyBy(compiledScenes, "id");
         const updatedStoryboard = _.map(storyboard as StoryboardScene[], scene => scenesById[scene.id] || scene);
@@ -461,7 +468,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       correctionIssues = createImagePromptCorrectionPayload(compiledScenes, promptQa.blockingErrors);
       plannedScenes = compiledScenes;
     }
-    throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
+    const scenesById = _.keyBy(latestCompiledScenes, "id");
+    const updatedStoryboard = _.map(storyboard as StoryboardScene[], scene => scenesById[scene.id] || scene);
+    const result = { success: true, storyboard: updatedStoryboard, promptQa: latestPromptQa };
+    setCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, result);
+    appWarn(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
+    return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED, retryable: true, rotationLogs: error.rotationLogs });
@@ -820,7 +832,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     }
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
-    const usableVersions = resolveUsableHooks(versions, hookType, count);
+    const usableVersions = resolveUsableHooks(versions, hookType, count, originalInput);
     if (_.isEmpty(usableVersions)) throw createAppError(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
     const output = { versions: usableVersions, rotationLogs: multiStepLogs };
     setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
@@ -894,7 +906,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       if (safetyResponse.aiMetadata) aiMetrics.push(safetyResponse.aiMetadata);
     } catch (safetyError) {
       appWarn(CONTENT_SAFETY_CONFIG.REVIEW_FAILED_LOG, safetyError);
-      throw createAppError(PIPELINE_SERVER_ERRORS.CONTENT_SAFETY_UNAVAILABLE);
+      contentSafety = createUnavailableContentSafetyReport();
     }
     if (!contentSafety.allowed) {
       throw new Error(_.join(contentSafety.blockingErrors, ", ") || PIPELINE_SERVER_ERRORS.CONTENT_SAFETY_REJECTED);
@@ -920,7 +932,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         assertResponseContract(hookResult, ResponseContractName.Hook);
         if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          generatedHookVersions = rankHookVersions(_.map(
+          generatedHookVersions = resolveUsableHooks(_.map(
             _.take(hookResult.versions, hookCount),
             (version: any, index: number): HookVersion => ({
               id: version.id || `hk_${index + 1}`,
@@ -929,7 +941,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
               selected: false,
               score: version.score,
             }),
-          ));
+          ), hookType, hookCount, originalInput);
           const selectedHook = _.find(generatedHookVersions, "selected");
           if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
           activeHookText = selectedHook.content;
@@ -937,13 +949,15 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         }
       } catch (hookError: any) {
         logger.error(LogEvent.ERROR_GENERATING_HOOKS, hookError);
-        throw createAppError(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
+        appWarn(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
+        generatedHookVersions = resolveUsableHooks([], config.hookConfig.type, config.hookConfig.count, originalInput);
+        activeHookText = _.toString(_.get(_.find(generatedHookVersions, "selected"), "content"));
       }
     }
 
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
-    const targetChapterCount = _.max([3, _.floor(targetWordCountMin / 100)]) || 3;
+    const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
 
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
     const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${contentControlDirective}`;
@@ -961,36 +975,25 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         });
       } catch (researchError) {
         appWarn(FACT_RESEARCH_CONFIG.FAILED_LOG, researchError);
-        throw createAppError(PIPELINE_SERVER_ERRORS.FACT_RESEARCH_UNAVAILABLE);
+        groundedResearchResponse = null;
       }
     }
     if(groundedResearchResponse?.aiMetadata)aiMetrics.push(groundedResearchResponse.aiMetadata);
-    const combinedResponse = await generateContentWithRetry({
+    const scriptPlanResponse = await requestValidScriptPlan({
       contents: groundedResearchResponse
         ? `${combinedScriptPrompt}\n\n[Grounded research evidence]:\n${groundedResearchResponse.text}`
         : `${combinedScriptPrompt}\n\n[Fact-check mode]: Disabled by the user. Do not invent sources, quotations, studies, or precise factual claims. Mark unverifiable claims unsupported and use cautious qualitative wording.`,
       config: {
         responseMimeType: "application/json",
         responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
-        maxOutputTokens: 2048,
+        maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
       },
       task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
-    });
+    }, targetChapterCount, generateContentWithRetry, originalInput);
 
-    if (combinedResponse.aiMetadata) aiMetrics.push(combinedResponse.aiMetadata);
-    if (combinedResponse.rotationLogs) multiStepLogs.push(...combinedResponse.rotationLogs);
-    const parsedScriptPlan = safeParseJSON(combinedResponse.text, {});
-    const parsedChapters = _.filter(_.castArray(_.get(parsedScriptPlan, "chapters")), chapter => !_.isEmpty(_.trim(_.toString(_.get(chapter, "title")))));
-    const scriptResult = {
-      ...(_.isPlainObject(parsedScriptPlan) ? parsedScriptPlan : {}),
-      theme: _.trim(_.toString(_.get(parsedScriptPlan, "theme"))) || originalInput,
-      characterSpecs: _.trim(_.toString(_.get(parsedScriptPlan, "characterSpecs"))),
-      preferredTerms: _.compact(_.map(_.castArray(_.get(parsedScriptPlan, "preferredTerms")), _.toString)),
-      factCheckNotes: _.trim(_.toString(_.get(parsedScriptPlan, "factCheckNotes"))),
-      creativeBrief: _.isPlainObject(_.get(parsedScriptPlan, "creativeBrief")) ? _.get(parsedScriptPlan, "creativeBrief") : {},
-      factPack: _.isPlainObject(_.get(parsedScriptPlan, "factPack")) ? _.get(parsedScriptPlan, "factPack") : { claims: [] },
-      chapters: parsedChapters,
-    };
+    aiMetrics.push(...scriptPlanResponse.aiMetadata);
+    multiStepLogs.push(...scriptPlanResponse.rotationLogs);
+    const scriptResult = normalizeScriptPlan(scriptPlanResponse.value, originalInput) as any;
     scriptResult.factPack = await validateFactPack(scriptResult.factPack, Boolean(config.factCheck));
     assertResponseContract(scriptResult, ResponseContractName.ScriptPlan);
 
@@ -1011,6 +1014,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const chapterWordTarget = _.ceil(targetWordCount / (_.max([1, chapters.length]) || 1));
     const requestValidChapterSegment = async (contents: string): Promise<string> => {
       const languageFailureLogs: string[] = [];
+      let latestUsableSegment = "";
       for (
         let attemptIndex = 0;
         attemptIndex < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_GENERATION_ATTEMPTS;
@@ -1041,8 +1045,14 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         const validation = validateChapterLanguage(cleanedSegment, isVi);
         if (validation.valid) return cleanedSegment;
 
+        latestUsableSegment = cleanedSegment;
         languageFailureLogs.push(...validation.issues);
         appWarn(PIPELINE_SERVER_LOGS.INVALID_CHAPTER_LANGUAGE_DISCARDED, validation.issues);
+      }
+
+      if (!_.isEmpty(latestUsableSegment)) {
+        multiStepLogs.push(...languageFailureLogs);
+        return latestUsableSegment;
       }
 
       const languageError: any = createAppError(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
@@ -1115,33 +1125,40 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
       return normalizeScriptQualityReport(safeParseJSON(response.text, {}), _.size(_.words(finalCleanScript)), targetDurationSeconds);
     };
-    let scriptQa = await evaluateScript();
-    for (let repairAttempt = 0; !scriptQa.passed && repairAttempt < SCRIPT_REPAIR_CONFIG.MAX_ATTEMPTS; repairAttempt++) {
-      const repairResponse = await generateContentWithRetry({
-        contents: getScriptRepairPrompt(
-          finalCleanScript,
-          jsonUtils.safeStringify(scriptQa),
-          jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
-          jsonUtils.safeStringify(scriptResult.narrativePlan || {}),
-          jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
-          targetDurationSeconds,
-          isVi,
-        ),
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          responseJsonSchema: SCRIPT_REPAIR_RESPONSE_SCHEMA,
-          maxOutputTokens: SCRIPT_REPAIR_CONFIG.MAX_OUTPUT_TOKENS,
-        },
-        task: { capability: AiTaskCapability.ScriptWriting },
-      });
-      if (repairResponse.rotationLogs) multiStepLogs.push(...repairResponse.rotationLogs);
-      if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
-      const repairedScript = _.trim(_.toString(_.get(safeParseJSON(repairResponse.text, {}), "script")));
-      if (_.isEmpty(repairedScript)) throw createAppError(SCRIPT_REPAIR_CONFIG.EMPTY_REPAIR_ERROR);
-      finalCleanScript = repairedScript;
+    let scriptQa;
+    try {
       scriptQa = await evaluateScript();
+      for (let repairAttempt = 0; !scriptQa.passed && repairAttempt < SCRIPT_REPAIR_CONFIG.MAX_ATTEMPTS; repairAttempt++) {
+        const repairResponse = await generateContentWithRetry({
+          contents: getScriptRepairPrompt(
+            finalCleanScript,
+            jsonUtils.safeStringify(scriptQa),
+            jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
+            jsonUtils.safeStringify(scriptResult.narrativePlan || {}),
+            jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
+            targetDurationSeconds,
+            isVi,
+          ),
+          config: {
+            responseMimeType: CONTENT_TYPES.JSON,
+            responseJsonSchema: SCRIPT_REPAIR_RESPONSE_SCHEMA,
+            maxOutputTokens: SCRIPT_REPAIR_CONFIG.MAX_OUTPUT_TOKENS,
+          },
+          task: { capability: AiTaskCapability.ScriptWriting },
+        });
+        if (repairResponse.rotationLogs) multiStepLogs.push(...repairResponse.rotationLogs);
+        if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
+        const repairedScript = _.trim(_.toString(_.get(safeParseJSON(repairResponse.text, {}), "script")));
+        if (_.isEmpty(repairedScript)) break;
+        finalCleanScript = repairedScript;
+        scriptQa = await evaluateScript();
+      }
+    } catch (qualityError) {
+      appWarn(REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED, qualityError);
+      scriptQa = normalizeScriptQualityReport({}, _.size(_.words(finalCleanScript)), targetDurationSeconds);
+      scriptQa.warnings = _.uniq([...scriptQa.warnings, "script_qa_unavailable"]);
     }
-    if (!scriptQa.passed) throw createAppError(REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED);
+    if (!scriptQa.passed) appWarn(REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED);
     const finalChapters = syncChaptersWithScript(finalCleanScript, completedChapters);
     const parsedData = {
       rewrittenScript: finalCleanScript,
@@ -1166,7 +1183,10 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const missingFreeAiKeys = _.some(rotationLogs, log => _.isEqual(_.toString(log), FREE_AI_PROVIDER_LOGS.NO_KEYS));
     const attemptedFreeAi = _.some(rotationLogs, log => _.includes(_.toString(log), "[AI Router]")) && !missingFreeAiKeys;
     const languageIntegrityFailed = _.isEqual(error?.message, PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
-    const errorMessage = languageIntegrityFailed
+    const scriptPlanInvalid = Boolean(error?.scriptPlanInvalid);
+    const errorMessage = scriptPlanInvalid
+      ? (isVi ? PIPELINE_SERVER_ERRORS.SCRIPT_PLAN_INVALID_VI : PIPELINE_SERVER_ERRORS.SCRIPT_PLAN_INVALID_EN)
+      : languageIntegrityFailed
       ? (isVi ? PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_VI : PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_EN)
       : missingFreeAiKeys
       ? (isVi ? "Chưa có khóa Groq hoặc Cerebras miễn phí; Gemini dự phòng cũng không phản hồi. Hãy thêm ít nhất một khóa free trong Cài đặt rồi tiếp tục dự án." : "No free Groq or Cerebras key is configured, and the Gemini fallback also failed. Add at least one free key in Settings, then resume the project.")
@@ -1175,7 +1195,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         : getGeminiUserMessage(error, isVi);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
       error: errorMessage,
-      retryable: languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
+      retryable: scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
     });
   }
 });
@@ -1403,9 +1423,9 @@ router.post("/storyboard", async (req: Request, res: Response) => {
   let chosenDuration = voiceDuration;
   if (!chosenDuration) {
     const wordCount = _.filter((rewrittenScript || "").split(/\s+/), Boolean).length;
-    const speed = config?.speed || 1.0;
-    chosenDuration = Math.round(wordCount / 2.5 / speed);
-    if (chosenDuration < 10) chosenDuration = 10;
+    const speed = config?.speed || STORYBOARD_FALLBACK_CONFIG.DEFAULT_VOICE_SPEED;
+    chosenDuration = Math.round(wordCount / STORYBOARD_FALLBACK_CONFIG.ESTIMATED_WORDS_PER_SECOND / speed);
+    chosenDuration = _.max([chosenDuration, STORYBOARD_FALLBACK_CONFIG.MIN_TOTAL_DURATION_SECONDS]);
   }
 
   let activeStyle = referenceStyle || "";
@@ -1418,9 +1438,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     return res.json({ ...cached, cached: true });
   }
 
-  if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi), retryable: true });
-  }
+  const aiProviderAvailable = await isAiProviderAvailable();
 
   try {
     let mappedDensity: SceneDensity = SceneDensity.CAU_DAI;
@@ -1451,14 +1469,18 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     const bibleParts: any[] = [];
     if (referenceImages && _.isArray(referenceImages) && (!_.isEmpty(referenceImages))) {
-      for (const imgBase64 of referenceImages.slice(0, 3)) {
-        const { data, mimeType } = await readStyleReferenceImage(imgBase64);
-        bibleParts.push({
-          inlineData: {
-            data,
-            mimeType,
-          },
-        });
+      for (const imgBase64 of _.take(referenceImages, SCENE_REFERENCE_CONFIG.MAX_IMAGES)) {
+        try {
+          const { data, mimeType } = await readStyleReferenceImage(imgBase64);
+          bibleParts.push({
+            inlineData: {
+              data,
+              mimeType,
+            },
+          });
+        } catch (referenceError) {
+          appWarn(STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, referenceError);
+        }
       }
     }
 
@@ -1466,20 +1488,34 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       text: visualBiblePrompt + (referenceImages && (!_.isEmpty(referenceImages)) ? VISUAL_BIBLE_REFERENCE_PROMPT : ""),
     });
 
-    const bibleResponse = await generateContentWithRetry({
-      contents: bibleParts,
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
-    });
-    const visualBible = safeParseJSON(bibleResponse.text, {});
-    if (_.isEmpty(visualBible.locations) || _.some([
-      visualBible.colorPalette,
-      visualBible.characterSpecs,
-      visualBible.landscapeSpecs,
-      visualBible.lightingMood,
-      visualBible.visualStyle,
-    ], value => _.isEmpty(_.trim(_.toString(value))))) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
-    logStoryboardStep(`${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`);
-    if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
+    let visualBible: VisualBible = {};
+    if (aiProviderAvailable) {
+      try {
+        const bibleResponse = await generateContentWithRetry({
+          contents: bibleParts,
+          config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
+        });
+        const parsedVisualBible = safeParseJSON(bibleResponse.text, {}) as VisualBible;
+        const hasRequiredVisualBibleFields = !_.isEmpty(parsedVisualBible.locations) && _.every([
+          parsedVisualBible.colorPalette,
+          parsedVisualBible.characterSpecs,
+          parsedVisualBible.landscapeSpecs,
+          parsedVisualBible.lightingMood,
+          parsedVisualBible.visualStyle,
+        ], value => !_.isEmpty(_.trim(_.toString(value))));
+        if (hasRequiredVisualBibleFields) visualBible = parsedVisualBible;
+        else storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
+        if (bibleResponse.rotationLogs) storyboardLogs.push(...bibleResponse.rotationLogs);
+      } catch (visualBibleError) {
+        appWarn(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID, visualBibleError);
+        storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
+      }
+    } else {
+      storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.VISUAL_BIBLE_WARNING);
+    }
+    if (!_.isEmpty(visualBible)) {
+      logStoryboardStep(`${getPipelineLog("STORY_STEP1_DONE", isVi)} ${visualBible.colorPalette}. Character Spec: ${visualBible.characterSpecs}. Landscape Spec: ${visualBible.landscapeSpecs}`);
+    }
 
     logStoryboardStep(`${getPipelineLog("STORY_STEP2", isVi)} ${mappedDensity}...`);
     let allScenes: any[] = [];
@@ -1512,7 +1548,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       } else {
         splitScenes = _.map(splitScenes, (scene: any, idx: number) => ({
           ...scene,
-          id: `sc_${idx + 1}`,
+          id: _.join([STORYBOARD_FALLBACK_CONFIG.SCENE_ID_PREFIX, _.add(idx, SecurityConstants.DEFAULT_AMOUNT)], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
           script: scene.script || scene.subtitle || "",
           subtitle: scene.subtitle || scene.script || "",
         }));
@@ -1577,7 +1613,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         }
 
         if (i < chunks.length - 1) {
-          await delayAsync(1500);
+          await delayAsync(PIPELINE_CONFIG.DELAY_BETWEEN_CHUNKS_MS);
         }
       }
 
@@ -1608,6 +1644,23 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
+    if (_.isEmpty(allScenes)) {
+      allScenes = createScriptGroundedStoryboard({
+        rewrittenScript,
+        chapters: syncedChapters,
+        splitStrategy,
+        aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
+        targetStyle: activeStyle || visualStyle,
+        visualBible,
+      });
+      storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.FALLBACK_WARNING);
+    } else {
+      allScenes = ensureScriptGroundedSceneDetails(allScenes, {
+        aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
+        targetStyle: activeStyle || visualStyle,
+        visualBible,
+      });
+    }
     let data: any = { scenes: allScenes, visualBible, rotationLogs: storyboardLogs };
 
     if (!data || !data.scenes || _.isEmpty(data.scenes)) {
@@ -1626,13 +1679,13 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       let currentSecs = 0;
       for (let i = 0; i < scenes.length; i++) {
         const wCount = wordCounts[i];
-        let duration = 3;
+        let duration: number = STORYBOARD_FALLBACK_CONFIG.MIN_SCENE_DURATION_SECONDS;
         if (totalWords > 0) {
           duration = Math.round((wCount / totalWords) * chosenDuration);
-          if (duration < 3) duration = 3;
+          duration = _.max([duration, STORYBOARD_FALLBACK_CONFIG.MIN_SCENE_DURATION_SECONDS]);
         }
         if (i === scenes.length - 1) {
-          duration = Math.max(3, chosenDuration - currentSecs);
+          duration = _.max([STORYBOARD_FALLBACK_CONFIG.MIN_SCENE_DURATION_SECONDS, chosenDuration - currentSecs]);
         }
 
         const startSecs = currentSecs;
@@ -1654,26 +1707,32 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       if (response.rotationLogs) data.rotationLogs.push(...response.rotationLogs);
       return normalizeStoryboardQuality(safeParseJSON(response.text, {}));
     };
-    data.storyboardQa = await evaluateStoryboard();
-    for (let repairAttempt = 0; !data.storyboardQa.passed && repairAttempt < STORYBOARD_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS; repairAttempt++) {
-      const repairResponse = await generateContentWithRetry({
-        contents: getStoryboardRepairPrompt(
-          jsonUtils.safeStringify(data.scenes),
-          jsonUtils.safeStringify(visualBible),
-          jsonUtils.safeStringify(data.storyboardQa),
-        ),
-        config: { responseMimeType: CONTENT_TYPES.JSON },
-        task: { capability: AiTaskCapability.VisualPlanning },
-      });
-      const repairedById = _.keyBy(_.get(safeParseJSON(repairResponse.text, {}), "scenes", []), "id");
-      data.scenes = _.map(data.scenes, (scene: StoryboardScene) => ({ ...scene, ..._.pick(repairedById[scene.id], [
-        "visibleAction", "reaction", "shotPurpose", "shotSize", "cameraAngle", "composition",
-        "continuityFrom", "continuityNotes", "cameraMotion", "effects", "lightingEffect", "transition",
-      ]) }));
-      if (repairResponse.rotationLogs) data.rotationLogs.push(...repairResponse.rotationLogs);
+    if (aiProviderAvailable) try {
       data.storyboardQa = await evaluateStoryboard();
+      for (let repairAttempt = 0; !data.storyboardQa.passed && repairAttempt < STORYBOARD_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS; repairAttempt++) {
+        const repairResponse = await generateContentWithRetry({
+          contents: getStoryboardRepairPrompt(
+            jsonUtils.safeStringify(data.scenes),
+            jsonUtils.safeStringify(visualBible),
+            jsonUtils.safeStringify(data.storyboardQa),
+          ),
+          config: { responseMimeType: CONTENT_TYPES.JSON },
+          task: { capability: AiTaskCapability.VisualPlanning },
+        });
+        const repairedById = _.keyBy(_.get(safeParseJSON(repairResponse.text, {}), "scenes", []), "id");
+        data.scenes = _.map(data.scenes, (scene: StoryboardScene) => ({ ...scene, ..._.pick(repairedById[scene.id], [
+          "visibleAction", "reaction", "shotPurpose", "shotSize", "cameraAngle", "composition",
+          "continuityFrom", "continuityNotes", "cameraMotion", "effects", "lightingEffect", "transition",
+        ]) }));
+        if (repairResponse.rotationLogs) data.rotationLogs.push(...repairResponse.rotationLogs);
+        data.storyboardQa = await evaluateStoryboard();
+      }
+    } catch (qualityError) {
+      appWarn(PIPELINE_SERVER_ERRORS.STORYBOARD_QUALITY_REJECTED, qualityError);
+      data.storyboardQa = normalizeStoryboardQuality({ warnings: ["storyboard_qa_unavailable"] });
     }
-    if (!data.storyboardQa.passed) throw createAppError(PIPELINE_SERVER_ERRORS.STORYBOARD_QUALITY_REJECTED);
+
+    if (!data.storyboardQa.passed) appWarn(PIPELINE_SERVER_ERRORS.STORYBOARD_QUALITY_REJECTED);
 
     setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
@@ -1702,7 +1761,10 @@ router.post("/seo", async (req: Request, res: Response) => {
   const numTags = seoConfig.numTags || 6;
 
   if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_UNAVAILABLE, retryable: true });
+    return res.json({
+      ...createSourceGroundedSeo(rewrittenScript, { numTitles, numDescriptions, numHashtags, numTags }),
+      rotationLogs: [SEO_FALLBACK_CONFIG.WARNING],
+    });
   }
 
   const seoLogger = new StepLogger();
@@ -1750,7 +1812,10 @@ router.post("/seo", async (req: Request, res: Response) => {
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_SEO, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED, retryable: true, rotationLogs: error.rotationLogs });
+    res.json({
+      ...createSourceGroundedSeo(rewrittenScript, { numTitles, numDescriptions, numHashtags, numTags }),
+      rotationLogs: _.uniq(_.compact([..._.castArray(error.rotationLogs), SEO_FALLBACK_CONFIG.WARNING])),
+    });
   }
 });
 
@@ -1766,7 +1831,10 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
 
   if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_UNAVAILABLE, retryable: true });
+    return res.json({
+      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode),
+      rotationLogs: [THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING],
+    });
   }
 
   const thumbLogger = new StepLogger();
@@ -1843,12 +1911,16 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     logThumbStep(PIPELINE_LOGS.THUMB_STEP3);
     logThumbStep(PIPELINE_LOGS.THUMB_DONE_ALL);
 
-    const normalizedThumbnails = normalizeThumbnailIdeas(
+    let normalizedThumbnails = normalizeThumbnailIdeas(
       _.castArray(thumbsResult.thumbnails || []),
       thumbnailCount,
       visualConfig.thumbnailTextInImageMode,
     );
-    if (_.lt(_.size(normalizedThumbnails), thumbnailCount)) throw createAppError(PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED);
+    if (_.lt(_.size(normalizedThumbnails), thumbnailCount)) {
+      const sourceFallbacks = createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode);
+      normalizedThumbnails = normalizeThumbnailIdeas(_.concat(normalizedThumbnails, _.drop(sourceFallbacks, _.size(normalizedThumbnails))), thumbnailCount, visualConfig.thumbnailTextInImageMode);
+      thumbLogs.push(THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING);
+    }
     const parsedData = {
       thumbnails: normalizedThumbnails,
       rotationLogs: thumbLogs,
@@ -1858,7 +1930,10 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED, retryable: true, rotationLogs: error.rotationLogs });
+    res.json({
+      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode),
+      rotationLogs: _.uniq(_.compact([..._.castArray(error.rotationLogs), THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING])),
+    });
   }
 });
 

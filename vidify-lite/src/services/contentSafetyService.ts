@@ -15,13 +15,28 @@ export const normalizeContentSafety = (value: Partial<ContentSafetyReport>): Con
     likenessRisk: Boolean(value.likenessRisk),
     copyrightRisk: Boolean(value.copyrightRisk),
     requiredDisclosures: _.uniq(_.compact(_.castArray(value.requiredDisclosures))),
-    blockingErrors: _.uniq(_.compact([
-      ..._.castArray(value.blockingErrors),
+    blockingErrors: _.uniq(_.compact(_.castArray(value.blockingErrors))),
+    warnings: _.uniq(_.compact([
+      ..._.castArray(value.warnings),
       !completeResponse && CONTENT_SAFETY_CONFIG.INCOMPLETE_RESPONSE_ERROR,
     ])),
-    warnings: _.uniq(_.compact(_.castArray(value.warnings))),
     allowed: false,
   };
-  report.allowed = completeResponse && _.isEmpty(report.blockingErrors) && !report.sexualExploitationRisk;
+  report.allowed = _.isEmpty(report.blockingErrors) && !report.sexualExploitationRisk;
   return report;
 };
+
+export const createUnavailableContentSafetyReport = (): ContentSafetyReport => ({
+  sensitiveTopic: false,
+  trueCase: false,
+  minorsInvolved: false,
+  sexualExploitationRisk: false,
+  victimExploitationRisk: false,
+  privacyRisk: false,
+  likenessRisk: false,
+  copyrightRisk: false,
+  requiredDisclosures: [],
+  blockingErrors: [],
+  warnings: [CONTENT_SAFETY_CONFIG.UNAVAILABLE_WARNING],
+  allowed: true,
+});

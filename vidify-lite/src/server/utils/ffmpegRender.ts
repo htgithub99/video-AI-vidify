@@ -194,11 +194,10 @@ export const renderFFmpegVideo = async (
       [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
     };
   });
-  const audioTracks = _.map(_.defaultTo(options.audioTracks, []), track => ({
-    ...track,
-    assetPath: resolveLocalAssetPath(track.assetUrl),
+  const audioTracks = _.compact(_.map(_.defaultTo(options.audioTracks, []), track => {
+    const assetPath = resolveLocalAssetPath(track.assetUrl);
+    return assetPath ? { ...track, assetPath } : undefined;
   }));
-  if (_.some(audioTracks, track => _.isEmpty(track.assetPath))) throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_AUDIO_TRACK_MISSING);
   const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH)
     ? SecurityConstants.DEFAULT_AMOUNT
     : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;

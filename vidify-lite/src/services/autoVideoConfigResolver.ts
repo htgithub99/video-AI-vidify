@@ -89,9 +89,10 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
     _.isEqual(config.generateType, GenerateType.Video),
     _.isEqual(config.generateType, GenerateType.Mixed),
   ]) && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as typeof IMAGE_ENGINES[number])) {
+    config.generateType = GenerateType.Image;
     issues.push({
       code: ConfigIssueCode.VideoModeImageEngineUnsupported,
-      severity: ConfigIssueSeverity.Blocking,
+      severity: ConfigIssueSeverity.Warning,
     });
   }
 

@@ -65,4 +65,9 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   NO_TEXT_DIRECTIVE: "no generated text, letters, numbers, labels, logo, signature, or watermark",
   TEXT_DIRECTIVE: "render the exact supplied headline once in clean, correctly spelled typography",
   REFERENCE_DIRECTIVE: "Use attached thumbnail reference images for visual style and composition language without copying their people, words, logos, or story details.",
+  SOURCE_FALLBACK_PROMPT_TEMPLATE: "Professional YouTube thumbnail grounded in this exact script moment: {source}. Composition: {composition}. Visual style: {style}",
+  SOURCE_TOKEN: "{source}",
+  COMPOSITION_TOKEN: "{composition}",
+  STYLE_TOKEN: "{style}",
+  SOURCE_FALLBACK_WARNING: "thumbnail_source_fallback_used",
 } as const;

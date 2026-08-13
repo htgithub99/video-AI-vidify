@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { getThumbnailLayoutPrompt } from "../src/constants/prompts.ts";
 import { ThumbnailLayoutId } from "../src/constants/thumbnail.ts";
 import { resolveBatchTabCount } from "../src/services/batchGenerationPolicy.ts";
-import { createThumbnailGenerationPrompt, normalizeThumbnailIdeas, resolveThumbnailReferenceImages } from "../src/services/thumbnailPromptService.ts";
+import { createSourceGroundedThumbnailIdeas, createThumbnailGenerationPrompt, normalizeThumbnailIdeas, resolveThumbnailReferenceImages } from "../src/services/thumbnailPromptService.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 
 const generated = [
@@ -36,6 +36,11 @@ const thumbnails = normalizeThumbnailIdeas([...generated, ...thirdGenerated], 3)
 assert.equal(thumbnails.length, 3);
 assert.deepEqual(thumbnails.map(thumbnail => thumbnail.id), ["th_1", "th_2", "th_3"]);
 assert.equal(new Set(thumbnails.map(thumbnail => thumbnail.layoutId)).size, 3);
+
+const sourceScript = "A player studies an empty wallet. A hostess reveals the hidden mechanism. The player walks away.";
+const sourceThumbnails = createSourceGroundedThumbnailIdeas(sourceScript, 3, "flat editorial illustration");
+assert.equal(sourceThumbnails.length, 3);
+assert.equal(sourceThumbnails.every(thumbnail => sourceScript.includes(thumbnail.subjectFocus || "")), true);
 
 const noTextThumbnails = normalizeThumbnailIdeas(generated, 2, "no_text");
 assert.equal(noTextThumbnails[0].hasText, false);

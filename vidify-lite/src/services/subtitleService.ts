@@ -48,3 +48,10 @@ export const createSubtitleCues = (scenes: StoryboardScene[]): StoryboardScene[]
   scenes,
   scene => ({ ...scene, subtitleCues: createSceneSubtitleCues(scene) }),
 );
+
+export const repairSubtitleCues = (scenes: StoryboardScene[]): StoryboardScene[] => createSubtitleCues(
+  _.map(scenes, scene => ({
+    ...scene,
+    subtitle: _.trim(_.replace(scene.subtitle || scene.script, /\s+/g, " ")),
+  })),
+);

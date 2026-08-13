@@ -789,8 +789,8 @@ export const LOG_DICTIONARY = {
     vi: "[Trí tuệ nhân tạo] Đang gọi mô hình AI vòng {0}/{1}: {2} (Vị trí: {3})",
   },
   GEMINI_SUCCESS: {
-    en: "[AI Service] ✅ Successfully completed via model: {0} after {1} attempts.",
-    vi: "[Trí tuệ nhân tạo] ✅ Gửi yêu cầu thành công tới mô hình AI: {0} (sau {1} lần thử).",
+    en: "[AI Service] Received a response from model: {0} after {1} attempts.",
+    vi: "[Trí tuệ nhân tạo] Đã nhận phản hồi từ mô hình AI: {0} (sau {1} lần thử).",
   },
   GEMINI_ERROR: {
     en: "[AI Service] ❌ Failed with model {0} (Attempt {1}): {2}",

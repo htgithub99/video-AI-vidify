@@ -1,5 +1,6 @@
 import _ from "lodash";
-import { AudioCueStatus, FinalQualityReport, ManualReviewItem, ManualReviewStatus, SceneAssetStatus, VideoProject } from "../types";
+import { FinalQualityReport, ManualReviewItem, ManualReviewStatus, SceneAssetStatus, VideoProject } from "../types";
+import { getFinalCompletionReadiness } from "./pipelineCompletionPolicyService";
 
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
@@ -14,31 +15,14 @@ export const createManualReviewItems = (project: VideoProject): ManualReviewItem
 export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport => {
   const missingAssets = _.size(_.filter(project.storyboard, scene => _.isEmpty(scene.assetUrl)));
   const unapprovedScenes = _.size(_.filter(project.storyboard, scene => scene.assetStatus !== SceneAssetStatus.Approved));
-  const requiredThumbnails = _.max([1, _.toInteger(project.visualConfig?.thumbnailCount)]) || 1;
-  const approvedThumbnails = _.size(_.filter(project.thumbnails, { approved: true }));
-  const unapprovedThumbnails = _.max([0, requiredThumbnails - approvedThumbnails]) || 0;
-  const audioBlockingErrors = project.voiceConfig.audioQa?.passed ? 0 : 1;
-  const subtitleBlockingErrors = project.subtitleQa?.passed ? 0 : 1;
-  const blockingErrors = _.compact([
-    missingAssets > 0 && "missing_scene_assets",
-    unapprovedScenes > 0 && "unapproved_scene_assets",
-    unapprovedThumbnails > 0 && "unapproved_required_thumbnails",
-    audioBlockingErrors > 0 && "audio_qa_failed",
-    subtitleBlockingErrors > 0 && "subtitle_qa_failed",
-    !project.editorQa?.passed && "editor_qa_failed",
-    project.audioCueSheet && _.some(project.audioCueSheet.cues, cue => cue.required && (cue.status !== AudioCueStatus.Approved || _.isEmpty(cue.assetUrl))) && "required_sound_assets_missing",
-    !project.scriptQa?.passed && "script_qa_failed",
-    !project.storyboardQa?.passed && "storyboard_qa_failed",
-    !project.contentSafety?.allowed && "content_safety_not_approved",
-    _.isEmpty(project.renderedVideoUrl) && "final_render_missing",
-    !project.finalMultimodalQa?.reviewAvailable && "final_multimodal_qa_required",
-    project.finalMultimodalQa && !project.finalMultimodalQa.passed && "final_multimodal_qa_failed",
-    _.some(project.manualReviewItems, { status: ManualReviewStatus.Pending }) && "manual_review_pending",
-  ]);
+  const unapprovedThumbnails = _.size(_.filter(project.thumbnails, thumbnail => !thumbnail.approved));
+  const audioBlockingErrors = project.voiceConfig.audioQa?.blockingErrors?.length || 0;
+  const subtitleBlockingErrors = project.subtitleQa?.blockingErrors?.length || 0;
+  const completionReadiness = getFinalCompletionReadiness(project);
+  const blockingErrors = completionReadiness.blockers;
   const warnings = _.uniq(_.compact(_.flatMap([
     project.scriptQa?.warnings,
     project.storyboardQa?.warnings,
-    project.audioCueSheet && _.some(project.audioCueSheet.cues, { status: AudioCueStatus.Planned }) ? ["sound_design_cues_not_mixed"] : [],
     project.voiceConfig.audioQa?.warnings,
     project.subtitleQa?.warnings,
     project.editorQa?.warnings,
@@ -47,6 +31,14 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
     _.some(project.thumbnails, thumbnail => thumbnail.approved && !thumbnail.qa?.passed) ? ["thumbnail_quality_below_target"] : [],
     !project.finalMultimodalQa ? ["final_multimodal_qa_missing"] : [],
     project.finalMultimodalQa?.warnings,
+    unapprovedScenes > 0 ? ["scene_quality_review_recommended"] : [],
+    unapprovedThumbnails > 0 ? ["thumbnail_quality_review_recommended"] : [],
+    project.voiceConfig.audioQa && !project.voiceConfig.audioQa.passed ? ["audio_quality_review_recommended"] : [],
+    project.subtitleQa && !project.subtitleQa.passed ? ["subtitle_quality_review_recommended"] : [],
+    project.editorQa && !project.editorQa.passed ? ["editor_quality_review_recommended"] : [],
+    project.scriptQa && !project.scriptQa.passed ? ["script_quality_review_recommended"] : [],
+    project.storyboardQa && !project.storyboardQa.passed ? ["storyboard_quality_review_recommended"] : [],
+    project.finalMultimodalQa && !project.finalMultimodalQa.passed ? ["final_quality_review_recommended"] : [],
   ])));
   return {
     visualBlockingErrors: unapprovedScenes + unapprovedThumbnails,

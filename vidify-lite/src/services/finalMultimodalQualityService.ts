@@ -21,17 +21,7 @@ const createUnavailableReport = (error?: string): FinalMultimodalQualityReport =
   reviewAvailable: false,
 });
 
-export const validateFinalVideo = async (
-  videoUrl: string,
-  script: string,
-  viewerPromise: string,
-): Promise<FinalMultimodalQualityReport> => {
-  const response = await safeSystemFetch(
-    API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO,
-    { videoUrl, script, viewerPromise },
-  );
-  if (!response.success || !response.data?.success) return createUnavailableReport(response.error);
-  const quality = response.data.quality;
+const normalizeFinalVideoQuality = (quality: Record<string, unknown>): FinalMultimodalQualityReport => {
   const scores = _.map(
     FINAL_MULTIMODAL_QA_CONFIG.SCORE_FIELDS,
     field => _.clamp(_.toNumber(_.get(quality, field)), 0, 100),
@@ -55,18 +45,34 @@ export const validateFinalVideo = async (
     promiseAlignmentScore,
     audioMixScore,
     subtitleLegibilityScore,
-    blockingErrors: _.uniq(_.compact(_.castArray(quality.blockingErrors))),
-    warnings: _.uniq(_.compact(_.castArray(quality.warnings))),
+    blockingErrors: _.uniq(_.compact(_.map(_.castArray(quality.blockingErrors), _.toString))),
+    warnings: _.uniq(_.compact(_.map(_.castArray(quality.warnings), _.toString))),
     passed: false,
     reviewAvailable: true,
   };
   if (_.some(scores, score => score < FINAL_MULTIMODAL_QA_CONFIG.TARGET_SCORE)) {
-    report.warnings = _.uniq([
-      ...report.warnings,
-      FINAL_MULTIMODAL_QA_CONFIG.BELOW_TARGET_WARNING,
-    ]);
+    report.warnings = _.uniq([...report.warnings, FINAL_MULTIMODAL_QA_CONFIG.BELOW_TARGET_WARNING]);
   }
   report.passed = _.isEmpty(report.blockingErrors)
     && _.every(scores, score => score >= FINAL_MULTIMODAL_QA_CONFIG.TARGET_SCORE);
   return report;
+};
+
+export const validateFinalVideo = async (
+  videoUrl: string,
+  script: string,
+  viewerPromise: string,
+): Promise<FinalMultimodalQualityReport> => {
+  let latestReport = createUnavailableReport();
+  for (let attempt = 0; attempt < FINAL_MULTIMODAL_QA_CONFIG.MAX_EVALUATION_ATTEMPTS; attempt++) {
+    const response = await safeSystemFetch(
+      API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO,
+      { videoUrl, script, viewerPromise, bypassCache: attempt > 0 },
+    );
+    latestReport = response.success && response.data?.success
+      ? normalizeFinalVideoQuality(response.data.quality)
+      : createUnavailableReport(response.error);
+    if (latestReport.passed) return latestReport;
+  }
+  return latestReport;
 };

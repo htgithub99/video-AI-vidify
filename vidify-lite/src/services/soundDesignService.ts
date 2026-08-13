@@ -20,7 +20,6 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
     emotionalIntent: SOUND_DESIGN_CONFIG.MUSIC_INTENT,
     startOffsetSeconds: 0,
     durationSeconds: totalDuration,
-    required: true,
     status: AudioCueStatus.Planned,
   });
   _.forEach(scenes, (scene, index) => {
@@ -32,7 +31,6 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
       emotionalIntent: index < scenes.length / 2 ? SOUND_DESIGN_CONFIG.AMBIENCE_TENSION_INTENT : SOUND_DESIGN_CONFIG.AMBIENCE_RESOLUTION_INTENT,
       startOffsetSeconds: sceneStartSeconds,
       durationSeconds: scene.duration,
-      required: false,
       status: AudioCueStatus.Planned,
     });
     _.forEach(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => {
@@ -45,7 +43,6 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
         emotionalIntent: SOUND_DESIGN_CONFIG.SOUND_EFFECT_INTENT,
         startOffsetSeconds: sceneStartSeconds,
         durationSeconds: Math.min(SOUND_DESIGN_CONFIG.MAX_SOUND_EFFECT_DURATION_SECONDS, scene.duration),
-        required: false,
         status: AudioCueStatus.Planned,
       });
     });
@@ -59,5 +56,17 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
       musicUnderVoiceDb: SOUND_DESIGN_CONFIG.MUSIC_UNDER_VOICE_DB,
       peakDb: SOUND_DESIGN_CONFIG.PEAK_DB,
     },
+  };
+};
+
+export const applyOptionalMusicAsset = (cueSheet: AudioCueSheet, assetUrl?: string): AudioCueSheet => {
+  if (_.isEmpty(assetUrl)) return cueSheet;
+  return {
+    ...cueSheet,
+    cues: _.map(cueSheet.cues, cue => (
+      _.isEqual(cue.type, AudioCueType.Music)
+        ? { ...cue, assetUrl, status: AudioCueStatus.Approved }
+        : cue
+    )),
   };
 };

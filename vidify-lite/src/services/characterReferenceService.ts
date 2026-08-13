@@ -41,14 +41,14 @@ const validateCharacterReference = async (
   assetUrl: string,
   targetStyle: string,
   signal?: AbortSignal,
-): Promise<void> => {
+): Promise<boolean> => {
   const response = await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_CHARACTER_REFERENCE, {
     name: character.name,
     identity: character.prompt || character.description,
     targetStyle,
     assetUrl,
   }, signal);
-  if (!response.success || !response.data?.success) throw new Error(CHARACTER_REFERENCE_CONFIG.QA_REQUIRED);
+  if (!response.success || !response.data?.success) return false;
   const quality = response.data.quality;
   const scores = [
     quality.identityConsistencyScore,
@@ -59,8 +59,35 @@ const validateCharacterReference = async (
   if (!quality.usableAsReference
     || !_.isEmpty(quality.blockingErrors)
     || _.some(scores, score => _.toNumber(score) < CHARACTER_REFERENCE_CONFIG.MIN_QA_SCORE)) {
-    throw new Error(CHARACTER_REFERENCE_CONFIG.QA_REJECTED);
+    return false;
   }
+  return true;
+};
+
+const generateCharacterReference = async (
+  projectId: string,
+  character: CharacterConfig,
+  visualConfig: VisualConfig,
+  style: string,
+  signal?: AbortSignal,
+): Promise<string> => {
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
+    prompt: createCharacterReferencePrompt(character, style),
+    style,
+    resolution: visualConfig.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+    engine: visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
+    sandboxConfig: { projectId },
+    visualConfig: {
+      ...visualConfig,
+      generateType: GenerateType.Image,
+      referenceImages: visualConfig.styleReferenceImages,
+    },
+  }, signal);
+  const assetUrl = createAssetUrl(_.defaultTo(response.data, {}));
+  if (!response.success || _.isEmpty(assetUrl)) {
+    throw new Error(_.replace(CHARACTER_REFERENCE_CONFIG.GENERATION_FAILED, "{name}", character.name));
+  }
+  return assetUrl;
 };
 
 const CHARACTER_REFERENCE_CONFIG_VIEW_TYPES: NonNullable<CharacterConfig["referenceViews"]> = [
@@ -69,6 +96,27 @@ const CHARACTER_REFERENCE_CONFIG_VIEW_TYPES: NonNullable<CharacterConfig["refere
   "three_quarter",
   "expression",
 ];
+
+const createValidatedReference = async (
+  projectId: string,
+  character: CharacterConfig,
+  visualConfig: VisualConfig,
+  style: string,
+  existingAssetUrl?: string,
+  signal?: AbortSignal,
+): Promise<{ assetUrl: string; approved: boolean }> => {
+  let assetUrl = existingAssetUrl || await generateCharacterReference(projectId, character, visualConfig, style, signal);
+  let approved = await validateCharacterReference(character, assetUrl, style, signal);
+  for (let repairAttempt = 0; !approved && repairAttempt < CHARACTER_REFERENCE_CONFIG.MAX_REPAIR_ATTEMPTS; repairAttempt++) {
+    try {
+      assetUrl = await generateCharacterReference(projectId, character, visualConfig, style, signal);
+      approved = await validateCharacterReference(character, assetUrl, style, signal);
+    } catch {
+      break;
+    }
+  }
+  return { assetUrl, approved };
+};
 
 export const generateCharacterReferenceLibrary = async ({
   projectId,
@@ -82,28 +130,25 @@ export const generateCharacterReferenceLibrary = async ({
   for (const character of characters) {
     const existingImages = _.filter(character.images, isUsableGeneratedAssetUrl);
     if (character.referenceApproved && !_.isEmpty(existingImages)) {
-      await validateCharacterReference(character, existingImages[0], style, signal);
-      approvedCharacters.push(approveExistingReference({ ...character, images: existingImages }));
+      const validation = await createValidatedReference(
+        projectId,
+        character,
+        visualConfig,
+        style,
+        existingImages[0],
+        signal,
+      );
+      approvedCharacters.push({
+        ...approveExistingReference({ ...character, images: _.uniq([validation.assetUrl, ...existingImages]) }),
+        referenceApproved: validation.approved,
+      });
       continue;
     }
-    const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
-      prompt: createCharacterReferencePrompt(character, style),
-      style,
-      resolution: visualConfig.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-      engine: visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-      sandboxConfig: { projectId },
-      visualConfig: {
-        ...visualConfig,
-        generateType: GenerateType.Image,
-        referenceImages: visualConfig.styleReferenceImages,
-      },
-    }, signal);
-    const assetUrl = createAssetUrl(_.defaultTo(response.data, {}));
-    if (!response.success || _.isEmpty(assetUrl)) {
-      throw new Error(_.replace(CHARACTER_REFERENCE_CONFIG.GENERATION_FAILED, "{name}", character.name));
-    }
-    await validateCharacterReference(character, assetUrl, style, signal);
-    approvedCharacters.push(approveExistingReference({ ...character, images: [assetUrl] }));
+    const validation = await createValidatedReference(projectId, character, visualConfig, style, undefined, signal);
+    approvedCharacters.push({
+      ...approveExistingReference({ ...character, images: [validation.assetUrl] }),
+      referenceApproved: validation.approved,
+    });
   }
   return approvedCharacters;
 };

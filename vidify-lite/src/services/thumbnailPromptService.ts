@@ -2,6 +2,7 @@ import _ from "lodash";
 import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, ThumbnailLayoutId } from "../constants/thumbnail";
 import { CharacterConfig, ThumbnailItem, VisualConfig } from "../types";
 import { appendImagePromptAspectRatio } from "./imagePromptQualityService";
+import { smartSplitSentences } from "../lib/textProcessor";
 
 const validLayoutIds = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
 
@@ -54,6 +55,41 @@ export const normalizeThumbnailIdeas = (
     usedLayoutIds,
     textMode,
   ));
+};
+
+export const createSourceGroundedThumbnailIdeas = (
+  script: string,
+  requestedCount: number,
+  style: string,
+  textMode: string = "auto",
+): ThumbnailItem[] => {
+  const normalizedScript = _.trim(script);
+  const sentences = smartSplitSentences(normalizedScript);
+  const sources = _.isEmpty(sentences) ? [normalizedScript] : sentences;
+  const generatedItems = _.times(requestedCount, index => {
+    const layout = THUMBNAIL_LAYOUT_CATALOG[index % _.size(THUMBNAIL_LAYOUT_CATALOG)];
+    const source = sources[index % _.size(sources)];
+    const prompt = _.replace(
+      _.replace(
+        _.replace(THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_PROMPT_TEMPLATE, THUMBNAIL_PROMPT_CONFIG.SOURCE_TOKEN, source),
+        THUMBNAIL_PROMPT_CONFIG.COMPOSITION_TOKEN,
+        layout.composition,
+      ),
+      THUMBNAIL_PROMPT_CONFIG.STYLE_TOKEN,
+      style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
+    );
+    return {
+      prompt,
+      style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
+      hasText: false,
+      textText: "",
+      layoutId: layout.id,
+      layout: layout.composition,
+      layoutRationale: layout.bestFor,
+      subjectFocus: source,
+    };
+  });
+  return normalizeThumbnailIdeas(generatedItems, requestedCount, textMode);
 };
 
 export const createThumbnailGenerationPrompt = (
