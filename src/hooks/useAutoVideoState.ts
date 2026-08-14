@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import _ from "lodash";
 import {
   VideoProject,
@@ -20,7 +20,6 @@ import { VideoQuality } from "../constants/enums";
 import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
-import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
@@ -151,23 +150,18 @@ export interface AutoVideoFormActions {
   setMusicAssetUrl: (v: string) => void;
 }
 
-const buildInitialProjectName = () =>
+const buildInitialProjectName = (): string =>
   _.join(
-    [PRESET_CONSTANTS.PROJECT_NAME_PREFIX, new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)],
+    [
+      PRESET_CONSTANTS.PROJECT_NAME_PREFIX,
+      new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10),
+    ],
     REFACTOR_CONSTANTS.VD_EMPTY_STRING,
   );
 
 const applyProjectToState = (
   proj: VideoProject,
-  actions: Pick<AutoVideoFormActions,
-    | "setInputType" | "setScriptContent" | "setGenre" | "setLanguage" | "setDuration" | "setSplitStrategy"
-    | "setVoiceProvider" | "setVoiceURI" | "setVoiceName"
-    | "setGenerationMode" | "setImageGeneratorEngine" | "setGenerateType"
-    | "setMaxVideoScenes" | "setAspectRatio" | "setStylePreset" | "setStyleBackgroundMode" | "setStyleTextInImageMode" | "setImageFocusMode" | "setThumbnailImageFocusMode"
-    | "setThumbnailCount" | "setThumbnailStylePreset" | "setThumbnailBackgroundMode" | "setThumbnailTextInImageMode"
-    | "setReferenceImages" | "setSceneReferenceImages" | "setThumbnailReferenceImages" | "setProjectName"
-    | "setMusicAssetUrl"
-  >,
+  actions: AutoVideoFormActions,
 ) => {
   if (proj.input) {
     if (proj.input.type) actions.setInputType(proj.input.type);
@@ -313,14 +307,17 @@ export function useAutoVideoState(
     setMusicAssetUrl,
   };
 
-  const loadConfig = async (projectId?: string | null) => {
+  const loadConfig = useCallback(async (projectId?: string | null) => {
     try {
-      const saved = await storageUtils.getAsync(getAutoVideoConfigStorageKey(projectId));
-      const parsed = jsonUtils.safeParse<CachedGeneratorConfig | null>(saved, null);
+      const parsed = await jsonUtils.getAsyncItem<CachedGeneratorConfig | null>(
+        getAutoVideoConfigStorageKey(projectId),
+        null,
+      );
       const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
       const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
       const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
       const projectThumbnailReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailReferenceImages, []);
+
       if (parsed) {
         const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
         if (foundProj?.input?.type) setInputType(foundProj.input.type);
@@ -365,25 +362,27 @@ export function useAutoVideoState(
         setChromeHeadless(usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
           ? parsed.chromeHeadless
           : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
-      } else {
-        if (foundProj) {
-          applyProjectToState(foundProj, actions);
-          setProjectName(foundProj.name);
-        }
+      } else if (foundProj) {
+        applyProjectToState(foundProj, actions);
+        setProjectName(foundProj.name);
       }
-    } catch (e) {
-      logger.error(T.errLoadConfig, e);
+    } catch (error) {
+      logger.error(T.errLoadConfig, error);
     }
-  };
+  }, [projects, T.errLoadConfig]);
 
   useEffect(() => {
+    let isCancelled = false;
     const loadSelectedConfig = async () => {
       setIsConfigLoaded(false);
       await loadConfig(selectedProjectId);
-      setIsConfigLoaded(true);
+      if (!isCancelled) setIsConfigLoaded(true);
     };
     loadSelectedConfig();
-  }, [selectedProjectId]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedProjectId, loadConfig]);
 
   useEffect(() => {
     if (!isConfigLoaded) return;
@@ -420,9 +419,9 @@ export function useAutoVideoState(
       chromeHeadless,
       musicAssetUrl,
     };
-    storageUtils.setAsync(
+    void jsonUtils.setAsyncItem(
       getAutoVideoConfigStorageKey(selectedProjectId),
-      jsonUtils.safeStringify(config),
+      config,
     );
   }, [
     isConfigLoaded, selectedProjectId,

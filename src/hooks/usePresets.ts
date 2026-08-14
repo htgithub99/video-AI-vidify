@@ -1,19 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { API_ROUTES, REFACTOR_CONSTANTS } from '../constants';
 
-const QUERY_KEY = REFACTOR_CONSTANTS.PRESETS_QUERY_KEY;
-const STALE_TIME = 5 * 60 * 1000;
-const ERR_FAILED_TO_FETCH = REFACTOR_CONSTANTS.PRESETS_ERR_FAILED_TO_FETCH;
+const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const STALE_TIME = FIVE_MINUTES_MS;
 
 export function usePresets() {
   return useQuery({
-    queryKey: [QUERY_KEY],
+    queryKey: [REFACTOR_CONSTANTS.PRESETS_QUERY_KEY],
     queryFn: async () => {
-      const res = await fetch(API_ROUTES.PRESETS);
-      if (!res.ok) {
-        throw new Error(ERR_FAILED_TO_FETCH);
+      const response = await fetch(API_ROUTES.PRESETS);
+      if (!response.ok) {
+        throw new Error(REFACTOR_CONSTANTS.PRESETS_ERR_FAILED_TO_FETCH);
       }
-      return res.json();
+      return response.json();
     },
     staleTime: STALE_TIME,
   });

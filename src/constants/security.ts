@@ -33,31 +33,40 @@ export enum FeatureType {
   VOICE = 'voice',
 }
 
-const _decode = (encodedHex: string): string => {
-  const key = 'vidify_secret_key_2026';
+const DECODE_KEY = 'vidify_secret_key_2026';
+const XOR_MASK = 0x5a;
+const RADIX_HEX = 16;
+const BYTE_SIZE = 2;
+const BYTE_MASK = 0xff;
+const BYTE_WRAP = 256;
+
+const decodeSecret = (encodedHex: string): string => {
   try {
     let result = '';
-    for (let i = 0; i < encodedHex.length; i += 2) {
-      const byte = parseInt(encodedHex.substring(i, i + 2), 16);
-      const keyChar = key.charCodeAt((i / 2) % key.length);
-      
+    for (let index = 0; index < encodedHex.length; index += BYTE_SIZE) {
+      const byte = parseInt(encodedHex.substring(index, index + BYTE_SIZE), RADIX_HEX);
+      const keyChar = DECODE_KEY.charCodeAt((index / BYTE_SIZE) % DECODE_KEY.length);
       let decryptedByte = byte ^ keyChar;
-      decryptedByte = (decryptedByte - (i / 2)) & 0xFF;
-      if (decryptedByte < 0) decryptedByte += 256;
-      decryptedByte = decryptedByte ^ 0x5A;
-      
+      decryptedByte = (decryptedByte - (index / BYTE_SIZE)) & BYTE_MASK;
+      if (decryptedByte < 0) decryptedByte += BYTE_WRAP;
+      decryptedByte = decryptedByte ^ XOR_MASK;
       result += String.fromCharCode(decryptedByte);
     }
     return result;
-  } catch (e) {}
-  return '';
+  } catch {
+    return '';
+  }
 };
 
 export const SecurityConstants = {
-  get ADMIN_APP_KEY() { return _decode('7a7d447f4671546d46716a4f604d744b6a492626262cf716e5'); },
+  get ADMIN_APP_KEY() {
+    return decodeSecret('7a7d447f4671546d46716a4f604d744b6a492626262cf716e5');
+  },
+  get GAS_API_URL() {
+    return decodeSecret('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1');
+  },
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
   DEFAULT_LICENSE_KEY: '4DE63-66EB0-A241C-F9BA5-05341',
-  get GAS_API_URL() { return _decode('444654444b1c240f5421405b4264e9293c197d7961bf39252be7372f0a36362be72fe3615e04303f52795468d559ff582d2ac3e602271a321f3c0f2232236986724bc622291703040c2de73d27dd223de703c33b5044b550031e07ffa012cafaf409b9b7eb29f5ffe08de0d099b9dbc1'); },
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
@@ -220,7 +229,7 @@ export const LocalizationConstants = {
   PLAN_LIFETIME: 'Vĩnh Viễn',
   PLAN_PRO: 'PRO',
   PLAN_FREE: 'Miễn Phí',
-};
+} as const;
 
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: 'Vui lòng kích hoạt mã bản quyền để sử dụng ứng dụng.',
@@ -291,7 +300,7 @@ export const SecurityMessages = {
   LABEL_EXPORT_VIDEO_TOOLTIP: 'Tự động xuất video sau khi tạo xong',
   PLACEHOLDER_VIDEO_OUTPUT_DIR_SHORT: 'Đường dẫn lưu video...',
   PLACEHOLDER_VIDEO_OUTPUT_DIR_TOOLTIP: 'Đường dẫn thư mục lưu video...',
-};
+} as const;
 
 export const AutoLoginConstants = {
   URLS: {
@@ -382,13 +391,13 @@ export const AutoLoginConstants = {
     IDENTITY_VERIFY: 'Tài khoản bị bắt xác minh danh tính (Verify it\'s you).',
   },
   DIAGNOSTICS: {
-    FILE_NAME: "google_login_dom_diagnostics.jsonl",
+    FILE_NAME: 'google_login_dom_diagnostics.jsonl',
     SELECTOR: 'form, input, button, [role="alert"], [aria-live="assertive"], iframe, h1, h2',
     MAX_ELEMENTS: 100,
     MAX_CLASS_NAME_LENGTH: 250,
     MAX_TEXT_LENGTH: 300,
     MAX_HTML_LENGTH: 600,
-    ERROR_MESSAGE: "Không thể ghi trạng thái đăng nhập Google ({0}).",
+    ERROR_MESSAGE: 'Không thể ghi trạng thái đăng nhập Google ({0}).',
   },
   CONFIG: {
     NAVIGATION_TIMEOUT_MS: 25000,
@@ -413,7 +422,7 @@ export const AutoLoginConstants = {
     PASSWORD_NEXT_DELAY_MIN_MS: 500,
     PASSWORD_NEXT_DELAY_MAX_MS: 1000,
   },
-};
+} as const;
 
 export const ImageGenMessages = {
   LABS_NO_PROJECT: '[Google Labs] Không có projectId, đang truy cập để tạo dự án mới...',
@@ -432,10 +441,10 @@ export const ImageGenMessages = {
   GLOBAL_CHROME_CLOSED_EXTERNAL: 'Trình duyệt Chrome toàn cục đã bị đóng từ bên ngoài.',
   CONFIG_CHANGED_FORCE_NEW_ROOM: 'Phát hiện thay đổi cấu hình (Aspect Ratio/Model/Engine). Buộc mở phòng chat mới để tránh ô nhiễm ngữ cảnh.',
   CHROME_MODE_CHANGED: '[Trình duyệt] Chế độ Chrome thay đổi (Headless: {0} -> {1}). Đang khởi động lại trình duyệt...',
-};
+} as const;
 
 export const UIConstants = {
   INFINITY: '∞',
   LANG_VI: 'VN',
-  LANG_EN: 'EN'
-};
+  LANG_EN: 'EN',
+} as const;

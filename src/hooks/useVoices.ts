@@ -6,15 +6,10 @@ import {
   VBEE_PROVIDER_ID,
   VOICE_OWNERSHIP_KEY,
   VOICE_OWNERSHIP_COMMUNITY,
-  REFACTOR_CONSTANTS
+  REFACTOR_CONSTANTS,
 } from '../constants';
 import { fetchVoiceCatalog } from '../services/voiceCatalogService';
-
-const CACHE_PREFIX = REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX;
-const QUERY_KEY = REFACTOR_CONSTANTS.VOICES_QUERY_KEY;
-const EMPTY_STRING = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-const JOIN_CHAR = REFACTOR_CONSTANTS.VOICES_JOIN_CHAR;
-const STALE_TIME = REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS;
+import { jsonUtils } from '../lib/json';
 
 export interface UseVoicesFilters {
   provider: string;
@@ -26,53 +21,66 @@ export interface UseVoicesFilters {
   search?: string;
 }
 
-export function useVoices(filters: UseVoicesFilters, enabled = true) {
+const buildVoiceQueryParams = (filters: UseVoicesFilters): URLSearchParams => {
+  const params = new URLSearchParams();
+  params.append(API_QUERY_PARAMS.PROVIDER, filters.provider);
+  params.append(API_QUERY_PARAMS.PAGE, String(filters.page));
+  params.append(API_QUERY_PARAMS.PAGE_SIZE, String(filters.pageSize));
+
+  if (!_.isEmpty(filters.language)) {
+    params.append(API_QUERY_PARAMS.LANGUAGE, filters.language!);
+  }
+  if (!_.isEmpty(filters.gender)) {
+    params.append(API_QUERY_PARAMS.GENDER, filters.gender!);
+  }
+  if (!_.isEmpty(filters.age)) {
+    params.append(API_QUERY_PARAMS.AGE, filters.age!);
+  }
+  if (!_.isEmpty(filters.search)) {
+    params.append(API_QUERY_PARAMS.SEARCH, filters.search!);
+  }
+  if (_.isEqual(filters.provider, VBEE_PROVIDER_ID)) {
+    params.append(VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY);
+  }
+  return params;
+};
+
+const getVoiceCacheKey = (filters: UseVoicesFilters): string => {
   const parts = [
-    CACHE_PREFIX,
+    REFACTOR_CONSTANTS.VOICES_CACHE_PREFIX,
     filters.provider,
     filters.page,
     filters.pageSize,
-    filters.language || EMPTY_STRING,
-    filters.gender || EMPTY_STRING,
-    filters.age || EMPTY_STRING,
-    filters.search || EMPTY_STRING
+    filters.language || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.gender || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.age || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    filters.search || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
   ];
-  const cacheKey = _.join(parts, JOIN_CHAR);
+  return _.join(parts, REFACTOR_CONSTANTS.VOICES_JOIN_CHAR);
+};
+
+export function useVoices(filters: UseVoicesFilters, enabled = true) {
+  const cacheKey = getVoiceCacheKey(filters);
 
   const query = useQuery({
-    queryKey: [QUERY_KEY, ..._.slice(parts, REFACTOR_CONSTANTS.INDEX_ONE)],
+    queryKey: [
+      REFACTOR_CONSTANTS.VOICES_QUERY_KEY,
+      filters.provider,
+      filters.page,
+      filters.pageSize,
+      filters.language,
+      filters.gender,
+      filters.age,
+      filters.search,
+    ],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      params.append(API_QUERY_PARAMS.PROVIDER, filters.provider);
-      params.append(API_QUERY_PARAMS.PAGE, String(filters.page));
-      params.append(API_QUERY_PARAMS.PAGE_SIZE, String(filters.pageSize));
-
-      if (!_.isEmpty(filters.language)) {
-        params.append(API_QUERY_PARAMS.LANGUAGE, filters.language!);
-      }
-      if (!_.isEmpty(filters.gender)) {
-        params.append(API_QUERY_PARAMS.GENDER, filters.gender!);
-      }
-      if (!_.isEmpty(filters.age)) {
-        params.append(API_QUERY_PARAMS.AGE, filters.age!);
-      }
-      if (!_.isEmpty(filters.search)) {
-        params.append(API_QUERY_PARAMS.SEARCH, filters.search!);
-      }
-
-      if (_.isEqual(filters.provider, VBEE_PROVIDER_ID)) {
-        params.append(VOICE_OWNERSHIP_KEY, VOICE_OWNERSHIP_COMMUNITY);
-      }
-
+      const params = buildVoiceQueryParams(filters);
       return fetchVoiceCatalog(params);
     },
-    initialData: () => {
-      const cached = localStorage.getItem(cacheKey);
-      return cached ? JSON.parse(cached) : undefined;
-    },
+    initialData: () => jsonUtils.getItem(cacheKey, undefined),
     enabled,
-    staleTime: STALE_TIME,
-    gcTime: STALE_TIME,
+    staleTime: REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS,
+    gcTime: REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS,
     refetchOnMount: false,
     refetchOnReconnect: false,
   });
@@ -80,7 +88,7 @@ export function useVoices(filters: UseVoicesFilters, enabled = true) {
   useEffect(() => {
     const data = _.get(query, 'data');
     if (data) {
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      jsonUtils.setItem(cacheKey, data);
     }
   }, [query.data, cacheKey]);
 

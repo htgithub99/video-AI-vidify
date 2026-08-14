@@ -2,14 +2,29 @@ import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../constants";
 import { jsonUtils } from "../lib/json";
 
-interface PipelineRunLock { runId: string; targetKey: string; ownerId: string; expiresAt: number; }
-export interface PipelineRunLease { acquired: boolean; runId: string; targetKey: string; }
+interface PipelineRunLock {
+  runId: string;
+  targetKey: string;
+  ownerId: string;
+  expiresAt: number;
+}
+
+export interface PipelineRunLease {
+  acquired: boolean;
+  runId: string;
+  targetKey: string;
+}
 
 const createRunId = (): string => crypto.randomUUID();
 const activeLeaseRunIds = new Set<string>();
 const getStorageKey = (targetKey: string): string => `${REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_PREFIX}${targetKey}`;
-const readLock = (targetKey: string): PipelineRunLock | null => jsonUtils.safeParse<PipelineRunLock | null>(localStorage.getItem(getStorageKey(targetKey)), null);
-const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock => Boolean(lock && _.gt(lock.expiresAt, Date.now()));
+
+const readLock = (targetKey: string): PipelineRunLock | null =>
+  jsonUtils.getItem<PipelineRunLock | null>(getStorageKey(targetKey), null);
+
+const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock =>
+  Boolean(lock && _.gt(lock.expiresAt, Date.now()));
+
 const getOwnerId = (): string => {
   const existingOwnerId = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_RUN_OWNER_KEY);
   if (!_.isEmpty(existingOwnerId)) return existingOwnerId!;
@@ -30,8 +45,13 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
     }
   }
   const runId = createRunId();
-  const lock: PipelineRunLock = { runId, targetKey: normalizedTargetKey, ownerId, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) };
-  localStorage.setItem(getStorageKey(normalizedTargetKey), jsonUtils.safeStringify(lock));
+  const lock: PipelineRunLock = {
+    runId,
+    targetKey: normalizedTargetKey,
+    ownerId,
+    expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS),
+  };
+  jsonUtils.setItem(getStorageKey(normalizedTargetKey), lock);
   const acquired = _.isEqual(readLock(normalizedTargetKey)?.runId, runId);
   if (acquired) activeLeaseRunIds.add(runId);
   return { acquired, runId, targetKey: normalizedTargetKey };
@@ -40,11 +60,16 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
 export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
   const currentLock = readLock(lease.targetKey);
   if (!_.isEqual(currentLock?.runId, lease.runId)) return false;
-  localStorage.setItem(getStorageKey(lease.targetKey), jsonUtils.safeStringify({ ...currentLock, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) }));
+  jsonUtils.setItem(
+    getStorageKey(lease.targetKey),
+    { ...currentLock, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) },
+  );
   return true;
 };
 
 export const releasePipelineRunLease = (lease: PipelineRunLease): void => {
-  if (_.isEqual(readLock(lease.targetKey)?.runId, lease.runId)) localStorage.removeItem(getStorageKey(lease.targetKey));
+  if (_.isEqual(readLock(lease.targetKey)?.runId, lease.runId)) {
+    jsonUtils.removeItem(getStorageKey(lease.targetKey));
+  }
   activeLeaseRunIds.delete(lease.runId);
 };

@@ -5,13 +5,35 @@ const FLAT_STYLE_PATTERN = /stickman|flat(?: solid)? colors?|minimalist|no gradi
 const SAFE_FLAT_EFFECTS = new Set(["", "none", "sharpen", "soft_focus"]);
 const GENTLE_TRANSITIONS = new Set(["cut", "cross_dissolve", "fade_black"]);
 
-const isFlatVisualStyle = (visualBible?: VisualBible): boolean => FLAT_STYLE_PATTERN.test(_.join([
-  visualBible?.visualStyle,
-  visualBible?.colorPalette,
-  visualBible?.lightingMood,
-  visualBible?.shading,
-  visualBible?.lineStyle,
-], " "));
+const MOTION_ZOOM_IN = "Zoom In";
+const MOTION_ZOOM_OUT = "Zoom Out";
+const MOTION_PAN_LEFT = "Pan Left";
+const MOTION_PAN_RIGHT = "Pan Right";
+const MOTION_PAN_UP = "Pan Up";
+const MOTION_PAN_DOWN = "Pan Down";
+
+const MOTION_RHYTHM = [
+  MOTION_ZOOM_IN,
+  MOTION_PAN_RIGHT,
+  MOTION_ZOOM_IN,
+  MOTION_PAN_LEFT,
+  MOTION_ZOOM_OUT,
+  MOTION_PAN_UP,
+  MOTION_ZOOM_IN,
+  MOTION_PAN_DOWN,
+];
+
+const SHOT_LADDER = ["Wide shot", "Medium shot", "Close-up", "Medium shot"];
+
+const isFlatVisualStyle = (visualBible?: VisualBible): boolean => FLAT_STYLE_PATTERN.test(
+  _.join([
+    visualBible?.visualStyle,
+    visualBible?.colorPalette,
+    visualBible?.lightingMood,
+    visualBible?.shading,
+    visualBible?.lineStyle,
+  ], " "),
+);
 
 const normalizeTransition = (
   scene: StoryboardScene,
@@ -19,11 +41,16 @@ const normalizeTransition = (
   index: number,
 ): string => {
   if (!nextScene) return "cut";
-  if (scene.chapterId && nextScene.chapterId && scene.chapterId !== nextScene.chapterId) return "fade_black";
+  if (scene.chapterId && nextScene.chapterId && !_.isEqual(scene.chapterId, nextScene.chapterId)) {
+    return "fade_black";
+  }
   const requested = _.replace(_.toLower(scene.transition || "cut"), /[ -]+/g, "_");
-  if (!GENTLE_TRANSITIONS.has(requested)) return "cut";
-  if (requested === "fade_black") return "cut";
-  if (requested === "cross_dissolve" && index % 4 !== 2) return "cut";
+  if (!GENTLE_TRANSITIONS.has(requested) || _.isEqual(requested, "fade_black")) {
+    return "cut";
+  }
+  if (_.isEqual(requested, "cross_dissolve") && index % 4 !== 2) {
+    return "cut";
+  }
   return requested;
 };
 
@@ -37,37 +64,27 @@ const resolveCinematicCameraMotion = (
   const VALID_MOTIONS = new Set([
     "zoom_in", "zoom_out", "pan_left", "pan_right", "pan_up", "pan_down", "drift", "static",
   ]);
-  if (VALID_MOTIONS.has(normalizedExplicit) && normalizedExplicit !== "zoom_in") {
+  if (VALID_MOTIONS.has(normalizedExplicit) && !_.isEqual(normalizedExplicit, "zoom_in")) {
     return explicitMotion;
   }
 
   // Smart narrative motion assignment:
-  // 1. Opening hook (Scene 1): Zoom In to pull audience in
-  if (index === 0) return "Zoom In";
-  // 2. Final resolution (Last scene): Slow Zoom Out for reflective closure
-  if (index === totalScenes - 1) return "Zoom Out";
+  // 1. Opening hook (Scene 1): Zoom In
+  if (index === 0) return MOTION_ZOOM_IN;
+  // 2. Final resolution (Last scene): Zoom Out
+  if (index === totalScenes - 1) return MOTION_ZOOM_OUT;
 
   // 3. Narrative & Shot size context
   const shotSize = _.toLower(_.toString(scene.shotSize));
   if (/wide|establishing/i.test(shotSize)) {
-    return index % 2 === 0 ? "Pan Left" : "Pan Right";
+    return index % 2 === 0 ? MOTION_PAN_LEFT : MOTION_PAN_RIGHT;
   }
   if (/close|extreme/i.test(shotSize)) {
-    return "Zoom In";
+    return MOTION_ZOOM_IN;
   }
 
   // 4. Alternating dynamic rhythm
-  const motionRhythm = [
-    "Zoom In",
-    "Pan Right",
-    "Zoom In",
-    "Pan Left",
-    "Zoom Out",
-    "Pan Up",
-    "Zoom In",
-    "Pan Down",
-  ];
-  return motionRhythm[index % motionRhythm.length];
+  return MOTION_RHYTHM[index % MOTION_RHYTHM.length];
 };
 
 const resolveCinematicShotSize = (
@@ -78,12 +95,11 @@ const resolveCinematicShotSize = (
   const normalizedCurrent = _.toLower(_.trim(currentShotSize || ""));
   const normalizedPrev = _.toLower(_.trim(previousShotSize || ""));
 
-  // Prevent Jump-Cuts (Consecutive identical close-ups or identical wide shots)
-  if (normalizedCurrent && normalizedCurrent !== normalizedPrev) {
+  // Prevent Jump-Cuts
+  if (!_.isEmpty(normalizedCurrent) && !_.isEqual(normalizedCurrent, normalizedPrev)) {
     return currentShotSize!;
   }
 
-  const SHOT_LADDER = ["Wide shot", "Medium shot", "Close-up", "Medium shot"];
   return SHOT_LADDER[index % SHOT_LADDER.length];
 };
 

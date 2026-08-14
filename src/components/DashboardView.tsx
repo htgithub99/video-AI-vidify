@@ -1,3 +1,4 @@
+import { FC, ReactNode } from "react";
 import { Video, Image as ImageIcon, Mic } from "lucide-react";
 import { Button } from "./ui/Button";
 import { VideoProject } from "../types";
@@ -5,7 +6,7 @@ import { Lang, translations } from "../lib/lang";
 import { useLicense } from "../contexts/LicenseContext";
 import { QUOTA_TEXTS } from "../constants/texts";
 import { AppLanguage } from "../constants/enums";
-import { UIConstants } from "../constants/security";
+import { SecurityConstants, UIConstants } from "../constants/security";
 import _ from "lodash";
 
 interface DashboardViewProps {
@@ -15,6 +16,56 @@ interface DashboardViewProps {
   onNavigateToProjects: () => void;
 }
 
+interface QuotaProgressBarProps {
+  icon: ReactNode;
+  label: string;
+  usage: number;
+  limit: number;
+  percent: number;
+  isUnlimited: boolean;
+  colorClass: string;
+  bgBarClass: string;
+  formatNumber?: boolean;
+}
+
+const QuotaProgressBar: FC<QuotaProgressBarProps> = ({
+  icon,
+  label,
+  usage,
+  limit,
+  percent,
+  isUnlimited,
+  colorClass,
+  bgBarClass,
+  formatNumber = false,
+}) => {
+  const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
+  const formattedLimit = isUnlimited
+    ? UIConstants.INFINITY
+    : formatNumber
+      ? limit.toLocaleString()
+      : limit;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-center text-[10px] font-bold">
+        <span className={`${colorClass} flex items-center gap-1.5`}>
+          {icon} {label}
+        </span>
+        <span className="text-slate-500">
+          <span className="text-slate-200">{formattedUsage}</span> / {formattedLimit}
+        </span>
+      </div>
+      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${bgBarClass} rounded-full transition-all duration-500`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
 export default function DashboardView({
   currentLang,
   projects,
@@ -22,26 +73,28 @@ export default function DashboardView({
   onNavigateToProjects,
 }: DashboardViewProps) {
   const t = translations[currentLang];
-  const langKey = _.isEqual(currentLang, AppLanguage.VI) ? 'VN' : 'EN';
-  const quotaText = QUOTA_TEXTS[langKey];
-  const latestProject = projects.length > 0 ? projects[projects.length - 1] : null;
+  const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
+  const langKey = isVietnamese ? UIConstants.LANG_VI : UIConstants.LANG_EN;
+  const quotaText = _.get(QUOTA_TEXTS, langKey, QUOTA_TEXTS.VN);
+  const latestProject = _.last(projects) || null;
 
   const { licenseInfo } = useLicense();
 
-  const limitVideo = _.get(licenseInfo, 'limits.video', 0);
-  const limitImage = _.get(licenseInfo, 'limits.image', 0);
-  const limitVoice = _.get(licenseInfo, 'limits.voice', 0);
-  const isUnlimited = _.get(licenseInfo, 'limits.unlimited', false);
+  const limitVideo = _.get(licenseInfo, SecurityConstants.LIMITS_VIDEO, SecurityConstants.ZERO);
+  const limitImage = _.get(licenseInfo, SecurityConstants.LIMITS_IMAGE, SecurityConstants.ZERO);
+  const limitVoice = _.get(licenseInfo, SecurityConstants.LIMITS_VOICE, SecurityConstants.ZERO);
+  const isUnlimited = Boolean(_.get(licenseInfo, SecurityConstants.LIMITS_UNLIMITED, false));
 
-  const usageVideo = _.get(licenseInfo, 'usage.video', 0);
-  const usageImage = _.get(licenseInfo, 'usage.image', 0);
-  const usageVoice = _.get(licenseInfo, 'usage.voice', 0);
+  const usageVideo = _.get(licenseInfo, SecurityConstants.USAGE_VIDEO, SecurityConstants.ZERO);
+  const usageImage = _.get(licenseInfo, SecurityConstants.USAGE_IMAGE, SecurityConstants.ZERO);
+  const usageVoice = _.get(licenseInfo, SecurityConstants.USAGE_VOICE, SecurityConstants.ZERO);
 
-  const getPercent = (used: number, limit: number) => isUnlimited ? 100 : _.clamp((used / (_.max([limit, 1]) as number)) * 100, 0, 100);
+  const calculatePercent = (used: number, limit: number): number =>
+    isUnlimited ? 100 : _.clamp((used / (_.max([limit, 1]) as number)) * 100, 0, 100);
 
-  const videoPercent = getPercent(usageVideo, limitVideo);
-  const imagePercent = getPercent(usageImage, limitImage);
-  const voicePercent = getPercent(usageVoice, limitVoice);
+  const videoPercent = calculatePercent(usageVideo, limitVideo);
+  const imagePercent = calculatePercent(usageImage, limitImage);
+  const voicePercent = calculatePercent(usageVoice, limitVoice);
 
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6">
@@ -66,24 +119,26 @@ export default function DashboardView({
             {quotaText.MEDIA_QUOTA}
           </h3>
           <div className="space-y-4 flex-1">
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-bold">
-                <span className="text-blue-400 flex items-center gap-1.5"><Video className="w-3 h-3" /> {quotaText.VIDEO}</span>
-                <span className="text-slate-500"><span className="text-slate-200">{usageVideo}</span> / {isUnlimited ? UIConstants.INFINITY : limitVideo}</span>
-              </div>
-              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${videoPercent}%` }} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center text-[10px] font-bold">
-                <span className="text-emerald-400 flex items-center gap-1.5"><ImageIcon className="w-3 h-3" /> {quotaText.IMAGE}</span>
-                <span className="text-slate-500"><span className="text-slate-200">{usageImage}</span> / {isUnlimited ? UIConstants.INFINITY : limitImage}</span>
-              </div>
-              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${imagePercent}%` }} />
-              </div>
-            </div>
+            <QuotaProgressBar
+              icon={<Video className="w-3 h-3" />}
+              label={quotaText.VIDEO}
+              usage={usageVideo}
+              limit={limitVideo}
+              percent={videoPercent}
+              isUnlimited={isUnlimited}
+              colorClass="text-blue-400"
+              bgBarClass="bg-blue-500"
+            />
+            <QuotaProgressBar
+              icon={<ImageIcon className="w-3 h-3" />}
+              label={quotaText.IMAGE}
+              usage={usageImage}
+              limit={limitImage}
+              percent={imagePercent}
+              isUnlimited={isUnlimited}
+              colorClass="text-emerald-400"
+              bgBarClass="bg-emerald-500"
+            />
           </div>
         </div>
 
@@ -91,15 +146,17 @@ export default function DashboardView({
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
             {quotaText.VOICE_QUOTA}
           </h3>
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center text-[10px] font-bold">
-              <span className="text-amber-400 flex items-center gap-1.5"><Mic className="w-3 h-3" /> {quotaText.CHARS}</span>
-              <span className="text-slate-500"><span className="text-slate-200">{usageVoice.toLocaleString()}</span> / {isUnlimited ? UIConstants.INFINITY : limitVoice.toLocaleString()}</span>
-            </div>
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${voicePercent}%` }} />
-            </div>
-          </div>
+          <QuotaProgressBar
+            icon={<Mic className="w-3 h-3" />}
+            label={quotaText.CHARS}
+            usage={usageVoice}
+            limit={limitVoice}
+            percent={voicePercent}
+            isUnlimited={isUnlimited}
+            colorClass="text-amber-400"
+            bgBarClass="bg-amber-500"
+            formatNumber
+          />
           <p className="text-[10px] text-slate-500 mt-auto">
             {quotaText.SYNC_MSG}
           </p>
@@ -108,14 +165,14 @@ export default function DashboardView({
 
       {latestProject ? (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-450 mb-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
             {t.dashboardLatestProject}
           </h3>
           <div className="flex flex-col sm:flex-row gap-5 items-start">
             <div className="w-full sm:w-48 aspect-video bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden shrink-0 relative">
               <Video className="w-12 h-12 text-slate-700" />
               <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold font-mono text-white shadow-sm">
-                {_.isEqual(latestProject.config.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}
+                {_.isEqual(latestProject.config?.language, AppLanguage.VI) ? UIConstants.LANG_VI : UIConstants.LANG_EN}
               </div>
             </div>
             <div className="flex-1 space-y-2">
