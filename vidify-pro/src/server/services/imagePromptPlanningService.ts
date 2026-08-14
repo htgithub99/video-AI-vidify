@@ -1,8 +1,0 @@
-import _ from "lodash";
-import { IMAGE_PROMPT_METADATA_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config.js";
-import { TextInImageMode } from "../../types.js";
-const CHARACTER_CARD_FIELDS = ["id", "name", "narrativeRole", "prompt", "hair", "signatureClothing", "accessories", "colorPalette", "silhouette"] as const;
-export interface AiImagePromptPlan { prompt: string; characterIds: string[]; expectedSubjectCount: number; allowBackgroundPeople: boolean; layout: string; textAllowed: boolean; }
-export const createPromptCharacterCards = (characters: unknown[]): Record<string, unknown>[] => _.map(characters, character => _.pick(character, CHARACTER_CARD_FIELDS));
-export const normalizeAiImagePromptPlan = (item: any, validCharacterIds: Set<string>, textMode: unknown): AiImagePromptPlan => ({ prompt: _.trim(_.toString(item.prompt)), characterIds: _.filter(_.uniq(_.castArray(item.characterIds)), characterId => validCharacterIds.has(_.toString(characterId))), expectedSubjectCount: _.clamp(_.toInteger(item.expectedSubjectCount), IMAGE_PROMPT_METADATA_CONFIG.MIN_SUBJECT_COUNT, IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT), allowBackgroundPeople: Boolean(item.allowBackgroundPeople), layout: _.includes(IMAGE_PROMPT_METADATA_CONFIG.ALLOWED_LAYOUTS, item.layout) ? item.layout : IMAGE_PROMPT_METADATA_CONFIG.DEFAULT_LAYOUT, textAllowed: _.isEqual(textMode, TextInImageMode.Auto) ? Boolean(item.textAllowed) : _.includes(TEXT_IN_IMAGE_MODE_CONFIG.TEXT_ALLOWED_MODES, textMode) });
-export const createBatchContinuityContext = (scenes: unknown[], startIndex: number, batchLength: number): Record<string, unknown> => ({ previousScene: _.get(scenes, startIndex - 1), nextScene: _.get(scenes, startIndex + batchLength) });
