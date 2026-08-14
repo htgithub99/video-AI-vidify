@@ -2,9 +2,14 @@ import { VideoGenre } from "./enums";
 
 const SATIRICAL_LIFE_GUIDELINE = `SATIRICAL / SOCIAL DARKSIDE STORYTELLING (SIGNATURE NARRATIVE FORMULA):
 - SECOND-PERSON POV ("YOU") MANDATORY: Always center the narrative around "you" to force extreme viewer immersion into the psychological descent, temptations, and collapse ("At 8:00 AM you plug in the camera...", "At 21, you pawned your wife's wedding gold...", "You thought you were smart...").
-- PRECISE TIME ANCHORS & CONCRETE NUMBERS:
+- PRECISE TIME ANCHORS & REALISTIC CHRONOLOGICAL FLOW:
   + Open scenes and transitions with exact time stamps: "8:00 AM...", "5:15 PM...", "2:25 AM...", "Three days later...", "One week later...", "9:53 PM...".
+  + TEMPORAL REALISM MANDATE: Time anchors must realistically match the physical duration of the events. If an event occurs "overnight" or "after a night of work", the timestamps must span across the night and morning (e.g., "8:00 PM -> 11:30 PM -> 3:00 AM -> 6:30 AM"), NEVER crammed within a single morning hour.
+- ARITHMETICAL & FINANCIAL CONTINUITY:
   + Use hyper-realistic financial numbers and transactions down to the exact amount: "2 tỷ 800 triệu", "30 triệu", "1000 USDT", "gaining $10, losing $20", "40 million cut".
+  + STRICT FINANCIAL LOGIC: Track money consistently across chapters. The initial offered sum, actual received earnings, and lost amounts must mathematically align (e.g., if you make 60 million and get scammed for 10 million, your wallet is NOT completely empty unless you lost the entirety of your money).
+- AUTHENTIC VIETNAMESE VOCABULARY & IDIOMS:
+  + When outputting Vietnamese, use authentic natural idioms (e.g., "quân cờ", "con tốt thí", "kẻ chịu trận", "mắt xích trong guồng quay"). NEVER invent awkward machine-translated terms (e.g., NEVER use "con gánh").
 - STACCATO PACING & CYNICAL IRONIC PUNCHLINES:
   + Short, punchy, unembellished sentences with the gritty urgency of an investigative true-crime exposé.
   + Frequently interweave cynical observations:

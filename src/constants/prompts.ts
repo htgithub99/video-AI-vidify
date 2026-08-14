@@ -327,6 +327,11 @@ ${
 }
 ${sentenceLengthDirective}
 
+[MANDATORY LOGICAL & ENTITY CONTINUITY RULES]:
+1. STRICT NUMERICAL & FINANCIAL LOGIC: Strictly honor exact monetary amounts, percentages, and transactions established in Story State or earlier chapters. Cash received, spent, or lost must be mathematically coherent.
+2. REALISTIC CHRONOLOGICAL TIMELINE: Time anchors/timestamps must strictly follow a plausible, realistic real-world timeline. Actions spanning overnight must span from evening/night to morning, not compressed into illogical daytime intervals.
+3. AUTHENTIC NATURAL VOCABULARY: Use native, natural idioms (e.g., in Vietnamese use "quân cờ", "con tốt thí", "mắt xích"; NEVER use awkward literal translations like "con gánh").
+
 Provide strict output complying EXACTLY with this JSON structure:
 {
   "scriptSegment": "FULL CHAPTER NARRATION"
@@ -1428,6 +1433,11 @@ ${
 Your workflow MUST execute the following steps internally:
 STEP 1: Research & Concept sheet formulation. Determine theme details, main characters visual profiles, core keywords, and preferred terms.
 STEP 2: Outline creation. Plan a pacing-optimized structure split into exactly ${targetChapterCount} chapters. Provide a clear title and description for each chapter detailing what narration must cover.
+
+[CROSS-CHAPTER NUMERICAL, LOGICAL & TEMPORAL INTEGRITY]:
+- Track characters, financial amounts, transaction numbers, and chronological timestamps seamlessly across all ${targetChapterCount} chapters.
+- Never introduce arithmetic contradictions (e.g. initial reward vs end balance) or unnatural temporal leaps (e.g. overnight events happening in 45 minutes of a single morning).
+- When writing in Vietnamese, use authentic native terminology and idioms (e.g. "quân cờ", "con tốt thí", "mắt xích"), strictly avoiding literal machine translation errors.
 
 Build a production-ready Creative Brief before outlining. Then build a Fact Pack containing every externally verifiable claim. For factual, documentary, historical, scientific, legal, medical, social-impact, or true-case topics, cover every major consequence or causal claim and target at least four distinct claims when the source evidence supports them. Never invent a source URL. If reliable source metadata is unavailable, mark the claim unsupported or needs_scope and provide a cautious safeRewrite. Every claim limited to a cohort, place, period, or observed association must preserve that scope in safeRewrite. The writer must not state unsupported or correlational claims as universal causal facts.
 

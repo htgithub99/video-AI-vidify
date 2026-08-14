@@ -337,9 +337,9 @@ export default function AutoVideoGenerator({
     const targetProject = activeCreatedProject || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
     if (targetProject) {
       const updatedProject = applyVoiceSelection(targetProject, {
-          voiceURI: selectedVoiceURI,
-          voiceName: selectedVoiceName,
-          provider: selectedVoiceProvider,
+          voiceURI: _.toString(selectedVoiceURI),
+          voiceName: _.toString(selectedVoiceName),
+          provider: _.toString(selectedVoiceProvider),
       });
       setActiveCreatedProject(updatedProject);
       void onUpdateProject(updatedProject, true);
