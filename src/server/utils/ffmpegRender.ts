@@ -9,6 +9,7 @@ import { VideoQuality } from "../../constants/enums.js";
 import { GenerateType, RenderAudioTrack, SubtitleCue, SubtitleMode } from "../../types.js";
 import { FFMPEG_RESOLUTIONS, FFMPEG_RENDER_CONSTANTS, FFMPEG_RENDER_KEYS, PRODUCTION_AUDIO_CONFIG } from "../../constants/config.js";
 import { ASSETS_DIR_NAME, PROJECTS_DIR_NAME, REFACTOR_CONSTANTS, SAFE_PROJECT_ID_REGEX, SecurityConstants, VIDEOS_DIR_NAME } from "../../constants/index.js";
+import { jsonUtils } from "../../lib/json.js";
 import { MEDIA_MIX_CONFIG } from "../../constants/loading.js";
 import { hasProductionAudioSource, isBlockedAudioSource } from "../../services/productionAudioService.js";
 
@@ -223,11 +224,10 @@ export const renderFFmpegVideo = async (
     [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
     [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
   };
-
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
   fs.writeFileSync(
     configPath,
-    JSON.stringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT),
+    jsonUtils.safeStringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT),
     FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8,
   );
 

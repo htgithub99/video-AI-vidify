@@ -2,7 +2,22 @@ import { cn } from "../../lib/utils";
 import { formatCleanTime } from "../../lib/timeUtils";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { PipelineWizardState } from "./usePipelineWizard";
-import * as LucideIcons from "lucide-react";
+import {
+  Eye,
+  Download,
+  ArrowLeft,
+  Play,
+  Pause,
+  Maximize,
+  Settings2,
+  FileText,
+  Database,
+  FolderOpen,
+  Monitor,
+  ChevronDown,
+  Video,
+  Send,
+} from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import React, { useRef, useState, useEffect } from "react";
@@ -13,6 +28,7 @@ import { VideoQuality, ResourceSourceMode, FolderSelectionType } from "../../con
 import { logger } from "../../utils/logger";
 import { safeSystemFetch, getStoredApiKey } from "../../lib/shared-utils";
 import _ from "lodash";
+import { jsonUtils } from "../../lib/json";
 import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
 import { createRenderAudioTracks } from "../../services/audioMixService";
@@ -20,8 +36,6 @@ import { createSubtitleCues } from "../../services/subtitleService";
 import { createAdvisoryFinalVideoReport } from "../../services/finalMultimodalQualityService";
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
 import { getRenderReadiness } from "../../services/pipelineCompletionPolicyService";
-
-const { Eye, Download, ArrowLeft, Play, Pause, Maximize, Settings2 } = LucideIcons as any;
 
 export default function PipelineStep4(props: PipelineWizardState) {
   const { t, setCurrentStep, isPlayingSim, currentSimTime, simActiveScene, startPlaybackSim, stopPlaybackSim, getSceneImageUrl, handleDownloadJSONProject, loadingExportType } = props;
@@ -114,7 +128,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
            [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
            [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY)
          },
-         body: JSON.stringify(payload)
+         body: jsonUtils.safeStringify(payload)
       });
       const data = await response.json();
       if (data.success && data.jobId) {
@@ -389,7 +403,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
                   <Tooltip content="Đặt tên cho video của bạn. Tên này sẽ được dùng làm tên thư mục và tên file video khi xuất bản." position="top">
-                    <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.FileText className="w-3.5 h-3.5 text-rose-500" /> Tên Video</span>
+                    <span className="flex items-center gap-1.5 cursor-help"><FileText className="w-3.5 h-3.5 text-rose-500" /> Tên Video</span>
                   </Tooltip>
                 </label>
                 <input 
@@ -404,7 +418,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
                   <Tooltip content="Chọn cách thức hệ thống lấy hình ảnh và âm thanh để ghép vào video." position="top">
-                    <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.Database className="w-3.5 h-3.5 text-rose-500" /> Nguồn Tài Nguyên</span>
+                    <span className="flex items-center gap-1.5 cursor-help"><Database className="w-3.5 h-3.5 text-rose-500" /> Nguồn Tài Nguyên</span>
                   </Tooltip>
                 </label>
                 <div className="grid grid-cols-3 bg-slate-950/50 p-1.5 rounded-lg border border-slate-800/80 w-full gap-1">
@@ -435,7 +449,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   <div className="flex gap-2 animate-fadeIn mt-3">
                     <input type="text" value={parentFolder} onChange={(e) => setParentFolder(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.ZIP_DIR_PLACEHOLDER} className="flex-1 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-4 h-10 text-xs text-slate-200 shadow-inner outline-none" />
                     <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.PARENT)} className="px-4 h-10 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 rounded-xl text-slate-400 transition-colors">
-                      <LucideIcons.FolderOpen className="w-4 h-4 text-rose-500" />
+                      <FolderOpen className="w-4 h-4 text-rose-500" />
                     </Button>
                   </div>
                 ) : inputMode === ResourceSourceMode.SPLIT ? (
@@ -443,13 +457,13 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     <div className="flex gap-1.5">
                       <input type="text" value={imagesDir} onChange={(e) => setImagesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.IMG_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
                       <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.IMAGES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
-                        <LucideIcons.FolderOpen className="w-4 h-4" />
+                        <FolderOpen className="w-4 h-4" />
                       </Button>
                     </div>
                     <div className="flex gap-1.5">
                       <input type="text" value={voicesDir} onChange={(e) => setVoicesDir(e.target.value)} placeholder={PIPELINE_STEP4_TEXTS.AUDIO_DIR_PLACEHOLDER} className="flex-1 w-0 bg-slate-950/80 border border-slate-800/80 focus:border-rose-500/50 rounded-xl px-3 h-10 text-xs text-slate-200 shadow-inner outline-none" />
                       <Button type="button" variant="ghost" onClick={() => handleSelectFolder(FolderSelectionType.VOICES)} className="px-3 h-10 shrink-0 bg-slate-950/80 border border-slate-800/80 rounded-xl text-slate-400 hover:text-rose-400 transition-colors">
-                        <LucideIcons.FolderOpen className="w-4 h-4" />
+                        <FolderOpen className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -464,7 +478,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 font-mono mb-2">
                     <Tooltip content="Độ phân giải video khi xuất bằng FFmpeg." position="top">
-                      <span className="flex items-center gap-1.5 cursor-help"><LucideIcons.Monitor className="w-3.5 h-3.5 text-rose-500" /> Chất Lượng Video</span>
+                      <span className="flex items-center gap-1.5 cursor-help"><Monitor className="w-3.5 h-3.5 text-rose-500" /> Chất Lượng Video</span>
                     </Tooltip>
                   </label>
                   <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-inner">
@@ -478,7 +492,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                       <option value={VideoQuality.HIGHEST} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_1080P}</option>
                       <option value={VideoQuality.ULTRA_4K} className="bg-slate-955 text-slate-200">{PIPELINE_STEP4_TEXTS.QUALITY_4K}</option>
                     </select>
-                    <LucideIcons.ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+                    <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
                   </div>
                 </div>
                 
@@ -499,7 +513,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                     {isRenderLoading ? (
                       <div className="w-5 h-5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin shrink-0" />
                     ) : (
-                      <LucideIcons.Video className="w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110" />
+                      <Video className="w-5 h-5 shrink-0 text-amber-500 transition-transform duration-300 group-hover:scale-110" />
                     )}
                   </Button>
                 </Tooltip>
@@ -511,7 +525,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
 
           <div className="bg-slate-900/40 border border-slate-850 backdrop-blur-sm p-6 rounded-xl space-y-4 shadow-xl relative overflow-visible z-40">
             <h3 className="font-bold text-slate-100 text-sm flex items-center gap-2 relative z-10 border-b border-slate-800/60 pb-3">
-              <LucideIcons.Send className="w-4 h-4 text-rose-500" />
+              <Send className="w-4 h-4 text-rose-500" />
               {t.Professional_Project_Pack}
             </h3>
 

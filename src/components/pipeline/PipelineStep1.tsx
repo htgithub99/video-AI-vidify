@@ -42,7 +42,6 @@ const {
   Volume2,
   Music,
   Download,
-
   Check,
   FileText,
   Sparkles,
@@ -388,11 +387,10 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       project.voiceConfig.previewUrl,
                     );
                   }}
-                  className={cn(`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${
-                    testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female")
+                  className={cn(`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs h-auto shadow-none ${testingVoiceURI === (project.voiceConfig.voiceURI || "preset-vi-bac-female")
                       ? "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-500 bg-amber-500/5"
                       : ""
-                  }`)}
+                    }`)}
                 >
                   {testingVoiceURI ===
                     (project.voiceConfig.voiceURI || "preset-vi-bac-female") ? (
@@ -549,7 +547,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                       className="hidden"
                     />
 
-                    
+
 
                     <div className="py-2.5 flex items-center justify-center gap-[4px] h-11 bg-slate-950 rounded-lg border border-slate-900 relative overflow-hidden px-1.5">
                       <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none" />
@@ -694,7 +692,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                 )}
               </div>
 
-              
+
             </div>
           </div>
         )}
@@ -824,7 +822,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
               <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-rose-500/[0.02] rounded-full blur-3xl pointer-events-none" />
 
               <div className="flex gap-1 bg-slate-950 rounded-[10px] p-1.5 border border-slate-800/60 shadow-inner relative z-10 max-w-sm">
-                
+
                 <Button variant="unstyled"
                   type="button"
                   onClick={() => {

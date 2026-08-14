@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import _ from "lodash";
 import { appError } from "../../lib/logger.js";
 import { SecurityConstants, SecurityMessages, GasActions } from "../../constants/security.js";
+import { jsonUtils } from "../../lib/json.js";
 
 export const getSettingsFromGAS = async (req: Request, res: Response) => {
   try {
@@ -12,7 +13,7 @@ export const getSettingsFromGAS = async (req: Request, res: Response) => {
     const keysRes = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ 
+      body: jsonUtils.safeStringify({ 
         [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS, 
         [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey, 
         [SecurityConstants.PROP_PLAN_ID_GAS]: planType, 
@@ -24,7 +25,7 @@ export const getSettingsFromGAS = async (req: Request, res: Response) => {
     const accountsRes = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ 
+      body: jsonUtils.safeStringify({ 
         [SecurityConstants.PROP_ACTION]: GasActions.GET_ACCOUNTS, 
         [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey, 
         [SecurityConstants.PROP_PLAN_ID_GAS]: planType, 
@@ -64,7 +65,7 @@ export const saveApiKeys = async (req: Request, res: Response) => {
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ 
+      body: jsonUtils.safeStringify({ 
         [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_API_KEYS, 
         [SecurityConstants.REQ_BODY_GEMINI_KEY]: geminiKey, 
         [SecurityConstants.REQ_BODY_CEREBRAS_KEY]: cerebrasKey,
@@ -93,7 +94,7 @@ export const addGoogleAccount = async (req: Request, res: Response) => {
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ [SecurityConstants.PROP_ACTION]: GasActions.ADD_ACCOUNT, [SecurityConstants.REQ_BODY_ACCOUNT]: account })
+      body: jsonUtils.safeStringify({ [SecurityConstants.PROP_ACTION]: GasActions.ADD_ACCOUNT, [SecurityConstants.REQ_BODY_ACCOUNT]: account })
     });
     const data: any = await response.json();
 
@@ -114,7 +115,7 @@ export const updateGoogleAccountStatus = async (req: Request, res: Response) => 
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_ACCOUNT_STATUS, [SecurityConstants.REQ_BODY_ROW_INDEX]: rowIndex, [SecurityConstants.REQ_BODY_STATUS]: status })
+      body: jsonUtils.safeStringify({ [SecurityConstants.PROP_ACTION]: GasActions.UPDATE_ACCOUNT_STATUS, [SecurityConstants.REQ_BODY_ROW_INDEX]: rowIndex, [SecurityConstants.REQ_BODY_STATUS]: status })
     });
     const data: any = await response.json();
 

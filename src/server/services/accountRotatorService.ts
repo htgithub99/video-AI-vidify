@@ -58,7 +58,7 @@ async function getGasAccounts(): Promise<GoogleAccount[]> {
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: JSON.stringify({ 
+      body: jsonUtils.safeStringify({ 
         action: GasActions.GET_ACCOUNTS, 
         license_key: licenseKey, 
         plan_id: planType, 
@@ -139,7 +139,7 @@ export async function markAccountError(email: string): Promise<void> {
       await fetch(SecurityConstants.GAS_API_URL, {
         method: SecurityConstants.HTTP_POST,
         headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: JSON.stringify({ 
+        body: jsonUtils.safeStringify({ 
           action: GasActions.UPDATE_ACCOUNT_STATUS, 
           email: email, 
           status: AccountStatus.ERROR 

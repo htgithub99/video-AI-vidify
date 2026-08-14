@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { jsonUtils } from "../lib/json";
 import { DEPENDENCY_HASH_CONFIG } from "../constants/config";
 import { AssetRevision, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -16,7 +17,7 @@ const stableValue = (value: unknown): unknown => {
 };
 
 export const createDependencyHash = (value: unknown): string => {
-  const input = JSON.stringify(stableValue(value));
+  const input = jsonUtils.safeStringify(stableValue(value));
   let hash: number = DEPENDENCY_HASH_CONFIG.FNV_OFFSET_BASIS;
   for (let index = 0; index < input.length; index += 1) {
     hash ^= input.charCodeAt(index);

@@ -118,6 +118,8 @@ import {
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
   SCRIPT_PROMPT_CONFIG,
   VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
+  ENGLISH_CHAPTER_RETRY_DIRECTIVE,
+  getVietnameseDiacriticsRestorationPrompt,
   RESPONSE_CONTRACT_CONFIG,
   SYSTEM_FETCH_CONFIG,
 } from "../../constants";
@@ -139,7 +141,7 @@ import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
-import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
+import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
@@ -1016,8 +1018,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         attemptIndex++
       ) {
         const response = await generateContentWithRetry({
-          contents: attemptIndex > 0 && isVi
-            ? `${contents}\n\n${VIETNAMESE_CHAPTER_RETRY_DIRECTIVE}`
+          contents: attemptIndex > 0
+            ? `${contents}\n\n${isVi ? VIETNAMESE_CHAPTER_RETRY_DIRECTIVE : ENGLISH_CHAPTER_RETRY_DIRECTIVE}`
             : contents,
           config: {
             responseMimeType: "application/json",
@@ -1046,6 +1048,28 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       }
 
       if (!_.isEmpty(latestUsableSegment)) {
+        if (isVi) {
+          const finalCheck = validateChapterLanguage(latestUsableSegment, true);
+          if (finalCheck.issues.includes(ChapterLanguageIssue.MissingVietnameseDiacritics)) {
+            try {
+              const restoreResponse = await generateContentWithRetry({
+                contents: getVietnameseDiacriticsRestorationPrompt(latestUsableSegment),
+                config: {
+                  responseMimeType: "application/json",
+                  responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
+                  maxOutputTokens: 2048,
+                },
+                task: { capability: AiTaskCapability.ScriptWriting },
+              });
+              const restoredSegment = extractCleanChapterSegment(restoreResponse.text);
+              if (!_.isEmpty(restoredSegment)) {
+                return restoredSegment;
+              }
+            } catch (restoreErr) {
+              appWarn("Không thể tự động khôi phục dấu tiếng Việt, sử dụng bản segment hiện tại.", restoreErr);
+            }
+          }
+        }
         multiStepLogs.push(...languageFailureLogs);
         return latestUsableSegment;
       }
