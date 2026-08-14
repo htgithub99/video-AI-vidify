@@ -344,7 +344,7 @@ export interface VisualConfig {
   styleBackgroundMode?: BackgroundMode;
   thumbnailBackgroundMode?: BackgroundMode;
   styleTextInImageMode?: TextInImageMode;
-  thumbnailTextInImageMode?: TextInImageMode;
+  thumbnailTextInImageMode?: ThumbnailTextMode;
   imageFocusMode?: ImageFocusMode;
   thumbnailImageFocusMode?: ImageFocusMode;
   aspectRatio?: string;
@@ -357,6 +357,7 @@ export interface VisualConfig {
   thumbnailReferenceImage?: string;
   thumbnailReferenceImages?: string[];
   thumbnailReferencePrompt?: string;
+  thumbnailStyleProfile?: VisualStyleProfile;
   styleReferenceImages?: string[];
   sceneReferenceImages?: string[];
   referenceImage?: string;
@@ -402,8 +403,6 @@ export interface CharacterConfig {
   accessories?: string;
   colorPalette?: string;
   silhouette?: string;
-  referenceViews?: Array<"front"|"side"|"three_quarter"|"expression">;
-  referenceApproved?: boolean;
   timelineStages?: CharacterTimelineStage[];
 }
 
@@ -518,9 +517,13 @@ export interface ThumbnailItem {
   layoutId?: string;
   layoutRationale?: string;
   typography?: string;
+  typographyId?: string;
+  accentWords?: string[];
   colorSuggestion?: string;
   subjectFocus?: string;
   imageUrl?: string;
+  generationStatus?: SceneAssetStatus;
+  generationError?: string;
   qa?: ThumbnailQualityReport;
   approved?: boolean;
   qaStatus?: QaStatus;
@@ -538,8 +541,20 @@ export interface VoiceArc { setup: VoiceDirection; descent: VoiceDirection; isol
 export interface AudioQualityReport { pronunciationScore: number; pauseScore: number; loudnessScore: number; naturalnessScore: number; emotionTransitionScore: number; durationFit: boolean; actualDurationSeconds: number; targetDurationSeconds: number; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 export interface SubtitleQualityReport { maxTwoLines: boolean; semanticBreaks: boolean; readingTimeFit: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
 export interface EditorQualityReport { approvedAssetsOnly: boolean; intentionalTransitions: boolean; blockingErrors: string[]; warnings: string[]; passed: boolean; }
-export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; styleFingerprint?:string; styleReferenceLocked?:boolean; locations?:VisualLocation[]; props?:VisualProp[]; }
-export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
+export interface VisualStyleProfile {
+  medium: string;
+  characterType?: string;
+  characterDna: string;
+  lineDna: string;
+  colorDna: string;
+  renderingDna: string;
+  periodCues: string;
+  worldRendering: string;
+  adaptiveElements: string;
+  sampleSpecificContent: string[];
+}
+export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; styleFingerprint?:string; styleReferenceLocked?:boolean; styleProfile?:VisualStyleProfile; locations?:VisualLocation[]; props?:VisualProp[]; }
+export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; scriptCoverageScore?:number; pacingCoverageScore?:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
 export interface ImagePromptQualityIssue { sceneId:string; code:string; severity:"blocking"|"warning"; }
 export interface ImagePromptQualityReport { totalPrompts:number; validPrompts:number; blockingErrors:ImagePromptQualityIssue[]; warnings:ImagePromptQualityIssue[]; passed:boolean; }
 export interface ContentSafetyReport { sensitiveTopic:boolean; trueCase:boolean; minorsInvolved:boolean; sexualExploitationRisk:boolean; victimExploitationRisk:boolean; privacyRisk:boolean; likenessRisk:boolean; copyrightRisk:boolean; requiredDisclosures:string[]; blockingErrors:string[]; warnings:string[]; allowed:boolean; }
@@ -640,6 +655,7 @@ export interface VideoProject {
   versionHistory?: ProjectVersion[];
   allowBulkDeleteImages?: boolean;
   isRecreatingStoryboard?: boolean;
+  allowAudioCleanup?: boolean;
   status?: string;
   activeRunId?: string | null;
   lastRunId?: string;
@@ -692,6 +708,7 @@ export interface Voice {
 
 export enum BackgroundMode {
   Auto = "auto",
+  Minimal = "minimal",
   Preserve = "preserve",
   Transparent = "transparent",
   Solid = "solid",
@@ -708,6 +725,16 @@ export enum TextInImageMode {
   Minimal = "minimal",
   Moderate = "moderate",
   Abundant = "abundant",
+}
+
+export enum ThumbnailTextMode {
+  Headline = "headline",
+  NoText = "no_text",
+}
+
+export enum StyleReferencePurpose {
+  Scene = "scene",
+  Thumbnail = "thumbnail",
 }
 
 export enum ImageFocusMode {
@@ -735,23 +762,29 @@ export const GEMINI_CHAT_SPEED_TAB_COUNT: Record<GeminiChatSpeed, number> = {
 };
 
 export enum GeminiChatModelName {
-  Pro = "Pro",
-  Flash = "Flash",
-  FlashLite = "Flash-Lite",
+  Pro = "3.1 Pro",
+  Flash = "3.7 Flash",
+  FlashLite = "3.5 Flash-Lite",
 }
 
 export enum GeminiChatSelector {
+  Response = 'model-response',
   Input = 'div.ql-editor[contenteditable="true"]',
   InputTextarea = 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
   ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button.input-area-switch',
+  ModelMenu = '[data-test-id="gem-mode-menu"]',
+  ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"]',
+  ModelLabel = '.label',
   PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="công cụ" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button',
   MenuOptions = '.cdk-overlay-pane button, mat-menu button, [role="menuitem"]',
   PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper',
   SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
+  GenerationBusy = 'gem-icon-button.send-button.stop',
+  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating)',
 }
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image: 'download-generated-image-button img, .attachment-container.generated-images img, model-response img.loaded, model-response img[src]',
+  image: 'download-generated-image-button img, .attachment-container.generated-images img, generated-image img, img[data-test-id="generated-image"]',
   video: 'generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]',
   all: 'img, video',
 } as const;

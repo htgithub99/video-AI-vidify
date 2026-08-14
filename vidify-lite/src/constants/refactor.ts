@@ -121,9 +121,9 @@ export const REFACTOR_CONSTANTS = {
   AVG_EXTRACT_STYLE_ERROR: 'Extract Style Error',
   AVG_EXTRACT_THUMB_STYLE_ERROR: 'Extract Thumb Style Error',
 
-  ENGINE_IMAGEN: "Gemini 3.5 Pro",
-  ENGINE_VEO3: "Gemini 3.5 Flash",
-  ENGINE_LABS_SANDBOX: "Gemini 3.5 Flash Lite",
+  ENGINE_IMAGEN: "3.1 Pro",
+  ENGINE_VEO3: "3.7 Flash",
+  ENGINE_LABS_SANDBOX: "3.5 Flash-Lite",
   ENGINE_OMNI_FLASH: "🎬 Omni Flash",
   ENGINE_VEO3_LITE: "🎥 Veo 3.1 - Lite",
   ENGINE_VEO3_FAST: "🎥 Veo 3.1 - Fast",
@@ -342,6 +342,7 @@ export const REFACTOR_CONSTANTS = {
   STATUS_CANCELLED: "Cancelled",
   PIPELINE_RUN_LOCK_PREFIX: "vidify_pipeline_run_lock_",
   PIPELINE_RUN_LOCK_TTL_MS: 7200000,
+  PIPELINE_RUN_OWNER_KEY: "vidify.pipeline.run.owner",
   ERR_PIPELINE_ALREADY_RUNNING: "Dự án này đang được xử lý. Vui lòng chờ hoặc hủy lần chạy hiện tại trước khi thử lại.",
   ERR_PIPELINE_RUN_REPLACED: "Lần chạy này đã được thay thế bởi một phiên xử lý mới hơn.",
   HOOK_FALLBACK_ID: "hk_fallback",
@@ -455,5 +456,4 @@ export const ROUTER_PATHS = {
   REFERENCE_AUDIO: "/reference-audio/:projectId",
   SELECT_VIDEO_SCENES: "/select-video-scenes",
   VALIDATE_SCENE_IMAGE: "/validate-scene-image",
-  VALIDATE_CHARACTER_REFERENCE: "/validate-character-reference",
 } as const;

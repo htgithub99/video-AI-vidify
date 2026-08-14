@@ -1,6 +1,6 @@
 import _ from "lodash";
-import { API_ROUTES, IMAGE_GENERATION_RETRY_CONFIG, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
-import { delayAsync, safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
 export interface ProjectImageItem {
@@ -9,6 +9,7 @@ export interface ProjectImageItem {
   generateType?: GenerateType;
   idempotencyKey?: string;
   referenceImages?: string[];
+  continuityKey?: string;
 }
 
 export interface ProjectImageResult {
@@ -20,7 +21,7 @@ export interface ProjectImageResult {
   assetType?: GenerateType.Image | GenerateType.Video;
 }
 
-type FallbackPayloadFactory = (item: ProjectImageItem) => object;
+type ImagePayloadFactory = (item: ProjectImageItem) => object;
 
 interface ProjectImageGenerationConfig {
   items: ProjectImageItem[];
@@ -28,11 +29,7 @@ interface ProjectImageGenerationConfig {
   style?: string;
   sandboxConfig?: object;
   cancelRef?: { current: boolean };
-  createFallbackPayload: FallbackPayloadFactory;
   onBatchResult: (result: ProjectImageResult) => void;
-  onFallbackStart?: (error: Error, items: ProjectImageItem[]) => void;
-  onFallbackItemStart?: (item: ProjectImageItem, index: number, total: number) => void;
-  onFallbackResult?: (result: ProjectImageResult) => void;
 }
 
 export interface ProjectImageGenerationSummary {
@@ -89,69 +86,44 @@ const hasImageResult = (result?: ProjectImageResult): boolean => (
 const isGenerationCancelled = (cancelRef?: { current: boolean }): boolean => (
   _.includes([true], Boolean(cancelRef?.current))
 );
-const ADAPTIVE_CONCURRENCY = { INITIAL: 3, MIN: 1, THROTTLE_PATTERN: /429|quota|timeout|rate.?limit/i } as const;
-
-const createCountError = (template: string, count: number): Error => new Error(
-  _.replace(
-    template,
-    SecurityConstants.PLACEHOLDER_0,
-    _.toString(count),
-  ),
-);
-
 const cleanBatchSession = async (): Promise<void> => {
   await safeSystemFetch(API_ROUTES.PIPELINE_CLEAN_BATCH_IMAGES, {});
 };
 
-export const generateProjectImageWithRetry = async (
+export const generateProjectImageOnce = async (
   item: ProjectImageItem,
-  createPayload: FallbackPayloadFactory,
+  createPayload: ImagePayloadFactory,
   signal?: AbortSignal,
 ): Promise<ProjectImageResult> => {
-  let latestResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
-  for (let attempt = 0; attempt < IMAGE_GENERATION_RETRY_CONFIG.MAX_ATTEMPTS; attempt++) {
-    if (signal?.aborted) return latestResult;
-    const response = await safeSystemFetch(
-      API_ROUTES.PIPELINE_GENERATE_IMAGE,
-      createPayload(item),
-      signal,
-    );
-    const base64 = _.defaultTo(
-      _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
-      _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
-    );
-    const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
-    const generationSucceeded = _.get(
-      response.data,
-      REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
+  const emptyResult: ProjectImageResult = { sceneId: item.sceneId, success: false };
+  if (signal?.aborted) return emptyResult;
+  const response = await safeSystemFetch(
+    API_ROUTES.PIPELINE_GENERATE_IMAGE,
+    createPayload(item),
+    signal,
+  );
+  const base64 = _.defaultTo(
+    _.get(response.data, REFACTOR_CONSTANTS.AVG_BASE64_KEY),
+    _.get(response.data, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY),
+  );
+  const fallbackUrl = _.get(response.data, REFACTOR_CONSTANTS.AVG_FALLBACK_URL_KEY);
+  const generationSucceeded = _.get(
+    response.data,
+    REFACTOR_CONSTANTS.AVG_SUCCESS_KEY,
+    response.success,
+  );
+  return {
+    sceneId: item.sceneId,
+    success: _.every([
       response.success,
-    );
-    latestResult = {
-      sceneId: item.sceneId,
-      success: _.every([
-        response.success,
-        _.some([
-          generationSucceeded,
-          _.isEqual(item.generateType, GenerateType.Image),
-        ], Boolean),
-        _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
-      ], Boolean),
-      base64,
-      fallbackUrl,
-      warning: response.error,
-      assetType: item.generateType === GenerateType.Video
-        ? GenerateType.Video
-        : GenerateType.Image,
-    };
-    if (latestResult.success) return latestResult;
-    if (_.lt(_.add(attempt, 1), IMAGE_GENERATION_RETRY_CONFIG.MAX_ATTEMPTS)) {
-      await delayAsync(_.multiply(
-        IMAGE_GENERATION_RETRY_CONFIG.BASE_DELAY_MS,
-        IMAGE_GENERATION_RETRY_CONFIG.BACKOFF_MULTIPLIER ** attempt,
-      ));
-    }
-  }
-  return latestResult;
+      _.some([generationSucceeded, _.isEqual(item.generateType, GenerateType.Image)], Boolean),
+      _.some([base64, fallbackUrl], isUsableGeneratedAssetUrl),
+    ], Boolean),
+    base64,
+    fallbackUrl,
+    warning: response.error,
+    assetType: item.generateType === GenerateType.Video ? GenerateType.Video : GenerateType.Image,
+  };
 };
 
 export const createProjectImageUrl = (result: ProjectImageResult): string => {
@@ -221,16 +193,18 @@ export const generateProjectImages = async ({
   style,
   sandboxConfig,
   cancelRef,
-  createFallbackPayload,
   onBatchResult,
-  onFallbackStart,
-  onFallbackItemStart,
-  onFallbackResult,
 }: ProjectImageGenerationConfig): Promise<ProjectImageGenerationSummary> => {
   const uniqueItems = _.uniqBy(items, item => item.idempotencyKey || item.sceneId);
   const resultsBySceneId = new Map<string, ProjectImageResult>();
-  let batchError: Error | undefined;
-
+  const reportMissingResults = (warning: string): void => {
+    _.forEach(uniqueItems, item => {
+      if (resultsBySceneId.has(item.sceneId)) return;
+      const failedResult: ProjectImageResult = { sceneId: item.sceneId, success: false, warning };
+      resultsBySceneId.set(item.sceneId, failedResult);
+      onBatchResult(failedResult);
+    });
+  };
   try {
     try {
       await safeSystemFetchStream(
@@ -249,10 +223,18 @@ export const generateProjectImages = async ({
         undefined,
         cancelRef,
       );
+      const missingResultCount = _.size(uniqueItems) - resultsBySceneId.size;
+      if (_.gt(missingResultCount, SecurityConstants.ZERO)) {
+        reportMissingResults(REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_INCOMPLETE.replace(
+          SecurityConstants.PLACEHOLDER_0,
+          _.toString(missingResultCount),
+        ));
+      }
     } catch (error) {
-      batchError = error instanceof Error
-        ? error
-        : new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR);
+      const warning = error instanceof Error
+        ? error.message
+        : REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
+      reportMissingResults(warning);
     }
 
     if (isGenerationCancelled(cancelRef)) {
@@ -267,43 +249,6 @@ export const generateProjectImages = async ({
       };
     }
 
-    const fallbackItems = _.filter(
-      uniqueItems,
-      (item) => !hasImageResult(resultsBySceneId.get(item.sceneId)),
-    );
-
-    if (!_.isEmpty(fallbackItems)) {
-      const fallbackReason = _.defaultTo(batchError, createCountError(
-        REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_INCOMPLETE,
-        _.size(fallbackItems),
-      ));
-      onFallbackStart?.(fallbackReason, fallbackItems);
-
-      let nextIndex = 0;
-      let targetConcurrency = _.min([ADAPTIVE_CONCURRENCY.INITIAL, _.size(fallbackItems)]);
-      const worker = async (workerIndex: number): Promise<void> => {
-        while (!isGenerationCancelled(cancelRef) && workerIndex < targetConcurrency) {
-          const index = nextIndex++;
-          if (index >= _.size(fallbackItems)) return;
-          const item = fallbackItems[index];
-          onFallbackItemStart?.(item, index, _.size(fallbackItems));
-          try {
-            const result = await generateProjectImageWithRetry(item, createFallbackPayload);
-            resultsBySceneId.set(item.sceneId, result);
-            onFallbackResult?.(result);
-            if (!result.success && ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(result.warning || "")) targetConcurrency = _.max([ADAPTIVE_CONCURRENCY.MIN, targetConcurrency - 1])!;
-          } catch (error) {
-            const warning = error instanceof Error ? error.message : REFACTOR_CONSTANTS.UNKNOWN_WARNING;
-            if (ADAPTIVE_CONCURRENCY.THROTTLE_PATTERN.test(warning)) targetConcurrency = _.max([ADAPTIVE_CONCURRENCY.MIN, targetConcurrency - 1])!;
-            const failedResult: ProjectImageResult = { sceneId: item.sceneId, success: false, warning };
-            resultsBySceneId.set(item.sceneId, failedResult);
-            onFallbackResult?.(failedResult);
-          }
-        }
-      };
-      await Promise.all(_.map(_.range(targetConcurrency), worker));
-    }
-
     const completedSceneIds = _.map(
       _.filter(uniqueItems, (item) => hasImageResult(resultsBySceneId.get(item.sceneId))),
       (item) => item.sceneId,
@@ -312,13 +257,6 @@ export const generateProjectImages = async ({
       _.filter(uniqueItems, (item) => !hasImageResult(resultsBySceneId.get(item.sceneId))),
       (item) => item.sceneId,
     );
-
-    if (!_.isEmpty(failedSceneIds)) {
-      throw createCountError(
-        REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_FAILED,
-        _.size(failedSceneIds),
-      );
-    }
 
     return {
       completedSceneIds,

@@ -58,7 +58,7 @@ export const defaultVisualConfig = {
 };
 
 export const AUTO_VIDEO_DEFAULTS = {
-  CONFIG_VERSION: 2,
+  CONFIG_VERSION: 3,
   CHROME_HEADLESS: false,
   RESUME_MODE: true,
 } as const;

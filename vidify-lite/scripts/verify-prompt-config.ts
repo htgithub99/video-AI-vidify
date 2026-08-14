@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { resolveVisualConfig } from "../src/services/autoVideoConfigResolver.ts";
 import { applyBackgroundMode } from "../src/lib/imagePromptDirectives.ts";
-import { BackgroundMode, GenerateType, ImageGeneratorEngine } from "../src/types.ts";
+import { BackgroundMode, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../src/types.ts";
 import { ResponseContractName, assertResponseContract } from "../src/server/services/responseContractService.ts";
 
 const assert = (condition: unknown, message: string): void => {
@@ -15,6 +15,12 @@ const resolvedVideoConfig = resolveVisualConfig({
   imageGeneratorEngine: ImageGeneratorEngine.Imagen,
 } as any);
 assert(!resolvedVideoConfig.blocked && resolvedVideoConfig.config.generateType === GenerateType.Image, "unsupported video/image-engine conflict was not recovered");
+const geminiConfig = resolveVisualConfig({
+  generationMode: ImageGenerationMode.GeminiChat,
+  generateType: GenerateType.Image,
+  imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+} as any);
+assert(geminiConfig.config.imageGeneratorEngine === ImageGeneratorEngine.Veo3, "selected Gemini model was replaced before browser generation");
 const textIdentityConfig = resolveVisualConfig({ characterConsistency: true, characterPrompt: "Vietnamese man in his forties, short black hair, worn navy jacket" } as any);
 assert(textIdentityConfig.config.characterConsistency, "textual character identity was incorrectly disabled");
 

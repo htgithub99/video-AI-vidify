@@ -17,7 +17,7 @@ import { LOADING_KEYS } from "../../constants/loading";
 import { ConsoleLogType, EXPORT_TYPES, LogEvent } from "../../constants/enums";
 import { CONSOLE_LOG_IGNORED_MESSAGES, LOG_SUCCESS_KEYWORDS, LOG_PENDING_KEYWORDS, LOG_WARN_KEYWORDS, LOG_ERROR_KEYWORDS, VITE_CONNECTED_KEYWORD, VITE_CONNECTION_LOST_KEYWORDS, VITE_FAILED_RELOAD_KEYWORD, VITE_HOT_UPDATE_KEYWORDS } from "../../constants/data";
 import { APP_TEXTS, AUDIO_MIME_TYPE, BLOB_PREFIX, RESTORE_SCENE_BLOB_ERR, RESTORE_BLOB_ERR, COMMON_STRINGS, EXTERNAL_AUDIO_TEXTS, ERROR_MESSAGES, VITE_HMR_LOGS, AUTO_GENERATE_TEXTS } from "../../constants/texts";
-import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender } from "../../types";
+import { VideoProject, HookVersion, StoryboardScene, ThumbnailItem, WizardStep, ImageGeneratorEngine, ProjectLanguage, HookPosition, ImageGenerationMode, GenerateType, AudioType, Gender, StyleReferencePurpose } from "../../types";
 import { applyAudioEffects, cleanScriptText } from "../../lib/audioProcessor";
 import { getSceneTimeRanges } from "../../lib/videoRenderer";
 import { safeSystemFetch, logSystemAction, randomDelay, getBatchDelayMs } from "../../lib/shared-utils";
@@ -30,10 +30,12 @@ import { formatUserFacingLog } from "../../lib/userLogFormatter";
 import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../../services/thumbnailPromptService";
-import { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../../lib/imagePromptDirectives";
+import { acceptGeneratedThumbnail } from "../../services/thumbnailQualityPipelineService";
 import { createSceneGenerationContext } from "../../services/sceneReferenceService";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
+import { createSceneContinuityKey, createThumbnailContinuityKey } from "../../services/imageGenerationContinuityService";
 import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
+import { createThumbnailStyleDirective } from "../../services/styleReferenceService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -241,6 +243,7 @@ export function usePipelineWizard(props: any) {
   const [sceneEditSubtitle, setSceneEditSubtitle] = useState("");
 
   const [sceneEditPrompt, setSceneEditPrompt] = useState("");
+  const [sceneEditTextAllowed, setSceneEditTextAllowed] = useState(false);
 
   const [sceneEditMotion, setSceneEditMotion] = useState("Zoom In");
 
@@ -1343,19 +1346,9 @@ export function usePipelineWizard(props: any) {
     try {
       const sourceScene = _.find(project.storyboard, { id: sceneId });
       const generationContext = sourceScene
-        ? createSceneGenerationContext({ ...sourceScene, prompt: customPrompt }, project.visualConfig, { includeCharacterImages: true })
+        ? createSceneGenerationContext({ ...sourceScene, prompt: customPrompt }, project.visualConfig)
         : { prompt: customPrompt, referenceImages: project.visualConfig.referenceImages || [] };
-      const finalPrompt = appendImagePromptAspectRatio(
-        applyImageFocusMode(
-          applyTextInImageMode(
-            applyBackgroundMode(generationContext.prompt, project.visualConfig.styleBackgroundMode),
-            project.visualConfig.styleTextInImageMode,
-          ),
-          project.visualConfig.imageFocusMode,
-          project.visualConfig.styleBackgroundMode,
-        ),
-        project.visualConfig.aspectRatio,
-      );
+      const finalPrompt = appendImagePromptAspectRatio(generationContext.prompt, project.visualConfig.aspectRatio);
       const sceneGenerateType = requestedGenerateType
         || (_.isEqual(project.visualConfig.generateType, GenerateType.Video)
           ? GenerateType.Video
@@ -1609,7 +1602,7 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.MULTI_STEP_SYSTEM_FLOW_Ex);
 
     try {
-      const extractPayload = { images, fallbackStyle: project.visualConfig?.referencePrompt };
+      const extractPayload = { images, fallbackStyle: project.visualConfig?.referencePrompt, purpose: StyleReferencePurpose.Scene };
       const { success: extractSuccess, data: extractData, error: extractError } = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, extractPayload);
 
       if (!extractSuccess || extractData?.error) {
@@ -1617,12 +1610,23 @@ export function usePipelineWizard(props: any) {
       }
 
       const extractedStyle = extractData.style;
+      const styleFingerprint = _.toString(extractData.fingerprint) || extractedStyle;
 
       setProject((prev) => ({
         ...prev,
         visualConfig: {
           ...prev.visualConfig,
+          style: extractedStyle,
           referencePrompt: extractedStyle,
+          styleFingerprint,
+          styleReferenceLocked: true,
+        },
+        visualBible: {
+          ...prev.visualBible,
+          visualStyle: extractedStyle,
+          styleProfile: extractData.styleProfile,
+          styleFingerprint,
+          styleReferenceLocked: true,
         },
       }));
 
@@ -2234,15 +2238,21 @@ export function usePipelineWizard(props: any) {
 
     setLoadingStates((prev) => ({ ...prev, extractThumbnailStyle: true }));
     try {
-      const response = await fetchSystemApi(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images });
+      const response = await fetchSystemApi(API_ROUTES.PIPELINE_EXTRACT_STYLE, { images, purpose: StyleReferencePurpose.Thumbnail });
       const data = await response.json();
       if (data.style) {
         setProject((prev) => {
+          const thumbnailStyleProfile = data.styleProfile;
+          const thumbnailReferencePrompt = createThumbnailStyleDirective(
+            prev.visualBible?.styleProfile,
+            thumbnailStyleProfile,
+          ) || data.style;
           const updatedProject = {
             ...prev,
             visualConfig: {
               ...prev.visualConfig,
-              thumbnailReferencePrompt: data.style,
+              thumbnailReferencePrompt,
+              thumbnailStyleProfile,
             },
           };
           setTimeout(() => {
@@ -2473,23 +2483,14 @@ export function usePipelineWizard(props: any) {
 
         const generationPrompts = new Map<string, string>();
         const batchItems = _.map(targetScenes, (scene) => {
-          const generationContext = createSceneGenerationContext(scene, project.visualConfig, { includeCharacterImages: true });
-          const prompt = appendImagePromptAspectRatio(
-            applyImageFocusMode(
-              applyTextInImageMode(
-                applyBackgroundMode(generationContext.prompt, project.visualConfig.styleBackgroundMode),
-                project.visualConfig.styleTextInImageMode,
-              ),
-              project.visualConfig.imageFocusMode,
-              project.visualConfig.styleBackgroundMode,
-            ),
-            project.visualConfig.aspectRatio,
-          );
+          const generationContext = createSceneGenerationContext(scene, project.visualConfig);
+          const prompt = appendImagePromptAspectRatio(generationContext.prompt, project.visualConfig.aspectRatio);
           generationPrompts.set(scene.id, prompt);
           return {
             sceneId: scene.id,
             prompt,
             referenceImages: generationContext.referenceImages,
+            continuityKey: createSceneContinuityKey(scene, project.visualConfig.characters),
             generateType: resolveSceneGenerateType(
               scene.id,
               configuredGenerateType,
@@ -2529,19 +2530,6 @@ export function usePipelineWizard(props: any) {
           style: project.visualConfig.style,
           sandboxConfig,
           cancelRef: cancelBatchImageRef,
-          createFallbackPayload: (item) => ({
-            prompt: item.prompt,
-            style: project.visualConfig.style,
-            resolution: project.visualConfig.quality,
-            bypassCache: false,
-            engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Veo3,
-            sandboxConfig,
-            visualConfig: {
-              ...project.visualConfig,
-              referenceImages: item.referenceImages,
-              generateType: item.generateType,
-            },
-          }),
           onBatchResult: (result) => {
             setLoadingStates((prev) => ({
               ...prev,
@@ -2564,26 +2552,6 @@ export function usePipelineWizard(props: any) {
               .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
               .replace(REFACTOR_CONSTANTS.TEMPLATE_CURRENT_INDEX, _.toString(completedCount))
               .replace(REFACTOR_CONSTANTS.TEMPLATE_TOTAL, _.toString(totalToProcess)));
-          },
-          onFallbackItemStart: (item) => setLoadingStates((prev) => ({
-            ...prev,
-            [LOADING_KEYS.RENDER_SCENE_PREFIX + item.sceneId]: true,
-          })),
-          onFallbackResult: (result) => {
-            setLoadingStates((prev) => ({
-              ...prev,
-              [LOADING_KEYS.RENDER_SCENE_PREFIX + result.sceneId]: false,
-            }));
-            if (result.success) {
-              applyResult(result);
-              return;
-            }
-            setErrorMsg(t.errorRenderingSceneBatch
-              .replace(REFACTOR_CONSTANTS.TEMPLATE_SCENE_ID, result.sceneId)
-              .replace(
-                REFACTOR_CONSTANTS.TEMPLATE_ERROR,
-                result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING,
-              ));
           },
         });
       } else {
@@ -2668,6 +2636,7 @@ export function usePipelineWizard(props: any) {
     setSceneEditScript(scene.script);
     setSceneEditSubtitle(scene.subtitle);
     setSceneEditPrompt(scene.generationPrompt || scene.prompt);
+    setSceneEditTextAllowed(Boolean(scene.textAllowed));
     setSceneEditMotion(scene.cameraMotion);
     setSceneEditFx(scene.effects || "");
     setSceneEditTransition(scene.transition || "");
@@ -2737,6 +2706,7 @@ export function usePipelineWizard(props: any) {
             script: sceneEditScript,
             subtitle: sceneEditSubtitle,
             prompt: sceneEditPrompt,
+            textAllowed: sceneEditTextAllowed,
             cameraMotion: sceneEditMotion,
             effects: sceneEditFx,
             transition: sceneEditTransition,
@@ -2856,7 +2826,7 @@ export function usePipelineWizard(props: any) {
         style: styleText,
         hasText: false,
       } as ThumbnailItem;
-      const referenceImages = resolveThumbnailReferenceImages(project.visualConfig, true);
+      const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
       const generationPrompt = createThumbnailGenerationPrompt(thumbnail, styleText, currentAspectRatio, !_.isEmpty(referenceImages), project.visualConfig.characters);
 
       const data = await safeFetchJsonWithAuth(API_ROUTES.PIPELINE_GENERATE_IMAGE, {
@@ -2891,10 +2861,12 @@ export function usePipelineWizard(props: any) {
         throw new Error(REFACTOR_CONSTANTS.ERR_THUMBNAIL_QUALITY_REJECTED);
       }
 
+      const validatedThumbnail = acceptGeneratedThumbnail({ ...thumbnail, imageUrl: imgUrl, generationPrompt });
+
       setProject((prev) => {
         const updated = (prev.thumbnails || []).map((th) => {
           if (th.id === thumbId) {
-            return { ...th, imageUrl: imgUrl, generationPrompt };
+            return { ...th, ...validatedThumbnail };
           }
           return th;
         });
@@ -2940,26 +2912,18 @@ export function usePipelineWizard(props: any) {
     try {
       if (_.isEqual(project.visualConfig.generationMode, ImageGenerationMode.GeminiChat)) {
         const currentAspectRatio = project.visualConfig.aspectRatio || "16:9";
-        const referenceImages = resolveThumbnailReferenceImages(project.visualConfig, true);
+        const referenceImages = resolveThumbnailReferenceImages(project.visualConfig);
         const generationPrompts = new Map<string, string>();
+        const generatedImageUrls = new Map<string, string>();
         const items = _.map(targets, thumbnail => {
           const generationPrompt = createThumbnailGenerationPrompt(thumbnail, thumbnail.style, currentAspectRatio, !_.isEmpty(referenceImages), project.visualConfig.characters);
           generationPrompts.set(thumbnail.id, generationPrompt);
-          return { sceneId: thumbnail.id, prompt: generationPrompt, generateType: GenerateType.Image, referenceImages };
+          return { sceneId: thumbnail.id, prompt: generationPrompt, generateType: GenerateType.Image, referenceImages, continuityKey: createThumbnailContinuityKey() };
         });
-        const applyThumbnailResult = (result: ProjectImageResult) => {
+        const collectThumbnailResult = (result: ProjectImageResult) => {
           const imageUrl = createProjectImageUrl(result);
           if (_.isEmpty(imageUrl)) return;
-          setProject(prev => {
-            const updatedProject = {
-              ...prev,
-              thumbnails: _.map(prev.thumbnails, thumbnail => _.isEqual(thumbnail.id, result.sceneId)
-                ? { ...thumbnail, imageUrl, generationPrompt: generationPrompts.get(thumbnail.id) }
-                : thumbnail),
-            };
-            setTimeout(() => onSaveProject(updatedProject, true), UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS);
-            return updatedProject;
-          });
+          generatedImageUrls.set(result.sceneId, imageUrl);
         };
         await generateProjectImages({
           items,
@@ -2967,17 +2931,21 @@ export function usePipelineWizard(props: any) {
           style: project.visualConfig.thumbnailReferencePrompt || project.visualConfig.style,
           sandboxConfig,
           cancelRef: cancelBatchImageRef,
-          createFallbackPayload: item => ({
-            prompt: item.prompt,
-            style: project.visualConfig.thumbnailReferencePrompt || project.visualConfig.style,
-            resolution: project.visualConfig.quality,
-            bypassCache: true,
-            engine: project.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-            sandboxConfig,
-            visualConfig: { ...project.visualConfig, referenceImages: item.referenceImages, generateType: GenerateType.Image },
-          }),
-          onBatchResult: result => { if (result.success) applyThumbnailResult(result); },
-          onFallbackResult: result => { if (result.success) applyThumbnailResult(result); },
+          onBatchResult: result => { if (result.success) collectThumbnailResult(result); },
+        });
+        const validatedThumbnails = _.map(targets, thumbnail => {
+          const imageUrl = generatedImageUrls.get(thumbnail.id);
+          if (_.isEmpty(imageUrl)) return thumbnail;
+          return acceptGeneratedThumbnail({ ...thumbnail, imageUrl, generationPrompt: generationPrompts.get(thumbnail.id) });
+        });
+        const validatedById = _.keyBy(validatedThumbnails, "id");
+        setProject(prev => {
+          const updatedProject = {
+            ...prev,
+            thumbnails: _.map(prev.thumbnails, thumbnail => validatedById[thumbnail.id] || thumbnail),
+          };
+          setTimeout(() => onSaveProject(updatedProject, true), UI_MESSAGE_DURATION.OBJECT_URL_REVOKE_MS);
+          return updatedProject;
         });
       } else {
         for (const thumb of targets) {
@@ -3639,6 +3607,8 @@ export function usePipelineWizard(props: any) {
     sceneEditSubtitle,
     setSceneEditSubtitle,
     sceneEditPrompt,
+    sceneEditTextAllowed,
+    setSceneEditTextAllowed,
     setSceneEditPrompt,
     sceneEditMotion,
     setSceneEditMotion,

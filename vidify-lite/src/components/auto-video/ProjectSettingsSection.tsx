@@ -3,9 +3,9 @@ import { ChevronDown, ImageIcon, Layout, Music } from "lucide-react";
 import { Tooltip } from "../ui/Tooltip";
 import { ImageDeleteOverlay, ImageUploadZone } from "./ImageUploadZone";
 import { REFACTOR_CONSTANTS } from "../../constants";
-import { BackgroundMode, ImageFocusMode, TextInImageMode } from "../../types";
+import { BackgroundMode, ImageFocusMode, ThumbnailTextMode } from "../../types";
 import { BackgroundModeSelect } from "./BackgroundModeSelect";
-import { TextInImageModeSelect } from "./TextInImageModeSelect";
+import { ThumbnailTextModeSelect } from "./ThumbnailTextModeSelect";
 import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage, PIPELINE_STEPS } from "../../constants/enums";
 
@@ -19,8 +19,8 @@ interface ProjectSettingsSectionProps {
   handleThumbnailStyleFilesUpload: (files: FileList) => void;
   backgroundMode: BackgroundMode;
   setBackgroundMode: (value: BackgroundMode) => void;
-  textInImageMode: TextInImageMode;
-  setTextInImageMode: (value: TextInImageMode) => void;
+  textInImageMode: ThumbnailTextMode;
+  setTextInImageMode: (value: ThumbnailTextMode) => void;
   imageFocusMode: ImageFocusMode;
   setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
@@ -70,7 +70,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </div>
 
         <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.thumbnailBgModeLabel} />
-        <TextInImageModeSelect value={textInImageMode} onChange={setTextInImageMode} language={language} label={T.thumbnailTextModeLabel} />
+        <ThumbnailTextModeSelect value={textInImageMode} onChange={setTextInImageMode} language={language} label={T.thumbnailTextModeLabel} />
         <ImageFocusModeSelect value={imageFocusMode} onChange={setImageFocusMode} language={language} label={T.thumbnailFocusModeLabel} />
 
         <div className="space-y-1">

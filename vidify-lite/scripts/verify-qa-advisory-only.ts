@@ -16,13 +16,12 @@ const invalidation = fs.readFileSync(
   path.resolve("src/hooks/autoVideoPipelineUtils.ts"),
   "utf8",
 );
-const prompts = fs.readFileSync(path.resolve("src/constants/prompts.ts"), "utf8");
-
-assert.match(pipelineController, /getScriptRepairPrompt/);
+assert.doesNotMatch(pipelineController, /getScriptRepairPrompt|getStoryboardRepairPrompt/);
+assert.doesNotMatch(pipelineController, /getScriptEditorQaPrompt|getStoryboardDirectorQaPrompt/);
 assert.doesNotMatch(invalidation, /scriptQa\?\.passed|storyboardQa\?\.passed/);
-assert.match(prompts, /surgical production rewrite/i);
 assert.match(autoPipeline, /WARN_IMAGE_PROMPT_QA_CONTINUED/);
 assert.match(autoPipeline, /WARN_FINAL_QA_RESULT/);
+assert.doesNotMatch(autoPipeline, /evaluateVisualAssetQuality|validateFinalVideo|repairSubtitleCues|repairEditingPlan/);
 
 const completeProject = {
   storyboard: [{ id: "scene_1", assetUrl: "real-scene-asset" }],

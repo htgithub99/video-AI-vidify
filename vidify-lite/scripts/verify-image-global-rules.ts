@@ -25,16 +25,15 @@ const plannerPrompt = getOptimizePromptsBatchPrompt(
   "16:9",
   JSON.stringify([{ id: "char_1", name: "Player" }]),
 );
-assert.match(plannerPrompt, /flexible checklist, not a mandatory template/i);
-assert.match(plannerPrompt, /Privately decide what the viewer should understand/i);
-assert.match(plannerPrompt, /few strong anchors/i);
-assert.match(plannerPrompt, /Do not force realistic skin, nose, eye, anatomy/i);
-assert.match(plannerPrompt, /deterministically compiles that data/i);
-assert.match(plannerPrompt, /semantic shot data only/i);
-assert.doesNotMatch(plannerPrompt, /45-90 words|complete canonical character blueprint/i);
+assert.match(plannerPrompt, /PROJECT STYLE LOCK/i);
+assert.match(plannerPrompt, /subject.*context.*style|style lock.*subject.*action.*setting/is);
+assert.match(plannerPrompt, /Every visible person.*exactly the same character type/i);
+assert.match(plannerPrompt, /Keep prompts concise and below 120 English words/i);
+assert.match(plannerPrompt, /complete concise Gemini prompt without --ar/i);
+assert.doesNotMatch(plannerPrompt, /Action Contract|complete canonical character blueprint/i);
 
 const compactCards = createPromptCharacterCards([{ id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "unused", images: ["unused"] }]);
-assert.deepEqual(compactCards, [{ id: "char_1", name: "Player", prompt: "blue bean torso" }]);
+assert.deepEqual(compactCards, [{ id: "char_1", name: "Player", identityLock: "", usesSharedStyleCore: true }]);
 assert.deepEqual(createBatchContinuityContext([{ id: "a" }, { id: "b" }, { id: "c" }], 1, 1), { previousScene: { id: "a" }, nextScene: { id: "c" } });
 
 writeVerificationLog("Global image-prompt rule assertions passed");

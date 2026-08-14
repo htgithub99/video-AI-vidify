@@ -7,7 +7,7 @@ import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
 
 chromium.use(stealthPlugin());
-import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS } from "../../constants";
+import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_FAMILY_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_RECOVERY_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS, GEMINI_MODEL_SELECTION_CONFIG } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
@@ -20,6 +20,7 @@ import { captureDomDiagnostics } from "./domDiagnosticsService.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
+import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 
 interface BrowserSession {
@@ -219,6 +220,7 @@ async function waitForGeminiRequestSlot(attempt: number): Promise<number> {
 export interface ImageGeneratorOptions {
   prompt: string;
   style?: string;
+  retainBrowserSession?: boolean;
   visualConfig?: {
     chromeHeadless?: boolean;
     generateType?: GenerateType;
@@ -439,7 +441,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   let responseText = "";
   let success = false;
   let attempts = 0;
-  const maxAttempts = 2;
+  const maxAttempts = SecurityConstants.DEFAULT_AMOUNT;
   let currentProjectId = cleanProjectId;
 
   let browserInstance: BrowserSession | null = null;
@@ -778,7 +780,11 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     appError(`${ImageGenMessages.IMAGE_RENDER_GLOBAL_ERR}${getErrorMessage(error)}`);
   } finally {
     if (browserInstance) {
-      scheduleGlobalBrowserCleanup();
+      if (options.retainBrowserSession) {
+        scheduleGlobalBrowserCleanup();
+      } else {
+        await closeActiveBrowser();
+      }
     }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.PLAYWRIGHT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -819,8 +825,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   await randomDelay(1000, 4000);
   let success = false;
   let base64Result: string | null = null;
-  let roomAttempts = 0;
-  const maxRoomAttempts = 2;
+  let roomAttempts = SecurityConstants.ZERO;
+  const maxRoomAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
 
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
@@ -848,79 +854,88 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       });
       const isConfigChanged = currentConfigState !== lastGeminiConfigState;
 
-      let needNewRoom = false;
-      if (!browserInstance) {
-        needNewRoom = true;
-      } else {
+      let needNewRoom = _.gt(roomAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
+      try {
+        if (!browserInstance) {
+          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
+          activePage = browserInstance.page;
+        }
         const currentUrl = activePage!.url();
         if (!_.includes(currentUrl, "gemini.google.com")) {
           needNewRoom = true;
-        } else if (consecutiveGeminiErrors >= 2) {
+        } else if (consecutiveGeminiErrors >= GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
         } else if (isConfigChanged) {
           needNewRoom = true;
           appLog(ImageGenMessages.CONFIG_CHANGED_FORCE_NEW_ROOM);
         }
-      }
 
-      if (needNewRoom) {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
-        try {
-          if (browserInstance) {
-            await closeActiveBrowser();
-            browserInstance = null;
-            activePage = null;
-          }
-
-          browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless);
-          activePage = browserInstance.page;
-
+        if (needNewRoom) {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace("{0}", roomAttempts.toString()).replace("{1}", maxRoomAttempts.toString()));
           await activePage.goto(EXTERNAL_URLS.GEMINI_CHAT, {
-            waitUntil: "commit",
-            timeout: 60000,
+            waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
+            timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
           });
-          await randomDelay(3000, 5000);
+          await randomDelay(
+            GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
+            GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
+          );
           consecutiveGeminiErrors = 0;
-        } catch (error: unknown) {
-          appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", getErrorMessage(error)));
-          if (browserInstance) {
-            await closeActiveBrowser();
-            browserInstance = null;
-            activePage = null;
-          }
-          if (roomAttempts >= maxRoomAttempts) {
-            throw error;
-          }
-          continue;
+        } else {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
         }
-      } else {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
+      } catch (error: unknown) {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace("{0}", getErrorMessage(error)));
+        if (browserInstance) {
+          await closeActiveBrowser();
+          browserInstance = null;
+          activePage = null;
+        }
+        if (roomAttempts >= maxRoomAttempts) {
+          throw error;
+        }
+        continue;
       }
 
-      let reloadAttempts = 0;
-      const maxReloadAttempts = 4;
+      let reloadAttempts = SecurityConstants.ZERO;
+      const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
 
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
-        if (reloadAttempts > 1) {
-          appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace("{0}", (reloadAttempts - 1).toString()));
+
+        if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
+          appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(
+            "{0}",
+            _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)),
+          ));
           try {
-            await activePage!.reload({ waitUntil: "domcontentloaded" });
-            await randomDelay(3000, 5000);
-          } catch (reloadError: unknown) {
+            await activePage!.reload({
+              waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL,
+              timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+            });
+            await randomDelay(
+              GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MIN_MS,
+              GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MAX_MS,
+            );
+          } catch (reloadError) {
+            consecutiveGeminiErrors++;
             appError(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD_FAILED.replace("{0}", getErrorMessage(reloadError)));
             continue;
           }
         }
 
         try {
+          await waitForGeminiPageIdle(activePage!, visualConfig);
           const inputLoc = activePage!.locator(GeminiChatSelector.Input).first();
           await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
-          const forceSetting = needNewRoom || isConfigChanged;
+          const forceSetting = needNewRoom
+            || isConfigChanged
+            || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
-          await configureGeminiModel(activePage!, visualConfig, forceSetting);
+          const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
+          if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
           await configureGeminiGenerateType(activePage!, visualConfig, forceSetting);
           await configureGeminiMediaInput(activePage!, visualConfig);
 
@@ -930,7 +945,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
           await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
 
-          const initialResponseCount = await activePage!.locator("model-response").count();
+          const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
           await waitForGeminiRequestSlot(reloadAttempts);
           const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
           let clicked = false;
@@ -948,9 +963,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
             await activePage!.keyboard.press("Enter");
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
           }
-          await randomDelay(1200, 2200);
-
           base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
+          await waitForGeminiPageIdle(activePage!, visualConfig);
           if (base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video)
             && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio)) {
             throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
@@ -971,7 +985,11 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace("{0}", getErrorMessage(error)));
   } finally {
     if (browserInstance) {
-      scheduleGlobalBrowserCleanup();
+      if (options.retainBrowserSession) {
+        scheduleGlobalBrowserCleanup();
+      } else {
+        await closeActiveBrowser();
+      }
     }
     const delayTime = await randomDelay();
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace("{0}", delayTime.toString()));
@@ -999,6 +1017,7 @@ export interface BatchImageItem {
   prompt: string;
   generateType?: GenerateType;
   referenceImages?: string[];
+  continuityKey?: string;
 }
 
 export interface BatchImageResult {
@@ -1046,16 +1065,16 @@ async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number
 }
 
 const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => {
-  const page = await context.newPage();
+  return context.newPage();
+};
+
+const createPreparedGeminiBatchPage = async (
+  context: BrowserContext,
+  tabIndex: number,
+): Promise<Page> => {
+  const page = await createGeminiBatchPage(context);
   try {
-    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
-      waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
-      timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-    });
-    await randomDelay(
-      GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
-      GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
-    );
+    await prepareGeminiBatchPage(page, tabIndex);
     return page;
   } catch (error) {
     await page.close().catch(() => {});
@@ -1096,32 +1115,40 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
   const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Normal;
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
-  const maxTabs = resolveBatchTabCount(items.length, concurrency, visualConfig.batchTabCount);
+  const continuityLaneCount = _.size(_.uniq(_.map(items, item => item.continuityKey || item.sceneId)));
+  const maxTabs = _.min([
+    resolveBatchTabCount(items.length, concurrency, visualConfig.batchTabCount),
+    continuityLaneCount,
+  ])!;
 
   if (maxTabs === 1) {
     const results: BatchImageResult[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
-      const result = await generateImageWithGeminiChat({
-        prompt: item.prompt,
-        style,
-        visualConfig: itemVisualConfig,
-      });
-      const batchRes = {
-        sceneId: item.sceneId,
-        ...result,
-        assetType: itemVisualConfig.generateType,
-      };
-      results.push(batchRes);
-      if (onProgress) {
-        onProgress(batchRes);
+    try {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
+        const result = await generateImageWithGeminiChat({
+          prompt: item.prompt,
+          style,
+          retainBrowserSession: true,
+          visualConfig: itemVisualConfig,
+        });
+        const batchRes = {
+          sceneId: item.sceneId,
+          ...result,
+          assetType: itemVisualConfig.generateType,
+        };
+        results.push(batchRes);
+        if (onProgress) {
+          onProgress(batchRes);
+        }
+        if (i < items.length - 1) {
+          const delayTime = await applyBatchDelay(visualConfig);
+          appLog(BACKEND_MESSAGES.SPAM_PREVENTION_DELAY.replace("{0}", delayTime.toString()));
+        }
       }
-
-      if (i < items.length - 1) {
-        const delayTime = await applyBatchDelay(visualConfig);
-        appLog(BACKEND_MESSAGES.SPAM_PREVENTION_DELAY.replace("{0}", delayTime.toString()));
-      }
+    } finally {
+      await closeActiveBrowser();
     }
     return results;
   }
@@ -1157,8 +1184,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       replacementAttempts = _.add(replacementAttempts, SecurityConstants.DEFAULT_AMOUNT);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_START.replace("{0}", _.toString(_.subtract(maxTabs, _.size(readyPages)))));
       try {
-        const page = await createGeminiBatchPage(context);
-        await prepareGeminiBatchPage(page, _.size(readyPages));
+        const page = await createPreparedGeminiBatchPage(context, _.size(readyPages));
         readyPages.push(page);
         appLog(
           BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_INIT
@@ -1179,8 +1205,8 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
       let success = false;
       let base64Result: string | null = null;
-      let roomAttempts = 0;
-      const maxRoomAttempts = 2;
+      let roomAttempts = SecurityConstants.ZERO;
+      const maxRoomAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
 
       try {
         while (roomAttempts < maxRoomAttempts && !success) {
@@ -1196,7 +1222,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
           if (!_.includes(currentUrl, "gemini.google.com")) {
             needNewRoom = true;
-          } else if (consecutiveErrors >= 2) {
+          } else if (consecutiveErrors >= GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM) {
             needNewRoom = true;
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_FORCED_NEW_ROOM.replace("{0}", (tabIndex + 1).toString()).replace("{1}", consecutiveErrors.toString()));
           }
@@ -1208,8 +1234,14 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 .replace("{2}", maxRoomAttempts.toString()),
             );
             try {
-              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: "commit", timeout: 60000 });
-              await randomDelay(2000, 4000);
+              await page.goto(EXTERNAL_URLS.GEMINI_CHAT, {
+                waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
+                timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+              });
+              await randomDelay(
+                GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
+                GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
+              );
               batchPagesErrors.set(page, 0);
             } catch (err: any) {
               appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", err.message));
@@ -1222,18 +1254,33 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_ROOM_REUSE.replace("{0}", (tabIndex + 1).toString()));
           }
 
-          let reloadAttempts = 0;
-          const maxReloadAttempts = 4;
+          let reloadAttempts = SecurityConstants.ZERO;
+          const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
 
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
-            if (reloadAttempts > 1) {
-              appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_ATTEMPT.replace("{0}", (tabIndex + 1).toString()).replace("{1}", (reloadAttempts - 1).toString()));
+
+            if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_ATTEMPT
+                .replace("{0}", _.toString(_.add(tabIndex, SecurityConstants.DEFAULT_AMOUNT)))
+                .replace("{1}", _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT))));
               try {
-                await page.reload({ waitUntil: "domcontentloaded" });
-                await randomDelay(3000, 5000);
-              } catch (reloadErr: any) {
-                appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", reloadErr.message));
+                await page.reload({
+                  waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL,
+                  timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
+                });
+                await randomDelay(
+                  GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MIN_MS,
+                  GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MAX_MS,
+                );
+              } catch (reloadError) {
+                batchPagesErrors.set(page, _.add(
+                  batchPagesErrors.get(page) || SecurityConstants.ZERO,
+                  SecurityConstants.DEFAULT_AMOUNT,
+                ));
+                appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_FAILED
+                  .replace("{0}", _.toString(_.add(tabIndex, SecurityConstants.DEFAULT_AMOUNT)))
+                  .replace("{1}", getErrorMessage(reloadError)));
                 continue;
               }
             }
@@ -1241,6 +1288,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
             try {
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
 
+              await waitForGeminiPageIdle(page, itemVisualConfig);
               const inputLoc = page.locator(GeminiChatSelector.Input).first();
               await inputLoc.waitFor({ state: "visible", timeout: 60000 });
 
@@ -1251,9 +1299,12 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
               const lastConfig = batchPagesConfigs.get(page);
               const isConfigChanged = currentConfigState !== lastConfig;
-              const forceSetting = needNewRoom || isConfigChanged;
+              const forceSetting = needNewRoom
+                || isConfigChanged
+                || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
-              await configureGeminiModel(page, itemVisualConfig, forceSetting);
+              const modelConfigured = await configureGeminiModel(page, itemVisualConfig);
+              if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
               await configureGeminiGenerateType(page, itemVisualConfig, forceSetting);
               await configureGeminiMediaInput(page, itemVisualConfig);
 
@@ -1263,7 +1314,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
               await enterGeminiPrompt(page, finalPrompt, itemVisualConfig);
 
-              const initialResponseCount = await page.locator("model-response").count();
+              const initialResponseCount = await page.locator(GeminiChatSelector.Response).count();
               await waitForGeminiRequestSlot(reloadAttempts);
               const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
               let clicked = false;
@@ -1281,9 +1332,8 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 await page.keyboard.press("Enter");
                 appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", `${item.sceneId} - ${BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER}`));
               }
-              await randomDelay(1200, 2200);
-
               base64Result = await waitForDownloadAndGetBase64(page, itemVisualConfig, initialResponseCount);
+              await waitForGeminiPageIdle(page, itemVisualConfig);
               if (base64Result && !_.isEqual(itemVisualConfig.generateType, GenerateType.Video)
                 && !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio)) {
                 throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
@@ -1329,15 +1379,33 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       };
     };
 
-    const queue = [...items];
+    const workerQueues = distributeItemsByContinuity(items, _.size(activePages));
 
-    const runWorker = async (page: Page, tabIndex: number) => {
+    const createReplacementWorkerPage = async (tabIndex: number): Promise<Page | null> => {
+      for (
+        let attempt = SecurityConstants.ZERO;
+        attempt < GEMINI_BATCH_SETUP_CONFIG.WORKER_REPLACEMENT_MAX_ATTEMPTS;
+        attempt++
+      ) {
+        try {
+          return await createPreparedGeminiBatchPage(context, tabIndex);
+        } catch (error) {
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_INIT_ERROR.replace("{0}", getErrorMessage(error)));
+        }
+      }
+      return null;
+    };
+
+    const runWorker = async (page: Page, tabIndex: number, queue: BatchImageItem[]) => {
+      let workerPage = page;
       while (queue.length > 0) {
         const item = queue.shift();
         if (!item) break;
+        let itemSucceeded = false;
 
         try {
-          const res = await generateOnTab(page, item, tabIndex);
+          const res = await generateOnTab(workerPage, item, tabIndex);
+          itemSucceeded = res.success;
           results.push(res);
           if (onProgress) {
             onProgress(res);
@@ -1357,6 +1425,20 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
         }
 
+        if (!itemSucceeded) {
+          if (!workerPage.isClosed()) {
+            continue;
+          }
+          const failedPage = workerPage;
+          globalBatchPages = _.without(globalBatchPages, failedPage);
+          if (_.isEmpty(queue)) return;
+          const replacementPage = await createReplacementWorkerPage(tabIndex);
+          if (!replacementPage) return;
+          workerPage = replacementPage;
+          globalBatchPages.push(replacementPage);
+          continue;
+        }
+
         if (_.size(queue)) {
           const delayTime = await applyBatchDelay(visualConfig);
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
@@ -1364,8 +1446,21 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       }
     };
 
-    const workers = _.map(activePages, (page, idx) => runWorker(page, idx));
+    const workers = _.map(activePages, (page, idx) => runWorker(page, idx, workerQueues[idx]));
     await Promise.all(workers);
+
+    _.forEach(_.filter(items, item => !_.some(results, { sceneId: item.sceneId })), (item) => {
+      const res = {
+        sceneId: item.sceneId,
+        success: false,
+        base64: null,
+        fallbackUrl: SecurityConstants.EMPTY_STRING,
+        warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING,
+        assetType: resolveBatchAssetType(item),
+      };
+      results.push(res);
+      if (onProgress) onProgress(res);
+    });
 
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_COMPLETE.replace("{0}", _.size(_.filter(results, (r) => r.success)).toString()).replace("{1}", items.length.toString()));
   } catch (err: any) {
@@ -1396,55 +1491,127 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   return results;
 }
 
-async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig, forceSetting: boolean) {
+const openGeminiModelMenu = async (page: Page, picker: Locator): Promise<Locator | null> => {
+  const menu = page.locator(GeminiChatSelector.ModelMenu).first();
+  if (!(await menu.isVisible().catch(() => false))) await picker.click();
+  const visible = await menu.waitFor({
+    state: "visible",
+    timeout: GEMINI_MODEL_SELECTION_CONFIG.MENU_TIMEOUT_MS,
+  }).then(() => true).catch(() => false);
+  return visible ? menu : null;
+};
+
+const closeGeminiModelMenu = async (picker: Locator, menu: Locator): Promise<void> => {
+  if (!(await menu.isVisible().catch(() => false))) return;
+  await picker.click().catch(() => undefined);
+  await menu.waitFor({
+    state: "hidden",
+    timeout: GEMINI_MODEL_SELECTION_CONFIG.MENU_TIMEOUT_MS,
+  }).catch(() => undefined);
+};
+
+const isGeminiModelOptionSelected = (option: Locator): Promise<boolean> => option.evaluate(
+  (element, selectedClass) => element.classList.contains(selectedClass)
+    || Boolean(element.querySelector(`.${selectedClass}`)),
+  GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS,
+).catch(() => false);
+
+const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolean> => {
+  const maximumAttempts = Math.ceil(
+    GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS
+      / GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS,
+  );
+  for (let attempt = SecurityConstants.ZERO; attempt < maximumAttempts; attempt++) {
+    if (await isGeminiModelOptionSelected(option)) return true;
+    await delayAsync(GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS);
+  }
+  return false;
+};
+
+const findGeminiModelOption = async (menu: Locator, modelRegex: RegExp): Promise<Locator | null> => {
+  const options = menu.locator(GeminiChatSelector.ModelOption);
+  const optionCount = await options.count();
+  for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
+    const option = options.nth(index);
+    const label = _.trim(await option.locator(GeminiChatSelector.ModelLabel).textContent().catch(() => ""));
+    const matches = modelRegex.test(label);
+    modelRegex.lastIndex = SecurityConstants.ZERO;
+    if (matches) return option;
+  }
+  return null;
+};
+
+const getSelectedGeminiModelLabel = async (menu: Locator): Promise<string> => {
+  const options = menu.locator(GeminiChatSelector.ModelOption);
+  const optionCount = await options.count();
+  for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
+    const option = options.nth(index);
+    if (await isGeminiModelOptionSelected(option)) {
+      return _.trim(await option.locator(GeminiChatSelector.ModelLabel).textContent().catch(() => ""));
+    }
+  }
+  return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+};
+
+async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   let targetModelText = GeminiChatModelName.Pro;
   let targetModelRegex = GEMINI_MODEL_PRO_REGEX;
+  let fallbackModelRegex: RegExp | null = null;
   if (engine === ImageGeneratorEngine.LabsSandbox) {
     targetModelText = GeminiChatModelName.FlashLite;
     targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
   } else if (engine === ImageGeneratorEngine.Veo3) {
     targetModelText = GeminiChatModelName.Flash;
     targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
+    fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
   }
 
   const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
   if (!(await modelPickerBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-    return;
+    return false;
   }
 
-  if (forceSetting) {
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace("{0}", targetModelText));
-    const currentText = await modelPickerBtn.textContent();
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentText || ""));
-
-    const isCorrect = targetModelRegex.test(currentText || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-
-    if (isCorrect) {
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace("{0}", targetModelText));
+  for (let attempt = 0; attempt < GEMINI_MODEL_SELECTION_CONFIG.MAX_ATTEMPTS; attempt++) {
+    const modelMenu = await openGeminiModelMenu(page, modelPickerBtn);
+    if (!modelMenu) continue;
+    const currentModelLabel = await getSelectedGeminiModelLabel(modelMenu);
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_CURRENT_MODEL.replace("{0}", currentModelLabel));
+    const currentModelMatches = targetModelRegex.test(currentModelLabel);
+    targetModelRegex.lastIndex = SecurityConstants.ZERO;
+    if (currentModelMatches) {
+      await closeGeminiModelMenu(modelPickerBtn, modelMenu);
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
-      return;
+      return true;
     }
 
-    await randomDelay(800, 1500);
-    await modelPickerBtn.click();
-    await randomDelay(1000, 1800);
-
-    const optionBtn = page
-      .locator(GeminiChatSelector.MenuOptions)
-      .filter({ hasText: targetModelRegex })
-      .first();
-    if (await optionBtn.isVisible()) {
-      await randomDelay(500, 1000);
-      await optionBtn.click();
-      await randomDelay(1200, 2000);
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_SUCCESS.replace("{0}", targetModelText));
-    } else {
+    let selectedModelRegex = targetModelRegex;
+    let matchingOption = await findGeminiModelOption(modelMenu, selectedModelRegex);
+    if (!matchingOption && fallbackModelRegex) {
+      selectedModelRegex = fallbackModelRegex;
+      matchingOption = await findGeminiModelOption(modelMenu, selectedModelRegex);
+    }
+    if (!matchingOption) {
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_NOT_FOUND.replace("{0}", targetModelText));
-      await page.keyboard.press("Escape");
-      await randomDelay(500, 800);
+      await closeGeminiModelMenu(modelPickerBtn, modelMenu);
+      continue;
+    }
+    await matchingOption.click();
+    await modelPickerBtn.waitFor({ state: "visible", timeout: GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS });
+    const verificationMenu = await openGeminiModelMenu(page, modelPickerBtn);
+    if (!verificationMenu) continue;
+    const selectedOption = await findGeminiModelOption(verificationMenu, selectedModelRegex);
+    const isSelected = Boolean(selectedOption && await waitForGeminiModelOptionSelected(selectedOption));
+    await closeGeminiModelMenu(modelPickerBtn, verificationMenu);
+    if (isSelected) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_SUCCESS.replace("{0}", targetModelText));
+      return true;
     }
   }
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_NOT_FOUND.replace("{0}", targetModelText));
+  return false;
 }
 
 async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig, forceSetting: boolean) {
@@ -1640,42 +1807,81 @@ async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: G
   await randomDelay(1500, 3000);
 }
 
-async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, timeoutMs = GEMINI_MEDIA_EXTRACTION_CONFIG.GENERATION_TIMEOUT_MS, initialResponseCount?: number) {
+const waitForGeneratedImageReady = async (media: Locator): Promise<void> => {
+  const maximumAttempts = Math.ceil(
+    GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_TIMEOUT_MS
+      / GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS,
+  );
+  for (let attempt = SecurityConstants.ZERO; attempt < maximumAttempts; attempt++) {
+    const ready = await media.evaluate((element: HTMLImageElement, minimumDimension) => {
+      const source = element.currentSrc || element.src || element.getAttribute("src") || "";
+      return element.complete
+        && element.naturalWidth >= minimumDimension
+        && element.naturalHeight >= minimumDimension
+        && source.length > 0;
+    }, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_IMAGE_DIMENSION_PX).catch(() => false);
+    if (ready) return;
+    await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS);
+  }
+  throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(
+    "{mediaType}",
+    GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE,
+  ));
+};
+
+const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfig): Promise<void> => {
+  const mediaType = _.isEqual(visualConfig.generateType, GenerateType.Video)
+    ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE
+    : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+  await page.waitForFunction(
+    ({ responseSelector, globalBusySelector, responseBusySelector, lastResponseOffset }) => {
+      const responses = document.querySelectorAll(responseSelector);
+      const latestResponse = responses.item(responses.length - lastResponseOffset);
+      return !document.querySelector(globalBusySelector)
+        && !latestResponse?.querySelector(responseBusySelector);
+    },
+    {
+      responseSelector: GeminiChatSelector.Response,
+      globalBusySelector: GeminiChatSelector.GenerationBusy,
+      responseBusySelector: GeminiChatSelector.ResponseGenerationBusy,
+      lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT,
+    },
+    { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS },
+  ).catch(() => {
+    throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(
+      "{mediaType}",
+      mediaType,
+    ));
+  });
+};
+
+async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number) {
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
   await captureGeminiDomState(page, "waiting_for_response");
 
   if (initialResponseCount !== undefined) {
     try {
-      await page.waitForFunction((expected) => document.querySelectorAll("model-response").length >= expected, initialResponseCount + 1, { timeout: 45000 });
+      await page.waitForFunction(
+        ({ expectedResponseCount, responseSelector }) => document.querySelectorAll(responseSelector).length >= expectedResponseCount,
+        {
+          expectedResponseCount: _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT),
+          responseSelector: GeminiChatSelector.Response,
+        },
+        { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS },
+      );
     } catch (e) {
       appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
     }
   }
 
-  try {
-    await page.locator("thinking-overlay").waitFor({ state: "detached", timeout: 30000 });
-  } catch (e) {
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
-  }
-
-  const latestResponse = page.locator("model-response").last();
+  const latestResponse = page.locator(GeminiChatSelector.Response).last();
   try {
     await latestResponse.waitFor({ state: "visible", timeout: 30000 });
   } catch (e) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_RESPONSE);
   }
   await captureGeminiDomState(page, "response_detected");
-
-  try {
-    const busyDiv = latestResponse.locator('message-content div[aria-busy="true"]').first();
-    if (await busyDiv.isVisible()) {
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
-      await latestResponse.locator('message-content div[aria-busy="false"]').first().waitFor({ state: "attached", timeout: timeoutMs });
-    }
-  } catch (e) {
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_TIMEOUT);
-  }
 
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const mediaSelector = isVideoGeneration
@@ -1702,32 +1908,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   const mediaReadyTimeout = isVideoGeneration
     ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS
     : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS;
-  const readyDeadline = Date.now() + mediaReadyTimeout;
-  let generationError = "";
-  while (Date.now() < readyDeadline) {
-    if (await mediaContainer.isVisible().catch(() => false)) {
-      break;
-    }
-
-    if (isVideoGeneration) {
-      const unexpectedImage = latestResponse
-        .locator(GEMINI_MEDIA_EXTRACTION_CONFIG.UNEXPECTED_IMAGE_SELECTOR)
-        .first();
-      if (await unexpectedImage.isVisible().catch(() => false)) {
-        await captureGeminiDomState(page, "video_unexpected_image");
-        throw new Error(GEMINI_MEDIA_ERRORS.VIDEO_REQUEST_RETURNED_IMAGE);
-      }
-    }
-
-    const responseText = _.toLower(await latestResponse.innerText().catch(() => ""));
-    const matchedError = _.find(GEMINI_MEDIA_EXTRACTION_CONFIG.GENERATION_ERROR_PATTERNS, (pattern) => _.includes(responseText, pattern));
-    if (matchedError) {
-      generationError = _.truncate(_.trim(responseText), { length: GEMINI_MEDIA_EXTRACTION_CONFIG.MAX_ERROR_TEXT_LENGTH });
-      await captureGeminiDomState(page, isVideoGeneration ? "video_error" : "image_error");
-      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace("{error}", generationError));
-    }
-    await page.waitForTimeout(1000);
-  }
+  await mediaContainer.waitFor({ state: "visible", timeout: mediaReadyTimeout }).catch(() => undefined);
 
   if (!(await mediaContainer.isVisible().catch(() => false))) {
     await captureGeminiDomState(page, isVideoGeneration ? "video_timeout" : "image_timeout");
@@ -1735,6 +1916,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
     const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
     throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace("{mediaType}", mediaType));
   }
+  if (!isVideoGeneration) await waitForGeneratedImageReady(mediaContainer);
   await captureGeminiDomState(page, isVideoGeneration ? "video_ready" : "image_ready");
 
 }
@@ -1881,13 +2063,13 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 }
 
 async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
-  await waitForGeminiFinished(page, visualConfig, GEMINI_MEDIA_EXTRACTION_CONFIG.GENERATION_TIMEOUT_MS, initialResponseCount);
+  await waitForGeminiFinished(page, visualConfig, initialResponseCount);
 
-  const latestResponse = page.locator("model-response").last();
+  const latestResponse = page.locator(GeminiChatSelector.Response).last();
   await latestResponse.waitFor({ state: "visible", timeout: 30000 });
 
   if (initialResponseCount !== undefined) {
-    const currentCount = await page.locator("model-response").count();
+    const currentCount = await page.locator(GeminiChatSelector.Response).count();
     if (currentCount <= initialResponseCount) {
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_PREVENT_OLD_IMAGE);
     }

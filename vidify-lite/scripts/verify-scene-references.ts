@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createCharacterIdentityBlocks, createSceneGenerationContext, resolveSceneCharacterIds } from "../src/services/sceneReferenceService.ts";
+import { createCharacterIdentityBlocks, createSceneGenerationContext, resolveSceneCharacterIds, resolveStoryboardCharacterIds } from "../src/services/sceneReferenceService.ts";
 import { CharacterConfig, StoryboardScene } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { normalizeExtractedStyle } from "../src/services/styleReferenceService.ts";
@@ -53,26 +53,17 @@ assert.deepEqual(context.referenceImages, [
   "/assets/projects/test/references/style/style.png",
   "/assets/projects/test/references/scene/scene.png",
 ]);
-assert.match(context.prompt, /exactly 1 primary character/i);
-assert.match(context.prompt, /not a collage/i);
-assert.match(context.prompt, /do not add unrelated background characters/i);
-assert.match(context.prompt, /free of readable text/i);
-assert.match(context.prompt, /image 1 only for style/i);
-assert.match(context.prompt, /image 2 for scene context/i);
-assert.match(context.prompt, /CHARACTER 1 — HOSTESS/i);
-assert.match(context.prompt, /long brown hair/i);
-assert.ok(context.prompt.endsWith("--ar 16:9"));
+assert.equal(context.prompt, scene.prompt);
 
 const nodeContext = createSceneGenerationContext(scene, {
   characters,
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
   sceneReferenceImages: [],
-}, { includeCharacterImages: true });
+});
 assert.deepEqual(nodeContext.referenceImages, [
   "/assets/projects/test/references/style/style.png",
-  "/assets/projects/test/references/character/hostess.png",
 ]);
-assert.match(nodeContext.prompt, /preserve the identity and appearance of Hostess/i);
+assert.equal(nodeContext.prompt, scene.prompt);
 
 const finalizedPrompt = "Complete AI-authored scene prompt with identity, white canvas, no text, and medium shot";
 const finalizedContext = createSceneGenerationContext({
@@ -83,7 +74,7 @@ const finalizedContext = createSceneGenerationContext({
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
   sceneReferenceImages: [],
 });
-assert.match(finalizedContext.prompt, /Attached reference roles in upload order/i);
+assert.equal(finalizedContext.prompt, `${finalizedPrompt} --ar 16:9`);
 assert.deepEqual(finalizedContext.referenceImages, ["/assets/projects/test/references/style/style.png"]);
 
 const multiCharacterContext = createSceneGenerationContext({
@@ -96,9 +87,7 @@ const multiCharacterContext = createSceneGenerationContext({
   styleReferenceImages: [],
   sceneReferenceImages: [],
 });
-assert.match(multiCharacterContext.prompt, /Exactly 2 recurring main characters/i);
-assert.match(multiCharacterContext.prompt, /CHARACTER 1 — PLAYER/i);
-assert.match(multiCharacterContext.prompt, /CHARACTER 2 — HOSTESS/i);
+assert.equal(multiCharacterContext.prompt, "The Player watches while the Hostess lifts the bowl, medium wide shot --ar 16:9");
 assert.equal(multiCharacterContext.referenceImages.length, 0);
 
 const objectOnlyContext = createSceneGenerationContext({
@@ -114,9 +103,7 @@ const objectOnlyContext = createSceneGenerationContext({
   sceneReferenceImages: [],
 });
 assert.doesNotMatch(objectOnlyContext.prompt, /CHARACTER 1 —/i);
-assert.match(objectOnlyContext.prompt, /exactly 1 primary visual subject/i);
-assert.doesNotMatch(objectOnlyContext.prompt, /exactly 1 primary character/i);
-assert.match(objectOnlyContext.prompt, /objects or environment only/i);
+assert.equal(objectOnlyContext.prompt, "A ceramic bowl covers four gaming pieces, overhead shot --ar 16:9");
 
 const inferredScene = {
   ...scene,
@@ -135,6 +122,18 @@ const explicitEmptyScene = {
   subtitle: "This practical solution helps the community.",
 };
 assert.deepEqual(resolveSceneCharacterIds(explicitEmptyScene, characters), []);
+const vietnameseCharacter = [{
+  id: "char_vu",
+  name: "Vũ",
+  narrativeRole: "Primary",
+  hair: "short black hair",
+  signatureClothing: "red jacket",
+}] as CharacterConfig[];
+const continuedScenes = resolveStoryboardCharacterIds([
+  { ...scene, id: "sc_vu_1", script: "Vũ ký hợp đồng.", subtitle: "Vũ ký hợp đồng.", prompt: "", characterIds: [] },
+  { ...scene, id: "sc_vu_2", script: "Anh nhanh chóng đeo đồng hồ.", subtitle: "Anh nhanh chóng đeo đồng hồ.", prompt: "", characterIds: [] },
+], vietnameseCharacter);
+assert.deepEqual(continuedScenes.map(item => item.characterIds), [["char_vu"], ["char_vu"]]);
 const unnamedPeopleContext = createSceneGenerationContext(explicitEmptyScene, {
   characters,
   styleReferenceImages: [],

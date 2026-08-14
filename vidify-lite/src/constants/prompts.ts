@@ -3,8 +3,7 @@ import { AspectRatio } from "../types.js";
 import { SPLIT_STRATEGY_CONFIGS } from "./strategies.js";
 import { SplitStrategy } from "./enums.js";
 import { AI_LIGHTING_EFFECT_IDS, AI_MOTION_EFFECT_IDS, AI_TRANSITION_EFFECT_IDS, AI_VISUAL_EFFECT_IDS } from "./data.js";
-import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG } from "./thumbnail.js";
-import { createGlobalImagePromptPlanningRules, IMAGE_PROMPT_FINAL_ORDER_RULE } from "./imagePromptRules.js";
+import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_CATALOG } from "./thumbnail.js";
 
 export const NO_FRAME_RULE = `Use a natural full-frame composition. Add "No frame" only when the scene could reasonably be mistaken for framed artwork.`;
 
@@ -29,7 +28,7 @@ const PROMPT_DIRECTIVE_INTEGRATION_RULES = `[DIRECTIVE PRIORITY & INTEGRATION RU
 4. The IMAGE FOCUS & COMPOSITION POLICY controls subject prominence, shot size, balance, and action readability only. It must not invent scenery, extra subjects, extra actions, or invisible/abstract content.
 5. Style, camera, lens, lighting, and atmosphere are lower priority and must adapt to every active policy above.
 6. Remove or rewrite any wording from the source prompt that conflicts with a higher-priority active policy. Integrate each active policy naturally and exactly once; do not paste or repeat directive text verbatim.
-7. Normalize the final image prompt to contain exactly one aspect-ratio parameter, and place that --ar parameter at the absolute end.`;
+7. Do not include any model-specific aspect-ratio parameter. The application appends exactly one after the AI-authored prompt.`;
 
 const getPromptDirectiveSection = (
   backgroundDirective?: string,
@@ -80,10 +79,10 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
 5. REFERENCE EXAMPLES (Story to English Prompt translation):
    - Example 1 (With Character):
      * Story/Script: "Under the heavy rain of the futuristic city, a girl named Linh stands holding a bright red umbrella."
-     * Target English Prompt: "A cinematic photorealistic 8k shot of a young Asian woman holding a bright red umbrella, standing in a rainy cyberpunk city street. She has a sad and longing expression on her face. Heavy rain, neon lights reflecting on wet puddles on the ground. Cinematic lighting, moody atmosphere, cyberpunk aesthetic. --ar 16:9"
+     * Target English Prompt: "A cinematic photorealistic shot of a young Asian woman holding a bright red umbrella in a rainy cyberpunk street, looking down with a sad expression as neon light reflects on wet pavement, medium eye-level composition."
    - Example 2 (Without Character):
      * Story/Script: "Lightning flashes across the dark storm clouds, illuminating the ancient castle on the cliff."
-     * Target English Prompt: "An epic wide-angle oil painting of an ancient stone castle perched precariously on a jagged cliff, with fierce lightning flashing across dark, churning storm clouds in the background. Dramatic high-contrast lighting, visible textured brushstrokes. --ar 16:9"
+     * Target English Prompt: "A wide oil painting of an ancient stone castle on a jagged cliff as lightning cuts through dark storm clouds, high-contrast illumination and visible textured brushstrokes."
 
  6. STRICT ALIGNMENT WITH NARRATION (MANDATORY): The generated visual prompt MUST strictly align and match the literal meaning and core subjects of the scene's narration text. Do NOT deviate from the storyline or introduce foreign elements. Every visual element described in the prompt must serve to visually represent the spoken words of that scene. Do NOT generalize or skip key visual facts from the narration. Ensure that when looking at the image, the viewer immediately understands the content of the narration.
  7. NO METAPHORICAL, ABSTRACT, OR INVISIBLE CONCEPTS (CRITICAL): Translate abstract narration, emotional states, and invisible/metaphorical concepts into tangible, physically drawable objects, actions, and body language. Never use words like "invisible", "unseen", or abstract concepts (e.g., avoid "engaged in a conversation with an invisible party", "invisible force", "loss of opportunity"). Instead, describe physical signs and observable details: for conversation with an unseen party, use "looking slightly off-camera, gesturing with a hand as if speaking to someone just out of frame"; for "loss of opportunity", describe concrete items like "a broken military sword half-buried in dry dust next to an abandoned uniform".
@@ -92,15 +91,15 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
  10. CLEARLY DEFINE COMBATANTS IN CONFLICT SCENES (MANDATORY): When a scene involves battle, combat, or conflict, you MUST clearly define the opposing sides so that the image generator creates the correct characters, clothing, uniforms, armor, weapons, formations, and settings for each respective side.
  11. CONDITIONAL ENVIRONMENT DETAIL: Describe the environment, terrain, weather, lighting, and overall setting fully only when the active background policy permits scenery. For transparent, white, solid, studio, gradient, or preserved-background policies, obey that policy and do not invent or restore environmental scenery, blur, or depth of field.
  12. HISTORICAL CONTEXT ENRICHMENT & ACCURACY (MANDATORY): For historical themes, you MUST explicitly specify the historical context, such as the conflict/war, the era or specific year, the country, the participating factions/sides, the military units/armies, and the types of soldiers or historical figures. Costumes, weapons, flags, insignia, vehicles, architecture, and cultural details must strictly adhere to the historical facts of the specified context, with absolutely no mixing of periods or countries.
- 13. CHARACTER REFERENCE & CONSISTENCY (MANDATORY): Every single scene containing a character MUST include their detailed character description and strictly apply Character Reference. If a character has appeared in previous scenes, you MUST maintain consistent identifying features including face, age, gender, body build, hair style, clothing, accessories, and other key identifying traits. Only modify these traits when explicitly required by the narrative progression or a clear scene transition.
+ 13. CHARACTER LOCK & CONSISTENCY (MANDATORY): Every recurring character must use the supplied character ID and its few canonical identity anchors. Apply the same shared Style Core construction to every person; character cards may distinguish identity but must never introduce a separate medium, anatomy system or rendering style.
  14. SCENE-TO-SCENE VISUAL CONTINUITY & PROGRESSION: Successive scenes must maintain consistency in characters, environment, time of day, weather, lighting, clothing, environmental damage, and key props. Only change these elements during explicit scene transitions or logical narrative progression.
  15. CINEMATIC QUALITY & CAMERA DIRECTION: Always prioritize cinematic visual quality by describing camera angles, shot size, composition, focus point, depth of field, lighting, and the emotional tone of the scene to ensure an engaging and cohesive cinematic flow.
- 16. VISUAL STYLE & ARTISTIC CONSISTENCY: All scenes within the same video must maintain a highly unified art style, color palette, lighting scheme, level of detail, and overall image quality to avoid abrupt or disruptive stylistic shifts.
+ 16. VISUAL STYLE & ARTISTIC CONSISTENCY: All scenes must share one medium, character construction, line language, color behavior and rendering method. The script may change setting, mood, lighting and composition without changing that shared Style Core.
  17. SEAMLESS TRANSITION LINKING: When consecutive scenes depict the same location or event, keep key elements (character positions, movement direction, composition, lighting, weather) consistent to ensure smooth and natural video editing transitions.
  18. FOCUS ON THE CORE SUBJECT: The prompt must focus strictly on the main subject and action of the scene. Avoid adding unrelated minor details that could distract the image generator and dilute the core visual focus.
  19. STRICT HISTORICAL ACCURACY & ANACHRONISM PREVENTION: Do not mix costumes, weapons, vehicles, architecture, flags, symbols, military ranks, or technology from different eras or countries, unless explicitly required by the story.
  20. DYNAMIC ACTION & EXPRESSION: When characters are present, always describe their specific actions, direction of gaze, facial expressions, and physical interaction with the environment to create a dynamic, lifelike feel instead of static poses.
- 21. ANATOMICAL FIDELITY & QUANTITY STRICTNESS (CRITICAL): Prevent extra limbs, floating arms, or merged/fused bodies. Ensure the number of main characters generated strictly matches the singular or plural count specified in the scene's script. If the script describes 'a panicked soldier' (singular), do NOT generate two or more soldiers in the foreground. Maintain a clear, physical separation between characters to prevent the AI from fusing their torsos, shoulders, or clothing. Maintain realistic scale and proportions.
+ 21. STYLE-CONSISTENT ANATOMY & QUANTITY STRICTNESS (CRITICAL): Prevent extra limbs, floating arms, merged bodies and duplicated held objects. Match the exact subject and object quantities in the scene. Keep every hand attached to its owner and every contact physically readable while preserving the shared Style Core's intended proportions, including simplified or stick-figure anatomy.
  22. CONSISTENT TIME OF DAY: If the narrative flows continuously, maintain a consistent time of day (e.g., dawn, midday, sunset, night) across consecutive scenes, and only change it when a new timeframe is explicitly introduced in the script.
  23. EDIT-FRIENDLY COMPOSITION: Each prompt should be designed like a single film frame with a clear focal point, minimal clutter, and sufficient detail to ensure that consecutive clips can be stitched together into a smooth, seamless video.
  24. PROMPT BLOAT PREVENTION & ARTISTIC CONCISENESS: Do NOT repeat general art styles, camera lens specs, or border rules multiple times in a single prompt. State them exactly once. Eliminate redundant style synonyms (e.g., write "oil-on-canvas painting style" instead of "oil painting, painterly texture, canvas art, oil-on-canvas finish"). Avoid repeating long physical descriptions of the same character multiple times in a single prompt; define key features once and clearly to prevent token bloat and AI confusion.
@@ -116,7 +115,7 @@ export const COMPACT_CINEMATIC_PROMPT_RULES = `[CORE VISUAL PROMPT CONTRACT]
 5. State art medium once, then subject, action/expression, identity/costume, permitted environment, lighting and camera composition.
 6. Keep adjacent scenes editable and visually progressive through purposeful shot/blocking changes without breaking geography, time, weather or screen direction.
 7. Avoid redundant style synonyms, repeated lens terms, duplicate directives, frames, borders and invented typography.
-8. End with exactly one aspect-ratio parameter.`;
+8. Do not include any model-specific aspect-ratio parameter; the application appends exactly one after the AI-authored prompt.`;
 
 export const getSceneStyleRewritePrompt = (promptText: string, newStyle: string, isThumbnail: boolean = false, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an elite AI Image Prompt Designer.
 Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generation prompt and rewrite it to perfectly align with the new visual style, while STRICTLY keeping the original meaning, setting, characters, actions, and key identifiers intact.
@@ -124,6 +123,7 @@ Your task is to take the original ${isThumbnail ? "thumbnail" : "image"} generat
 [VISUAL REFERENCE SOURCE MATERIALS]
 - Original Image Prompt: "${promptText}"
 - New Target Style: "${newStyle}"
+- Target canvas: ${aspectRatio}
 
 [SOFT STYLE ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 1. Character & Environment Retention (Soft Alignment):
@@ -138,7 +138,7 @@ STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this structural for
 ${COMPACT_CINEMATIC_PROMPT_RULES}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 ${NO_FRAME_RULE}
-- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the rewritten prompt.
+- Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after your rewritten prompt.
 ${!isThumbnail ? "IMPORTANT MANDATE: The rewritten image generation prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompt. Do not use Vietnamese in the output.\n" : ""}DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw rewritten prompt string${!isThumbnail ? " in English" : ""}.`;
 
 export const getStyleRewriteBatchPrompt = (newStyle: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, isVi: boolean = false, backgroundDirective?: string, textDirective?: string, focusDirective?: string, isThumbnail: boolean = false): string => `You are an elite AI Image Prompt Designer.
@@ -187,59 +187,52 @@ export const getOptimizePromptsBatchPrompt = (
   locationLibraryJson: string = "",
   propLibraryJson: string = "",
   correctionIssuesJson: string = "",
-): string => `You are a senior storyboard artist who returns structured shot plans for a coherent video. You do not write the final engine prompt.
+): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
 
 ${UNTRUSTED_INPUT_RULE}
 
-[CREATIVE PRIORITIES]
-${createGlobalImagePromptPlanningRules()}
+[PROJECT STYLE LOCK]
+${referenceStyle || visualStyle || "Use one coherent visual style for every person and scene."}
 
-${IMAGE_PROMPT_FINAL_ORDER_RULE}
-
-[PROJECT LANGUAGE]
-- Style fingerprint: ${referenceStyle || visualStyle || "Use a coherent style suitable for the story"}
+[IDENTITY AND CONTINUITY]
+- Character cards: ${charactersJson || "No recurring character cards"}
 - Visual Bible: ${visualBibleJson || "Not supplied"}
-- Recurring character cards: ${charactersJson || "No recurring character cards"}
-- Location library: ${locationLibraryJson || "No recurring location library"}
-- Prop library: ${propLibraryJson || "No recurring prop library"}
-- Neighboring-scene continuity: ${continuityContext || "No extra continuity context"}
-- Reference role at generation time: ${referenceContext}
+- Neighboring scenes: ${continuityContext || "No extra continuity context"}
+- Locations: ${locationLibraryJson || "No recurring locations"}
+- Props: ${propLibraryJson || "No recurring props"}
+- Generation references: ${referenceContext}
 
-[USER CHOICES]
+[USER SETTINGS]
 - Canvas: ${aspectRatio}
-- Background mode: ${backgroundMode}
-- Text mode: ${textMode}
-- Focus preference: ${focusMode}
+- Background: ${backgroundMode}
+- Text: ${textMode}
+- Framing: ${focusMode}
 
-[HOW TO PLAN EACH SCENE]
-Privately decide what the viewer should understand, then choose the most effective visible action, subject, setting, composition, camera distance, and lighting. Do not expose that reasoning.
+[GEMINI PROMPT FORMAT]
+Write one natural English paragraph in this order:
+1. Copy the PROJECT STYLE LOCK verbatim at the beginning, exactly once.
+2. State the visible subject. For a recurring character, use its valid ID and only its identityLock traits.
+3. State one simple physical action with exact object quantity.
+4. State the script-grounded setting and historical period only when relevant.
+5. State shot size, camera angle and composition.
+6. End with one concise text policy.
 
-- Treat the script as meaning to visualize, not a list of nouns. Prefer human action, reaction, cause, and consequence over literal question marks, charts, labels, screens, banners, gears, curtains, or generic symbols.
-- Use recurring named characters when the narration explicitly names them or clearly continues their experience. Return their valid IDs. Do not replace them with generic people, but do not force them into unrelated scenes.
-- Translate each present character card into the supplied art style. Keep only a few strong anchors that the style can actually show, such as hair silhouette, torso or outfit color, posture, and one accessory. Do not force realistic skin, nose, eye, anatomy, lens, or fabric details into a simplified illustration style.
-- With multiple recurring characters, make roles and interactions unambiguous. Specify spatial positions only when they help the composition.
-- Let objects and environments follow the same rendering language as the characters. Avoid photorealistic props inside illustrated scenes.
-- Vary visual rhythm across the batch naturally. Do not mechanically alternate shot types and do not repeat an isolated centered character when a meaningful interaction or environment would tell the story better.
-- In auto text mode, use readable text only when exact wording is essential. Keep it short and exact. Otherwise communicate visually and state that no readable text should appear when the scene is likely to generate labels, charts, signs, documents, or UI.
-- Use only the constraints that solve a likely failure. Avoid long negative lists, quality buzzwords, rigid section labels, and repeated style synonyms.
-- Return semantic shot data only. The application deterministically compiles that data into the final engine prompt.
-- Do not include prompt prose, --ar, model syntax, style buzzwords, or quality tags.
-- visualIntent states what viewers must understand from the shot.
-- visibleAction and reaction must describe physically visible behavior, never an abstract emotion by itself.
-- Use stable character, location, and prop IDs from the supplied libraries. Never invent an ID.
-- shotPurpose must be one of setup, action, reaction, punchline, reveal, callback, montage, emotional_hold.
-- Every adjacent scene must differ in shotSize, cameraAngle, or composition while preserving story continuity.
+[HARD RULES]
+- Every visible person, including unnamed mentors, clients, crowds and background figures, must use exactly the same character type and construction from PROJECT STYLE LOCK. Never render one person as a stick figure and another as realistic, anime, 3D or painterly.
+- Character cards distinguish identity only. Hair, clothing color and one accessory may differ; body construction, realism, facial-detail level, line work and rendering must never differ.
+- Resolve names and continuing pronouns to valid character IDs. Do not turn a recurring character into a generic person.
+- Show one literal action, not an abstract symbol. Keep hands, held objects and contact points visually simple.
+- Keep prompts concise and below 120 English words. Do not repeat style phrases, identity traits, negative constraints or technical terms.
+- Write all technical prompt text in English. Only exact text intended to appear in the image may use ${isVi ? "Vietnamese with correct diacritics" : "English"}.
+- Do not include --ar; the application appends it after the AI-authored prompt.
+- Use only supplied character, location and prop IDs. Prefer one continuous frame.
 
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
-${getGeneratedMediaLanguageDirective(isVi)}
+${correctionIssuesJson ? `[ONE CORRECTION PASS]\nFix only these issues and return the full result again:\n${correctionIssuesJson}` : ""}
 
-${correctionIssuesJson ? `[CORRECTION REQUEST]\nRepair every listed issue without changing the scene meaning:\n${correctionIssuesJson}` : ""}
-
-Output ONLY a valid JSON array:
-[{"id":"scene_id","narrativeBeatId":"beat_01","shotPurpose":"action","visualIntent":"what the viewer understands","characterIds":["char_1"],"characterStage":"base","locationId":"loc_home","propIds":["prop_wallet"],"visibleAction":"physically drawable action","reaction":"visible reaction or empty string","characterStateBefore":"concrete state","characterStateAfter":"changed state","expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"shotSize":"medium wide shot","cameraAngle":"eye-level three-quarter angle","composition":"subject left, consequence visible on right","continuityFrom":"previous scene state or empty string","continuityNotes":"identity, outfit, geography, screen direction, and prop state to preserve","callbackId":"callback ID or empty string","lighting":"visible style-compatible light"}]
-
-Use only supplied IDs. Prefer single_frame unless simultaneous separated views are essential. Do not include markdown or explanations.
+Output ONLY this JSON array shape:
+[{"id":"scene_id","prompt":"complete concise Gemini prompt without --ar","visualIntent":"what viewers understand","visibleAction":"one physical action","characterIds":["char_1"],"expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"shotPurpose":"action","shotSize":"medium shot","cameraAngle":"eye-level angle","composition":"clear subject placement","locationId":"loc_id or empty string","propIds":["prop_id"],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate light"}]
 
 Input scenes:
 ${chunkJson}`;
@@ -344,21 +337,28 @@ export const getSceneImageQualityPrompt = (
   sceneScript: string,
   imagePrompt: string,
   expectedSubjectCount?: number,
+  purpose: string = "scene",
+  expectedHeadline: string = "",
+  layoutId: string = "",
+  typographyId: string = "",
 ): string => `You are a strict senior art director and AI-image quality controller.
-Evaluate the attached image for use in a professional edited video.
+Evaluate the attached ${purpose === "thumbnail" ? "finished YouTube thumbnail" : "image"} for use in a professional edited video.
 
 SCENE ID: ${sceneId}
 NARRATION: ${sceneScript}
 IMAGE PROMPT: ${imagePrompt}
 EXPECTED PRIMARY SUBJECT COUNT: ${_.defaultTo(expectedSubjectCount, "infer from prompt")}
+${purpose === "thumbnail" ? `EXPECTED HEADLINE: ${expectedHeadline || "none"}\nAPPROVED LAYOUT: ${layoutId}\nAPPROVED TYPOGRAPHY: ${typographyId}` : ""}
 
-Use professional editorial judgment rather than rigid score thresholds. Put an item in blockingErrors and set usableForVideo=false only when the visible defect makes the image technically unusable or materially tells the wrong story: severe anatomy corruption, missing heads, merged bodies, a clearly wrong main action/subject, destructive crop, prominent gibberish text, or major identity/style drift. Treat minor aesthetic weakness, imperfect composition, small background artifacts, and taste-level differences as warnings. Evaluate and report only; never propose or perform a replacement, rewrite, regeneration, or corrective prompt.
+Use professional editorial judgment rather than rigid score thresholds. Judge narrative alignment primarily against NARRATION, not merely against IMAGE PROMPT. Put an item in blockingErrors and set usableForVideo=false only when the visible defect makes the image technically unusable or materially tells the wrong story: severe anatomy corruption, missing heads, merged bodies, a clearly wrong main action/subject or environment, destructive crop, prominent gibberish text, unreadable or badly clipped expected headline, text covering a face, or major identity/style drift. Treat minor aesthetic weakness, imperfect composition, small background artifacts, and taste-level differences as warnings. For a thumbnail, evaluate the completed typography, phone-size readability, approved layout structure and headline placement. Evaluate and report only; never propose or perform a replacement, rewrite, regeneration, or corrective prompt.
 
 Return JSON only:
 {
   "anatomy": 0,
   "subjectCount": 0,
   "promptAlignment": 0,
+  "narrativeAlignment": 0,
+  "environmentRelevance": 0,
   "characterConsistency": 0,
   "composition": 0,
   "styleConsistency": 0,
@@ -421,6 +421,9 @@ export const getVideoDirectorSceneSplitPrompt = (
 ): string => `You are an elite AI Video Director. Your mission is to split the rewritten script into semantic storytelling scenes and design high-quality, consistent image prompts.
 ${UNTRUSTED_INPUT_RULE}
 
+[TARGET CANVAS]
+${aspectRatio}
+
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 Use the following visual specifications as your core style and identity reference:
 - Color Palette & General Style: ${visualStyle} (Reference Style: ${referenceStyle ? referenceStyle : "Not specified"})
@@ -468,7 +471,7 @@ Below is an example of how to combine the Reference Materials and the Scene Scri
 - Reference Character Spec: "An old wizard with a long grey beard, wearing a patched brown robe and round spectacles."
 - Reference Landscape Spec: "A dark damp stone library with towering wooden bookshelves filled with glowing ancient books."
 - Scene Script: "He carefully reached for the magical book on the shelf."
-- Target English Prompt: "A medium shot of the old wizard with a long grey beard, wearing a patched brown robe and round spectacles, as he carefully reaches his hand towards a glowing magical book on a wooden shelf. He is in the dark damp stone library with towering wooden bookshelves in the background. Cinematic lighting, soft dust particles floating in the air, highly detailed, photorealistic 8k. --ar ${aspectRatio}"
+- Target English Prompt: "A medium shot of the old wizard with a long grey beard, wearing a patched brown robe and round spectacles, as he carefully reaches his hand towards a glowing magical book on a wooden shelf. He is in the dark damp stone library with towering wooden bookshelves in the background. Soft dust particles float in the scene-appropriate light."
 (Notice how the prompt naturally integrates the wizard's appearance and the library setting while specifying a concrete camera composition and physical action).
 
 [MULTI-STEP SYSTEM FLOW MANDATE]
@@ -487,10 +490,10 @@ Requirements:
     - MANDATORY SEMANTIC INTEGRITY FOR NARRATION (CRITICAL): Regardless of the chosen split strategy or density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (always containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g. do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene. If a sentence is divided into multiple sub-scenes, rephrase each sub-scene's narration slightly so it remains a complete, meaningful sentence (e.g. carry over the subject).
     - CONTEXT PRESERVATION FOR SPLIT SCENE PROMPTS: The image prompt (prompt) for EACH sub-scene must contain the FULL context of the original complete sentence (subject, action, main setting) so that the generated image is not vague or generic.
       * Example: If the sentence is "In a medieval library, the old wizard reads a glowing book and slowly casts a spell." and it is split into two sub-scenes:
-        - Sub-scene 1: Narration: "In a medieval library, the old wizard reads a glowing book." -> Prompt: "A close-up shot of an old wizard with a long white beard reading a glowing leather-bound book in a medieval library filled with tall bookshelves. Cinematic lighting, photorealistic 8k. --ar ${aspectRatio}"
-        - Sub-scene 2: Narration: "The wizard slowly casts a spell." -> Prompt: "A medium shot of the old wizard in the medieval library, holding his hand over the glowing book as blue magical particles float in the air. Cinematic lighting, photorealistic 8k. --ar ${aspectRatio}" (Notice that the second sub-scene's narration is rephrased to "The wizard slowly casts a spell." to be a complete sentence with a subject, and the image prompt explicitly carries over all context to prevent a vague image).
+        - Sub-scene 1: Narration: "In a medieval library, the old wizard reads a glowing book." -> Prompt: "A close-up shot of an old wizard with a long white beard reading a glowing leather-bound book in a medieval library filled with tall bookshelves."
+        - Sub-scene 2: Narration: "The wizard slowly casts a spell." -> Prompt: "A medium shot of the old wizard in the medieval library, holding his hand over the glowing book as blue magical particles float in the air." (Notice that the second sub-scene's narration is rephrased to "The wizard slowly casts a spell." to be a complete sentence with a subject, and the image prompt explicitly carries over all context to prevent a vague image).
       * NEVER generate an image prompt like "glowing particles" or "hands casting a spell" which is extremely vague and lacks a clear subject/setting.
-    - ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene. Every prompt must end with this parameter (e.g. "..., photorealistic 8k, cyberpunk aesthetic. --ar ${aspectRatio}").
+    - Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after each AI-authored prompt.
     - NO GENERIC COPIES & STRICT VISUAL PROGRESSION: Every scene prompt must be highly specific to its script segment. Successive or adjacent scenes MUST NOT have identical or near-identical prompts. Even if the character or location remains the same, you MUST vary the camera shot/distance (e.g., alternate between close-up shot, medium shot, wide shot), camera angle, lighting, or the character's precise action or pose to ensure a clear visual progression and avoid generating identical images.
     - STRICT PROMPT RICHNESS: Ensure the "prompt" is extremely detailed and descriptive (minimum of 35-50 words). Describe the focal subject, precise setting, lighting, and camera specifications.
     - CRITICAL HARD CONTEXTUAL ALIGNMENT DIRECTIVE: What is written in the scene's script segment MUST be displayed exactly in the generated image.
@@ -514,7 +517,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
       "duration": 5,
       "script": "The exact single sentence from the rewritten script.",
       "subtitle": "The exact single sentence from the rewritten script.",
-      "prompt": "Highly detailed image prompt strictly following the blueprint. If character exists: '[Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. If no character exists: '[Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens]'. Example of non-character prompt: 'An oil painting of an ancient massive redwood tree standing in the center of a dense misty forest, sunbeams filtering through the foliage, damp moss-covered ground, cinematic wide shot, photorealistic 8k. --ar ${aspectRatio}' THIS PROMPT MUST BE WRITTEN ENTIRELY IN ENGLISH.",
+      "prompt": "Complete English image prompt containing the literal subject, one visible action, identity lock, script-grounded environment, shared Style Core, lighting and camera composition, without model-specific parameters.",
       "cameraMotion": "zoom_in",
       "effects": "dreamy",
       "lightingEffect": "natural_light",
@@ -611,11 +614,9 @@ Return only valid JSON:
 Storyboard:
 ${scenesJson}`;
 
-export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE-ONLY REFERENCE DIRECTIVE:\nThe supplied image(s) are visual-style samples only, never character references. Extract and apply only art medium, line quality, rendering technique, color palette, contrast, texture, and lighting. Completely ignore all depicted people, faces, bodies, clothing, poses, objects, locations, composition, and narrative content. Never copy or mention a person from a style sample in characterSpecs. Character identity must come exclusively from the script and the separate Character Reference Specs.";
+export const VISUAL_BIBLE_REFERENCE_PROMPT = "\n\nMULTIMODAL REFERENCE ROLE:\nUse the supplied images only as a soft visual-language reference. Preserve a small set of reusable traits such as medium, character construction, line behavior and color/rendering method. The script is always authoritative for people, locations, props, action, era, mood, lighting and composition. Ignore every sampled location, object arrangement, pose and lighting state. Never force a scene into the sample's world when the narration calls for another setting.";
 
-export const THUMBNAIL_REFERENCE_PROMPT = (refImgStr: string) => `CRITICAL DIRECTIVE: You MUST create prompts that strictly and exactly follow this extracted style reference: "${refImgStr}". Deeply integrate these aesthetic keywords into the thumbnail prompt.`;
-
-export const THUMBNAIL_IMAGE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL STYLE REFERENCE DIRECTIVE:\nWe have provided the actual style reference image(s) for the thumbnails above. Inspect their color palette, typography vibe, lighting contrast, and composition. Strictly apply these elements to your output prompts.";
+export const THUMBNAIL_IMAGE_REFERENCE_PROMPT = "\n\nCRITICAL MULTIMODAL THUMBNAIL REFERENCE DIRECTIVE:\nReference 1, when supplied, is the authoritative scene Style Core for all character construction. A thumbnail sample may influence only broad background treatment and contrast, never character anatomy, medium, line language or coloring. The selected layout controls geometry and typography through the closed eight-template catalog. Render the exact requested headline and required arrow directly in the generated image. Never copy sample people, location, lighting, words, logos, poses, objects, story details or arrangement.";
 
 export const TEMPLATE_TMP_CONTENT = (projectName: string) => `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${projectName}`;
 
@@ -650,6 +651,9 @@ export const getSceneDetailBatchPrompt = (
 ): string => {
   return `You are an elite AI Video Director and Visual Designer.
 Your task is to take a batch of storyboard scenes (which already have their script text) and generate high-quality, detailed visual prompts and camera directions for each of them.
+
+[TARGET CANVAS]
+${aspectRatio}
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 Use the following visual specifications as your core style and identity reference:
@@ -693,7 +697,7 @@ The generated "prompt" field for each scene MUST strictly follow this exact stru
 - Every prompt MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original script.
 - ${getGeneratedMediaLanguageDirective(isVi)}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
-- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt for every single scene.
+- Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after each AI-authored prompt.
 
 [DYNAMIC MOTION, EFFECTS & TRANSITIONS]
 For each scene, analyze its context, emotional tone, and narrative pacing to specify:
@@ -708,7 +712,7 @@ Output must comply EXACTLY with this JSON schema (return only raw JSON, no markd
   "scenes": [
     {
       "id": "scene_id_matching_input",
-      "prompt": "Highly detailed image prompt in English (35-50 words) ending with --ar ${aspectRatio}.",
+      "prompt": "Complete image prompt in English (35-50 words) without model-specific parameters.",
       "cameraMotion": "Zoom In",
       "lightingEffect": "natural_light",
       "effects": "dreamy",
@@ -751,7 +755,7 @@ export const getThumbnailLayoutPrompt = (
   refImageStr: string,
   isVi: boolean,
   aspectRatio: string = "16:9",
-  textMode: string = "auto",
+  textMode: string = "headline",
   backgroundMode: string = "auto",
   focusMode: string = "default",
   backgroundDirective: string = "",
@@ -763,8 +767,8 @@ Analyze the script and create EXACTLY ${thumbnailCount} distinct ${aspectRatio} 
 [SCRIPT]
 ${rewrittenScript}
 
-[STYLE REFERENCE]
-${refImageStr || "No extracted thumbnail style was supplied. Use an editorial treatment appropriate to the script."}
+[PROJECT STYLE LOCK]
+${refImageStr || "Use one coherent visual style and one character type for every person."}
 
 [USER CONFIGURATION]
 - Background mode: ${backgroundMode}
@@ -778,43 +782,35 @@ ${charactersJson ? `- Recurring character profiles:\n${charactersJson}` : "- No 
 [APPROVED LAYOUT LIBRARY]
 ${_.join(_.map(THUMBNAIL_LAYOUT_CATALOG, layout => `- ${layout.id}: ${layout.composition} Best suited to ${layout.bestFor}.`), "\n")}
 
-[ART-DIRECTION PROCESS]
-1. Identify the video's central promise, strongest visible evidence, dominant emotion, recurring characters, and the one question that should make a viewer click.
-2. Score the approved layouts internally for story fit, phone-size clarity, emotional force, style compatibility, and available negative space.
-3. Select one layoutId per concept. Prefer different layouts when several score similarly, but reuse a layout when it is clearly strongest.
-4. Use only story-supported people, props, places, and consequences. Do not invent generic shock objects, glowing mysteries, versus symbols, question marks, arrows, or extra faces unless they clarify real evidence in the script.
-5. Match the supplied reference style faithfully. Never upgrade a flat illustration into cinematic realism, 3D, oil painting, neon, or heavy shading unless those traits exist in the reference.
-6. Keep one dominant idea, one readable hierarchy, clear silhouettes, strong subject-background separation, and minimal clutter. Keep the bottom-right timestamp zone and outer edge margins clear.
-7. Arrows are optional editorial aids. Use at most one arrow and only when it points to a specific story-relevant clue.
-3. Text policy:
-   - ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)}
-   - When text is used, write natural ${isVi ? "Vietnamese with correct diacritics" : "English"}, keep the main hook to at most ${THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS} words, and describe its exact placement.
-   - When text is not used, set hasText=false and textText to an empty string. Never add a platform duration badge.
-4. Prompt construction:
-   - Write each generation prompt in English except for the exact visible headline stored in textText.
-   - Preserve the selected layout, subject count, negative space, headline placement, reference style, and safe zones.
-   - Produce one full-bleed image, not a mockup, poster frame, contact sheet, or bordered collage.
-   - Do not include model-specific aspect-ratio flags because the image engine receives ${aspectRatio} separately.
-   - Every concept must be materially different in focal evidence, emotional angle, or layout.
-   - Each prompt MUST be a complete standalone generation-ready prompt containing every applicable user setting, exact named-character identity anchor, layout, background, text instruction, safe zone, visual hierarchy, faithful style and reference-image role exactly once.
-   - No style, identity, layout, background, text, focus, safe-zone, negative, or reference-role instruction will be appended later. The application appends only one aspect-ratio suffix.
+[APPROVED TYPOGRAPHY LIBRARY]
+${_.join(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, typography => `- ${typography.id}: ${typography.description} Best suited to ${typography.bestFor}.`), "\n")}
+
+[SIMPLE GEMINI THUMBNAIL RULES]
+1. Choose exactly one of the eight layout IDs. Use its locked typography ID and arrow policy without inventing or combining templates.
+2. Begin generationPrompt by copying PROJECT STYLE LOCK verbatim, exactly once. Every visible person must use that same character type, body construction, line work and rendering. Never mix stick figures with realistic, anime, 3D or painterly people.
+3. Describe one dominant story-supported subject or interaction, one physical action and one piece of visible evidence. Recurring characters use only their identity traits from the supplied profiles.
+4. Follow this prompt order: exact Style Lock; subject and identity; action and evidence; selected layout geometry; headline and typography; background and safe margin. Keep generationPrompt below 150 English words.
+5. ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)} When text is enabled, preserve one headline of at most ${THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS} words in ${isVi ? "Vietnamese with correct diacritics" : "English"}. Render it exactly once. When text is disabled, include one concise text-free instruction.
+6. Keep one full-bleed image, strong subject-background separation and a clear bottom-right timestamp zone. Do not include --ar; the application appends it.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, no markdown code wraps or backticks:
 {
   "concepts": [
-    { "layoutId": "subject_left_text_right", "composition": "Why this composition fits", "textHook": "SHORT HOOK", "layoutScore": 90 }
+    { "layoutId": "solo_left_arrow_right", "typographyId": "condensed_impact", "composition": "Why this exact template fits", "textHook": "SHORT HOOK", "layoutScore": 90 }
   ],
   "thumbnails": [
     {
       "id": "th_1",
-      "prompt": "Concise English generation prompt describing the visible subject, action, evidence, background, selected composition, optional headline placement, palette, and faithful reference style.",
-      "style": "Faithful reusable style description",
+      "generationPrompt": "Concise English Gemini prompt beginning with the exact PROJECT STYLE LOCK, followed by subject, one action, evidence, selected layout, exact visible headline, typography, background and safe margin, without --ar.",
+      "style": "Exact PROJECT STYLE LOCK",
       "hasText": true,
       "textText": "${isVi ? "MÓC CÂU" : "THE HOOK"}",
-      "layoutId": "subject_left_text_right",
+      "layoutId": "solo_left_arrow_right",
+      "typographyId": "condensed_impact",
       "layout": "Exact spatial arrangement",
       "layoutRationale": "Why this layout best communicates the video's promise",
       "typography": "Short typography direction",
+      "accentWords": ["Optional exact headline word needing the catalog accent color"],
       "colorSuggestion": "Controlled contrast and accent colors",
       "subjectFocus": "The single primary focal subject or group"
     }
@@ -862,6 +858,9 @@ export const getDetailedPromptBuilderPrompt = (
   currentPrompt?: string,
 ): string => `You are an elite AI Image Prompt Designer. Your task is to take the user's detailed inputs and combine/refine them into a single, highly descriptive cinematic image generation prompt in English.
 
+[TARGET CANVAS]
+${aspectRatio}
+
 [VISUAL REFERENCE SOURCE MATERIALS]
 - Base Narrative/Script: "${sceneScript}"
 - Current Image Prompt (to refine/regenerate): "${currentPrompt || "Not specified"}"
@@ -888,7 +887,7 @@ STRUCTURE MANDATE (THE BLUEPRINT): The generated prompt MUST strictly follow thi
 - If it has a character: [Art style/Medium] of [Main Subject/Character] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 - If it does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
 ${COMPACT_CINEMATIC_PROMPT_RULES}
-- ASPECT RATIO MANDATE: You MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the generated prompt.
+- Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after the AI-authored prompt.
 DO NOT include any commentary, prefixes, or markdown. Output ONLY the raw prompt string in English.`;
 
 export const getHookAnalysisPrompt = (originalInput: string, genre: string): string => `You are an expert content strategist. Analyze the following topic/idea: "${originalInput}".
@@ -984,7 +983,7 @@ Target Visual Style: "${visualStyle}"
 Genre: "${genre}"`;
 
   if (referenceStyle) {
-    prompt += `\n\nStyle fingerprint extracted from the user's reference: "${referenceStyle}". Treat it as the strongest visual authority. Resolve contradictory terms instead of combining them.`;
+    prompt += `\n\nSoft visual-language profile extracted from the user's reference: "${referenceStyle}". Use it for rendering language only. The script remains authoritative for setting, era, people, action, props, mood, lighting and composition.`;
   }
 
   if (referenceCharacters) {
@@ -993,8 +992,10 @@ Genre: "${genre}"`;
 
   prompt += `\n\nCreate a concise production guide:
 - Describe the style using only its most distinctive line work, proportions, coloring, shading, texture, and background traits. Avoid repeated synonyms and generic quality tags.
+- Treat the reference style as flexible guidance, never as a checklist. Prefer clarity of the narrated event over reproducing every observed trait.
 - Give each recurring character a named style-compatible card with four to six visible anchors. Prefer silhouette, hair shape, stable color blocking, posture, and one accessory. Do not describe realistic facial anatomy when the style uses simplified faces.
 - Identify only recurring locations, objects, and palette relationships that matter across scenes. Allow individual scenes to choose their own camera and lighting when useful.
+- Derive every location and prop from the script. Never use a location, prop, outfit, weather condition or lighting state merely because it appeared in a style-reference image.
 - Resolve conflicts such as flat illustration versus photorealistic materials, simple faces versus detailed anatomy, or white editorial space versus fully rendered environments.
 - Describe how props and environments should share the same visual language as the characters.
 - Do not turn abstract narration into a permanent catalog of charts, signs, screens, question marks, or symbolic objects. Visualize those ideas through story action later.
@@ -1155,6 +1156,11 @@ export const getCharacterAnalysisPrompt = (script: string, visualStyle: string =
 Target visual style:
 ${visualStyle || "No fixed style supplied; use concise, adaptable visual anchors."}
 
+PROJECT-WIDE STYLE BIBLE RULE:
+- The supplied style is one shared construction system for the entire cast, never a per-character inspiration.
+- Every character must use the same medium, head-to-body ratio, torso and limb construction, facial simplification, line language, coloring, shading, and rendering depth.
+- Character fields describe identity only. They must not introduce photorealism, anime anatomy, stick limbs, 3D rendering, or another medium unless that construction is already present in the shared style.
+
 STRICT LANGUAGE AND IDENTITY RULES:
 - Write every "description" and "prompt" value entirely in natural English, regardless of the script language.
 - Preserve a real proper name in its original form. For an unnamed character, create a short descriptive English label such as "Former Prisoner" or "Hiring Manager"; never return a generic localized label.
@@ -1167,6 +1173,7 @@ STRICT LANGUAGE AND IDENTITY RULES:
 - Separate permanent identity traits from scene-specific pose, action, expression, camera angle, and temporary costume changes.
 - Return characters in importance order: primary character first, then supporting characters.
 - The reusable "prompt" must be a compact style-compatible identity card, not a full scene prompt and not a list of cinematic quality tags.
+- Do not put medium, rendering style, lighting, camera, environment, or scene mood into any character prompt. Those always come from the shared project Style Bible and the current scene.
 
 Output ONLY a valid JSON array matching the structure: 
 [
@@ -1205,18 +1212,10 @@ Extract a highly detailed character design prompt in English that describes this
 
 Keep the output as a set of keywords or descriptive phrases separated by commas, max 30 words in total. Only return the English character prompt keywords, with no introductory text or markdown.`;
 
-export const getCharacterReferenceQualityPrompt = (name: string, identity: string, targetStyle: string): string => `You are a visual-development supervisor. Audit this character model sheet as a reusable identity reference, not as a video frame.
-
-Character: ${name}
-Canonical identity: ${identity}
-Target style: ${targetStyle}
-
-Score whether every shown view depicts the same character, whether front, side, three-quarter, and expression views are usable, whether immutable hair, silhouette, proportions, outfit colors, and accessories remain stable, and whether the rendering matches the target style. Block fused bodies, accidental extra characters, identity drift between views, missing required views, severe anatomy corruption, unreadable layout, or style conflict.
-
-Output ONLY raw JSON:
-{"identityConsistencyScore":0,"viewCoverageScore":0,"styleConsistencyScore":0,"anatomyScore":0,"usableAsReference":false,"blockingErrors":[],"warnings":[]}`;
-
 export const getCharacterRewriteBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite scene prompts to naturally incorporate consistent visual descriptions of characters.
+
+[TARGET CANVAS]
+${aspectRatio}
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Character Visual Blueprints:
@@ -1241,13 +1240,16 @@ RULES:
 3. Keep the scene's original action, background, setting, lighting, camera angle, and mood in their respective sections. Do NOT change the overall art style.
 4. ${NO_FRAME_RULE}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
-8. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+8. Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after every AI-authored prompt.
 9. Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input scenes:
 ${chunkJson}`;
 
 export const getCharacterRewriteThumbnailsBatchPrompt = (charactersJson: string, chunkJson: string, aspectRatio: string = AspectRatio.SixteenNine, backgroundDirective?: string, textDirective?: string, focusDirective?: string): string => `You are an expert prompt engineer for AI image generators. Your task is to rewrite YouTube/TikTok cover thumbnail prompts to naturally incorporate consistent visual descriptions of the main characters.
+
+[TARGET CANVAS]
+${aspectRatio}
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 - Character Visual Blueprints:
@@ -1272,24 +1274,62 @@ RULES:
 2. SEAMLESS INTEGRATION RULE: Do NOT simply append the character details at the end. You MUST seamlessly weave the characters' physical descriptions, clothing, and details directly into the [Main Subject] and [Action] sections of the prompt.
 3. ${NO_FRAME_RULE}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
-7. ASPECT RATIO MANDATE: For each rewritten prompt, you MUST append the exact parameter "--ar ${aspectRatio}" at the very end of the prompt. Every prompt returned in the JSON must end with this parameter.
+7. Do not include --ar or any model-specific aspect-ratio syntax. The application appends the configured ratio after every AI-authored prompt.
 8. Output ONLY a valid JSON array matching the structure: [{"id": "thumbnail_id", "prompt": "rewritten prompt"}]. Do not include markdown tags, code blocks, or explanatory text.
 
 Input thumbnails:
 ${chunkJson}`;
 
-export const STYLE_EXTRACTION_PROMPT = `Analyze the provided image(s) and extract a faithful reusable visual-style fingerprint in English.
-Do not narrate the scene, but preserve every recurring design rule that controls consistency: head-to-body ratio, torso geometry, limb construction, eye/nose/mouth simplicity, hair silhouette treatment, outline weight, clothing color blocking, coloring, shading, background treatment, and overall level of detail.
+export const STYLE_EXTRACTION_PROMPT = `Extract one minimal project-wide Style Lock from the supplied scene reference image. Analyze only traits that every person and every scene can share.
 
-CRITICAL RULES:
-- Never replace the observed style with a generic stick-figure, meme-face, cinematic, 3D, anime, or photorealistic preset.
-- Hair presence and hair silhouette treatment are style-defining features; never convert haired characters into bald circles.
-- Distinguish small oval/dot facial features from giant meme eyes.
-- Distinguish rounded bean-shaped torsos from line-only stick bodies.
-- Preserve flat solid colors and the observed outline language. Do not invent gradients, realistic lighting, volumetric effects, or camera terminology.
-- Describe style only, not the identity, count, action, or story role of subjects.
+Return these short decisions:
+- medium: broad medium and realism level only.
+- characterType: choose exactly one cast-wide category such as stick-figure character construction, realistic human photography, stylized 2D cartoon people, anime characters, 3D cartoon characters, or painterly human figures.
+- characterDna: only two to four shared construction traits such as head shape, torso shape, limb type and facial simplification.
+- lineDna: outline behavior only.
+- colorDna: flat or graded color behavior and broad saturation only.
+- renderingDna: fill, shading and texture method only.
+- worldRendering: only how new script-grounded backgrounds are rendered.
 
-Return one comma-separated English style fingerprint of 35-60 words, with no introduction or markdown.`;
+Never put sampled hair style, hair color, skin tone, clothing, accessory, person, pose, expression, room, prop, lighting, mood, camera or composition into a reusable field. Put all such sampled details in sampleSpecificContent. Never mix character categories; if the reference uses stick figures, characterType must remain stick-figure character construction for the whole cast. Leave periodCues empty because the script, not the style image, controls historical period. adaptiveElements must say that the script controls setting, period, action, mood, lighting and composition.
+
+Return only JSON matching this schema:
+{
+  "medium": "Broad medium and realism level",
+  "characterType": "One exact cast-wide character category",
+  "characterDna": "Two to four dominant construction traits",
+  "lineDna": "Broad outline and contour behavior",
+  "colorDna": "Palette behavior and saturation, not mandatory exact colors",
+  "renderingDna": "Broad shading and texture method",
+  "periodCues": "Reusable period-signaling language or empty string",
+  "worldRendering": "How new script-grounded environments should be rendered",
+  "adaptiveElements": "Lighting, mood, camera and composition must follow each scene",
+  "sampleSpecificContent": ["Concrete sampled content to exclude"]
+}`;
+
+export const THUMBNAIL_STYLE_EXTRACTION_PROMPT = `Extract a minimal thumbnail presentation profile from the supplied thumbnail reference image(s).
+
+Return the same compact schema, but follow these limits:
+- If a separate scene Style Core exists, its character construction is authoritative for the entire project. This thumbnail profile must never replace it.
+- medium, characterType, characterDna, lineDna, colorDna and renderingDna are fallback values only when no scene style reference exists.
+- worldRendering contains only broad background treatment and contrast behavior: minimal, illustrated, realistic, photographic or mixed; low, medium or high contrast.
+- Do not analyze or return layout geometry, headline placement, font, camera, crop, mood or lighting. The application controls them through closed templates.
+- Never mention sampled people, clothes, rooms, places, objects, words, logos, poses or arrangements outside sampleSpecificContent.
+- Every reusable field is one short phrase without alternatives or examples.
+
+Return only JSON matching this schema:
+{
+  "medium": "Broad medium and realism level",
+  "characterType": "One exact cast-wide character category",
+  "characterDna": "Shared cast-wide construction traits",
+  "lineDna": "Outline, keyline and contour behavior",
+  "colorDna": "Palette, saturation and contrast behavior",
+  "renderingDna": "Shading, texture and cutout method",
+  "periodCues": "Reusable period-signaling language or empty string",
+  "worldRendering": "How new script-grounded environments should be rendered",
+  "adaptiveElements": "Script and selected template control content, lighting and composition",
+  "sampleSpecificContent": ["Concrete sampled content to exclude"]
+}`;
 
 export const getMultiStepHookPrompt = (originalInput: string, genre: string, hookType: string, duration: number, language: string, count: number): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
 Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
@@ -1472,79 +1512,11 @@ MANDATORY: Generate exactly ${targetChapterCount} concise chapters in the chapte
   ]
 }`;
 
-export const getScriptEditorQaPrompt = (
-  script: string,
-  selectedHook: string,
-  creativeBriefJson: string,
-  factPackJson: string,
-  targetDurationSeconds: number,
-  isVi: boolean,
-): string => `You are an independent senior story editor and fact-safety reviewer. Audit the script; do not praise it and do not rewrite it wholesale.
-
-Language: ${isVi ? "Vietnamese" : "English"}
-Target duration: ${targetDurationSeconds} seconds
-Selected hook: ${selectedHook}
-Creative brief: ${creativeBriefJson}
-Fact pack: ${factPackJson}
-Script: ${script}
-
-Detect timeline contradictions, repeated chapters or ideas, unsupported factual claims, lecture-like/mechanical prose, broken emotional progression, and a hook whose promised question is not paid off. A verified factuality score requires that factual statements are supported by the Fact Pack or cautiously scoped. Every score uses 100 as excellent and 0 as unusable: repetitionScore 100 means no meaningful repetition; hookPayoffScore 100 means the conclusion explicitly and convincingly answers the opening hook. Profanity, provocative wording, satire, slang, insults used as a rhetorical hook, and quoted stigmatizing language are editorial style choices: mention them in warnings when useful, but NEVER put them in blockingErrors. Duration mismatch and low editorial scores are also warnings, not blockers. Add blocking errors only when the script is empty/corrupt or presents a severe illegal or safety risk that cannot be published. Return integer scores from 0 to 100.
-
-Output ONLY raw JSON:
-{
-  "continuityScore": 0,
-  "repetitionScore": 0,
-  "factualityScore": 0,
-  "emotionalArcScore": 0,
-  "conversationalScore": 0,
-  "hookPayoffScore": 0,
-  "blockingErrors": [],
-  "warnings": [],
-  "suggestedPatches": []
-}`;
-
-export const getScriptRepairPrompt = (
-  script: string,
-  qualityReportJson: string,
-  creativeBriefJson: string,
-  narrativePlanJson: string,
-  factPackJson: string,
-  targetDurationSeconds: number,
-  isVi: boolean,
-): string => `You are the senior story editor responsible for a surgical production rewrite.
-
-Language: ${isVi ? "Vietnamese" : "English"}
-Target duration: ${targetDurationSeconds} seconds
-Creative brief: ${creativeBriefJson}
-Narrative plan: ${narrativePlanJson}
-Fact pack: ${factPackJson}
-Quality report: ${qualityReportJson}
-Script: ${script}
-
-Correct every reported weakness while preserving verified facts, the selected premise, the central character, and the intended language. Strengthen causal progression, emotional state changes, retention beats, callbacks, false victory, collapse, and ending payoff where required by the narrative plan. Remove repeated explanations, mechanical transitions, generic moralizing, and unsupported claims. Keep the narration natural for voice delivery and close to the target duration. Do not add headings, production notes, citations, markdown, or facts absent from the Fact Pack.
-
-Output ONLY raw JSON:
-{"script":"complete repaired script"}`;
-
 export const getAudioQualityPrompt = (script: string, targetDurationSeconds: number): string => `You are an independent senior voice director and audio QC engineer. Listen to the supplied narration audio and compare it with the script. Use editorial judgment. Blocking errors are reserved for technically unusable audio such as prolonged silence/dropouts, severe clipping, unintelligible or materially wrong narration, or speed so extreme that viewers cannot follow it. Lower-quality delivery, limited emotion, small pronunciation imperfections, or a duration preference belong in warnings and scores, not blockingErrors.
 Target duration: ${targetDurationSeconds} seconds
 Script: ${script}
 Score pronunciation accuracy, natural pauses, loudness/clipping safety, human naturalness versus robotic delivery, and emotional transitions from 0 to 100. Add blocking errors for unintelligible or materially incorrect pronunciation, clipping, silence/dropouts, severe speed problems, robotic delivery, or emotion that contradicts the story. Output ONLY raw JSON:
 {"pronunciationScore":0,"pauseScore":0,"loudnessScore":0,"naturalnessScore":0,"emotionTransitionScore":0,"blockingErrors":[],"warnings":[]}`;
-
-export const getStoryboardDirectorQaPrompt = (storyboardJson: string, visualBibleJson: string): string => `You are an independent film director and storyboard editor. Audit this storyboard against its Visual Bible. Detect repeated shots/prompts, motif abuse, broken screen direction/geography/time continuity, missing visible action, abstract prompts copied from narration, transition repetition, and shots that cannot be edited cleanly. Use practical editorial judgment: blockingErrors are only for an empty/corrupt scene, a prompt that cannot produce the narrated action, irreconcilable continuity, or an uneditable composition. Repetition, weak variety, imperfect pacing, and taste-level issues are warnings with lower scores, not blockers. Score 0-100 and output ONLY raw JSON:
-{"continuityScore":0,"shotDiversityScore":0,"visibleActionScore":0,"editabilityScore":0,"blockingErrors":[],"warnings":[]}
-Visual Bible: ${visualBibleJson}
-Storyboard: ${storyboardJson}`;
-
-export const getStoryboardRepairPrompt = (storyboardJson: string, visualBibleJson: string, qualityReportJson: string): string => `You are a senior storyboard editor. Repair only the scenes responsible for the reported problems while preserving every scene ID, script, subtitle, chapter assignment, duration, and story order. Improve visible action, shot diversity, editability, continuity, screen geography, callback clarity, camera motion, and transition intent. Do not write final image-engine prompts and do not add facts or scenes.
-
-Visual Bible: ${visualBibleJson}
-Quality report: ${qualityReportJson}
-Storyboard: ${storyboardJson}
-
-Output ONLY raw JSON:
-{"scenes":[{"id":"existing scene ID","visibleAction":"drawable action","reaction":"visible reaction","shotPurpose":"setup|action|reaction|punchline|reveal|callback|montage|emotional_hold","shotSize":"shot size","cameraAngle":"camera angle","composition":"editable composition","continuityFrom":"prior state","continuityNotes":"identity, geography, prop and screen-direction lock","cameraMotion":"motion intent","effects":"visual treatment","lightingEffect":"lighting intent","transition":"edit transition"}]}`;
 
 export const getFinalVideoQualityPrompt = (script: string, viewerPromise: string): string => `You are the final independent multimodal QC director. The supplied images are evenly distributed chronological frames from the rendered video, followed by the rendered audio mix. Detect black/blank/corrupt frames, severe anatomy, prominent garbled or illegible subtitles, destructive crop, character/style drift, broken visual continuity, repetitive compositions, weak pacing, clipped or inaudible narration, narration masked by supporting audio, abrupt audio cuts, and mismatch with the script/viewer promise. Background music, ambience, and sound effects are optional creative elements. Their absence must never lower a score, create a warning, or create a blocking error. When supporting audio is absent, assess audioMixScore from narration clarity, loudness, continuity, and freedom from clipping. When supporting audio is present, also assess its balance with narration. Use practical publishing judgment. A publishable result needs clear narration, readable subtitles, coherent visuals, and professional pacing. Score every field from 0 to 100. Output ONLY raw JSON:
 {"visualScore":0,"cropScore":0,"continuityScore":0,"pacingScore":0,"transitionVarietyScore":0,"promiseAlignmentScore":0,"audioMixScore":0,"subtitleLegibilityScore":0,"blockingErrors":[],"warnings":[]}

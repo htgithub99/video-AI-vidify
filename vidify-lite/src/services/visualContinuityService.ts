@@ -30,7 +30,6 @@ export const normalizeCharacterLibrary = (characters: CharacterConfig[]): Charac
       name: secondPersonProtagonist ? VISUAL_CONTINUITY_CONFIG.PROTAGONIST_DEFAULT_NAME : _.trim(character.name),
       narrativeRole: secondPersonProtagonist ? VISUAL_CONTINUITY_CONFIG.PROTAGONIST_ROLE : character.narrativeRole,
       images: _.uniq(_.compact(character.images)),
-      referenceViews: _.uniq(_.defaultTo(character.referenceViews, [])),
       timelineStages: _.map(sourceTimelineStages, stage => ({
         id: _.trim(stage.id) || VISUAL_CONTINUITY_CONFIG.EMPTY_STAGE_ID,
         label: _.trim(_.toString(stage.label)),
@@ -71,7 +70,6 @@ export const validateVisualContinuity = (
     ..._.map(_.filter([...recurringCharacterIds], id => !characterIds.has(id)), id => `unknown_character:${id}`),
     ..._.map(_.filter(scenes, scene => !_.isEmpty(scene.locationId) && !locationIds.has(scene.locationId)), scene => `unknown_location:${scene.id}`),
     ..._.flatMap(scenes, scene => _.map(_.filter(scene.propIds, id => !propIds.has(id)), id => `unknown_prop:${scene.id}:${id}`)),
-    ..._.map(_.filter(characters, character => recurringCharacterIds.has(character.id) && !character.referenceApproved), character => `character_reference_required:${character.id}`),
   ]));
   return { blockingErrors, passed: _.isEmpty(blockingErrors) };
 };

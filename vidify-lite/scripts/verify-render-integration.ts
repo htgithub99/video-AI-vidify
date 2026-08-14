@@ -9,6 +9,10 @@ import { readVisualQaAssets } from "../src/server/services/visualQaMediaService.
 
 const execFileAsync = promisify(execFile);
 const PROJECT_ID = "integration_video2_test";
+const PROJECT_DIRECTORY = path.resolve(process.cwd(), "assets", "projects", PROJECT_ID);
+const removeTestProject = (): void => fs.rmSync(PROJECT_DIRECTORY, { recursive: true, force: true });
+removeTestProject();
+process.once("exit", removeTestProject);
 const createBmpDataUrl = (): string => {
   const width = 2;
   const height = 2;
@@ -80,5 +84,5 @@ if (!probe.streams?.some((stream: any) => stream.codec_type === "audio")) throw 
 if (!probe.streams?.some((stream: any) => stream.codec_type === "subtitle" && stream.codec_name === "mov_text")) throw new Error("Rendered subtitle track is missing");
 const visualQaFrames = await readVisualQaAssets(outputUrl);
 if (visualQaFrames.length === 0 || visualQaFrames.some(frame => frame.mimeType !== "image/jpeg" || frame.data.length === 0)) throw new Error("Rendered video frames are unavailable for Vision QA");
-fs.rmSync(path.dirname(outputPath), { recursive: true, force: true });
+removeTestProject();
 process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));

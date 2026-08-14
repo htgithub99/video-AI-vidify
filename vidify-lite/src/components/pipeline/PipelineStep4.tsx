@@ -17,7 +17,7 @@ import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
 import { createRenderAudioTracks } from "../../services/audioMixService";
 import { createSubtitleCues } from "../../services/subtitleService";
-import { validateFinalVideo } from "../../services/finalMultimodalQualityService";
+import { createAdvisoryFinalVideoReport } from "../../services/finalMultimodalQualityService";
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
 import { getRenderReadiness } from "../../services/pipelineCompletionPolicyService";
 
@@ -131,12 +131,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
              if (statusData.success) {
                 if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
                   renderPending = false;
-                  props.setInfoMsg(PIPELINE_STEP4_TEXTS.FINAL_QA_RUNNING);
-                  const finalMultimodalQa = await validateFinalVideo(
-                    statusData.url,
-                    props.project.scriptRewritten,
-                    _.toString(props.project.creativeBrief?.viewerPromise),
-                  );
+                  const finalMultimodalQa = createAdvisoryFinalVideoReport();
                   const renderedProject = {
                     ...props.project,
                     storyboard: scenesWithSubtitles,
@@ -156,7 +151,7 @@ export default function PipelineStep4(props: PipelineWizardState) {
                   props.setProject(completedProject);
                   await props.onSaveProject(completedProject, true);
                   setPreviewVideoUrl(statusData.url);
-                  props.setInfoMsg(finalMultimodalQa.passed && finalQc.publishable
+                  props.setInfoMsg(finalQc.publishable
                     ? PIPELINE_STEP4_TEXTS.RENDER_FFMPEG_SUCCESS
                     : PIPELINE_STEP4_TEXTS.FINAL_QA_REJECTED);
                  setIsRenderLoading(false);

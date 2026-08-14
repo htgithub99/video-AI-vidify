@@ -1,8 +1,8 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG } from "../constants/config";
+import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
 import { appendImagePromptAspectRatio, sanitizeImagePrompt } from "./imagePromptQualityService";
-import { removeConflictingStyleTerms } from "./styleReferenceService";
+import { createSoftStyleDirective, removeConflictingStyleTerms } from "./styleReferenceService";
 
 export interface ImagePromptCompilerOptions {
   aspectRatio?: string;
@@ -23,7 +23,12 @@ const compactWords = (value: string, maximumWords: number): string => _.join(
   " ",
 );
 
-const createCharacterClause = (scene: StoryboardScene, characters: CharacterConfig[]): string => _.join(
+const compactSceneField = (value: unknown): string => compactWords(
+  _.trim(_.toString(value)),
+  IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS,
+);
+
+const createCharacterClause = (scene: StoryboardScene, characters: CharacterConfig[]): string => compactWords(_.join(
   _.map(
     _.filter(characters, character => _.includes(scene.characterIds, character.id)),
     character => {
@@ -46,18 +51,21 @@ const createCharacterClause = (scene: StoryboardScene, characters: CharacterConf
     },
   ),
   IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR,
-);
+), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
 
 const createLocationClause = (scene: StoryboardScene, visualBible?: VisualBible): string => {
   const location = _.find(visualBible?.locations, { id: scene.locationId });
   if (!location) return "";
-  return applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_TEMPLATE, {
+  return compactWords(applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_TEMPLATE, {
     name: location.name,
-    anchors: _.join(location.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
-  });
+    anchors: compactWords(
+      _.join(location.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
+      IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_MAX_WORDS,
+    ),
+  }), IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_MAX_WORDS);
 };
 
-const createPropClause = (scene: StoryboardScene, visualBible?: VisualBible): string => _.join(
+const createPropClause = (scene: StoryboardScene, visualBible?: VisualBible): string => compactWords(_.join(
   _.map(
     _.filter(visualBible?.props, prop => _.includes(scene.propIds, prop.id)),
     prop => applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.PROP_TEMPLATE, {
@@ -66,12 +74,30 @@ const createPropClause = (scene: StoryboardScene, visualBible?: VisualBible): st
     }),
   ),
   IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR,
-);
+), IMAGE_PROMPT_COMPILER_CONFIG.PROP_MAX_WORDS);
+
+const createStyleClause = (options: ImagePromptCompilerOptions): string => {
+  const visualBible = options.visualBible;
+  const style = visualBible?.styleProfile
+    ? createSoftStyleDirective(visualBible.styleProfile)
+    : compactWords(
+      _.trim(options.targetStyle || visualBible?.visualStyle || ""),
+      IMAGE_PROMPT_COMPILER_CONFIG.STYLE_MAX_WORDS,
+    );
+  return style && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.STYLE_TEMPLATE, { value: style });
+};
 
 const createConstraintClauses = (scene: StoryboardScene): string[] => {
-  const subjectCount = _.toInteger(scene.expectedSubjectCount);
+  const hasSubjectCount = _.isFinite(scene.expectedSubjectCount);
+  const subjectCount = hasSubjectCount
+    ? _.clamp(
+      _.toInteger(scene.expectedSubjectCount),
+      IMAGE_PROMPT_METADATA_CONFIG.MIN_SUBJECT_COUNT,
+      IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT,
+    )
+    : undefined;
   return _.compact([
-    subjectCount >= 0 && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.SUBJECT_COUNT_TEMPLATE, {
+    hasSubjectCount && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.SUBJECT_COUNT_TEMPLATE, {
       count: _.toString(subjectCount),
       plural: _.isEqual(subjectCount, 1) ? "" : "s",
     }),
@@ -81,43 +107,48 @@ const createConstraintClauses = (scene: StoryboardScene): string[] => {
   ]) as string[];
 };
 
+const createNarrativeClause = (scene: StoryboardScene): string => compactWords(
+  _.trim(scene.visualIntent || scene.script || scene.subtitle || ""),
+  IMAGE_PROMPT_COMPILER_CONFIG.NARRATIVE_MAX_WORDS,
+);
+
+const createCompositionClause = (scene: StoryboardScene): string => compactWords(
+  applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.COMPOSITION_TEMPLATE, {
+    shotSize: _.toString(scene.shotSize),
+    cameraAngle: _.toString(scene.cameraAngle),
+    composition: _.toString(scene.composition),
+  }),
+  IMAGE_PROMPT_COMPILER_CONFIG.COMPOSITION_MAX_WORDS,
+);
+
 export const compileImagePrompt = (
   scene: StoryboardScene,
   options: ImagePromptCompilerOptions = {},
 ): string => {
   const visualBible = options.visualBible;
-  const style = _.join(_.compact([
-    options.targetStyle,
-    visualBible?.visualStyle,
-    visualBible?.lineStyle,
-    visualBible?.colorMode,
-    visualBible?.shading,
-    visualBible?.colorPalette,
-  ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
   const beforeState = _.trim(_.toString(scene.characterStateBefore));
   const afterState = _.trim(_.toString(scene.characterStateAfter));
   const stateChange = !_.isEmpty(beforeState) && !_.isEmpty(afterState) && !_.isEqual(_.toLower(beforeState), _.toLower(afterState))
     ? applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.BEFORE_AFTER_TEMPLATE, {
-      before: beforeState,
-      after: afterState,
+      before: compactSceneField(beforeState),
+      after: compactSceneField(afterState),
     })
     : "";
-  const continuity = _.join(_.compact([scene.continuityFrom, scene.continuityNotes, scene.callbackId]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
+  const continuity = compactWords(
+    _.join(_.compact([scene.continuityFrom, scene.continuityNotes, scene.callbackId]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
+    IMAGE_PROMPT_COMPILER_CONFIG.CONTINUITY_MAX_WORDS,
+  );
   const clauses = _.compact([
-    scene.visualIntent,
-    scene.visibleAction,
+    createNarrativeClause(scene),
+    compactSceneField(scene.visibleAction),
     createCharacterClause(scene, _.defaultTo(options.characters, [])),
-    scene.reaction && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.REACTION_TEMPLATE, { value: scene.reaction }),
+    scene.reaction && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.REACTION_TEMPLATE, { value: compactSceneField(scene.reaction) }),
     stateChange,
     createLocationClause(scene, visualBible),
     createPropClause(scene, visualBible),
-    scene.lighting || visualBible?.lightingMood || IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LIGHTING,
-    style && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.STYLE_TEMPLATE, { value: style }),
-    applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.COMPOSITION_TEMPLATE, {
-      shotSize: _.toString(scene.shotSize),
-      cameraAngle: _.toString(scene.cameraAngle),
-      composition: _.toString(scene.composition),
-    }),
+    compactSceneField(scene.lighting) || IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LIGHTING,
+    createCompositionClause(scene),
+    createStyleClause(options),
     continuity && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.CONTINUITY_TEMPLATE, { value: continuity }),
     ...createConstraintClauses(scene),
   ]);

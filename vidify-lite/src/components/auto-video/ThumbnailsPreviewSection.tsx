@@ -3,12 +3,14 @@ import { Download, ImageIcon } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
+import { deduplicateVisualStyleText } from "../../services/visualStyleDisplayService";
 
 interface ThumbnailsPreviewSectionProps {
   activeCreatedProject: any;
+  onThumbnailLoadError?: (thumbnailId: string) => void;
 }
 
-export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> = ({ activeCreatedProject }) => {
+export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> = ({ activeCreatedProject, onThumbnailLoadError }) => {
   if (!activeCreatedProject?.thumbnails || activeCreatedProject.thumbnails.length === 0) {
     return null;
   }
@@ -19,19 +21,29 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
         <ImageIcon className="w-4 h-4 text-rose-500" /> {AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_TITLE}
       </h3>
       <div className="grid grid-cols-1 gap-4">
-        {_.map(activeCreatedProject.thumbnails, (thumb) => (
+        {_.map(activeCreatedProject.thumbnails, (thumb) => {
+          const displayStyle = deduplicateVisualStyleText(thumb.style);
+          return (
           <div key={thumb.id} className="bg-slate-950 border border-slate-800/80 rounded-2xl overflow-hidden shadow-md flex flex-col sm:flex-row p-3 gap-3">
             <div className="sm:w-1/2 aspect-video relative overflow-hidden bg-slate-900 rounded-xl border border-slate-800">
               {thumb.imageUrl ? (
-                <img src={thumb.imageUrl} alt="Thumbnail Idea" className="w-full h-full object-cover" />
+                <img
+                  src={thumb.imageUrl}
+                  alt="Thumbnail Idea"
+                  className="w-full h-full object-cover"
+                  onError={() => onThumbnailLoadError?.(thumb.id)}
+                />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-[10px]">
                   <span>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_UNRENDERED}</span>
                 </div>
               )}
-              <div className="absolute top-2 left-2">
-                <span className="bg-black/60 backdrop-blur-md text-white border border-white/10 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                  {thumb.style} Look
+              <div className="absolute top-2 left-2 right-2 min-w-0">
+                <span
+                  className="block max-w-full overflow-hidden whitespace-nowrap text-ellipsis bg-black/60 backdrop-blur-md text-white border border-white/10 text-[9px] font-bold px-2 py-0.5 rounded-full"
+                  title={displayStyle}
+                >
+                  {displayStyle}
                 </span>
               </div>
             </div>
@@ -62,7 +74,8 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

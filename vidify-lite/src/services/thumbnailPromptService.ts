@@ -1,15 +1,22 @@
 import _ from "lodash";
-import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, ThumbnailLayoutId } from "../constants/thumbnail";
-import { CharacterConfig, ThumbnailItem, VisualConfig } from "../types";
+import { LEGACY_THUMBNAIL_LAYOUT_MAP, THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_CATALOG, ThumbnailLayoutId, ThumbnailTypographyId } from "../constants/thumbnail";
+import { CharacterConfig, ThumbnailItem, ThumbnailTextMode, VisualConfig } from "../types";
 import { appendImagePromptAspectRatio } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
+import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 
 const validLayoutIds = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
+const validTypographyIds = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
 
 const getNextLayoutId = (usedLayoutIds: Set<string>, index: number): ThumbnailLayoutId => {
   const unusedLayout = _.find(THUMBNAIL_LAYOUT_CATALOG, layout => !usedLayoutIds.has(layout.id));
   return (unusedLayout || THUMBNAIL_LAYOUT_CATALOG[index % _.size(THUMBNAIL_LAYOUT_CATALOG)]).id;
 };
+
+const createFallbackHeadline = (value: unknown): string => _.join(
+  _.take(_.filter(_.toString(value).normalize("NFC").trim().split(/\s+/), Boolean), THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS),
+  " ",
+);
 
 const normalizeThumbnail = (
   source: Partial<ThumbnailItem>,
@@ -17,25 +24,39 @@ const normalizeThumbnail = (
   usedLayoutIds: Set<string>,
   textMode: string,
 ): ThumbnailItem => {
-  const requestedLayoutId = _.toString(source.layoutId);
-  const layoutId = validLayoutIds.has(requestedLayoutId) && !usedLayoutIds.has(requestedLayoutId)
+  const rawLayoutId = _.toString(source.layoutId);
+  const requestedLayoutId = _.get(LEGACY_THUMBNAIL_LAYOUT_MAP, rawLayoutId, rawLayoutId);
+  const layoutId = validLayoutIds.has(requestedLayoutId)
     ? requestedLayoutId as ThumbnailLayoutId
     : getNextLayoutId(usedLayoutIds, index);
   usedLayoutIds.add(layoutId);
   const layoutDefinition = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: layoutId })!;
-  const hasText = textMode === THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE
-    ? false
-    : Boolean(source.hasText);
+  const requestedTypographyId = _.toString(source.typographyId);
+  const templateTypographyId = layoutDefinition.typographyId;
+  const typographyId = validTypographyIds.has(templateTypographyId)
+    ? templateTypographyId as ThumbnailTypographyId
+    : validTypographyIds.has(requestedTypographyId)
+      ? requestedTypographyId as ThumbnailTypographyId
+      : THUMBNAIL_PROMPT_CONFIG.DEFAULT_TYPOGRAPHY_ID;
+  const typographyDefinition = _.find(THUMBNAIL_TYPOGRAPHY_CATALOG, { id: typographyId })!;
+  const hasText = textMode !== THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE;
+  const textText = hasText
+    ? _.trim(_.toString(source.textText)).normalize("NFC")
+    : "";
+  const generationPrompt = _.trim(_.toString(source.generationPrompt || source.prompt));
   return {
     id: `th_${_.add(index, 1)}`,
-    prompt: _.trim(_.toString(source.prompt)),
+    prompt: generationPrompt,
+    generationPrompt,
     style: _.trim(_.toString(source.style)) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
     hasText,
-    textText: hasText ? _.trim(_.toString(source.textText)) : "",
+    textText,
     layoutId,
     layout: _.trim(_.toString(source.layout)) || layoutDefinition.composition,
     layoutRationale: _.trim(_.toString(source.layoutRationale)) || layoutDefinition.bestFor,
-    typography: _.trim(_.toString(source.typography)) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_TYPOGRAPHY,
+    typography: typographyDefinition.description,
+    typographyId,
+    accentWords: _.take(_.uniq(_.compact(_.castArray(source.accentWords))), THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS),
     colorSuggestion: _.trim(_.toString(source.colorSuggestion)) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_COLOR,
     subjectFocus: _.trim(_.toString(source.subjectFocus)),
   };
@@ -44,9 +65,9 @@ const normalizeThumbnail = (
 export const normalizeThumbnailIdeas = (
   generatedItems: Partial<ThumbnailItem>[],
   requestedCount: number,
-  textMode: string = "auto",
+  textMode: string = ThumbnailTextMode.Headline,
 ): ThumbnailItem[] => {
-  const validGeneratedItems = _.filter(generatedItems, item => !_.isEmpty(_.trim(_.toString(item.prompt))));
+  const validGeneratedItems = _.filter(generatedItems, item => !_.isEmpty(_.trim(_.toString(item.generationPrompt || item.prompt))));
   const sourceItems = _.take(validGeneratedItems, requestedCount);
   const usedLayoutIds = new Set<string>();
   return _.map(sourceItems, (item, index) => normalizeThumbnail(
@@ -61,7 +82,7 @@ export const createSourceGroundedThumbnailIdeas = (
   script: string,
   requestedCount: number,
   style: string,
-  textMode: string = "auto",
+  textMode: string = ThumbnailTextMode.Headline,
 ): ThumbnailItem[] => {
   const normalizedScript = _.trim(script);
   const sentences = smartSplitSentences(normalizedScript);
@@ -81,8 +102,9 @@ export const createSourceGroundedThumbnailIdeas = (
     return {
       prompt,
       style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
-      hasText: false,
-      textText: "",
+      hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText),
+      textText: createFallbackHeadline(source),
+      generationPrompt: prompt,
       layoutId: layout.id,
       layout: layout.composition,
       layoutRationale: layout.bestFor,
@@ -98,27 +120,59 @@ export const createThumbnailGenerationPrompt = (
   aspectRatio: string,
   hasReferences: boolean = false,
   _characters: CharacterConfig[] = [],
-): string => appendImagePromptAspectRatio(_.join(_.compact([
-  THUMBNAIL_PROMPT_CONFIG.GENERATION_PREFIX,
-  thumbnail.prompt,
-  `${THUMBNAIL_PROMPT_CONFIG.LAYOUT_LABEL}: ${thumbnail.layout}`,
-  `${THUMBNAIL_PROMPT_CONFIG.SUBJECT_LABEL}: ${thumbnail.subjectFocus}`,
-  THUMBNAIL_PROMPT_CONFIG.FULL_BLEED,
-  THUMBNAIL_PROMPT_CONFIG.PHONE_READABILITY,
-  THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE,
-  thumbnail.hasText && !_.isEmpty(thumbnail.textText)
-    ? THUMBNAIL_PROMPT_CONFIG.NO_TEXT_BACKGROUND_DIRECTIVE
-    : THUMBNAIL_PROMPT_CONFIG.NO_TEXT_DIRECTIVE,
-  hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_DIRECTIVE : "",
-  style,
-]), ". "), aspectRatio);
+): string => {
+  void style;
+  void hasReferences;
+  return appendImagePromptAspectRatio(thumbnail.generationPrompt || thumbnail.prompt, aspectRatio);
+};
+
+export const getThumbnailPlanningIssues = (
+  generatedItems: Array<Partial<ThumbnailItem>>,
+  textMode: string,
+  requestedCount: number = _.size(generatedItems),
+  styleLock: string = "",
+): string[] => _.uniq(_.concat(
+  _.lt(_.size(generatedItems), requestedCount) ? [THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT] : [],
+  _.flatMap(generatedItems, item => {
+  const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
+  const generationPrompt = _.trim(_.toString(item.generationPrompt || item.prompt));
+  const headline = _.trim(_.toString(item.textText)).normalize("NFC");
+  const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
+  const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
+  IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
+  const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), " ");
+  const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), " ");
+  return _.compact([
+    !layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT,
+    layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
+    _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
+    hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
+    hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline)
+      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
+    layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt)
+      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH,
+    !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt)
+      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH,
+    containsAspectRatio && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ASPECT_RATIO_PRESENT,
+    !_.isEmpty(normalizedStyleLock) && !_.includes(normalizedPrompt, normalizedStyleLock)
+      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.STYLE_LOCK_MISSING,
+    ]) as string[];
+  }),
+));
 
 export const resolveThumbnailReferenceImages = (
-  visualConfig: Pick<VisualConfig, "characters" | "thumbnailReferenceImages">,
-  includeCharacterImages: boolean = false,
-): string[] => _.take(_.uniq(_.concat(
-  _.defaultTo(visualConfig.thumbnailReferenceImages, []),
-  includeCharacterImages
-    ? _.flatMap(_.defaultTo(visualConfig.characters, []), character => character.images)
-    : [],
-)), THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES);
+  visualConfig: Pick<VisualConfig, "styleReferenceImages" | "thumbnailReferenceImages">,
+): string[] => {
+  const sceneStyleReference = _.first(_.defaultTo(visualConfig.styleReferenceImages, []));
+  const thumbnailPresentationReferences = _.take(
+    _.uniq(_.defaultTo(visualConfig.thumbnailReferenceImages, [])),
+    THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES,
+  );
+  return _.take(
+    _.uniq(_.compact(_.concat(
+      sceneStyleReference,
+      thumbnailPresentationReferences,
+    ))),
+    THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES,
+  );
+};

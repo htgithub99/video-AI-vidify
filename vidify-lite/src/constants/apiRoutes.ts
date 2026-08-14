@@ -24,7 +24,6 @@ export const API_ROUTES = {
   PIPELINE_GENERATE_IMAGE: "/api/pipeline/generate-image",
   PIPELINE_GENERATE_BATCH_IMAGES: "/api/pipeline/generate-batch-images",
   PIPELINE_VALIDATE_SCENE_IMAGE: "/api/pipeline/validate-scene-image",
-  PIPELINE_VALIDATE_CHARACTER_REFERENCE: "/api/pipeline/validate-character-reference",
   PIPELINE_SELECT_VIDEO_SCENES: "/api/pipeline/select-video-scenes",
   PIPELINE_CLEAN_BATCH_IMAGES: "/api/pipeline/clean-batch-images",
   PIPELINE_PROJECT_ASSETS: "/api/pipeline/project-assets",

@@ -36,6 +36,21 @@ export const clearProjectImageOutputs = (project: VideoProject): VideoProject =>
     scene => !_.isEqual(scene.assetType, GenerateType.Video),
   ),
   thumbnails: [],
+  visualConfig: {
+    ...project.visualConfig,
+    characters: _.map(_.defaultTo(project.visualConfig?.characters, []), character => {
+      const cleanedCharacter = {
+        ...character,
+        images: [],
+        extracted: false,
+      };
+      _.unset(cleanedCharacter, "referenceViews");
+      _.unset(cleanedCharacter, "referenceApproved");
+      return cleanedCharacter;
+    }),
+    characterImages: [],
+    characterExtracted: false,
+  },
   imagePromptQa: undefined,
   dependencyHashes: {
     ...project.dependencyHashes,

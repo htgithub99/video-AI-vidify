@@ -17,10 +17,10 @@ import JSZip from "jszip";
 import { safeParseJSON, formatTime } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
-import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, IMAGE_PROMPT_QA_CONFIG, STORYBOARD_QUALITY_CONFIG, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG } from "../../constants/config.js";
-import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
-import { normalizeExtractedStyle } from "../../services/styleReferenceService.js";
-import { createSourceGroundedThumbnailIdeas, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
+import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
+import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
+import { createSoftStyleDirective, ensureSharedCharacterStyleLock, normalizeExtractedStyle, normalizeVisualStyleProfile } from "../../services/styleReferenceService.js";
+import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
@@ -56,18 +56,14 @@ import {
   getSceneImageQualityPrompt,
   SCENE_QA_REFERENCE_DIRECTIVE,
   getCharacterAnalysisPrompt,
-  getCharacterReferenceQualityPrompt,
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
   getCharacterRewriteThumbnailsBatchPrompt,
   STYLE_EXTRACTION_PROMPT,
+  THUMBNAIL_STYLE_EXTRACTION_PROMPT,
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
-  getScriptEditorQaPrompt,
-  getScriptRepairPrompt,
   getAudioQualityPrompt,
-  getStoryboardDirectorQaPrompt,
-  getStoryboardRepairPrompt,
   getFinalVideoQualityPrompt,
   getContentSafetyPrompt,
   REGEX_AUTO_MODE_PATH,
@@ -104,7 +100,6 @@ import {
   getDuplicateScenePromptDirective,
   VISUAL_BIBLE_REFERENCE_PROMPT,
   getSeoOptimizationPrompt,
-  THUMBNAIL_REFERENCE_PROMPT,
   THUMBNAIL_IMAGE_REFERENCE_PROMPT,
   FileEncoding,
   MimeType,
@@ -117,18 +112,14 @@ import {
   HOOK_RESPONSE_SCHEMA,
   SCRIPT_PLAN_RESPONSE_SCHEMA,
   CHAPTER_RESPONSE_SCHEMA,
-  SCRIPT_QA_RESPONSE_SCHEMA,
-  SCRIPT_REPAIR_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
-  CHARACTER_REFERENCE_QA_RESPONSE_SCHEMA,
+  VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
-  STORYBOARD_QA_RESPONSE_SCHEMA,
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
   SCRIPT_PROMPT_CONFIG,
   VIETNAMESE_CHAPTER_RETRY_DIRECTIVE,
   RESPONSE_CONTRACT_CONFIG,
-  SCRIPT_REPAIR_CONFIG,
-  CHARACTER_REFERENCE_CONFIG,
+  SYSTEM_FETCH_CONFIG,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
@@ -141,10 +132,10 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 
-import { AspectRatio, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, VisualBible, VisualConfig } from "../../types.js";
+import { AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, StyleReferencePurpose, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
-import { normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
+import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
@@ -152,9 +143,9 @@ import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, validateChapterLanguage } from "../
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
-import { compileStoryboardPrompts } from "../../services/imagePromptCompilerService.js";
-import { createImagePromptCorrectionPayload, validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
-import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails } from "../../services/storyboardFallbackService.js";
+import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
+import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
+import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
 import { createSourceGroundedSeo } from "../../services/seoFallbackService.js";
 
 import ffmpeg from "fluent-ffmpeg";
@@ -245,8 +236,12 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
       });
     }
 
+    const purpose = _.isEqual(req.body.purpose, StyleReferencePurpose.Thumbnail)
+      ? StyleReferencePurpose.Thumbnail
+      : StyleReferencePurpose.Scene;
     const cachePayload = {
-      ..._.omit(req.body, ["images", "bypassCache", "timestamp", "projectId"]),
+      purpose,
+      profileVersion: STYLE_EXTRACTION_CONFIG.PROFILE_VERSION,
       contentHashes: _.sortBy(_.uniq(contentHashes)),
     };
     const cachedStyle = checkCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, Boolean(req.body?.bypassCache));
@@ -257,24 +252,24 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     }
 
     parts.push({
-      text: _.join([
-        STYLE_EXTRACTION_PROMPT,
-        BACKGROUND_MODE_CONFIG.EXTRACTION_PREFIX,
-        _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, req.body.backgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
-        BACKGROUND_MODE_CONFIG.EXTRACTION_SUFFIX,
-      ], REFACTOR_CONSTANTS.VD_BLANK),
+      text: _.isEqual(purpose, StyleReferencePurpose.Thumbnail)
+        ? THUMBNAIL_STYLE_EXTRACTION_PROMPT
+        : STYLE_EXTRACTION_PROMPT,
     });
 
     const response = await generateContentWithRetry({
       contents: parts,
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA },
       task: { capability: AiTaskCapability.StyleExtraction },
     }, 0);
 
     if (response && response.text) {
-      const extracted = normalizeExtractedStyle(response.text);
+      const styleProfile = normalizeVisualStyleProfile(safeParseJSON(response.text, {}));
+      const extracted = createSoftStyleDirective(styleProfile) || normalizeExtractedStyle(response.text);
       const result = {
         style: extracted,
-        fingerprint: createHash("sha256").update(_.join(_.sortBy(_.uniq(contentHashes)), ":")).digest("hex"),
+        styleProfile,
+        fingerprint: createHash("sha256").update(_.join([STYLE_EXTRACTION_CONFIG.PROFILE_VERSION, purpose, ..._.sortBy(_.uniq(contentHashes))], ":")).digest("hex"),
       };
       setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, result);
       return res.json(result);
@@ -335,7 +330,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
         if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
+              rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
             }
           }
         }
@@ -405,85 +400,70 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         ? "One or more scene-context reference images will be attached at generation time."
         : "",
     ]), " ") || "No reference image will be attached.";
-    const targetStyle = referenceStyle || visualStyle;
-    let plannedScenes = _.cloneDeep(sourceScenes);
-    let correctionIssues: Record<string, unknown>[] = [];
-    let latestCompiledScenes = _.cloneDeep(sourceScenes);
-    let latestPromptQa: ReturnType<typeof validateCompiledImagePrompts> | undefined;
-    for (let attempt = 0; attempt <= IMAGE_PROMPT_QA_CONFIG.MAX_CORRECTION_ATTEMPTS; attempt++) {
-      const planningPayload = createVisualPlanningPayload(plannedScenes);
-      const chunks = _.chunk(planningPayload, chunkSize);
-      const optimizedMap = new Map<string, StoryboardScene>();
-      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-        const chunkItem = chunks[chunkIndex];
-        const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
-        const prompt = getOptimizePromptsBatchPrompt(
-          visualStyle,
-          referenceStyle,
-          jsonUtils.safeStringify(chunkItem),
-          aspectRatio || AspectRatio.SixteenNine,
-          charactersJson,
-          isVi,
-          backgroundDirective,
-          textDirective,
-          focusDirective,
-          resolvedVisualConfig.styleBackgroundMode || "auto",
-          resolvedVisualConfig.styleTextInImageMode || "auto",
-          resolvedVisualConfig.imageFocusMode || "default",
-          referenceContext,
-          jsonUtils.safeStringify(resolvedVisualBible),
-          jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)),
-          jsonUtils.safeStringify(resolvedVisualBible.locations || []),
-          jsonUtils.safeStringify(resolvedVisualBible.props || []),
-          jsonUtils.safeStringify(_.filter(correctionIssues, issue => _.some(chunkItem, { id: _.get(issue, "id") }))),
-        );
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: CONTENT_TYPES.JSON },
-          task: { capability: AiTaskCapability.VisualPlanning },
-        });
-        const parsed = safeParseJSON(response.text, []);
-        _.forEach(_.isArray(parsed) ? parsed : [], item => {
-          const baseScene = _.find(plannedScenes, { id: item.id });
-          if (baseScene) optimizedMap.set(item.id, normalizeVisualShotPlan(item, baseScene, {
-            characters,
-            visualBible: resolvedVisualBible,
-            textMode: resolvedVisualConfig.styleTextInImageMode,
-          }));
-        });
-        if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
-      }
-      plannedScenes = _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene);
-      const compiledScenes = compileStoryboardPrompts(plannedScenes, {
-        aspectRatio: aspectRatio || AspectRatio.SixteenNine,
+    const targetStyle = ensureSharedCharacterStyleLock(resolvedVisualBible.styleProfile
+      ? createSoftStyleDirective(resolvedVisualBible.styleProfile)
+      : referenceStyle || visualStyle);
+    let plannedScenes: StoryboardScene[] = resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
+    const planningPayload = createVisualPlanningPayload(plannedScenes);
+    const chunks = _.chunk(planningPayload, chunkSize);
+    const optimizedMap = new Map<string, StoryboardScene>();
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      const chunkItem = chunks[chunkIndex];
+      const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
+      const prompt = getOptimizePromptsBatchPrompt(
+        visualStyle,
         targetStyle,
-        characters,
-        visualBible: resolvedVisualBible,
+        jsonUtils.safeStringify(chunkItem),
+        aspectRatio || AspectRatio.SixteenNine,
+        charactersJson,
+        isVi,
+        backgroundDirective,
+        textDirective,
+        focusDirective,
+        resolvedVisualConfig.styleBackgroundMode || "auto",
+        resolvedVisualConfig.styleTextInImageMode || "auto",
+        resolvedVisualConfig.imageFocusMode || "default",
+        referenceContext,
+        jsonUtils.safeStringify(resolvedVisualBible),
+        jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)),
+        jsonUtils.safeStringify(resolvedVisualBible.locations || []),
+        jsonUtils.safeStringify(resolvedVisualBible.props || []),
+        jsonUtils.safeStringify([]),
+      );
+      const response = await generateContentWithRetry({
+        contents: prompt,
+        config: { responseMimeType: CONTENT_TYPES.JSON },
+        task: { capability: AiTaskCapability.VisualPlanning },
       });
-      const promptQa = validateCompiledImagePrompts(compiledScenes, {
-        backgroundMode: resolvedVisualConfig.styleBackgroundMode,
-        textMode: resolvedVisualConfig.styleTextInImageMode,
-        targetStyle,
-        characters,
-        visualBible: resolvedVisualBible,
+      const parsed = safeParseJSON(response.text, []);
+      _.forEach(_.isArray(parsed) ? parsed : [], item => {
+        const baseScene = _.find(plannedScenes, { id: item.id });
+        if (baseScene) optimizedMap.set(item.id, normalizeVisualShotPlan(item, baseScene, {
+          characters,
+          visualBible: resolvedVisualBible,
+          textMode: resolvedVisualConfig.styleTextInImageMode,
+        }));
       });
-      latestCompiledScenes = compiledScenes;
-      latestPromptQa = promptQa;
-      if (promptQa.passed) {
-        const scenesById = _.keyBy(compiledScenes, "id");
-        const updatedStoryboard = _.map(storyboard as StoryboardScene[], scene => scenesById[scene.id] || scene);
-        const result = { success: true, storyboard: updatedStoryboard, promptQa };
-        setCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, result);
-        return res.json(result);
-      }
-      correctionIssues = createImagePromptCorrectionPayload(compiledScenes, promptQa.blockingErrors);
-      plannedScenes = compiledScenes;
+      if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
-    const scenesById = _.keyBy(latestCompiledScenes, "id");
+    plannedScenes = _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene);
+    const promptQa = validateCompiledImagePrompts(plannedScenes, {
+      backgroundMode: resolvedVisualConfig.styleBackgroundMode,
+      textMode: resolvedVisualConfig.styleTextInImageMode,
+      targetStyle,
+      characters,
+      visualBible: resolvedVisualBible,
+      forbidAspectRatio: true,
+    });
+    const finalizedScenes = _.map(plannedScenes, scene => ({
+      ...scene,
+      prompt: appendImagePromptAspectRatio(scene.prompt, aspectRatio || AspectRatio.SixteenNine),
+    }));
+    const scenesById = _.keyBy(finalizedScenes, "id");
     const updatedStoryboard = _.map(storyboard as StoryboardScene[], scene => scenesById[scene.id] || scene);
-    const result = { success: true, storyboard: updatedStoryboard, promptQa: latestPromptQa };
+    const result = { success: true, storyboard: updatedStoryboard, promptQa };
     setCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, result);
-    appWarn(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
+    if (!promptQa.passed) appWarn(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
@@ -512,7 +492,9 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
       const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
-      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
+      const textDirective = _.isEqual(visualConfig?.thumbnailTextInImageMode, ThumbnailTextMode.NoText)
+        ? TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.no_text
+        : THUMBNAIL_PROMPT_CONFIG.REWRITE_HEADLINE_DIRECTIVE;
       const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
       const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective, true);
 
@@ -525,7 +507,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
         if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
+              rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
             }
           }
         }
@@ -570,7 +552,9 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
     if (thumbsToRewrite.length > 0) {
       const rewrittenMap = new Map<string, string>();
       const backgroundDirective = visualConfig?.thumbnailBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailBackgroundMode] : undefined;
-      const textDirective = visualConfig?.thumbnailTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.thumbnailTextInImageMode] : undefined;
+      const textDirective = _.isEqual(visualConfig?.thumbnailTextInImageMode, ThumbnailTextMode.NoText)
+        ? TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.no_text
+        : THUMBNAIL_PROMPT_CONFIG.REWRITE_HEADLINE_DIRECTIVE;
       const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
       const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
 
@@ -583,7 +567,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
         if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item && item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
+              rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
             }
           }
         }
@@ -749,7 +733,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
         if (_.isArray(parsed)) {
           for (const item of parsed) {
             if (item.id && item.prompt) {
-              rewrittenMap.set(item.id, item.prompt);
+              rewrittenMap.set(item.id, appendImagePromptAspectRatio(item.prompt, aspectRatio || AspectRatio.SixteenNine));
             }
           }
         }
@@ -1128,48 +1112,18 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    let finalCleanScript = fullScript.trim();
+    const finalCleanScript = fullScript.trim();
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
-    const evaluateScript = async () => {
-      const response = await generateContentWithRetry({ contents: getScriptEditorQaPrompt(finalCleanScript, activeHookText, jsonUtils.safeStringify(scriptResult.creativeBrief || {}), jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }), targetDurationSeconds, isVi), config: { responseMimeType: "application/json", responseJsonSchema: SCRIPT_QA_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning } });
-      if (response.rotationLogs) multiStepLogs.push(...response.rotationLogs);
-      if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
-      return normalizeScriptQualityReport(safeParseJSON(response.text, {}), _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    const scriptQaBase = normalizeScriptQualityReport({}, _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    const scriptQa = {
+      ...scriptQaBase,
+      blockingErrors: [],
+      warnings: _.compact([
+        ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING,
+        !scriptQaBase.durationFit && ADVISORY_QA_CONFIG.SCRIPT_DURATION_WARNING,
+      ]),
+      passed: true,
     };
-    let scriptQa;
-    try {
-      scriptQa = await evaluateScript();
-      for (let repairAttempt = 0; !scriptQa.passed && repairAttempt < SCRIPT_REPAIR_CONFIG.MAX_ATTEMPTS; repairAttempt++) {
-        const repairResponse = await generateContentWithRetry({
-          contents: getScriptRepairPrompt(
-            finalCleanScript,
-            jsonUtils.safeStringify(scriptQa),
-            jsonUtils.safeStringify(scriptResult.creativeBrief || {}),
-            jsonUtils.safeStringify(scriptResult.narrativePlan || {}),
-            jsonUtils.safeStringify(scriptResult.factPack || { claims: [] }),
-            targetDurationSeconds,
-            isVi,
-          ),
-          config: {
-            responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: SCRIPT_REPAIR_RESPONSE_SCHEMA,
-            maxOutputTokens: SCRIPT_REPAIR_CONFIG.MAX_OUTPUT_TOKENS,
-          },
-          task: { capability: AiTaskCapability.ScriptWriting },
-        });
-        if (repairResponse.rotationLogs) multiStepLogs.push(...repairResponse.rotationLogs);
-        if (repairResponse.aiMetadata) aiMetrics.push(repairResponse.aiMetadata);
-        const repairedScript = _.trim(_.toString(_.get(safeParseJSON(repairResponse.text, {}), "script")));
-        if (_.isEmpty(repairedScript)) break;
-        finalCleanScript = repairedScript;
-        scriptQa = await evaluateScript();
-      }
-    } catch (qualityError) {
-      appWarn(REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED, qualityError);
-      scriptQa = normalizeScriptQualityReport({}, _.size(_.words(finalCleanScript)), targetDurationSeconds);
-      scriptQa.warnings = _.uniq([...scriptQa.warnings, "script_qa_unavailable"]);
-    }
-    if (!scriptQa.passed) appWarn(REFACTOR_CONSTANTS.ERR_SCRIPT_QUALITY_REJECTED);
     const finalChapters = syncChaptersWithScript(finalCleanScript, completedChapters);
     const parsedData = {
       rewrittenScript: finalCleanScript,
@@ -1369,6 +1323,10 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
   const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
   const referenceAssetUrl = _.toString(_.get(req.body, "referenceAssetUrl"));
   const referenceAssetUrls = _.take(_.filter(_.castArray(_.get(req.body, "referenceAssetUrls", [])), _.isString), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
+  const qaPurpose = _.isEqual(_.get(req.body, "qaPurpose"), "thumbnail") ? "thumbnail" : "scene";
+  const expectedHeadline = _.toString(_.get(req.body, "expectedHeadline"));
+  const layoutId = _.toString(_.get(req.body, "layoutId"));
+  const typographyId = _.toString(_.get(req.body, "typographyId"));
 
   if (_.isEmpty(assetUrl)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
@@ -1379,7 +1337,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
     if (_.isEmpty(encodedAssets)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
 
     const parts: any[] = [
-      { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount) },
+      { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId) },
     ];
     _.forEach(encodedAssets, encodedImage => parts.push({ inlineData: encodedImage }));
     const qualityReferences = _.take(_.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
@@ -1503,11 +1461,11 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       characterSpecs: characterRef || "Preserve recurring identity anchors",
       landscapeSpecs: "Preserve story-grounded environments and geography",
       visualStyle: activeStyle || visualStyle,
-      colorPalette: activeStyle || visualStyle,
-      lightingMood: "style-compatible natural light",
-      lineStyle: activeStyle || visualStyle,
-      colorMode: activeStyle || visualStyle,
-      shading: activeStyle || visualStyle,
+      colorPalette: "Use a restrained scene-appropriate palette compatible with the selected visual language",
+      lightingMood: "Let each narrated scene determine its lighting and mood",
+      lineStyle: "Follow the selected visual language without adding unrelated rendering traits",
+      colorMode: "Keep coloring coherent while adapting contrast to each scene",
+      shading: "Use only style-compatible shading needed for readable forms",
       background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
       textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
       locations: [],
@@ -1692,7 +1650,15 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     if (data?.scenes?.length) {
-      data.scenes = assignStoryboardChapterIds(diversifyDuplicatePrompts(data.scenes), syncedChapters);
+      data.scenes = ensureStoryboardScriptCoverage(diversifyDuplicatePrompts(data.scenes), {
+        rewrittenScript,
+        chapters: syncedChapters,
+        splitStrategy,
+        aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
+        targetStyle: activeStyle || visualStyle,
+        visualBible,
+      });
+      data.scenes = assignStoryboardChapterIds(data.scenes, syncedChapters);
     }
 
     if (chosenDuration && data.scenes && data.scenes.length > 0) {
@@ -1722,41 +1688,25 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       }
     }
 
-    const evaluateStoryboard = async () => {
-      const response = await generateContentWithRetry({
-        contents: getStoryboardDirectorQaPrompt(jsonUtils.safeStringify(data.scenes), jsonUtils.safeStringify(visualBible)),
-        config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: STORYBOARD_QA_RESPONSE_SCHEMA, maxOutputTokens: 1024 },
-        task: { capability: AiTaskCapability.VisualQa },
-      });
-      if (response.rotationLogs) data.rotationLogs.push(...response.rotationLogs);
-      return normalizeStoryboardQuality(safeParseJSON(response.text, {}));
+    const storyboardQaBase = applyDeterministicStoryboardCoverage(
+      normalizeStoryboardQuality({}),
+      rewrittenScript,
+      data.scenes,
+    );
+    data.storyboardQa = {
+      ...storyboardQaBase,
+      blockingErrors: [],
+      warnings: _.uniq(_.compact([
+        ADVISORY_QA_CONFIG.STORYBOARD_SKIPPED_WARNING,
+        storyboardQaBase.scriptCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE
+          ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING
+          : "",
+        storyboardQaBase.pacingCoverageScore! < STORYBOARD_QUALITY_CONFIG.MIN_SCORE
+          ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING
+          : "",
+      ])),
+      passed: true,
     };
-    if (aiProviderAvailable) try {
-      data.storyboardQa = await evaluateStoryboard();
-      for (let repairAttempt = 0; !data.storyboardQa.passed && repairAttempt < STORYBOARD_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS; repairAttempt++) {
-        const repairResponse = await generateContentWithRetry({
-          contents: getStoryboardRepairPrompt(
-            jsonUtils.safeStringify(data.scenes),
-            jsonUtils.safeStringify(visualBible),
-            jsonUtils.safeStringify(data.storyboardQa),
-          ),
-          config: { responseMimeType: CONTENT_TYPES.JSON },
-          task: { capability: AiTaskCapability.VisualPlanning },
-        });
-        const repairedById = _.keyBy(_.get(safeParseJSON(repairResponse.text, {}), "scenes", []), "id");
-        data.scenes = _.map(data.scenes, (scene: StoryboardScene) => ({ ...scene, ..._.pick(repairedById[scene.id], [
-          "visibleAction", "reaction", "shotPurpose", "shotSize", "cameraAngle", "composition",
-          "continuityFrom", "continuityNotes", "cameraMotion", "effects", "lightingEffect", "transition",
-        ]) }));
-        if (repairResponse.rotationLogs) data.rotationLogs.push(...repairResponse.rotationLogs);
-        data.storyboardQa = await evaluateStoryboard();
-      }
-    } catch (qualityError) {
-      appWarn(PIPELINE_SERVER_ERRORS.STORYBOARD_QUALITY_REJECTED, qualityError);
-      data.storyboardQa = normalizeStoryboardQuality({ warnings: ["storyboard_qa_unavailable"] });
-    }
-
-    if (!data.storyboardQa.passed) appWarn(PIPELINE_SERVER_ERRORS.STORYBOARD_QUALITY_REJECTED);
 
     setCache(API_ROUTES.PIPELINE_STORYBOARD, req.body, data);
     res.json(data);
@@ -1846,17 +1796,24 @@ router.post("/seo", async (req: Request, res: Response) => {
 router.post("/thumbnails", async (req: Request, res: Response) => {
   const { rewrittenScript, config = {}, visualConfig = {}, bypassCache } = req.body;
 
-  const cached = checkCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, bypassCache);
+  const thumbnailCachePayload = {
+    ...req.body,
+    layoutProfileVersion: THUMBNAIL_PROMPT_CONFIG.LAYOUT_PROFILE_VERSION,
+  };
+  const cached = checkCache(API_ROUTES.PIPELINE_THUMBNAILS, thumbnailCachePayload, bypassCache);
   if (cached) {
     return res.json({ ...cached, cached: true });
   }
 
   const thumbnailCount = _.toInteger(visualConfig.thumbnailCount) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_COUNT;
-  const refImageStr = visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage ? THUMBNAIL_REFERENCE_PROMPT(visualConfig.thumbnailReferencePrompt || visualConfig.thumbnailReferenceImage) : "";
+  const thumbnailTextMode = _.isEqual(visualConfig.thumbnailTextInImageMode, ThumbnailTextMode.NoText)
+    ? ThumbnailTextMode.NoText
+    : ThumbnailTextMode.Headline;
+  const refImageStr = ensureSharedCharacterStyleLock(visualConfig.thumbnailReferencePrompt || visualConfig.style || "");
 
   if (!(await isAiProviderAvailable())) {
     return res.json({
-      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode),
+      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode),
       rotationLogs: [THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING],
     });
   }
@@ -1879,9 +1836,8 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
         visualConfig.thumbnailBackgroundMode,
       )
       : "";
-    const thumbnailCharacters = _.map(
+    const thumbnailCharacters = createPromptCharacterCards(
       _.defaultTo(visualConfig?.characters, []),
-      character => _.omit(character, ["images", "referenceViews"]),
     );
     const combinedThumbnailsPrompt = getThumbnailLayoutPrompt(
       rewrittenScript,
@@ -1889,7 +1845,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       refImageStr,
       isVi,
       visualConfig.aspectRatio || "16:9",
-      visualConfig.thumbnailTextInImageMode,
+      thumbnailTextMode,
       visualConfig.thumbnailBackgroundMode || "auto",
       visualConfig.thumbnailImageFocusMode || "default",
       thumbnailBackgroundDirective,
@@ -1910,25 +1866,34 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       }
     }
 
-    thumbParts.push({
-      text:
-        combinedThumbnailsPrompt +
-        (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : ""),
-    });
-
+    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>> } = {
+      concepts: [],
+      thumbnails: [],
+    };
+    const requestParts = _.concat(thumbParts, [{
+      text: combinedThumbnailsPrompt
+        + (visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : ""),
+    }]);
     const combinedResponse = await generateContentWithRetry({
-      contents: thumbParts,
+      contents: requestParts,
       config: { responseMimeType: "application/json" },
+      task: { capability: AiTaskCapability.Thumbnail },
     });
-
-    const thumbsResult = safeParseJSON(combinedResponse.text, {
+    const parsedResult = safeParseJSON(combinedResponse.text, {
       concepts: [],
       thumbnails: [],
     });
+    thumbsResult = {
+      concepts: _.castArray(parsedResult.concepts || []),
+      thumbnails: _.castArray(parsedResult.thumbnails || []),
+    };
+    if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
+    const planningIssues = getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
+    if (!_.isEmpty(planningIssues)) {
+      thumbLogs.push(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX} ${_.join(planningIssues, ", ")}`);
+    }
 
     logThumbStep(`${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`);
-    if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
-
     logThumbStep(PIPELINE_LOGS.THUMB_STEP2);
     logThumbStep(`${PIPELINE_LOGS.THUMB_STEP2_DONE} ${(thumbsResult.thumbnails || []).length || 0} thumbnails.`);
 
@@ -1938,11 +1903,11 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     let normalizedThumbnails = normalizeThumbnailIdeas(
       _.castArray(thumbsResult.thumbnails || []),
       thumbnailCount,
-      visualConfig.thumbnailTextInImageMode,
+      thumbnailTextMode,
     );
     if (_.lt(_.size(normalizedThumbnails), thumbnailCount)) {
-      const sourceFallbacks = createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode);
-      normalizedThumbnails = normalizeThumbnailIdeas(_.concat(normalizedThumbnails, _.drop(sourceFallbacks, _.size(normalizedThumbnails))), thumbnailCount, visualConfig.thumbnailTextInImageMode);
+      const sourceFallbacks = createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode);
+      normalizedThumbnails = normalizeThumbnailIdeas(_.concat(normalizedThumbnails, _.drop(sourceFallbacks, _.size(normalizedThumbnails))), thumbnailCount, thumbnailTextMode);
       thumbLogs.push(THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING);
     }
     const parsedData = {
@@ -1950,12 +1915,12 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       rotationLogs: thumbLogs,
     };
 
-    setCache(API_ROUTES.PIPELINE_THUMBNAILS, req.body, parsedData);
+    setCache(API_ROUTES.PIPELINE_THUMBNAILS, thumbnailCachePayload, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
     res.json({
-      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, visualConfig.thumbnailTextInImageMode),
+      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode),
       rotationLogs: _.uniq(_.compact([..._.castArray(error.rotationLogs), THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING])),
     });
   }
@@ -2115,19 +2080,26 @@ router.post("/generate-batch-images", requireBatchVisualLicense, async (req: Req
 
     res.setHeader("Content-Type", "application/x-ndjson");
     res.setHeader("Transfer-Encoding", "chunked");
+    const heartbeatId = setInterval(() => {
+      if (!res.writableEnded && !res.destroyed) res.write("\n");
+    }, SYSTEM_FETCH_CONFIG.STREAM_HEARTBEAT_MS);
 
     let successfulImageCount = SecurityConstants.ZERO;
     let successfulVideoCount = SecurityConstants.ZERO;
-    await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
-      if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
-        if (_.isEqual(progressResult.assetType, GenerateType.Video)) {
-          successfulVideoCount = _.add(successfulVideoCount, SecurityConstants.DEFAULT_AMOUNT);
-        } else {
-          successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
+    try {
+      await generateBatchImagesWithGeminiChat(items, visualConfig, style, (progressResult) => {
+        if (_.get(progressResult, SecurityConstants.SUCCESS_KEY)) {
+          if (_.isEqual(progressResult.assetType, GenerateType.Video)) {
+            successfulVideoCount = _.add(successfulVideoCount, SecurityConstants.DEFAULT_AMOUNT);
+          } else {
+            successfulImageCount = _.add(successfulImageCount, SecurityConstants.DEFAULT_AMOUNT);
+          }
         }
-      }
-      res.write(jsonUtils.safeStringify(progressResult) + "\n");
-    });
+        res.write(jsonUtils.safeStringify(progressResult) + "\n");
+      });
+    } finally {
+      clearInterval(heartbeatId);
+    }
 
     if (_.gt(successfulImageCount, SecurityConstants.ZERO)) {
       await incrementFeatureUsage(req, FeatureType.IMAGE, successfulImageCount);
@@ -2731,7 +2703,10 @@ router.post("/export-zip", async (req: Request, res: Response) => {
     if (!fullAudioPath) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: EXPORT_ZIP_CONFIG.ERR_VOICE_REQUIRED });
     }
-    const approvedCover = _.find(project.thumbnails, thumbnail => thumbnail.approved && !_.isEmpty(thumbnail.imageUrl));
+    const approvedCover = _.find(project.thumbnails, thumbnail => (
+      !_.isEmpty(thumbnail.imageUrl)
+      && (thumbnail.approved || _.includes([AssetAcceptance.Approved, AssetAcceptance.AcceptedWithWarning], thumbnail.acceptance))
+    ));
     const coverPath = resolveLocalProjectAssetPath(_.toString(approvedCover?.imageUrl));
     if (!coverPath) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: EXPORT_ZIP_CONFIG.ERR_COVER_REQUIRED });
@@ -3160,13 +3135,34 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
   }
 
   try {
-    fs.rmSync(assetDirectory, { recursive: true, force: true });
-    fs.mkdirSync(assetDirectory, { recursive: true });
+    const targetGroups = _.isEqual(group, PROJECT_ASSET_GROUP.VISUALS)
+      ? [
+        PROJECT_ASSET_GROUP.IMAGES,
+        PROJECT_VISUAL_ASSET_CONFIG.THUMBNAILS_DIRECTORY,
+        PROJECT_ASSET_GROUP.VIDEOS,
+        path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.CHARACTER),
+        path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.UPSCALED),
+      ]
+      : [group];
+    _.forEach(targetGroups, targetGroup => {
+      const targetDirectory = path.resolve(projectRoot, targetGroup);
+      if (!_.startsWith(_.toLower(targetDirectory), _.toLower(`${projectRoot}${path.sep}`))) throw createAppError(PROJECT_ASSET_INVALID_REQUEST);
+      fs.rmSync(targetDirectory, { recursive: true, force: true });
+      if (!_.includes([
+        path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.CHARACTER),
+        path.join(PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY, REFERENCE_ASSET_GROUP.UPSCALED),
+      ], targetGroup)) {
+        fs.mkdirSync(targetDirectory, { recursive: true });
+      }
+    });
 
     let project = await getProjectDetailFromDb(projectId);
     if (project) {
       let changed = false;
-      if (_.isEqual(group, PROJECT_ASSET_GROUP.IMAGES)) {
+      if (_.isEqual(group, PROJECT_ASSET_GROUP.VISUALS)) {
+        project = clearProjectVideoOutputs(clearProjectImageOutputs(project));
+        changed = true;
+      } else if (_.isEqual(group, PROJECT_ASSET_GROUP.IMAGES)) {
         project = clearProjectImageOutputs(project);
         changed = true;
       } else if (_.isEqual(group, PROJECT_ASSET_GROUP.VIDEOS)) {
@@ -3235,26 +3231,6 @@ router.get("/ffmpeg-render/status/:jobId", async (req: Request, res: Response) =
     url: job.url,
     error: job.error
   });
-});
-
-router.post(ROUTER_PATHS.VALIDATE_CHARACTER_REFERENCE, async (req: Request, res: Response) => {
-  const assetUrl = _.toString(req.body?.assetUrl);
-  const encodedImage = readEncodedProjectImage(assetUrl);
-  if (!encodedImage) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: CHARACTER_REFERENCE_CONFIG.QA_REQUIRED });
-  try {
-    const response = await generateContentWithRetry({
-      contents: [{ role: "user", parts: [
-        { text: getCharacterReferenceQualityPrompt(_.toString(req.body?.name), _.toString(req.body?.identity), _.toString(req.body?.targetStyle)) },
-        { inlineData: encodedImage },
-      ] }],
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: CHARACTER_REFERENCE_QA_RESPONSE_SCHEMA },
-      task: { capability: AiTaskCapability.VisualQa },
-    });
-    return res.json({ success: true, quality: safeParseJSON(response.text, {}) });
-  } catch (error: any) {
-    logger.error(LogEvent.VISUAL_QA_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: CHARACTER_REFERENCE_CONFIG.QA_REQUIRED });
-  }
 });
 
 router.post(ROUTER_PATHS.REFERENCE_AUDIO, async (req: Request, res: Response) => {

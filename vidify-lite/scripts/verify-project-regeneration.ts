@@ -29,6 +29,11 @@ const project = {
   finalQc: { publishable: true },
   finalMultimodalQa: { passed: true },
   manualReviewItems: [{ id: "review_1" }],
+  visualConfig: {
+    characters: [{ id: "char_1", images: ["/references/user/character.png"] }],
+    characterImages: ["/references/character/ref.png"],
+    characterExtracted: true,
+  },
 } as unknown as VideoProject;
 
 const resetProject = clearAllProjectVisualOutputs(project);
@@ -38,6 +43,9 @@ assert.deepEqual(resetProject.thumbnails, []);
 assert.deepEqual(resetProject.manualReviewItems, []);
 assert.equal(resetProject.finalQc, undefined);
 assert.equal(resetProject.finalMultimodalQa, undefined);
+assert.deepEqual(resetProject.visualConfig.characters?.[0].images, []);
+assert.deepEqual(resetProject.visualConfig.characterImages, []);
+assert.equal(resetProject.visualConfig.characterExtracted, false);
 for (const scene of resetProject.storyboard || []) {
   assert.equal(scene.assetUrl, undefined);
   assert.deepEqual(scene.assetUrls, []);
@@ -46,5 +54,12 @@ for (const scene of resetProject.storyboard || []) {
   assert.equal(scene.generationPrompt, undefined);
   assert.deepEqual(scene.assetRevisions, []);
 }
+
+const projectControllerSource = await import("node:fs").then(({ readFileSync }) => (
+  readFileSync("src/server/controllers/projectController.ts", "utf8")
+));
+assert.match(projectControllerSource, /legacyCharacterReferenceDir/);
+assert.match(projectControllerSource, /fs\.rmSync\(legacyCharacterReferenceDir/);
+assert.match(projectControllerSource, /Boolean\(newProject\.allowAudioCleanup\)/);
 
 process.stdout.write("Project visual regeneration assertions passed.\n");

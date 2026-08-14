@@ -3,13 +3,22 @@ import { resolveUsableHooks } from "../src/services/hookResilienceService.ts";
 import { acquirePipelineRunLease, releasePipelineRunLease } from "../src/services/pipelineRunLockService.ts";
 import { applyProfessionalEditingPolicy } from "../src/services/editingPolicyService.ts";
 import { createAudioCueSheet } from "../src/services/soundDesignService.ts";
+import fs from "node:fs";
 
 const values = new Map<string, string>();
+const sessionValues = new Map<string, string>();
 Object.defineProperty(globalThis, "localStorage", {
   value: {
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => values.set(key, value),
     removeItem: (key: string) => values.delete(key),
+  },
+});
+Object.defineProperty(globalThis, "sessionStorage", {
+  value: {
+    getItem: (key: string) => sessionValues.get(key) ?? null,
+    setItem: (key: string, value: string) => sessionValues.set(key, value),
+    removeItem: (key: string) => sessionValues.delete(key),
   },
 });
 const assert = (value: unknown, message: string): void => {
@@ -24,6 +33,11 @@ const duplicate = acquirePipelineRunLease("project_1");
 assert(first.acquired && !duplicate.acquired, "duplicate pipeline run was accepted");
 releasePipelineRunLease(first);
 assert(acquirePipelineRunLease("project_1").acquired, "pipeline lease was not released");
+const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");
+const previewSource = fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8");
+assert(/const handleStartAutoGenerate[\s\S]*: Promise<void> =>/.test(autoGeneratorSource), "pipeline start promise is not exposed to regeneration");
+assert(/await handleStartAutoGenerate\(\{/.test(autoGeneratorSource), "regeneration does not await the active pipeline");
+assert(/finally \{\s*setLoadingTarget\(null\)/.test(previewSource), "regeneration loading state can remain stuck");
 
 const editScenes = applyProfessionalEditingPolicy([
   { id: "s1", chapterId: "c1", duration: 5, effects: "dreamy", lightingEffect: "spotlight", transition: "cross_dissolve", cameraMotion: "handheld_soft" },

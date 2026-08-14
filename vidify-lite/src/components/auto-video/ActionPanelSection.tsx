@@ -9,7 +9,7 @@ interface ActionPanelSectionProps {
   isCancelling: boolean;
   currentStepIndex: number;
   stepProgress: number;
-  handleStartAutoGenerate: () => void;
+  handleStartAutoGenerate: () => Promise<void>;
   cancelPipeline: () => void;
   T: any;
 }
@@ -40,7 +40,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
         <Button
           variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
           size={REFACTOR_CONSTANTS.SIZE_LG}
-          onClick={() => handleStartAutoGenerate()}
+          onClick={() => { void handleStartAutoGenerate(); }}
           disabled={isProcessing || _.isEmpty(_.trim(scriptContent))}
           isLoading={isProcessing && !isCancelling}
           className="flex-1 py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 border border-rose-400/30 text-white rounded-xl shadow-xl shadow-rose-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"

@@ -1,9 +1,72 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG, MARKDOWN_REGEX } from "../constants";
+import { IMAGE_PROMPT_COMPILER_CONFIG, MARKDOWN_REGEX, STYLE_LOCK_CONFIG } from "../constants";
+import { VisualStyleProfile } from "../types";
+
+const normalizeField = (value: unknown): string => _.trim(
+  _.replace(_.toString(value), MARKDOWN_REGEX, ""),
+);
+
+export const normalizeVisualStyleProfile = (value: unknown): VisualStyleProfile => ({
+  medium: normalizeField(_.get(value, "medium")),
+  characterType: normalizeField(_.get(value, "characterType")),
+  characterDna: normalizeField(_.get(value, "characterDna")),
+  lineDna: normalizeField(_.get(value, "lineDna")),
+  colorDna: normalizeField(_.get(value, "colorDna")),
+  renderingDna: normalizeField(_.get(value, "renderingDna")),
+  periodCues: normalizeField(_.get(value, "periodCues")),
+  worldRendering: normalizeField(_.get(value, "worldRendering")),
+  adaptiveElements: normalizeField(_.get(value, "adaptiveElements")),
+  sampleSpecificContent: _.uniq(_.compact(_.map(
+    _.castArray(_.get(value, "sampleSpecificContent", [])),
+    normalizeField,
+  ))),
+});
+
+export const createCharacterConstructionDirective = (profile?: VisualStyleProfile): string => {
+  if (!profile) return "";
+  const medium = normalizeField(profile.medium);
+  const characterType = normalizeField(profile.characterType);
+  const characterDna = normalizeField(profile.characterDna);
+  const peopleRule = _.join(_.compact([
+    "Every person uses the same",
+    characterType || "character construction",
+    characterDna && `with ${characterDna}`,
+  ]), " ");
+  return _.join(_.compact([
+    medium,
+    peopleRule,
+    normalizeField(profile.lineDna),
+    normalizeField(profile.colorDna),
+    normalizeField(profile.renderingDna),
+  ]), ". ");
+};
+
+export const createSoftStyleDirective = (profile: VisualStyleProfile): string => _.join(_.compact([
+  createCharacterConstructionDirective(profile),
+  normalizeField(profile.worldRendering),
+]), ". ") || IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE;
+
+export const createThumbnailStyleDirective = (
+  sceneProfile?: VisualStyleProfile,
+  thumbnailProfile?: VisualStyleProfile,
+): string => {
+  const characterSource = sceneProfile || thumbnailProfile;
+  const presentationSource = thumbnailProfile || sceneProfile;
+  return _.join(_.compact([
+    createCharacterConstructionDirective(characterSource),
+    normalizeField(presentationSource?.worldRendering),
+  ]), ". ");
+};
 
 export const normalizeExtractedStyle = (value: unknown): string => _.trim(
   _.replace(_.toString(value), MARKDOWN_REGEX, ""),
 );
+
+export const ensureSharedCharacterStyleLock = (value: unknown): string => {
+  const style = normalizeExtractedStyle(value);
+  if (_.isEmpty(style) || STYLE_LOCK_CONFIG.SHARED_PERSON_PATTERN.test(style)) return style;
+  return _.join([style, STYLE_LOCK_CONFIG.SHARED_PERSON_RULE], ". ");
+};
 
 export const resolveReferenceLockedStyle = (style: unknown, hasReferences: boolean): string => {
   const normalizedStyle = normalizeExtractedStyle(style);

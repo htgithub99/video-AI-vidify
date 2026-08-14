@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-export const IMAGE_PROMPT_PIPELINE_VERSION = "ai-final-prompt-v2";
+export const IMAGE_PROMPT_PIPELINE_VERSION = "gemini-simple-style-lock-v6";
 
 export const GLOBAL_IMAGE_PROMPT_MASTER_RULE = {
   STORY: "Make the scene's meaning immediately understandable through a concrete subject, action, reaction, setting, or consequence.",

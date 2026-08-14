@@ -1,4 +1,4 @@
-import { AppTab, REFACTOR_CONSTANTS, StoryboardSourceMode, UI_MESSAGE_DURATION } from "../../constants";
+import { AppTab, REFACTOR_CONSTANTS, SCENE_TEXT_MODE_UI_CONFIG, StoryboardSourceMode, UI_MESSAGE_DURATION } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
@@ -112,6 +112,8 @@ export default function PipelineStep1(props: PipelineWizardState) {
     sceneEditSubtitle,
     setSceneEditSubtitle,
     sceneEditPrompt,
+    sceneEditTextAllowed,
+    setSceneEditTextAllowed,
     setSceneEditPrompt,
     sceneEditMotion,
     setSceneEditMotion,
@@ -2534,6 +2536,24 @@ export default function PipelineStep1(props: PipelineWizardState) {
                           onChange={(e) => setSceneEditScript(e.target.value)}
                           className="w-full bg-slate-955 border border-slate-800 text-slate-200 text-xs p-3 rounded-xl focus:outline-none focus:border-rose-500 transition-all duration-200"
                         />
+                      </div>
+
+                      <div className="space-y-1.5 text-left">
+                        <label className="text-[9px] text-slate-450 uppercase font-mono font-bold block tracking-wider">
+                          {SCENE_TEXT_MODE_UI_CONFIG.LABELS[currentLang]}
+                        </label>
+                        <select
+                          value={sceneEditTextAllowed ? SCENE_TEXT_MODE_UI_CONFIG.VALUES.WITH_TEXT : SCENE_TEXT_MODE_UI_CONFIG.VALUES.NO_TEXT}
+                          onChange={(event) => setSceneEditTextAllowed(event.target.value === SCENE_TEXT_MODE_UI_CONFIG.VALUES.WITH_TEXT)}
+                          className="w-full bg-slate-955 border border-slate-800 text-slate-200 text-xs p-2.5 rounded-xl outline-none"
+                        >
+                          <option value={SCENE_TEXT_MODE_UI_CONFIG.VALUES.NO_TEXT} className="bg-slate-900 text-slate-200">
+                            {SCENE_TEXT_MODE_UI_CONFIG.OPTIONS[currentLang].no_text}
+                          </option>
+                          <option value={SCENE_TEXT_MODE_UI_CONFIG.VALUES.WITH_TEXT} className="bg-slate-900 text-slate-200">
+                            {SCENE_TEXT_MODE_UI_CONFIG.OPTIONS[currentLang].with_text}
+                          </option>
+                        </select>
                       </div>
 
                       <div className="space-y-1.5">

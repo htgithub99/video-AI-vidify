@@ -1,25 +1,13 @@
 import assert from "node:assert/strict";
-import {
-  CHARACTER_REFERENCE_CONFIG,
-  AUDIO_QUALITY_CONFIG,
-  FINAL_MULTIMODAL_QA_CONFIG,
-  IMAGE_PROMPT_QA_CONFIG,
-  QUALITY_RETRY_CONFIG,
-  SCRIPT_REPAIR_CONFIG,
-  STORYBOARD_QUALITY_CONFIG,
-  SCRIPT_PLAN_CONFIG,
-  VISUAL_ASSET_REPAIR_CONFIG,
-} from "../src/constants/config.ts";
+import { SCRIPT_PLAN_CONFIG, TECHNICAL_RESPONSE_RETRY_CONFIG } from "../src/constants/config.ts";
+import fs from "node:fs";
 
-assert.equal(QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS, 1);
-assert.equal(QUALITY_RETRY_CONFIG.MAX_EVALUATION_ATTEMPTS, 2);
-assert.equal(SCRIPT_REPAIR_CONFIG.MAX_ATTEMPTS, 1);
-assert.equal(STORYBOARD_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS, 1);
-assert.equal(IMAGE_PROMPT_QA_CONFIG.MAX_CORRECTION_ATTEMPTS, 1);
-assert.equal(VISUAL_ASSET_REPAIR_CONFIG.MAX_ATTEMPTS, 1);
-assert.equal(CHARACTER_REFERENCE_CONFIG.MAX_REPAIR_ATTEMPTS, 1);
-assert.equal(FINAL_MULTIMODAL_QA_CONFIG.MAX_EVALUATION_ATTEMPTS, 2);
-assert.equal(AUDIO_QUALITY_CONFIG.MAX_REPAIR_ATTEMPTS, 1);
+const pipelineController = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+const autoPipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+
+assert.doesNotMatch(pipelineController, /MAX_CORRECTION_ATTEMPTS|MAX_REPAIR_ATTEMPTS|evaluateScript|evaluateStoryboard/);
+assert.doesNotMatch(autoPipeline, /validateFinalVideo|evaluateVisualAssetQuality|repairSubtitleCues|repairEditingPlan/);
+assert.equal(TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS, 2);
 assert.equal(SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS, 2);
 
-process.stdout.write("Single QA retry policy assertions passed.\n");
+process.stdout.write("Advisory QA retry policy assertions passed.\n");

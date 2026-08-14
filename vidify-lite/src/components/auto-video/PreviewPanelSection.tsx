@@ -32,7 +32,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
     setLoadingTarget(target);
     try {
       await handleRegenerate(target);
-    } catch {
+    } finally {
       setLoadingTarget(null);
     }
   };

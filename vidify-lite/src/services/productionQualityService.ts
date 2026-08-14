@@ -79,7 +79,8 @@ export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => 
 };
 
 export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQualityReport => {
-  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: quality.promptAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, quality.promptAlignment, quality.editability])) };
+  const narrativeAlignment = _.defaultTo(quality.narrativeAlignment, quality.promptAlignment);
+  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])) };
   const belowTarget = _.compact(_.map(scores, (value, key) => value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? `thumbnail_${key}_below_target` : ""));
   const blockingErrors = _.uniq(quality.blockingErrors);
   return { ...scores, blockingErrors, warnings: _.uniq([...quality.warnings, ...belowTarget]), passed: quality.usableForVideo && _.isEmpty(blockingErrors) && _.isEmpty(belowTarget) };

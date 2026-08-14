@@ -1,5 +1,6 @@
-import { enforceImagePromptStyle, evaluateImagePrompts, removeGeneratedTextRequests, sanitizeImagePrompt } from "../src/services/imagePromptQualityService.ts";
+import { appendImagePromptAspectRatio, enforceImagePromptStyle, evaluateImagePrompts, removeGeneratedTextRequests, sanitizeImagePrompt } from "../src/services/imagePromptQualityService.ts";
 import { BackgroundMode, TextInImageMode } from "../src/types.ts";
+import { compileImagePrompt } from "../src/services/imagePromptCompilerService.ts";
 
 const assert = (value: unknown, message: string): void => { if (!value) throw new Error(message); };
 const createScene = (id: string, prompt: string): any => ({ id, prompt, script: "Narration", subtitle: "Narration" });
@@ -13,20 +14,64 @@ assert(!evaluateImagePrompts([createScene("sc_1", `${validPrompt}, a worker, obj
 assert(!/Cáº£nh tá»‰nh/.test(removeGeneratedTextRequests("A trophy with Vietnamese text 'Cáº£nh tá»‰nh', medium shot")), "Quoted generated text request was not removed.");
 assert(!evaluateImagePrompts([createScene("sc_1", "flat illustration without camera direction")], { textMode: TextInImageMode.NoText }).passed, "Prompt without camera direction was accepted.");
 const referenceStyle = "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, distinct stable hair silhouette, flat solid colors";
-const repairedStyle = enforceImagePromptStyle("Stunning high-quality design depicting: Nam at a table, Realistic Cinematic, 3D Render, Dramatic Lighting", referenceStyle, "Nam sits at a table", "medium shot", TextInImageMode.Auto, "16:9");
-assert(repairedStyle.includes("distinct stable hair silhouette") && !/realistic cinematic|3d render|dramatic lighting/i.test(repairedStyle), "Reference style was not enforced over a cinematic fallback.");
-assert(evaluateImagePrompts([createScene("sc_1", repairedStyle)], { textMode: TextInImageMode.Auto, targetStyle: referenceStyle }).passed, "Repaired reference-style prompt was rejected.");
+const aiPrompt = "Stunning high-quality design depicting: Nam at a table, Realistic Cinematic, 3D Render, Dramatic Lighting";
+const preservedPrompt = enforceImagePromptStyle(aiPrompt, referenceStyle, "Nam sits at a table", "medium shot", TextInImageMode.Auto, "16:9");
+assert(preservedPrompt === `${aiPrompt} --ar 16:9`, "Application changed AI-authored prompt content.");
 assert(!evaluateImagePrompts([createScene("sc_1", "Realistic Cinematic 3D render of Nam at a table, medium shot")], { targetStyle: referenceStyle }).passed, "Cross-style prompt drift was accepted.");
-const repeatedRules = enforceImagePromptStyle(repairedStyle, referenceStyle, "Nam sits at a table", "medium shot", TextInImageMode.Auto, "16:9");
-assert((repeatedRules.match(/no text or logos/gi) || []).length === 1, "No-text directive was duplicated.");
-assert((repeatedRules.match(/flat solid colors/gi) || []).length === 1, "Style clauses were duplicated.");
-assert(repeatedRules.endsWith("--ar 16:9"), "Final prompt does not end with the required aspect ratio.");
+const aiViolation = "AI prompt with its own --ar 4:3";
+assert(appendImagePromptAspectRatio(aiViolation, "16:9") === aiViolation, "Application silently rewrote an AI aspect-ratio violation.");
 
-const video2Style = "Simple 2D cartoon style with bold black outlines, stickfigure limbs, flat colors, pure white background";
-const malformedVideo2Prompt = `${video2Style}. of Simple 2D cartoon style with bold black outlines of a player lifting a bowl, medium shot --ar 16:9`;
-const cleanedVideo2Prompt = enforceImagePromptStyle(malformedVideo2Prompt, video2Style, "A player lifts a bowl", "zoom_in", TextInImageMode.Auto, "16:9");
-assert(!/\.\s*of\s+Simple|style\s+with\s+bold\s+black\s+outlines\s+of/i.test(cleanedVideo2Prompt), "Malformed duplicated style connector remains.");
-assert((cleanedVideo2Prompt.match(/Simple 2D cartoon style/gi) || []).length === 1, "Video 2 style was duplicated.");
-assert(cleanedVideo2Prompt.endsWith("--ar 16:9"), "Cleaned Video 2 prompt lost its aspect ratio.");
+const softStylePrompt = compileImagePrompt({
+  id: "sc_soft",
+  script: "A broker signs a property contract in a modern office.",
+  subtitle: "A broker signs a property contract in a modern office.",
+  visualIntent: "Show a high-pressure property agreement in a modern office",
+  visibleAction: "A broker signs a contract while a client watches",
+  expectedSubjectCount: 2,
+  characterIds: [],
+  propIds: [],
+  shotSize: "medium shot",
+  cameraAngle: "eye-level angle",
+  composition: "contract and both faces remain readable",
+  layout: "single_frame",
+  allowBackgroundPeople: false,
+  textAllowed: false,
+} as any, {
+  aspectRatio: "16:9",
+  targetStyle: "Dark dungeon with a candle and wooden door",
+  visualBible: {
+    visualStyle: "Dark dungeon with a candle and wooden door",
+    styleProfile: {
+      medium: "2D hand-drawn cartoon",
+      characterDna: "rounded heads and simplified bodies",
+      lineDna: "bold organic outlines",
+      colorDna: "muted low-saturation palette",
+      renderingDna: "flat color with restrained shadows",
+      periodCues: "",
+      worldRendering: "simplified readable environments",
+      adaptiveElements: "lighting and composition follow each scene",
+      sampleSpecificContent: ["dark dungeon", "candle", "wooden door"],
+    },
+  },
+});
+assert(/property contract|modern office/i.test(softStylePrompt), "Script-grounded narrative was lost.");
+assert(!/dungeon|candle|wooden door/i.test(softStylePrompt), "Sample-specific content leaked into the prompt.");
+assert(softStylePrompt.split(/\s+/).length <= 160, "Soft style prompt became overly constrained.");
+
+const exactStyleLock = "Flat stickman illustration with round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
+const actionLockedScene = {
+  ...createScene("sc_action", `${exactStyleLock}. Vũ leans forward while his left hand holds one watch and his right hand removes the strap, eyes fixed on the clasp, medium eye-level shot composition`),
+  visualIntent: "Show Vũ removing one watch",
+  visibleAction: "Vũ removes one watch",
+  expectedSubjectCount: 1,
+  characterIds: [],
+  propIds: [],
+  shotPurpose: "action",
+  shotSize: "medium shot",
+  cameraAngle: "eye-level angle",
+  composition: "hands and clasp remain readable",
+};
+assert(evaluateImagePrompts([actionLockedScene], { requireStructuredPlan: true, targetStyle: exactStyleLock }).passed, "An exact shared Style Lock was rejected.");
+assert(!evaluateImagePrompts([{ ...actionLockedScene, prompt: actionLockedScene.prompt.replace(exactStyleLock, "Flat cartoon") }], { requireStructuredPlan: true, targetStyle: exactStyleLock }).passed, "A prompt missing the exact shared Style Lock was accepted.");
 
 process.stdout.write("Image prompt QA assertions passed.\n");

@@ -4,14 +4,15 @@ export const APP_CONFIG = {
   TOAST_DURATION: 3000,
 };
 
-export const QUALITY_RETRY_CONFIG = {
-  MAX_REPAIR_ATTEMPTS: 1,
-  MAX_EVALUATION_ATTEMPTS: 2,
+export const TECHNICAL_RESPONSE_RETRY_CONFIG = {
+  MAX_ATTEMPTS: 2,
 } as const;
 
-export const EDITOR_REPAIR_CONFIG = {
-  CAMERA_MOTIONS: ["drift", "push_in", "pull_out", "pan_left", "pan_right"],
-  TRANSITIONS: ["cut", "cross_dissolve", "cut", "fade_black"],
+export const ADVISORY_QA_CONFIG = {
+  SCRIPT_SKIPPED_WARNING: "script_qa_skipped_for_speed",
+  SCRIPT_DURATION_WARNING: "script_duration_out_of_target",
+  STORYBOARD_SKIPPED_WARNING: "storyboard_qa_skipped_for_speed",
+  THUMBNAIL_PLANNING_WARNING_PREFIX: "thumbnail_planning_advisory:",
 } as const;
 
 export const SEO_FALLBACK_CONFIG = {
@@ -93,9 +94,10 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
 
 export const BACKGROUND_MODE_CONFIG = {
   DEFAULT: "auto",
-  OPTIONS: ["auto", "preserve", "transparent", "solid", "white", "contextual", "blurred", "gradient", "studio"],
+  OPTIONS: ["auto", "minimal", "contextual", "transparent"],
   DIRECTIVES: {
-    auto: "Choose the background naturally from the content and composition.",
+    auto: "Choose the background naturally for each narrative beat. When style references exist, preserve their reusable environment language without copying their exact location, object placement, lighting state, or composition.",
+    minimal: "Use a clean, restrained, style-compatible background with only the props and environmental cues required to understand the narrative action.",
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
@@ -106,16 +108,36 @@ export const BACKGROUND_MODE_CONFIG = {
     studio: "CRITICAL BACKGROUND OVERRIDE: Use a minimal professional studio backdrop with controlled soft lighting and no environmental scenery.",
   },
   LABELS: {
-    vi: { auto: "Tự động", preserve: "Giữ nền mẫu", transparent: "Không nền", solid: "Nền đơn sắc", white: "Nền trắng", contextual: "Tạo bối cảnh", blurred: "Nền mờ", gradient: "Nền gradient", studio: "Nền studio" },
-    en: { auto: "Automatic", preserve: "Keep sample", transparent: "No background", solid: "Solid color", white: "White", contextual: "Create context", blurred: "Blurred", gradient: "Gradient", studio: "Studio" },
+    vi: { auto: "Tự động", minimal: "Nền tối giản", preserve: "Giữ nền mẫu", transparent: "Không nền", solid: "Nền đơn sắc", white: "Nền trắng", contextual: "Bối cảnh đầy đủ", blurred: "Nền mờ", gradient: "Nền gradient", studio: "Nền studio" },
+    en: { auto: "Automatic", minimal: "Minimal", preserve: "Keep sample", transparent: "No background", solid: "Solid color", white: "White", contextual: "Full setting", blurred: "Blurred", gradient: "Gradient", studio: "Studio" },
   },
-  EXTRACTION_PREFIX: "Background treatment requirement:",
-  EXTRACTION_SUFFIX: "Include the observed background treatment in the extracted style when the requirement asks to preserve it.",
+  DESCRIPTIONS: {
+    vi: {
+      auto: "AI học cách dựng nền từ ảnh mẫu và điều chỉnh theo từng cảnh.",
+      minimal: "Nền gọn, chỉ giữ chi tiết cần thiết để kể chuyện.",
+      contextual: "Dựng đầy đủ địa điểm, kiến trúc và đạo cụ theo kịch bản.",
+      transparent: "Tách chủ thể để ghép nền ở bước hậu kỳ.",
+    },
+    en: {
+      auto: "AI learns the reference environment language and adapts it per scene.",
+      minimal: "A clean setting with only story-critical details.",
+      contextual: "Build the full location, architecture, and props from the script.",
+      transparent: "Isolate the subject for later compositing.",
+    },
+  },
+  LEGACY_MODE_MAP: {
+    preserve: "auto",
+    solid: "minimal",
+    white: "minimal",
+    blurred: "contextual",
+    gradient: "minimal",
+    studio: "minimal",
+  },
 } as const;
 
 export const TEXT_IN_IMAGE_MODE_CONFIG = {
-  DEFAULT: "auto",
-  OPTIONS: ["auto", "no_text", "minimal", "moderate", "abundant"],
+  DEFAULT: "no_text",
+  OPTIONS: ["no_text", "minimal"],
   TEXT_ALLOWED_MODES: ["minimal", "moderate", "abundant"],
   DIRECTIVES: {
     auto: "",
@@ -125,8 +147,12 @@ export const TEXT_IN_IMAGE_MODE_CONFIG = {
     abundant: "CRITICAL OVERRIDE: The image MUST feature abundant text, highly visible typography, or many words seamlessly integrated.",
   },
   LABELS: {
-    vi: { auto: "Tự động", no_text: "Không có chữ", minimal: "Ít chữ", moderate: "Chữ vừa", abundant: "Nhiều chữ" },
-    en: { auto: "Auto", no_text: "No text", minimal: "Minimal text", moderate: "Moderate text", abundant: "Abundant text" },
+    vi: { auto: "Tự động", no_text: "Không chữ", minimal: "Có chữ", moderate: "Chữ vừa", abundant: "Nhiều chữ" },
+    en: { auto: "Auto", no_text: "No text", minimal: "With text", moderate: "Moderate text", abundant: "Abundant text" },
+  },
+  DESCRIPTIONS: {
+    vi: { no_text: "Tạo ảnh sạch, không có ký tự", minimal: "Hiển thị nội dung theo ngôn ngữ đã chọn" },
+    en: { no_text: "Create a clean image without characters", minimal: "Show content in the selected language" },
   },
 } as const;
 
@@ -149,19 +175,70 @@ export const IMAGE_FOCUS_MODE_CONFIG = {
     vi: { default: "Tự động", portrait: "Chủ thể nổi bật", action: "Hành động", landscape: "Toàn cảnh", conceptual: "Nghệ thuật" },
     en: { default: "Auto", portrait: "Subject Focus", action: "Action", landscape: "Wide Scene", conceptual: "Artistic" },
   },
+  DESCRIPTIONS: {
+    vi: { default: "AI chọn trọng tâm phù hợp từng cảnh", portrait: "Ưu tiên một chủ thể chính", action: "Ưu tiên hành động rõ ràng", landscape: "Ưu tiên không gian toàn cảnh", conceptual: "Ưu tiên cách thể hiện nghệ thuật" },
+    en: { default: "AI chooses the focus for each scene", portrait: "Prioritize one main subject", action: "Prioritize a clear action", landscape: "Prioritize a wide environment", conceptual: "Prioritize an artistic treatment" },
+  },
 } as const;
 
 export const PROJECT_ASSET_GROUP = {
   VOICES: "voices",
   IMAGES: "images",
   VIDEOS: "videos",
+  VISUALS: "visuals",
+} as const;
+
+export const SCENE_TEXT_MODE_UI_CONFIG = {
+  LABELS: { vi: "Chữ trong ảnh", en: "Image text" },
+  VALUES: { NO_TEXT: "no_text", WITH_TEXT: "with_text" },
+  OPTIONS: {
+    vi: {
+      no_text: "Không chữ — Tạo ảnh sạch, không có ký tự",
+      with_text: "Có chữ — Dùng đúng ngôn ngữ đã chọn",
+    },
+    en: {
+      no_text: "No text — Create a clean image without characters",
+      with_text: "With text — Use the selected language",
+    },
+  },
+} as const;
+
+export const PROJECT_VISUAL_ASSET_CONFIG = {
+  THUMBNAILS_DIRECTORY: "thumbnails",
+  REFERENCES_DIRECTORY: "references",
+} as const;
+
+export const THUMBNAIL_TEXT_MODE_CONFIG = {
+  DEFAULT: "headline",
+  OPTIONS: ["headline", "no_text"],
+  LABELS: {
+    vi: { headline: "Có tiêu đề", no_text: "Không tiêu đề" },
+    en: { headline: "With title", no_text: "No title" },
+  },
+  DESCRIPTIONS: {
+    vi: {
+      headline: "AI chọn layout và tạo chữ chính xác trực tiếp trong ảnh.",
+      no_text: "Ảnh bìa chỉ có hình, không có chữ hay ký hiệu.",
+    },
+    en: {
+      headline: "AI chooses the layout and renders the exact headline in the image.",
+      no_text: "Create an image-only thumbnail without text or symbols.",
+    },
+  },
+  LEGACY_MODE_MAP: {
+    auto: "headline",
+    minimal: "headline",
+    moderate: "headline",
+    abundant: "headline",
+  },
 } as const;
 
 export const IMAGE_PROMPT_QA_CONFIG = {
-  MIN_WORDS: 70,
-  MAX_WORDS: 140,
+  MIN_WORDS: 25,
+  MAX_WORDS: 120,
   MAX_ADJACENT_SIMILARITY: 0.88,
-  MAX_CORRECTION_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
+  MIN_IDENTITY_TOKEN_MATCHES: 2,
+  MIN_QA_TOKEN_LENGTH: 4,
   CAMERA_PATTERN: /\b(?:shot|angle|composition|view|framing)\b/i,
   VISIBLE_ACTION_PATTERN: /\b(?:opens?|closes?|holds?|drops?|lifts?|pushes?|pulls?|walks?|runs?|sits?|stands?|turns?|looks?|reaches?|takes?|gives?|hides?|reveals?|enters?|leaves?|points?|watches?|reacts?|moves?|drives?|falls?|breaks?|builds?|counts?|pays?|signs?|drinks?|eats?|works?|fights?|cries?|laughs?|smiles?|stares?|grips?|places?|removes?|wears?|shows?)\b/i,
   ABSTRACT_ONLY_PATTERN: /^(?:an?\s+)?(?:feeling|emotion|concept|idea|sense|symbol|metaphor|mood)\b/i,
@@ -192,10 +269,13 @@ export const IMAGE_PROMPT_QA_CONFIG = {
     UNKNOWN_PROP_ID: "unknown_prop_id",
     MISSING_SHOT_PLAN: "missing_shot_plan",
     MISSING_CHARACTER_ID: "missing_recurring_character_id",
+    MISSING_CHARACTER_LOCK: "missing_character_identity_lock",
+    MISSING_STYLE_CORE: "missing_shared_style_core",
     UNKNOWN_CHARACTER_ID: "unknown_character_id",
     ADJACENT_COMPOSITION_DUPLICATE: "adjacent_composition_duplicate",
     GENERIC_CENTERED_PORTRAIT: "generic_centered_portrait",
     ENGINE_SYNTAX_CONFLICT: "engine_syntax_conflict",
+    AI_ASPECT_RATIO: "ai_prompt_contains_aspect_ratio",
   },
   WARNING_CODES: {
     PROMPT_TOO_SHORT: "image_prompt_too_short",
@@ -214,7 +294,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CLAUSE_SEPARATOR: ". ",
   LIST_SEPARATOR: ", ",
   CHARACTER_SEPARATOR: "; ",
-  DEFAULT_LIGHTING: "clear style-compatible lighting",
+  DEFAULT_LIGHTING: "natural scene-appropriate lighting",
   DEFAULT_LAYOUT: "single_frame",
   NO_TEXT_DIRECTIVE: "No readable text, letters, numbers, logos, or watermarks",
   NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
@@ -226,15 +306,27 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CONTINUITY_TEMPLATE: "Continuity: {value}",
   BEFORE_AFTER_TEMPLATE: "Visible change from {before} to {after}",
   REACTION_TEMPLATE: "Visible reaction: {value}",
-  STYLE_TEMPLATE: "Visual style: {value}",
+  STYLE_TEMPLATE: "Visual language guide: {value}. Adapt the setting, mood, lighting and composition to this scene",
   COMPOSITION_TEMPLATE: "{shotSize}, {cameraAngle}, {composition}",
-  ASPECT_RATIO_PREFIX: "--ar",
-  MIN_TARGET_WORDS: 70,
-  MAX_TARGET_WORDS: 140,
-  LOCKED_REFERENCE_STYLE: "Match the attached style reference faithfully: preserve its medium, line work, proportions, palette, shading, texture, and background treatment without introducing another visual medium",
+  STYLE_MAX_WORDS: 40,
+  STYLE_FIELD_WORD_LIMITS: {
+    medium: 6,
+    characterDna: 8,
+    lineDna: 5,
+    colorDna: 5,
+    renderingDna: 5,
+    periodCues: 5,
+    worldRendering: 6,
+  },
+  NARRATIVE_MAX_WORDS: 42,
+  SCENE_FIELD_MAX_WORDS: 24,
+  LOCATION_MAX_WORDS: 14,
+  PROP_MAX_WORDS: 10,
+  COMPOSITION_MAX_WORDS: 16,
+  CONTINUITY_MAX_WORDS: 8,
+  LOCKED_REFERENCE_STYLE: "Use the attached reference as a flexible visual guide for medium, character construction, line work and color behavior. Let the script decide the setting, action, mood, lighting and composition",
   CONFLICTING_STYLE_PATTERN: /\b(?:photorealistic|hyperrealistic|3d\s+render|octane\s+render|cinematic\s+realism|realistic\s+cinematic|dramatic\s+lighting|volumetric\s+lighting|shot\s+on\s+\d+mm)\b/gi,
-  REDUNDANT_STATE_PATTERN: /^\s*(\S[\s\S]*?)\s*$/i,
-  CHARACTER_IDENTITY_MAX_WORDS: 38,
+  CHARACTER_IDENTITY_MAX_WORDS: 24,
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {
@@ -256,20 +348,13 @@ export const VISUAL_CONTINUITY_CONFIG = {
   ],
 } as const;
 
-export const CHARACTER_REFERENCE_CONFIG = {
-  MODEL_SHEET_PREFIX: "Character model sheet for",
-  VIEW_DIRECTIVE: "show the same character in front, side, three-quarter, and expression views",
-  IDENTITY_DIRECTIVE: "preserve one identical face, silhouette, proportions, hair, outfit colors, and accessories in every view",
-  LAYOUT_DIRECTIVE: "clean evenly spaced reference poses on one plain background",
-  TEXT_DIRECTIVE: "no text, labels, logos, watermarks, scenery, or extra people",
-  STYLE_TEMPLATE: "Render faithfully in this visual style: {style}",
-  DEFAULT_STYLE: "coherent 2D editorial illustration",
-  GENERATION_FAILED: "Chưa thể tạo ảnh chuẩn cho nhân vật {name}. Hãy kiểm tra công cụ tạo ảnh rồi tiếp tục dự án.",
-  REFERENCE_REQUIRED: "Nhân vật lặp lại chưa có ảnh chuẩn được duyệt. Hãy tạo lại ảnh nhân vật trước khi tạo cảnh.",
-  MIN_QA_SCORE: 85,
-  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
-  QA_REQUIRED: "Chưa thể kiểm tra ảnh chuẩn nhân vật. Hãy kiểm tra kết nối rồi thử lại.",
-  QA_REJECTED: "Ảnh chuẩn nhân vật chưa đạt độ nhất quán. Hãy tạo lại ảnh nhân vật.",
+export const IMAGE_GENERATION_CONTINUITY_CONFIG = {
+  CHARACTER_PREFIX: "character:",
+  SUPPORTING_LANE: "characters:supporting",
+  ENVIRONMENT_LANE: "scene:environment",
+  THUMBNAIL_LANE: "thumbnail",
+  SUPPORTING_ROLE_PATTERN: /\b(?:mentor|client|supporting|advisor|customer)\b/i,
+  MIN_WORKER_COUNT: 1,
 } as const;
 
 export const IMAGE_PROMPT_METADATA_CONFIG = {
@@ -321,7 +406,17 @@ export const VOICE_TTS_ROUTING_CONFIG = {
   GENERATED_AUDIO_KEYS: ["audioBase64", "audioUrl", "audioQa", "timingLog"],
   SCENE_AUDIO_KEYS: ["audioBase64", "audioUrl"],
 } as const;
-export const STYLE_EXTRACTION_CONFIG = { ASSET_PREFIX: "/assets/", HTTP_PREFIXES: ["http://", "https://"], UNAVAILABLE_ERROR: "Chưa thể phân tích phong cách từ ảnh tham chiếu. Hãy kiểm tra kết nối rồi thử lại.", MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" } } as const;
+export const STYLE_EXTRACTION_CONFIG = {
+  ASSET_PREFIX: "/assets/",
+  HTTP_PREFIXES: ["http://", "https://"],
+  PROFILE_VERSION: "minimal-style-lock-v9-character-type",
+  UNAVAILABLE_ERROR: "Chưa thể phân tích phong cách từ ảnh tham chiếu. Hãy kiểm tra kết nối rồi thử lại.",
+  MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" },
+} as const;
+export const STYLE_LOCK_CONFIG = {
+  SHARED_PERSON_RULE: "Every person uses exactly this same character type, body construction, line work, coloring, and rendering style",
+  SHARED_PERSON_PATTERN: /every person uses/i,
+} as const;
 export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled",AUDIO:"audio" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
@@ -412,6 +507,16 @@ export const GEMINI_BATCH_SETUP_CONFIG = {
   NAVIGATION_TIMEOUT_MS: 60000,
   DELAY_MIN_MS: 2000,
   DELAY_MAX_MS: 4000,
+  WORKER_REPLACEMENT_MAX_ATTEMPTS: 2,
+} as const;
+
+export const GEMINI_CHAT_RECOVERY_CONFIG = {
+  MAX_ROOMS_PER_ITEM: 2,
+  MAX_ATTEMPTS_PER_ROOM: 3,
+  FIRST_ATTEMPT: 1,
+  RELOAD_WAIT_UNTIL: "domcontentloaded" as const,
+  RELOAD_DELAY_MIN_MS: 3000,
+  RELOAD_DELAY_MAX_MS: 5000,
 } as const;
 
 export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
@@ -428,7 +533,7 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   UPLOAD_DELAY_MAX_MS: 2000,
   UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   PROCESSING_APPEAR_TIMEOUT_MS: 15000,
-  MEDIA_READY_TIMEOUT_MS: 45000,
+  MEDIA_READY_TIMEOUT_MS: 180000,
   VIDEO_READY_TIMEOUT_MS: 600000,
   VIDEO_SOURCE_POLL_MS: 500,
   VIDEO_SOURCE_POLL_ATTEMPTS: 30,
@@ -481,6 +586,7 @@ export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
 
 export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   GENERATION_TIMEOUT_MS: 150000,
+  NEW_RESPONSE_TIMEOUT_MS: 45000,
   MAX_ERROR_TEXT_LENGTH: 500,
   IMAGE_TAG: "img",
   EMPTY_VALUE: "",
@@ -494,6 +600,9 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   IMAGE_MIME_TYPE: "image/jpeg",
   IMAGE_QUALITY: 0.95,
   IMAGE_READY_TIMEOUT_MS: 15000,
+  PAGE_IDLE_TIMEOUT_MS: 180000,
+  MIN_IMAGE_DIMENSION_PX: 256,
+  IMAGE_READY_POLL_MS: 250,
   STATES: {
     EXTRACT_START: "media_extract_start",
     SOURCE_MISSING: "media_src_missing",
@@ -744,8 +853,19 @@ export const RENDER_LOGIC_CONSTANTS = {
   DEFAULT_PROVIDER: "AI33Pro",
 } as const;
 
+export const GEMINI_MODEL_SELECTION_CONFIG = {
+  MAX_ATTEMPTS: 2,
+  MENU_TIMEOUT_MS: 10_000,
+  OPTION_TIMEOUT_MS: 10_000,
+  SELECTION_POLL_MS: 200,
+  SELECTED_CLASS: "selected",
+  ACTIVE_ATTRIBUTE: "data-active",
+  ACTIVE_VALUE: "true",
+} as const;
+
 export const SYSTEM_FETCH_CONFIG = {
   STREAM_INACTIVITY_TIMEOUT_MS: 90_000,
+  STREAM_HEARTBEAT_MS: 15_000,
   STREAM_ABORT_REASON_TIMEOUT: "stream_inactivity_timeout",
   STREAM_ABORT_REASON_CANCELLED: "stream_cancelled",
   NDJSON_LINE_SEPARATOR: "\n",
@@ -790,7 +910,8 @@ export const DEPENDENCY_HASH_CONFIG = {
 export const STORYBOARD_QUALITY_CONFIG = {
   MIN_SCORE: 85,
   BELOW_TARGET_WARNING: "storyboard_quality_below_target",
-  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
+  SCRIPT_COVERAGE_WARNING: "storyboard_script_coverage_incomplete",
+  PACING_COVERAGE_WARNING: "storyboard_scene_coverage_too_sparse",
 } as const;
 
 export const STORYBOARD_FALLBACK_CONFIG = {
@@ -801,9 +922,10 @@ export const STORYBOARD_FALLBACK_CONFIG = {
   DEFAULT_VOICE_SPEED: 1,
   MIN_TOTAL_DURATION_SECONDS: 10,
   SHORT_SCENE_MAX_WORDS: 12,
-  LONG_SCENE_MAX_WORDS: 28,
+  LONG_SCENE_MAX_WORDS: 22,
   PARAGRAPH_SCENE_SENTENCE_COUNT: 3,
-  STANDARD_SCENE_SENTENCE_COUNT: 2,
+  STANDARD_SCENE_SENTENCE_COUNT: 1,
+  MIN_COVERAGE_RATIO: 0.9,
   FALLBACK_WARNING: "storyboard_ai_fallback_used",
   VISUAL_BIBLE_WARNING: "visual_bible_unavailable",
   VISUAL_INTENT_TEMPLATE: "Editorial visual grounded only in this narration: {script}",
@@ -819,18 +941,12 @@ export const PRODUCTION_AUDIO_CONFIG = {
   SOURCE_BLOCKED_ERROR: "Giọng đọc mẫu không thể dùng để dựng video. Hãy tạo hoặc tải lên giọng đọc thật.",
 } as const;
 
-export const SCRIPT_REPAIR_CONFIG = {
-  MAX_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
-  MAX_OUTPUT_TOKENS: 8_192,
-  EMPTY_REPAIR_ERROR: "script_repair_returned_empty_content",
-} as const;
-
 export const SCRIPT_PLAN_CONFIG = {
   MIN_CHAPTERS: 3,
   MAX_CHAPTERS: 8,
   TARGET_WORDS_PER_CHAPTER: 300,
   MAX_OUTPUT_TOKENS: 8_192,
-  MAX_RESPONSE_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_EVALUATION_ATTEMPTS,
+  MAX_RESPONSE_ATTEMPTS: TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS,
   INVALID_RESPONSE_ERROR: "invalid_script_plan_response",
   INVALID_CHAPTERS_ERROR: "invalid_script_plan_response_invalid_chapters",
   REQUIRED_CHAPTER_CONTENT_FIELDS: ["id", "title", "description", "purpose"],
@@ -859,7 +975,6 @@ export const AUDIO_QUALITY_CONFIG = {
   BELOW_TARGET_WARNING: "audio_quality_below_target",
   REPAIR_FAILED_WARNING: "audio_quality_repair_unavailable",
   GENERATED_AUDIO_REQUIRED_ERROR: "voice_repair_returned_empty_audio",
-  MAX_REPAIR_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
 } as const;
 
 export const VOICE_ALIGNMENT_CONFIG = {
@@ -869,12 +984,6 @@ export const VOICE_ALIGNMENT_CONFIG = {
   SCENE_VOICE_RESET_FIELDS: ["audioBase64", "audioUrl", "subtitleCues", "_start", "_end"],
   BACKEND_WARNING: "voice_alignment_backend_unavailable",
   DURATION_WARNING: "voice_duration_decode_unavailable",
-} as const;
-
-export const IMAGE_GENERATION_RETRY_CONFIG = {
-  MAX_ATTEMPTS: 3,
-  BASE_DELAY_MS: 1_000,
-  BACKOFF_MULTIPLIER: 2,
 } as const;
 
 export const SOUND_DESIGN_CONFIG = {
@@ -942,7 +1051,6 @@ export const FINAL_MULTIMODAL_QA_CONFIG = {
   UNAVAILABLE_WARNING: "final_multimodal_qa_unavailable",
   UNAVAILABLE_ERROR: "final_multimodal_qa_required",
   BELOW_TARGET_WARNING: "final_quality_below_target",
-  MAX_EVALUATION_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_EVALUATION_ATTEMPTS,
   SCORE_FIELDS: [
     "visualScore",
     "cropScore",
@@ -966,16 +1074,6 @@ export const VISUAL_QA_MEDIA_CONFIG = {
   MAX_FRAMES: 3,
   FFMPEG_FALLBACK_COMMAND: "ffmpeg",
   EXTRACTION_FAILED: "Chưa thể đọc khung hình video để kiểm tra chất lượng. Hãy tạo lại cảnh video rồi thử lại.",
-} as const;
-
-export const VISUAL_ASSET_REPAIR_CONFIG = {
-  MAX_ATTEMPTS: QUALITY_RETRY_CONFIG.MAX_REPAIR_ATTEMPTS,
-  PROMPT_TEMPLATE: "{prompt}. Correct every rejected visual defect from the previous candidate: {feedback}. Preserve the required identity, action, subject count, composition, continuity, and style. Produce one clean production-ready frame only.",
-  PROMPT_TOKEN: "{prompt}",
-  FEEDBACK_TOKEN: "{feedback}",
-  FEEDBACK_SEPARATOR: ", ",
-  GENERATION_FAILED: "Chưa thể tạo lại hình ảnh đạt chuẩn. Hãy kiểm tra công cụ tạo ảnh rồi thử lại.",
-  QUALITY_REJECTED: "Hình ảnh vẫn chưa đạt chuẩn sau khi đã tự tạo lại. Hãy xem các lỗi chất lượng rồi thử lại.",
 } as const;
 
 export const AI_TASK_ROUTER_CONFIG = {

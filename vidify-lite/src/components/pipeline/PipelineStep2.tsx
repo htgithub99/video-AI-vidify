@@ -6,6 +6,7 @@ import { Tooltip } from "../ui/Tooltip";
 import { appError } from "../../lib/logger.js";
 import { ErrorMessage, ThumbnailActionPosition, SEO_DEFAULT_CONFIGS, PIPELINE_STEP2_TEXTS, REFACTOR_CONSTANTS, UI_MESSAGE_DURATION } from "../../constants";
 import { setTemporaryState } from "./pipeline-utils";
+import { deduplicateVisualStyleText } from "../../services/visualStyleDisplayService";
 
 import * as LucideIcons from "lucide-react";
 
@@ -643,7 +644,9 @@ export default function PipelineStep2(props: PipelineWizardState) {
                   </div>
                 )}
                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {_.map(project.thumbnails || [], (thumb) => (
+                  {_.map(project.thumbnails || [], (thumb) => {
+                    const displayStyle = deduplicateVisualStyleText(thumb.style);
+                    return (
                     <div key={thumb.id} className="bg-slate-900 border border-slate-800/80 hover:border-rose-500/55 rounded-xl overflow-hidden shadow-md hover:shadow-2xl hover:shadow-rose-500/[0.04] transition-all duration-350 cursor-pointer group flex flex-col hover:scale-[1.02] hover:-translate-y-0.5">
                       <div className="aspect-video relative overflow-hidden shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                         {thumb.imageUrl ? (
@@ -669,8 +672,11 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           </div>
                         )}
                         <div className="absolute top-3 left-3 flex gap-2 flex-wrap z-10">
-                          <span className="bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">
-                            {thumb.style} {t.Look}
+                          <span
+                            className="block max-w-[min(70vw,18rem)] overflow-hidden whitespace-nowrap text-ellipsis bg-black/60 backdrop-blur-md text-white border border-white/10 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg"
+                            title={displayStyle}
+                          >
+                            {displayStyle}
                           </span>
                           {thumb.hasText && <span className="bg-rose-500/80 backdrop-blur-md text-white border border-rose-400/30 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg">{t.withText}</span>}
                         </div>
@@ -772,7 +778,8 @@ export default function PipelineStep2(props: PipelineWizardState) {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

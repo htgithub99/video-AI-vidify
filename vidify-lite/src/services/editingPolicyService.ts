@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { EDITOR_REPAIR_CONFIG } from "../constants/config";
 import { StoryboardScene, VisualBible } from "../types";
 
 const FLAT_STYLE_PATTERN = /stickman|flat(?: solid)? colors?|minimalist|no gradients?|no shading/i;
@@ -49,15 +48,3 @@ export const applyProfessionalEditingPolicy = (
     };
   });
 };
-
-export const repairEditingPlan = (
-  scenes: StoryboardScene[],
-  visualBible?: VisualBible,
-): StoryboardScene[] => applyProfessionalEditingPolicy(
-  _.map(scenes, (scene, index) => ({
-    ...scene,
-    cameraMotion: EDITOR_REPAIR_CONFIG.CAMERA_MOTIONS[index % EDITOR_REPAIR_CONFIG.CAMERA_MOTIONS.length],
-    transition: EDITOR_REPAIR_CONFIG.TRANSITIONS[index % EDITOR_REPAIR_CONFIG.TRANSITIONS.length],
-  })),
-  visualBible,
-);

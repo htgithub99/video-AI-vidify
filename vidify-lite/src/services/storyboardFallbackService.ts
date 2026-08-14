@@ -51,6 +51,25 @@ const createNarrationSegments = (script: string, splitStrategy: SplitStrategy): 
   return _.map(_.chunk(sentenceFragments, sentenceCount), segment => _.join(segment, " "));
 };
 
+const normalizeCoverageText = (value: unknown): string => _.join(
+  _.words(_.deburr(_.toLower(_.toString(value))), /[\p{L}\p{N}]+/gu),
+  " ",
+);
+
+export const calculateStoryboardScriptCoverage = (
+  script: string,
+  scenes: Array<Partial<Pick<StoryboardScene, "script" | "subtitle">>>,
+): number => {
+  const scriptTokens = _.words(normalizeCoverageText(script), /[^\s]+/g);
+  if (_.isEmpty(scriptTokens)) return 1;
+  const sceneText = normalizeCoverageText(_.join(_.map(scenes, scene => scene.script || scene.subtitle), " "));
+  const sceneTokenCounts = _.countBy(_.words(sceneText, /[^\s]+/g));
+  const matchedTokens = _.sumBy(_.toPairs(_.countBy(scriptTokens)), ([token, count]) => (
+    _.min([count, _.get(sceneTokenCounts, token, 0)]) || 0
+  ));
+  return _.divide(matchedTokens, _.size(scriptTokens));
+};
+
 const createScriptGroundedScene = (script: string, index: number): StoryboardScene => ({
   id: _.join([STORYBOARD_FALLBACK_CONFIG.SCENE_ID_PREFIX, _.add(index, SecurityConstants.DEFAULT_AMOUNT)], ""),
   chapterId: STORYBOARD_FALLBACK_CONFIG.DEFAULT_CHAPTER_ID,
@@ -126,4 +145,19 @@ export const createScriptGroundedStoryboard = ({
     targetStyle,
     visualBible,
   });
+};
+
+export const ensureStoryboardScriptCoverage = (
+  scenes: StoryboardScene[],
+  options: StoryboardFallbackOptions,
+): StoryboardScene[] => {
+  const coverage = calculateStoryboardScriptCoverage(options.rewrittenScript, scenes);
+  const fallbackScenes = createScriptGroundedStoryboard(options);
+  const sourceSegments = createNarrationSegments(_.trim(options.rewrittenScript), options.splitStrategy || SplitStrategy.LONG_SENTENCE);
+  const maximumSceneWords = _.max(_.map(scenes, scene => _.size(_.words(scene.script || scene.subtitle)))) || 0;
+  const coverageTooSparse = _.size(scenes) < _.size(sourceSegments)
+    || maximumSceneWords > STORYBOARD_FALLBACK_CONFIG.LONG_SCENE_MAX_WORDS;
+  return coverage < STORYBOARD_FALLBACK_CONFIG.MIN_COVERAGE_RATIO || coverageTooSparse
+    ? fallbackScenes
+    : ensureScriptGroundedSceneDetails(scenes, options);
 };

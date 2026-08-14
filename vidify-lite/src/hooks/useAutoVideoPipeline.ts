@@ -23,6 +23,8 @@ import {
   StoryboardScene,
   BackgroundMode,
   TextInImageMode,
+  ThumbnailTextMode,
+  StyleReferencePurpose,
   ImageFocusMode,
   CharacterConfig,
   SceneAssetStatus,
@@ -53,7 +55,7 @@ import { safeSystemFetch, generateRandomString } from "../lib/shared-utils";
 import {
   createProjectImageUrl,
   generateProjectImages,
-  generateProjectImageWithRetry,
+  generateProjectImageOnce,
   getSceneAssetSummary,
   hasSceneAsset,
   isUsableGeneratedAssetUrl,
@@ -62,35 +64,31 @@ import {
   type ProjectImageResult,
 } from "../services/projectImageGenerationService";
 import { resolveVisualConfig } from "../services/autoVideoConfigResolver";
-import { parseTargetDurationSeconds } from "../services/scriptQualityService";
-import { DEFAULT_VOICE_ARC, evaluateEdit, evaluateSubtitles, evaluateThumbnail } from "../services/productionQualityService";
+import { DEFAULT_VOICE_ARC, evaluateEdit, evaluateSubtitles } from "../services/productionQualityService";
 import { appendAssetRevision, createSceneDependencyHash, inheritApprovedSceneAsset } from "../services/dependencyHashService";
 import { createManualReviewItems, evaluateFinalQuality } from "../services/finalQualityService";
 import { migrateVideoProject } from "../services/projectMigrationService";
 import { resolveQualityProfile } from "../services/qualityProfileService";
 import { upscaleApprovedSceneAssets } from "../services/imageUpscaleService";
-import { validateFinalVideo } from "../services/finalMultimodalQualityService";
+import { createAdvisoryFinalVideoReport } from "../services/finalMultimodalQualityService";
 import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rolloutService";
 import { applyOptionalMusicAsset, createAudioCueSheet } from "../services/soundDesignService";
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
 import { appendImagePromptAspectRatio, evaluateImagePrompts } from "../services/imagePromptQualityService";
-import { compileStoryboardPrompts } from "../services/imagePromptCompilerService";
-import { createScriptGroundedStoryboard } from "../services/storyboardFallbackService";
-import { applyProfessionalEditingPolicy, repairEditingPlan } from "../services/editingPolicyService";
+import { createScriptGroundedStoryboard, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
+import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
 import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
-import { generateCharacterReferenceLibrary } from "../services/characterReferenceService";
-import { resolveReferenceLockedStyle } from "../services/styleReferenceService";
+import { createThumbnailStyleDirective, ensureSharedCharacterStyleLock, resolveReferenceLockedStyle } from "../services/styleReferenceService";
 import { normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline } from "../services/voiceTimelineService";
-import { validateAndRepairVoice } from "../services/voiceQualityRepairService";
-import { createSubtitleCues, repairSubtitleCues } from "../services/subtitleService";
-import { validateAndRepairVisualAsset } from "../services/visualAssetRepairService";
+import { assessVoiceAdvisory } from "../services/voiceQualityRepairService";
+import { createSubtitleCues } from "../services/subtitleService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../services/thumbnailPromptService";
-import { renderThumbnailTextOverlay } from "../services/thumbnailOverlayService";
-import { THUMBNAIL_OVERLAY_CONFIG } from "../constants/thumbnail";
+import { acceptGeneratedThumbnail } from "../services/thumbnailQualityPipelineService";
+import { createSceneContinuityKey, createThumbnailContinuityKey } from "../services/imageGenerationContinuityService";
 import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
@@ -149,7 +147,7 @@ export interface PipelineConfig {
   thumbnailCount: number;
   thumbnailStylePreset: string;
   thumbnailBackgroundMode: BackgroundMode;
-  thumbnailTextInImageMode: TextInImageMode;
+  thumbnailTextInImageMode: ThumbnailTextMode;
   thumbnailImageFocusMode: ImageFocusMode;
   thumbnailReferenceImages: string[];
   projectName: string;
@@ -178,12 +176,6 @@ export interface PipelineActions {
   setLogs: React.Dispatch<React.SetStateAction<string[]>>;
   setRenderedVideoUrl: React.Dispatch<React.SetStateAction<string>>;
 }
-
-const hasSameNamedCharacters = (scene: StoryboardScene, candidate: StoryboardScene): boolean => {
-  const sceneCharacterIds = _.sortBy(_.uniq(_.compact(scene.characterIds)));
-  const candidateCharacterIds = _.sortBy(_.uniq(_.compact(candidate.characterIds)));
-  return !_.isEmpty(sceneCharacterIds) && _.isEqual(sceneCharacterIds, candidateCharacterIds);
-};
 
 export function useAutoVideoPipeline(
   projects: VideoProject[],
@@ -340,10 +332,18 @@ export function useAutoVideoPipeline(
         config,
         getPipelineInvalidationState(existingTargetProj, config, referenceChangeState),
       );
+      const sceneStyleProfileOutdated = _.every([
+        !_.isEmpty(existingTargetProj?.visualConfig?.styleReferenceImages),
+        _.isEmpty(existingTargetProj?.visualBible?.styleProfile?.characterType),
+      ], Boolean);
+      const thumbnailStyleProfileOutdated = _.every([
+        !_.isEmpty(existingTargetProj?.visualConfig?.thumbnailReferenceImages),
+        _.isEmpty(existingTargetProj?.visualConfig?.thumbnailStyleProfile?.characterType),
+      ], Boolean);
       const requiresVisualReferenceMigration = _.some(
         existingTargetProj?.storyboard,
         scene => _.isEmpty(scene.layout) || _.isNil(scene.textAllowed),
-      );
+      ) || sceneStyleProfileOutdated || thumbnailStyleProfileOutdated;
       let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets || requiresVisualReferenceMigration;
 
       if (config.resumeMode && existingTargetProj) {
@@ -644,22 +644,16 @@ export function useAutoVideoPipeline(
           ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
               images: newProj.visualConfig.styleReferenceImages,
               backgroundMode: config.styleBackgroundMode,
+              purpose: StyleReferencePurpose.Scene,
             }, requestSignal)
           : Promise.resolve(null);
-        const referencesAreShared = hasStyleReferences
-          && hasThumbnailReferences
-          && _.isEqual(
-            _.sortBy(newProj.visualConfig.styleReferenceImages),
-            _.sortBy(newProj.visualConfig.thumbnailReferenceImages),
-          );
-        const thumbnailStyleAnalysisRequest = referencesAreShared
-          ? styleAnalysisRequest
-          : hasThumbnailReferences
-            ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
+        const thumbnailStyleAnalysisRequest = hasThumbnailReferences
+          ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
               images: newProj.visualConfig.thumbnailReferenceImages,
               backgroundMode: config.thumbnailBackgroundMode,
+              purpose: StyleReferencePurpose.Thumbnail,
             }, requestSignal)
-            : Promise.resolve(null);
+          : Promise.resolve(null);
         const [styleResponse, thumbnailStyleResponse] = await Promise.all([styleAnalysisRequest, thumbnailStyleAnalysisRequest]);
         throwIfCancelled();
         if (hasStyleReferences && (!styleResponse?.success || _.isEmpty(styleResponse.data?.style))) {
@@ -668,10 +662,18 @@ export function useAutoVideoPipeline(
         if (hasThumbnailReferences && (!thumbnailStyleResponse?.success || _.isEmpty(thumbnailStyleResponse.data?.style))) {
           appendLog(thumbnailStyleResponse?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
         }
-        currentStylePreset = resolveReferenceLockedStyle(styleResponse?.success ? styleResponse.data?.style : "", hasStyleReferences)
+        currentStylePreset = styleResponse?.success
+          ? resolveReferenceLockedStyle(styleResponse.data?.style, hasStyleReferences) || currentStylePreset
+          : ensureSharedCharacterStyleLock(currentStylePreset);
+        const styleProfile = styleResponse?.success
+          ? styleResponse.data?.styleProfile
+          : newProj.visualBible?.styleProfile;
+        const thumbnailStyleProfile = thumbnailStyleResponse?.success
+          ? thumbnailStyleResponse.data?.styleProfile
+          : newProj.visualConfig.thumbnailStyleProfile;
+        currentThumbnailStyle = createThumbnailStyleDirective(styleProfile, thumbnailStyleProfile)
+          || resolveReferenceLockedStyle(thumbnailStyleResponse?.success ? thumbnailStyleResponse.data?.style : "", hasThumbnailReferences)
           || currentStylePreset;
-        currentThumbnailStyle = resolveReferenceLockedStyle(thumbnailStyleResponse?.success ? thumbnailStyleResponse.data?.style : "", hasThumbnailReferences)
-          || currentThumbnailStyle;
         const styleFingerprint = _.toString(styleResponse?.data?.fingerprint) || currentStylePreset;
         newProj = {
           ...newProj,
@@ -680,12 +682,14 @@ export function useAutoVideoPipeline(
             style: currentStylePreset,
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
+            thumbnailStyleProfile,
             styleFingerprint,
             styleReferenceLocked: hasStyleReferences,
           },
           visualBible: {
             ...newProj.visualBible,
             visualStyle: currentStylePreset,
+            styleProfile,
             styleFingerprint,
             styleReferenceLocked: hasStyleReferences,
             locations: _.defaultTo(newProj.visualBible?.locations, []),
@@ -760,7 +764,7 @@ export function useAutoVideoPipeline(
             imageQuality: newProj.visualConfig.quality,
           },
           visualStyle: storyboardStyle,
-          referenceImages: _.defaultTo(newProj.visualConfig.styleReferenceImages, config.referenceImages),
+          referenceImages: [],
           referenceStyle: storyboardStyle,
           referenceCharacters: jsonUtils.safeStringify(_.map(analyzedCharacters, (character) => ({
             name: character.name,
@@ -782,6 +786,7 @@ export function useAutoVideoPipeline(
         const visualBible: VisualBible = {
           ...generatedVisualBible,
           visualStyle: currentStylePreset,
+          styleProfile: newProj.visualBible?.styleProfile,
           styleFingerprint: newProj.visualConfig.styleFingerprint,
           styleReferenceLocked: hasStyleReferences,
           locations: _.defaultTo(generatedVisualBible?.locations, []),
@@ -800,6 +805,14 @@ export function useAutoVideoPipeline(
           appendLog(REFACTOR_CONSTANTS.WARN_STORYBOARD_QA_RESULT);
         }
         if (_.isEmpty(realScenes)) throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
+        realScenes = ensureStoryboardScriptCoverage(realScenes, {
+          rewrittenScript: realScript,
+          chapters,
+          splitStrategy: config.splitStrategy as SplitStrategy,
+          aspectRatio: config.aspectRatio,
+          targetStyle: storyboardStyle,
+          visualBible,
+        });
         const storyboardQa = storyboardAvailable
           ? storyboardRes.data.storyboardQa as StoryboardQualityReport | undefined
           : undefined;
@@ -824,48 +837,8 @@ export function useAutoVideoPipeline(
         ...scene,
         characterIds: resolveSceneCharacterIds(scene, analyzedCharacters),
       }));
-      const recurringCharacterIds = new Set(_.flatMap(realScenes, scene => scene.characterIds));
-      const recurringCharacters = _.filter(analyzedCharacters, character => recurringCharacterIds.has(character.id));
-      if (!_.isEmpty(recurringCharacters)) {
-        try {
-          const approvedCharacters = await generateCharacterReferenceLibrary({
-            projectId: newProj.id,
-            characters: recurringCharacters,
-            visualConfig: newProj.visualConfig,
-            targetStyle: newProj.visualConfig.referencePrompt || newProj.visualConfig.style || config.stylePreset,
-            signal: requestSignal,
-          });
-          const persistedCharacterReferences = await Promise.all(_.map(approvedCharacters, async character => {
-            const response = await safeSystemFetch(
-              `${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${newProj.id}/${REFERENCE_ASSET_GROUP.CHARACTER}`,
-              { images: character.images },
-              requestSignal,
-            );
-            if (!response.success || _.isEmpty(response.data?.assets)) {
-              appendLog(PIPELINE_CLIENT_ERRORS.CHARACTER_REFERENCE_PERSIST_FAILED);
-              return character;
-            }
-            return { ...character, images: _.defaultTo(response.data.assets, character.images) };
-          }));
-          const approvedById = _.keyBy(persistedCharacterReferences, "id");
-          analyzedCharacters = _.map(analyzedCharacters, character => approvedById[character.id] || character);
-          newProj = {
-            ...newProj,
-            visualConfig: {
-              ...newProj.visualConfig,
-              characters: analyzedCharacters,
-              characterImages: _.uniq(_.flatMap(persistedCharacterReferences, "images")),
-              characterExtracted: true,
-            },
-          };
-          await syncProject(newProj);
-        } catch (referenceError) {
-          appendLog(referenceError instanceof Error ? referenceError.message : PIPELINE_CLIENT_ERRORS.CHARACTER_REFERENCE_PERSIST_FAILED);
-        }
-      }
       const referenceContinuityReport = validateVisualContinuity(realScenes, analyzedCharacters, newProj.visualBible);
-      const referenceErrors = _.filter(referenceContinuityReport.blockingErrors, error => _.startsWith(error, "character_reference_required"));
-      if (!_.isEmpty(referenceErrors)) appendLog(_.join(referenceErrors, REFACTOR_CONSTANTS.VD_BLANK));
+      if (!referenceContinuityReport.passed) appendLog(_.join(referenceContinuityReport.blockingErrors, REFACTOR_CONSTANTS.VD_BLANK));
 
       let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -1028,17 +1001,14 @@ export function useAutoVideoPipeline(
           shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
         } else {
-          realScenes = compileStoryboardPrompts(realScenes as StoryboardScene[], {
-            aspectRatio: config.aspectRatio,
-            targetStyle: currentStylePreset,
-            characters: voiceUpdatedProj.visualConfig.characters,
-            visualBible: voiceUpdatedProj.visualBible,
-          });
           appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
         }
       } else {
         currentStylePreset = voiceUpdatedProj.visualConfig?.style || config.stylePreset;
-        currentThumbnailStyle = voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt || config.thumbnailStylePreset;
+        currentThumbnailStyle = createThumbnailStyleDirective(
+          voiceUpdatedProj.visualBible?.styleProfile,
+          voiceUpdatedProj.visualConfig?.thumbnailStyleProfile,
+        ) || voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt || config.thumbnailStylePreset;
       }
 
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
@@ -1118,6 +1088,64 @@ export function useAutoVideoPipeline(
             bypassCache: true,
           }, requestSignal);
         })();
+      const shouldRegenerateThumbnails = Boolean(config.forceRegenerateScenes)
+        || invalidationState.regenerateThumbnails;
+      let preparedSeoData: unknown = cachedSeoData;
+      let preparedThumbnails: ThumbnailItem[] = [];
+      let sharedThumbnailBatchItems: Array<{
+        sceneId: string;
+        idempotencyKey: string;
+        prompt: string;
+        generateType: GenerateType.Image;
+        referenceImages: string[];
+        continuityKey: string;
+      }> = [];
+      if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+        if (!preparedSeoData && seoRequest) {
+          const seoRes = await seoRequest;
+          preparedSeoData = seoRes.success && seoRes.data
+            ? seoRes.data
+            : createSourceGroundedSeo(realScript, newProj.seoConfig);
+        }
+        const cachedThumbnails = _.defaultTo(newProj.thumbnails, []);
+        preparedThumbnails = config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(cachedThumbnails)
+          ? _.cloneDeep(cachedThumbnails)
+          : [];
+        if (_.isEmpty(preparedThumbnails)) {
+          const thumbnailPlan = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, {
+            rewrittenScript: realScript,
+            config: voiceUpdatedProj.config,
+            visualConfig: { ...voiceUpdatedProj.visualConfig, thumbnailReferencePrompt: currentThumbnailStyle },
+            bypassCache: true,
+          }, requestSignal);
+          preparedThumbnails = _.cloneDeep(_.defaultTo(thumbnailPlan.data?.thumbnails, []));
+        }
+        const thumbnailReferenceImages = resolveThumbnailReferenceImages(voiceUpdatedProj.visualConfig);
+        sharedThumbnailBatchItems = _.map(
+          _.filter(preparedThumbnails, thumbnail => _.isEmpty(thumbnail.imageUrl)),
+          thumbnail => {
+            const thumbnailStyle = _.toString(_.defaultTo(thumbnail.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
+            const prompt = createThumbnailGenerationPrompt(
+              thumbnail,
+              thumbnailStyle,
+              config.aspectRatio,
+              !_.isEmpty(thumbnailReferenceImages),
+              voiceUpdatedProj.visualConfig.characters,
+            );
+            thumbnail.generationPrompt = prompt;
+            thumbnail.generationStatus = SceneAssetStatus.Generating;
+            thumbnail.generationError = undefined;
+            return {
+              sceneId: thumbnail.id,
+              idempotencyKey: _.join([voiceUpdatedProj.id, thumbnail.id, "thumbnail"], ":"),
+              prompt,
+              generateType: GenerateType.Image,
+              referenceImages: thumbnailReferenceImages,
+              continuityKey: createThumbnailContinuityKey(),
+            };
+          },
+        );
+      }
 
       const visualDependencies = {
         ..._.pick(voiceUpdatedProj.visualConfig, ["style", "stylePreset", "imageGeneratorEngine", "aspectRatio", "styleBackgroundMode", "styleTextInImageMode", "imageFocusMode", "generateType"]),
@@ -1168,7 +1196,13 @@ export function useAutoVideoPipeline(
 
       let imageCheckpointQueue = Promise.resolve();
       const persistImageCheckpoint = (): Promise<void> => {
-        const checkpointProject = { ...voiceUpdatedProj, storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"] };
+        const checkpointProject = {
+          ...voiceUpdatedProj,
+          storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
+          thumbnails: _.isEmpty(preparedThumbnails)
+            ? voiceUpdatedProj.thumbnails
+            : _.cloneDeep(preparedThumbnails),
+        };
         imageCheckpointQueue = imageCheckpointQueue.then(() => syncProject(checkpointProject));
         return imageCheckpointQueue;
       };
@@ -1177,7 +1211,6 @@ export function useAutoVideoPipeline(
         const context = createSceneGenerationContext(
           scene,
           voiceUpdatedProj.visualConfig,
-          { includeCharacterImages: true },
         );
         return {
           ...context,
@@ -1189,10 +1222,10 @@ export function useAutoVideoPipeline(
         };
       };
 
-      if (targetScenesToGen && targetScenesToGen.length > 0) {
+      if (_.some([!_.isEmpty(targetScenesToGen), !_.isEmpty(sharedThumbnailBatchItems)])) {
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
-          const batchItems = _.map(targetScenesToGen, (scene) => {
+          const sceneBatchItems = _.map(targetScenesToGen, (scene) => {
             const requestContext = createSceneRequestContext(scene);
             scene.generationPrompt = requestContext.prompt;
             return {
@@ -1200,13 +1233,13 @@ export function useAutoVideoPipeline(
               idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash], ":"),
               prompt: requestContext.prompt,
               referenceImages: requestContext.referenceImages,
+              continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
               generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
             };
           });
+          const batchItems = _.concat(sceneBatchItems, sharedThumbnailBatchItems);
           let completedCount = SecurityConstants.ZERO;
           let batchFailureCount = SecurityConstants.ZERO;
-          let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-          let fallbackFailureCount = SecurityConstants.ZERO;
 
           const applyResult = (result: ProjectImageResult) => {
             const imageUrl = createProjectImageUrl(result);
@@ -1228,6 +1261,14 @@ export function useAutoVideoPipeline(
                 appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
               }
               void persistImageCheckpoint();
+              return;
+            }
+            const thumbnail = _.find(preparedThumbnails, item => _.isEqual(item.id, result.sceneId));
+            if (thumbnail && !_.isEmpty(imageUrl)) {
+              thumbnail.imageUrl = imageUrl;
+              thumbnail.generationStatus = SceneAssetStatus.Generated;
+              thumbnail.generationError = undefined;
+              void persistImageCheckpoint();
             }
           };
 
@@ -1238,52 +1279,27 @@ export function useAutoVideoPipeline(
               style: currentStylePreset,
               sandboxConfig: sandboxConfigPayload,
               cancelRef: cancellationRef,
-              createFallbackPayload: (item) => ({
-                prompt: item.prompt,
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-                bypassCache: false,
-                engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-                sandboxConfig: sandboxConfigPayload,
-                visualConfig: { ...visualConfigPayload, referenceImages: item.referenceImages, generateType: item.generateType },
-              }),
               onBatchResult: (result) => {
                 if (result.success) { applyResult(result); return; }
                 batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
-                if (_.isEmpty(batchFailureReason)) {
-                  batchFailureReason = _.find([result.warning, REFACTOR_CONSTANTS.UNKNOWN_WARNING], (value) => !_.isEmpty(value)) as string;
-                }
-              },
-              onFallbackStart: (error) => appendLog(T.logBatchFailuresSummary(
-                batchFailureCount,
-                _.size(targetScenesToGen),
-                _.find([batchFailureReason, error.message], (value) => !_.isEmpty(value)) as string,
-              )),
-              onFallbackItemStart: (_item, index, total) => {
-                const current = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
-                if (_.some([
-                  _.isEqual(current, SecurityConstants.DEFAULT_AMOUNT),
-                  _.isEqual(current, total),
-                  _.isEqual(current % 5, SecurityConstants.ZERO),
-                ])) {
-                  appendLog(T.logFallbackProgress(current, total));
-                }
-              },
-              onFallbackResult: (result) => {
-                if (result.success) { applyResult(result); return; }
-                fallbackFailureCount = _.add(fallbackFailureCount, SecurityConstants.DEFAULT_AMOUNT);
+                const failureReason = _.defaultTo(result.warning, REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR);
                 const failedScene = _.find(realScenes as VideoProject["storyboard"], (item) => _.isEqual(item.id, result.sceneId));
                 if (failedScene && !hasSceneAsset(failedScene)) {
                   failedScene.assetStatus = SceneAssetStatus.Failed;
-                  failedScene.assetError = result.warning || REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
-                  void persistImageCheckpoint();
+                  failedScene.assetError = failureReason;
                 }
+                const failedThumbnail = _.find(preparedThumbnails, (item) => _.isEqual(item.id, result.sceneId));
+                if (failedThumbnail && _.isEmpty(failedThumbnail.imageUrl)) {
+                  failedThumbnail.generationStatus = SceneAssetStatus.Failed;
+                  failedThumbnail.generationError = failureReason;
+                }
+                void persistImageCheckpoint();
               },
             });
             if (generationSummary.cancelled) {
               throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_CANCELLED);
             }
-            appendLog(T.logImageGenerationSummary(completedCount, fallbackFailureCount, _.size(targetScenesToGen)));
+            appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems)));
           } catch (generationError) {
             const failureReason = generationError instanceof Error
               ? generationError.message
@@ -1308,7 +1324,7 @@ export function useAutoVideoPipeline(
               .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
               .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
             try {
-              const imageResult = await generateProjectImageWithRetry({
+              const imageResult = await generateProjectImageOnce({
                 sceneId: sc.id,
                 prompt: requestContext.prompt,
                 referenceImages: requestContext.referenceImages,
@@ -1353,78 +1369,19 @@ export function useAutoVideoPipeline(
         }
       }
       const technicallyValidScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene));
-      const imageScenesToValidate = technicallyValidScenes;
-      const validationSceneIds = new Set(_.map(imageScenesToValidate, "id"));
-
-      for (const scene of imageScenesToValidate) {
-        scene.assetStatus = SceneAssetStatus.Validating;
-        const sceneReferenceContext = createSceneGenerationContext(
-          scene,
-          voiceUpdatedProj.visualConfig,
-          { includeCharacterImages: true },
-        );
-        const canonicalReferenceUrl = !_.isEmpty(scene.characterIds) ? _.get(_.find(realScenes, candidate => _.every([
-          candidate.id !== scene.id,
-          candidate.assetStatus === SceneAssetStatus.Approved,
-          candidate.assetType !== GenerateType.Video,
-          !_.isEmpty(candidate.assetUrl),
-          hasSameNamedCharacters(scene, candidate),
-        ], Boolean)), "assetUrl") : undefined;
-        const qualityReferenceUrls = _.take(_.uniq(_.compact([
-          ...sceneReferenceContext.referenceImages,
-          canonicalReferenceUrl,
-        ])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
-        try {
-          const validationResult = await validateAndRepairVisualAsset({
-            projectId: voiceUpdatedProj.id,
-            target: scene,
-            style: currentStylePreset,
-            resolution: voiceUpdatedProj.visualConfig.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-            engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-            visualConfig: visualConfigPayload,
-            sandboxConfig: sandboxConfigPayload,
-            referenceAssetUrl: canonicalReferenceUrl,
-            referenceAssetUrls: qualityReferenceUrls,
-            signal: requestSignal,
-          });
-          if (!_.isEqual(scene.assetUrl, validationResult.assetUrl)) {
-            scene.assetUrl = validationResult.assetUrl;
-            scene.assetUrls = [validationResult.assetUrl];
-            scene.assetType = validationResult.assetType;
-            scene.generationPrompt = validationResult.generationPrompt;
-            appendAssetRevision(scene, validationResult.assetUrl, SceneAssetStatus.Approved);
-          }
-          scene.assetStatus = SceneAssetStatus.Approved;
-          scene.qaStatus = validationResult.approved
-            ? QaStatus.Passed
-            : validationResult.qaAvailable
-              ? QaStatus.Failed
-              : QaStatus.Unavailable;
-          scene.acceptance = validationResult.approved
-            ? AssetAcceptance.Approved
-            : AssetAcceptance.AcceptedWithWarning;
-          scene.assetError = validationResult.approved
-            ? undefined
-            : validationResult.qaAvailable
-              ? "visual_quality_below_target"
-              : "visual_qa_unavailable";
-          const revision = _.findLast(scene.assetRevisions);
-          if (revision) {
-            revision.status = SceneAssetStatus.Approved;
-            revision.approvedAt = new Date().toISOString();
-          }
-        } catch (qualityError) {
-          scene.assetStatus = SceneAssetStatus.Approved;
-          scene.qaStatus = QaStatus.Unavailable;
-          scene.acceptance = AssetAcceptance.AcceptedWithWarning;
-          scene.assetError = qualityError instanceof Error
-            && _.isEqual(qualityError.message, REFACTOR_CONSTANTS.ERR_VISUAL_QA_REQUIRED)
-            ? "visual_qa_unavailable"
-            : "visual_quality_below_target";
-          appendLog(_.replace(REFACTOR_CONSTANTS.WARN_VISUAL_QA_RESULT, SecurityConstants.PLACEHOLDER_0, scene.id));
+      const validationSceneIds = new Set(_.map(technicallyValidScenes, "id"));
+      _.forEach(technicallyValidScenes, scene => {
+        scene.assetStatus = SceneAssetStatus.Approved;
+        scene.qaStatus = QaStatus.Unavailable;
+        scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+        scene.assetError = "visual_qa_unavailable";
+        const revision = _.findLast(scene.assetRevisions);
+        if (revision) {
+          revision.status = SceneAssetStatus.Approved;
+          revision.approvedAt = new Date().toISOString();
         }
-        await persistImageCheckpoint();
-      }
+      });
+      await persistImageCheckpoint();
 
       const approvedImageScenes = _.filter(technicallyValidScenes, scene => _.every([
         scene.assetType !== GenerateType.Video,
@@ -1458,15 +1415,21 @@ export function useAutoVideoPipeline(
       appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
 
-      const imageUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
+      const imageUpdatedProj = {
+        ...voiceUpdatedProj,
+        storyboard: realScenes as VideoProject["storyboard"],
+        thumbnails: _.isEmpty(preparedThumbnails)
+          ? voiceUpdatedProj.thumbnails
+          : preparedThumbnails,
+      };
       await syncProject(imageUpdatedProj);
 
-      let seoData: unknown = cachedSeoData;
+      let seoData: unknown = preparedSeoData;
       if (cachedSeoData) {
         appendLog(T.logResumeSeo);
       }
 
-      if (!cachedSeoData) {
+      if (!preparedSeoData) {
         const seoRes = await seoRequest;
         if (seoRes.success && seoRes.data) {
           seoData = seoRes.data;
@@ -1480,9 +1443,6 @@ export function useAutoVideoPipeline(
       let thumbnailsList: ThumbnailItem[] = [];
       let isThumbsCached = false;
       let existingThumbs: ThumbnailItem[] = [];
-      const shouldRegenerateThumbnails = Boolean(config.forceRegenerateScenes)
-        || invalidationState.regenerateThumbnails;
-
       if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
         existingThumbs = newProj.thumbnails!;
         if (_.every(existingThumbs, (t) => !_.isEmpty(t.imageUrl))) {
@@ -1492,7 +1452,9 @@ export function useAutoVideoPipeline(
         }
       }
 
-      if (!isThumbsCached) {
+      if (!isThumbsCached && !_.isEmpty(preparedThumbnails)) {
+        thumbnailsList = preparedThumbnails;
+      } else if (!isThumbsCached) {
         let parsedThumbs: ThumbnailItem[] = [];
 
         if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(existingThumbs)) {
@@ -1544,14 +1506,12 @@ export function useAutoVideoPipeline(
                   prompt: generationPrompt,
                   generateType: GenerateType.Image,
                   referenceImages: thumbnailReferenceImages,
+                  continuityKey: createThumbnailContinuityKey(),
                 };
               });
 
               let completedCount = SecurityConstants.ZERO;
               let batchFailureCount = SecurityConstants.ZERO;
-              let batchFailureReason: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-              let fallbackFailureCount = SecurityConstants.ZERO;
-
               const applyThumbResult = (result: ProjectImageResult) => {
                 const imageUrl = createProjectImageUrl(result);
                 const thumb = _.find(parsedThumbs, (item) => _.isEqual(item.id, result.sceneId));
@@ -1574,37 +1534,9 @@ export function useAutoVideoPipeline(
                 style: currentThumbnailStyle || currentStylePreset,
                 sandboxConfig: sandboxConfigPayload,
                 cancelRef: cancellationRef,
-                createFallbackPayload: (item) => ({
-                  prompt: item.prompt,
-                  style: currentThumbnailStyle || currentStylePreset,
-                  resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-                  bypassCache: false,
-                  engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-                  sandboxConfig: sandboxConfigPayload,
-                  visualConfig: { ...visualConfigPayload, style: currentThumbnailStyle || currentStylePreset, referenceImages: item.referenceImages, generateType: item.generateType },
-                }),
                 onBatchResult: (result) => {
                   if (result.success) { applyThumbResult(result); return; }
                   batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
-                  if (_.isEmpty(batchFailureReason)) {
-                    batchFailureReason = result.warning || REFACTOR_CONSTANTS.UNKNOWN_WARNING;
-                  }
-                },
-                onFallbackStart: (error) => appendLog(
-                  _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_FALLBACK_START, SecurityConstants.PLACEHOLDER_0, error.message)
-                ),
-                onFallbackItemStart: (_item, index, total) => {
-                  appendLog(
-                    _.replace(
-                      _.replace(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_FALLBACK_ITEM, SecurityConstants.PLACEHOLDER_0, _.toString(index + 1)),
-                      SecurityConstants.PLACEHOLDER_1,
-                      _.toString(total)
-                    )
-                  );
-                },
-                onFallbackResult: (result) => {
-                  if (result.success) { applyThumbResult(result); return; }
-                  fallbackFailureCount = _.add(fallbackFailureCount, SecurityConstants.DEFAULT_AMOUNT);
                 },
               });
               if (thumbnailGenerationSummary.cancelled) {
@@ -1670,66 +1602,7 @@ export function useAutoVideoPipeline(
           thumbnail.approved = false;
           continue;
         }
-        const thumbnailStyle = _.toString(_.defaultTo(thumbnail.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
-        const thumbnailReferences = resolveThumbnailReferenceImages(imageUpdatedProj.visualConfig);
-        try {
-          const validationResult = await validateAndRepairVisualAsset({
-            projectId: imageUpdatedProj.id,
-            target: {
-              id: thumbnail.id,
-              script: _.toString(_.get(_.first(_.get(seoData, "titles", [])), "text", imageUpdatedProj.name)),
-              prompt: thumbnail.prompt,
-              generationPrompt: thumbnail.generationPrompt,
-              assetUrl: thumbnail.imageUrl,
-            },
-            style: thumbnailStyle,
-            resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-            engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-            visualConfig: { ...visualConfigPayload, style: thumbnailStyle },
-            sandboxConfig: sandboxConfigPayload,
-            referenceAssetUrls: thumbnailReferences,
-            signal: requestSignal,
-          });
-          thumbnail.imageUrl = validationResult.assetUrl;
-          thumbnail.generationPrompt = validationResult.generationPrompt;
-          thumbnail.qa = validationResult.quality
-            ? evaluateThumbnail(validationResult.quality)
-            : undefined;
-          thumbnail.qaStatus = thumbnail.qa?.passed
-            ? QaStatus.Passed
-            : validationResult.qaAvailable
-              ? QaStatus.Failed
-              : QaStatus.Unavailable;
-          thumbnail.acceptance = thumbnail.qa?.passed
-            ? AssetAcceptance.Approved
-            : isUsableGeneratedAssetUrl(thumbnail.imageUrl)
-              ? AssetAcceptance.AcceptedWithWarning
-              : AssetAcceptance.Rejected;
-          thumbnail.approved = thumbnail.acceptance === AssetAcceptance.Approved;
-        } catch {
-          thumbnail.qaStatus = QaStatus.Unavailable;
-          thumbnail.acceptance = isUsableGeneratedAssetUrl(thumbnail.imageUrl)
-            ? AssetAcceptance.AcceptedWithWarning
-            : AssetAcceptance.Rejected;
-          thumbnail.approved = false;
-          appendLog(REFACTOR_CONSTANTS.ERR_THUMBNAIL_QA_REQUIRED);
-        }
-        if (thumbnail.hasText && !_.isEmpty(thumbnail.textText)) {
-          try {
-            thumbnail.imageUrl = await renderThumbnailTextOverlay(thumbnail.imageUrl!, thumbnail.textText!);
-          } catch (overlayError) {
-            logger.error(THUMBNAIL_OVERLAY_CONFIG.LOG_ERROR, overlayError);
-            thumbnail.hasText = false;
-            thumbnail.textText = "";
-          }
-        }
-        if (thumbnail.qa && !thumbnail.qa.passed) {
-          appendLog(_.replace(
-            REFACTOR_CONSTANTS.WARN_THUMBNAIL_QA_RESULT,
-            SecurityConstants.PLACEHOLDER_0,
-            thumbnail.id,
-          ));
-        }
+        Object.assign(thumbnail, acceptGeneratedThumbnail(thumbnail));
       }
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.SEO_THUMB_DONE);
       appendLog(T.logSeoResultDetail(
@@ -1745,35 +1618,16 @@ export function useAutoVideoPipeline(
       }
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.ALIGN_DONE);
 
-      const voiceQualityResult = await validateAndRepairVoice({
+      const voiceQualityResult = await assessVoiceAdvisory({
         audioBase64: globalAudioBase64,
         audioUrl: globalAudioUrl,
         provider: _.toString(voiceUpdatedProj.voiceConfig.provider || config.voiceProvider),
-        script: realScript,
         scenes: realScenes as StoryboardScene[],
-        targetDurationSeconds: parseTargetDurationSeconds(newProj.config.duration),
-        regenerateVoice: async () => {
-          appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_RETRY);
-          const directedVoice = await generatePipelineVoice();
-          throwIfCancelled();
-          return directedVoice;
-        },
-        alignVoice: async (audioBase64, scenes) => {
-          const alignmentResult = await alignVoiceTimeline({
-            audioBase64,
-            scenes,
-            projectId: newProj.id,
-            projectName: newProj.name,
-            signal: requestSignal,
-          });
-          if (alignmentResult.warning) appendLog(alignmentResult.warning);
-          return alignmentResult.scenes;
-        },
+        targetDurationSeconds: calculateSceneDuration(realScenes as StoryboardScene[]),
       });
       globalAudioBase64 = voiceQualityResult.audioBase64;
       globalAudioUrl = voiceQualityResult.audioUrl;
       realScenes = voiceQualityResult.scenes;
-      if (voiceQualityResult.repairError) appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_REPAIR_FAILED);
       if (!voiceQualityResult.quality.passed) appendLog(REFACTOR_CONSTANTS.WARN_AUDIO_QA_RESULT);
 
       slicedUpdatedProj = {
@@ -1782,17 +1636,9 @@ export function useAutoVideoPipeline(
       };
 
       realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
-      let subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
-      if (!subtitleQa.passed) {
-        realScenes = repairSubtitleCues(realScenes as StoryboardScene[]);
-        subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
-      }
+      const subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
       if (!subtitleQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_SUBTITLE_QA_RESULT);
-      let editorQa = evaluateEdit(realScenes as StoryboardScene[]);
-      if (!editorQa.passed) {
-        realScenes = repairEditingPlan(realScenes as StoryboardScene[], slicedUpdatedProj.visualBible);
-        editorQa = evaluateEdit(realScenes as StoryboardScene[]);
-      }
+      const editorQa = evaluateEdit(realScenes as StoryboardScene[]);
       if (!editorQa.passed) appendLog(REFACTOR_CONSTANTS.WARN_EDITOR_QA_RESULT);
       slicedUpdatedProj = {
         ...slicedUpdatedProj,
@@ -1890,11 +1736,7 @@ export function useAutoVideoPipeline(
           if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
             renderPending = false;
             activeRenderJobIdRef.current = null;
-            const finalMultimodalQa = await validateFinalVideo(
-              statusData.url,
-              realScript,
-              _.toString(slicedUpdatedProj.creativeBrief?.viewerPromise),
-            );
+            const finalMultimodalQa = createAdvisoryFinalVideoReport();
             const renderCandidateBase: VideoProject = {
               ...slicedUpdatedProj,
               seo: _.defaultTo(seoData as VideoProject["seo"], undefined),

@@ -72,22 +72,9 @@ export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
   },
 } as const;
 
-export const SCRIPT_QA_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false,
-  required: ["continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore", "blockingErrors", "warnings", "suggestedPatches"],
-  properties: {
-    continuityScore: numberScoreSchema, repetitionScore: numberScoreSchema, factualityScore: numberScoreSchema,
-    emotionalArcScore: numberScoreSchema, conversationalScore: numberScoreSchema, hookPayoffScore: numberScoreSchema,
-    blockingErrors: stringArraySchema, warnings: stringArraySchema, suggestedPatches: stringArraySchema,
-  },
-} as const;
-
-export const SCRIPT_REPAIR_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false, required: ["script"], properties: { script: stringSchema },
-} as const;
-
 const visualQaProperties = {
   anatomy: numberScoreSchema, subjectCount: numberScoreSchema, promptAlignment: numberScoreSchema,
+  narrativeAlignment: numberScoreSchema, environmentRelevance: numberScoreSchema,
   characterConsistency: numberScoreSchema, composition: numberScoreSchema, styleConsistency: numberScoreSchema,
   editability: numberScoreSchema, usableForVideo: { type: "boolean" }, blockingErrors: stringArraySchema,
   unwantedText: { type: "boolean" }, multiPanelLayout: { type: "boolean" }, duplicatedSubjects: { type: "boolean" },
@@ -95,17 +82,20 @@ const visualQaProperties = {
 } as const;
 export const VISUAL_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:Object.keys(visualQaProperties),properties:visualQaProperties } as const;
 
-export const CHARACTER_REFERENCE_QA_RESPONSE_SCHEMA = {
+export const VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA = {
   type: "object", additionalProperties: false,
-  required: ["identityConsistencyScore", "viewCoverageScore", "styleConsistencyScore", "anatomyScore", "usableAsReference", "blockingErrors", "warnings"],
+  required: ["medium", "characterType", "characterDna", "lineDna", "colorDna", "renderingDna", "periodCues", "worldRendering", "adaptiveElements", "sampleSpecificContent"],
   properties: {
-    identityConsistencyScore: numberScoreSchema,
-    viewCoverageScore: numberScoreSchema,
-    styleConsistencyScore: numberScoreSchema,
-    anatomyScore: numberScoreSchema,
-    usableAsReference: { type: "boolean" },
-    blockingErrors: stringArraySchema,
-    warnings: stringArraySchema,
+    medium: stringSchema,
+    characterType: stringSchema,
+    characterDna: stringSchema,
+    lineDna: stringSchema,
+    colorDna: stringSchema,
+    renderingDna: stringSchema,
+    periodCues: stringSchema,
+    worldRendering: stringSchema,
+    adaptiveElements: stringSchema,
+    sampleSpecificContent: stringArraySchema,
   },
 } as const;
 
@@ -120,7 +110,5 @@ export const VISUAL_BIBLE_RESPONSE_SCHEMA = {
     props: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "name", "visualAnchors", "narrativeFunction"], properties: { id: stringSchema, name: stringSchema, visualAnchors: stringArraySchema, narrativeFunction: stringSchema } } },
   },
 } as const;
-
-export const STORYBOARD_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:["continuityScore","shotDiversityScore","visibleActionScore","editabilityScore","blockingErrors","warnings"],properties:{continuityScore:numberScoreSchema,shotDiversityScore:numberScoreSchema,visibleActionScore:numberScoreSchema,editabilityScore:numberScoreSchema,blockingErrors:stringArraySchema,warnings:stringArraySchema} } as const;
 
 export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:["visualScore","cropScore","continuityScore","pacingScore","transitionVarietyScore","promiseAlignmentScore","audioMixScore","subtitleLegibilityScore","blockingErrors","warnings"],properties:{visualScore:numberScoreSchema,cropScore:numberScoreSchema,continuityScore:numberScoreSchema,pacingScore:numberScoreSchema,transitionVarietyScore:numberScoreSchema,promiseAlignmentScore:numberScoreSchema,audioMixScore:numberScoreSchema,subtitleLegibilityScore:numberScoreSchema,blockingErrors:stringArraySchema,warnings:stringArraySchema} } as const;

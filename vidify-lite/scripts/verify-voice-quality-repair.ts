@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { StoryboardScene } from "../src/types.ts";
-import { validateAndRepairVoice } from "../src/services/voiceQualityRepairService.ts";
+import { assessVoiceAdvisory } from "../src/services/voiceQualityRepairService.ts";
 
 const originalFetch = globalThis.fetch;
 let audioQaCalls = 0;
@@ -39,33 +39,22 @@ const scenes = [{
 }] as StoryboardScene[];
 
 try {
-  const result = await validateAndRepairVoice({
+  const result = await assessVoiceAdvisory({
     audioBase64: "real-original-audio",
     audioUrl: "",
     provider: "real-provider",
-    script: "Source-grounded narration",
     scenes,
     targetDurationSeconds: 30,
-    regenerateVoice: async () => {
-      voiceRepairCalls += 1;
-      return { audioBase64: "real-repaired-audio", provider: "real-repair-provider" };
-    },
-    alignVoice: async (_audioBase64, alignedScenes) => {
-      alignmentCalls += 1;
-      return alignedScenes;
-    },
   });
 
-  assert.equal(audioQaCalls, 2);
-  assert.equal(voiceRepairCalls, 1);
-  assert.equal(alignmentCalls, 1);
-  assert.equal(result.audioBase64, "real-repaired-audio");
-  assert.equal(result.provider, "real-repair-provider");
-  assert.equal(result.repairAttempted, true);
-  assert.equal(result.repaired, true);
-  assert.equal(result.quality.passed, false);
+  assert.equal(audioQaCalls, 0);
+  assert.equal(voiceRepairCalls, 0);
+  assert.equal(alignmentCalls, 0);
+  assert.equal(result.audioBase64, "real-original-audio");
+  assert.equal(result.provider, "real-provider");
+  assert.equal(result.quality.passed, true);
 } finally {
   globalThis.fetch = originalFetch;
 }
 
-process.stdout.write("Voice quality repair assertions passed.\n");
+process.stdout.write("Voice advisory assertions passed.\n");

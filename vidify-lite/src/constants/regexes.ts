@@ -68,9 +68,10 @@ export const IMAGE_GEN_VEO_EXACT_REGEX =
   /(veo|omni flash|banana 2\b(?!.*lite))/i;
 export const IMAGE_GEN_VEO_FALLBACK_REGEX = /(veo|omni flash|banana 2)/i;
 
-export const GEMINI_MODEL_PRO_REGEX = /\bPro\b/i;
-export const GEMINI_MODEL_FLASH_REGEX = /\bFlash\b(?![\s-]*Lite)/i;
-export const GEMINI_MODEL_FLASH_LITE_REGEX = /\bFlash[\s-]*Lite\b/i;
+export const GEMINI_MODEL_PRO_REGEX = /\b3\.1\s+Pro\b/i;
+export const GEMINI_MODEL_FLASH_REGEX = /\b3\.7\s+Flash\b/i;
+export const GEMINI_MODEL_FLASH_FAMILY_REGEX = /\b3\.\d+\s+Flash(?![\s-]*Lite)\b/i;
+export const GEMINI_MODEL_FLASH_LITE_REGEX = /\b3\.5\s+Flash[\s-]*Lite\b/i;
 
 export const JSON_CLEANUP_CURLY_REGEX = /,\s*}/g;
 export const JSON_CLEANUP_SQUARE_REGEX = /,\s*]/g;

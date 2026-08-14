@@ -10,7 +10,7 @@ import {
   ImageGenerationMode,
   GenerateType,
   BackgroundMode,
-  TextInImageMode,
+  ThumbnailTextMode,
   ImageFocusMode,
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
@@ -49,6 +49,7 @@ import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
 import { toast } from "sonner";
+import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -193,14 +194,14 @@ export default function AutoVideoGenerator({
     applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY, (v) => setGenerationMode(v as ImageGenerationMode));
     applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) => setGenerateType(v as GenerateType));
     applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) => setStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) => setStyleBackgroundMode(v as BackgroundMode));
-    applyIfExists(REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY, (v) => setStyleTextInImageMode(v as TextInImageMode));
+    applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) => setStyleBackgroundMode(normalizeBackgroundMode(v as BackgroundMode)));
+    setStyleTextInImageMode(SCENE_TEXT_MODE);
     applyIfExists(REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY, (v) => setImageFocusMode(v as ImageFocusMode));
     applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) => setMaxVideoScenes(v as number));
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(v as BackgroundMode));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(v as TextInImageMode));
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(normalizeBackgroundMode(v as BackgroundMode)));
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(normalizeThumbnailTextMode(v as ThumbnailTextMode)));
     applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) => setThumbnailImageFocusMode(v as ImageFocusMode));
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
@@ -243,7 +244,7 @@ export default function AutoVideoGenerator({
     reader.readAsDataURL(file);
   };
 
-  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}) => {
+  const handleStartAutoGenerate = (overrides: { forceRegenerateVoice?: boolean; forceRegenerateScenes?: boolean; resumeMode?: boolean } = {}): Promise<void> => (
     startPipeline({
       scriptContent, inputType, genre, language, duration, rewriteLevel,
       similarityReduction, creativityLevel, factCheck, audience, writingStyle,
@@ -258,8 +259,8 @@ export default function AutoVideoGenerator({
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
       musicAssetUrl,
-    });
-  };
+    })
+  );
 
   const regenerationTexts = REGENERATION_TEXTS[currentLang as "vi" | "en"] || REGENERATION_TEXTS.vi;
   const handleRegenerate = async (target: string) => {
@@ -269,17 +270,18 @@ export default function AutoVideoGenerator({
     const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
       ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
       : _.isEqual(target, REGENERATION_TARGET.IMAGES)
-        ? [PROJECT_ASSET_GROUP.IMAGES, PROJECT_ASSET_GROUP.VIDEOS]
+        ? [PROJECT_ASSET_GROUP.VISUALS]
         : [PROJECT_ASSET_GROUP.VIDEOS];
 
-    const responses = await Promise.all(_.map(groups, (group) => fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
-      method: HTTP_METHODS.DELETE,
-      headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-    })));
-
-    if (_.some(responses, (response) => !response.ok)) {
-      toast.error(regenerationTexts.failed);
-      return;
+    for (const group of groups) {
+      const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
+        method: HTTP_METHODS.DELETE,
+        headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
+      });
+      if (!response.ok) {
+        toast.error(regenerationTexts.failed);
+        return;
+      }
     }
 
     let updatedProject = _.cloneDeep(project);
@@ -306,7 +308,7 @@ export default function AutoVideoGenerator({
     }
 
     pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-    handleStartAutoGenerate({
+    await handleStartAutoGenerate({
       resumeMode: true,
       forceRegenerateVoice: _.isEqual(target, REGENERATION_TARGET.VOICE),
       forceRegenerateScenes: _.isEqual(target, REGENERATION_TARGET.IMAGES),
@@ -343,6 +345,21 @@ export default function AutoVideoGenerator({
       void onUpdateProject(updatedProject, true);
     }
     setIsVoiceDialogOpen(false);
+  };
+
+  const handleThumbnailLoadError = (thumbnailId: string) => {
+    const latestProject = _.find(projects, { id: activeCreatedProject?.id }) || activeCreatedProject;
+    if (!latestProject) return;
+    const updatedProject = {
+      ...latestProject,
+      thumbnails: _.map(latestProject.thumbnails, thumbnail => (
+        _.isEqual(thumbnail.id, thumbnailId)
+          ? { ...thumbnail, imageUrl: undefined }
+          : thumbnail
+      )),
+    };
+    setActiveCreatedProject(updatedProject);
+    void onUpdateProject(updatedProject, true);
   };
 
   return (
@@ -458,8 +475,8 @@ export default function AutoVideoGenerator({
                 setResumeMode={setResumeMode}
                 backgroundMode={styleBackgroundMode}
                 setBackgroundMode={setStyleBackgroundMode}
-                textInImageMode={styleTextInImageMode}
-                setTextInImageMode={setStyleTextInImageMode}
+                textMode={styleTextInImageMode}
+                setTextMode={setStyleTextInImageMode}
                 imageFocusMode={imageFocusMode}
                 setImageFocusMode={setImageFocusMode}
                 language={currentLang as AppLanguage}
@@ -528,7 +545,10 @@ export default function AutoVideoGenerator({
 
           <SeoPanelSection activeCreatedProject={activeCreatedProject} />
 
-          <ThumbnailsPreviewSection activeCreatedProject={activeCreatedProject} />
+          <ThumbnailsPreviewSection
+            activeCreatedProject={activeCreatedProject}
+            onThumbnailLoadError={handleThumbnailLoadError}
+          />
         </div>
       </div>
     </div>

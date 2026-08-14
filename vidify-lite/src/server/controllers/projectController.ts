@@ -5,7 +5,7 @@ import { ProjectKind, VideoProject } from "../../types.js";
 import { randomUUID } from "crypto";
 import _ from 'lodash';
 
-import { REFACTOR_CONSTANTS, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG } from "../../constants/index.js";
+import { REFACTOR_CONSTANTS, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, IMAGES_DIR_NAME, VOICES_DIR_NAME, THUMBNAILS_DIR_NAME, VIDEOS_DIR_NAME, getBackendMsg, ERROR_MESSAGES, COMMON_STRINGS, LOG_MESSAGES, VIETNAMESE_ACCENT_MARKS_REGEX, VIETNAMESE_D_LETTER_REGEX, SAFE_FOLDER_CHARS_REGEX, MULTIPLE_SPACES_REGEX, BASE64_IMAGE_MIME_REGEX, BASE64_VIDEO_MIME_REGEX, ASSET_PROJECT_PATH_REGEX, SecurityConstants, ALIGN_CONFIG, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import { getProjectsListFromDb, getProjectDetailFromDb, saveProjectDetailToDb, deleteProjectFromDb, migrateJsonToSqlite } from "../utils/db.js";
 import { getDataDirectory } from "../utils/paths.js";
@@ -258,6 +258,12 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     const audioDir = path.join(projectDir, VOICES_DIR_NAME);
     const thumbDir = path.join(projectDir, THUMBNAILS_DIR_NAME);
     const videoDir = path.join(projectDir, VIDEOS_DIR_NAME);
+    const legacyCharacterReferenceDir = path.join(
+      projectDir,
+      PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY,
+      REFERENCE_ASSET_GROUP.CHARACTER,
+    );
+    fs.rmSync(legacyCharacterReferenceDir, { recursive: true, force: true });
 
     if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
     if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
@@ -355,7 +361,7 @@ function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   return newProject.storyboard;
 }
 
-function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) {
+function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, cleanAudio: boolean) {
   const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
   const audioDir = path.join(projectDir, VOICES_DIR_NAME);
 
@@ -388,7 +394,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
 
     const newHasAudio = (!_.isEmpty(newScene?.audioUrl) && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
 
-    if (!newHasAudio && fs.existsSync(audioDir)) {
+    if (cleanAudio && !newHasAudio && fs.existsSync(audioDir)) {
       try {
         const files = fs.readdirSync(audioDir);
         const newSceneIdStr = String(newScene.id);
@@ -414,7 +420,7 @@ function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string) 
   const oldAudioUrl = _.get(oldProject, 'voiceConfig.audioUrl');
   const newAudioUrl = _.get(newProject, 'voiceConfig.audioUrl');
 
-  if (oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
+  if (cleanAudio && oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
     const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
     if (fs.existsSync(unifiedAudioFile)) {
       try {
@@ -569,12 +575,13 @@ export const updateProject = async (request: Request, response: Response) => {
           }
         } else {
           newProject.storyboard = syncOrphanedScenes(newProject, oldProject);
-          cleanUpDiskFiles(newProject, oldProject, projectDir);
+          cleanUpDiskFiles(newProject, oldProject, projectDir, Boolean(newProject.allowAudioCleanup));
         }
       }
 
       delete newProject.allowBulkDeleteImages;
       delete newProject.isRecreatingStoryboard;
+      delete newProject.allowAudioCleanup;
 
       let updatedProject = { ...oldProject, ...newProject, updatedAt: new Date().toISOString() };
 

@@ -1,4 +1,4 @@
-import { resolveQualityProfile, selectScenesForVisionQa } from "../src/services/qualityProfileService.ts";
+import { resolveQualityProfile } from "../src/services/qualityProfileService.ts";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../src/services/contentSafetyService.ts";
 import { rollbackSceneAssetRevision } from "../src/services/dependencyHashService.ts";
 import { resolveRolloutConfig } from "../src/services/rolloutService.ts";
@@ -24,15 +24,7 @@ const scene: any = {
 };
 const restored = rollbackSceneAssetRevision(scene, "r1");
 assert(restored.assetUrl === "approved" && restored.assetRevisions.at(-1)?.operation === "rollback" && restored.assetRevisions.at(-1)?.parentRevisionId === "r2", "asset rollback lineage failed");
-assert(resolveQualityProfile(QualityMode.Premium).draftCandidates === 2 && resolveQualityProfile().draftCandidates === 1, "quality profile failed");
-const qaScenes: any[] = [
-  { id: "sc_1", script: "A man enters" },
-  { id: "sc_2", script: "empty road" },
-  { id: "sc_3", script: "a woman waits" },
-  { id: "sc_4", script: "the end" },
-];
-assert(selectScenesForVisionQa(qaScenes, QualityMode.Premium).length === 4, "premium vision QA coverage failed");
-assert(selectScenesForVisionQa(qaScenes, QualityMode.Balanced).some(item => item.id === "sc_3"), "balanced character QA failed");
+assert(resolveQualityProfile(QualityMode.Premium).draftCandidates === 1 && resolveQualityProfile().draftCandidates === 1, "single image generation policy failed");
 const rollout = resolveRolloutConfig("project_1");
-assert(rollout.flags.finalQc && ["stable", "canary"].includes(rollout.releaseChannel), "rollout config failed");
+assert(!rollout.flags.finalQc && !rollout.flags.visualQa && ["stable", "canary"].includes(rollout.releaseChannel), "advisory rollout config failed");
 writeVerificationLog("Advanced safety/rollback/rollout assertions passed");

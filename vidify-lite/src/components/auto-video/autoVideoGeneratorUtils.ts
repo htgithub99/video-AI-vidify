@@ -22,9 +22,9 @@ export const getImageEngineOptions = (
 ): { value: ImageGeneratorEngine; label: string }[] => {
   if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
     return [
-      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
-      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
       { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
+      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
+      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
     ];
   }
 

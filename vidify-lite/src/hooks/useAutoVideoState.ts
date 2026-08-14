@@ -13,6 +13,7 @@ import {
   AspectRatio,
   BackgroundMode,
   TextInImageMode,
+  ThumbnailTextMode,
   ImageFocusMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
@@ -24,6 +25,7 @@ import { logger } from "../utils/logger";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { getAutoVideoConfigStorageKey } from "./autoVideoPipelineUtils";
+import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 
 interface CachedGeneratorConfig {
   version?: number;
@@ -49,7 +51,7 @@ interface CachedGeneratorConfig {
   thumbnailCount?: number;
   thumbnailStylePreset?: string;
   thumbnailBackgroundMode?: BackgroundMode;
-  thumbnailTextInImageMode?: TextInImageMode;
+  thumbnailTextInImageMode?: ThumbnailTextMode;
   projectName?: string;
   referenceImages?: string[];
   sceneReferenceImages?: string[];
@@ -104,7 +106,7 @@ export interface AutoVideoFormState {
   thumbnailCount: number;
   thumbnailStylePreset: string;
   thumbnailBackgroundMode: BackgroundMode;
-  thumbnailTextInImageMode: TextInImageMode;
+  thumbnailTextInImageMode: ThumbnailTextMode;
   thumbnailReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
@@ -141,7 +143,7 @@ export interface AutoVideoFormActions {
   setThumbnailCount: (v: number) => void;
   setThumbnailStylePreset: (v: string) => void;
   setThumbnailBackgroundMode: (v: BackgroundMode) => void;
-  setThumbnailTextInImageMode: (v: TextInImageMode) => void;
+  setThumbnailTextInImageMode: (v: ThumbnailTextMode) => void;
   setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   setProjectName: (v: string) => void;
   setResumeMode: (v: boolean) => void;
@@ -190,14 +192,14 @@ const applyProjectToState = (
     if (!_.isUndefined(proj.visualConfig.maxVideoScenes)) actions.setMaxVideoScenes(proj.visualConfig.maxVideoScenes);
     if (proj.visualConfig.aspectRatio) actions.setAspectRatio(proj.visualConfig.aspectRatio as AspectRatio);
     if (proj.visualConfig.stylePreset) actions.setStylePreset(proj.visualConfig.stylePreset);
-    if (proj.visualConfig.styleBackgroundMode) actions.setStyleBackgroundMode(proj.visualConfig.styleBackgroundMode);
-    if (proj.visualConfig.styleTextInImageMode) actions.setStyleTextInImageMode(proj.visualConfig.styleTextInImageMode);
+    if (proj.visualConfig.styleBackgroundMode) actions.setStyleBackgroundMode(normalizeBackgroundMode(proj.visualConfig.styleBackgroundMode));
+    actions.setStyleTextInImageMode(SCENE_TEXT_MODE);
     if (proj.visualConfig.imageFocusMode) actions.setImageFocusMode(proj.visualConfig.imageFocusMode);
     if (proj.visualConfig.thumbnailImageFocusMode) actions.setThumbnailImageFocusMode(proj.visualConfig.thumbnailImageFocusMode);
     if (!_.isUndefined(proj.visualConfig.thumbnailCount)) actions.setThumbnailCount(proj.visualConfig.thumbnailCount);
     if (proj.visualConfig.thumbnailReferencePrompt) actions.setThumbnailStylePreset(proj.visualConfig.thumbnailReferencePrompt);
-    if (proj.visualConfig.thumbnailBackgroundMode) actions.setThumbnailBackgroundMode(proj.visualConfig.thumbnailBackgroundMode);
-    if (proj.visualConfig.thumbnailTextInImageMode) actions.setThumbnailTextInImageMode(proj.visualConfig.thumbnailTextInImageMode);
+    if (proj.visualConfig.thumbnailBackgroundMode) actions.setThumbnailBackgroundMode(normalizeBackgroundMode(proj.visualConfig.thumbnailBackgroundMode));
+    actions.setThumbnailTextInImageMode(normalizeThumbnailTextMode(proj.visualConfig.thumbnailTextInImageMode));
     actions.setReferenceImages(
       _.defaultTo(proj.visualConfig.styleReferenceImages, (
         _.isEmpty(proj.visualConfig.sceneReferenceImages)
@@ -256,7 +258,7 @@ export function useAutoVideoState(
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
   const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
-  const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
+  const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(SCENE_TEXT_MODE);
   const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
   const [thumbnailImageFocusMode, setThumbnailImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
@@ -266,7 +268,7 @@ export function useAutoVideoState(
   const [thumbnailCount, setThumbnailCount] = useState<number>(2);
   const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
   const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
-  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<TextInImageMode>(TextInImageMode.Auto);
+  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<ThumbnailTextMode>(ThumbnailTextMode.Headline);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
 
   const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
@@ -338,14 +340,14 @@ export function useAutoVideoState(
         if (!_.isUndefined(parsed.maxVideoScenes)) setMaxVideoScenes(parsed.maxVideoScenes);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.stylePreset) setStylePreset(parsed.stylePreset);
-        if (parsed.styleBackgroundMode) setStyleBackgroundMode(parsed.styleBackgroundMode);
-        if (parsed.styleTextInImageMode) setStyleTextInImageMode(parsed.styleTextInImageMode);
+        if (parsed.styleBackgroundMode) setStyleBackgroundMode(normalizeBackgroundMode(parsed.styleBackgroundMode));
+        setStyleTextInImageMode(SCENE_TEXT_MODE);
         if (parsed.imageFocusMode) setImageFocusMode(parsed.imageFocusMode);
         if (parsed.thumbnailImageFocusMode) setThumbnailImageFocusMode(parsed.thumbnailImageFocusMode);
         if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
         if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
-        if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(parsed.thumbnailBackgroundMode);
-        if (parsed.thumbnailTextInImageMode) setThumbnailTextInImageMode(parsed.thumbnailTextInImageMode);
+        if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(normalizeBackgroundMode(parsed.thumbnailBackgroundMode));
+        setThumbnailTextInImageMode(normalizeThumbnailTextMode(parsed.thumbnailTextInImageMode));
         if (parsed.projectName) setProjectName(parsed.projectName);
         if (!_.isUndefined(parsed.musicAssetUrl)) setMusicAssetUrl(parsed.musicAssetUrl);
         setReferenceImages(!_.isEmpty(projectStyleReferenceImages)

@@ -1,6 +1,7 @@
 import _ from "lodash";
 import {
   GenerateType,
+  ImageGenerationMode,
   ImageGeneratorEngine,
   TextInImageMode,
   VisualConfig,
@@ -39,16 +40,6 @@ const VIDEO_ENGINES = [
 
 const IMAGE_ENGINES = [ImageGeneratorEngine.Imagen] as const;
 
-const NO_TEXT_NEGATIVE_PROMPT = [
-  "no readable text",
-  "no letters",
-  "no numbers",
-  "blank documents",
-  "blank screens",
-  "no logos",
-  "no watermark",
-] as const;
-
 const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
   !_.isEmpty(config.characterPrompt),
   _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
@@ -57,6 +48,7 @@ const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
 export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
+  const usesGeminiModelPicker = _.isEqual(config.generationMode, ImageGenerationMode.GeminiChat);
 
   if (_.every([config.characterConsistency, !hasCharacterIdentity(config)], Boolean)) {
     config.characterConsistency = false;
@@ -76,7 +68,7 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
       });
     }
 
-    if (_.includes(VIDEO_ENGINES, config.imageGeneratorEngine as typeof VIDEO_ENGINES[number])) {
+    if (!usesGeminiModelPicker && _.includes(VIDEO_ENGINES, config.imageGeneratorEngine as typeof VIDEO_ENGINES[number])) {
       config.imageGeneratorEngine = ImageGeneratorEngine.Imagen;
       issues.push({
         code: ConfigIssueCode.ImageModeVideoEngineReplaced,
@@ -88,7 +80,7 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
   if (_.some([
     _.isEqual(config.generateType, GenerateType.Video),
     _.isEqual(config.generateType, GenerateType.Mixed),
-  ]) && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as typeof IMAGE_ENGINES[number])) {
+  ]) && !usesGeminiModelPicker && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as typeof IMAGE_ENGINES[number])) {
     config.generateType = GenerateType.Image;
     issues.push({
       code: ConfigIssueCode.VideoModeImageEngineUnsupported,
@@ -97,10 +89,6 @@ export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig 
   }
 
   if (_.isEqual(config.styleTextInImageMode, TextInImageMode.NoText)) {
-    config.negativePrompt = _.join(_.uniq(_.compact([
-      config.negativePrompt,
-      ...NO_TEXT_NEGATIVE_PROMPT,
-    ])), ", ");
     issues.push({
       code: ConfigIssueCode.NoTextConstraintApplied,
       severity: ConfigIssueSeverity.Warning,

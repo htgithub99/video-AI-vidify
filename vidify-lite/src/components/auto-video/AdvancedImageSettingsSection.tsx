@@ -6,10 +6,10 @@ import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { BackgroundMode, TextInImageMode } from "../../types";
 import { BackgroundModeSelect } from "./BackgroundModeSelect";
-import { TextInImageModeSelect } from "./TextInImageModeSelect";
 import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage } from "../../constants/enums";
 import { ImageFocusMode } from "../../types";
+import { SceneTextModeSelect } from "./SceneTextModeSelect";
 
 interface AdvancedImageSettingsSectionProps {
   showAdvancedImageSettings: boolean;
@@ -20,8 +20,8 @@ interface AdvancedImageSettingsSectionProps {
   setResumeMode: (val: boolean) => void;
   backgroundMode: BackgroundMode;
   setBackgroundMode: (value: BackgroundMode) => void;
-  textInImageMode: TextInImageMode;
-  setTextInImageMode: (value: TextInImageMode) => void;
+  textMode: TextInImageMode;
+  setTextMode: (value: TextInImageMode) => void;
   imageFocusMode: ImageFocusMode;
   setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
@@ -37,8 +37,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   setResumeMode,
   backgroundMode,
   setBackgroundMode,
-  textInImageMode,
-  setTextInImageMode,
+  textMode,
+  setTextMode,
   imageFocusMode,
   setImageFocusMode,
   language,
@@ -67,7 +67,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
       {showAdvancedImageSettings && (
         <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_CONTENT_CLASS, "sm:grid-cols-5")}>
           <BackgroundModeSelect value={backgroundMode} onChange={setBackgroundMode} language={language} label={T.styleBgModeLabel} />
-          <TextInImageModeSelect value={textInImageMode} onChange={setTextInImageMode} language={language} label={T.styleTextModeLabel} />
+          <SceneTextModeSelect value={textMode} onChange={setTextMode} language={language} label={T.styleTextModeLabel} />
           <ImageFocusModeSelect value={imageFocusMode} onChange={setImageFocusMode} language={language} label={T.imageFocusModeLabel} />
           {[
             {
@@ -77,8 +77,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               value: chromeHeadless ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS : REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED,
               onChange: (v: string) => setChromeHeadless(v === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS),
               options: [
-                { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: T.optionHeadless },
-                { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: T.optionWindowed },
+                { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: `${T.optionHeadless} — ${T.lblChromeHeadlessTooltip}` },
+                { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: `${T.optionWindowed} — ${T.lblChromeHeadlessTooltip}` },
               ] as { value: string; label: string }[],
             },
             {
@@ -88,8 +88,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               value: resumeMode ? REFACTOR_CONSTANTS.RESUME_MODE_RESUME : REFACTOR_CONSTANTS.RESUME_MODE_NEW,
               onChange: (v: string) => setResumeMode(v === REFACTOR_CONSTANTS.RESUME_MODE_RESUME),
               options: [
-                { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: T.optionResume },
-                { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: T.optionNew },
+                { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: `${T.optionResume} — ${T.lblResumeModeTooltip}` },
+                { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: `${T.optionNew} — ${T.lblResumeModeTooltip}` },
               ] as { value: string; label: string }[],
             },
           ].map(({ label, tooltip, icon, value, onChange, options }) => (
