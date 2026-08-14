@@ -259,19 +259,21 @@ export function useAutoVideoPipeline(
       alert(T.alertEmptyScript);
       return;
     }
+    processingRef.current = true;
+    cancellationRef.current = false;
+    setIsCancelling(false);
+
     const availableMusicAssetUrl = config.musicAssetUrl || activeCreatedProject?.config.musicAssetUrl;
     config.musicAssetUrl = availableMusicAssetUrl;
 
     const pipelineTargetKey = _.toString(config.selectedProjectId || activeCreatedProject?.id || _.kebabCase(_.join([config.projectName, config.scriptContent], REFACTOR_CONSTANTS.VD_EMPTY_STRING)));
     const pipelineRunLease = acquirePipelineRunLease(pipelineTargetKey);
     if (!pipelineRunLease.acquired) {
+      processingRef.current = false;
       alert(REFACTOR_CONSTANTS.ERR_PIPELINE_ALREADY_RUNNING);
       return;
     }
 
-    processingRef.current = true;
-    cancellationRef.current = false;
-    setIsCancelling(false);
     requestAbortControllerRef.current = new AbortController();
     const requestSignal = requestAbortControllerRef.current.signal;
 
@@ -288,7 +290,6 @@ export function useAutoVideoPipeline(
 
     let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
     setLogs(_.clone(currentLogs));
-
     const appendLog = (msg: string) => {
       const timestamp = new Date().toLocaleTimeString();
       const formatted = `[${timestamp}] ${msg}`;

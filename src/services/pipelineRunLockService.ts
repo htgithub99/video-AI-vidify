@@ -52,19 +52,31 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
     expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS),
   };
   jsonUtils.setItem(getStorageKey(normalizedTargetKey), lock);
-  const acquired = _.isEqual(readLock(normalizedTargetKey)?.runId, runId);
-  if (acquired) activeLeaseRunIds.add(runId);
-  return { acquired, runId, targetKey: normalizedTargetKey };
+  activeLeaseRunIds.add(runId);
+  return { acquired: true, runId, targetKey: normalizedTargetKey };
 };
 
 export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
+  if (!lease || !lease.acquired || _.isEmpty(lease.runId)) return false;
+  
   const currentLock = readLock(lease.targetKey);
-  if (!_.isEqual(currentLock?.runId, lease.runId)) return false;
-  jsonUtils.setItem(
-    getStorageKey(lease.targetKey),
-    { ...currentLock, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) },
-  );
-  return true;
+  const ownerId = getOwnerId();
+  
+  if (
+    _.isEqual(currentLock?.runId, lease.runId) ||
+    (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)))
+  ) {
+    const refreshedLock: PipelineRunLock = {
+      runId: lease.runId,
+      targetKey: lease.targetKey,
+      ownerId,
+      expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS),
+    };
+    jsonUtils.setItem(getStorageKey(lease.targetKey), refreshedLock);
+    return true;
+  }
+
+  return false;
 };
 
 export const releasePipelineRunLease = (lease: PipelineRunLease): void => {
