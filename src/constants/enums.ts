@@ -133,6 +133,8 @@ export enum SplitStrategy {
 export enum VideoGenre {
   STORY_DRIVEN_VIDEO_ESSAY = "Story-driven Video Essay",
   NARRATIVE_EXPLAINER = "Narrative Explainer",
+  CHARACTER_PSYCHOLOGY = "Character Psychology Analysis",
+  LORE_WORLD_BUILDING = "Lore and World Breakdown",
   SATIRICAL_LIFE_AUTO = "Satirical Life Story Auto",
   TRANSFORMATION_TIMELINE = "Transformation Timeline",
   CAREER_SOCIAL_DARKSIDE = "Career and Social Darkside",

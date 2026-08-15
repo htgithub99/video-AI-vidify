@@ -21,6 +21,7 @@ export const pipelineNodes = [
   { id: "SGE", nameVi: "Dựng phân cảnh", nameEn: "Storyboard Generator", stageGroup: 3, descVi: "Lập sơ độ phân cảnh chi tiết đồng bộ mốc thời gian.", descEn: "Forms coordinates linking timing, narration, and screen actions." },
   { id: "SSP", nameVi: "Phân dòng cảnh", nameEn: "Scene Splitter", stageGroup: 3, descVi: "Cắt nhỏ kịch bản bám sát diễn biến bối cảnh.", descEn: "Splits chapter narratives into granular scenes." },
   { id: "TGE", nameVi: "Thiết Kế Sơ Đồ Thời Gian", nameEn: "Timeline Generator", stageGroup: 3, descVi: "Ước lượng thời gian và thời lượng cho từng khung hình.", descEn: "Calculates start-end frames based on reading speeds." },
+
   { id: "VPL", nameVi: "Kế Hoạch Hình Ảnh", nameEn: "Visual Planner", stageGroup: 4, descVi: "Định lượng số lượng ảnh cần thiết cho đoạn phim.", descEn: "Optimizes assets count, preventing duplicate images." },
   { id: "ASM", nameVi: "Tài nguyên hình ảnh", nameEn: "Asset Manager", stageGroup: 4, descVi: "Nhập dữ liệu hình ảnh tải lên hoặc tự động khởi tạo.", descEn: "Mixes imported CSV elements and system default textures." },
   { id: "PGE", nameVi: "Mô tả hình ảnh", nameEn: "Prompt Generator", stageGroup: 4, descVi: "Dựng từ khóa vẽ tranh chi tiết cho công cụ.", descEn: "Enhances descriptive painting formulas for high quality." },
@@ -41,17 +42,19 @@ export const pipelineNodes = [
 ] as const;
 
 export const genreLabels = {
-  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Kể chuyện",
-  [VideoGenre.NARRATIVE_EXPLAINER]: "Video essay giải thích",
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Tóm tắt phim & truyện",
+  [VideoGenre.NARRATIVE_EXPLAINER]: "Giải thích nguồn gốc & sự kiện",
+  [VideoGenre.CHARACTER_PSYCHOLOGY]: "Phân tích tâm lý nhân vật",
+  [VideoGenre.LORE_WORLD_BUILDING]: "Giải mã chi tiết bí ẩn",
   [VideoGenre.SATIRICAL_LIFE_AUTO]: "AI tự chọn",
   [VideoGenre.TRANSFORMATION_TIMELINE]: "Biến đổi theo thời gian",
   [VideoGenre.CAREER_SOCIAL_DARKSIDE]: "Góc tối nghề nghiệp",
   [VideoGenre.DOWNFALL_CONSEQUENCE]: "Sa ngã và trả giá",
   [VideoGenre.DARK_COMEDY_TRAGEDY]: "Bi kịch hài đen",
-  Storytelling: "Kể chuyện",
+  Storytelling: "Tóm tắt phim & truyện",
   History: "Lịch sử & tài liệu",
   Documentary: "Phim tài liệu",
-  Explanation: "Giải thích",
+  Explanation: "Giải thích nguồn gốc & sự kiện",
   Review: "Đánh giá / Review",
   Education: "Giáo dục",
   News: "Tin tức",
@@ -75,7 +78,12 @@ export const GENRE_OPTION_GROUPS = [
   },
   {
     label: "Kể chuyện – giải thích",
-    options: [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER],
+    options: [
+      VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
+      VideoGenre.NARRATIVE_EXPLAINER,
+      VideoGenre.CHARACTER_PSYCHOLOGY,
+      VideoGenre.LORE_WORLD_BUILDING,
+    ],
   },
   {
     label: "Tài liệu – kiến thức",
