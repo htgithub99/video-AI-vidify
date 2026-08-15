@@ -248,6 +248,11 @@ export const DURATION_OPTIONS = [
   { val: "5m", label: "750 từ (~5 phút)" },
   { val: "10m", label: "1500 từ (~10 phút)" },
   { val: "15m", label: "2250 từ (~15 phút)" },
+  { val: "30m", label: "4500 từ (~30 phút)" },
+  { val: "40m", label: "6000 từ (~40 phút)" },
+  { val: "60m", label: "9000 từ (~60 phút)" },
+  { val: "1h30m", label: "13500 từ (~1h30 phút)" },
+  { val: "2h", label: "18000 từ (~2 giờ)" },
 ] as const;
 
 export const DEFAULT_IMAGE_KEYWORDS = "cinematic,landscape";

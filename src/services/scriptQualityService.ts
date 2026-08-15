@@ -102,6 +102,13 @@ export const normalizeScriptQualityReport = (
 
 export const parseTargetDurationSeconds = (duration: unknown): number => {
   const normalized = _.toString(duration).toLowerCase().trim();
+  if (normalized.includes("h")) {
+    const hoursMatch = normalized.match(/(\d+(?:\.\d+)?)h/);
+    const minutesMatch = normalized.match(/(\d+(?:\.\d+)?)m/);
+    const hours = hoursMatch ? _.toFinite(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? _.toFinite(minutesMatch[1]) : 0;
+    return hours * 3600 + minutes * 60;
+  }
   const amount = _.toFinite(_.get(normalized.match(/\d+(?:\.\d+)?/), 0, 0));
   return normalized.endsWith("s") ? amount : amount * 60;
 };
