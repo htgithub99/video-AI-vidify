@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG, MARKDOWN_REGEX, STYLE_LOCK_CONFIG } from "../constants";
+import { IMAGE_PROMPT_COMPILER_CONFIG, MARKDOWN_REGEX, STYLE_LOCK_CONFIG, STYLE_REFERENCE_DIRECTIVES } from "../constants";
 import { VisualStyleProfile } from "../types";
 
 const normalizeField = (value: unknown): string => _.trim(
@@ -31,17 +31,17 @@ export const createCharacterConstructionDirective = (profile?: VisualStyleProfil
   const colorDna = normalizeField(profile.colorDna);
   const renderingDna = normalizeField(profile.renderingDna);
   const peopleRule = _.join(_.compact([
-    "Strict character visual lock: every person/character uses the exact same",
-    characterType || "character anatomy and construction",
+    STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_PREFIX,
+    characterType || STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_FALLBACK,
     characterDna && `with ${characterDna}`,
-    "Always render complete facial features: distinct solid black eyes, eyebrows, nose dot, expressive line mouth, and hairstyle matching the reference. Never leave the face blank or featureless",
+    STYLE_REFERENCE_DIRECTIVES.FACIAL_FEATURES_RULE,
   ]), ". ");
   return _.join(_.compact([
     medium,
     peopleRule,
-    lineDna && `Line art: ${lineDna}`,
-    colorDna && `Palette: ${colorDna}`,
-    renderingDna && `Rendering: ${renderingDna}`,
+    lineDna && _.replace(STYLE_REFERENCE_DIRECTIVES.LINE_ART_TEMPLATE, "{value}", lineDna),
+    colorDna && _.replace(STYLE_REFERENCE_DIRECTIVES.PALETTE_TEMPLATE, "{value}", colorDna),
+    renderingDna && _.replace(STYLE_REFERENCE_DIRECTIVES.RENDERING_TEMPLATE, "{value}", renderingDna),
   ]), ". ");
 };
 
@@ -53,9 +53,11 @@ export const createMasterStylePrefix = (profile?: VisualStyleProfile): string =>
   const lineDna = normalizeField(profile.lineDna);
   return _.join(_.compact([
     medium,
-    characterType && `Unified art style: ${characterType}`,
-    characterDna && `Every character anatomy follows: ${characterDna}`,
-    "Full facial features required: solid black dot eyes, eyebrows, small mouth, and hair styled per reference on every character",
+    STYLE_REFERENCE_DIRECTIVES.UNIVERSAL_ANATOMY_MANDATE,
+    characterType && _.replace(STYLE_REFERENCE_DIRECTIVES.UNIFIED_STYLE_TEMPLATE, "{value}", characterType),
+    characterDna && _.replace(STYLE_REFERENCE_DIRECTIVES.EVERY_ANATOMY_TEMPLATE, "{value}", characterDna),
+    STYLE_REFERENCE_DIRECTIVES.FULL_FACIAL_FEATURES,
+    STYLE_REFERENCE_DIRECTIVES.STRICT_PROHIBITION,
     lineDna,
   ]), ". ");
 };
@@ -65,10 +67,11 @@ export const createMasterStyleSuffix = (profile?: VisualStyleProfile): string =>
   const renderingDna = normalizeField(profile.renderingDna);
   const worldRendering = normalizeField(profile.worldRendering);
   return _.join(_.compact([
-    renderingDna && `Visual consistency: ${renderingDna}`,
-    worldRendering && `Environment style: ${worldRendering}`,
-    "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
-    "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
+    renderingDna && _.replace(STYLE_REFERENCE_DIRECTIVES.VISUAL_CONSISTENCY_TEMPLATE, "{value}", renderingDna),
+    worldRendering && _.replace(STYLE_REFERENCE_DIRECTIVES.ENVIRONMENT_STYLE_TEMPLATE, "{value}", worldRendering),
+    STYLE_REFERENCE_DIRECTIVES.LIMB_INTEGRITY,
+    STYLE_REFERENCE_DIRECTIVES.UNIFORM_VISUAL_IDENTITY,
+    STYLE_REFERENCE_DIRECTIVES.CLEAN_RENDER,
   ]), ". ");
 };
 
@@ -108,6 +111,6 @@ export const resolveReferenceLockedStyle = (style: unknown, hasReferences: boole
 export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string => referenceLocked
   ? _.trim(value
     .replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, "")
-    .replace(/\s*,\s*,+/g, ", ")
-    .replace(/\s+([,.;:])/g, "$1"))
+    .replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ")
+    .replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1"))
   : value;

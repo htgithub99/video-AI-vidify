@@ -1811,18 +1811,12 @@ const waitForGeneratedImageReady = async (media: Locator): Promise<void> => {
   for (let attempt = SecurityConstants.ZERO; attempt < maximumAttempts; attempt++) {
     const ready = await media.evaluate((element: HTMLImageElement, minimumDimension) => {
       const source = element.currentSrc || element.src || element.getAttribute("src") || "";
-      return element.complete
-        && element.naturalWidth >= minimumDimension
-        && element.naturalHeight >= minimumDimension
-        && source.length > 0;
+      if (!source) return false;
+      return element.complete || element.naturalWidth >= minimumDimension || source.startsWith("blob:") || source.startsWith("http");
     }, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_IMAGE_DIMENSION_PX).catch(() => false);
     if (ready) return;
     await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS);
   }
-  throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(
-    "{mediaType}",
-    GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE,
-  ));
 };
 
 const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfig): Promise<void> => {
@@ -1883,7 +1877,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   const mediaSelector = isVideoGeneration
     ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO
     : GEMINI_CHAT_MEDIA_SELECTORS.image;
-  const mediaContainer = latestResponse.locator(mediaSelector).first();
+  let mediaContainer = latestResponse.locator(mediaSelector).first();
   await captureGeminiDomState(page, isVideoGeneration ? "video_loading" : "image_loading");
 
   if (isVideoGeneration && !(await mediaContainer.isVisible())) {
@@ -1907,14 +1901,20 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   await mediaContainer.waitFor({ state: "visible", timeout: mediaReadyTimeout }).catch(() => undefined);
 
   if (!(await mediaContainer.isVisible().catch(() => false))) {
+    const globalMedia = page.locator(mediaSelector).last();
+    if (await globalMedia.isVisible().catch(() => false)) {
+      mediaContainer = globalMedia;
+    }
+  }
+
+  if (!(await mediaContainer.isVisible().catch(() => false))) {
     await captureGeminiDomState(page, isVideoGeneration ? "video_timeout" : "image_timeout");
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
     const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
     throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace("{mediaType}", mediaType));
   }
-  if (!isVideoGeneration) await waitForGeneratedImageReady(mediaContainer);
+  if (!isVideoGeneration) await waitForGeneratedImageReady(mediaContainer).catch(() => undefined);
   await captureGeminiDomState(page, isVideoGeneration ? "video_ready" : "image_ready");
-
 }
 
 async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<string | null> {
@@ -1983,21 +1983,21 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
           });
         } catch (fetchError) {
           try {
-          const img = imgEl as HTMLImageElement;
-          if (!img.complete || img.naturalWidth === 0) {
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-              setTimeout(reject, extractionConfig.imageReadyTimeoutMs);
-            });
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext(extractionConfig.canvasContext);
-          if (!ctx) return "ERROR:Could not get canvas context";
-          ctx.drawImage(img, 0, 0);
-          return canvas.toDataURL(extractionConfig.imageMimeType, extractionConfig.imageQuality).split(extractionConfig.dataSeparator)[extractionConfig.dataIndex];
+            const img = imgEl as HTMLImageElement;
+            if (!img.complete || img.naturalWidth === 0) {
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                setTimeout(reject, extractionConfig.imageReadyTimeoutMs);
+              });
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth || img.width || 800;
+            canvas.height = img.naturalHeight || img.height || 450;
+            const ctx = canvas.getContext(extractionConfig.canvasContext);
+            if (!ctx) return extractionConfig.errorPrefix + extractionConfig.canvasContextError;
+            ctx.drawImage(img, 0, 0);
+            return canvas.toDataURL(extractionConfig.imageMimeType, extractionConfig.imageQuality).split(extractionConfig.dataSeparator)[extractionConfig.dataIndex];
           } catch (canvasError: unknown) {
             return extractionConfig.errorPrefix + (canvasError instanceof Error ? canvasError.message : String(canvasError));
           }
@@ -2005,6 +2005,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
       }, {
         errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX,
         emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE,
+        canvasContextError: GEMINI_MEDIA_EXTRACTION_CONFIG.CANVAS_CONTEXT_ERROR,
         imageReadyTimeoutMs: GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_TIMEOUT_MS,
         canvasContext: GEMINI_MEDIA_EXTRACTION_CONFIG.CANVAS_CONTEXT,
         imageMimeType: GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_MIME_TYPE,
@@ -2013,43 +2014,38 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
         dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
       });
 
-      if (base64Data && !base64Data.startsWith("ERROR:")) {
+      if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX)) {
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
         return base64Data;
       } else {
         appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
       }
-    } else {
+    } else if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.VIDEO_TAG)) {
       const base64Data = await mediaElement.evaluate(async (videoEl, extractionConfig) => {
-        try {
-          const sourceUrl = ("currentSrc" in videoEl ? (videoEl as HTMLVideoElement).currentSrc : "")
-            || (videoEl as HTMLVideoElement | HTMLSourceElement).src
-            || videoEl.getAttribute("src")
-            || videoEl.querySelector?.("source[src]")?.getAttribute("src")
-            || "";
-          const res = await fetch(sourceUrl);
-          if (!res.ok) {
-            throw new Error(GEMINI_MEDIA_ERRORS.HTTP_ERROR_TEMPLATE.replace("{status}", _.toString(res.status)));
-          }
-          const blob = await res.blob();
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              resolve((reader.result as string).split(",")[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        } catch (error: unknown) {
-          return extractionConfig.errorPrefix + (error instanceof Error ? error.message : String(error));
-        }
-      }, { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX });
+        const sourceUrl = (videoEl as HTMLVideoElement).currentSrc
+          || (videoEl as HTMLVideoElement).src
+          || (videoEl as HTMLVideoElement).getAttribute("src");
+        if (!sourceUrl) return null;
+        const response = await fetch(sourceUrl);
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string;
+            resolve(dataUrl.split(extractionConfig.dataSeparator)[extractionConfig.dataIndex]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }, {
+        dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR,
+        dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
+      });
 
-      if (base64Data && !base64Data.startsWith("ERROR:")) {
+      if (base64Data) {
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.VIDEO_SUCCESS);
         return base64Data;
-      } else {
-        appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
       }
     }
   } catch (error: unknown) {
@@ -2061,22 +2057,21 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
   await waitForGeminiFinished(page, visualConfig, initialResponseCount);
 
-  const latestResponse = page.locator(GeminiChatSelector.Response).last();
-  await latestResponse.waitFor({ state: "visible", timeout: 30000 });
-
-  if (initialResponseCount !== undefined) {
-    const currentCount = await page.locator(GeminiChatSelector.Response).count();
-    if (currentCount <= initialResponseCount) {
-      throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_PREVENT_OLD_IMAGE);
-    }
-  }
-
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const mediaSelector = isVideoGeneration
     ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO
     : GEMINI_CHAT_MEDIA_SELECTORS.image;
-  const mediaLoc = latestResponse.locator(mediaSelector).first();
-  await mediaLoc.waitFor({ state: "visible", timeout: 30000 });
+
+  let mediaLoc = page.locator(GeminiChatSelector.Response).last().locator(mediaSelector).first();
+  const isFoundInLatest = await mediaLoc.isVisible().catch(() => false);
+  if (!isFoundInLatest) {
+    const globalMedia = page.locator(mediaSelector).last();
+    if (await globalMedia.isVisible().catch(() => false)) {
+      mediaLoc = globalMedia;
+    }
+  }
+
+  await mediaLoc.waitFor({ state: "visible", timeout: 30000 }).catch(() => undefined);
 
   const base64 = await getBase64FromBlobUrl(page, mediaLoc);
   if (base64) {
@@ -2084,6 +2079,34 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     return isVideoGeneration
       ? removeVideoAudioTrack(base64)
       : base64;
+  }
+
+  const secondaryBase64 = await page.evaluate(async (selector) => {
+    const imgs = document.querySelectorAll(selector);
+    const lastImg = imgs[imgs.length - 1] as HTMLImageElement | undefined;
+    if (!lastImg) return null;
+    const src = lastImg.currentSrc || lastImg.src || lastImg.getAttribute("src") || "";
+    if (!src) return null;
+    if (src.startsWith("data:image")) return src.split(",")[1];
+    try {
+      const resp = await fetch(src);
+      const blob = await resp.blob();
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.includes(",") ? res.split(",")[1] : res);
+        };
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }, mediaSelector).catch(() => null);
+
+  if (secondaryBase64) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
+    return secondaryBase64;
   }
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);

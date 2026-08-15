@@ -109,11 +109,12 @@ const createConstraintClauses = (scene: StoryboardScene): string[] => {
       count: _.toString(subjectCount),
       plural: _.isEqual(subjectCount, 1) ? "" : "s",
     }),
-    isMultiPerson && "Distinct character visuals: secondary characters, mentors, or clients must wear contrasting clothing colors (e.g. navy, grey, green, or brown) to clearly distinguish them from the main protagonist",
+    isMultiPerson && IMAGE_PROMPT_COMPILER_CONFIG.DISTINCT_CHARACTER_VISUALS_DIRECTIVE,
     _.isEqual(scene.layout, IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LAYOUT) && IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,
     _.isEqual(scene.allowBackgroundPeople, false) && IMAGE_PROMPT_COMPILER_CONFIG.NO_EXTRA_PEOPLE_DIRECTIVE,
-    _.isEqual(scene.textAllowed, false) && IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
-    "Strictly no grid lines, no alignment guide overlays, no framing lines on the final image",
+    IMAGE_PROMPT_COMPILER_CONFIG.UNIFORM_CHARACTER_DIRECTIVE,
+    IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_LIMB_DIRECTIVE,
+    IMAGE_PROMPT_COMPILER_CONFIG.NO_GRID_DIRECTIVE,
   ]) as string[];
 };
 
@@ -125,8 +126,8 @@ const createNarrativeClause = (scene: StoryboardScene): string => compactWords(
 const createCompositionClause = (scene: StoryboardScene): string => {
   const compositionText = _.replace(
     _.toString(scene.composition),
-    /rule of thirds/gi,
-    "balanced third-division subject placement without visible grid lines",
+    IMAGE_PROMPT_COMPILER_CONFIG.RULE_OF_THIRDS_REGEX,
+    IMAGE_PROMPT_COMPILER_CONFIG.RULE_OF_THIRDS_REPLACEMENT,
   );
   return compactWords(
     applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.COMPOSITION_TEMPLATE, {

@@ -299,6 +299,14 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   NO_TEXT_DIRECTIVE: "No readable text, letters, numbers, logos, or watermarks",
   NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
   SINGLE_FRAME_DIRECTIVE: "one continuous frame without panels or collage",
+  DISTINCT_CHARACTER_VISUALS_DIRECTIVE: "Distinct character visuals: secondary characters, mentors, or clients must wear contrasting clothing colors (e.g. navy, grey, green, or brown) to clearly distinguish them from the main protagonist",
+  UNIFORM_CHARACTER_DIRECTIVE: "Universal character anatomy rule: every character in the scene (including background figures, crowd, boss, clients, and brokers) must be strictly rendered with uniform stick figure anatomy, matching the reference",
+  NATURAL_LIMB_DIRECTIVE: "Natural single-jointed limb posing without extra joints, disjointed elbows, or mutated arms",
+  NO_GRID_DIRECTIVE: "Strictly no grid lines, no alignment guide overlays, no framing lines on the final image",
+  RULE_OF_THIRDS_REGEX: /rule of thirds/gi,
+  RULE_OF_THIRDS_REPLACEMENT: "balanced third-division subject placement without visible grid lines",
+  COMMA_CLEANUP_REGEX: /\s*,\s*,+/g,
+  PUNCTUATION_SPACE_REGEX: /\s+([,.;:])/g,
   SUBJECT_COUNT_TEMPLATE: "exactly {count} primary visual subject{plural}",
   CHARACTER_TEMPLATE: "{name}: {identity}",
   LOCATION_TEMPLATE: "{name}, {anchors}",
@@ -416,6 +424,25 @@ export const STYLE_EXTRACTION_CONFIG = {
 export const STYLE_LOCK_CONFIG = {
   SHARED_PERSON_RULE: "Every person uses exactly this same character type, body construction, line work, coloring, and rendering style",
   SHARED_PERSON_PATTERN: /every person uses/i,
+} as const;
+
+export const STYLE_REFERENCE_DIRECTIVES = {
+  PEOPLE_RULE_PREFIX: "Strict character visual lock: every person/character uses the exact same",
+  PEOPLE_RULE_FALLBACK: "character anatomy and construction",
+  FACIAL_FEATURES_RULE: "Always render complete facial features: distinct solid black eyes, eyebrows, nose dot, expressive line mouth, and hairstyle matching the reference. Never leave the face blank or featureless",
+  LINE_ART_TEMPLATE: "Line art: {value}",
+  PALETTE_TEMPLATE: "Palette: {value}",
+  RENDERING_TEMPLATE: "Rendering: {value}",
+  UNIVERSAL_ANATOMY_MANDATE: "MANDATORY UNIVERSAL CHARACTER ANATOMY: Every single person, protagonist, secondary character, broker, boss, and background crowd member MUST strictly share the exact same character construction",
+  UNIFIED_STYLE_TEMPLATE: "Unified art style: {value}",
+  EVERY_ANATOMY_TEMPLATE: "Every character anatomy strictly follows: {value}",
+  FULL_FACIAL_FEATURES: "Full facial features required: solid black dot eyes, eyebrows, small line mouth, and styled hair matching the reference on every character",
+  STRICT_PROHIBITION: "Strict prohibition: Absolutely NO realistic human body proportions, NO muscular anatomical limbs, NO 3D rendered bodies, NO semi-realistic cartoon torsos",
+  VISUAL_CONSISTENCY_TEMPLATE: "Visual consistency: {value}",
+  ENVIRONMENT_STYLE_TEMPLATE: "Environment style: {value}",
+  LIMB_INTEGRITY: "Limb & Anatomy Integrity: Natural single-jointed stick limbs with clean natural elbow/knee angles, strictly no disjointed multi-jointed arms, no mutated extra elbows, no rubbery distorted limbs",
+  UNIFORM_VISUAL_IDENTITY: "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
+  CLEAN_RENDER: "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
 } as const;
 export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled",AUDIO:"audio" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
@@ -590,6 +617,8 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   NEW_RESPONSE_TIMEOUT_MS: 45000,
   MAX_ERROR_TEXT_LENGTH: 500,
   IMAGE_TAG: "img",
+  VIDEO_TAG: "video",
+  CANVAS_CONTEXT_ERROR: "Could not get canvas context",
   EMPTY_VALUE: "",
   DATA_SEPARATOR: ",",
   DATA_URL_PREFIX: "data:",
