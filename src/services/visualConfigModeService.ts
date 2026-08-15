@@ -5,7 +5,7 @@ import { BackgroundMode, TextInImageMode, ThumbnailTextMode } from "../types";
 export const SCENE_TEXT_MODE = TextInImageMode.NoText;
 
 export const normalizeBackgroundMode = (value?: BackgroundMode): BackgroundMode => (
-  _.get(BACKGROUND_MODE_CONFIG.LEGACY_MODE_MAP, value || "", value || BackgroundMode.Auto) as BackgroundMode
+  _.get(BACKGROUND_MODE_CONFIG.LEGACY_MODE_MAP, value || "", value || BackgroundMode.Contextual) as BackgroundMode
 );
 
 export const normalizeThumbnailTextMode = (value?: ThumbnailTextMode | TextInImageMode): ThumbnailTextMode => (

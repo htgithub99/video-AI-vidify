@@ -93,8 +93,8 @@ export const AUTO_VIDEO_PIPELINE_CONFIG = {
 } as const;
 
 export const BACKGROUND_MODE_CONFIG = {
-  DEFAULT: "auto",
-  OPTIONS: ["auto", "minimal", "contextual", "transparent"],
+  DEFAULT: "contextual",
+  OPTIONS: ["contextual", "auto", "minimal", "transparent"],
   DIRECTIVES: {
     auto: "Choose the background naturally for each narrative beat. When style references exist, preserve their reusable environment language without copying their exact location, object placement, lighting state, or composition.",
     minimal: "Use a clean, restrained, style-compatible background with only the props and environmental cues required to understand the narrative action.",

@@ -256,7 +256,7 @@ export function useAutoVideoState(
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
   const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
-  const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
+  const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Contextual);
   const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(SCENE_TEXT_MODE);
   const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
   const [thumbnailImageFocusMode, setThumbnailImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);

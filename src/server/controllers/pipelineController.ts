@@ -1490,7 +1490,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       lineStyle: "Follow the selected visual language without adding unrelated rendering traits",
       colorMode: "Keep coloring coherent while adapting contrast to each scene",
       shading: "Use only style-compatible shading needed for readable forms",
-      background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.auto),
+      background: _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, config?.styleBackgroundMode, BACKGROUND_MODE_CONFIG.DIRECTIVES.contextual),
       textPolicy: _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, config?.styleTextInImageMode, TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES.auto),
       locations: [],
       props: [],
@@ -1774,7 +1774,8 @@ router.post("/seo", async (req: Request, res: Response) => {
 
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
-    const combinedSeoPrompt = getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags);
+    const genre = config.genre || req.body?.genre || req.body?.project?.config?.genre;
+    const combinedSeoPrompt = getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre);
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,

@@ -597,27 +597,52 @@ Chapters structure context:
 ${chaptersStr}`;
 };
 
-export const getSeoOptimizationPrompt = (rewrittenScript: string, isVi: boolean, numTitles: number, numDescriptions: number, numHashtags: number, numTags: number): string => `You are a high-impact viral CTR professional SEO analyst and marketing copywriter.
-Your task is to analyze this video script and generate fully optimized search and click metadata:
+export const getSeoOptimizationPrompt = (
+  rewrittenScript: string,
+  isVi: boolean,
+  numTitles: number,
+  numDescriptions: number,
+  numHashtags: number,
+  numTags: number,
+  genre?: string,
+): string => `You are an elite YouTube & TikTok viral video strategist, SEO growth hacker, and copywriting master.
+Your task is to analyze the provided video script and generate punchy, irresistible, highly-clickable video titles, descriptions, hashtags, and search tags in ${isVi ? "Vietnamese" : "English"}.
+
+[TARGET GENRE & AUDIENCE PSYCHOLOGY]
+Target Video Genre: ${genre || "Storytelling / Explainer"}
+The generated titles, descriptions, hashtags, and tags MUST strictly align with the style, tone, and audience psychology of this specific "${genre || "Storytelling"}" genre:
+- For "Movie & Story Recap / Storytelling": Use dramatic narrative hooks, iconic naming, or volume tags (e.g. "Chúa tể của những chiếc nhẫn (Quyển 1)", "Cái kết đắng cho kẻ phản bội").
+- For "Knowledge & Explainer / Social Trends": Use curiosity-gap explainers and provocative questions (e.g. "Tại sao thật tệ khi đi Cướp Ngân Hàng?", "BÓC PHỐT - DRAMA LÀ GÌ? TẠI SAO AI CŨNG THÍCH HÍT HÀ?", "Cái bẫy của trò GỌI GÁI ONLINE là gì?").
+- For "Deep Analysis & Business": Use first-person analytical hooks (e.g. "Tôi phân tích công ty Masan (Chinsu) để bạn không phải làm", "Bản chất thực sự của mô hình kinh doanh X").
+- For "How-to & Practical Skills": Use actionable, direct solution hooks (e.g. "Làm thế nào để mở quán cafe thành công?", "Bí quyết giúp bạn...").
+- For "Dark Realities & Cautionary Tales / Shocking Drama": Use high-stakes numbers and shocking reveals (e.g. "Tại sao thật tệ khi làm Tú Ông?", "BÓC TRẦN CẠM BẪY 20 TRIỆU: Tại Sao Ai Cũng Sập Bẫy?").
+
 ---
 ${rewrittenScript}
 ---
 
-Your process MUST complete all of these steps internally:
-1. Keyword Analysis: Analyze the content and identify the top 10 search terms (including highly searched long-tail keywords) in ${isVi ? "Vietnamese" : "English"}.
-2. Draft SEO Generation: Generate exactly ${numTitles} click-worthy video titles and exactly ${numDescriptions} descriptions. Provide metrics for each title and description (searchScore, ctrScore, compScore, seoScore) on a scale of 0-100. Generate exactly ${numHashtags} hashtags and exactly ${numTags} search tags.
-3. SEO Optimization & Refinement: Polish the results so that the keywords are naturally integrated into the text. Avoid dry or clinical styles; optimize titles specifically for high CTR on modern media platforms (e.g. YouTube, TikTok).
+[VIRAL YOUTUBE TITLE FRAMEWORKS MANDATE]
+You MUST generate exactly ${numTitles} DIVERSE, PUNCHY titles in ${isVi ? "Vietnamese" : "English"} fitting the selected genre. Each title MUST be SHORT and impactful (strictly 6 to 12 words, max 65 characters so it is never truncated on mobile screens).
+RULES FOR TITLES:
+1. Strict length constraint: 6 to 12 words. NEVER generate long, essay-like, boring or clinical titles.
+2. High contrast & emotional intensity: Use conversational, punchy language that real people click on.
+3. Maximum diversity: Every generated title MUST use a completely different framework and tone appropriate for the genre. Do NOT output titles with identical structure or repetitive phrasing.
 
-You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, with no markdown code wraps or backticks:
+[DESCRIPTION & TAGS MANDATE]
+- Descriptions: Generate exactly ${numDescriptions} engaging descriptions in ${isVi ? "Vietnamese" : "English"}. Start with an intriguing hook question, summarize the dramatic storyline in 2-3 sentences with natural keywords, and end with a call to subscribe.
+- Hashtags: Exactly ${numHashtags} clean, camelCase tags matching the topic (e.g. #GaiNganh, #GocKhuat, #CauChuyenCuocSong).
+- Search Tags: Exactly ${numTags} high-search-volume tags combining short-tail & long-tail phrases in ${isVi ? "Vietnamese" : "English"}.
+
+Return ONLY a valid raw JSON object matching this schema with NO markdown wrapping or backticks:
 {
   "keywords": ["keyword1", "keyword2"],
   "titles": [
-    { "text": "Optimized Title", "searchScore": 95, "ctrScore": 95, "compScore": 25, "seoScore": 96 }
+    { "text": "Short Punchy Viral Title", "searchScore": 96, "ctrScore": 98, "compScore": 22, "seoScore": 97 }
   ],
   "descriptions": [
     { "text": "Optimized description naturally integrating keywords...", "searchScore": 92, "ctrScore": 90, "compScore": 30, "seoScore": 91 }
   ],
-  "hashtags": ["hashtag1", "hashtag2"],
+  "hashtags": ["#Hashtag1", "#Hashtag2"],
   "tags": ["tag1", "tag2"]
 }`;
 
