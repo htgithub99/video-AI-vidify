@@ -23,7 +23,7 @@ export enum ThumbnailTypographyId {
 export const THUMBNAIL_LAYOUT_CATALOG = [
   {
     id: ThumbnailLayoutId.SoloLeftArrowRight,
-    composition: "Template 1: one dominant illustrated subject fills the left 58%; the right half stays clean and light; place a compact headline at center-right with one curved hand-drawn arrow immediately below pointing toward the subject or evidence.",
+    composition: "Template 1: one dominant illustrated subject fills the left 58%; seamless natural environment fills the right half without solid white blocks; place a compact headline at center-right with one curved hand-drawn arrow pointing toward the subject.",
     bestFor: "a single character holding or revealing one dangerous or unusual object",
     textPosition: "right",
     maximumSubjects: 2,
@@ -32,7 +32,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.DuoCenterTitleTop,
-    composition: "Template 2: two friendly illustrated characters form one large centered pair across the lower 75%; a large outlined story title sits alone at the top center; the environment frames them symmetrically without competing details.",
+    composition: "Template 2: two friendly illustrated characters form one large centered pair across the lower 75%; a large outlined story title sits directly over the natural background at top center without solid white box cutouts.",
     bestFor: "couples, literary characters, relationships, friendship, or a two-person folk story",
     textPosition: "top",
     maximumSubjects: 2,
@@ -41,7 +41,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.InteractionArrowHeadline,
-    composition: "Template 3: two large characters occupy the lower and right frame in one readable interaction; keep the upper-left quarter clean for a bold headline; place one thick curved arrow under the headline pointing to the exchanged object or consequence.",
+    composition: "Template 3: two large characters occupy the lower and right frame in one readable interaction; keep the upper-left area uncluttered with seamless background scenery for bold headline overlay (NO solid white boxes or blank rectangles); place one thick curved arrow under the headline pointing to the exchanged object or consequence.",
     bestFor: "temptation, payment, confrontation, transaction, rescue, betrayal, or cause-and-effect action",
     textPosition: "top_left",
     maximumSubjects: 2,
@@ -50,7 +50,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
   {
     id: ThumbnailLayoutId.SoloActionLeftCaptionRight,
-    composition: "Template 4: one tightly cropped action subject fills the left 56%; reserve an uncluttered light field on the center-right for one-line caption; add a small curved arrow below the caption pointing back toward the action.",
+    composition: "Template 4: one tightly cropped action subject fills the left 56%; reserve an uncluttered field on the center-right against the natural backdrop (NO blank white rectangles) for one-line caption; add a small curved arrow below the caption pointing back toward the action.",
     bestFor: "a single decisive action, mistake, experiment, challenge, or surprising physical evidence",
     textPosition: "right",
     maximumSubjects: 1,

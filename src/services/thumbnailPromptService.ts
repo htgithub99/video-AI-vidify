@@ -139,8 +139,8 @@ export const createThumbnailGenerationPrompt = (
     hasText && thumbnail.accentWords?.length
       ? `Key visual accent words: ${_.join(thumbnail.accentWords, ", ")}.`
       : "",
-    "Single continuous composition, single frame, vibrant saturated colors, maximum thumbnail click-through appeal.",
-    "Bottom-right 20% area must remain completely clean as a safe zone for timestamps.",
+    "Single continuous composition, single frame, vibrant saturated colors, seamless atmospheric background with NO solid white boxes, NO blank rectangles, and NO artificial white patches.",
+    "Ensure bottom-right area keeps uncluttered ambient background for timestamp readability without adding white blocks.",
   ]);
 
   return appendImagePromptAspectRatio(_.join(parts, " "), aspectRatio);

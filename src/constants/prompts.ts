@@ -453,10 +453,13 @@ Use the following visual specifications as your core style and identity referenc
 
 [SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 You MUST apply these alignment rules to ensure visual consistency without restricting natural artistic variety:
-1. Character Visual Continuity (Soft Alignment):
-   When a scene involves any character specified above, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items or colors) into the scene's image prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression (e.g., happy, shocked, intense, pointing, walking) to match the exact narration.
-2. Environment Visual Continuity (Soft Alignment):
-   Weave the landscape specifications into the background of the image prompt. You are encouraged to adjust lighting, weather, or time of day (e.g. sunrise, foggy night, storm, bright daylight) to fit the dynamic mood of the current scene, while keeping the core setting (e.g. library, castle, lab) consistent.
+1. Character Visual Continuity & Identity Lock (STRICT):
+   - When the protagonist or recurring character appears across scenes (including crowd, street, or action scenes), they MUST strictly retain their canonical physical identifiers (e.g. precise hair style/haircut, hair color, facial shape, key clothing items and accent colors).
+   - NEVER drop the character's hairstyle to a bald/generic head in intermediate action scenes (e.g., if protagonist has short dark bob hair and blazer, she must keep that short dark bob hair and blazer whether walking, in a crowd, or carrying an object).
+   - Vary only their pose, action, body gesture, and emotional expression (happy, stressed, curious, shocked) to match the narration.
+2. Environment Visual Continuity & Consistent Palette:
+   - Maintain a cohesive color palette and lighting atmosphere across all scenes fitting the project style (avoid abrupt jumps between monochrome line art and high-saturation colorful photographic styles unless explicitly required by script transitions).
+   - Weave the landscape specifications into the background of the image prompt with dynamic lighting matching the scene's emotional tone.
 3. Genre-Adaptive Visualization:
    Embody this specific guideline for the "${genre}" genre:
    ${genreVisualGuideline}
@@ -505,6 +508,7 @@ Requirements:
       - If the scene does NOT have a character: [Art style/Medium] of [Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
     - STRICT ALIGNMENT WITH NARRATION (CRITICAL): The generated prompt for each scene MUST strictly align with the literal text of the scene's script segment. Do NOT deviate from the storyline or introduce foreign elements. The prompt must be a direct visual translation of the narration.
     - MANDATORY SEMANTIC INTEGRITY FOR NARRATION (CRITICAL): Regardless of the chosen split strategy or density, every single scene's script/narration MUST be a grammatically complete, semantically meaningful clause or sentence (always containing a clear subject and verb/predicate, expressing a complete thought). Do NOT split sentences into meaningless fragments, individual words, or tiny dangling phrases (e.g. do NOT output 'and then', 'she is', 'in the', 'however'). Each scene's narration must stand alone as a coherent statement so that the generated image perfectly matches the scene. If a sentence is divided into multiple sub-scenes, rephrase each sub-scene's narration slightly so it remains a complete, meaningful sentence (e.g. carry over the subject).
+    - BALANCED SUBTITLE PACING & READABILITY: Keep each scene's narration segment balanced in length (ideally 8 to 22 words, matching an estimated reading duration of 3 to 7 seconds). Avoid overly dense or bloated run-on sentences in a single scene so that viewers have adequate time to read subtitles comfortably without rush.
     - CONTEXT PRESERVATION FOR SPLIT SCENE PROMPTS: The image prompt (prompt) for EACH sub-scene must contain the FULL context of the original complete sentence (subject, action, main setting) so that the generated image is not vague or generic.
       * Example: If the sentence is "In a medieval library, the old wizard reads a glowing book and slowly casts a spell." and it is split into two sub-scenes:
         - Sub-scene 1: Narration: "In a medieval library, the old wizard reads a glowing book." -> Prompt: "A close-up shot of an old wizard with a long white beard reading a glowing leather-bound book in a medieval library filled with tall bookshelves."
@@ -807,7 +811,7 @@ ${_.join(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, typography => `- ${typography.id}: 
 2. Begin generationPrompt by copying PROJECT STYLE LOCK verbatim, exactly once. Every visible person must use that same character type, body construction, line work and rendering. Never mix stick figures with realistic, anime, 3D or painterly people.
 3. Describe one dominant story-supported subject or interaction, one physical action and one piece of visible evidence. Recurring characters use only their identity traits from the supplied profiles.
 4. Follow this prompt order: exact Style Lock; subject and identity; action and evidence; selected layout geometry; headline and typography; background and safe margin. Keep generationPrompt below 150 English words.
-5. ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)} When text is enabled, preserve one headline of at most ${THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS} words in ${isVi ? "Vietnamese with correct diacritics" : "English"}. Render it exactly once. When text is disabled, include one concise text-free instruction.
+5. ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)} When text is enabled, create an ultra-engaging, high-CTR, highly specific headline (strictly 2 to 4 uppercase words). NEVER use bland or generic phrases like "SỰ THẬT ĐẰNG SAU" or "CÂU CHUYỆN CUỘC ĐỜI". Instead, extract high-stakes numbers, specific turning points, or core dilemmas from the story (e.g., "CÁI GIÁ 20 TRIỆU", "BẪY BẬC THỀM", "SẬP BẪY TÚ ÔNG", "TRẢ GIÁ QUÁ ĐẮT", "BỊ BẮT TẠI TRẬN") in ${isVi ? "Vietnamese with full correct diacritics" : "English"}. Render it exactly once. When text is disabled, include one concise text-free instruction.
 6. Keep one full-bleed image, strong subject-background separation and a clear bottom-right timestamp zone. Do not include --ar; the application appends it.
 
 You MUST return a valid JSON object matching this schema perfectly. Output ONLY raw JSON, no markdown code wraps or backticks:
