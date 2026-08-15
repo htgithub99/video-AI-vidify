@@ -21,7 +21,6 @@ export const pipelineNodes = [
   { id: "SGE", nameVi: "Dựng phân cảnh", nameEn: "Storyboard Generator", stageGroup: 3, descVi: "Lập sơ độ phân cảnh chi tiết đồng bộ mốc thời gian.", descEn: "Forms coordinates linking timing, narration, and screen actions." },
   { id: "SSP", nameVi: "Phân dòng cảnh", nameEn: "Scene Splitter", stageGroup: 3, descVi: "Cắt nhỏ kịch bản bám sát diễn biến bối cảnh.", descEn: "Splits chapter narratives into granular scenes." },
   { id: "TGE", nameVi: "Thiết Kế Sơ Đồ Thời Gian", nameEn: "Timeline Generator", stageGroup: 3, descVi: "Ước lượng thời gian và thời lượng cho từng khung hình.", descEn: "Calculates start-end frames based on reading speeds." },
-
   { id: "VPL", nameVi: "Kế Hoạch Hình Ảnh", nameEn: "Visual Planner", stageGroup: 4, descVi: "Định lượng số lượng ảnh cần thiết cho đoạn phim.", descEn: "Optimizes assets count, preventing duplicate images." },
   { id: "ASM", nameVi: "Tài nguyên hình ảnh", nameEn: "Asset Manager", stageGroup: 4, descVi: "Nhập dữ liệu hình ảnh tải lên hoặc tự động khởi tạo.", descEn: "Mixes imported CSV elements and system default textures." },
   { id: "PGE", nameVi: "Mô tả hình ảnh", nameEn: "Prompt Generator", stageGroup: 4, descVi: "Dựng từ khóa vẽ tranh chi tiết cho công cụ.", descEn: "Enhances descriptive painting formulas for high quality." },
