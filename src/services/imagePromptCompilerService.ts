@@ -28,30 +28,37 @@ const compactSceneField = (value: unknown): string => compactWords(
   IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS,
 );
 
-const createCharacterClause = (scene: StoryboardScene, characters: CharacterConfig[]): string => compactWords(_.join(
-  _.map(
-    _.filter(characters, character => _.includes(scene.characterIds, character.id)),
-    character => {
-      const stage = _.find(character.timelineStages, { id: scene.characterStage });
-      const identityAnchors = _.join(_.compact([
-        character.hair,
-        character.signatureClothing,
-        character.accessories,
-        character.silhouette,
-        character.colorPalette,
-      ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
-      const identity = compactWords(_.join(_.compact([
-        identityAnchors || character.prompt || character.description,
-        stage?.outfit,
-        stage?.expressionRange,
-        stage?.posture,
-        stage?.visibleCondition,
-      ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
-      return applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_TEMPLATE, { name: character.name, identity });
-    },
-  ),
-  IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR,
-), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
+const createCharacterClause = (scene: StoryboardScene, characters: CharacterConfig[]): string => {
+  const matchedCharacters = _.filter(characters, character => _.includes(scene.characterIds, character.id));
+  const activeCharacters = !_.isEmpty(matchedCharacters)
+    ? matchedCharacters
+    : (!_.isEmpty(characters) ? [_.first(characters)!] : []);
+
+  return compactWords(_.join(
+    _.map(
+      activeCharacters,
+      character => {
+        const stage = _.find(character.timelineStages, { id: scene.characterStage });
+        const identityAnchors = _.join(_.compact([
+          character.hair,
+          character.signatureClothing,
+          character.accessories,
+          character.silhouette,
+          character.colorPalette,
+        ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
+        const identity = compactWords(_.join(_.compact([
+          identityAnchors || character.prompt || character.description,
+          stage?.outfit,
+          stage?.expressionRange,
+          stage?.posture,
+          stage?.visibleCondition,
+        ]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
+        return applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_TEMPLATE, { name: character.name, identity });
+      },
+    ),
+    IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR,
+  ), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS);
+};
 
 const createLocationClause = (scene: StoryboardScene, visualBible?: VisualBible): string => {
   const location = _.find(visualBible?.locations, { id: scene.locationId });

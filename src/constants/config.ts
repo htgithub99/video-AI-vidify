@@ -306,7 +306,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CONTINUITY_TEMPLATE: "Continuity: {value}",
   BEFORE_AFTER_TEMPLATE: "Visible change from {before} to {after}",
   REACTION_TEMPLATE: "Visible reaction: {value}",
-  STYLE_TEMPLATE: "Visual language guide: {value}. Adapt the setting, mood, lighting and composition to this scene",
+  STYLE_TEMPLATE: "Visual style guide: {value}. Render with clean bold vector outlines and consistent flat fills on a seamless clean background, no rough paper sketch textures, no pencil doodles",
   COMPOSITION_TEMPLATE: "{shotSize}, {cameraAngle}, {composition}",
   STYLE_MAX_WORDS: 40,
   STYLE_FIELD_WORD_LIMITS: {
