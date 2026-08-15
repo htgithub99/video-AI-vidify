@@ -59,7 +59,7 @@ const normalizeThumbnail = (
   const generationPrompt = _.trim(_.toString(source.generationPrompt || source.prompt));
 
   return {
-    id: `th_${_.add(index, 1)}`,
+    id: `${THUMBNAIL_PROMPT_CONFIG.ID_PREFIX}${_.add(index, 1)}`,
     prompt: generationPrompt,
     generationPrompt,
     style: _.trim(_.toString(source.style)) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
@@ -127,32 +127,48 @@ export const createSourceGroundedThumbnailIdeas = (
   return normalizeThumbnailIdeas(generatedItems, requestedCount, textMode);
 };
 
+const resolveThumbnailProtagonistDna = (character?: CharacterConfig): string => {
+  if (!character) return "";
+  const dnaParts = _.compact([
+    character.name ? _.replace(THUMBNAIL_PROMPT_CONFIG.CHARACTER_NAME_TEMPLATE, "{name}", character.name) : "",
+    character.genderPresentation ? _.replace(THUMBNAIL_PROMPT_CONFIG.GENDER_SUBJECT_TEMPLATE, "{gender}", character.genderPresentation) : "",
+    character.hair,
+    character.silhouette,
+    character.signatureClothing,
+  ]);
+  return _.isEmpty(dnaParts)
+    ? ""
+    : _.replace(THUMBNAIL_PROMPT_CONFIG.PROTAGONIST_LOCK_TEMPLATE, "{dna}", _.join(dnaParts, ", "));
+};
+
 export const createThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
   style: string,
   aspectRatio: string,
   hasReferences: boolean = false,
-  _characters: CharacterConfig[] = [],
+  characters: CharacterConfig[] = [],
 ): string => {
   const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
   const styleDirective = style || thumbnail.style || "";
   const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
+  const characterDirective = resolveThumbnailProtagonistDna(_.first(characters));
 
   const parts = _.compact([
-    styleDirective && `Visual style: ${styleDirective}.`,
-    hasReferences ? "Preserve reference character anatomy, proportions, and line work strictly." : "",
-    `Thumbnail layout: ${layoutDesc}.`,
+    styleDirective && _.replace(THUMBNAIL_PROMPT_CONFIG.STYLE_DIRECTIVE_TEMPLATE, "{style}", styleDirective),
+    characterDirective,
+    hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_LOCK_DIRECTIVE : "",
+    _.replace(THUMBNAIL_PROMPT_CONFIG.LAYOUT_DIRECTIVE_TEMPLATE, "{layout}", layoutDesc),
     basePrompt,
     hasText
-      ? `Render large bold uppercase headline text: "${headline}" cleanly in heavy condensed typography with high visual contrast.`
-      : "Completely text-free thumbnail image, no readable words or letters.",
+      ? _.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)
+      : THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_DIRECTIVE,
     hasText && thumbnail.accentWords?.length
-      ? `Key visual accent words: ${_.join(thumbnail.accentWords, ", ")}.`
+      ? _.replace(THUMBNAIL_PROMPT_CONFIG.ACCENT_WORDS_TEMPLATE, "{words}", _.join(thumbnail.accentWords, ", "))
       : "",
-    "Single continuous composition, single frame, vibrant saturated colors, seamless atmospheric background with NO solid white boxes, NO blank rectangles, and NO artificial white patches.",
-    "Ensure bottom-right area keeps uncluttered ambient background for timestamp readability without adding white blocks.",
+    THUMBNAIL_PROMPT_CONFIG.COMPOSITION_DIRECTIVE,
+    THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE_DIRECTIVE,
   ]);
 
   return appendImagePromptAspectRatio(_.join(parts, " "), aspectRatio);
