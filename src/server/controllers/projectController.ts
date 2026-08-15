@@ -64,7 +64,7 @@ const deleteProjectAssetDirectory = (assetsRoot: string, folderName: string): vo
 };
 
 
-function processSceneAssets(scene: any, imageDir: string, audioDir: string, videoDir: string, folderName: string): any {
+function processSceneAssets(scene: any, imageDir: string, videoDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
   if (imgBase64 && !_.get(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY)) {
     _.set(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY, imgBase64);
@@ -73,7 +73,7 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, vide
     delete scene[REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY];
   }
 
-  let { assetUrl, assetUrls, audioUrl, audioBase64 } = scene;
+  let { assetUrl, assetUrls, audioUrl } = scene;
   let sceneUpdated = false;
   assetUrls = assetUrls || [];
 
@@ -120,14 +120,6 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, vide
     }
   }
 
-  if (_.some(assetUrls, (url) => _.some(
-    [COMMON_STRINGS.BASE64_IMAGE_PREFIX, COMMON_STRINGS.BASE64_VIDEO_PREFIX],
-    (prefix) => _.includes(url, prefix),
-  ))) {
-    assetUrls = assetUrl ? [assetUrl] : [];
-    sceneUpdated = true;
-  }
-
   if (assetUrl) {
     const isNotBase64 = _.every(
       [COMMON_STRINGS.BASE64_IMAGE_PREFIX, COMMON_STRINGS.BASE64_VIDEO_PREFIX],
@@ -149,23 +141,6 @@ function processSceneAssets(scene: any, imageDir: string, audioDir: string, vide
   } else if (!_.isEmpty(assetUrls)) {
     assetUrls = [];
     sceneUpdated = true;
-  }
-
-  const hasBase64Audio = _.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD) && !_.some([COMMON_STRINGS.SLASH_PREFIX, COMMON_STRINGS.HTTP_PREFIX], (prefix) => _.startsWith(audioBase64, prefix));
-
-  if (hasBase64Audio) {
-    const sceneIdStr = String(scene.id);
-    const cleanId = _.startsWith(sceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? sceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : sceneIdStr;
-    const fileName = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${COMMON_STRINGS.WAV_EXT}`;
-    const filePath = path.join(audioDir, fileName);
-    try {
-      fs.writeFileSync(filePath, Buffer.from(audioBase64, COMMON_STRINGS.BASE64));
-      audioUrl = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${folderName}${COMMON_STRINGS.SLASH_PREFIX}${VOICES_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${fileName}`;
-      delete scene.audioBase64;
-      sceneUpdated = true;
-    } catch (err) {
-      appError(`${ERROR_MESSAGES.WRITE_SCENE_AUDIO_ERR}${scene.id}`, err);
-    }
   } else if (audioUrl) {
     const fixedAudioUrl = enforceCorrectFolder(audioUrl);
     if (!_.eq(fixedAudioUrl, audioUrl)) {
@@ -199,6 +174,13 @@ function processThumbAssets(thumb: any, thumbDir: string, folderName: string): a
       } catch (err) {
         appError(`${ERROR_MESSAGES.WRITE_THUMB_IMAGE_ERR}${thumb.id}`, err);
       }
+    }
+  } else if (imageUrl && !_.startsWith(imageUrl, "data:")) {
+    const fileName = path.basename(imageUrl);
+    const filePath = path.join(thumbDir, fileName);
+    if (!fs.existsSync(filePath)) {
+      imageUrl = undefined;
+      thumbUpdated = true;
     }
   }
 
@@ -235,7 +217,6 @@ function processVoiceConfig(voiceConfig: any, audioDir: string, folderName: stri
 
 function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
   const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
-
   return _.map(projects, (project) => {
     if (_.isEqual(project.projectKind, ProjectKind.Container)) return project;
 
@@ -274,7 +255,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     let storyboard = project.storyboard;
     if (_.isArray(storyboard)) {
       storyboard = _.map(storyboard, (scene) => {
-        const processed = processSceneAssets(scene, imageDir, audioDir, videoDir, folderName);
+        const processed = processSceneAssets(scene, imageDir, videoDir, folderName);
         if (processed.isUpdated) {
           storyboardUpdated = true;
           delete processed.isUpdated;
@@ -361,186 +342,204 @@ function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   return newProject.storyboard;
 }
 
-function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, cleanAudio: boolean) {
-  const imageDir = path.join(projectDir, IMAGES_DIR_NAME);
-  const audioDir = path.join(projectDir, VOICES_DIR_NAME);
-  const thumbDir = path.join(projectDir, THUMBNAILS_DIR_NAME);
-  const referencesDir = path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY);
+function cleanupUnusedSceneImages(storyboard: any[], imageDir: string): void {
+  if (!fs.existsSync(imageDir) || !_.isArray(storyboard)) return;
 
-  if (fs.existsSync(imageDir) && _.isArray(newProject.storyboard)) {
-    const activeImageFiles = new Set<string>();
-    _.forEach(newProject.storyboard, (scene: any) => {
-      if (scene?.assetUrl && !_.eq(scene.assetUrl, COMMON_STRINGS.UNDEFINED)) {
-        activeImageFiles.add(path.basename(scene.assetUrl));
+  const activeImageFiles = new Set<string>();
+  _.forEach(storyboard, (scene: any) => {
+    if (scene?.assetUrl && !_.eq(scene.assetUrl, COMMON_STRINGS.UNDEFINED)) {
+      activeImageFiles.add(path.basename(scene.assetUrl));
+    }
+    if (_.isArray(scene?.assetUrls)) {
+      _.forEach(scene.assetUrls, (url: string) => {
+        if (url) activeImageFiles.add(path.basename(url));
+      });
+    }
+  });
+
+  _.forEach(storyboard, (newScene: any) => {
+    const hasImage = (!_.isEmpty(newScene?.assetUrl) && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !_.isEmpty(newScene?.assetUrls);
+    if (hasImage) return;
+
+    try {
+      const files = fs.readdirSync(imageDir);
+      const newSceneIdStr = String(newScene.id);
+      const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX)
+        ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length)
+        : newSceneIdStr;
+      const prefix1 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
+      const prefix2 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}_`;
+
+      _.forEach(files, (file) => {
+        if ((_.startsWith(file, prefix1) || _.startsWith(file, prefix2)) && !activeImageFiles.has(file)) {
+          const filePath = path.join(imageDir, file);
+          try {
+            fs.unlinkSync(filePath);
+            appLog(`${LOG_MESSAGES.DELETE_SCENE_IMAGE_DISK_SUCCESS}${filePath}`);
+          } catch (err) {
+            appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
+          }
+        }
+      });
+    } catch (err) {
+      appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${imageDir}`, err);
+    }
+  });
+}
+
+function cleanupUnusedSceneAudios(
+  storyboard: any[],
+  oldProject: any,
+  newProject: any,
+  audioDir: string,
+  cleanAudio: boolean,
+): void {
+  if (!cleanAudio || !fs.existsSync(audioDir) || !_.isArray(storyboard)) return;
+
+  _.forEach(storyboard, (newScene: any) => {
+    const hasAudio = !_.isEmpty(newScene?.audioUrl) && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED);
+    if (hasAudio) return;
+
+    try {
+      const files = fs.readdirSync(audioDir);
+      const newSceneIdStr = String(newScene.id);
+      const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX)
+        ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length)
+        : newSceneIdStr;
+      const prefix = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
+      _.forEach(files, (file) => {
+        if (_.startsWith(file, prefix)) {
+          const filePath = path.join(audioDir, file);
+          try {
+            fs.unlinkSync(filePath);
+            appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${filePath}`);
+          } catch (err) {
+            appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${filePath}`, err);
+          }
+        }
+      });
+    } catch (err) {
+      appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
+    }
+  });
+
+  const oldAudioUrl = _.get(oldProject, "voiceConfig.audioUrl");
+  const newAudioUrl = _.get(newProject, "voiceConfig.audioUrl");
+  if (oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
+    const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
+    if (fs.existsSync(unifiedAudioFile)) {
+      try {
+        fs.unlinkSync(unifiedAudioFile);
+        appLog(`${LOG_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_SUCCESS}${unifiedAudioFile}`);
+      } catch (err) {
+        appError(`${ERROR_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_ERR}${unifiedAudioFile}`, err);
       }
-      if (_.isArray(scene?.assetUrls)) {
-        _.forEach(scene.assetUrls, (url: string) => {
-          if (url) activeImageFiles.add(path.basename(url));
-        });
+    }
+  }
+}
+
+function cleanupUnusedThumbnails(thumbnails: any[], thumbDir: string): void {
+  if (!fs.existsSync(thumbDir)) return;
+
+  try {
+    const activeThumbnailFiles = new Set<string>();
+    if (_.isArray(thumbnails)) {
+      _.forEach(thumbnails, (thumb: any) => {
+        if (thumb?.imageUrl && !_.startsWith(thumb.imageUrl, "data:")) {
+          activeThumbnailFiles.add(path.basename(thumb.imageUrl));
+        }
+      });
+    }
+    const files = fs.readdirSync(thumbDir);
+    _.forEach(files, (file) => {
+      if (!activeThumbnailFiles.has(file)) {
+        const filePath = path.join(thumbDir, file);
+        try {
+          if (fs.statSync(filePath).isFile()) {
+            fs.unlinkSync(filePath);
+            appLog(`${LOG_MESSAGES.DELETE_SCENE_IMAGE_DISK_SUCCESS}${filePath}`);
+          }
+        } catch (err) {
+          appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
+        }
       }
     });
+  } catch (err) {
+    appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${thumbDir}`, err);
+  }
+}
 
-    _.forEach(newProject.storyboard, (newScene: any) => {
-      const newHasImage = (!_.isEmpty(newScene?.assetUrl) && !_.eq(newScene.assetUrl, COMMON_STRINGS.UNDEFINED)) || !_.isEmpty(newScene?.assetUrls);
-      if (!newHasImage) {
-        try {
-          const files = fs.readdirSync(imageDir);
-          const newSceneIdStr = String(newScene.id);
-          const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : newSceneIdStr;
-          const prefix1 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
-          const prefix2 = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}_`;
+function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): void {
+  if (!fs.existsSync(referencesDir)) return;
 
-          _.forEach(files, (file) => {
-            if ((_.startsWith(file, prefix1) || _.startsWith(file, prefix2)) && !activeImageFiles.has(file)) {
-              const filePath = path.join(imageDir, file);
-              try {
+  try {
+    const activeReferenceUrls = new Set<string>();
+    const addRef = (val: unknown) => {
+      if (_.isString(val) && !_.isEmpty(val) && !_.startsWith(val, "data:")) {
+        activeReferenceUrls.add(val);
+        activeReferenceUrls.add(path.basename(val));
+      }
+    };
+
+    const addRefList = (list: unknown) => {
+      if (_.isArray(list)) {
+        _.forEach(list, (item) => addRef(item));
+      }
+    };
+
+    const vc = newProject.visualConfig || {};
+    addRefList(vc.styleReferenceImages);
+    addRefList(vc.thumbnailReferenceImages);
+    addRefList(vc.sceneReferenceImages);
+    addRefList(vc.referenceImages);
+    addRefList(vc.characterImages);
+    if (_.isArray(vc.characters)) {
+      _.forEach(vc.characters, (char: any) => {
+        addRef(char?.referenceImage);
+        addRef(char?.avatarUrl);
+        addRefList(char?.images);
+        addRefList(char?.referenceImages);
+      });
+    }
+
+    const cfg = newProject.config || {};
+    addRefList(cfg.referenceImages);
+    addRefList(cfg.thumbnailReferenceImages);
+    addRefList(cfg.sceneReferenceImages);
+    addRef(cfg.musicAssetUrl);
+
+    const groups = fs.readdirSync(referencesDir);
+    _.forEach(groups, (groupName) => {
+      const groupDir = path.join(referencesDir, groupName);
+      if (fs.existsSync(groupDir) && fs.statSync(groupDir).isDirectory()) {
+        const refFiles = fs.readdirSync(groupDir);
+        _.forEach(refFiles, (file) => {
+          const relUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${newProject.id}/references/${groupName}/${file}`;
+          const isReferenced = activeReferenceUrls.has(file) || activeReferenceUrls.has(relUrl) || Array.from(activeReferenceUrls).some(u => u.includes(file));
+          if (!isReferenced) {
+            const filePath = path.join(groupDir, file);
+            try {
+              if (fs.statSync(filePath).isFile()) {
                 fs.unlinkSync(filePath);
                 appLog(`${LOG_MESSAGES.DELETE_SCENE_IMAGE_DISK_SUCCESS}${filePath}`);
-              } catch (err) {
-                appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
               }
+            } catch (err) {
+              appError(`${ERROR_MESSAGES.DELETE_SCENE_IMAGE_DISK_ERR}${filePath}`, err);
             }
-          });
-        } catch (err) {
-          appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${imageDir}`, err);
-        }
-      }
-    });
-  }
-
-  if (cleanAudio && fs.existsSync(audioDir) && _.isArray(newProject.storyboard)) {
-    _.forEach(newProject.storyboard, (newScene: any) => {
-      const newHasAudio = (!_.isEmpty(newScene?.audioUrl) && !_.eq(newScene.audioUrl, COMMON_STRINGS.UNDEFINED));
-      if (!newHasAudio) {
-        try {
-          const files = fs.readdirSync(audioDir);
-          const newSceneIdStr = String(newScene.id);
-          const cleanId = _.startsWith(newSceneIdStr, COMMON_STRINGS.SCENE_PREFIX) ? newSceneIdStr.slice(COMMON_STRINGS.SCENE_PREFIX.length) : newSceneIdStr;
-          const prefix = `${COMMON_STRINGS.SCENE_PREFIX}${cleanId}${SecurityConstants.DOT}`;
-          _.forEach(files, (file) => {
-            if (_.startsWith(file, prefix)) {
-              const filePath = path.join(audioDir, file);
-              try {
-                fs.unlinkSync(filePath);
-                appLog(`${LOG_MESSAGES.DELETE_SCENE_AUDIO_DISK_SUCCESS}${filePath}`);
-              } catch (err) {
-                appError(`${ERROR_MESSAGES.DELETE_SCENE_AUDIO_DISK_ERR}${filePath}`, err);
-              }
-            }
-          });
-        } catch (err) {
-          appError(`${ERROR_MESSAGES.READ_AUDIO_DIR_CLEAN_ERR}${audioDir}`, err);
-        }
-      }
-    });
-
-    const oldAudioUrl = _.get(oldProject, 'voiceConfig.audioUrl');
-    const newAudioUrl = _.get(newProject, 'voiceConfig.audioUrl');
-    if (oldAudioUrl && (_.isEmpty(newAudioUrl) || _.eq(newAudioUrl, ""))) {
-      const unifiedAudioFile = path.join(audioDir, COMMON_STRINGS.UNIFIED_WAV);
-      if (fs.existsSync(unifiedAudioFile)) {
-        try {
-          fs.unlinkSync(unifiedAudioFile);
-          appLog(`${LOG_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_SUCCESS}${unifiedAudioFile}`);
-        } catch (err) {
-          appError(`${ERROR_MESSAGES.DELETE_UNIFIED_AUDIO_DISK_ERR}${unifiedAudioFile}`, err);
-        }
-      }
-    }
-  }
-
-  if (fs.existsSync(thumbDir)) {
-    try {
-      const activeThumbnailFiles = new Set<string>();
-      if (_.isArray(newProject.thumbnails)) {
-        _.forEach(newProject.thumbnails, (thumb: any) => {
-          if (thumb?.imageUrl && !_.startsWith(thumb.imageUrl, "data:")) {
-            activeThumbnailFiles.add(path.basename(thumb.imageUrl));
           }
         });
       }
-      const files = fs.readdirSync(thumbDir);
-      _.forEach(files, (file) => {
-        if (!activeThumbnailFiles.has(file)) {
-          const filePath = path.join(thumbDir, file);
-          try {
-            if (fs.statSync(filePath).isFile()) {
-              fs.unlinkSync(filePath);
-              appLog(`[Disk Cleanup] Deleted unreferenced thumbnail image: ${filePath}`);
-            }
-          } catch (err) {
-            appError(`[Disk Cleanup] Error deleting thumbnail image: ${filePath}`, err);
-          }
-        }
-      });
-    } catch (err) {
-      appError(`[Disk Cleanup] Error reading thumbnails directory: ${thumbDir}`, err);
-    }
+    });
+  } catch (err) {
+    appError(`${ERROR_MESSAGES.READ_IMAGES_DIR_CLEAN_ERR}${referencesDir}`, err);
   }
+}
 
-  if (fs.existsSync(referencesDir)) {
-    try {
-      const activeReferenceUrls = new Set<string>();
-      const addRef = (val: unknown) => {
-        if (_.isString(val) && !_.isEmpty(val) && !_.startsWith(val, "data:")) {
-          activeReferenceUrls.add(val);
-          activeReferenceUrls.add(path.basename(val));
-        }
-      };
-
-      const addRefList = (list: unknown) => {
-        if (_.isArray(list)) {
-          _.forEach(list, (item) => addRef(item));
-        }
-      };
-
-      const vc = newProject.visualConfig || {};
-      addRefList(vc.styleReferenceImages);
-      addRefList(vc.thumbnailReferenceImages);
-      addRefList(vc.sceneReferenceImages);
-      addRefList(vc.referenceImages);
-      addRefList(vc.characterImages);
-      if (_.isArray(vc.characters)) {
-        _.forEach(vc.characters, (char: any) => {
-          addRef(char?.referenceImage);
-          addRef(char?.avatarUrl);
-          addRefList(char?.images);
-          addRefList(char?.referenceImages);
-        });
-      }
-
-      const cfg = newProject.config || {};
-      addRefList(cfg.referenceImages);
-      addRefList(cfg.thumbnailReferenceImages);
-      addRefList(cfg.sceneReferenceImages);
-      addRef(cfg.musicAssetUrl);
-
-      const groups = fs.readdirSync(referencesDir);
-      _.forEach(groups, (groupName) => {
-        const groupDir = path.join(referencesDir, groupName);
-        if (fs.existsSync(groupDir) && fs.statSync(groupDir).isDirectory()) {
-          const refFiles = fs.readdirSync(groupDir);
-          _.forEach(refFiles, (file) => {
-            const relUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${newProject.id}/references/${groupName}/${file}`;
-            const isReferenced = activeReferenceUrls.has(file) || activeReferenceUrls.has(relUrl) || Array.from(activeReferenceUrls).some(u => u.includes(file));
-            if (!isReferenced) {
-              const filePath = path.join(groupDir, file);
-              try {
-                if (fs.statSync(filePath).isFile()) {
-                  fs.unlinkSync(filePath);
-                  appLog(`[Disk Cleanup] Deleted unreferenced reference file: ${filePath}`);
-                }
-              } catch (err) {
-                appError(`[Disk Cleanup] Error deleting reference file: ${filePath}`, err);
-              }
-            }
-          });
-        }
-      });
-    } catch (err) {
-      appError(`[Disk Cleanup] Error reading references directory: ${referencesDir}`, err);
-    }
-  }
+function cleanUpDiskFiles(newProject: any, oldProject: any, projectDir: string, cleanAudio: boolean): void {
+  cleanupUnusedSceneImages(newProject.storyboard, path.join(projectDir, IMAGES_DIR_NAME));
+  cleanupUnusedSceneAudios(newProject.storyboard, oldProject, newProject, path.join(projectDir, VOICES_DIR_NAME), cleanAudio);
+  cleanupUnusedThumbnails(newProject.thumbnails, path.join(projectDir, THUMBNAILS_DIR_NAME));
+  cleanupUnusedReferenceFiles(newProject, path.join(projectDir, PROJECT_VISUAL_ASSET_CONFIG.REFERENCES_DIRECTORY));
 }
 
 async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {

@@ -1187,7 +1187,9 @@ export function useAutoVideoPipeline(
           ...voiceUpdatedProj,
           storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
           thumbnails: _.isEmpty(preparedThumbnails)
-            ? voiceUpdatedProj.thumbnails
+            ? (config.forceRegenerateScenes
+                ? _.map(_.defaultTo(voiceUpdatedProj.thumbnails, []), t => ({ ...t, imageUrl: undefined, generationStatus: undefined, generationPrompt: undefined }))
+                : voiceUpdatedProj.thumbnails)
             : _.cloneDeep(preparedThumbnails),
         };
         imageCheckpointQueue = imageCheckpointQueue.then(() => syncProject(checkpointProject));

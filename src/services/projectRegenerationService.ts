@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { GenerateType, StoryboardScene, VideoProject } from "../types";
+import { CharacterConfig, GenerateType, StoryboardScene, VideoProject } from "../types";
 
 export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
@@ -17,7 +17,7 @@ export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene =
 const clearMatchingSceneAssets = (
   scenes: StoryboardScene[] | undefined,
   predicate: (scene: StoryboardScene) => boolean,
-): StoryboardScene[] => _.map(_.defaultTo(scenes, []), scene => (
+): StoryboardScene[] => _.map(_.defaultTo(scenes, []), (scene) => (
   predicate(scene) ? clearSceneVisualAsset(scene) : scene
 ));
 
@@ -29,25 +29,34 @@ const clearFinalRenderState = (project: VideoProject): VideoProject => ({
   manualReviewItems: [],
 });
 
+const cleanCharacterVisualConfig = (
+  characters: CharacterConfig[] | undefined,
+): CharacterConfig[] => _.map(_.defaultTo(characters, []), (character) => ({
+  ..._.omit(character, ["referenceViews", "referenceApproved"]),
+  images: [],
+  extracted: false,
+})) as CharacterConfig[];
+
+const cleanThumbnailOutputs = (thumbnails: VideoProject["thumbnails"]) => (
+  _.map(_.defaultTo(thumbnails, []), (thumb) => ({
+    ...thumb,
+    imageUrl: undefined,
+    generationPrompt: undefined,
+    generationStatus: undefined,
+    generationError: undefined,
+  }))
+);
+
 export const clearProjectImageOutputs = (project: VideoProject): VideoProject => clearFinalRenderState({
   ...project,
   storyboard: clearMatchingSceneAssets(
     project.storyboard,
-    scene => !_.isEqual(scene.assetType, GenerateType.Video),
+    (scene) => !_.isEqual(scene.assetType, GenerateType.Video),
   ),
-  thumbnails: [],
+  thumbnails: cleanThumbnailOutputs(project.thumbnails),
   visualConfig: {
     ...project.visualConfig,
-    characters: _.map(_.defaultTo(project.visualConfig?.characters, []), character => {
-      const cleanedCharacter = {
-        ...character,
-        images: [],
-        extracted: false,
-      };
-      _.unset(cleanedCharacter, "referenceViews");
-      _.unset(cleanedCharacter, "referenceApproved");
-      return cleanedCharacter;
-    }),
+    characters: cleanCharacterVisualConfig(project.visualConfig?.characters),
     characterImages: [],
     characterExtracted: false,
   },
@@ -63,7 +72,7 @@ export const clearProjectVideoOutputs = (project: VideoProject): VideoProject =>
   ...project,
   storyboard: clearMatchingSceneAssets(
     project.storyboard,
-    scene => _.isEqual(scene.assetType, GenerateType.Video),
+    (scene) => _.isEqual(scene.assetType, GenerateType.Video),
   ),
 });
 
