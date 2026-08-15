@@ -97,11 +97,11 @@ export const BACKGROUND_MODE_CONFIG = {
   OPTIONS: ["contextual", "auto", "minimal", "transparent"],
   DIRECTIVES: {
     auto: "Choose the background naturally for each narrative beat. When style references exist, preserve their reusable environment language without copying their exact location, object placement, lighting state, or composition.",
-    minimal: "Use a clean, restrained, style-compatible background with only the props and environmental cues required to understand the narrative action.",
+    minimal: "CRITICAL BACKGROUND OVERRIDE: Pure solid white background (#FFFFFF), completely seamless clean white backdrop with zero room scenery, zero background clutter, and zero architectural walls. Only the main subject and essential story-critical symbolic props are drawn on the clean white canvas.",
     preserve: "CRITICAL BACKGROUND OVERRIDE: Preserve the reference image background treatment, including whether it is absent, transparent, plain, or contextual. This overrides generic environment requirements.",
     transparent: "CRITICAL BACKGROUND OVERRIDE: Isolated main subject only, transparent background, no environment, no scenery, no backdrop, no floor, clean cutout composition. This overrides every request for a surrounding background.",
     solid: "CRITICAL BACKGROUND OVERRIDE: Use a clean single-color solid background with no scenery, no environment, and no background objects. This overrides generic environment requirements.",
-    white: "Use a pure white (#FFFFFF) editorial canvas. Preserve the complete narrative situation with a few style-matched contextual props, furniture, architectural line cues, layered scale, overlap, and contact shadows where the scene needs them. Keep the canvas visually clean and mostly white, but never erase a story-critical location, action, relationship, or atmosphere.",
+    white: "CRITICAL BACKGROUND OVERRIDE: Pure solid white background (#FFFFFF), completely seamless clean white backdrop with zero room scenery, zero background clutter, and zero architectural walls. Only the main subject and essential story-critical symbolic props are drawn on the clean white canvas.",
     contextual: "Create a detailed contextual environment that supports the scene narrative and subject.",
     blurred: "Use a softly blurred contextual background with strong separation from the sharply focused subject.",
     gradient: "CRITICAL BACKGROUND OVERRIDE: Use a clean minimal color-gradient background with no scenery or background objects.",
@@ -334,6 +334,12 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CONTINUITY_MAX_WORDS: 8,
   LOCKED_REFERENCE_STYLE: "Use the attached reference as a flexible visual guide for medium, character construction, line work and color behavior. Let the script decide the setting, action, mood, lighting and composition",
   CONFLICTING_STYLE_PATTERN: /\b(?:photorealistic|hyperrealistic|3d\s+render|octane\s+render|cinematic\s+realism|realistic\s+cinematic|dramatic\s+lighting|volumetric\s+lighting|shot\s+on\s+\d+mm)\b/gi,
+  NARRATIVE_IGNORE_PREFIX: "Editorial visual grounded only in this narration:",
+  SPACE_SEPARATOR: " ",
+  PLURAL_SUFFIX: "s",
+  NON_WHITESPACE_REGEX: /[^\s]+/g,
+  SINGLE_SUBJECT_COUNT: 1,
+  EMPTY_STRING: "",
   CHARACTER_IDENTITY_MAX_WORDS: 24,
 } as const;
 

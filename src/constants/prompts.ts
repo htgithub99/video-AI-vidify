@@ -170,8 +170,11 @@ ${COMPACT_CINEMATIC_PROMPT_RULES}
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 ${NO_FRAME_RULE}
 ${getGeneratedMediaLanguageDirective(isVi)}
-- FRAME FORMAT: Compose every scene natively for ${aspectRatio}. Do not include model-specific flags such as --ar in the prompt text because aspect ratio is supplied separately to the image engine.
-${isThumbnail ? "Write the technical prompt in English, but preserve the exact visible headline in its requested language with correct spelling and diacritics." : "IMPORTANT MANDATE: The rewritten image generation prompts MUST BE ENTIRELY IN ENGLISH, regardless of the language of the original prompts. Do not use Vietnamese in the output."}
+- FRAME FORMAT: Compose every scene natively for ${aspectRatio}. Do not include model-specific flags such as --ar in the prompt text.
+- 100% USER CONFIGURATION ADHERENCE: If user selected white/minimal background, NEVER render room outlines, window frames, or architectural walls. If user selected no_text, NEVER render text.
+- STYLE CONSISTENCY: Every person in every scene must use the EXACT same artistic medium, anatomy construction, line work, and rendering style from target style.
+- LIMB INTEGRITY: Smooth continuous single-line limbs with clean simple hands/feet; strictly NO oversized black joint balls or mechanical circles.
+- NO VIETNAMESE IN PROMPT: The image prompt MUST be written ENTIRELY in English.
 
 Output ONLY a valid JSON array matching the structure: [{"id": "scene_id", "prompt": "rewritten prompt in English"}]. Do not include markdown tags, code blocks, or explanatory text.
 
@@ -200,6 +203,7 @@ export const getOptimizePromptsBatchPrompt = (
 ): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
 
 ${UNTRUSTED_INPUT_RULE}
+${getGeneratedMediaLanguageDirective(isVi)}
 
 [PROJECT STYLE LOCK]
 ${referenceStyle || visualStyle || "Use one coherent visual style for every person and scene."}
@@ -212,32 +216,28 @@ ${referenceStyle || visualStyle || "Use one coherent visual style for every pers
 - Props: ${propLibraryJson || "No recurring props"}
 - Generation references: ${referenceContext}
 
-[USER SETTINGS]
+[USER SETTINGS & STRICT CONFIGURATION ENFORCEMENT]
 - Canvas: ${aspectRatio}
-- Background: ${backgroundMode}
-- Text: ${textMode}
+- Background Mode: ${backgroundMode}
+- Text-In-Image Mode: ${textMode}
 - Framing: ${focusMode}
 
-[GEMINI PROMPT FORMAT]
-Write one natural English paragraph in this order:
-1. Copy the PROJECT STYLE LOCK verbatim at the beginning, exactly once.
-2. State the visible subject. For a recurring character, use its valid ID and only its identityLock traits.
-3. State one simple physical action with exact object quantity.
-4. State the script-grounded setting and historical period only when relevant.
-5. State shot size, camera angle and composition.
-6. End with one concise text policy.
+${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
+
+[GEMINI PROMPT GOLDEN FORMULA]
+Write one natural English paragraph in this exact 5-block order:
+1. [Style Anchor]: Copy the PROJECT STYLE LOCK verbatim at the beginning, exactly once.
+2. [Character DNA & Subject]: Describe the main subject or recurring character using full physical DNA traits (hairstyle, skin tone, limb structure without mechanical joint balls, signature outfit). Never use raw ID tags like char_1 in the prompt text.
+3. [Specific Action & Emotional State]: State one clear, dynamic physical action with exaggerated facial acting/emotion appropriate for the story beat.
+4. [Environment & Props]: When background mode is 'white' or 'minimal', STRICTLY enforce pure solid white background (#FFFFFF) with zero room walls or scenery clutter. When contextual, build the story setting.
+5. [Camera & Negative Constraints]: State shot size, camera angle, and end with: "Completely text-free, strictly no text, no words, no letters." (unless text is explicitly enabled).
 
 [HARD RULES]
-- Every visible person, including unnamed mentors, clients, crowds and background figures, must use exactly the same character type and construction from PROJECT STYLE LOCK. Never render one person as a stick figure and another as realistic, anime, 3D or painterly.
-- Character cards distinguish identity only. Hair, clothing color and one accessory may differ; body construction, realism, facial-detail level, line work and rendering must never differ.
-- Resolve names and continuing pronouns to valid character IDs. Do not turn a recurring character into a generic person.
-- Show one literal action, not an abstract symbol. Keep hands, held objects and contact points visually simple.
-- Keep prompts concise and below 120 English words. Do not repeat style phrases, identity traits, negative constraints or technical terms.
-- Write all technical prompt text in English. Only exact text intended to appear in the image may use ${isVi ? "Vietnamese with correct diacritics" : "English"}.
-- Do not include --ar; the application appends it after the AI-authored prompt.
-- Use only supplied character, location and prop IDs. Prefer one continuous frame.
-
-${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
+- 100% USER CONFIGURATION ADHERENCE: If user selected white/minimal background, NEVER render room outlines, window frames, or architectural walls. If user selected no_text, NEVER render text.
+- STYLE CONSISTENCY: Every person in every scene must use the EXACT same artistic medium, anatomy construction, line work, and rendering style from PROJECT STYLE LOCK. Never drift into anime, 3D, or realistic if the style is stickman/doodle/vector.
+- LIMB INTEGRITY: Smooth continuous single-line limbs with clean simple hands/feet; strictly NO oversized black joint balls, mechanical circles, or disconnected joints.
+- NO VIETNAMESE IN PROMPT: The image prompt MUST be written ENTIRELY in English. Do NOT inject Vietnamese narration or subtitle text into the visual prompt.
+- Do not include --ar in prompt text because the engine handles aspect ratio separately.
 
 ${correctionIssuesJson ? `[ONE CORRECTION PASS]\nFix only these issues and return the full result again:\n${correctionIssuesJson}` : ""}
 
