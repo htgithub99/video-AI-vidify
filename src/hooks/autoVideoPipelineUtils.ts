@@ -208,10 +208,26 @@ export const getPipelineInvalidationState = (
     _.pick(project.visualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
     _.pick(currentVisualConfig, AUTO_VIDEO_PIPELINE_CONFIG.VISUAL_CONFIG_KEYS),
   );
-  const regenerateScript = inputChanged || scriptConfigChanged || !project.contentSafety?.allowed || _.isEmpty(project.scriptRewritten) || _.isEmpty(project.creativeBrief) || _.isEmpty(project.factPack);
-  const regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || _.isEmpty(project.storyboard);
-  const regenerateVoice = regenerateScript || voiceConfigChanged;
-  const regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
+  const hasScript = !_.isEmpty(project.scriptRewritten);
+  const hasStoryboard = !_.isEmpty(project.storyboard);
+  const hasVoice = !_.isEmpty(project.voiceConfig?.audioUrl) || !_.isEmpty(project.voiceConfig?.audioBase64);
+
+  let regenerateScript = inputChanged || scriptConfigChanged || !project.contentSafety?.allowed || !hasScript;
+  let regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || !hasStoryboard;
+  let regenerateVoice = regenerateScript || voiceConfigChanged || !hasVoice;
+  let regenerateSceneAssets = regenerateStoryboard || visualConfigChanged || references.shouldRegenerateSceneAssets;
+
+  if (config.forceRegenerateScenes) {
+    if (hasScript) regenerateScript = false;
+    if (hasStoryboard) regenerateStoryboard = false;
+    if (hasVoice) regenerateVoice = false;
+    regenerateSceneAssets = true;
+  } else if (config.forceRegenerateVoice) {
+    if (hasScript) regenerateScript = false;
+    if (hasStoryboard) regenerateStoryboard = false;
+    regenerateVoice = true;
+    regenerateSceneAssets = false;
+  }
 
   return {
     regenerateScript,
@@ -220,6 +236,7 @@ export const getPipelineInvalidationState = (
     regenerateSceneAssets,
     regenerateSeo: regenerateScript,
     regenerateThumbnails: regenerateScript
+      || Boolean(config.forceRegenerateScenes)
       || references.hasVisualOverrides
       || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount)
       || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode)

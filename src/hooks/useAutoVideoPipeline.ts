@@ -1242,13 +1242,7 @@ export function useAutoVideoPipeline(
               scene!.assetError = undefined;
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
               const totalScenes = _.size(targetScenesToGen);
-              if (_.some([
-                _.isEqual(completedCount, SecurityConstants.DEFAULT_AMOUNT),
-                _.isEqual(completedCount, totalScenes),
-                _.isEqual(completedCount % 5, SecurityConstants.ZERO),
-              ])) {
-                appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
-              }
+              appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
               void persistImageCheckpoint();
               return;
             }
