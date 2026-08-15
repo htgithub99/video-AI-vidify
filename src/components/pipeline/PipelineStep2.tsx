@@ -1,5 +1,7 @@
 import _ from "lodash";
 import { cn } from "../../lib/utils";
+import { API_ROUTES } from "../../constants/apiRoutes";
+import { safeSystemFetch } from "../../lib/shared-utils";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
@@ -228,6 +230,10 @@ export default function PipelineStep2(props: PipelineWizardState) {
                           size="xs"
                           onClick={(e) => {
                             e.stopPropagation();
+                            const removedUrl = (project.visualConfig?.thumbnailReferenceImages || [])[idx];
+                            if (removedUrl && (_.startsWith(removedUrl, "/assets/projects/") || _.includes(removedUrl, "/references/"))) {
+                              safeSystemFetch(API_ROUTES.PIPELINE_DELETE_ASSET_FILE, { assetUrl: removedUrl, projectId: project.id });
+                            }
                             setProject((prev) => {
                               const updated = [...(prev.visualConfig?.thumbnailReferenceImages || [])];
                               updated.splice(idx, 1);

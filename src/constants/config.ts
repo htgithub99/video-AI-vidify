@@ -440,7 +440,7 @@ export const STYLE_REFERENCE_DIRECTIVES = {
   STRICT_PROHIBITION: "Strict prohibition: Absolutely NO realistic human body proportions, NO muscular anatomical limbs, NO 3D rendered bodies, NO semi-realistic cartoon torsos",
   VISUAL_CONSISTENCY_TEMPLATE: "Visual consistency: {value}",
   ENVIRONMENT_STYLE_TEMPLATE: "Environment style: {value}",
-  LIMB_INTEGRITY: "Limb & Anatomy Integrity: Natural single-jointed stick limbs with clean natural elbow/knee angles, strictly no disjointed multi-jointed arms, no mutated extra elbows, no rubbery distorted limbs",
+  LIMB_INTEGRITY: "Limb & Anatomy Integrity: Natural single-jointed stick limbs with clean natural elbow/knee angles, strictly no disjointed multi-jointed arms, no mutated extra elbows, no rubbery distorted limbs, strictly no oversized black joint balls or spheres",
   UNIFORM_VISUAL_IDENTITY: "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
   CLEAN_RENDER: "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
 } as const;
@@ -537,12 +537,17 @@ export const GEMINI_BATCH_SETUP_CONFIG = {
   WORKER_REPLACEMENT_MAX_ATTEMPTS: 2,
 } as const;
 export const GEMINI_CHAT_RECOVERY_CONFIG = {
-  MAX_ROOMS_PER_ITEM: 2,
+  MAX_ROOMS_PER_ITEM: 3,
   MAX_ATTEMPTS_PER_ROOM: 3,
   FIRST_ATTEMPT: 1,
   RELOAD_WAIT_UNTIL: "domcontentloaded" as const,
   RELOAD_DELAY_MIN_MS: 3000,
   RELOAD_DELAY_MAX_MS: 5000,
+  CAPTCHA_WAIT_TIMEOUT_MS: 180000,
+  CAPTCHA_POLL_INTERVAL_MS: 1500,
+  CHALLENGE_URL_KEYWORD: "challenge",
+  ACCOUNTS_URL_KEYWORD: "accounts.google.com",
+  SORRY_URL_KEYWORD: "sorry/index",
 } as const;
 
 export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {

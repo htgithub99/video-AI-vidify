@@ -1,4 +1,6 @@
 import { AppTab, REFACTOR_CONSTANTS, SCENE_TEXT_MODE_UI_CONFIG, StoryboardSourceMode, UI_MESSAGE_DURATION } from "../../constants";
+import { API_ROUTES } from "../../constants/apiRoutes";
+import { safeSystemFetch } from "../../lib/shared-utils";
 import { setTemporaryState } from "./pipeline-utils";
 import _ from "lodash";
 import { cn } from "../../lib/utils";
@@ -1388,17 +1390,28 @@ export default function PipelineStep1(props: PipelineWizardState) {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  const removedUrl = (project.visualConfig?.referenceImages || [])[idx];
+                                  if (removedUrl && (_.startsWith(removedUrl, "/assets/projects/") || _.includes(removedUrl, "/references/"))) {
+                                    safeSystemFetch(API_ROUTES.PIPELINE_DELETE_ASSET_FILE, { assetUrl: removedUrl, projectId: project.id });
+                                  }
                                   setProject((prev) => {
                                     const updated = [
                                       ...(prev.visualConfig?.referenceImages ||
                                         []),
                                     ];
                                     updated.splice(idx, 1);
+                                    const updatedStyle = [
+                                      ...(prev.visualConfig?.styleReferenceImages ||
+                                        []),
+                                    ];
+                                    const styleIdx = updatedStyle.indexOf(removedUrl);
+                                    if (styleIdx >= 0) updatedStyle.splice(styleIdx, 1);
                                     return {
                                       ...prev,
                                       visualConfig: {
                                         ...prev.visualConfig,
                                         referenceImages: updated,
+                                        styleReferenceImages: updatedStyle,
                                       },
                                     };
                                   });

@@ -42,6 +42,7 @@ export const API_ROUTES = {
   PIPELINE_FFMPEG_RENDER: "/api/pipeline/ffmpeg-render",
   PIPELINE_FFMPEG_RENDER_STATUS: "/api/pipeline/ffmpeg-render/status/",
   PIPELINE_FFMPEG_RENDER_CANCEL: "/api/pipeline/ffmpeg-render/cancel/",
+  PIPELINE_DELETE_ASSET_FILE: "/api/pipeline/delete-asset-file",
 } as const;
 
 export const EXTERNAL_URLS = {

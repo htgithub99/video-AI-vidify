@@ -816,6 +816,59 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
   };
 }
 
+const isCaptchaOrChallengeActive = async (page: Page): Promise<boolean> => {
+  if (page.isClosed()) return false;
+  const currentUrl = page.url();
+  if (
+    _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.CHALLENGE_URL_KEYWORD)
+    || _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.SORRY_URL_KEYWORD)
+    || _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.ACCOUNTS_URL_KEYWORD)
+  ) {
+    return true;
+  }
+  try {
+    const hasChallengeFrame = (await page.locator('iframe[src*="recaptcha"], iframe[src*="challenge"], iframe[src*="arkose"], #captcha, div[class*="captcha"]').count()) > 0;
+    if (hasChallengeFrame) return true;
+    const bodyText = await page.evaluate(() => document.body?.innerText?.toLowerCase() || "");
+    return _.includes(bodyText, "xác minh bạn là người")
+      || _.includes(bodyText, "verify you are human")
+      || _.includes(bodyText, "unusual traffic")
+      || _.includes(bodyText, "recaptcha");
+  } catch {
+    return false;
+  }
+};
+
+const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number): Promise<boolean> => {
+  const startTime = Date.now();
+  let warnedCaptcha = false;
+  const tabLabel = _.isNumber(tabIndex) ? _.toString(_.add(tabIndex, SecurityConstants.DEFAULT_AMOUNT)) : "1";
+
+  while (_.lt(_.subtract(Date.now(), startTime), GEMINI_CHAT_RECOVERY_CONFIG.CAPTCHA_WAIT_TIMEOUT_MS)) {
+    if (page.isClosed()) return false;
+
+    try {
+      const inputLoc = page.locator(GeminiChatSelector.Input).first();
+      if ((await inputLoc.count()) > 0 && (await inputLoc.isVisible())) {
+        if (warnedCaptcha) {
+          appLog(BACKEND_MESSAGES.GEMINI_CAPTCHA_SOLVED_RESUMING.replace("{0}", tabLabel));
+        }
+        return true;
+      }
+    } catch {}
+
+    const isCaptcha = await isCaptchaOrChallengeActive(page);
+    if (isCaptcha && !warnedCaptcha) {
+      warnedCaptcha = true;
+      appLog(BACKEND_MESSAGES.GEMINI_CAPTCHA_DETECTED.replace("{0}", tabLabel));
+    }
+
+    await delayAsync(GEMINI_CHAT_RECOVERY_CONFIG.CAPTCHA_POLL_INTERVAL_MS);
+  }
+
+  return false;
+};
+
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, visualConfig } = options;
 
@@ -827,7 +880,6 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let base64Result: string | null = null;
   let roomAttempts = SecurityConstants.ZERO;
   const maxRoomAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
-
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
 
@@ -927,8 +979,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
         try {
           await waitForGeminiPageIdle(activePage!, visualConfig);
-          const inputLoc = activePage!.locator(GeminiChatSelector.Input).first();
-          await inputLoc.waitFor({ state: "visible", timeout: 60000 });
+          const isPageReady = await waitForGeminiReadyOrCaptchaSolved(activePage!);
+          if (!isPageReady) {
+            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+          }
 
           const forceSetting = needNewRoom
             || isConfigChanged
@@ -1285,8 +1339,10 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace("{0}", (tabIndex + 1).toString()).replace("{1}", item.sceneId));
 
               await waitForGeminiPageIdle(page, itemVisualConfig);
-              const inputLoc = page.locator(GeminiChatSelector.Input).first();
-              await inputLoc.waitFor({ state: "visible", timeout: 60000 });
+              const isPageReady = await waitForGeminiReadyOrCaptchaSolved(page, tabIndex);
+              if (!isPageReady) {
+                throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+              }
 
               const currentConfigState = jsonUtils.safeStringify({
                 generateType: itemVisualConfig.generateType,

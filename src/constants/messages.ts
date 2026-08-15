@@ -173,6 +173,8 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_MUTEX_DELAY: "Đang chuẩn bị bước tiếp theo...",
     GEMINI_CHAT_REQUEST_PACING: "Đang điều tiết tốc độ tạo nội dung...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "Kênh {0}: Đang chuẩn bị phân cảnh tiếp theo...",
+    GEMINI_CAPTCHA_DETECTED: "Kênh {0}: Phát hiện màn hình xác minh/Captcha. Vui lòng giải Captcha trên trình duyệt, hệ thống sẽ tự động tiếp tục ngay sau đó.",
+    GEMINI_CAPTCHA_SOLVED_RESUMING: "Kênh {0}: Đã xác minh thành công! Đang tự động tiếp tục quy trình tạo ảnh...",
     SPAM_PREVENTION_DELAY: "Đang giữ khoảng cách an toàn giữa các yêu cầu tạo ảnh...",
     API_RATE_LIMITS_TRIGGERED: "Hệ thống đạt giới hạn tạo ảnh tạm thời, đang giãn cách thời gian...",
     TTS_DEFAULT_TEST: "Xin chào, đây là giọng đọc thử nghiệm.",
@@ -292,24 +294,6 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     NO_AUDIO_CHUNKS: "No audio chunks provided",
     NO_VALID_AUDIO_BASE64: "No valid base64 audio data found in chunks",
     FAILED_READ_MERGED_AUDIO: "Failed to read merged audio file",
-    FFMPEG_PROCESSING_ERROR: "FFmpeg processing error: ",
-    INTERNAL_SERVER_ERROR: "Internal server error: ",
-    HTTP_STATUS_ERROR: "HTTP error! status: ",
-    GOOGLE_TTS_FAILED: "Google TTS failed for chunk: {0}",
-    TTS_FETCH_POLLING_ERROR: "Fetch polling error: {0}",
-    TTS_POLLING_FAILED_RETRYING: "Polling task failed, retrying... {0}",
-    PLAYWRIGHT_BORDER: "\n=======================================================",
-    PLAYWRIGHT_BORDER_BOTTOM: "=======================================================\n",
-    PLAYWRIGHT_PAGE_CLOSED_REINIT: "[Playwright] Browser page is closed or not initialized. Re-initializing...",
-    PLAYWRIGHT_PAGE_CLOSED_PREV_ATTEMPT: "[Playwright] Page was closed in previous attempt. Re-initializing...",
-    PLAYWRIGHT_CLOSED_DETECTED_RESET: "[Playwright] Detect closed page/context. Resetting Playwright instance...",
-    GEMINI_CHAT_START_ROOM: "[Gemini Chat] Starting new chat room (Attempt {0}/{1})...",
-    GEMINI_CHAT_INIT_FAILED: "[Gemini Chat] Failed to initialize new page: {0}",
-    GEMINI_CHAT_RELOAD: "[Gemini Chat] Encountered issue, reloading page attempt {0}...",
-    GEMINI_CHAT_RELOAD_FAILED: "[Gemini Chat] Page reload failed: {0}",
-    GEMINI_CHAT_ATTEMPT_FAILED: "[Gemini Chat] Error on attempt {0} in room {1}: {2}",
-    GEMINI_CHAT_FAILED_COMPLETELY: "[Gemini Chat] Failed completely: {0}",
-    GEMINI_CHAT_FALLBACK_WARNING: "Image generation via Gemini Chat Room failed completely. Using fallback image.",
     GEMINI_CHAT_CONFIG_MODEL: "[Gemini Chat] Configuring model: Target is {0}",
     GEMINI_CHAT_CURRENT_MODEL: "[Gemini Chat] Current model: {0}",
     GEMINI_CHAT_MODEL_CORRECT: "[Gemini Chat] Current model matches config, skipping.",
@@ -370,7 +354,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     VOICE_ALIGN_NO_AUDIO: "No audio data found.",
     VOICE_ALIGN_NO_SCENES: "No scenes found.",
     VOICE_ALIGN_MISSING_OUTPUT: "No output file received from Python script.",
-    VOICE_ALIGN_INSTALL_ERR: "Python environment lacks 'openai-whisper' library and automatic installation failed. Please run 'pip install openai-whisper' manually on Terminal. Error: {0}",
+    VOICE_ALIGN_INSTALL_ERR: "Python environment lacks required library. Error: {0}",
     VOICE_ALIGN_PARSE_ERR: "Error reading synchronization results: {0}",
     GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT: "Timeout waiting for new response from Gemini Chat or no new response found.",
     GEMINI_CHAT_NO_NEW_RESPONSE: "No new response from Gemini after sending prompt. Please try again.",
@@ -384,11 +368,13 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_MUTEX_DELAY: "[Gemini Chat] Waiting {0}ms before releasing image generation mutex...",
     GEMINI_CHAT_REQUEST_PACING: "[Gemini Chat] Pacing request for {0}ms...",
     GEMINI_CHAT_BATCH_NEXT_DELAY: "[Batch Gemini] Tab {0}: Waiting {1}ms before processing next scene...",
+    GEMINI_CAPTCHA_DETECTED: "[Batch Gemini] Tab {0}: Verification screen/Captcha detected. Please solve the Captcha on your browser, system will automatically resume immediately.",
+    GEMINI_CAPTCHA_SOLVED_RESUMING: "[Batch Gemini] Tab {0}: Verification completed! Resuming image generation automatically...",
     SPAM_PREVENTION_DELAY: "[Spam Prevention] Waiting for {0}ms before next image generation request...",
     API_RATE_LIMITS_TRIGGERED: "API rate limits triggered",
     TTS_DEFAULT_TEST: "Hello, this is a test voice.",
-    ULTRA_FILE_REQUIRED: "draft_content.json file path is required!",
-    ULTRA_FILE_NOT_FOUND: "draft_content.json file not found!",
+    ULTRA_FILE_REQUIRED: "Project data is required!",
+    ULTRA_FILE_NOT_FOUND: "Project data not found!",
     ULTRA_SUCCESS: "CapCut Editor processed successfully!",
     SELECT_FILE_FAILED: "Error opening file selector!",
     SELECT_FOLDER_FAILED: "Error opening folder selector!",
@@ -502,28 +488,28 @@ export const PIPELINE_LOGS_LOCALIZED = {
   },
 };
 
-export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.en;
-export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.en;
+export type BackendMessageKey = keyof typeof BACKEND_MESSAGES_LOCALIZED.vi;
+export type PipelineLogKey = keyof typeof PIPELINE_LOGS_LOCALIZED.vi;
 
 export const getBackendMsg = (key: BackendMessageKey, isVi: boolean = true): string => {
-  return isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : BACKEND_MESSAGES_LOCALIZED.en[key];
+  return isVi ? BACKEND_MESSAGES_LOCALIZED.vi[key] : (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || BACKEND_MESSAGES_LOCALIZED.vi[key];
 };
 
 export const getPipelineLog = (key: PipelineLogKey, isVi: boolean = true): string => {
-  return isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : PIPELINE_LOGS_LOCALIZED.en[key];
+  return isVi ? PIPELINE_LOGS_LOCALIZED.vi[key] : (PIPELINE_LOGS_LOCALIZED.en as any)[key] || PIPELINE_LOGS_LOCALIZED.vi[key];
 };
 
 export const BACKEND_MESSAGES = new Proxy({} as Record<BackendMessageKey, string>, {
   get(_, prop: string) {
     const key = prop as BackendMessageKey;
-    return BACKEND_MESSAGES_LOCALIZED.vi[key] || BACKEND_MESSAGES_LOCALIZED.en[key] || "";
+    return BACKEND_MESSAGES_LOCALIZED.vi[key] || (BACKEND_MESSAGES_LOCALIZED.en as any)[key] || "";
   },
 });
 
 export const PIPELINE_LOGS = new Proxy({} as Record<PipelineLogKey, string>, {
   get(_, prop: string) {
     const key = prop as PipelineLogKey;
-    return PIPELINE_LOGS_LOCALIZED.vi[key] || PIPELINE_LOGS_LOCALIZED.en[key] || "";
+    return PIPELINE_LOGS_LOCALIZED.vi[key] || (PIPELINE_LOGS_LOCALIZED.en as any)[key] || "";
   },
 });
 

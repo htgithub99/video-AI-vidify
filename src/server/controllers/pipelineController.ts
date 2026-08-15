@@ -3116,6 +3116,7 @@ router.delete("/templates/:id", (req: Request, res: Response) => {
     res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("TEMPLATE_DELETE_FAILED", isVi) });
   }
 });
+
 router.put("/templates/:id", express.json(), (req: Request, res: Response) => {
   const isVi = req.query?.lang !== ProjectLanguage.EN;
   try {
@@ -3143,6 +3144,60 @@ router.post(ROUTER_PATHS.REFERENCE_ASSETS, async (req: Request, res: Response) =
   if(!_.startsWith(_.toLower(directory),_.toLower(_.join([projectRoot,path.sep],""))))return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({error:PROJECT_ASSET_INVALID_REQUEST});
   fs.mkdirSync(directory,{recursive:true});const assets:string[]=[];
   try{_.forEach(_.take(_.castArray(req.body?.images),10),(image,index)=>{const match=_.toString(image).match(REFACTOR_CONSTANTS.IMAGE_DATA_URL_CAPTURE_REGEX);if(!match){if(_.startsWith(_.toString(image),`/${ASSETS_DIR_NAME}/`))assets.push(_.toString(image));return}const extension=_.includes(match[1],"png")?"png":_.includes(match[1],"webp")?"webp":"jpg";const filename=`ref_${index+1}_${createHash("sha256").update(match[2]).digest("hex").slice(0,12)}.${extension}`;const filePath=path.join(directory,filename);if(!fs.existsSync(filePath))fs.writeFileSync(filePath,Buffer.from(match[2],"base64"));assets.push(`/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/references/${group}/${filename}`)});return res.json({success:true,assets})}catch(error:any){return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({error:error.message})}
+});
+
+router.post("/delete-asset-file", async (req: Request, res: Response) => {
+  const assetUrl = _.toString(req.body?.assetUrl);
+  const projectId = path.basename(_.toString(req.body?.projectId));
+  if (_.isEmpty(assetUrl) || _.isEmpty(projectId)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+  const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
+  // Extract path within project
+  let cleanAssetPath = assetUrl;
+  const projectPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/`;
+  if (_.startsWith(cleanAssetPath, projectPrefix)) {
+    cleanAssetPath = cleanAssetPath.slice(projectPrefix.length);
+  } else if (_.includes(cleanAssetPath, `${projectId}/`)) {
+    cleanAssetPath = cleanAssetPath.slice(cleanAssetPath.indexOf(`${projectId}/`) + projectId.length + 1);
+  }
+  const targetPath = path.resolve(projectRoot, cleanAssetPath);
+  if (!_.startsWith(_.toLower(targetPath), _.toLower(`${projectRoot}${path.sep}`))) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+  try {
+    if (fs.existsSync(targetPath)) {
+      fs.unlinkSync(targetPath);
+      logger.info(`[Asset Cleanup] Deleted asset file: ${targetPath}`);
+    }
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
+});
+
+router.delete(`${ROUTER_PATHS.REFERENCE_ASSETS}/:projectId/:group/:filename`, async (req: Request, res: Response) => {
+  const projectId = path.basename(_.toString(req.params.projectId));
+  const group = _.toString(req.params.group);
+  const filename = path.basename(_.toString(req.params.filename));
+  const allowed = _.values(REFERENCE_ASSET_GROUP);
+  if (!_.includes(allowed, group) || _.isEmpty(projectId) || _.isEmpty(filename)) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+  const filePath = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId, "references", group, filename);
+  const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
+  if (!_.startsWith(_.toLower(filePath), _.toLower(`${projectRoot}${path.sep}`))) {
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  }
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      logger.info(`[Reference Asset] Deleted file: ${filePath}`);
+    }
+    return res.json({ success: true });
+  } catch (error: any) {
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+  }
 });
 
 router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
