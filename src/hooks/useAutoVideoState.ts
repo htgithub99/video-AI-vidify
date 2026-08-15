@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import _ from "lodash";
 import {
   VideoProject,
@@ -213,6 +213,11 @@ export function useAutoVideoState(
 ) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
+  const projectsRef = useRef(projects);
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+
   const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
   const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
@@ -313,7 +318,7 @@ export function useAutoVideoState(
         getAutoVideoConfigStorageKey(projectId),
         null,
       );
-      const foundProj = projectId ? _.find(projects, { id: projectId }) : undefined;
+      const foundProj = projectId ? _.find(projectsRef.current, { id: projectId }) : undefined;
       const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
       const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
       const projectThumbnailReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailReferenceImages, []);
@@ -369,7 +374,7 @@ export function useAutoVideoState(
     } catch (error) {
       logger.error(T.errLoadConfig, error);
     }
-  }, [projects, T.errLoadConfig]);
+  }, [T.errLoadConfig]);
 
   useEffect(() => {
     let isCancelled = false;

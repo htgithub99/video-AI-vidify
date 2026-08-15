@@ -509,7 +509,6 @@ export const GEMINI_BATCH_SETUP_CONFIG = {
   DELAY_MAX_MS: 4000,
   WORKER_REPLACEMENT_MAX_ATTEMPTS: 2,
 } as const;
-
 export const GEMINI_CHAT_RECOVERY_CONFIG = {
   MAX_ROOMS_PER_ITEM: 2,
   MAX_ATTEMPTS_PER_ROOM: 3,
@@ -581,6 +580,8 @@ export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
     '[role="alert"]',
     '[aria-live="assertive"]',
   ].join(", "),
+  PROCESSING: "async-processing-chip",
+  GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
   ERROR_MESSAGE: "Không thể ghi trạng thái DOM Gemini ({0}).",
 } as const;
 
@@ -647,9 +648,9 @@ export const AUTO_GENERATOR_SCENE_REFERENCE_CONFIG = {
   UPLOAD_SUBTITLE_CLASS: "text-[8px] text-slate-500 leading-tight block truncate max-w-full",
   IMAGE_CARD_CLASS: "relative w-full aspect-square rounded-xl group shadow-md overflow-hidden border border-slate-800/80 hover:border-sky-500/30 transition-colors",
   IMAGE_CLASS: "w-full h-full object-cover rounded-xl",
-  IMAGE_OVERLAY_CLASS: "absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center",
-  DELETE_BUTTON_CLASS: "w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0",
-  DELETE_ICON_CLASS: "w-4 h-4",
+  IMAGE_OVERLAY_CLASS: "absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-end items-start p-1.5",
+  DELETE_BUTTON_CLASS: "w-5 h-5 bg-rose-600/90 hover:bg-rose-500 hover:scale-110 rounded-full flex items-center justify-center text-white shadow-md transition-all duration-200 p-0 border border-white/20",
+  DELETE_ICON_CLASS: "w-3 h-3",
 } as const;
 
 export const GEMINI_VIDEO_PROCESS_CONFIG = {

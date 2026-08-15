@@ -80,15 +80,15 @@ interface ImageDeleteOverlayProps {
 
 export function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProps) {
   return (
-    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+    <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex justify-end items-start p-1.5">
       <Button
         type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
         variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
         onClick={onDelete}
-        className="w-7 h-7 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 transform scale-75 group-hover:scale-100 p-0"
+        className="w-5 h-5 bg-rose-600/90 hover:bg-rose-500 hover:scale-110 rounded-full flex items-center justify-center text-white shadow-md transition-all duration-200 p-0 border border-white/20"
         title={tooltip}
       >
-        <X className="w-4 h-4" />
+        <X className="w-3 h-3" />
       </Button>
     </div>
   );
