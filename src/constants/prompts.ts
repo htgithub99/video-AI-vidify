@@ -94,8 +94,8 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
      * Story/Script: "Lightning flashes across the dark storm clouds, illuminating the ancient castle on the cliff."
      * Target English Prompt: "A wide oil painting of an ancient stone castle on a jagged cliff as lightning cuts through dark storm clouds, high-contrast illumination and visible textured brushstrokes."
 
- 6. STRICT ALIGNMENT WITH NARRATION (MANDATORY): The generated visual prompt MUST strictly align and match the literal meaning and core subjects of the scene's narration text. Do NOT deviate from the storyline or introduce foreign elements. Every visual element described in the prompt must serve to visually represent the spoken words of that scene. Do NOT generalize or skip key visual facts from the narration. Ensure that when looking at the image, the viewer immediately understands the content of the narration.
- 7. NO METAPHORICAL, ABSTRACT, OR INVISIBLE CONCEPTS (CRITICAL): Translate abstract narration, emotional states, and invisible/metaphorical concepts into tangible, physically drawable objects, actions, and body language. Never use words like "invisible", "unseen", or abstract concepts (e.g., avoid "engaged in a conversation with an invisible party", "invisible force", "loss of opportunity"). Instead, describe physical signs and observable details: for conversation with an unseen party, use "looking slightly off-camera, gesturing with a hand as if speaking to someone just out of frame"; for "loss of opportunity", describe concrete items like "a broken military sword half-buried in dry dust next to an abandoned uniform".
+ 6. CONTEXTUAL NARRATIVE MEANING & ESSENCE (NATURAL & CINEMATIC): Focus on accurately capturing the core meaning, emotional mood, and narrative intent of the scene rather than an overly rigid, literal word-for-word translation. If the voiceover is philosophical, introspective, or descriptive, illustrate the natural situation, atmosphere, and character emotional state that best conveys the scene's true meaning, giving the frame visual breath and cinematic storytelling depth.
+ 7. NO METAPHORICAL, ABSTRACT, OR INVISIBLE CONCEPTS (CRITICAL): Translate abstract narration, emotional states, and invisible concepts into tangible, physically visible actions, relatable situations, and body language. Avoid abstract non-renderable words like "invisible", "unseen", or "loss of opportunity". Instead, depict observable actions (e.g. a character looking anxious at a bill, a confident stride into a room, an expressive glance, or a relevant environmental interaction).
  8. NO FRAMES OR BORDERS: The prompt must yield full-bleed images.
  9. CHARACTER DIVERSITY (MANDATORY): Characters within the same scene must not look identical. Create reasonable distinctions in face, age, body build, hair, facial hair, clothing, and gear (appropriate to the context) while remaining context-appropriate.
  10. CLEARLY DEFINE COMBATANTS IN CONFLICT SCENES (MANDATORY): When a scene involves battle, combat, or conflict, you MUST clearly define the opposing sides so that the image generator creates the correct characters, clothing, uniforms, armor, weapons, formations, and settings for each respective side.
@@ -1209,9 +1209,10 @@ PROJECT-WIDE STYLE BIBLE RULE:
 
 STRICT LANGUAGE AND IDENTITY RULES:
 - Write every "description" and "prompt" value entirely in natural English, regardless of the script language.
+- MANDATORY GENDER & IDENTITY DETECTION: Thoroughly inspect script context, pronouns, occupation, attire cues (e.g., dress, heels, suit, tie, uniform), and relationships to determine the precise genderPresentation ("female", "male", or "neutral"). For female protagonists, you MUST explicitly specify feminine hair silhouette, styled hairstyle, and dress/outfit cues in the prompt to prevent male or genderless misgeneration.
 - Preserve a real proper name in its original form. For an unnamed character, create a short descriptive English label such as "Former Prisoner" or "Hiring Manager"; never return a generic localized label.
 - Classify only recurring, visually representable people. Do not treat the narrator, audience, society, crowds, or briefly mentioned people as characters unless they physically recur in the story.
-- In second-person narration, the recurring person addressed as "bạn" or "you" is the protagonist whenever the story follows their actions and consequences. Return the stable English name "You" and narrativeRole "second_person_protagonist".
+- In second-person narration, the recurring person addressed as "bạn" or "you" is the protagonist whenever the story follows their actions and consequences. Return the stable English name "You" and narrativeRole "second_person_protagonist" with their contextually accurate gender and visual DNA.
 - Translate identity into four to six visual anchors the target style can reliably show. Prefer hair silhouette, body or torso shape, stable outfit color blocking, posture, and one accessory.
 - Do not force realistic skin texture, face geometry, nose shape, eye color, fabric detail, or anatomy into styles that simplify or omit those features. Use an empty string for a schema field that the style cannot represent.
 - Invent concrete, story-appropriate anchors when the script omits them, but keep the design simple enough to repeat in every scene.
@@ -1272,10 +1273,14 @@ ${charactersJson}
    For each scene, identify which named or recurring characters are physically present from the script and current prompt. For every present character, copy the complete canonical character blueprint into the rewritten prompt without omitting or paraphrasing any immutable trait. Change only pose, action, facial expression, camera placement, or an explicitly narrated temporary condition.
    CRITICAL DIRECTIVE: When a character is present in the scene, you MUST explicitly include the character's exact name at the beginning of their visual description in the rewritten prompt (e.g., "portraying George Armstrong Custer, a male, Caucasian, 50s with..." rather than just "portraying a male, Caucasian, 50s..."). Never omit the character's name.
    Never change apparent age, face geometry, skin tone, hairstyle, body build, signature outfit design/color, or accessories between scenes. Never replace a named supporting character with a generic person or transfer one character's traits to another.
-2. Character Exclusion Rule:
+2. Gender & Outfit Continuity:
+   You MUST strictly preserve the protagonist's gender (female/male) across all scenes without alteration. If the character is female, every scene prompt involving her must explicitly describe her as a female figure with styled female hair and context-appropriate feminine clothing (e.g. casual wear, work clothes, or evening dress matching the narrative beat). Never describe her as male or gender-neutral.
+3. Dynamic Pose Progression & Anti-Duplication:
+   Ensure consecutive scenes progress the action dynamically. If scene N has the character in one posture/action (e.g. sitting or looking at phone), scene N+1 MUST show an active follow-through action (e.g. standing, walking, gesturing, reacting) and alter the shot size (e.g. Wide -> Close-up -> Medium) to prevent visually repetitive frames.
+4. Character Exclusion Rule:
    If a scene does not contain any characters, do NOT force or incorporate any character description; instead, rewrite it to focus purely on the scene's environment, object, or action.
-3. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
-4. Video Frame Integrity: Preserve a complete narrative composition. Never turn a scene into an isolated character sheet, centered standing pose, headshot, hand-only detail, or disconnected object unless the script and active focus directive explicitly require that composition.
+5. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
+6. Video Frame Integrity: Preserve a complete narrative composition. Never turn a scene into an isolated character sheet, centered standing pose, headshot, hand-only detail, or disconnected object unless the script and active focus directive explicitly require that composition.
 
 RULES:
 1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right:
@@ -1308,9 +1313,9 @@ ${charactersJson}
    CRITICAL DIRECTIVE: You MUST explicitly include the character's exact name at the start of their visual description in the rewritten prompt (e.g., "portraying George Armstrong Custer, a male, Caucasian, 50s with..." instead of just "portraying a male, Caucasian, 50s..."). Never omit the character's name.
 2. Pose & Action Adaptation:
    Change the character's pose, body action, and facial expression to perfectly match the action described in the original thumbnail prompt.
-3. Art Style & Context Preservation:
-   Keep the original art style, layout, text/slogan, surrounding background, lighting, and camera angle of each thumbnail. Do NOT change them.
-4. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
+4. Gender & Identity Fidelity:
+   You MUST strictly maintain the protagonist's exact gender and visual silhouette on the thumbnail. For a female protagonist, describe her with distinct feminine hair and attire matching the thumbnail concept, never drawing a male subject.
+5. No Metaphorical Framing: Focus strictly on the literal visual representation. Avoid books, frames, or screens.
 
 RULES:
 1. STRUCTURE MANDATE: The rewritten prompt MUST strictly follow this exact structural formula from left to right:

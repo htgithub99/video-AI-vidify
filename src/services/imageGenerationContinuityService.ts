@@ -34,16 +34,23 @@ export const distributeItemsByContinuity = <T extends ContinuityBatchItem>(
   items: T[],
   requestedWorkerCount: number,
 ): T[][] => {
+  const totalItems = _.size(items);
+  if (totalItems === 0) return [];
+
   const workerCount = _.clamp(
     _.toInteger(requestedWorkerCount),
     IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT,
-    _.max([_.size(items), IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT])!,
+    _.max([totalItems, IMAGE_GENERATION_CONTINUITY_CONFIG.MIN_WORKER_COUNT])!,
   );
-  const lanes = _.values(_.groupBy(items, item => item.continuityKey || IMAGE_GENERATION_CONTINUITY_CONFIG.ENVIRONMENT_LANE));
+
   const workerQueues = _.times(workerCount, () => [] as T[]);
-  _.forEach(lanes, lane => {
+  const lanes = _.values(_.groupBy(items, item => item.continuityKey || IMAGE_GENERATION_CONTINUITY_CONFIG.ENVIRONMENT_LANE));
+  const orderedItems = _.flatten(lanes);
+
+  _.forEach(orderedItems, item => {
     const targetIndex = _.minBy(_.range(workerCount), index => _.size(workerQueues[index]))!;
-    workerQueues[targetIndex].push(...lane);
+    workerQueues[targetIndex].push(item);
   });
+
   return workerQueues;
 };

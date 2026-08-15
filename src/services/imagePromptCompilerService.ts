@@ -40,6 +40,7 @@ const createCharacterClause = (scene: StoryboardScene, characters: CharacterConf
       character => {
         const stage = _.find(character.timelineStages, { id: scene.characterStage });
         const identityAnchors = _.join(_.compact([
+          character.genderPresentation,
           character.hair,
           character.signatureClothing,
           character.accessories,

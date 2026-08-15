@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
+import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
 import { CharacterConfig, ShotPurpose, StoryboardScene, TextInImageMode, VisualBible } from "../types";
 import { resolveSceneCharacterIds } from "./sceneReferenceService";
 
@@ -14,12 +14,14 @@ export interface VisualPlanningOptions {
 export const createVisualCharacterCards = (characters: Array<Partial<CharacterConfig>>): Record<string, unknown>[] => _.map(
   characters,
   character => ({
-    ..._.pick(character, ["id", "name", "narrativeRole"]),
+    ..._.pick(character, ["id", "name", "narrativeRole", "genderPresentation"]),
     identityLock: _.join(_.compact([
+      character.genderPresentation,
       character.hair,
+      character.silhouette,
       character.signatureClothing,
       character.accessories,
-    ]), "; "),
+    ]), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR),
     usesSharedStyleCore: true,
   }),
 );
