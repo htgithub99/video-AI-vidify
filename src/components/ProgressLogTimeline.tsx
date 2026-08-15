@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import _ from "lodash";
 import {
   FileText,
@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   XCircle,
   Activity,
+  Copy,
+  Check,
 } from "lucide-react";
 import { PROGRESS_LOG_CONFIG, ProgressLogTone } from "../constants/progressLog";
 import { SecurityConstants } from "../constants/security";
@@ -98,6 +100,15 @@ ProgressLogIcon.displayName = "ProgressLogIcon";
 export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogTimelineProps) => {
   const entries = useMemo(() => _.map(logs, log => parseProgressLog(log, language)), [logs, language]);
   const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const handleCopy = (text: string, index: number) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedIndex(index);
+    setTimeout(() => {
+      setCopiedIndex((prev) => (prev === index ? null : prev));
+    }, 2000);
+  };
 
   return (
     <div className="relative pl-1.5 py-1 space-y-4">
@@ -108,8 +119,11 @@ export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogT
 
       {_.map(entries, (entry, index) => {
         const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
+        const isError = entry.tone === ProgressLogTone.Error;
+        const isCopied = copiedIndex === index;
+
         return (
-          <div key={index} className={PROGRESS_LOG_CONFIG.CLASSES.ITEM}>
+          <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, "group/log relative")}>
             <span className={cn(
               PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER,
               isLightTheme ? style.iconBgLight : style.iconBgDark
@@ -129,14 +143,32 @@ export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogT
               {entry.message}
             </span>
 
-            {!_.isEmpty(entry.time) && (
-              <span className={cn(
-                PROGRESS_LOG_CONFIG.CLASSES.TIME,
-                isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK
-              )}>
-                {entry.time}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+              {isError && (
+                <button
+                  type="button"
+                  onClick={() => handleCopy(entry.message, index)}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm",
+                    isCopied
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                      : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
+                  )}
+                  title={isCopied ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR}
+                >
+                  {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-rose-400" />}
+                </button>
+              )}
+
+              {!_.isEmpty(entry.time) && (
+                <span className={cn(
+                  PROGRESS_LOG_CONFIG.CLASSES.TIME,
+                  isLightTheme ? PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT : PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK
+                )}>
+                  {entry.time}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}

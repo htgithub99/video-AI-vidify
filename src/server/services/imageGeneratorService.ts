@@ -1113,13 +1113,9 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     return [];
   }
 
-  const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Normal;
-  const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || REFACTOR_CONSTANTS.INDEX_ONE;
-  const continuityLaneCount = _.size(_.uniq(_.map(items, item => item.continuityKey || item.sceneId)));
-  const maxTabs = _.min([
-    resolveBatchTabCount(items.length, concurrency, visualConfig.batchTabCount),
-    continuityLaneCount,
-  ])!;
+  const speed = visualConfig?.geminiChatSpeed || GeminiChatSpeed.Fast;
+  const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || 5;
+  const maxTabs = resolveBatchTabCount(items.length, concurrency, visualConfig?.batchTabCount);
 
   if (maxTabs === 1) {
     const results: BatchImageResult[] = [];

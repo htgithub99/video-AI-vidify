@@ -1,22 +1,48 @@
 import _ from "lodash";
-import { LEGACY_THUMBNAIL_LAYOUT_MAP, THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, THUMBNAIL_TYPOGRAPHY_CATALOG, ThumbnailLayoutId, ThumbnailTypographyId } from "../constants/thumbnail";
+import {
+  LEGACY_THUMBNAIL_LAYOUT_MAP,
+  THUMBNAIL_LAYOUT_CATALOG,
+  THUMBNAIL_PROMPT_CONFIG,
+  THUMBNAIL_TYPOGRAPHY_CATALOG,
+  ThumbnailLayoutId,
+  ThumbnailTypographyId,
+} from "../constants/thumbnail";
 import { CharacterConfig, ThumbnailItem, ThumbnailTextMode, VisualConfig } from "../types";
 import { appendImagePromptAspectRatio } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 
-const validLayoutIds = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
-const validTypographyIds = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
+const VALID_LAYOUT_IDS = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
+const VALID_TYPOGRAPHY_IDS = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
 
 const getNextLayoutId = (usedLayoutIds: Set<string>, index: number): ThumbnailLayoutId => {
   const unusedLayout = _.find(THUMBNAIL_LAYOUT_CATALOG, layout => !usedLayoutIds.has(layout.id));
   return (unusedLayout || THUMBNAIL_LAYOUT_CATALOG[index % _.size(THUMBNAIL_LAYOUT_CATALOG)]).id;
 };
 
-const createFallbackHeadline = (value: unknown): string => _.join(
-  _.take(_.filter(_.toString(value).normalize("NFC").trim().split(/\s+/), Boolean), THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS),
-  " ",
-);
+const resolveLayoutId = (sourceLayoutId: unknown, usedLayoutIds: Set<string>, index: number): ThumbnailLayoutId => {
+  const rawId = _.toString(sourceLayoutId);
+  const mappedId = _.get(LEGACY_THUMBNAIL_LAYOUT_MAP, rawId, rawId);
+  const layoutId = VALID_LAYOUT_IDS.has(mappedId)
+    ? (mappedId as ThumbnailLayoutId)
+    : getNextLayoutId(usedLayoutIds, index);
+  usedLayoutIds.add(layoutId);
+  return layoutId;
+};
+
+const resolveTypographyId = (
+  sourceTypographyId: unknown,
+  templateTypographyId: ThumbnailTypographyId,
+): ThumbnailTypographyId => {
+  if (VALID_TYPOGRAPHY_IDS.has(templateTypographyId)) {
+    return templateTypographyId;
+  }
+  const requestedId = _.toString(sourceTypographyId);
+  if (VALID_TYPOGRAPHY_IDS.has(requestedId)) {
+    return requestedId as ThumbnailTypographyId;
+  }
+  return THUMBNAIL_PROMPT_CONFIG.DEFAULT_TYPOGRAPHY_ID;
+};
 
 const normalizeThumbnail = (
   source: Partial<ThumbnailItem>,
@@ -24,26 +50,14 @@ const normalizeThumbnail = (
   usedLayoutIds: Set<string>,
   textMode: string,
 ): ThumbnailItem => {
-  const rawLayoutId = _.toString(source.layoutId);
-  const requestedLayoutId = _.get(LEGACY_THUMBNAIL_LAYOUT_MAP, rawLayoutId, rawLayoutId);
-  const layoutId = validLayoutIds.has(requestedLayoutId)
-    ? requestedLayoutId as ThumbnailLayoutId
-    : getNextLayoutId(usedLayoutIds, index);
-  usedLayoutIds.add(layoutId);
+  const layoutId = resolveLayoutId(source.layoutId, usedLayoutIds, index);
   const layoutDefinition = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: layoutId })!;
-  const requestedTypographyId = _.toString(source.typographyId);
-  const templateTypographyId = layoutDefinition.typographyId;
-  const typographyId = validTypographyIds.has(templateTypographyId)
-    ? templateTypographyId as ThumbnailTypographyId
-    : validTypographyIds.has(requestedTypographyId)
-      ? requestedTypographyId as ThumbnailTypographyId
-      : THUMBNAIL_PROMPT_CONFIG.DEFAULT_TYPOGRAPHY_ID;
+  const typographyId = resolveTypographyId(source.typographyId, layoutDefinition.typographyId);
   const typographyDefinition = _.find(THUMBNAIL_TYPOGRAPHY_CATALOG, { id: typographyId })!;
-  const hasText = textMode !== THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE;
-  const textText = hasText
-    ? _.trim(_.toString(source.textText)).normalize("NFC")
-    : "";
+  const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
+  const textText = hasText ? _.trim(_.toString(source.textText)).normalize("NFC") : "";
   const generationPrompt = _.trim(_.toString(source.generationPrompt || source.prompt));
+
   return {
     id: `th_${_.add(index, 1)}`,
     prompt: generationPrompt,
@@ -56,7 +70,7 @@ const normalizeThumbnail = (
     layoutRationale: _.trim(_.toString(source.layoutRationale)) || layoutDefinition.bestFor,
     typography: typographyDefinition.description,
     typographyId,
-    accentWords: _.take(_.uniq(_.compact(_.castArray(source.accentWords))), THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS),
+    accentWords: _.uniq(_.compact(_.castArray(source.accentWords))),
     colorSuggestion: _.trim(_.toString(source.colorSuggestion)) || THUMBNAIL_PROMPT_CONFIG.DEFAULT_COLOR,
     subjectFocus: _.trim(_.toString(source.subjectFocus)),
   };
@@ -70,12 +84,8 @@ export const normalizeThumbnailIdeas = (
   const validGeneratedItems = _.filter(generatedItems, item => !_.isEmpty(_.trim(_.toString(item.generationPrompt || item.prompt))));
   const sourceItems = _.take(validGeneratedItems, requestedCount);
   const usedLayoutIds = new Set<string>();
-  return _.map(sourceItems, (item, index) => normalizeThumbnail(
-    item,
-    index,
-    usedLayoutIds,
-    textMode,
-  ));
+
+  return _.map(sourceItems, (item, index) => normalizeThumbnail(item, index, usedLayoutIds, textMode));
 };
 
 export const createSourceGroundedThumbnailIdeas = (
@@ -87,6 +97,7 @@ export const createSourceGroundedThumbnailIdeas = (
   const normalizedScript = _.trim(script);
   const sentences = smartSplitSentences(normalizedScript);
   const sources = _.isEmpty(sentences) ? [normalizedScript] : sentences;
+
   const generatedItems = _.times(requestedCount, index => {
     const layout = THUMBNAIL_LAYOUT_CATALOG[index % _.size(THUMBNAIL_LAYOUT_CATALOG)];
     const source = sources[index % _.size(sources)];
@@ -99,11 +110,12 @@ export const createSourceGroundedThumbnailIdeas = (
       THUMBNAIL_PROMPT_CONFIG.STYLE_TOKEN,
       style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
     );
+
     return {
       prompt,
       style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
       hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText),
-      textText: createFallbackHeadline(source),
+      textText: _.trim(_.toString(source)).normalize("NFC"),
       generationPrompt: prompt,
       layoutId: layout.id,
       layout: layout.composition,
@@ -111,6 +123,7 @@ export const createSourceGroundedThumbnailIdeas = (
       subjectFocus: source,
     };
   });
+
   return normalizeThumbnailIdeas(generatedItems, requestedCount, textMode);
 };
 
@@ -124,9 +137,8 @@ export const createThumbnailGenerationPrompt = (
   const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
-
   const styleDirective = style || thumbnail.style || "";
-  const layoutDesc = thumbnail.layout || "Left 55% contains the main focal subject; Right 45% is clean high-contrast negative space";
+  const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
 
   const parts = _.compact([
     styleDirective && `Visual style: ${styleDirective}.`,
@@ -154,28 +166,29 @@ export const getThumbnailPlanningIssues = (
 ): string[] => _.uniq(_.concat(
   _.lt(_.size(generatedItems), requestedCount) ? [THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT] : [],
   _.flatMap(generatedItems, item => {
-  const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
-  const generationPrompt = _.trim(_.toString(item.generationPrompt || item.prompt));
-  const headline = _.trim(_.toString(item.textText)).normalize("NFC");
-  const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
-  const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
-  IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
-  const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), " ");
-  const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), " ");
-  return _.compact([
-    !layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT,
-    layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
-    _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
-    hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
-    hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline)
-      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
-    layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt)
-      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH,
-    !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt)
-      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH,
-    containsAspectRatio && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ASPECT_RATIO_PRESENT,
-    !_.isEmpty(normalizedStyleLock) && !_.includes(normalizedPrompt, normalizedStyleLock)
-      && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.STYLE_LOCK_MISSING,
+    const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
+    const generationPrompt = _.trim(_.toString(item.generationPrompt || item.prompt));
+    const headline = _.trim(_.toString(item.textText)).normalize("NFC");
+    const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
+    const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
+    IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
+    const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), " ");
+    const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), " ");
+
+    return _.compact([
+      !layout && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INVALID_LAYOUT,
+      layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
+      _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
+      hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
+      hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
+      layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ARROW_POLICY_MISMATCH,
+      !hasText && !THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_PATTERN.test(generationPrompt)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TEXT_POLICY_MISMATCH,
+      containsAspectRatio && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.ASPECT_RATIO_PRESENT,
+      !_.isEmpty(normalizedStyleLock) && !_.includes(normalizedPrompt, normalizedStyleLock)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.STYLE_LOCK_MISSING,
     ]) as string[];
   }),
 ));
