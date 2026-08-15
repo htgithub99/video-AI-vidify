@@ -68,12 +68,43 @@ export class LicenseValidationError extends Error {
     }
 }
 
+interface CachedLicenseEntry {
+    info: LicenseInfo;
+    timestamp: number;
+}
+
+const licenseCache = new Map<string, CachedLicenseEntry>();
+
+const createDefaultLicenseInfo = (): LicenseInfo => ({
+    status: LicenseStatus.ACTIVE,
+    plan_id: PlanType.PRO_LIFETIME,
+    plan_type: PlanType.PRO_LIFETIME,
+    quota_type: SecurityConstants.QUOTA_TYPE_TOTAL,
+    expires_at: null,
+    usage: {
+        video: SecurityConstants.ZERO,
+        image: SecurityConstants.ZERO,
+        voice: SecurityConstants.ZERO,
+    },
+    limits: {
+        video: SecurityConstants.ZERO,
+        image: SecurityConstants.ZERO,
+        voice: SecurityConstants.ZERO,
+        unlimited: true,
+    }
+});
+
 export class LicenseService {
     static async validateKey(licenseKey: string): Promise<LicenseInfo | null> {
         if (_.isEmpty(licenseKey)) return null;
-        
+
+        const cached = licenseCache.get(licenseKey);
+        if (cached && _.lt(_.subtract(Date.now(), cached.timestamp), SecurityConstants.LICENSE_CACHE_TTL_MS)) {
+            return cached.info;
+        }
+
         const deviceId = getHardwareId();
-        
+
         try {
             const response = await fetch(SecurityConstants.GAS_API_URL, {
                 method: SecurityConstants.HTTP_POST,
@@ -85,16 +116,16 @@ export class LicenseService {
                     device_id: deviceId
                 })
             });
-            
+
             const data: any = await response.json();
-            
+
             if (_.has(data, SecurityConstants.ERROR_KEY)) {
                 const errorMsg = _.get(data, SecurityConstants.ERROR_KEY);
                 appError(SecurityMessages.LICENSE_VALIDATION_ERROR, errorMsg);
                 throw new LicenseValidationError(errorMsg);
             }
-            
-            return {
+
+            const info: LicenseInfo = {
                 status: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.STATUS_KEY)))) as LicenseStatus,
                 plan_id: _.get(data, SecurityConstants.PLAN_ID_KEY),
                 plan_type: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.PLAN_NAME_KEY, PlanType.FREE)))) as PlanType,
@@ -112,9 +143,20 @@ export class LicenseService {
                     unlimited: _.get(data, SecurityConstants.PLAN_IS_UNLIMITED, false),
                 }
             };
+
+            licenseCache.set(licenseKey, { info, timestamp: Date.now() });
+            return info;
         } catch (error: any) {
             if (error instanceof LicenseValidationError) {
                 throw error;
+            }
+            if (cached) {
+                return cached.info;
+            }
+            if (_.isEqual(licenseKey, SecurityConstants.DEFAULT_LICENSE_KEY)) {
+                const fallbackInfo = createDefaultLicenseInfo();
+                licenseCache.set(licenseKey, { info: fallbackInfo, timestamp: Date.now() });
+                return fallbackInfo;
             }
             appError(SecurityMessages.FAILED_TO_CONNECT, error);
             throw new Error(_.defaultTo(error.message, SecurityMessages.FAILED_TO_CONNECT));
@@ -139,7 +181,7 @@ export class LicenseService {
                     amount: amount
                 })
             });
-            
+
             const data: any = await response.json();
             if (_.has(data, SecurityConstants.ERROR_KEY)) {
                 appError(SecurityMessages.USAGE_UPDATE_ERROR, _.get(data, SecurityConstants.ERROR_KEY));

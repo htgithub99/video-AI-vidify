@@ -67,6 +67,7 @@ export const SecurityConstants = {
   },
   LOCAL_STORAGE_LICENSE_KEY: 'vidify_license_key',
   DEFAULT_LICENSE_KEY: '4DE63-66EB0-A241C-F9BA5-05341',
+  LICENSE_CACHE_TTL_MS: 300000,
   DEVICE_ID_FILE_NAME: 'device_id.json',
   HEADER_LICENSE_KEY: 'x-license-key',
   TOAST_DURATION: 3000,
