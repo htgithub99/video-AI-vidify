@@ -56,6 +56,20 @@ export const removeGeneratedTextRequests = (prompt: string): string => _.trim(pr
   .replace(/\s*,\s*,+/g, ", ")
   .replace(/\s+([,.;:])/g, "$1"));
 
+export const deduplicatePromptSentences = (text: string): string => {
+  if (!text) return "";
+  const parts = _.split(text, /(?<=[.!?])\s+/);
+  const seen = new Set<string>();
+  const uniqueParts = _.filter(parts, (part) => {
+    const normalized = _.toLower(_.trim(part));
+    if (_.isEmpty(normalized) || _.size(normalized) < 5) return false;
+    if (seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+  return _.join(uniqueParts, " ");
+};
+
 export const sanitizeImagePrompt = (prompt: string): string => {
   return _.trim(_.toString(prompt));
 };

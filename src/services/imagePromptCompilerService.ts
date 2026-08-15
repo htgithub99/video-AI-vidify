@@ -2,7 +2,11 @@ import _ from "lodash";
 import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
 import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
-import { appendImagePromptAspectRatio, sanitizeImagePrompt } from "./imagePromptQualityService";
+import {
+  appendImagePromptAspectRatio,
+  deduplicatePromptSentences,
+  sanitizeImagePrompt,
+} from "./imagePromptQualityService";
 import {
   createMasterStylePrefix,
   createMasterStyleSuffix,
@@ -29,10 +33,13 @@ const compactWords = (value: string, maximumWords: number): string => _.join(
   IMAGE_PROMPT_COMPILER_CONFIG.SPACE_SEPARATOR,
 );
 
-const compactSceneField = (value: unknown): string => compactWords(
-  _.trim(_.toString(value)),
-  IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS,
-);
+const compactSceneField = (value: unknown): string => {
+  const str = _.trim(_.toString(value));
+  if (_.isEmpty(str) || DETECTOR_VIETNAMESE_REGEX.test(str)) {
+    return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+  }
+  return compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+};
 
 const buildSingleCharacterIdentity = (
   character: CharacterConfig,
@@ -244,10 +251,23 @@ export const compileImagePrompt = (
   options: ImagePromptCompilerOptions = {},
 ): string => {
   const visualBible = options.visualBible;
-  const clauses = buildPromptClauses(scene, options);
-  const rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
   const isReferenceLocked = Boolean(options.referenceLocked || visualBible?.styleReferenceLocked);
-  const sanitizedPrompt = sanitizeImagePrompt(removeConflictingStyleTerms(rawPrompt, isReferenceLocked));
+
+  const existingPrompt = _.trim(_.toString(scene.prompt));
+  const isAiOptimizedPrompt = !_.isEmpty(existingPrompt)
+    && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)
+    && _.size(_.words(existingPrompt)) > 15;
+
+  let rawPrompt: string;
+  if (isAiOptimizedPrompt) {
+    rawPrompt = existingPrompt;
+  } else {
+    const clauses = buildPromptClauses(scene, options);
+    rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  }
+
+  const cleanedPrompt = deduplicatePromptSentences(removeConflictingStyleTerms(rawPrompt, isReferenceLocked));
+  const sanitizedPrompt = sanitizeImagePrompt(cleanedPrompt);
 
   return appendImagePromptAspectRatio(sanitizedPrompt, options.aspectRatio);
 };

@@ -8,7 +8,10 @@ import {
   ThumbnailTypographyId,
 } from "../constants/thumbnail";
 import { CharacterConfig, ThumbnailItem, ThumbnailTextMode, VisualConfig } from "../types";
-import { appendImagePromptAspectRatio } from "./imagePromptQualityService";
+import {
+  appendImagePromptAspectRatio,
+  deduplicatePromptSentences,
+} from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
 
@@ -171,7 +174,10 @@ export const createThumbnailGenerationPrompt = (
     THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE_DIRECTIVE,
   ]);
 
-  return appendImagePromptAspectRatio(_.join(parts, " "), aspectRatio);
+  const rawCombined = _.join(parts, " ");
+  const deduplicated = deduplicatePromptSentences(rawCombined);
+
+  return appendImagePromptAspectRatio(deduplicated, aspectRatio);
 };
 
 export const getThumbnailPlanningIssues = (
@@ -210,7 +216,7 @@ export const getThumbnailPlanningIssues = (
 ));
 
 export const resolveThumbnailReferenceImages = (
-  visualConfig: Pick<VisualConfig, "styleReferenceImages" | "thumbnailReferenceImages">,
+  visualConfig: Partial<Pick<VisualConfig, "styleReferenceImages" | "thumbnailReferenceImages">> = {},
 ): string[] => {
   const sceneStyleReference = _.first(_.defaultTo(visualConfig.styleReferenceImages, []));
   const thumbnailPresentationReferences = _.take(
@@ -221,7 +227,7 @@ export const resolveThumbnailReferenceImages = (
     _.uniq(_.compact(_.concat(
       sceneStyleReference,
       thumbnailPresentationReferences,
-    ))),
+    ))) as string[],
     THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES,
   );
 };
