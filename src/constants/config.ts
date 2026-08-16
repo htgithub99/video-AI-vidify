@@ -454,6 +454,7 @@ export const STYLE_REFERENCE_DIRECTIVES = {
   LIMB_INTEGRITY: "Limb & Anatomy Integrity: Natural single-jointed stick limbs with clean natural elbow/knee angles, strictly no disjointed multi-jointed arms, no mutated extra elbows, no rubbery distorted limbs, strictly no oversized black joint balls or spheres",
   UNIFORM_VISUAL_IDENTITY: "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
   CLEAN_RENDER: "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
+  REFERENCE_MATCH_DIRECTIVE: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image",
 } as const;
 
 export const STYLE_DIRECTIVE_CONFIG = {

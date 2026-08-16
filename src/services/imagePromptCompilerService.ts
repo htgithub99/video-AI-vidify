@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
+import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG, STYLE_REFERENCE_DIRECTIVES } from "../constants/config";
 import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
 import {
@@ -225,8 +225,22 @@ const buildPromptClauses = (
   options: ImagePromptCompilerOptions,
 ): string[] => {
   const visualBible = options.visualBible;
-  const masterPrefix = visualBible?.styleProfile ? createMasterStylePrefix(visualBible.styleProfile) : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
-  const masterSuffix = visualBible?.styleProfile ? createMasterStyleSuffix(visualBible.styleProfile) : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+  const isReferenceLocked = Boolean(options.referenceLocked || visualBible?.styleReferenceLocked);
+
+  const masterPrefix = isReferenceLocked
+    ? STYLE_REFERENCE_DIRECTIVES.REFERENCE_MATCH_DIRECTIVE
+    : (visualBible?.styleProfile ? createMasterStylePrefix(visualBible.styleProfile) : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING);
+
+  const masterSuffix = isReferenceLocked
+    ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING
+    : (visualBible?.styleProfile ? createMasterStyleSuffix(visualBible.styleProfile) : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING);
+
+  const constraints = isReferenceLocked
+    ? [
+      _.isEqual(scene.layout, IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LAYOUT) && IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,
+      IMAGE_PROMPT_COMPILER_CONFIG.NO_GRID_DIRECTIVE,
+    ]
+    : createConstraintClauses(scene);
 
   return _.compact([
     masterPrefix,
@@ -239,10 +253,10 @@ const buildPromptClauses = (
     createPropClause(scene, visualBible),
     compactSceneField(scene.lighting) || IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LIGHTING,
     createCompositionClause(scene),
-    createStyleClause(options),
+    !isReferenceLocked && createStyleClause(options),
     buildContinuityClause(scene),
     masterSuffix,
-    ...createConstraintClauses(scene),
+    ...constraints,
   ]);
 };
 
