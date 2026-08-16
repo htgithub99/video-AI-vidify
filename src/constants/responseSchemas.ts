@@ -84,18 +84,37 @@ export const VISUAL_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:fa
 
 export const VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA = {
   type: "object", additionalProperties: false,
-  required: ["medium", "characterType", "characterDna", "lineDna", "colorDna", "renderingDna", "periodCues", "worldRendering", "adaptiveElements", "sampleSpecificContent"],
+  required: [
+    "medium", "characterType", "characterDna", "lineDna", "shapeLanguage",
+    "colorDna", "colorPhilosophy", "renderingDna", "lightingStyle", "texture",
+    "detailLevel", "visualComplexity", "periodCues", "worldRendering",
+    "compositionLanguage", "facialExpressionLanguage", "overallMood",
+    "adaptiveElements", "negativeStylePrompt", "sampleSpecificContent",
+    "lockedStyleElements", "flexibleElements",
+  ],
   properties: {
     medium: stringSchema,
     characterType: stringSchema,
     characterDna: stringSchema,
     lineDna: stringSchema,
+    shapeLanguage: stringSchema,
     colorDna: stringSchema,
+    colorPhilosophy: stringSchema,
     renderingDna: stringSchema,
+    lightingStyle: stringSchema,
+    texture: stringSchema,
+    detailLevel: stringSchema,
+    visualComplexity: stringSchema,
     periodCues: stringSchema,
     worldRendering: stringSchema,
+    compositionLanguage: stringSchema,
+    facialExpressionLanguage: stringSchema,
+    overallMood: stringSchema,
     adaptiveElements: stringSchema,
+    negativeStylePrompt: stringSchema,
     sampleSpecificContent: stringArraySchema,
+    lockedStyleElements: stringArraySchema,
+    flexibleElements: stringArraySchema,
   },
 } as const;
 

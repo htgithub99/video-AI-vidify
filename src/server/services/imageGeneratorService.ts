@@ -869,6 +869,8 @@ const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number):
   return false;
 };
 
+const roomReferenceUploadedMap = new WeakMap<Page, boolean>();
+
 export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const { prompt, visualConfig } = options;
 
@@ -933,6 +935,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
             GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
             GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
           );
+          roomReferenceUploadedMap.set(activePage, false);
           consecutiveGeminiErrors = 0;
         } else {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
@@ -951,7 +954,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       }
 
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
+      const maxReloadAttempts = 2; // Retry tối đa 2 lần bằng reload room hiện tại, lần 3 tạo room mới
 
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
@@ -990,7 +993,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
           const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
           if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          await configureGeminiGenerateType(activePage!, visualConfig, forceSetting);
+          
+          // Bỏ bước chọn tạo ảnh: trực tiếp upload 1 ảnh tham chiếu và nhập prompt
           await configureGeminiMediaInput(activePage!, visualConfig);
 
           if (forceSetting) {
@@ -1151,6 +1155,7 @@ const prepareGeminiBatchPage = async (page: Page, index: number): Promise<void> 
       GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
       GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
     );
+    roomReferenceUploadedMap.set(page, false);
     batchPagesErrors.set(page, SecurityConstants.ZERO);
   } catch (error: any) {
     appError(
@@ -1292,6 +1297,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS,
                 GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS,
               );
+              roomReferenceUploadedMap.set(page, false);
               batchPagesErrors.set(page, 0);
             } catch (err: any) {
               appError(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_REDIRECT_FAILED.replace("{0}", (tabIndex + 1).toString()).replace("{1}", err.message));
@@ -1305,7 +1311,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
 
           let reloadAttempts = SecurityConstants.ZERO;
-          const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
+          const maxReloadAttempts = 2; // Retry tối đa 2 lần bằng reload room hiện tại, lần 3 tạo room mới
 
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
@@ -1357,7 +1363,8 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
               const modelConfigured = await configureGeminiModel(page, itemVisualConfig);
               if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-              await configureGeminiGenerateType(page, itemVisualConfig, forceSetting);
+              
+              // Bỏ bước chọn tạo ảnh: trực tiếp upload 1 ảnh tham chiếu và nhập prompt
               await configureGeminiMediaInput(page, itemVisualConfig);
 
               if (forceSetting) {
@@ -1666,7 +1673,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   return false;
 }
 
-async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig, forceSetting: boolean) {
+export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig, forceSetting: boolean) {
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
   const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
@@ -1793,8 +1800,18 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     }
   }
 
-  const referenceFiles = createGeminiReferenceFiles(visualConfig?.referenceImages);
-  if (_.isEmpty(referenceFiles)) return;
+  // Chỉ upload 1 lần cho mỗi room theo yêu cầu
+  const isAlreadyUploaded = roomReferenceUploadedMap.get(page) === true;
+  if (isAlreadyUploaded) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
+    return;
+  }
+
+  const allReferenceFiles = createGeminiReferenceFiles(visualConfig?.referenceImages);
+  if (_.isEmpty(allReferenceFiles)) return;
+
+  // Lấy 1 ảnh tham chiếu duy nhất
+  const referenceFiles = [allReferenceFiles[0]];
 
   const referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
   if (!(await referenceInput.count())) {
@@ -1804,7 +1821,7 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
   await referenceInput.setInputFiles(referenceFiles);
   await page.waitForFunction(
     ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
-    { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: _.size(referenceFiles) },
+    { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: 1 },
     { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
   ).catch(() => undefined);
   await randomDelay(
@@ -1812,12 +1829,13 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
   );
   const uploadedReferenceCount = await page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS).count();
-  if (_.lt(uploadedReferenceCount, _.size(referenceFiles))) {
+  if (_.lt(uploadedReferenceCount, 1)) {
     throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED);
   }
+  roomReferenceUploadedMap.set(page, true);
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
     SecurityConstants.PLACEHOLDER_0,
-    _.toString(_.size(referenceFiles)),
+    "1",
   ));
 }
 

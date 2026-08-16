@@ -1610,6 +1610,7 @@ export function usePipelineWizard(props: any) {
       }
 
       const extractedStyle = extractData.style;
+      const negativeStylePrompt = extractData.negativeStylePrompt || extractData.styleProfile?.negativeStylePrompt || "";
       const styleFingerprint = _.toString(extractData.fingerprint) || extractedStyle;
 
       setProject((prev) => ({
@@ -1618,6 +1619,7 @@ export function usePipelineWizard(props: any) {
           ...prev.visualConfig,
           style: extractedStyle,
           referencePrompt: extractedStyle,
+          negativeStylePrompt,
           styleFingerprint,
           styleReferenceLocked: true,
         },
@@ -1625,6 +1627,7 @@ export function usePipelineWizard(props: any) {
           ...prev.visualBible,
           visualStyle: extractedStyle,
           styleProfile: extractData.styleProfile,
+          negativeStylePrompt,
           styleFingerprint,
           styleReferenceLocked: true,
         },

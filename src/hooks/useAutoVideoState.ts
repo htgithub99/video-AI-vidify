@@ -18,11 +18,10 @@ import {
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue } from "../constants";
-import { PRESET_CONSTANTS } from "../constants/texts";
+import { PRESET_CONSTANTS, AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
 import { logger } from "../utils/logger";
 import { Lang } from "../lib/lang";
-import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { getAutoVideoConfigStorageKey } from "./autoVideoPipelineUtils";
 import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 
@@ -55,6 +54,7 @@ interface CachedGeneratorConfig {
   referenceImages?: string[];
   sceneReferenceImages?: string[];
   thumbnailReferenceImages?: string[];
+  thumbnailSceneReferenceImages?: string[];
   resumeMode?: boolean;
   chromeHeadless?: boolean;
   musicAssetUrl?: string;
@@ -107,6 +107,7 @@ export interface AutoVideoFormState {
   thumbnailBackgroundMode: BackgroundMode;
   thumbnailTextInImageMode: ThumbnailTextMode;
   thumbnailReferenceImages: string[];
+  thumbnailSceneReferenceImages: string[];
   projectName: string;
   resumeMode: boolean;
   showAdvancedImageSettings: boolean;
@@ -144,6 +145,7 @@ export interface AutoVideoFormActions {
   setThumbnailBackgroundMode: (v: BackgroundMode) => void;
   setThumbnailTextInImageMode: (v: ThumbnailTextMode) => void;
   setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
+  setThumbnailSceneReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   setProjectName: (v: string) => void;
   setResumeMode: (v: boolean) => void;
   setShowAdvancedImageSettings: (v: boolean) => void;
@@ -151,18 +153,9 @@ export interface AutoVideoFormActions {
 }
 
 const buildInitialProjectName = (): string =>
-  _.join(
-    [
-      PRESET_CONSTANTS.PROJECT_NAME_PREFIX,
-      new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10),
-    ],
-    REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  );
+  `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)}`;
 
-const applyProjectToState = (
-  proj: VideoProject,
-  actions: AutoVideoFormActions,
-) => {
+const applyProjectToState = (proj: VideoProject, actions: AutoVideoFormActions) => {
   if (proj.input) {
     if (proj.input.type) actions.setInputType(proj.input.type);
     actions.setScriptContent(_.defaultTo(proj.input.content, REFACTOR_CONSTANTS.VD_EMPTY_STRING));
@@ -195,23 +188,25 @@ const applyProjectToState = (
     if (proj.visualConfig.thumbnailBackgroundMode) actions.setThumbnailBackgroundMode(normalizeBackgroundMode(proj.visualConfig.thumbnailBackgroundMode));
     actions.setThumbnailTextInImageMode(normalizeThumbnailTextMode(proj.visualConfig.thumbnailTextInImageMode));
     actions.setReferenceImages(
-      _.defaultTo(proj.visualConfig.styleReferenceImages, (
+      _.defaultTo(
+        proj.visualConfig.styleReferenceImages,
         _.isEmpty(proj.visualConfig.sceneReferenceImages)
           ? _.defaultTo(proj.visualConfig.referenceImages, [])
           : []
-      )),
+      )
     );
     actions.setSceneReferenceImages(_.defaultTo(proj.visualConfig.sceneReferenceImages, []));
     actions.setThumbnailReferenceImages(_.defaultTo(proj.visualConfig.thumbnailReferenceImages, []));
+    actions.setThumbnailSceneReferenceImages(_.defaultTo(proj.visualConfig.thumbnailSceneReferenceImages, []));
   }
 };
 
 export function useAutoVideoState(
   selectedProjectId: string | null | undefined,
   projects: VideoProject[],
-  currentLang: Lang,
+  currentLang: Lang
 ) {
-  const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
+  const T = _.get(AUTO_GENERATOR_PANEL_TEXTS, currentLang, AUTO_GENERATOR_PANEL_TEXTS.vi);
 
   const projectsRef = useRef(projects);
   useEffect(() => {
@@ -269,6 +264,7 @@ export function useAutoVideoState(
   const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
   const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<ThumbnailTextMode>(ThumbnailTextMode.Headline);
   const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
+  const [thumbnailSceneReferenceImages, setThumbnailSceneReferenceImages] = useState<string[]>([]);
 
   const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
   const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
@@ -306,6 +302,7 @@ export function useAutoVideoState(
     setThumbnailBackgroundMode,
     setThumbnailTextInImageMode,
     setThumbnailReferenceImages,
+    setThumbnailSceneReferenceImages,
     setProjectName,
     setResumeMode,
     setShowAdvancedImageSettings,
@@ -316,12 +313,13 @@ export function useAutoVideoState(
     try {
       const parsed = await jsonUtils.getAsyncItem<CachedGeneratorConfig | null>(
         getAutoVideoConfigStorageKey(projectId),
-        null,
+        null
       );
       const foundProj = projectId ? _.find(projectsRef.current, { id: projectId }) : undefined;
       const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
       const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
       const projectThumbnailReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailReferenceImages, []);
+      const projectThumbnailSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.thumbnailSceneReferenceImages, []);
 
       if (parsed) {
         const usesCurrentDefaults = _.isEqual(parsed.version, AUTO_VIDEO_DEFAULTS.CONFIG_VERSION);
@@ -346,27 +344,42 @@ export function useAutoVideoState(
         setStyleTextInImageMode(SCENE_TEXT_MODE);
         if (parsed.imageFocusMode) setImageFocusMode(parsed.imageFocusMode);
         if (parsed.thumbnailImageFocusMode) setThumbnailImageFocusMode(parsed.thumbnailImageFocusMode);
-        if (parsed.thumbnailCount !== undefined) setThumbnailCount(parsed.thumbnailCount);
+        if (!_.isUndefined(parsed.thumbnailCount)) setThumbnailCount(parsed.thumbnailCount);
         if (parsed.thumbnailStylePreset) setThumbnailStylePreset(parsed.thumbnailStylePreset);
         if (parsed.thumbnailBackgroundMode) setThumbnailBackgroundMode(normalizeBackgroundMode(parsed.thumbnailBackgroundMode));
         setThumbnailTextInImageMode(normalizeThumbnailTextMode(parsed.thumbnailTextInImageMode));
         if (parsed.projectName) setProjectName(parsed.projectName);
         if (!_.isUndefined(parsed.musicAssetUrl)) setMusicAssetUrl(parsed.musicAssetUrl);
-        setReferenceImages(!_.isEmpty(projectStyleReferenceImages)
-          ? projectStyleReferenceImages
-          : _.defaultTo(parsed.referenceImages, []));
-        setSceneReferenceImages(!_.isEmpty(projectSceneReferenceImages)
-          ? projectSceneReferenceImages
-          : _.defaultTo(parsed.sceneReferenceImages, []));
-        setThumbnailReferenceImages(!_.isEmpty(projectThumbnailReferenceImages)
-          ? projectThumbnailReferenceImages
-          : _.defaultTo(parsed.thumbnailReferenceImages, []));
-        setResumeMode(usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
-          ? parsed.resumeMode
-          : AUTO_VIDEO_DEFAULTS.RESUME_MODE);
-        setChromeHeadless(usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
-          ? parsed.chromeHeadless
-          : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
+        setReferenceImages(
+          !_.isEmpty(projectStyleReferenceImages)
+            ? projectStyleReferenceImages
+            : _.defaultTo(parsed.referenceImages, [])
+        );
+        setSceneReferenceImages(
+          !_.isEmpty(projectSceneReferenceImages)
+            ? projectSceneReferenceImages
+            : _.defaultTo(parsed.sceneReferenceImages, [])
+        );
+        setThumbnailReferenceImages(
+          !_.isEmpty(projectThumbnailReferenceImages)
+            ? projectThumbnailReferenceImages
+            : _.defaultTo(parsed.thumbnailReferenceImages, [])
+        );
+        setThumbnailSceneReferenceImages(
+          !_.isEmpty(projectThumbnailSceneReferenceImages)
+            ? projectThumbnailSceneReferenceImages
+            : _.defaultTo(parsed.thumbnailSceneReferenceImages, [])
+        );
+        setResumeMode(
+          usesCurrentDefaults && !_.isUndefined(parsed.resumeMode)
+            ? parsed.resumeMode
+            : AUTO_VIDEO_DEFAULTS.RESUME_MODE
+        );
+        setChromeHeadless(
+          usesCurrentDefaults && !_.isUndefined(parsed.chromeHeadless)
+            ? parsed.chromeHeadless
+            : AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS
+        );
       } else if (foundProj) {
         applyProjectToState(foundProj, actions);
         setProjectName(foundProj.name);
@@ -420,20 +433,21 @@ export function useAutoVideoState(
       referenceImages,
       sceneReferenceImages,
       thumbnailReferenceImages,
+      thumbnailSceneReferenceImages,
       resumeMode,
       chromeHeadless,
       musicAssetUrl,
     };
     void jsonUtils.setAsyncItem(
       getAutoVideoConfigStorageKey(selectedProjectId),
-      config,
+      config
     );
   }, [
     isConfigLoaded, selectedProjectId,
     inputType, scriptContent, genre, language, duration, splitStrategy,
     voiceProvider, voiceURI, voiceName, generationMode, imageGeneratorEngine,
     generateType, maxVideoScenes, aspectRatio, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode,
-    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, resumeMode, chromeHeadless, musicAssetUrl,
+    projectName, referenceImages, sceneReferenceImages, thumbnailReferenceImages, thumbnailSceneReferenceImages, resumeMode, chromeHeadless, musicAssetUrl,
   ]);
 
   const state: AutoVideoFormState = {
@@ -446,6 +460,7 @@ export function useAutoVideoState(
     chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, thumbnailImageFocusMode,
     referenceImages, sceneReferenceImages, characterImages,
     thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailReferenceImages,
+    thumbnailSceneReferenceImages,
     projectName, resumeMode, showAdvancedImageSettings, ffmpegQuality, isConfigLoaded, musicAssetUrl,
   };
 

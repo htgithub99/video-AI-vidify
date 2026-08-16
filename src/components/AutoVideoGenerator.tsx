@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
@@ -14,14 +14,14 @@ import {
   ImageFocusMode,
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
-import { applyVoiceSelection } from "../lib/voiceRouting";
-import { AppTab, AppTheme, AppLanguage } from "../constants/enums";
+import { AppTheme, AppLanguage } from "../constants/enums";
 import {
   API_ROUTES,
   HTTP_METHODS,
   CONTENT_TYPES,
   CONTENT_TYPE_HEADER,
   REFACTOR_CONSTANTS,
+  DEFAULT_PROJECT_CONFIGS,
   API_HEADERS,
   STORAGE_KEYS,
 } from "../constants";
@@ -33,9 +33,7 @@ import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
-import { readFilesAsDataURL } from "../lib/shared-utils";
-import { Zap, Sliders } from "lucide-react";
-
+import { readFilesAsDataURL, safeSystemFetch } from "../lib/shared-utils";
 import { ActionPanelSection } from "./auto-video/ActionPanelSection";
 import { AdvancedImageSettingsSection } from "./auto-video/AdvancedImageSettingsSection";
 import { GenerationSettingsSection } from "./auto-video/GenerationSettingsSection";
@@ -49,7 +47,7 @@ import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
 import { toast } from "sonner";
-import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
+import { normalizeBackgroundMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -69,9 +67,9 @@ export default function AutoVideoGenerator({
   onUpdateProject,
   theme = AppTheme.DARK,
 }: AutoVideoGeneratorProps) {
-  const T = getAutoVideoTexts(currentLang);
-  const mediaMixTexts = MEDIA_MIX_TEXTS[currentLang as "vi" | "en"] || MEDIA_MIX_TEXTS.vi;
-  const splitLabelMap = getSplitLabels(T);
+  const T = useMemo(() => getAutoVideoTexts(currentLang), [currentLang]);
+  const mediaMixTexts = useMemo(() => _.get(MEDIA_MIX_TEXTS, currentLang, MEDIA_MIX_TEXTS.vi), [currentLang]);
+  const splitLabelMap = useMemo(() => getSplitLabels(T), [T]);
 
   const { state, actions } = useAutoVideoState(selectedProjectId, projects, currentLang);
   const { pipelineState, pipelineActions, syncSelectedProject } = useAutoVideoPipeline(projects, onUpdateProject, currentLang);
@@ -82,6 +80,7 @@ export default function AutoVideoGenerator({
     generationMode, imageGeneratorEngine, generateType, maxVideoScenes,
     aspectRatio, chromeHeadless, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode, referenceImages, sceneReferenceImages,
     characterImages, thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
+    thumbnailSceneReferenceImages,
     projectName, resumeMode, showAdvancedImageSettings,
     rewriteLevel, similarityReduction, creativityLevel, factCheck, audience, writingStyle,
     hookStrategy, hookDuration, hookPosition, voiceSpeed, voicePitch, voiceVolume,
@@ -94,7 +93,7 @@ export default function AutoVideoGenerator({
     setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
     setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
     setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode,
-    setReferenceImages, setSceneReferenceImages,
+    setReferenceImages,
     setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setThumbnailReferenceImages,
     setProjectName, setResumeMode, setShowAdvancedImageSettings, setMusicAssetUrl,
   } = actions;
@@ -104,7 +103,7 @@ export default function AutoVideoGenerator({
 
   useEffect(() => {
     syncSelectedProject(selectedProjectId);
-  }, [selectedProjectId, projects]);
+  }, [selectedProjectId, projects, syncSelectedProject]);
 
   useEffect(() => {
     if (!selectedProjectId || !isConfigLoaded || isProcessing) return;
@@ -115,24 +114,24 @@ export default function AutoVideoGenerator({
       pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
       pipelineActions.setLogs(foundProj.generationLogs || []);
     }
-  }, [selectedProjectId, projects, isConfigLoaded, isProcessing]);
+  }, [selectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, pipelineActions]);
 
   const { data: presetsData, refetch: refetchPresets } = usePresets();
   const presets = presetsData || [];
 
-  const [_presetNameInputState, setPresetNameInputState] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const [presetNameInputState, setPresetNameInputState] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [selectedPresetId, setSelectedPresetId] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    pipelineActions.setLogs((prev) => [...prev, _.join([`[${timestamp}]`, msg], REFACTOR_CONSTANTS.AVG_BLANK)]);
+    pipelineActions.setLogs((prev) => [...prev, `[${timestamp}] ${msg}`]);
   };
 
   const handleSavePreset = async () => {
-    const trimmedName = _.trim(_presetNameInputState);
+    const trimmedName = _.trim(presetNameInputState);
     if (_.isEmpty(trimmedName)) return;
     const newPresetData = {
-      id: _.join([PRESET_CONSTANTS.ID_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING),
+      id: `${PRESET_CONSTANTS.ID_PREFIX}${Date.now()}`,
       name: trimmedName,
       config: {
         [REFACTOR_CONSTANTS.AVG_INPUT_TYPE_KEY]: inputType,
@@ -201,7 +200,7 @@ export default function AutoVideoGenerator({
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
     applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
     applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(normalizeBackgroundMode(v as BackgroundMode)));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(normalizeThumbnailTextMode(v as ThumbnailTextMode)));
+    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(v as ThumbnailTextMode));
     applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) => setThumbnailImageFocusMode(v as ImageFocusMode));
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
@@ -209,7 +208,7 @@ export default function AutoVideoGenerator({
 
   const handleDeletePreset = async (id: string) => {
     try {
-      const res = await fetch(_.join([API_ROUTES.PRESETS, id], REFACTOR_CONSTANTS.VD_SLASH), {
+      const res = await fetch(`${API_ROUTES.PRESETS}/${id}`, {
         method: HTTP_METHODS.DELETE,
       });
       const json = await res.json();
@@ -232,9 +231,59 @@ export default function AutoVideoGenerator({
     addLog(logMessage(files.length));
   };
 
-  const handleStyleFilesUpload = createImageUploadHandler(setReferenceImages, T.logStyleUploaded);
-  const handleSceneReferenceFilesUpload = createImageUploadHandler(setSceneReferenceImages, T.logSceneReferenceUploaded);
-  const handleThumbnailStyleFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbUploaded);
+  const handleReferenceFilesUpload = createImageUploadHandler(setReferenceImages, T.logSceneReferenceUploaded || T.logStyleUploaded);
+  const handleThumbnailReferenceFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbSceneReferenceUploaded || T.logThumbUploaded);
+
+  const deleteAssetAndUpdateProject = (
+    targetImages: string[],
+    targetIndex: number,
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    isThumbnail: boolean
+  ) => {
+    const targetUrl = _.nth(targetImages, targetIndex);
+    const updatedImages = _.filter(targetImages, (_v, i) => !_.isEqual(i, targetIndex));
+    setter(updatedImages);
+
+    const activeId = selectedProjectId || activeCreatedProject?.id;
+    const match = targetUrl ? targetUrl.match(/\/assets\/projects\/([^/]+)\//) : null;
+    const projectId = match ? match[1] : activeId;
+
+    if (targetUrl && projectId) {
+      safeSystemFetch(API_ROUTES.PIPELINE_DELETE_ASSET_FILE, { assetUrl: targetUrl, projectId });
+    }
+
+    if (activeId && onUpdateProject) {
+      const currentProj = _.find(projects, { id: activeId });
+      if (currentProj) {
+        const visualConfig = isThumbnail
+          ? {
+              ...currentProj.visualConfig,
+              thumbnailReferenceImages: updatedImages,
+              thumbnailSceneReferenceImages: updatedImages,
+            }
+          : {
+              ...currentProj.visualConfig,
+              referenceImages: updatedImages,
+              styleReferenceImages: updatedImages,
+              sceneReferenceImages: updatedImages,
+            };
+        const updatedProj: VideoProject = {
+          ...currentProj,
+          visualConfig,
+        };
+        onUpdateProject(updatedProj, true);
+      }
+    }
+  };
+
+  const handleDeleteReferenceImage = (targetIndex: number) => {
+    deleteAssetAndUpdateProject(referenceImages, targetIndex, setReferenceImages, false);
+  };
+
+  const handleDeleteThumbnailReferenceImage = (targetIndex: number) => {
+    deleteAssetAndUpdateProject(thumbnailReferenceImages, targetIndex, setThumbnailReferenceImages, true);
+  };
+
   const handleMusicUpload = (files: FileList) => {
     const file = _.first(Array.from(files));
     if (!file) return;
@@ -255,6 +304,7 @@ export default function AutoVideoGenerator({
       chromeHeadless, geminiChatSpeed, batchDelay, stylePreset, styleBackgroundMode, styleTextInImageMode, imageFocusMode,
       referenceImages, sceneReferenceImages, characterImages,
       thumbnailCount, thumbnailStylePreset, thumbnailBackgroundMode, thumbnailTextInImageMode, thumbnailImageFocusMode, thumbnailReferenceImages,
+      thumbnailSceneReferenceImages,
       projectName, resumeMode: overrides.resumeMode ?? resumeMode, ffmpegQuality, selectedProjectId,
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
@@ -262,11 +312,12 @@ export default function AutoVideoGenerator({
     })
   );
 
-  const regenerationTexts = REGENERATION_TEXTS[currentLang as "vi" | "en"] || REGENERATION_TEXTS.vi;
+  const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);
+
   const handleRegenerate = async (target: string) => {
     const project = activeCreatedProject;
-    if (!project) return;
-    if (isProcessing) return;
+    if (!project || isProcessing) return;
+
     const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
       ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
       : _.isEqual(target, REGENERATION_TARGET.IMAGES)
@@ -307,114 +358,39 @@ export default function AutoVideoGenerator({
       await onUpdateProject(updatedProject, true);
     }
 
-    pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-    await handleStartAutoGenerate({
-      resumeMode: true,
-      forceRegenerateVoice: _.isEqual(target, REGENERATION_TARGET.VOICE),
-      forceRegenerateScenes: _.isEqual(target, REGENERATION_TARGET.IMAGES),
-    });
+    if (isVoice) {
+      handleStartAutoGenerate({ forceRegenerateVoice: true });
+    } else if (isImages) {
+      handleStartAutoGenerate({ forceRegenerateScenes: true });
+    } else if (isVideos) {
+      handleStartAutoGenerate({ resumeMode: true });
+    }
   };
 
-
-  const voiceDialogPersistenceScope = _.join(
-    [AppTab.AUTO_GENERATOR, _.defaultTo(activeCreatedProject?.id, _.defaultTo(selectedProjectId, REFACTOR_CONSTANTS.VOICE_DIALOG_GLOBAL_SCOPE))],
-    REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR,
-  );
-
-  const handleVoiceSelect = (v: CatalogVoice) => {
-    const selectedVoiceURI = _.find([
-      _.get(v, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY),
-      _.get(v, REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY),
-      _.get(v, REFACTOR_CONSTANTS.AVG_ID_KEY),
-    ], (value) => !_.isEmpty(value));
-    const selectedVoiceName = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_NAME_PATH, selectedVoiceURI);
-    const selectedVoiceProvider = _.get(v, REFACTOR_CONSTANTS.VOICE_CATALOG_PROVIDER_PATH, voiceProvider);
-
-    setVoiceURI(_.toString(selectedVoiceURI));
-    setVoiceName(_.toString(selectedVoiceName));
-    setVoiceProvider(_.toString(selectedVoiceProvider));
-
-    const targetProject = activeCreatedProject || (selectedProjectId ? _.find(projects, { id: selectedProjectId }) : undefined);
-    if (targetProject) {
-      const updatedProject = applyVoiceSelection(targetProject, {
-          voiceURI: _.toString(selectedVoiceURI),
-          voiceName: _.toString(selectedVoiceName),
-          provider: _.toString(selectedVoiceProvider),
-      });
-      setActiveCreatedProject(updatedProject);
-      void onUpdateProject(updatedProject, true);
-    }
+  const handleVoiceSelectAndClose = (voice: CatalogVoice) => {
+    setVoiceURI(voice.voice_id);
+    setVoiceName(voice.name);
+    setVoiceProvider(voice.provider || DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
     setIsVoiceDialogOpen(false);
   };
 
-  const handleThumbnailLoadError = (thumbnailId: string) => {
-    const latestProject = _.find(projects, { id: activeCreatedProject?.id }) || activeCreatedProject;
-    if (!latestProject) return;
-    const updatedProject = {
-      ...latestProject,
-      thumbnails: _.map(latestProject.thumbnails, thumbnail => (
-        _.isEqual(thumbnail.id, thumbnailId)
-          ? { ...thumbnail, imageUrl: undefined }
-          : thumbnail
-      )),
-    };
-    setActiveCreatedProject(updatedProject);
-    void onUpdateProject(updatedProject, true);
-  };
-
   return (
-    <div className="flex-1 h-full w-full bg-slate-955 text-slate-100 flex flex-col min-h-0 overflow-hidden font-sans select-none">
-      <div className="h-14 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500">
-            <Zap className="w-5 h-5 fill-rose-500/20 animate-pulse" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-slate-100 flex items-center gap-2" title={T.bannerTitleTooltip}>
-              {T.bannerTitle}
-              <span className="text-[9px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-mono uppercase font-bold">
-                {T.bannerBadge}
-              </span>
-            </h1>
-            <p className="text-[11px] text-slate-400">{T.bannerSubtitle}</p>
-          </div>
-        </div>
+    <div className="flex-1 flex flex-col h-full bg-slate-955 overflow-hidden text-slate-100 font-sans">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 overflow-y-auto lg:overflow-hidden">
+        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 border-r border-slate-800/80 space-y-6 scrollbar-none">
+          <PresetSection
+            presets={presets}
+            selectedPresetId={selectedPresetId}
+            handleApplyPreset={handleApplyPreset}
+            presetNameInputState={presetNameInputState}
+            setPresetNameInputState={setPresetNameInputState}
+            handleSavePreset={handleSavePreset}
+            handleDeletePreset={handleDeletePreset}
+            T={T}
+            truncateWords={truncateWords}
+          />
 
-        <PresetSection
-          presets={presets}
-          selectedPresetId={selectedPresetId}
-          handleApplyPreset={handleApplyPreset}
-          presetNameInputState={_presetNameInputState}
-          setPresetNameInputState={setPresetNameInputState}
-          handleSavePreset={handleSavePreset}
-          handleDeletePreset={handleDeletePreset}
-          T={T}
-          truncateWords={truncateWords}
-        />
-      </div>
-
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden scrollbar-none">
-        <div className="lg:col-span-7 h-auto lg:h-full overflow-hidden p-5 flex flex-col">
-          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-4 p-6 relative lg:h-full flex flex-col justify-start overflow-y-auto scrollbar-none">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="border-b border-slate-800/80 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-inner">
-                  <Sliders className="w-5 h-5 text-rose-500" />
-                </div>
-                <div>
-                  <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-100 flex items-center gap-2 font-mono" title={T.panelTitleTooltip}>
-                    {T.panelTitle}
-                    <span className="text-[9px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
-                      {T.panelBadge}
-                    </span>
-                  </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">{T.panelSubtitle}</p>
-                </div>
-              </div>
-            </div>
-
+          <div className="space-y-4">
             <ProjectInputSection
               inputType={inputType}
               setInputType={setInputType}
@@ -440,9 +416,9 @@ export default function AutoVideoGenerator({
               voiceProvider={voiceProvider}
               isVoiceDialogOpen={isVoiceDialogOpen}
               setIsVoiceDialogOpen={setIsVoiceDialogOpen}
-              voiceDialogPersistenceScope={voiceDialogPersistenceScope}
+              voiceDialogPersistenceScope="auto_video_generator"
               currentLang={currentLang}
-              handleVoiceSelect={handleVoiceSelect}
+              handleVoiceSelect={handleVoiceSelectAndClose}
               truncateWords={truncateWords}
               T={T}
             />
@@ -455,14 +431,14 @@ export default function AutoVideoGenerator({
                 setGenerationMode={setGenerationMode}
                 imageGeneratorEngine={imageGeneratorEngine}
                 setImageGeneratorEngine={setImageGeneratorEngine}
-                aspectRatio={aspectRatio}
-                setAspectRatio={setAspectRatio}
                 generateType={generateType}
                 setGenerateType={setGenerateType}
                 maxVideoScenes={maxVideoScenes}
                 setMaxVideoScenes={setMaxVideoScenes}
-                getImageEngineOptions={getImageEngineOptions}
+                aspectRatio={aspectRatio}
+                setAspectRatio={setAspectRatio}
                 T={T}
+                getImageEngineOptions={getImageEngineOptions}
                 mediaMixTexts={mediaMixTexts}
               />
 
@@ -486,10 +462,8 @@ export default function AutoVideoGenerator({
               <ImageReferenceSection
                 referenceImages={referenceImages}
                 setReferenceImages={setReferenceImages}
-                sceneReferenceImages={sceneReferenceImages}
-                setSceneReferenceImages={setSceneReferenceImages}
-                handleStyleFilesUpload={handleStyleFilesUpload}
-                handleSceneReferenceFilesUpload={handleSceneReferenceFilesUpload}
+                handleReferenceFilesUpload={handleReferenceFilesUpload}
+                onDeleteImage={handleDeleteReferenceImage}
                 T={T}
               />
             </div>
@@ -503,7 +477,8 @@ export default function AutoVideoGenerator({
               setThumbnailCount={setThumbnailCount}
               thumbnailReferenceImages={thumbnailReferenceImages}
               setThumbnailReferenceImages={setThumbnailReferenceImages}
-              handleThumbnailStyleFilesUpload={handleThumbnailStyleFilesUpload}
+              handleThumbnailReferenceFilesUpload={handleThumbnailReferenceFilesUpload}
+              onDeleteThumbnailImage={handleDeleteThumbnailReferenceImage}
               backgroundMode={thumbnailBackgroundMode}
               setBackgroundMode={setThumbnailBackgroundMode}
               textInImageMode={thumbnailTextInImageMode}
@@ -514,6 +489,7 @@ export default function AutoVideoGenerator({
               T={T}
               musicAssetUrl={musicAssetUrl}
               onMusicUpload={handleMusicUpload}
+              onRemoveMusic={() => setMusicAssetUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING)}
             />
           </div>
         </div>
@@ -530,24 +506,30 @@ export default function AutoVideoGenerator({
             T={T}
           />
 
-          <LogPanelSection logs={logs} theme={theme} T={T} language={currentLang} />
+          <LogPanelSection
+            logs={logs}
+            theme={theme}
+            T={T}
+            language={currentLang}
+          />
 
           <PreviewPanelSection
             renderedVideoUrl={renderedVideoUrl}
             projectName={projectName}
             activeCreatedProject={activeCreatedProject}
             isProcessing={isProcessing}
-            onSelectProject={onSelectProject}
             handleRegenerate={handleRegenerate}
+            onSelectProject={onSelectProject}
             T={T}
             regenerationTexts={regenerationTexts}
           />
 
-          <SeoPanelSection activeCreatedProject={activeCreatedProject} />
-
           <ThumbnailsPreviewSection
             activeCreatedProject={activeCreatedProject}
-            onThumbnailLoadError={handleThumbnailLoadError}
+          />
+
+          <SeoPanelSection
+            activeCreatedProject={activeCreatedProject}
           />
         </div>
       </div>

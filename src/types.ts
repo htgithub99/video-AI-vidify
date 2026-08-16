@@ -352,10 +352,12 @@ export interface VisualConfig {
   characterConsistencyLevel?: string;
   contextConsistencyLevel?: string;
   negativePrompt?: string;
+  negativeStylePrompt?: string;
   imageGeneratorEngine?: ImageGeneratorEngine;
   thumbnailCount?: number;
   thumbnailReferenceImage?: string;
   thumbnailReferenceImages?: string[];
+  thumbnailSceneReferenceImages?: string[];
   thumbnailReferencePrompt?: string;
   thumbnailStyleProfile?: VisualStyleProfile;
   styleReferenceImages?: string[];
@@ -546,14 +548,26 @@ export interface VisualStyleProfile {
   characterType?: string;
   characterDna: string;
   lineDna: string;
+  shapeLanguage?: string;
   colorDna: string;
+  colorPhilosophy?: string;
   renderingDna: string;
+  lightingStyle?: string;
+  texture?: string;
+  detailLevel?: string;
+  visualComplexity?: string;
   periodCues: string;
   worldRendering: string;
+  compositionLanguage?: string;
+  facialExpressionLanguage?: string;
+  overallMood?: string;
   adaptiveElements: string;
+  negativeStylePrompt?: string;
   sampleSpecificContent: string[];
+  lockedStyleElements?: string[];
+  flexibleElements?: string[];
 }
-export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; styleFingerprint?:string; styleReferenceLocked?:boolean; styleProfile?:VisualStyleProfile; locations?:VisualLocation[]; props?:VisualProp[]; }
+export interface VisualBible { colorPalette?:string; characterSpecs?:string; landscapeSpecs?:string; lightingMood?:string; visualStyle?:string; background?:string; lineStyle?:string; colorMode?:string; shading?:string; textPolicy?:string; styleFingerprint?:string; styleReferenceLocked?:boolean; styleProfile?:VisualStyleProfile; negativeStylePrompt?:string; locations?:VisualLocation[]; props?:VisualProp[]; }
 export interface StoryboardQualityReport { continuityScore:number; shotDiversityScore:number; visibleActionScore:number; editabilityScore:number; scriptCoverageScore?:number; pacingCoverageScore?:number; blockingErrors:string[]; warnings:string[]; passed:boolean; }
 export interface ImagePromptQualityIssue { sceneId:string; code:string; severity:"blocking"|"warning"; }
 export interface ImagePromptQualityReport { totalPrompts:number; validPrompts:number; blockingErrors:ImagePromptQualityIssue[]; warnings:ImagePromptQualityIssue[]; passed:boolean; }

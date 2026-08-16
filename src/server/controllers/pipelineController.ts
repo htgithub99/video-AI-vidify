@@ -19,7 +19,7 @@ import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
-import { createSoftStyleDirective, ensureSharedCharacterStyleLock, normalizeExtractedStyle, normalizeVisualStyleProfile } from "../../services/styleReferenceService.js";
+import { createSoftStyleDirective, ensureSharedCharacterStyleLock, normalizeExtractedStyle, normalizeVisualStyleProfile, resolveNegativeStylePrompt } from "../../services/styleReferenceService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
@@ -269,9 +269,11 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
       const backgroundMode = req.body?.backgroundMode || req.body?.visualConfig?.styleBackgroundMode;
       const styleProfile = normalizeVisualStyleProfile(safeParseJSON(response.text, {}));
       const extracted = createSoftStyleDirective(styleProfile, backgroundMode) || normalizeExtractedStyle(response.text);
+      const negativeStylePrompt = resolveNegativeStylePrompt(styleProfile);
       const result = {
         style: extracted,
         styleProfile,
+        negativeStylePrompt,
         fingerprint: createHash("sha256").update(_.join([STYLE_EXTRACTION_CONFIG.PROFILE_VERSION, purpose, ..._.sortBy(_.uniq(contentHashes))], ":")).digest("hex"),
       };
       setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, result);
@@ -1880,8 +1882,17 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
     );
 
     const thumbParts: any[] = [];
-    if (visualConfig.thumbnailReferenceImages && _.isArray(visualConfig.thumbnailReferenceImages) && visualConfig.thumbnailReferenceImages.length > 0) {
-      for (const imgBase64 of visualConfig.thumbnailReferenceImages.slice(0, 3)) {
+    const thumbRefList = _.take(
+      _.compact(
+        _.concat(
+          _.castArray(visualConfig.thumbnailReferenceImages || []),
+          _.castArray(visualConfig.thumbnailSceneReferenceImages || []),
+        ),
+      ),
+      3,
+    );
+    if (thumbRefList.length > 0) {
+      for (const imgBase64 of thumbRefList) {
         const { data, mimeType } = await readStyleReferenceImage(imgBase64);
         thumbParts.push({
           inlineData: {
@@ -3163,17 +3174,46 @@ router.post("/delete-asset-file", async (req: Request, res: Response) => {
     cleanAssetPath = cleanAssetPath.slice(cleanAssetPath.indexOf(`${projectId}/`) + projectId.length + 1);
   }
   const targetPath = path.resolve(projectRoot, cleanAssetPath);
-  if (!_.startsWith(_.toLower(targetPath), _.toLower(`${projectRoot}${path.sep}`))) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
+  if (_.startsWith(_.toLower(targetPath), _.toLower(`${projectRoot}${path.sep}`))) {
+    try {
+      if (fs.existsSync(targetPath)) {
+        fs.unlinkSync(targetPath);
+        logger.info(`[Asset Cleanup] Deleted asset file: ${targetPath}`);
+      }
+    } catch (e: any) {
+      logger.warn(`[Asset Cleanup] Failed to unlink file ${targetPath}:`, e?.message);
+    }
   }
+
   try {
-    if (fs.existsSync(targetPath)) {
-      fs.unlinkSync(targetPath);
-      logger.info(`[Asset Cleanup] Deleted asset file: ${targetPath}`);
+    const project = await getProjectDetailFromDb(projectId);
+    if (project && project.visualConfig) {
+      let changed = false;
+      const filterOut = (arr?: string[]) => {
+        if (!_.isArray(arr)) return arr;
+        const next = _.filter(arr, (u) => !_.includes(u, cleanAssetPath) && u !== assetUrl);
+        if (next.length !== arr.length) {
+          changed = true;
+          return next;
+        }
+        return arr;
+      };
+
+      project.visualConfig.referenceImages = filterOut(project.visualConfig.referenceImages) || [];
+      project.visualConfig.styleReferenceImages = filterOut(project.visualConfig.styleReferenceImages) || [];
+      project.visualConfig.sceneReferenceImages = filterOut(project.visualConfig.sceneReferenceImages) || [];
+      project.visualConfig.thumbnailReferenceImages = filterOut(project.visualConfig.thumbnailReferenceImages) || [];
+      project.visualConfig.thumbnailSceneReferenceImages = filterOut(project.visualConfig.thumbnailSceneReferenceImages) || [];
+
+      if (changed) {
+        await saveProjectDetailToDb(project);
+        logger.info(`[Asset Cleanup] Cleaned up deleted reference image from DB for project ${projectId}`);
+      }
     }
     return res.json({ success: true });
   } catch (error: any) {
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message });
+    logger.error(`[Asset Cleanup] Error updating DB for project ${projectId}:`, error);
+    return res.json({ success: true, warning: error.message });
   }
 });
 

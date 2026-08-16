@@ -1331,58 +1331,69 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 Input thumbnails:
 ${chunkJson}`;
 
-export const STYLE_EXTRACTION_PROMPT = `Extract one minimal project-wide Style Lock from the supplied scene reference image based on 6 core visual pillars. Analyze only traits that every person and every scene can share.
+export const STYLE_EXTRACTION_PROMPT = `You are an expert AI Visual Style Director. Extract a comprehensive, reusable IMAGE STYLE PROFILE from the supplied reference image(s).
 
-Return these short decisions:
-- medium: Art medium and genre (e.g. 2D flat vector illustration, anime, photorealistic photography, 3D digital render).
-- characterType: Choose exactly one cast-wide category such as 2D vector stickfigure construction, realistic human photography, stylized 2D cartoon people, anime characters, or 3D cartoon characters.
-- characterDna: Dominant body and limb anatomy construction (e.g. smooth continuous stick limbs, minimalist head shape, simplified natural proportions). Strictly avoid mechanical circular joint balls or joint dots.
-- lineDna: Line art and outline behavior (e.g. clean uniform black outlines, delicate thin line art, lineless flat shapes).
-- colorDna: Color palette, saturation, and contrast behavior (e.g. vibrant full-color palette with harmonious scene-appropriate tones, rich warm colors, flat colorful vector fills, or monochrome only if the reference is strictly black-and-white).
-- renderingDna: Shading and surface texture (e.g. flat filled 2D vectors with no shading or texture, soft cel-shading, matte 3D surface).
-- worldRendering: How script-grounded environments and background settings should be rendered (e.g. detailed contextual environment with natural lighting and depth, or clean minimalist solid white background if minimal mode is requested).
+CRITICAL RULE: STRICTLY DISTINGUISH STYLE VS CONTENT
+- STYLE = HOW it is drawn/rendered (Art medium, line art, shape language, coloring, shading, lighting philosophy, texture, rendering method, expression style).
+- CONTENT = WHAT is depicted (Specific person, clothing, pose, action, specific room, prop, story events). NEVER copy content details into style fields! Put all concrete sampled elements into "sampleSpecificContent".
 
-Never put sampled hair style, hair color, skin tone, clothing, accessory, person, pose, expression, room, prop, lighting, mood, camera or composition into a reusable field. Put all such sampled details in sampleSpecificContent. Never mix character categories. Leave periodCues empty because the script controls historical period. adaptiveElements must say that the script controls setting, period, action, mood, lighting and composition.
+Analyze and return JSON with these exact fields:
+1. medium: Broad art medium and genre (e.g., "2D minimalist cartoon illustration", "anime", "vintage comic art", "3D stylized matte render", "photorealistic portrait").
+2. characterType: General cast-wide character category (e.g., "2D stylized minimalist figures", "anime characters", "realistic people").
+3. characterDna: Shared cast-wide anatomical construction traits (e.g., "smooth continuous limbs, simplified head-to-body ratio, no mechanical joints").
+4. lineDna: Outline and contour behavior (e.g., "clean uniform bold black outlines", "thin delicate contour lines", "lineless flat shapes").
+5. shapeLanguage: Dominant geometric / organic shape language (e.g., "soft rounded geometric shapes", "sharp angular silhouettes", "organic hand-drawn forms").
+6. colorDna: Color palette behavior (e.g., "vibrant high-contrast limited color palette", "warm muted pastel tones", "rich saturated primary colors").
+7. colorPhilosophy: Overall color harmony approach (e.g., "limited cohesive palette with punchy accent highlights").
+8. renderingDna: Shading and fill method (e.g., "flat vector color fills with subtle soft cel-shading", "painterly textured blending", "matte 3D surface").
+9. lightingStyle: Visual lighting philosophy (e.g., "soft ambient diffused lighting", "high contrast graphic lighting", "flat studio illumination").
+10. texture: Surface texture quality (e.g., "ultra-clean digital vector", "subtle paper grain", "rough dry brush texture").
+11. detailLevel: Level of rendering detail ("low", "medium", or "high").
+12. visualComplexity: Visual density rating ("low visual complexity, high readability", "moderate density", "rich intricate detail").
+13. periodCues: Historical or era cues if inherent to the visual style, otherwise empty string.
+14. worldRendering: General background treatment approach (e.g., "clean contextual environment with simplified shapes", "minimalist solid background", "soft atmospheric depth").
+15. compositionLanguage: General compositional tendency (e.g., "balanced character-centric framing with clean negative space").
+16. facialExpressionLanguage: How emotions are rendered (e.g., "minimal simplified facial features, expressive stylized eyes and mouth").
+17. overallMood: Overall aesthetic mood (e.g., "playful energetic", "serious cinematic", "calm educational").
+18. adaptiveElements: Statement confirming script controls scene action, camera, and setting (e.g., "Script controls setting, character actions, camera angles, and lighting direction").
+19. negativeStylePrompt: Tailored negative prompt preventing distortion of this specific style (e.g. For 2D cartoon: "photorealistic, realistic human anatomy, 3D render, hyperdetailed skin texture, photographic blur, thin scratchy inconsistent lines").
+20. sampleSpecificContent: List of specific sampled items from the reference image to strictly exclude from the style prompt (e.g. ["brown hair girl", "yellow shirt", "holding coffee cup", "classroom blackboard"]).
+21. lockedStyleElements: Array of elements that must stay consistent across all scenes (e.g. ["medium", "line art", "color palette", "shape language", "shading"]).
+22. flexibleElements: Array of elements that change per scene (e.g. ["character identity", "action", "camera angle", "background location", "props"]).
 
-Return only JSON matching this schema:
-{
-  "medium": "Broad art medium and genre",
-  "characterType": "One exact cast-wide character category",
-  "characterDna": "Dominant construction and limb traits (smooth continuous limbs, no mechanical joints)",
-  "lineDna": "Outline and contour behavior",
-  "colorDna": "Palette behavior, saturation and contrast",
-  "renderingDna": "Shading, fill and surface texture method",
-  "periodCues": "",
-  "worldRendering": "How script-grounded environments should be rendered",
-  "adaptiveElements": "Script controls setting, period, action, mood, lighting and composition",
-  "sampleSpecificContent": ["Concrete sampled content to exclude"]
-}
-`;
+Return ONLY valid JSON matching this schema.`;
 
-export const THUMBNAIL_STYLE_EXTRACTION_PROMPT = `Extract a minimal thumbnail presentation profile from the supplied thumbnail reference image(s) based on 6 core visual pillars.
+export const THUMBNAIL_STYLE_EXTRACTION_PROMPT = `You are an expert AI Thumbnail Visual Director. Extract a thumbnail visual presentation profile from the supplied reference image(s).
 
-Return the same compact schema, but follow these limits:
-- If a separate scene Style Core exists, its character construction is authoritative for the entire project. This thumbnail profile must never replace it.
-- medium, characterType, characterDna, lineDna, colorDna and renderingDna are fallback values only when no scene style reference exists.
-- worldRendering contains only broad background treatment and contrast behavior: minimal, illustrated, realistic, photographic or mixed; low, medium or high contrast.
-- Do not analyze or return layout geometry, headline placement, font, camera, crop, mood or lighting. The application controls them through closed templates.
-- Never mention sampled people, clothes, rooms, places, objects, words, logos, poses or arrangements outside sampleSpecificContent.
-- Every reusable field is one short phrase without alternatives or examples.
+CRITICAL RULE:
+- If a scene style exists, its core character construction is authoritative. This thumbnail profile focuses on high-CTR visual presentation, contrast, and layout aesthetics.
+- Do NOT extract specific people, clothing, headlines, or objects from the reference into reusable fields. Put sampled items in "sampleSpecificContent".
 
-Return only JSON matching this schema:
-{
-  "medium": "Broad art medium and genre",
-  "characterType": "One exact cast-wide character category",
-  "characterDna": "Shared cast-wide construction traits (smooth continuous limbs, no mechanical joints)",
-  "lineDna": "Outline, keyline and contour behavior",
-  "colorDna": "Palette, saturation and contrast behavior",
-  "renderingDna": "Shading, texture and cutout method",
-  "periodCues": "",
-  "worldRendering": "How script-grounded environments should be rendered",
-  "adaptiveElements": "Script and selected template control content, lighting and composition",
-  "sampleSpecificContent": ["Concrete sampled content to exclude"]
-}
-`;
+Analyze and return JSON with these exact fields:
+1. medium: Broad art medium and genre (e.g., "2D high-impact cartoon illustration", "photorealistic cinematic capture").
+2. characterType: General character category (e.g., "2D stylized expressive figures").
+3. characterDna: Shared construction traits (e.g., "expressive faces, bold silhouettes").
+4. lineDna: Keyline and outline behavior (e.g., "bold high-contrast outlines for high thumbnail legibility").
+5. shapeLanguage: Thumbnail shape language (e.g., "bold dynamic geometric shapes, strong silhouette separation").
+6. colorDna: Color palette (e.g., "high-saturation viral color palette with strong foreground-background contrast").
+7. colorPhilosophy: Palette philosophy (e.g., "punchy warm accents against deep cool background").
+8. renderingDna: Shading and rendering method (e.g., "sharp cutout rendering with vivid edge highlights").
+9. lightingStyle: Thumbnail lighting (e.g., "dramatic rim lighting with high foreground focus").
+10. texture: Surface texture quality (e.g., "clean crisp digital finish").
+11. detailLevel: ("medium" or "high").
+12. visualComplexity: ("low visual complexity for mobile screen readability").
+13. periodCues: Empty string unless genre-specific.
+14. worldRendering: Background treatment (e.g., "high contrast simplified background with depth blur and clear focal separation").
+15. compositionLanguage: Composition style (e.g., "dynamic rule-of-thirds framing with large focal subject and room for headline").
+16. facialExpressionLanguage: Facial expression style (e.g., "exaggerated emotive facial expressions with clear eye contact").
+17. overallMood: Thumbnail mood (e.g., "high curiosity, dramatic hook").
+18. adaptiveElements: "Template and headline determine layout, crop, and framing".
+19. negativeStylePrompt: Tailored negative prompt for thumbnail (e.g., "cluttered background, illegible composition, washed out low contrast colors, dull lighting").
+20. sampleSpecificContent: Concrete sampled elements to exclude (e.g. ["specific headline text", "specific sample character"]).
+21. lockedStyleElements: ["visual medium", "high contrast palette", "rendering style", "bold outlines"].
+22. flexibleElements: ["headline text", "specific characters", "scene composition", "thumbnail layout template"].
+
+Return ONLY valid JSON matching this schema.`;
 
 export const getMultiStepHookPrompt = (originalInput: string, genre: string, hookType: string, duration: number, language: string, count: number): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
 Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".

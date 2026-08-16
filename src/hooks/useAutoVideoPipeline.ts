@@ -24,7 +24,6 @@ import {
   BackgroundMode,
   TextInImageMode,
   ThumbnailTextMode,
-  StyleReferencePurpose,
   ImageFocusMode,
   CharacterConfig,
   SceneAssetStatus,
@@ -46,7 +45,7 @@ import {
   API_HEADERS, PIPELINE_CLIENT_ERRORS, SplitStrategy,
 } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, REFERENCE_ASSET_GROUP, STYLE_EXTRACTION_CONFIG } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, REFERENCE_ASSET_GROUP } from "../constants/config";
 import { IMAGE_PROMPT_PIPELINE_VERSION } from "../constants/imagePromptRules";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -80,7 +79,7 @@ import { createScriptGroundedStoryboard, ensureStoryboardScriptCoverage } from "
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
 import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
-import { createThumbnailStyleDirective, ensureSharedCharacterStyleLock, resolveReferenceLockedStyle } from "../services/styleReferenceService";
+import { createThumbnailStyleDirective } from "../services/styleReferenceService";
 import { normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline } from "../services/voiceTimelineService";
@@ -150,6 +149,7 @@ export interface PipelineConfig {
   thumbnailTextInImageMode: ThumbnailTextMode;
   thumbnailImageFocusMode: ImageFocusMode;
   thumbnailReferenceImages: string[];
+  thumbnailSceneReferenceImages?: string[];
   projectName: string;
   resumeMode: boolean;
   ffmpegQuality: VideoQuality;
@@ -474,6 +474,7 @@ export function useAutoVideoPipeline(
             videoDuration: config.videoDuration,
             thumbnailCount: config.thumbnailCount,
             thumbnailReferenceImages: config.thumbnailReferenceImages,
+            thumbnailSceneReferenceImages: config.thumbnailSceneReferenceImages,
             thumbnailReferencePrompt: config.thumbnailStylePreset,
             styleReferenceImages: config.referenceImages,
             sceneReferenceImages: config.sceneReferenceImages,
@@ -487,7 +488,10 @@ export function useAutoVideoPipeline(
       }
 
       const referenceGroups: Array<[string,string[]]> = await Promise.all(_.map([
-        {group:"style",images:config.referenceImages,configKey:"styleReferenceImages"}, {group:"scene",images:config.sceneReferenceImages,configKey:"sceneReferenceImages"}, {group:"thumbnail",images:config.thumbnailReferenceImages,configKey:"thumbnailReferenceImages"},
+        {group:"style",images:config.referenceImages,configKey:"styleReferenceImages"},
+        {group:"scene",images:config.sceneReferenceImages,configKey:"sceneReferenceImages"},
+        {group:"thumbnail",images:config.thumbnailReferenceImages,configKey:"thumbnailReferenceImages"},
+        {group:"thumbnailScene",images:config.thumbnailSceneReferenceImages,configKey:"thumbnailSceneReferenceImages"},
       ], async ({group, images, configKey}): Promise<[string,string[]]> => {
         if (_.isEmpty(images)) return [group,_.defaultTo(_.get(newProj.visualConfig,configKey),[])];
         const response=await safeSystemFetch(`${API_ROUTES.PIPELINE_REFERENCE_ASSETS}/${newProjectId}/${group}`,{images});
@@ -524,7 +528,8 @@ export function useAutoVideoPipeline(
             _.uniq(_.concat(canonicalReferences.style, canonicalReferences.scene)),
             SCENE_REFERENCE_CONFIG.MAX_IMAGES,
           ),
-        thumbnailReferenceImages: canonicalReferences.thumbnail,
+          thumbnailReferenceImages: canonicalReferences.thumbnail,
+          thumbnailSceneReferenceImages: canonicalReferences.thumbnailScene,
           characterImages: [],
         },
       };
@@ -628,47 +633,10 @@ export function useAutoVideoPipeline(
       }
 
       let currentStylePreset = newProj.visualConfig.referencePrompt || newProj.visualConfig.style || config.stylePreset;
-      let currentThumbnailStyle = newProj.visualConfig.thumbnailReferencePrompt || config.thumbnailStylePreset;
+      let currentThumbnailStyle = newProj.visualConfig.thumbnailReferencePrompt || config.thumbnailStylePreset || currentStylePreset;
       const hasStyleReferences = !_.isEmpty(newProj.visualConfig.styleReferenceImages);
-      const hasThumbnailReferences = !_.isEmpty(newProj.visualConfig.thumbnailReferenceImages);
+
       if (!isStoryboardCached || config.forceRegenerateScenes || requiresVisualReferenceMigration) {
-        if (hasStyleReferences) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STYLE_EXTRACT);
-        if (hasThumbnailReferences) appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMB_STYLE_EXTRACT);
-        const styleAnalysisRequest = hasStyleReferences
-          ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-              images: newProj.visualConfig.styleReferenceImages,
-              backgroundMode: config.styleBackgroundMode,
-              purpose: StyleReferencePurpose.Scene,
-            }, requestSignal)
-          : Promise.resolve(null);
-        const thumbnailStyleAnalysisRequest = hasThumbnailReferences
-          ? safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_STYLE, {
-              images: newProj.visualConfig.thumbnailReferenceImages,
-              backgroundMode: config.thumbnailBackgroundMode,
-              purpose: StyleReferencePurpose.Thumbnail,
-            }, requestSignal)
-          : Promise.resolve(null);
-        const [styleResponse, thumbnailStyleResponse] = await Promise.all([styleAnalysisRequest, thumbnailStyleAnalysisRequest]);
-        throwIfCancelled();
-        if (hasStyleReferences && (!styleResponse?.success || _.isEmpty(styleResponse.data?.style))) {
-          appendLog(styleResponse?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
-        }
-        if (hasThumbnailReferences && (!thumbnailStyleResponse?.success || _.isEmpty(thumbnailStyleResponse.data?.style))) {
-          appendLog(thumbnailStyleResponse?.error || STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR);
-        }
-        currentStylePreset = styleResponse?.success
-          ? resolveReferenceLockedStyle(styleResponse.data?.style, hasStyleReferences) || currentStylePreset
-          : ensureSharedCharacterStyleLock(currentStylePreset);
-        const styleProfile = styleResponse?.success
-          ? styleResponse.data?.styleProfile
-          : newProj.visualBible?.styleProfile;
-        const thumbnailStyleProfile = thumbnailStyleResponse?.success
-          ? thumbnailStyleResponse.data?.styleProfile
-          : newProj.visualConfig.thumbnailStyleProfile;
-        currentThumbnailStyle = createThumbnailStyleDirective(styleProfile, thumbnailStyleProfile)
-          || resolveReferenceLockedStyle(thumbnailStyleResponse?.success ? thumbnailStyleResponse.data?.style : "", hasThumbnailReferences)
-          || currentStylePreset;
-        const styleFingerprint = _.toString(styleResponse?.data?.fingerprint) || currentStylePreset;
         newProj = {
           ...newProj,
           visualConfig: {
@@ -676,15 +644,11 @@ export function useAutoVideoPipeline(
             style: currentStylePreset,
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
-            thumbnailStyleProfile,
-            styleFingerprint,
             styleReferenceLocked: hasStyleReferences,
           },
           visualBible: {
             ...newProj.visualBible,
             visualStyle: currentStylePreset,
-            styleProfile,
-            styleFingerprint,
             styleReferenceLocked: hasStyleReferences,
             locations: _.defaultTo(newProj.visualBible?.locations, []),
             props: _.defaultTo(newProj.visualBible?.props, []),

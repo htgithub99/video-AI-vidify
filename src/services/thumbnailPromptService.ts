@@ -218,17 +218,16 @@ export const getThumbnailPlanningIssues = (
 ));
 
 export const resolveThumbnailReferenceImages = (
-  visualConfig: Partial<Pick<VisualConfig, "styleReferenceImages" | "thumbnailReferenceImages">> = {},
+  visualConfig: Partial<Pick<VisualConfig, "styleReferenceImages" | "thumbnailReferenceImages" | "thumbnailSceneReferenceImages">> = {},
 ): string[] => {
   const sceneStyleReference = _.first(_.defaultTo(visualConfig.styleReferenceImages, []));
-  const thumbnailPresentationReferences = _.take(
-    _.uniq(_.defaultTo(visualConfig.thumbnailReferenceImages, [])),
-    THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES,
-  );
+  const thumbnailPresentationReferences = _.defaultTo(visualConfig.thumbnailReferenceImages, []);
+  const thumbnailSceneReferences = _.defaultTo(visualConfig.thumbnailSceneReferenceImages, []);
   return _.take(
     _.uniq(_.compact(_.concat(
       sceneStyleReference,
       thumbnailPresentationReferences,
+      thumbnailSceneReferences,
     ))) as string[],
     THUMBNAIL_PROMPT_CONFIG.MAX_REFERENCE_IMAGES,
   );
