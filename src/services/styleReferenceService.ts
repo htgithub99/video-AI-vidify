@@ -125,17 +125,19 @@ export const createCharacterConstructionDirective = (profile?: VisualStyleProfil
   const texture = normalizeField(profile.texture);
 
   const resolvedCharacterType = characterType || STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_FALLBACK;
-  const characterDnaSuffix = characterDna ? ` with ${characterDna}` : STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
+  const characterDnaSuffix = characterDna
+    ? `${STYLE_REFERENCE_DIRECTIVES.WITH_DNA_PREFIX}${characterDna}`
+    : STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
   const peopleRule = `${STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_PREFIX} ${resolvedCharacterType}${characterDnaSuffix}`;
 
   return _.join(_.compact([
     medium,
     peopleRule,
-    shapeLanguage ? `shape language: ${shapeLanguage}` : "",
+    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SHAPE_LANGUAGE_TEMPLATE, shapeLanguage),
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.LINE_ART_TEMPLATE, lineDna),
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.PALETTE_TEMPLATE, colorDna),
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.RENDERING_TEMPLATE, renderingDna),
-    texture ? `texture: ${texture}` : "",
+    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.TEXTURE_TEMPLATE, texture),
   ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
@@ -153,7 +155,7 @@ export const createMasterStylePrefix = (profile?: VisualStyleProfile): string =>
     STYLE_REFERENCE_DIRECTIVES.UNIVERSAL_ANATOMY_MANDATE,
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.UNIFIED_STYLE_TEMPLATE, characterType),
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.EVERY_ANATOMY_TEMPLATE, characterDna),
-    shapeLanguage ? `shapes: ${shapeLanguage}` : "",
+    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SHAPES_TEMPLATE, shapeLanguage),
     STYLE_REFERENCE_DIRECTIVES.FULL_FACIAL_FEATURES,
     STYLE_REFERENCE_DIRECTIVES.STRICT_PROHIBITION,
     lineDna,
@@ -169,7 +171,7 @@ export const createMasterStyleSuffix = (profile?: VisualStyleProfile, background
 
   return _.join(_.compact([
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.VISUAL_CONSISTENCY_TEMPLATE, renderingDna),
-    texture ? `surface: ${texture}` : "",
+    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SURFACE_TEMPLATE, texture),
     applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.ENVIRONMENT_STYLE_TEMPLATE, worldRendering),
     STYLE_REFERENCE_DIRECTIVES.LIMB_INTEGRITY,
     STYLE_REFERENCE_DIRECTIVES.UNIFORM_VISUAL_IDENTITY,
@@ -207,7 +209,7 @@ export const createThumbnailStyleDirective = (
 };
 
 export const resolveNegativeStylePrompt = (profile?: VisualStyleProfile): string => {
-  if (!profile?.negativeStylePrompt) return "";
+  if (!profile?.negativeStylePrompt) return STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
   return normalizeField(profile.negativeStylePrompt);
 };
 
