@@ -11,6 +11,7 @@ import { CharacterConfig, ThumbnailItem, ThumbnailTextMode, VisualConfig } from 
 import {
   appendImagePromptAspectRatio,
   deduplicatePromptSentences,
+  sanitizeImagePrompt,
 } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
@@ -151,7 +152,8 @@ export const createThumbnailGenerationPrompt = (
   hasReferences: boolean = false,
   characters: CharacterConfig[] = [],
 ): string => {
-  const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
+  let basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
+  basePrompt = _.trim(basePrompt.replace(/--ar\s+\d+:\d+/gi, ""));
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
   const styleDirective = style || thumbnail.style || "";
@@ -177,7 +179,7 @@ export const createThumbnailGenerationPrompt = (
   const rawCombined = _.join(parts, " ");
   const deduplicated = deduplicatePromptSentences(rawCombined);
 
-  return appendImagePromptAspectRatio(deduplicated, aspectRatio);
+  return appendImagePromptAspectRatio(sanitizeImagePrompt(deduplicated), aspectRatio);
 };
 
 export const getThumbnailPlanningIssues = (

@@ -300,7 +300,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
   SINGLE_FRAME_DIRECTIVE: "one continuous frame without panels or collage",
   DISTINCT_CHARACTER_VISUALS_DIRECTIVE: "Distinct character visuals: secondary characters, mentors, or clients must wear contrasting clothing colors (e.g. navy, grey, green, or brown) to clearly distinguish them from the main protagonist",
-  UNIFORM_CHARACTER_DIRECTIVE: "Universal character anatomy rule: every character in the scene (including background figures, crowd, boss, clients, and brokers) must be strictly rendered with uniform stick figure anatomy, matching the reference",
+  UNIFORM_CHARACTER_DIRECTIVE: "Universal character anatomy rule: every character in the scene (including background figures, crowd, boss, clients, and brokers) must strictly share the exact same character anatomy construction, matching the project visual anchor",
   NATURAL_LIMB_DIRECTIVE: "Natural single-jointed limb posing without extra joints, disjointed elbows, or mutated arms",
   NO_GRID_DIRECTIVE: "Strictly no grid lines, no alignment guide overlays, no framing lines on the final image",
   RULE_OF_THIRDS_REGEX: /rule of thirds/gi,
@@ -314,7 +314,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CONTINUITY_TEMPLATE: "Continuity: {value}",
   BEFORE_AFTER_TEMPLATE: "Visible change from {before} to {after}",
   REACTION_TEMPLATE: "Visible reaction: {value}",
-  STYLE_TEMPLATE: "Visual style guide: {value}. Render with clean bold vector outlines and consistent flat fills on a seamless clean background, no rough paper sketch textures, no pencil doodles",
+  STYLE_TEMPLATE: "Visual style guide: {value}",
   COMPOSITION_TEMPLATE: "{shotSize}, {cameraAngle}, {composition}",
   STYLE_MAX_WORDS: 40,
   STYLE_FIELD_WORD_LIMITS: {
@@ -433,16 +433,16 @@ export const STYLE_LOCK_CONFIG = {
 } as const;
 
 export const STYLE_REFERENCE_DIRECTIVES = {
-  PEOPLE_RULE_PREFIX: "Strict character visual lock: every person/character uses the exact same",
+  PEOPLE_RULE_PREFIX: "Strict character visual lock: every person uses the exact same",
   PEOPLE_RULE_FALLBACK: "character anatomy and construction",
-  FACIAL_FEATURES_RULE: "Always render complete facial features: distinct solid black eyes, eyebrows, nose dot, expressive line mouth, and hairstyle matching the reference. Never leave the face blank or featureless",
+  FACIAL_FEATURES_RULE: "Render clear expressive facial features suited to the character's emotion and narrative action. Never leave the face blank",
   LINE_ART_TEMPLATE: "Line art: {value}",
   PALETTE_TEMPLATE: "Palette: {value}",
   RENDERING_TEMPLATE: "Rendering: {value}",
   UNIVERSAL_ANATOMY_MANDATE: "MANDATORY UNIVERSAL CHARACTER ANATOMY: Every single person, protagonist, secondary character, broker, boss, and background crowd member MUST strictly share the exact same character construction",
   UNIFIED_STYLE_TEMPLATE: "Unified art style: {value}",
   EVERY_ANATOMY_TEMPLATE: "Every character anatomy strictly follows: {value}",
-  FULL_FACIAL_FEATURES: "Full facial features required: solid black dot eyes, eyebrows, small line mouth, and styled hair matching the reference on every character",
+  FULL_FACIAL_FEATURES: "Render clear expressive facial features suited to character emotion and narrative action, never blank",
   STRICT_PROHIBITION: "Strict prohibition: Absolutely NO realistic human body proportions, NO muscular anatomical limbs, NO 3D rendered bodies, NO semi-realistic cartoon torsos",
   VISUAL_CONSISTENCY_TEMPLATE: "Visual consistency: {value}",
   ENVIRONMENT_STYLE_TEMPLATE: "Environment style: {value}",
@@ -450,6 +450,32 @@ export const STYLE_REFERENCE_DIRECTIVES = {
   UNIFORM_VISUAL_IDENTITY: "Maintain uniform visual identity across all scenes, no blank faces, no style drift, no realistic 3D artifacts",
   CLEAN_RENDER: "Clean render: strictly no grid lines, no alignment guide overlays, no watermark lines",
 } as const;
+
+export const STYLE_DIRECTIVE_CONFIG = {
+  SENTENCE_SEPARATOR: ". ",
+  TEMPLATE_VALUE_TOKEN: "{value}",
+  SPACE_SEPARATOR: " ",
+  EMPTY_STRING: "",
+  CONTEXTUAL_MODE: "contextual",
+  MINIMAL_MODE: "minimal",
+  WHITE_MODE: "white",
+  SOLID_MODE: "solid",
+  TRANSPARENT_MODE: "transparent",
+  AUTO_MODE: "auto",
+  CONTEXTUAL_ENVIRONMENT_TEXT: "detailed contextual environment supporting the scene narrative",
+  MINIMAL_ENVIRONMENT_TEXT: "clean seamless solid white background (#FFFFFF) with minimal scene clutter",
+  TRANSPARENT_ENVIRONMENT_TEXT: "isolated main subject with transparent background and no scenery",
+  SOLID_WHITE_BG_PATTERN: /(?:solid\s+white\s+background|against\s+a\s+solid\s+white\s+background|minimalist\s+solid\s+white\s+background)/gi,
+  STRICT_LOCK_PREFIX_PATTERN: /strict character visual lock:?/gi,
+  EVERY_PERSON_PREFIX_PATTERN: /every (?:person|character)\/?(?:character)? uses the exact same\.?/gi,
+  MULTIPLE_SPACES_PATTERN: /\s+/g,
+  CIRCULAR_JOINTS_FULL_PATTERN: /stick limbs with circular joints/gi,
+  CIRCULAR_JOINTS_WITH_PATTERN: /with circular joints/gi,
+  CIRCULAR_JOINTS_PATTERN: /circular joints/gi,
+  JOINT_BALLS_PATTERN: /joint (?:dots|balls|spheres)/gi,
+  SMOOTH_LIMBS_REPLACEMENT: "smooth continuous stick limbs",
+} as const;
+
 export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled",AUDIO:"audio" } as const;
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";

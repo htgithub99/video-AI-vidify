@@ -266,8 +266,9 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     }, 0);
 
     if (response && response.text) {
+      const backgroundMode = req.body?.backgroundMode || req.body?.visualConfig?.styleBackgroundMode;
       const styleProfile = normalizeVisualStyleProfile(safeParseJSON(response.text, {}));
-      const extracted = createSoftStyleDirective(styleProfile) || normalizeExtractedStyle(response.text);
+      const extracted = createSoftStyleDirective(styleProfile, backgroundMode) || normalizeExtractedStyle(response.text);
       const result = {
         style: extracted,
         styleProfile,
@@ -403,7 +404,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         : "",
     ]), " ") || "No reference image will be attached.";
     const targetStyle = ensureSharedCharacterStyleLock(resolvedVisualBible.styleProfile
-      ? createSoftStyleDirective(resolvedVisualBible.styleProfile)
+      ? createSoftStyleDirective(resolvedVisualBible.styleProfile, resolvedVisualConfig.styleBackgroundMode)
       : referenceStyle || visualStyle);
     let plannedScenes: StoryboardScene[] = resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
     const planningPayload = createVisualPlanningPayload(plannedScenes);

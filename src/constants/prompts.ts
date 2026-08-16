@@ -229,11 +229,11 @@ Write one natural English paragraph in this exact 5-block order:
 1. [Style Anchor]: Copy the PROJECT STYLE LOCK verbatim at the beginning, exactly once.
 2. [Character DNA & Subject]: Describe the main subject or recurring character using full physical DNA traits (hairstyle, skin tone, limb structure without mechanical joint balls, signature outfit). Never use raw ID tags like char_1 in the prompt text.
 3. [Specific Action & Emotional State]: State one clear, dynamic physical action with exaggerated facial acting/emotion appropriate for the story beat.
-4. [Environment & Props]: When background mode is 'white' or 'minimal', STRICTLY enforce pure solid white background (#FFFFFF) with zero room walls or scenery clutter. When contextual, build the story setting.
+4. [Environment & Props]: If Background Mode is 'contextual' or 'auto', build a rich detailed story environment matching the scene narration (e.g. factory floor with machinery, city street, office, cozy living room) with appropriate full colors. If Background Mode is 'white' or 'minimal', STRICTLY enforce pure solid white background (#FFFFFF) with zero room walls or scenery clutter.
 5. [Camera & Negative Constraints]: State shot size, camera angle, and end with: "Completely text-free, strictly no text, no words, no letters." (unless text is explicitly enabled).
 
 [HARD RULES]
-- 100% USER CONFIGURATION ADHERENCE: If user selected white/minimal background, NEVER render room outlines, window frames, or architectural walls. If user selected no_text, NEVER render text.
+- 100% USER CONFIGURATION ADHERENCE: If user selected contextual background, NEVER output solid white background; always draw the story environment. If user selected white/minimal background, NEVER render room outlines or scenery. If user selected no_text, NEVER render text.
 - STYLE CONSISTENCY: Every person in every scene must use the EXACT same artistic medium, anatomy construction, line work, and rendering style from PROJECT STYLE LOCK. Never drift into anime, 3D, or realistic if the style is stickman/doodle/vector.
 - LIMB INTEGRITY: Smooth continuous single-line limbs with clean simple hands/feet; strictly NO oversized black joint balls, mechanical circles, or disconnected joints.
 - NO VIETNAMESE IN PROMPT: The image prompt MUST be written ENTIRELY in English. Do NOT inject Vietnamese narration or subtitle text into the visual prompt.
@@ -1331,34 +1331,35 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 Input thumbnails:
 ${chunkJson}`;
 
-export const STYLE_EXTRACTION_PROMPT = `Extract one minimal project-wide Style Lock from the supplied scene reference image. Analyze only traits that every person and every scene can share.
+export const STYLE_EXTRACTION_PROMPT = `Extract one minimal project-wide Style Lock from the supplied scene reference image based on 6 core visual pillars. Analyze only traits that every person and every scene can share.
 
 Return these short decisions:
-- medium: broad medium and realism level only.
-- characterType: choose exactly one cast-wide category such as stick-figure character construction, realistic human photography, stylized 2D cartoon people, anime characters, 3D cartoon characters, or painterly human figures.
-- characterDna: only two to four shared construction traits such as head shape, torso shape, limb type and facial simplification.
-- lineDna: outline behavior only.
-- colorDna: flat or graded color behavior and broad saturation only.
-- renderingDna: fill, shading and texture method only.
-- worldRendering: only how new script-grounded backgrounds are rendered.
+- medium: Art medium and genre (e.g. 2D flat vector illustration, anime, photorealistic photography, 3D digital render).
+- characterType: Choose exactly one cast-wide category such as 2D vector stickfigure construction, realistic human photography, stylized 2D cartoon people, anime characters, or 3D cartoon characters.
+- characterDna: Dominant body and limb anatomy construction (e.g. smooth continuous stick limbs, minimalist head shape, simplified natural proportions). Strictly avoid mechanical circular joint balls or joint dots.
+- lineDna: Line art and outline behavior (e.g. clean uniform black outlines, delicate thin line art, lineless flat shapes).
+- colorDna: Color palette, saturation, and contrast behavior (e.g. vibrant full-color palette with harmonious scene-appropriate tones, rich warm colors, flat colorful vector fills, or monochrome only if the reference is strictly black-and-white).
+- renderingDna: Shading and surface texture (e.g. flat filled 2D vectors with no shading or texture, soft cel-shading, matte 3D surface).
+- worldRendering: How script-grounded environments and background settings should be rendered (e.g. detailed contextual environment with natural lighting and depth, or clean minimalist solid white background if minimal mode is requested).
 
-Never put sampled hair style, hair color, skin tone, clothing, accessory, person, pose, expression, room, prop, lighting, mood, camera or composition into a reusable field. Put all such sampled details in sampleSpecificContent. Never mix character categories; if the reference uses stick figures, characterType must remain stick-figure character construction for the whole cast. Leave periodCues empty because the script, not the style image, controls historical period. adaptiveElements must say that the script controls setting, period, action, mood, lighting and composition.
+Never put sampled hair style, hair color, skin tone, clothing, accessory, person, pose, expression, room, prop, lighting, mood, camera or composition into a reusable field. Put all such sampled details in sampleSpecificContent. Never mix character categories. Leave periodCues empty because the script controls historical period. adaptiveElements must say that the script controls setting, period, action, mood, lighting and composition.
 
 Return only JSON matching this schema:
 {
-  "medium": "Broad medium and realism level",
+  "medium": "Broad art medium and genre",
   "characterType": "One exact cast-wide character category",
-  "characterDna": "Two to four dominant construction traits",
-  "lineDna": "Broad outline and contour behavior",
-  "colorDna": "Palette behavior and saturation, not mandatory exact colors",
-  "renderingDna": "Broad shading and texture method",
-  "periodCues": "Reusable period-signaling language or empty string",
-  "worldRendering": "How new script-grounded environments should be rendered",
-  "adaptiveElements": "Lighting, mood, camera and composition must follow each scene",
+  "characterDna": "Dominant construction and limb traits (smooth continuous limbs, no mechanical joints)",
+  "lineDna": "Outline and contour behavior",
+  "colorDna": "Palette behavior, saturation and contrast",
+  "renderingDna": "Shading, fill and surface texture method",
+  "periodCues": "",
+  "worldRendering": "How script-grounded environments should be rendered",
+  "adaptiveElements": "Script controls setting, period, action, mood, lighting and composition",
   "sampleSpecificContent": ["Concrete sampled content to exclude"]
-}`;
+}
+`;
 
-export const THUMBNAIL_STYLE_EXTRACTION_PROMPT = `Extract a minimal thumbnail presentation profile from the supplied thumbnail reference image(s).
+export const THUMBNAIL_STYLE_EXTRACTION_PROMPT = `Extract a minimal thumbnail presentation profile from the supplied thumbnail reference image(s) based on 6 core visual pillars.
 
 Return the same compact schema, but follow these limits:
 - If a separate scene Style Core exists, its character construction is authoritative for the entire project. This thumbnail profile must never replace it.
@@ -1370,17 +1371,18 @@ Return the same compact schema, but follow these limits:
 
 Return only JSON matching this schema:
 {
-  "medium": "Broad medium and realism level",
+  "medium": "Broad art medium and genre",
   "characterType": "One exact cast-wide character category",
-  "characterDna": "Shared cast-wide construction traits",
+  "characterDna": "Shared cast-wide construction traits (smooth continuous limbs, no mechanical joints)",
   "lineDna": "Outline, keyline and contour behavior",
   "colorDna": "Palette, saturation and contrast behavior",
   "renderingDna": "Shading, texture and cutout method",
-  "periodCues": "Reusable period-signaling language or empty string",
-  "worldRendering": "How new script-grounded environments should be rendered",
+  "periodCues": "",
+  "worldRendering": "How script-grounded environments should be rendered",
   "adaptiveElements": "Script and selected template control content, lighting and composition",
   "sampleSpecificContent": ["Concrete sampled content to exclude"]
-}`;
+}
+`;
 
 export const getMultiStepHookPrompt = (originalInput: string, genre: string, hookType: string, duration: number, language: string, count: number): string => `You are an elite YouTube/TikTok viral content strategist and copywriting script writer.
 Your mission is to perform a highly strategic 3-step pipeline for the topic: "${originalInput}".
