@@ -910,7 +910,7 @@ export function useAutoVideoPipeline(
         SecurityConstants.ZERO,
       ));
 
-      if (!isStoryboardCached || config.forceRegenerateScenes || didAnalyzeCharacters || requiresVisualReferenceMigration) {
+      if (!isStoryboardCached || config.forceRegenerateScenes || shouldRegenerateSceneAssets || didAnalyzeCharacters || requiresVisualReferenceMigration) {
         voiceUpdatedProj = {
           ...voiceUpdatedProj,
           visualConfig: {
@@ -951,7 +951,7 @@ export function useAutoVideoPipeline(
           aspectRatio: config.aspectRatio,
           language: config.language,
           promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
-          bypassCache: Boolean(config.forceRegenerateScenes),
+          bypassCache: true,
         }, requestSignal);
         if (optimizeRes.success && optimizeRes.data?.storyboard) {
           realScenes = optimizeRes.data.storyboard;
@@ -1000,10 +1000,8 @@ export function useAutoVideoPipeline(
         ...voiceUpdatedProj,
         visualConfig: executionVisualConfig,
       };
-      await syncProject(voiceUpdatedProj);
-      setStepProgress(60);
-
-      setStepProgress(65);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_PREPARE);
+      setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_START);
       setCurrentStepIndex(3);
       const modeName = _.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)
         ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM

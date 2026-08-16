@@ -379,12 +379,10 @@ export const REFACTOR_CONSTANTS = {
   WARN_AUDIO_QA_RETRY: "Giọng đọc chưa đạt mục tiêu; hệ thống đang tạo lại voice một lần.",
   WARN_AUDIO_QA_REPAIR_FAILED: "Chưa thể tạo lại voice; hệ thống giữ bản voice thật gần nhất và tiếp tục.",
   WARN_FINAL_QA_RESULT: "Video hoàn tất nhưng còn cảnh báo chất lượng; vui lòng xem báo cáo trước khi đăng.",
-  ERR_SUBTITLE_QUALITY_REJECTED: "Phụ đề chưa đạt chuẩn đọc. Hãy điều chỉnh nội dung hoặc thời lượng rồi thử lại.",
+  ERR_SUBTITLE_QUALITY_REJECTED: "Phụ đề chưa đạt chuẩn đọc.",
   ERR_EDITOR_QUALITY_REJECTED: "Timeline còn tài nguyên hoặc nhịp dựng chưa đạt chuẩn. Hãy xử lý các cảnh lỗi rồi thử lại.",
   ERR_AUDIO_QUALITY_REJECTED: "Giọng đọc chưa đạt chuẩn nghe. Hãy tạo lại giọng đọc rồi tiếp tục dự án.",
   ERR_FINAL_QUALITY_REJECTED: "Bản dựng chưa đạt kiểm tra cuối. Hãy xử lý các mục bị từ chối trước khi xuất bản.",
-  MSG_RENDER_PREFIX: "Đang tạo video: ",
-  MSG_PERCENT: "%",
 
   ACCOUNTS_FILE: "google_accounts.json",
   ENCODING_UTF8: "utf-8",
@@ -429,6 +427,8 @@ export const REFACTOR_CONSTANTS = {
   VALID_VOICE_PREFIXES: ["elevenlabs_", "minimax_", "clone_", "edge_", "kokoro_", "vbee_", "fishaudio_"] as const,
   DEFAULT_EDGE_VOICE_ID: "edge_vi-VN-HoaiMyNeural",
   EDGE_PREFIX: "edge_",
+  MSG_RENDER_PREFIX: "Đang tạo video: ",
+  MSG_PERCENT: "%",
   REQ_PROP_HEADERS: "headers",
   REQ_PROP_BODY: "body",
   KEY_NAME_GEMINI_API_KEY: "gemini_api_key",
@@ -436,6 +436,13 @@ export const REFACTOR_CONSTANTS = {
   KEY_NAME_GROQ_API_KEY: "groq_api_key",
   KEY_NAME_AI33_API_KEY: "ai33_api_key",
   ZERO_FLOAT: 0.0,
+  HASH_PREFIX: "#",
+  ACCEPT_AUDIO_ALL: "audio/*",
+  DISPLAY_NONE: "none",
+  FILE_EXT_PNG: ".png",
+  QUERY_PARAM_SEPARATOR: "?",
+  PUBLIC_DIR_NAME: "public",
+  DATA_URL_PREFIX: "data:",
 } as const;
 
 export const ROUTER_PATHS = {

@@ -19,18 +19,17 @@ export interface EncodedImageAsset {
 }
 
 const getImageMimeType = (filePath: string): MimeType => (
-  _.isEqual(_.toLower(path.extname(filePath)), ".png") ? MimeType.PNG : MimeType.JPEG
+  _.isEqual(_.toLower(path.extname(filePath)), REFACTOR_CONSTANTS.FILE_EXT_PNG || ".png") ? MimeType.PNG : MimeType.JPEG
 );
 
 const resolveContainedAssetPath = (assetUrl: string, rootDirectory: string): string | undefined => {
-  const relativePath = _.trimStart(_.first(_.split(assetUrl, "?")) || assetUrl, "/\\");
-  const resolvedRoot = path.resolve(rootDirectory);
-  const resolvedPath = path.resolve(resolvedRoot, relativePath);
-  const normalizedRoot = _.toLower(_.join([resolvedRoot, path.sep], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
-  return _.every([
-    _.startsWith(_.toLower(resolvedPath), normalizedRoot),
-    fs.existsSync(resolvedPath),
-  ], Boolean) ? resolvedPath : undefined;
+  const relativePath = _.trimStart(_.first(_.split(assetUrl, REFACTOR_CONSTANTS.QUERY_PARAM_SEPARATOR || "?")) || assetUrl, "/\\");
+  const candidates = [
+    path.resolve(rootDirectory, relativePath),
+    path.resolve(process.cwd(), relativePath),
+    path.resolve(process.cwd(), REFACTOR_CONSTANTS.PUBLIC_DIR_NAME || "public", relativePath),
+  ];
+  return _.find(candidates, (p) => fs.existsSync(p));
 };
 
 export const resolveLocalProjectAssetPath = (assetUrl: string): string | undefined => (
@@ -51,7 +50,7 @@ export const readEncodedProjectImage = (assetUrl: string): EncodedImageAsset | u
 export const readStyleReferenceImage = async (imageSource: string): Promise<EncodedImageAsset> => {
   let data = imageSource;
   let mimeType: string = CONTENT_TYPES.JPEG;
-  if (_.startsWith(imageSource, "data:")) {
+  if (_.startsWith(imageSource, REFACTOR_CONSTANTS.DATA_URL_PREFIX || "data:")) {
     const match = imageSource.match(BASE64_DATA_URL_REGEX);
     if (match) {
       mimeType = match[1];

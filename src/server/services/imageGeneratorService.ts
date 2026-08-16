@@ -1800,43 +1800,54 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     }
   }
 
-  // Chỉ upload 1 lần cho mỗi room theo yêu cầu
-  const isAlreadyUploaded = roomReferenceUploadedMap.get(page) === true;
+  const isAlreadyUploaded = _.isEqual(roomReferenceUploadedMap.get(page), true);
   if (isAlreadyUploaded) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
     return;
   }
 
-  const allReferenceFiles = createGeminiReferenceFiles(visualConfig?.referenceImages);
+  const rawReferences = visualConfig?.referenceImages || visualConfig?.sceneReferenceImages;
+  const allReferenceFiles = createGeminiReferenceFiles(rawReferences);
   if (_.isEmpty(allReferenceFiles)) return;
 
-  // Lấy 1 ảnh tham chiếu duy nhất
-  const referenceFiles = [allReferenceFiles[0]];
+  const referenceFiles = [_.first(allReferenceFiles)!];
 
-  const referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
-  if (!(await referenceInput.count())) {
+  let referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+  const hasInput = _.gt(await referenceInput.count(), SecurityConstants.ZERO);
+
+  if (!hasInput) {
+    const plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
+    if (await plusButton.isVisible().catch(() => false)) {
+      await plusButton.click().catch(() => {});
+      await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
+      referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+    }
+  }
+
+  if (_.lte(await referenceInput.count(), SecurityConstants.ZERO)) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND);
     return;
   }
-  await referenceInput.setInputFiles(referenceFiles);
-  await page.waitForFunction(
-    ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
-    { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: 1 },
-    { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
-  ).catch(() => undefined);
-  await randomDelay(
-    GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS,
-    GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
-  );
-  const uploadedReferenceCount = await page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS).count();
-  if (_.lt(uploadedReferenceCount, 1)) {
-    throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED);
+
+  try {
+    await referenceInput.setInputFiles(referenceFiles);
+    await page.waitForFunction(
+      ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
+      { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: SecurityConstants.DEFAULT_AMOUNT },
+      { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
+    ).catch(() => undefined);
+    await randomDelay(
+      GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS,
+      GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
+    );
+    roomReferenceUploadedMap.set(page, true);
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
+      SecurityConstants.PLACEHOLDER_0,
+      _.toString(SecurityConstants.DEFAULT_AMOUNT),
+    ));
+  } catch (uploadErr) {
+    appError(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED, uploadErr);
   }
-  roomReferenceUploadedMap.set(page, true);
-  appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
-    SecurityConstants.PLACEHOLDER_0,
-    "1",
-  ));
 }
 
 async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: GeminiVisualConfig) {

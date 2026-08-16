@@ -39,6 +39,21 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleReferenceFilesUpload(e.target.files);
+    }
+  };
+
+  const photoCountLabel = T.photoCount
+    ? T.photoCount(_.size(referenceImages))
+    : _.join([_.size(referenceImages), REFACTOR_CONSTANTS.VD_BLANK, T.photos || REFACTOR_CONSTANTS.VD_EMPTY_STRING], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
@@ -52,33 +67,30 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
           </span>
         </div>
         <span className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">
-          {T.photoCount ? T.photoCount(referenceImages.length) : `${referenceImages.length} ảnh`}
+          {photoCountLabel}
         </span>
       </div>
 
       <div
         className="flex flex-wrap items-center gap-2.5"
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
+        onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
         <Tooltip content={T.sceneReferenceUploadSub} position="top">
-          <label className="group relative flex flex-col items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500/80 bg-slate-50/50 dark:bg-slate-900/20 hover:bg-sky-50/40 dark:hover:bg-sky-950/20 text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 cursor-pointer transition-all duration-200 shadow-sm shrink-0">
-            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/60 group-hover:bg-sky-500/10 group-hover:scale-110 transition-all mb-1 border border-slate-200 dark:border-slate-700/50 group-hover:border-sky-500/30">
-              <Plus className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 dark:group-hover:text-sky-400" />
+          <label className="group relative flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500/80 dark:hover:border-blue-400 bg-white dark:bg-slate-900/60 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 cursor-pointer transition-all duration-200 shadow-sm hover:shadow shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110">
+              <Plus className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-bold tracking-tight text-slate-600 dark:text-slate-300 group-hover:text-sky-600 dark:group-hover:text-sky-400">
+            <span className="text-xs font-bold tracking-tight text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               {T.addPhoto || T.sceneReferenceUploadTitle}
             </span>
-            <span className="text-[8px] text-slate-400 dark:text-slate-500">{T.uploadDragOrSelect}</span>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 mt-0.5">{T.uploadDragOrSelect}</span>
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
               accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
               multiple
               className="hidden"
-              onChange={(e) => e.target.files && handleReferenceFilesUpload(e.target.files)}
+              onChange={handleFileInputChange}
             />
           </label>
         </Tooltip>
@@ -88,8 +100,7 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
             key={idx}
             imageSrc={imgSrc}
             index={idx}
-            badgePrefix="#"
-            borderColorClass="hover:border-sky-500/80 dark:hover:border-sky-400/80"
+            badgePrefix={REFACTOR_CONSTANTS.HASH_PREFIX}
             deleteTooltip={T.deleteSceneReferenceTooltip || T.deletePhotoTooltip}
             previewTooltip={T.viewLargeImage}
             onPreview={setPreviewImage}

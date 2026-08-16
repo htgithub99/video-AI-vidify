@@ -68,6 +68,8 @@ export const AUTO_VIDEO_PIPELINE_PROGRESS = {
   STORYBOARD_DONE: 30,
   VOICE_START: 35,
   VOICE_DONE: 50,
+  IMAGE_PREPARE: 60,
+  IMAGE_START: 65,
   IMAGE_DONE: 75,
   SEO_THUMB_DONE: 85,
   ALIGN_DONE: 90,
@@ -611,8 +613,9 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
 export const GEMINI_CHAT_VIDEO_SELECTORS = {
   ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
   ASPECT_OPTIONS: '[role="menuitemradio"]',
-  REFERENCE_INPUT: 'input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
-  REFERENCE_CHIPS: 'input-companion-uploader .attachment-container, input-companion-uploader [data-test-id*="attachment"], input-companion-uploader async-processing-chip',
+  REFERENCE_INPUT: 'input[type="file"], input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+  REFERENCE_CHIPS: '.attachment-container, [data-test-id*="attachment"], async-processing-chip, mat-chip, .image-preview, .thumbnail-container, input-companion-uploader .attachment-container, input-companion-uploader [data-test-id*="attachment"], input-companion-uploader async-processing-chip',
+  PLUS_BUTTON: 'button:has(mat-icon), button[aria-label*="tệp" i], button[aria-label*="file" i], button[aria-label*="thêm" i], button[aria-label*="add" i], button[data-test-id*="plus" i]',
   PROCESSING: "async-processing-chip",
   GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
 } as const;
