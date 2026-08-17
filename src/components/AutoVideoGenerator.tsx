@@ -370,9 +370,9 @@ export default function AutoVideoGenerator({
       }
 
       if (isVoice) {
-        await handleStartAutoGenerate({ forceRegenerateVoice: true });
+        await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
       } else if (isImages) {
-        await handleStartAutoGenerate({ forceRegenerateScenes: true });
+        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
       } else if (isVideos) {
         await handleStartAutoGenerate({ resumeMode: true });
       }

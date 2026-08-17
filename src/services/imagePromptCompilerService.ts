@@ -171,14 +171,14 @@ const createConstraintClauses = (scene: StoryboardScene): string[] => {
 };
 
 const createNarrativeClause = (scene: StoryboardScene): string => {
-  const raw = _.trim(scene.visualIntent || IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING);
-  if (_.isEmpty(raw) || _.startsWith(raw, IMAGE_PROMPT_COMPILER_CONFIG.NARRATIVE_IGNORE_PREFIX)) {
-    return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+  const candidates = [scene.visualIntent, scene.visibleAction, scene.prompt];
+  for (const item of candidates) {
+    const raw = _.trim(_.toString(item));
+    if (!_.isEmpty(raw) && !_.startsWith(raw, IMAGE_PROMPT_COMPILER_CONFIG.NARRATIVE_IGNORE_PREFIX) && !DETECTOR_VIETNAMESE_REGEX.test(raw)) {
+      return compactWords(raw, IMAGE_PROMPT_COMPILER_CONFIG.NARRATIVE_MAX_WORDS);
+    }
   }
-  if (DETECTOR_VIETNAMESE_REGEX.test(raw)) {
-    return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
-  }
-  return compactWords(raw, IMAGE_PROMPT_COMPILER_CONFIG.NARRATIVE_MAX_WORDS);
+  return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
 };
 
 const createCompositionClause = (scene: StoryboardScene): string => {
@@ -238,6 +238,7 @@ const buildPromptClauses = (
   const constraints = isReferenceLocked
     ? [
       _.isEqual(scene.layout, IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LAYOUT) && IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,
+      IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
       IMAGE_PROMPT_COMPILER_CONFIG.NO_GRID_DIRECTIVE,
     ]
     : createConstraintClauses(scene);
@@ -251,7 +252,7 @@ const buildPromptClauses = (
     buildStateChangeClause(scene),
     createLocationClause(scene, visualBible),
     createPropClause(scene, visualBible),
-    compactSceneField(scene.lighting) || IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LIGHTING,
+    !isReferenceLocked && (compactSceneField(scene.lighting) || IMAGE_PROMPT_COMPILER_CONFIG.DEFAULT_LIGHTING),
     createCompositionClause(scene),
     !isReferenceLocked && createStyleClause(options),
     buildContinuityClause(scene),
@@ -270,7 +271,16 @@ export const compileImagePrompt = (
   }
 
   const clauses = buildPromptClauses(scene, options);
-  const rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  let rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  if (_.size(_.trim(rawPrompt)) < 15) {
+    const fallbackBase = _.compact([
+      options.targetStyle || options.visualBible?.visualStyle || "2D minimalist cartoon illustration",
+      scene.shotSize,
+      scene.cameraAngle,
+      "Universal character consistency, no text, no frame",
+    ]);
+    rawPrompt = _.join(fallbackBase, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  }
   const cleanedPrompt = deduplicatePromptSentences(removeConflictingStyleTerms(rawPrompt, Boolean(options.referenceLocked)));
   return appendImagePromptAspectRatio(sanitizeImagePrompt(cleanedPrompt), options.aspectRatio);
 };

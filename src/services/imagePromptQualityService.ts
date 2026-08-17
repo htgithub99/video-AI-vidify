@@ -73,6 +73,10 @@ export const deduplicatePromptSentences = (text: string): string => {
 export const sanitizeImagePrompt = (prompt: string): string => {
   let cleaned = _.trim(_.toString(prompt));
   cleaned = cleaned
+    .replace(/Visual style guide:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Universal character anatomy rule:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Natural single-jointed limb posing without extra joints, disjointed elbows, or mutated arms\.\s*/gi, "")
+    .replace(/one continuous frame without panels or collage\.\s*/gi, "")
     .replace(/Strict character visual lock:\s*every person uses the exact same[^\.]*\.\s*/gi, "")
     .replace(/Strict character visual lock:\s*[^\.]*\.\s*/gi, "")
     .replace(/Line art:\s*[^\.]*\.\s*/gi, "")
