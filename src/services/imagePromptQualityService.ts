@@ -73,13 +73,19 @@ export const deduplicatePromptSentences = (text: string): string => {
 export const sanitizeImagePrompt = (prompt: string): string => {
   let cleaned = _.trim(_.toString(prompt));
   cleaned = cleaned
+    .replace(/Strict character visual lock:\s*every person uses the exact same[^\.]*\.\s*/gi, "")
+    .replace(/Strict character visual lock:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Line art:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Palette:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Rendering:\s*[^\.]*\.\s*/gi, "")
+    .replace(/Shape language:\s*[^\.]*\.\s*/gi, "")
+    .replace(/clean minimal line art or detailed contextual environment supporting the scene narrative\.\s*/gi, "")
+    .replace(/chibi stickman cartoon illustration[^\.]*\.\s*/gi, "")
     .replace(/every personcharacter uses the exact same\.\s*/gi, "every person uses the exact same ")
     .replace(/every person\/character uses the exact same\.\s*/gi, "every person uses the exact same ")
-    .replace(/strict character visual lock: every personcharacter/gi, "Strict character visual lock: every person")
     .replace(/every personcharacter/gi, "every person")
     .replace(/with round head shape, pill shaped torso, stick limbs with (?:circular joints|smooth continuous stick limbs) and simplified facial dots\.\s*/gi, "")
     .replace(/Always render complete facial features: distinct solid black eyes, eyebrows, nose dot, expressive line mouth, and hairstyle matching the reference\. Never leave the face blank or featureless\.\s*/gi, "")
-    .replace(/Strict character visual lock: every person uses the exact same with round head shape[^\.]*\.\s*/gi, "")
     .replace(/with circular joints/gi, "")
     .replace(/circular joints/gi, "")
     .replace(/joint (?:dots|balls|spheres)/gi, "")

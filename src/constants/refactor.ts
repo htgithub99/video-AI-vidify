@@ -211,6 +211,7 @@ export const REFACTOR_CONSTANTS = {
   WARN_STORYBOARD_QA_RESULT: 'Phân cảnh có điểm cần xem lại về tính liên tục hoặc độ đa dạng; hệ thống giữ nguyên nội dung.',
   IMAGE_DATA_URL_CAPTURE_REGEX: /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i,
   AUDIO_DATA_URL_CAPTURE_REGEX: /^data:(audio\/(?:mpeg|mp3|wav|ogg));base64,(.+)$/i,
+
   DATA_VIDEO_BASE64_PREFIX: 'data:video/mp4;base64,',
   VIDEO_SCENE_IDS_KEY: 'videoSceneIds',
   TEMPLATE_SCENE_ID: '{sceneId}',
@@ -245,7 +246,7 @@ export const REFACTOR_CONSTANTS = {
   LOG_ERROR_READ_IDB: 'ERROR_READING_INDEXEDDB_KEY: ',
   LOG_ERROR_WRITE_IDB: 'ERROR_WRITING_INDEXEDDB_KEY: ',
   LOG_ERROR_REMOVE_IDB: 'ERROR_REMOVING_INDEXEDDB_KEY: ',
-
+  LOG_ERROR_CLEAR_IDB: 'ERROR_CLEARING_INDEXEDDB: ',
   JOB_STATUS_PENDING: "pending",
   JOB_STATUS_PROCESSING: "processing",
   JOB_STATUS_COMPLETED: "completed",

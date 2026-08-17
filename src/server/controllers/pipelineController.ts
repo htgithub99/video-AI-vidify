@@ -19,7 +19,8 @@ import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
-import { createSoftStyleDirective, ensureSharedCharacterStyleLock, normalizeExtractedStyle, normalizeVisualStyleProfile, resolveNegativeStylePrompt } from "../../services/styleReferenceService.js";
+import { createSoftStyleDirective, normalizeExtractedStyle, normalizeVisualStyleProfile, resolveNegativeStylePrompt } from "../../services/styleReferenceService.js";
+import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
@@ -388,7 +389,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const resolvedVisualBible = visualBible as VisualBible;
     const characters = _.defaultTo(resolvedVisualConfig.characters, []);
     const visualStyle = resolvedVisualConfig.style;
-    const referenceStyle = resolvedVisualConfig.referencePrompt || "";
     const promptCharacters = createPromptCharacterCards(characters);
     const charactersJson = !_.isEmpty(promptCharacters)
       ? jsonUtils.safeStringify(promptCharacters)
@@ -397,17 +397,18 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const backgroundDirective = resolvedVisualConfig.styleBackgroundMode ? _.get(BACKGROUND_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleBackgroundMode) : undefined;
     const textDirective = resolvedVisualConfig.styleTextInImageMode ? _.get(TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES, resolvedVisualConfig.styleTextInImageMode) : undefined;
     const focusDirective = resolvedVisualConfig.imageFocusMode ? resolveImageFocusDirective(resolvedVisualConfig.imageFocusMode, resolvedVisualConfig.styleBackgroundMode) : undefined;
-    const referenceContext = _.join(_.compact([
-      !_.isEmpty(resolvedVisualConfig.styleReferenceImages)
-        ? "A style-only reference image will be attached at generation time."
-        : "",
-      !_.isEmpty(resolvedVisualConfig.sceneReferenceImages)
+    const hasStyleRef = hasValidImages(resolvedVisualConfig.styleReferenceImages);
+    const hasSceneRef = hasValidImages(resolvedVisualConfig.sceneReferenceImages) || hasValidImages(resolvedVisualConfig.referenceImages);
+    const referenceContext = hasStyleRef
+      ? "A style-only reference image will be attached at generation time."
+      : (hasSceneRef
         ? "One or more scene-context reference images will be attached at generation time."
-        : "",
-    ]), " ") || "No reference image will be attached.";
-    const targetStyle = ensureSharedCharacterStyleLock(resolvedVisualBible.styleProfile
-      ? createSoftStyleDirective(resolvedVisualBible.styleProfile, resolvedVisualConfig.styleBackgroundMode)
-      : referenceStyle || visualStyle);
+        : "No reference image will be attached.");
+    const targetStyle = hasStyleRef
+      ? "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image."
+      : (hasSceneRef
+        ? `Strict character match: accurately preserve character identity from the reference image in the "${visualStyle}" style.`
+        : (resolvedVisualBible.visualStyle || visualStyle || "Dynamically craft the visual art style and medium to match the story's emotional tone and genre."));
     let plannedScenes: StoryboardScene[] = resolveStoryboardCharacterIds(_.cloneDeep(sourceScenes), characters);
     const planningPayload = createVisualPlanningPayload(plannedScenes);
     const chunks = _.chunk(planningPayload, chunkSize);
@@ -1579,12 +1580,10 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           subtitle: s.subtitle
         })), null, 2);
 
-        const hasStyleReference = Boolean(!_.isEmpty(config?.styleReferenceImages));
-        const hasSceneReference = Boolean(
-          !_.isEmpty(referenceImages) ||
-          !_.isEmpty(config?.referenceImages) ||
-          !_.isEmpty(config?.sceneReferenceImages)
-        );
+        const hasStyleReference = hasValidImages(config?.styleReferenceImages);
+        const hasSceneReference = hasValidImages(referenceImages) ||
+          hasValidImages(config?.referenceImages) ||
+          hasValidImages(config?.sceneReferenceImages);
 
         const batchPrompt = getSceneDetailBatchPrompt(
           minimalScenesJson,
@@ -1846,11 +1845,18 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
   const thumbnailTextMode = _.isEqual(visualConfig.thumbnailTextInImageMode, ThumbnailTextMode.NoText)
     ? ThumbnailTextMode.NoText
     : ThumbnailTextMode.Headline;
-  const refImageStr = ensureSharedCharacterStyleLock(visualConfig.thumbnailReferencePrompt || visualConfig.style || "");
+  const hasThumbReference = hasValidImages(visualConfig.thumbnailReferenceImages) ||
+    hasValidImages(visualConfig.thumbnailSceneReferenceImages);
+  const hasStyleRef = hasValidImages(visualConfig.styleReferenceImages);
+  const refImageStr = hasThumbReference
+    ? "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image."
+    : (hasStyleRef
+      ? "Strict visual match: accurately follow the exact art style and aesthetic of the uploaded style reference image."
+      : (visualConfig.thumbnailReferencePrompt || "Dynamically craft the visual art style and medium to match the story's emotional tone and genre."));
 
   if (!(await isAiProviderAvailable())) {
     return res.json({
-      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, visualConfig.thumbnailReferencePrompt || visualConfig.style, thumbnailTextMode),
+      thumbnails: createSourceGroundedThumbnailIdeas(rewrittenScript, thumbnailCount, refImageStr, thumbnailTextMode),
       rotationLogs: [THUMBNAIL_PROMPT_CONFIG.SOURCE_FALLBACK_WARNING],
     });
   }
@@ -3174,7 +3180,6 @@ router.post("/delete-asset-file", async (req: Request, res: Response) => {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: PROJECT_ASSET_INVALID_REQUEST });
   }
   const projectRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, projectId);
-  // Extract path within project
   let cleanAssetPath = assetUrl;
   const projectPrefix = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${projectId}/`;
   if (_.startsWith(cleanAssetPath, projectPrefix)) {

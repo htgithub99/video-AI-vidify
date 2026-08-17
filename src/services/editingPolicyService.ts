@@ -58,7 +58,9 @@ const resolveCinematicCameraMotion = (
   scene: StoryboardScene,
   index: number,
   totalScenes: number,
+  flatStyle: boolean = false,
 ): string => {
+  if (flatStyle) return "drift";
   const explicitMotion = _.trim(scene.cameraMotion || "");
   const normalizedExplicit = _.replace(_.toLower(explicitMotion), /[ -]+/g, "_");
   const VALID_MOTIONS = new Set([
@@ -68,13 +70,9 @@ const resolveCinematicCameraMotion = (
     return explicitMotion;
   }
 
-  // Smart narrative motion assignment:
-  // 1. Opening hook (Scene 1): Zoom In
   if (index === 0) return MOTION_ZOOM_IN;
-  // 2. Final resolution (Last scene): Zoom Out
   if (index === totalScenes - 1) return MOTION_ZOOM_OUT;
 
-  // 3. Narrative & Shot size context
   const shotSize = _.toLower(_.toString(scene.shotSize));
   if (/wide|establishing/i.test(shotSize)) {
     return index % 2 === 0 ? MOTION_PAN_LEFT : MOTION_PAN_RIGHT;
@@ -83,7 +81,6 @@ const resolveCinematicCameraMotion = (
     return MOTION_ZOOM_IN;
   }
 
-  // 4. Alternating dynamic rhythm
   return MOTION_RHYTHM[index % MOTION_RHYTHM.length];
 };
 
@@ -95,7 +92,6 @@ const resolveCinematicShotSize = (
   const normalizedCurrent = _.toLower(_.trim(currentShotSize || ""));
   const normalizedPrev = _.toLower(_.trim(previousShotSize || ""));
 
-  // Prevent Jump-Cuts
   if (!_.isEmpty(normalizedCurrent) && !_.isEqual(normalizedCurrent, normalizedPrev)) {
     return currentShotSize!;
   }
@@ -117,7 +113,7 @@ export const applyProfessionalEditingPolicy = (
     const effects = flatStyle && !SAFE_FLAT_EFFECTS.has(requestedEffect) ? "" : scene.effects;
     const lightingEffect = flatStyle ? "natural_light" : scene.lightingEffect;
 
-    const cameraMotion = resolveCinematicCameraMotion(scene, index, total);
+    const cameraMotion = resolveCinematicCameraMotion(scene, index, total, flatStyle);
     const shotSize = resolveCinematicShotSize(scene.shotSize, lastShotSize, index);
     lastShotSize = shotSize;
 

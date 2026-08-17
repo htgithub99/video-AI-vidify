@@ -29,9 +29,9 @@ const getDB = (): Promise<IDBDatabase> => {
 };
 
 export const storageUtils = {
-  get: (key: string): string | null => { try { if (!_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED)) return window.localStorage.getItem(key); } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_READ_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } return null; },
-  set: (key: string, value: string): void => { try { if (!_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED)) { window.localStorage.setItem(key, value); window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE)); } } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_WRITE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } },
-  remove: (key: string): void => { try { if (!_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED)) { window.localStorage.removeItem(key); window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE)); } } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } },
+  get: (key: string): string | null => { try { const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? (globalThis as any).localStorage : null); if (storage) return storage.getItem(key); } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_READ_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } return null; },
+  set: (key: string, value: string): void => { try { const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? (globalThis as any).localStorage : null); if (storage) { storage.setItem(key, value); if (typeof window !== 'undefined') window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE)); } } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_WRITE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } },
+  remove: (key: string): void => { try { const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? (globalThis as any).localStorage : null); if (storage) { storage.removeItem(key); if (typeof window !== 'undefined') window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE)); } } catch (error) { appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_LOCAL, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error); } },
   getAsync: async (key: string): Promise<string | null> => {
     try {
       const db = await getDB();
@@ -45,14 +45,14 @@ export const storageUtils = {
         request.onerror = () => reject(request.error);
       });
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_READ_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
-      return storageUtils.get(key);
+      appError(REFACTOR_CONSTANTS.LOG_ERROR_READ_IDB, error);
+      return null;
     }
   },
   setAsync: async (key: string, value: string): Promise<void> => {
     try {
       const db = await getDB();
-      await new Promise<void>((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const transaction = db.transaction(
           REFACTOR_CONSTANTS.DB_STORE_NAME,
           REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode,
@@ -61,18 +61,14 @@ export const storageUtils = {
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
-      if (!_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED)) {
-        window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
-      }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_WRITE_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
-      storageUtils.set(key, value);
+      appError(REFACTOR_CONSTANTS.LOG_ERROR_WRITE_IDB, error);
     }
   },
   removeAsync: async (key: string): Promise<void> => {
     try {
       const db = await getDB();
-      await new Promise<void>((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const transaction = db.transaction(
           REFACTOR_CONSTANTS.DB_STORE_NAME,
           REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode,
@@ -81,12 +77,24 @@ export const storageUtils = {
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
       });
-      if (!_.eq(typeof window, REFACTOR_CONSTANTS.TYPE_UNDEFINED)) {
-        window.dispatchEvent(new Event(REFACTOR_CONSTANTS.DB_EVENT_STORAGE));
-      }
     } catch (error) {
-      appError(_.join([REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_IDB, key], REFACTOR_CONSTANTS.VD_EMPTY_STRING), error);
-      storageUtils.remove(key);
+      appError(REFACTOR_CONSTANTS.LOG_ERROR_REMOVE_IDB, error);
+    }
+  },
+  clearAsync: async (): Promise<void> => {
+    try {
+      const db = await getDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+          REFACTOR_CONSTANTS.DB_STORE_NAME,
+          REFACTOR_CONSTANTS.DB_MODE_READWRITE as IDBTransactionMode,
+        );
+        const request = transaction.objectStore(REFACTOR_CONSTANTS.DB_STORE_NAME).clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    } catch (error) {
+      appError(REFACTOR_CONSTANTS.LOG_ERROR_CLEAR_IDB, error);
     }
   },
 };

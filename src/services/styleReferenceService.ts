@@ -4,48 +4,11 @@ import {
   MARKDOWN_REGEX,
   STYLE_DIRECTIVE_CONFIG,
   STYLE_LOCK_CONFIG,
-  STYLE_REFERENCE_DIRECTIVES,
 } from "../constants";
 import { VisualStyleProfile } from "../types";
 
 const normalizeField = (value: unknown): string => _.trim(
   _.replace(_.toString(value), MARKDOWN_REGEX, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING),
-);
-
-const cleanCharacterType = (characterType: string): string => _.trim(
-  _.replace(
-    _.replace(
-      _.replace(
-        characterType,
-        STYLE_DIRECTIVE_CONFIG.STRICT_LOCK_PREFIX_PATTERN,
-        STYLE_DIRECTIVE_CONFIG.EMPTY_STRING,
-      ),
-      STYLE_DIRECTIVE_CONFIG.EVERY_PERSON_PREFIX_PATTERN,
-      STYLE_DIRECTIVE_CONFIG.EMPTY_STRING,
-    ),
-    STYLE_DIRECTIVE_CONFIG.MULTIPLE_SPACES_PATTERN,
-    STYLE_DIRECTIVE_CONFIG.SPACE_SEPARATOR,
-  ),
-);
-
-const cleanCharacterDna = (characterDna: string): string => _.trim(
-  _.replace(
-    _.replace(
-      _.replace(
-        _.replace(
-          characterDna,
-          STYLE_DIRECTIVE_CONFIG.CIRCULAR_JOINTS_FULL_PATTERN,
-          STYLE_DIRECTIVE_CONFIG.SMOOTH_LIMBS_REPLACEMENT,
-        ),
-        STYLE_DIRECTIVE_CONFIG.CIRCULAR_JOINTS_WITH_PATTERN,
-        STYLE_DIRECTIVE_CONFIG.SMOOTH_LIMBS_REPLACEMENT,
-      ),
-      STYLE_DIRECTIVE_CONFIG.CIRCULAR_JOINTS_PATTERN,
-      STYLE_DIRECTIVE_CONFIG.SMOOTH_LIMBS_REPLACEMENT,
-    ),
-    STYLE_DIRECTIVE_CONFIG.JOINT_BALLS_PATTERN,
-    STYLE_DIRECTIVE_CONFIG.EMPTY_STRING,
-  ),
 );
 
 const resolveWorldRendering = (worldRendering: string, backgroundMode?: string): string => {
@@ -72,12 +35,6 @@ const resolveWorldRendering = (worldRendering: string, backgroundMode?: string):
   }
   return normalized;
 };
-
-const applyTemplateValue = (template: string, value: string): string => (
-  value
-    ? _.replace(template, STYLE_DIRECTIVE_CONFIG.TEMPLATE_VALUE_TOKEN, value)
-    : STYLE_DIRECTIVE_CONFIG.EMPTY_STRING
-);
 
 export const normalizeVisualStyleProfile = (value: unknown): VisualStyleProfile => ({
   medium: normalizeField(_.get(value, "medium")),
@@ -116,28 +73,15 @@ export const normalizeVisualStyleProfile = (value: unknown): VisualStyleProfile 
 export const createCharacterConstructionDirective = (profile?: VisualStyleProfile): string => {
   if (!profile) return STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
   const medium = normalizeField(profile.medium);
-  const characterType = cleanCharacterType(normalizeField(profile.characterType));
-  const characterDna = cleanCharacterDna(normalizeField(profile.characterDna));
-  const lineDna = normalizeField(profile.lineDna);
-  const shapeLanguage = normalizeField(profile.shapeLanguage);
+  const characterType = normalizeField(profile.characterType);
   const colorDna = normalizeField(profile.colorDna);
   const renderingDna = normalizeField(profile.renderingDna);
-  const texture = normalizeField(profile.texture);
-
-  const resolvedCharacterType = characterType || STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_FALLBACK;
-  const characterDnaSuffix = characterDna
-    ? `${STYLE_REFERENCE_DIRECTIVES.WITH_DNA_PREFIX}${characterDna}`
-    : STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
-  const peopleRule = `${STYLE_REFERENCE_DIRECTIVES.PEOPLE_RULE_PREFIX} ${resolvedCharacterType}${characterDnaSuffix}`;
 
   return _.join(_.compact([
     medium,
-    peopleRule,
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SHAPE_LANGUAGE_TEMPLATE, shapeLanguage),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.LINE_ART_TEMPLATE, lineDna),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.PALETTE_TEMPLATE, colorDna),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.RENDERING_TEMPLATE, renderingDna),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.TEXTURE_TEMPLATE, texture),
+    characterType,
+    colorDna,
+    renderingDna,
   ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
@@ -145,21 +89,14 @@ export const createMasterStylePrefix = (profile?: VisualStyleProfile): string =>
   if (!profile) return STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
   const medium = normalizeField(profile.medium);
   const characterType = normalizeField(profile.characterType);
-  const characterDna = cleanCharacterDna(normalizeField(profile.characterDna));
   const lineDna = normalizeField(profile.lineDna);
-  const shapeLanguage = normalizeField(profile.shapeLanguage);
   const colorDna = normalizeField(profile.colorDna);
 
   return _.join(_.compact([
     medium,
-    STYLE_REFERENCE_DIRECTIVES.UNIVERSAL_ANATOMY_MANDATE,
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.UNIFIED_STYLE_TEMPLATE, characterType),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.EVERY_ANATOMY_TEMPLATE, characterDna),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SHAPES_TEMPLATE, shapeLanguage),
-    STYLE_REFERENCE_DIRECTIVES.FULL_FACIAL_FEATURES,
-    STYLE_REFERENCE_DIRECTIVES.STRICT_PROHIBITION,
+    characterType,
     lineDna,
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.PALETTE_TEMPLATE, colorDna),
+    colorDna,
   ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
@@ -167,15 +104,10 @@ export const createMasterStyleSuffix = (profile?: VisualStyleProfile, background
   if (!profile) return STYLE_DIRECTIVE_CONFIG.EMPTY_STRING;
   const renderingDna = normalizeField(profile.renderingDna);
   const worldRendering = resolveWorldRendering(normalizeField(profile.worldRendering), backgroundMode);
-  const texture = normalizeField(profile.texture);
 
   return _.join(_.compact([
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.VISUAL_CONSISTENCY_TEMPLATE, renderingDna),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.SURFACE_TEMPLATE, texture),
-    applyTemplateValue(STYLE_REFERENCE_DIRECTIVES.ENVIRONMENT_STYLE_TEMPLATE, worldRendering),
-    STYLE_REFERENCE_DIRECTIVES.LIMB_INTEGRITY,
-    STYLE_REFERENCE_DIRECTIVES.UNIFORM_VISUAL_IDENTITY,
-    STYLE_REFERENCE_DIRECTIVES.CLEAN_RENDER,
+    renderingDna,
+    worldRendering,
   ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 

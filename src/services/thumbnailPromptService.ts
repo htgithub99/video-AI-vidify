@@ -139,12 +139,17 @@ export const createThumbnailGenerationPrompt = (
   _characters: CharacterConfig[] = [],
 ): string => {
   const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
-  if (!_.isEmpty(basePrompt) && !DETECTOR_VIETNAMESE_REGEX.test(basePrompt)) {
-    return appendImagePromptAspectRatio(sanitizeImagePrompt(basePrompt), aspectRatio);
-  }
-
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
+
+  if (!_.isEmpty(basePrompt) && !DETECTOR_VIETNAMESE_REGEX.test(basePrompt)) {
+    let combined = basePrompt;
+    if (hasText && !combined.includes(headline)) {
+      combined = `${combined} ${_.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)}`;
+    }
+    return appendImagePromptAspectRatio(sanitizeImagePrompt(combined), aspectRatio);
+  }
+
   const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
 
   const parts = _.compact([

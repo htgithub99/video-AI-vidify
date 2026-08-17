@@ -18,18 +18,27 @@ export interface EncodedImageAsset {
   mimeType: string;
 }
 
+export const hasValidImages = (images: unknown): boolean => (
+  _.isArray(images) && _.some(images, (img) => Boolean(_.isString(img) && _.trim(img).length > 0))
+);
+
 const getImageMimeType = (filePath: string): MimeType => (
   _.isEqual(_.toLower(path.extname(filePath)), REFACTOR_CONSTANTS.FILE_EXT_PNG || ".png") ? MimeType.PNG : MimeType.JPEG
 );
 
 const resolveContainedAssetPath = (assetUrl: string, rootDirectory: string): string | undefined => {
   const relativePath = _.trimStart(_.first(_.split(assetUrl, REFACTOR_CONSTANTS.QUERY_PARAM_SEPARATOR || "?")) || assetUrl, "/\\");
-  const candidates = [
-    path.resolve(rootDirectory, relativePath),
-    path.resolve(process.cwd(), relativePath),
-    path.resolve(process.cwd(), REFACTOR_CONSTANTS.PUBLIC_DIR_NAME || "public", relativePath),
-  ];
-  return _.find(candidates, (p) => fs.existsSync(p));
+  const candidate = path.resolve(rootDirectory, relativePath);
+  const normalizedRoot = path.resolve(rootDirectory);
+  if (candidate.startsWith(normalizedRoot) && fs.existsSync(candidate)) {
+    return candidate;
+  }
+  const publicCandidate = path.resolve(process.cwd(), REFACTOR_CONSTANTS.PUBLIC_DIR_NAME || "public", relativePath);
+  const normalizedPublic = path.resolve(process.cwd(), REFACTOR_CONSTANTS.PUBLIC_DIR_NAME || "public");
+  if (publicCandidate.startsWith(normalizedPublic) && fs.existsSync(publicCandidate)) {
+    return publicCandidate;
+  }
+  return undefined;
 };
 
 export const resolveLocalProjectAssetPath = (assetUrl: string): string | undefined => (

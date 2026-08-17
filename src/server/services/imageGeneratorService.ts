@@ -954,7 +954,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       }
 
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = 2; // Retry tối đa 2 lần bằng reload room hiện tại, lần 3 tạo room mới
+      const maxReloadAttempts = 2;
 
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
@@ -1095,22 +1095,38 @@ const resolveBatchAssetType = (
 );
 
 const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisualConfig): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => {
-  const fallbackRefs = !_.isEmpty(visualConfig?.referenceImages)
-    ? visualConfig.referenceImages
-    : !_.isEmpty(visualConfig?.sceneReferenceImages)
-      ? visualConfig.sceneReferenceImages
-      : visualConfig?.styleReferenceImages;
+  const isThumbnail = _.startsWith(_.toString(item.sceneId), "thumb_") || _.startsWith(_.toString(item.sceneId), "thumbnail_");
 
-  const resolvedRefs = !_.isEmpty(item?.referenceImages)
-    ? item.referenceImages
-    : fallbackRefs;
+  let targetReferences: any[] = [];
+  if (isThumbnail) {
+    targetReferences = !_.isEmpty(item?.referenceImages)
+      ? (item.referenceImages as any[])
+      : !_.isEmpty(visualConfig?.thumbnailReferenceImages)
+        ? (visualConfig.thumbnailReferenceImages as any[])
+        : !_.isEmpty(visualConfig?.thumbnailSceneReferenceImages)
+          ? (visualConfig.thumbnailSceneReferenceImages as any[])
+          : !_.isEmpty(visualConfig?.styleReferenceImages)
+            ? (visualConfig.styleReferenceImages as any[])
+            : [];
+  } else {
+    targetReferences = !_.isEmpty(item?.referenceImages)
+      ? (item.referenceImages as any[])
+      : !_.isEmpty(visualConfig?.sceneReferenceImages)
+        ? (visualConfig.sceneReferenceImages as any[])
+        : !_.isEmpty(visualConfig?.referenceImages)
+          ? (visualConfig.referenceImages as any[])
+          : !_.isEmpty(visualConfig?.styleReferenceImages)
+            ? (visualConfig.styleReferenceImages as any[])
+            : [];
+  }
 
   return {
     ...visualConfig,
     generateType: resolveBatchAssetType(item),
-    referenceImages: resolvedRefs,
-    sceneReferenceImages: resolvedRefs,
-    styleReferenceImages: resolvedRefs,
+    referenceImages: targetReferences,
+    sceneReferenceImages: visualConfig?.sceneReferenceImages,
+    styleReferenceImages: visualConfig?.styleReferenceImages,
+    thumbnailReferenceImages: visualConfig?.thumbnailReferenceImages,
   };
 };
 
@@ -1325,7 +1341,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
 
           let reloadAttempts = SecurityConstants.ZERO;
-          const maxReloadAttempts = 2; // Retry tối đa 2 lần bằng reload room hiện tại, lần 3 tạo room mới
+          const maxReloadAttempts = 2;
 
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
@@ -1814,6 +1830,11 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     }
   }
 
+  if (roomReferenceUploadedMap.get(page)) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
+    return;
+  }
+
   const rawReferences = !_.isEmpty(visualConfig?.referenceImages)
     ? visualConfig.referenceImages
     : !_.isEmpty(visualConfig?.sceneReferenceImages)
@@ -1824,97 +1845,104 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
 
   const currentChipCount = await page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS).count().catch(() => 0);
   if (_.gt(currentChipCount, SecurityConstants.ZERO)) {
+    roomReferenceUploadedMap.set(page, true);
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
     return;
   }
 
   const referenceFiles = [_.first(allReferenceFiles)!];
 
-  let uploadSuccess = false;
-  let referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let uploadSuccess = false;
 
-  if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
-    try {
-      await referenceInput.setInputFiles(referenceFiles);
-      uploadSuccess = true;
-    } catch {
-      uploadSuccess = false;
-    }
-  }
-
-  if (!uploadSuccess) {
-    let plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
-    if (!await plusButton.isVisible().catch(() => false)) {
-      plusButton = page.locator('.input-area, .chat-input, input-area, form').locator('button').first();
-    }
-    if (await plusButton.isVisible().catch(() => false)) {
-      await plusButton.click().catch(() => {});
-      await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
-    }
-
-    referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
-    if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
+    const fileInputs = page.locator('input[type="file"]');
+    const inputCount = await fileInputs.count().catch(() => 0);
+    for (let i = 0; i < inputCount; i++) {
       try {
-        await referenceInput.setInputFiles(referenceFiles);
+        await fileInputs.nth(i).setInputFiles(referenceFiles);
         uploadSuccess = true;
+        break;
       } catch {}
     }
 
     if (!uploadSuccess) {
-      const uploadMenuItem = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.UPLOAD_MENU_ITEM).first();
-      if (await uploadMenuItem.isVisible().catch(() => false)) {
-        try {
-          const [fileChooser] = await Promise.all([
-            page.waitForEvent('filechooser', { timeout: 8000 }).catch(() => null),
-            uploadMenuItem.click().catch(() => {}),
-          ]);
-          if (fileChooser) {
-            await fileChooser.setFiles(referenceFiles);
+      const plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
+      const fallbackPlus = page.locator('.input-area, .chat-input, input-area, form').locator('button').first();
+      const targetPlus = (await plusButton.isVisible().catch(() => false)) ? plusButton : fallbackPlus;
+
+      if (await targetPlus.isVisible().catch(() => false)) {
+        await targetPlus.click().catch(() => {});
+        await randomDelay(500, 1000);
+
+        const newInputs = page.locator('input[type="file"]');
+        const newInputCount = await newInputs.count().catch(() => 0);
+        for (let i = 0; i < newInputCount; i++) {
+          try {
+            await newInputs.nth(i).setInputFiles(referenceFiles);
             uploadSuccess = true;
-          }
-        } catch {
-          referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
-          if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
-            await referenceInput.setInputFiles(referenceFiles).catch(() => {});
-            uploadSuccess = true;
+            break;
+          } catch {}
+        }
+
+        if (!uploadSuccess) {
+          const uploadMenuItem = page.locator('[role="menuitem"], button').filter({ hasText: /upload|tải|file/i }).first();
+          if (await uploadMenuItem.isVisible().catch(() => false)) {
+            try {
+              const [fileChooser] = await Promise.all([
+                page.waitForEvent('filechooser', { timeout: 4000 }).catch(() => null),
+                uploadMenuItem.click().catch(() => {}),
+              ]);
+              if (fileChooser) {
+                await fileChooser.setFiles(referenceFiles);
+                uploadSuccess = true;
+              }
+            } catch {}
           }
         }
+        await page.keyboard.press("Escape").catch(() => {});
       }
     }
+
+    if (uploadSuccess) {
+      try {
+        await page.waitForFunction(
+          ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
+          { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: SecurityConstants.DEFAULT_AMOUNT },
+          { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
+        ).catch(() => undefined);
+        await randomDelay(
+          GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS,
+          GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
+        );
+        roomReferenceUploadedMap.set(page, true);
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
+          SecurityConstants.PLACEHOLDER_0,
+          _.toString(SecurityConstants.DEFAULT_AMOUNT),
+        ));
+        return;
+      } catch (uploadErr) {
+        appError(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED, uploadErr);
+      }
+    }
+
+    await randomDelay(800, 1500);
   }
 
-  if (!uploadSuccess) {
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND);
-    return;
-  }
-
-  try {
-    await page.waitForFunction(
-      ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
-      { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: SecurityConstants.DEFAULT_AMOUNT },
-      { timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_VERIFY_TIMEOUT_MS },
-    ).catch(() => undefined);
-    await randomDelay(
-      GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MIN_MS,
-      GEMINI_CHAT_VIDEO_INPUT_CONFIG.UPLOAD_DELAY_MAX_MS,
-    );
-    roomReferenceUploadedMap.set(page, true);
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD.replace(
-      SecurityConstants.PLACEHOLDER_0,
-      _.toString(SecurityConstants.DEFAULT_AMOUNT),
-    ));
-  } catch (uploadErr) {
-    appError(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_UPLOAD_FAILED, uploadErr);
-  }
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND);
 }
 
 async function enterGeminiPrompt(page: Page, promptText: string, visualConfig: GeminiVisualConfig) {
+  await page.keyboard.press("Escape").catch(() => {});
+  const closeButton = page.locator('button[aria-label="Close"], button[mat-dialog-close], .lightbox-close, [role="dialog"] button:has(mat-icon)').first();
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click().catch(() => {});
+    await page.keyboard.press("Escape").catch(() => {});
+  }
+
   const inputLoc = page.locator(GeminiChatSelector.InputTextarea).first();
-  await smoothMouseMove(page, inputLoc);
-  await inputLoc.focus();
+  await inputLoc.focus().catch(() => {});
+  await inputLoc.evaluate((el: HTMLElement) => el.focus()).catch(() => {});
   await randomDelay(300, 600);
-  await inputLoc.click();
-  await randomDelay(400, 800);
 
   const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
   if (inputMethod === PromptInputMethod.Type) {

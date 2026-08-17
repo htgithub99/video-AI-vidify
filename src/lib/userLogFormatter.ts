@@ -36,7 +36,6 @@ export const formatUserFacingLog = (value: unknown, language?: string): string =
 
   if (_.isEmpty(rawMessage)) return messages.PROCESSING;
 
-  // Nhận diện các mẫu kỹ thuật nghiêm trọng
   if (USER_LOG_CONFIG.CONNECTION_ERROR_PATTERN.test(rawMessage)) return messages.CONFIG_REQUIRED;
   if (USER_LOG_CONFIG.CAPACITY_ERROR_PATTERN.test(rawMessage)) return messages.SERVICE_BUSY;
   if (USER_LOG_CONFIG.TRANSIENT_ERROR_PATTERN.test(rawMessage)) return messages.TEMPORARY_ISSUE;
@@ -50,7 +49,6 @@ export const formatUserFacingLog = (value: unknown, language?: string): string =
   const cleanMessage = sanitizeTechnicalText(rawMessage);
   if (_.isEmpty(cleanMessage)) return messages.PROCESSING;
 
-  // Kiểm tra nếu thông báo vẫn chứa từ ngữ kỹ thuật/code
   if (USER_LOG_CONFIG.TECHNICAL_TERMS_PATTERN.test(cleanMessage) || USER_LOG_CONFIG.CODE_KEYWORD_PATTERN.test(cleanMessage)) {
     if (USER_LOG_CONFIG.VOICE_PATTERN.test(cleanMessage)) return messages.VOICE_PROCESSING;
     if (USER_LOG_CONFIG.RENDER_PATTERN.test(cleanMessage)) return messages.RENDER_PROCESSING;

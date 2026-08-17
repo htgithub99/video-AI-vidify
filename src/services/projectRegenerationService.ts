@@ -1,8 +1,10 @@
 import _ from "lodash";
 import { CharacterConfig, GenerateType, StoryboardScene, VideoProject } from "../types";
+import { sanitizeImagePrompt } from "./imagePromptQualityService";
 
 export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
+  prompt: scene.prompt ? sanitizeImagePrompt(scene.prompt) : scene.prompt,
   generationPrompt: undefined,
   assetType: undefined,
   assetUrl: undefined,
@@ -37,25 +39,16 @@ const cleanCharacterVisualConfig = (
   extracted: false,
 })) as CharacterConfig[];
 
-const cleanThumbnailOutputs = (thumbnails: VideoProject["thumbnails"]) => (
-  _.map(_.defaultTo(thumbnails, []), (thumb) => ({
-    ...thumb,
-    imageUrl: undefined,
-    generationPrompt: undefined,
-    generationStatus: undefined,
-    generationError: undefined,
-  }))
-);
-
 export const clearProjectImageOutputs = (project: VideoProject): VideoProject => clearFinalRenderState({
   ...project,
   storyboard: clearMatchingSceneAssets(
     project.storyboard,
     (scene) => !_.isEqual(scene.assetType, GenerateType.Video),
   ),
-  thumbnails: cleanThumbnailOutputs(project.thumbnails),
+  thumbnails: [],
   visualConfig: {
     ...project.visualConfig,
+    referencePrompt: project.visualConfig?.style || "",
     characters: cleanCharacterVisualConfig(project.visualConfig?.characters),
     characterImages: [],
     characterExtracted: false,

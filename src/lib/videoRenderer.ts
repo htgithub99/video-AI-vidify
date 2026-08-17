@@ -266,34 +266,58 @@ export const drawSceneFrameToContext = (
     ctx.restore();
   }
 
-  ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_SUB_BG;
-  ctx.fillRect(80, h - 130, w - 160, 80);
+  ctx.save();
+  const subBoxHeight = 70;
+  const subBoxY = h - 110;
+  const subBoxX = 100;
+  const subBoxWidth = w - 200;
 
-  ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_YELLOW;
-  ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBTITLE;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(subBoxX, subBoxY, subBoxWidth, subBoxHeight, 12);
+    ctx.fill();
+  } else {
+    ctx.fillRect(subBoxX, subBoxY, subBoxWidth, subBoxHeight);
+  }
+
+  ctx.font = "bold 26px sans-serif";
   ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
   const subText = sc.subtitle || sc.script || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
 
   let currentSubLine: string = RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
   let subLines: string[] = [];
-  const maxLineLength = 90;
+  const maxLineLength = 80;
 
-  _.forEach(subText.split(RENDER_LOGIC_CONSTANTS.SPACE_CHAR), (w: string) => {
-    if (_.gt((currentSubLine + w).length, maxLineLength)) {
-      subLines.push(currentSubLine);
-      currentSubLine = `${w}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
+  _.forEach(subText.split(RENDER_LOGIC_CONSTANTS.SPACE_CHAR), (wStr: string) => {
+    if (_.gt((currentSubLine + wStr).length, maxLineLength)) {
+      subLines.push(_.trim(currentSubLine));
+      currentSubLine = `${wStr}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
     } else {
-      currentSubLine += `${w}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
+      currentSubLine += `${wStr}${RENDER_LOGIC_CONSTANTS.SPACE_CHAR}`;
     }
   });
-  subLines.push(currentSubLine);
+  if (!_.isEmpty(_.trim(currentSubLine))) {
+    subLines.push(_.trim(currentSubLine));
+  }
 
-  let sY = h - 90 - (subLines.length - 1) * 15;
+  const lineHeight = 30;
+  const totalTextHeight = subLines.length * lineHeight;
+  let sY = subBoxY + (subBoxHeight / 2) - (totalTextHeight / 2) + (lineHeight / 2);
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#000000";
+  ctx.fillStyle = "#FFE600";
+
   _.forEach(subLines, (l) => {
+    ctx.strokeText(l, w / 2, sY);
     ctx.fillText(l, w / 2, sY);
-    sY += 30;
+    sY += lineHeight;
   });
+  ctx.restore();
 };
+
 export const compileVideoToBlob = async (
   scenes: StoryboardScene[],
   getSceneImageUrl: (sc: StoryboardScene) => string,

@@ -113,16 +113,17 @@ export const CINEMATIC_PROMPT_RULES = `CRITICAL PROMPT DESIGN RULES & STEPS (To 
  22. CONSISTENT TIME OF DAY: If the narrative flows continuously, maintain a consistent time of day (e.g., dawn, midday, sunset, night) across consecutive scenes, and only change it when a new timeframe is explicitly introduced in the script.
  23. EDIT-FRIENDLY COMPOSITION: Each prompt should be designed like a single film frame with a clear focal point, minimal clutter, and sufficient detail to ensure that consecutive clips can be stitched together into a smooth, seamless video.
  24. PROMPT BLOAT PREVENTION & ARTISTIC CONCISENESS: Do NOT repeat general art styles, camera lens specs, or border rules multiple times in a single prompt. State them exactly once. Eliminate redundant style synonyms (e.g., write "oil-on-canvas painting style" instead of "oil painting, painterly texture, canvas art, oil-on-canvas finish"). Avoid repeating long physical descriptions of the same character multiple times in a single prompt; define key features once and clearly to prevent token bloat and AI confusion.
- 25. SHOT SIZE VARIATION & VISUAL PROGRESSION (CRITICAL): Prevent consecutive scenes from yielding near-identical images by explicitly altering camera shot sizes and perspectives (e.g., alternate "close-up shot", "medium shot", "wide-angle cinematic shot", "low-angle shot", "over-the-shoulder shot") and shifting the character's precise pose, hand gestures, head tilt, or facial expressions.
+ 25. SHOT SIZE VARIATION & DYNAMIC PROGRESSION (CRITICAL): Prevent consecutive scenes from yielding monotonous or near-identical images by strictly applying Cinematic Shot Progression (e.g., Establishing Wide Shot -> Dynamic Medium Action Shot -> Emotional Close-Up -> Dramatic Dutch/Low-Angle Shot) and shifting the character's precise pose, hand gestures, head tilt, or facial expressions.
  26. CROWD ANATOMY DEFECT PREVENTION (LARGE-SCALE SCENES): In massive scene battles or large crowds (e.g., "hundreds of soldiers clashing", "thousands of tents"), establish a clear foreground focus on 1 to 3 distinct, well-drawn characters or key objects. Describe the vast crowd/army in the background using terms like "silhouettes in the distant hazy dust", "indistinct figures obscured by gunpowder smoke", or "soft-focus background" to prevent mutated limbs or facial distortions.
- 27. AVOID COMPLEX DIVERGENT OR MULTI-DIRECTIONAL ACTIONS (CRITICAL): Do not ask the image generator to depict multiple characters or groups performing different or opposite actions simultaneously (e.g., "two groups of soldiers riding away from each other in opposite directions"). AI generators struggle with dual-subject focus and will merge the directions. Instead, focus the prompt on one primary direction of movement or a single focal group's perspective (e.g., "A group of soldiers riding away down a ravine, seen from the perspective of another group stationary on a hill").`;
+ 27. AVOID COMPLEX DIVERGENT OR MULTI-DIRECTIONAL ACTIONS (CRITICAL): Do not ask the image generator to depict multiple characters or groups performing different or opposite actions simultaneously. Focus the prompt on one primary direction of movement or a single focal group's perspective.
+ 28. CINEMATIC LIGHTING & OPTICAL DEPTH (MASTER CLASS): Elevate visual quality with rich photographic depth terms when style permits: volumetric rim lighting, chiaroscuro contrast, subtle atmospheric haze, creamy bokeh, and realistic 35mm or 85mm anamorphic lens depth.`;
 
 export const COMPACT_CINEMATIC_PROMPT_RULES = `[CORE VISUAL PROMPT CONTRACT]
 1. Preserve the literal subject, subject count, identity, action, setting and narrative continuity. Do not invent characters or unrelated scenery.
 2. Convert abstract ideas into one concrete, physically visible action or piece of evidence; avoid invisible concepts and decorative metaphors.
 3. Use one clear focal action, realistic anatomy, separated bodies and an exact subject count. Keep crowds indistinct behind 1-3 clear foreground subjects.
 4. Preserve approved character markers and historical period/country accuracy. Never mix eras, uniforms, flags, weapons or architecture.
-5. State art medium once, then subject, action/expression, identity/costume, permitted environment, lighting and camera composition.
+5. Apply Cinematic Shot Progression (Wide establishing -> Medium action -> Emotional close-up) with rich volumetric lighting, rim light contrast, and optical lens depth (35mm/85mm).
 6. Keep adjacent scenes editable and visually progressive through purposeful shot/blocking changes without breaking geography, time, weather or screen direction.
 7. Avoid redundant style synonyms, repeated lens terms, duplicate directives, frames, borders and invented typography.
 8. Do not include any model-specific aspect-ratio parameter; the application appends exactly one after the AI-authored prompt.`;
@@ -226,16 +227,15 @@ ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
 [GEMINI PROMPT GOLDEN FORMULA]
 Write one natural English paragraph in this exact 5-block order:
-1. [Style Anchor]: Copy the PROJECT STYLE LOCK verbatim at the beginning, exactly once.
-2. [Character DNA & Subject]: Describe the main subject or recurring character using full physical DNA traits (hairstyle, skin tone, limb structure without mechanical joint balls, signature outfit). Never use raw ID tags like char_1 in the prompt text.
-3. [Specific Action & Emotional State]: State one clear, dynamic physical action with exaggerated facial acting/emotion appropriate for the story beat.
-4. [Environment & Props]: If Background Mode is 'contextual' or 'auto', build a rich detailed story environment matching the scene narration (e.g. factory floor with machinery, city street, office, cozy living room) with appropriate full colors. If Background Mode is 'white' or 'minimal', STRICTLY enforce pure solid white background (#FFFFFF) with zero room walls or scenery clutter.
+1. [Style Anchor]: Start with the PROJECT STYLE LOCK instruction at the beginning. NEVER prefix the prompt with style labels like "Line art:", "Palette:", "Rendering:", or "Medium:".
+2. [Main Subject / Character]: Describe the main subject or recurring character naturally (role, hairstyle, skin tone, clothing). Never use raw ID tags like char_1 in the prompt text.
+3. [Specific Action & Emotional State]: State one clear, dynamic physical action with visible facial expression appropriate for the story beat.
+4. [Environment & Props]: If Background Mode is 'contextual' or 'auto', build a rich detailed story environment matching the scene narration. If Background Mode is 'white' or 'minimal', enforce pure solid white background (#FFFFFF).
 5. [Camera & Negative Constraints]: State shot size, camera angle, and end with: "Completely text-free, strictly no text, no words, no letters." (unless text is explicitly enabled).
 
 [HARD RULES]
+- STRICT PROMPT PURITY: NEVER output rigid style labels ("Line art:", "Palette:", "Rendering:") or theoretical anatomy ("stickfigure construction", "round head shape", "pill shaped torso").
 - 100% USER CONFIGURATION ADHERENCE: If user selected contextual background, NEVER output solid white background; always draw the story environment. If user selected white/minimal background, NEVER render room outlines or scenery. If user selected no_text, NEVER render text.
-- STYLE CONSISTENCY: Every person in every scene must use the EXACT same artistic medium, anatomy construction, line work, and rendering style from PROJECT STYLE LOCK. Never drift into anime, 3D, or realistic if the style is stickman/doodle/vector.
-- LIMB INTEGRITY: Smooth continuous single-line limbs with clean simple hands/feet; strictly NO oversized black joint balls, mechanical circles, or disconnected joints.
 - NO VIETNAMESE IN PROMPT: The image prompt MUST be written ENTIRELY in English. Do NOT inject Vietnamese narration or subtitle text into the visual prompt.
 - Do not include --ar in prompt text because the engine handles aspect ratio separately.
 
@@ -684,7 +684,7 @@ export const getSceneDetailBatchPrompt = (
   scenesJson: string,
   visualStyle: string,
   referenceStyle: string,
-  characterRef: string | undefined,
+  _characterRef: string | undefined,
   characterSpecs: string | undefined,
   landscapeSpecs: string | undefined,
   isVi: boolean,
@@ -697,12 +697,15 @@ export const getSceneDetailBatchPrompt = (
   hasStyleReference?: boolean,
   hasSceneReference?: boolean,
 ): string => {
+  const hasAnyReference = Boolean(hasStyleReference || hasSceneReference);
   const promptStructureBlueprint = hasStyleReference
-    ? `- [STYLE REFERENCE MANDATE]: An uploaded style reference image is attached. DO NOT hardcode rigid vector/stick-figure style descriptions in text. The image generator will adopt the visual art style from the attached style reference image.
-- Format each scene prompt strictly as a single self-contained complete prompt: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image. [Main Subject Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
+    ? `- [STYLE REFERENCE MANDATE]: An uploaded style reference image is attached.
+- STRICT PROMPT PURITY RULE: NEVER prefix scene prompts with style labels like "Line art:", "Palette:", "Rendering:", "Medium:", or "Character DNA:". DO NOT describe vector shapes, stick-figure anatomy, round head shape, or circular joints. The image generator will directly read all style traits from the uploaded image.
+- Format each scene prompt strictly as: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image. [Main Subject Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
     : hasSceneReference
-      ? `- [SCENE REFERENCE MANDATE]: An uploaded scene/character reference image is attached. Focus on preserving the character and subject identity from the attached reference image while rendering in the "${visualStyle}" style.
-- Format each scene prompt strictly as a single self-contained complete prompt: "Strict character match: accurately preserve the character design, outfit, and appearance from the attached reference image. [Art style/Medium: ${visualStyle}] of [Main Character Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
+      ? `- [SCENE REFERENCE MANDATE]: An uploaded scene/character reference image is attached.
+- STRICT PROMPT PURITY RULE: NEVER prefix scene prompts with style labels like "Line art:", "Palette:", "Rendering:".
+- Format each scene prompt strictly as: "Strict character match: accurately preserve the character design, outfit, and appearance from the attached reference image. [Art style/Medium: ${visualStyle}] of [Main Character Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
       : `- [STORY-DRIVEN VISUAL STYLE MANDATE]: No reference images are attached. You MUST dynamically deduce and craft the most evocative, coherent art style and rendering medium (e.g. cinematic digital illustration, moody oil painting, vivid anime, expressive watercolor, documentary photography, etc.) tailored specifically to the narrative genre ("${genre}"), mood, and storytelling context of the script.
 - Format each scene prompt strictly as a single self-contained complete prompt written entirely by you: "[Story-grounded Art Style & Medium] of [Main Character / Subject Action & Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]. Do not leave any placeholders."`;
 
@@ -715,19 +718,17 @@ ${aspectRatio}
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 Use the following visual specifications as your core style and identity reference:
 - General Visual Style: ${hasStyleReference ? "Follow attached style reference image" : (hasSceneReference ? visualStyle : "Dynamically deduce from story context and script theme")}
-- Color Palette / Reference Style: ${referenceStyle || "Not specified"}
+- Color Palette / Reference Style: ${hasAnyReference ? "Follow attached reference image palette" : (referenceStyle || "Not specified")}
 - Primary Landscape/Environment Specs:
-  ${landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive the environment, setting, and background details from each scene's script context."}
+  ${hasAnyReference ? "Dynamically derive environment from each scene's script context" : (landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive environment from each scene's script context.")}
 - Character Specs (Visual Identity Blueprint):
-  * Manual/Ref Characters: ${characterRef ? characterRef : "None provided"}
-  * Auto-extracted Character Specs: ${characterSpecs ? characterSpecs : "None provided"}
-  (If both are provided, merge them logically. If neither is available, dynamically design the character's physical appearance appropriate to the theme).
+  ${hasAnyReference ? "Preserve subject role and actions from script matching the attached reference image" : (characterSpecs ? characterSpecs : "Dynamically design character appearance appropriate to theme")}
 
 [SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 1. Character Visual Continuity (Soft Alignment):
-   When a scene involves any character specified above, you MUST weave their primary visual markers (e.g. hair style/color, key facial features, prominent clothing items) into the scene's image prompt. However, do NOT copy specifications blindly. You MUST change their pose, body action, and facial expression (e.g., happy, shocked, intense, pointing, walking) to match the scene's script/action.
+   When a scene involves any character, weave their role and key visible markers into the prompt. Change pose, body action, and facial expression (e.g., happy, shocked, intense, pointing, walking) to match the scene's script/action.
 2. Environment Visual Continuity (Soft Alignment):
-   Weave the landscape specifications into the background of the image prompt. Adjust lighting, weather, or time of day to fit the mood of the scene, while keeping the core setting consistent.
+   Weave the setting into the background of the image prompt. Adjust lighting, weather, or time of day to fit the mood of the scene, while keeping the core setting consistent.
 3. Genre-Adaptive Visualization:
    Embody this guideline for the "${genre}" genre:
    ${genreVisualGuideline}
@@ -823,7 +824,7 @@ Analyze the script and create EXACTLY ${thumbnailCount} distinct ${aspectRatio} 
 [SCRIPT]
 ${rewrittenScript}
 
-[PROJECT STYLE LOCK]
+[STYLE AND ART DIRECTION]
 ${refImageStr || "Use one coherent visual style and one character type for every person."}
 
 [USER CONFIGURATION]
@@ -843,9 +844,9 @@ ${_.join(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, typography => `- ${typography.id}: 
 
 [SIMPLE GEMINI THUMBNAIL RULES]
 1. Choose exactly one of the eight layout IDs. Use its locked typography ID and arrow policy without inventing or combining templates.
-2. Begin generationPrompt by copying PROJECT STYLE LOCK verbatim, exactly once. Every visible person must use that same character type, body construction, line work and rendering. Never mix stick figures with realistic, anime, 3D or painterly people.
+2. Begin generationPrompt directly with the style instruction from [STYLE AND ART DIRECTION]. NEVER output labels like "PROJECT STYLE LOCK:" or "STYLE:". Start directly with the visual description.
 3. Describe one dominant story-supported subject or interaction, one physical action and one piece of visible evidence. Recurring characters use only their identity traits from the supplied profiles.
-4. Follow this prompt order: exact Style Lock; subject and identity; action and evidence; selected layout geometry; headline and typography; background and safe margin. Keep generationPrompt below 150 English words.
+4. Follow this prompt order: style instruction; subject and identity; action and evidence; selected layout geometry; headline and typography; background and safe margin. Keep generationPrompt below 150 English words.
 5. ${_.get(THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES, textMode, THUMBNAIL_PROMPT_CONFIG.TEXT_MODE_POLICIES.auto)} When text is enabled, create an ultra-engaging, high-CTR, grammatically complete headline (strictly 2 to 5 uppercase words). The headline MUST be a complete standalone statement or high-stakes punchline that expresses a full, clear meaning on its own. NEVER generate vague questions or dangling incomplete phrases (e.g. NEVER output "SỰ THẬT ĐẰNG SAU", "GÁI NGÀNH LÀ GÌ?", "VÀ RỒI", "BẠN LÀ"). Instead, extract high-stakes numbers, specific dramatic revelations, or core dilemmas from the story (e.g. "CÁI GIÁ 20 TRIỆU", "SẬP BẪY TÚ ÔNG", "BẪY TÌNH TIỀN TỶ", "TRẢ GIÁ QUÁ ĐẮT", "BỊ BẮT TẠI TRẬN", "CẠM BẪY ĐẦU ĐỜI", "BÍ MẬT ĐỘNG TRỜI") in ${isVi ? "Vietnamese with full correct diacritics" : "English"}. Render it exactly once. When text is disabled, include one concise text-free instruction.
 6. Keep one full-bleed image, strong subject-background separation and a clear bottom-right timestamp zone. Do not include --ar; the application appends it.
 
@@ -857,8 +858,8 @@ You MUST return a valid JSON object matching this schema perfectly. Output ONLY 
   "thumbnails": [
     {
       "id": "th_1",
-      "generationPrompt": "Concise English Gemini prompt beginning with the exact PROJECT STYLE LOCK, followed by subject, one action, evidence, selected layout, exact visible headline, typography, background and safe margin, without --ar.",
-      "style": "Exact PROJECT STYLE LOCK",
+      "generationPrompt": "Concise English Gemini prompt beginning directly with the style instruction, followed by subject, one action, evidence, selected layout, exact visible headline, typography, background and safe margin, without --ar.",
+      "style": "Exact style instruction",
       "hasText": true,
       "textText": "${isVi ? "MÓC CÂU" : "THE HOOK"}",
       "layoutId": "solo_left_arrow_right",
@@ -971,20 +972,27 @@ Rules:
   { "id": "hk_unique_1", "content": "Polished Hook Line...", "type": "Angle Name", "selected": true }
 ]`;
 
-export const getScriptConceptPrompt = (originalInput: string, genre: string, writingStyle: string, language: string): string => `You are an expert researcher and creative director.
-Create a "Concept & Terminology Sheet" for a video script based on:
+export const getScriptConceptPrompt = (originalInput: string, genre: string, writingStyle: string, language: string): string => `You are an expert Hollywood screenwriter, researcher, and creative director.
+Create a high-retention "Concept & Terminology Sheet" with a 3-ACT HOLLYWOOD PACING framework based on:
 Input Idea: "${originalInput}"
 Genre: "${genre}"
 Style: "${writingStyle}"
 Language: "${language === "vi" ? "Vietnamese" : "English"}"
 
+PACING & HOOK MANDATES:
+1. FIRST 3 SECONDS HOOK: Open with a provocative question, unexpected fact, or high-stakes dilemma to maximize retention.
+2. 3-ACT HOLLYWOOD PACING:
+   - Act 1 (Hook & Setup): Introduce core stakes and protagonist goal in the first 20% of duration.
+   - Act 2 (Rising Action & Climax): Escalate tension, obstacles, and the turning point.
+   - Act 3 (Payoff & Lesson): Deliver the high-impact punchline, moral resolution, or surprising payoff.
+
 Your task is to outline:
-1. Concept details and historical/scientific settings.
-2. Character Profiles: If characters exist, define their key traits, visual descriptions (clothing, age, style), and consistent naming.
+1. Concept details, narrative premise, and historical/scientific settings.
+2. Character Profiles: Define key traits, visual descriptions (clothing, age, style), and consistent naming.
 3. Forbidden Terms vs Preferred Terminology: Recommend terms to use and terms to avoid to fit the genre and TTS engines.
 Output a raw JSON object matching this schema perfectly (no markdown wrapping):
 {
-  "theme": "Core theme details",
+  "theme": "Core theme details and 3-act narrative premise",
   "characterSpecs": "Detailed visual descriptions of main characters or entities",
   "keywords": ["keyword1", "keyword2"],
   "preferredTerms": ["term1", "term2"]
@@ -1147,20 +1155,25 @@ Rules:
   "tags": ["tag1", "tag2"]
 }`;
 
-export const getThumbnailConceptPrompt = (script: string, count: number, isVi: boolean): string => `You are a viral YouTube thumbnail strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
+export const getThumbnailConceptPrompt = (script: string, count: number, isVi: boolean): string => `You are a world-class viral YouTube thumbnail growth hacker and CTR strategist. Brainstorm ${count || 3} high-CTR thumbnail composition concepts for a video based on this script.
 Script:
 """
 ${script}
 """
 
-Each concept should detail:
-1. Core focal subject with extreme emotional triggers (shock, extreme curiosity, mystery, fear, awe) to maximize Click-Through Rate (CTR).
-2. High-contrast elements, dramatic backlighting, or mysterious glows.
-3. Best text hook overlay to place on the thumbnail. This text hook MUST be extremely short, clean, and punchy (strictly 1 to 3 words max, written in ${isVi ? "Vietnamese" : "English"}). For example, "BÍ MẬT!", "SỰ THẬT!", "CẢNH BÁO!", "TRÁNH XA!". Never use full sentences or long phrases to avoid layout clutter.
+Each concept MUST strictly follow the CURIOSITY GAP & HIGH-CTR FORMULA:
+1. Core Focal Subject (45-50% Frame Dominance): A single large dominant subject with extreme emotional triggers (shocked expression, glowing mysterious artifact, high-stakes confrontation, or intense curiosity).
+2. Lighting & Visual Contrast: Vivid color contrast, intense neon rim lighting, deep dark cinematic background to make the subject pop on mobile screens.
+3. Curiosity Gap Text Hook: Short, punchy, curiosity-inducing text hook in uppercase (strictly 2 to 4 words, written in ${isVi ? "Vietnamese" : "English"}).
+   - Exposure format: "SỰ THẬT TỐI", "BÍ MẬT 100 TỶ", "CÚ LỪA KINH HOÀNG"
+   - Warning format: "CẠM BẪY CHẾT NGƯỜI", "TRẢ GIÁ QUÁ ĐẮT", "ĐỪNG BAO GIỜ"
+   - Paradox format: "TỪ ĐỈNH CAO XUỐNG ĐÁY", "NGHỊCH LÝ ĐAU ĐỚN"
+   Never use generic or descriptive labels. Must create an irresistible itch to click.
+
 Output a raw JSON object (no markdown wrapping):
 {
   "concepts": [
-    { "composition": "Visual description", "textHook": "TEXT OVERLAY" }
+    { "composition": "Visual description with focal subject and rim light", "textHook": "PUNCHY 2-4 WORD HOOK" }
   ]
 }`;
 
@@ -1175,8 +1188,8 @@ ${conceptsJson}
 [SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 1. Character Visual Continuity (Soft Alignment):
    Ensure that any character specifications present in the concepts/drafts are woven into the prompts using consistent visual markers (hair color, outfits). AI must adjust pose, action, and facial expression (e.g., extremely shocked face, excitement, curiosity) to fit the specific concept and maximize clickability.
-2. High CTR Focal Subject:
-   Refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design. It must feature a single, dominant focal subject (subject focus) with a blurred background.
+2. High CTR Focal Subject (45-50% Frame Dominance):
+   Refine the "prompt" field to describe a highly engaging, high-contrast, professional 16:9 design. It must feature a single, dominant focal subject (subject focus) with vibrant neon rim lighting and a deep blurred background.
 3. No Metaphorical Framing: Focus strictly on the literal visual representation of the concept. Avoid framed elements, bookshelves, or TV frames.
 
 CRITICAL THUMBNAIL LAYOUT RULES:
@@ -1186,7 +1199,7 @@ CRITICAL THUMBNAIL LAYOUT RULES:
    - CINEMATIC PROMPT RULES:
      ${COMPACT_CINEMATIC_PROMPT_RULES}
    - SEAMLESS INTEGRATION RULE: Do NOT simply append composition or character references at the end. You MUST seamlessly weave the concept's composition, subject focus, and lighting suggestions directly into the corresponding sections of the blueprint.
-2. Typography & Text Overlay (100% MANDATORY): EVERY design in the array MUST have hasText: true. The textText must be a highly relevant, click-bait text hook derived from the concepts, written in uppercase, strictly 1 to 4 words max. You MUST explicitly describe the text overlay (e.g. '...a bold massive white text overlay at the bottom that reads "[TEXT]" with a thick black outline...') directly inside the English 'prompt' so the AI image generator renders it on the image.
+2. Typography & Text Overlay (100% MANDATORY): EVERY design in the array MUST have hasText: true. The textText must be a highly relevant, click-bait text hook derived from the concepts, written in uppercase, strictly 2 to 4 words max. You MUST explicitly describe the text overlay (e.g. '...a bold massive white text overlay at the bottom that reads "[TEXT]" with a thick black outline and neon glow...') directly inside the English 'prompt' so the AI image generator renders it on the image.
 3. DO NOT place any key visual detail, text overlay, or main subject in the bottom-right corner of the image because that is where video platform timestamps are overlayed.
 4. EVERY design in the array MUST have a text overlay (where 'hasText' is true, and layout/typography/colorSuggestion are specified).
 5. ${NO_FRAME_RULE}
@@ -1196,7 +1209,7 @@ Return ONLY a raw JSON array matching this format (no markdown wrapping, no extr
 [
   {
     "id": "th_unique_id",
-    "prompt": "Refined English 16:9 thumbnail prompt... (Must explicitly describe the typography text overlay, e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline...')",
+    "prompt": "Refined English 16:9 thumbnail prompt... (Must explicitly describe the typography text overlay, e.g. '...a bold massive white text overlay at the bottom that reads \"THE TRUTH\" with a thick black outline and neon glow...')",
     "style": "Style Name",
     "hasText": true,
     "textText": "Clickable text",
