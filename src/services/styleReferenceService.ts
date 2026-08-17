@@ -4,6 +4,7 @@ import {
   MARKDOWN_REGEX,
   STYLE_DIRECTIVE_CONFIG,
   STYLE_LOCK_CONFIG,
+  resolveStylePreset,
 } from "../constants";
 import { VisualStyleProfile } from "../types";
 
@@ -153,10 +154,9 @@ export const ensureSharedCharacterStyleLock = (value: unknown): string => {
   return _.join([style, STYLE_LOCK_CONFIG.SHARED_PERSON_RULE], STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
-export const resolveReferenceLockedStyle = (style: unknown, hasReferences: boolean): string => {
-  const normalizedStyle = normalizeExtractedStyle(style);
-  if (!hasReferences) return normalizedStyle;
-  return normalizedStyle || IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE;
+export const resolveReferenceLockedStyle = (style: unknown, _hasReferences: boolean): string => {
+  const preset = resolveStylePreset(_.toString(style));
+  return preset.positivePrompt;
 };
 
 export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string => (

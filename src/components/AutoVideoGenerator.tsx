@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
@@ -33,11 +33,10 @@ import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
-import { readFilesAsDataURL, safeSystemFetch } from "../lib/shared-utils";
 import { ActionPanelSection } from "./auto-video/ActionPanelSection";
 import { AdvancedImageSettingsSection } from "./auto-video/AdvancedImageSettingsSection";
 import { GenerationSettingsSection } from "./auto-video/GenerationSettingsSection";
-import { ImageReferenceSection } from "./auto-video/ImageReferenceSection";
+import { StylePresetSelector } from "./auto-video/StylePresetSelector";
 import { LogPanelSection } from "./auto-video/LogPanelSection";
 import { PresetSection } from "./auto-video/PresetSection";
 import { PreviewPanelSection } from "./auto-video/PreviewPanelSection";
@@ -93,8 +92,7 @@ export default function AutoVideoGenerator({
     setVoiceProvider, setVoiceURI, setVoiceName, setIsVoiceDialogOpen,
     setGenerationMode, setImageGeneratorEngine, setGenerateType, setMaxVideoScenes,
     setAspectRatio, setChromeHeadless, setStylePreset, setStyleBackgroundMode, setStyleTextInImageMode, setImageFocusMode,
-    setReferenceImages,
-    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode, setThumbnailReferenceImages,
+    setThumbnailCount, setThumbnailStylePreset, setThumbnailBackgroundMode, setThumbnailTextInImageMode, setThumbnailImageFocusMode,
     setProjectName, setResumeMode, setShowAdvancedImageSettings, setMusicAssetUrl,
   } = actions;
 
@@ -219,69 +217,6 @@ export default function AutoVideoGenerator({
     } catch (err) {
       logger.error(REFACTOR_CONSTANTS.VD_EMPTY_STRING, err);
     }
-  };
-
-  const createImageUploadHandler = (
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    logMessage: (count: number) => string,
-  ) => (files: FileList) => {
-    readFilesAsDataURL(files, (result) => {
-      setter((prev) => [...prev, result]);
-    });
-    addLog(logMessage(files.length));
-  };
-
-  const handleReferenceFilesUpload = createImageUploadHandler(setReferenceImages, T.logSceneReferenceUploaded || T.logStyleUploaded);
-  const handleThumbnailReferenceFilesUpload = createImageUploadHandler(setThumbnailReferenceImages, T.logThumbSceneReferenceUploaded || T.logThumbUploaded);
-
-  const deleteAssetAndUpdateProject = (
-    targetImages: string[],
-    targetIndex: number,
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    isThumbnail: boolean
-  ) => {
-    const targetUrl = _.nth(targetImages, targetIndex);
-    const updatedImages = _.filter(targetImages, (_v, i) => !_.isEqual(i, targetIndex));
-    setter(updatedImages);
-
-    const activeId = selectedProjectId || activeCreatedProject?.id;
-    const match = targetUrl ? targetUrl.match(/\/assets\/projects\/([^/]+)\//) : null;
-    const projectId = match ? match[1] : activeId;
-
-    if (targetUrl && projectId) {
-      safeSystemFetch(API_ROUTES.PIPELINE_DELETE_ASSET_FILE, { assetUrl: targetUrl, projectId });
-    }
-
-    if (activeId && onUpdateProject) {
-      const currentProj = _.find(projects, { id: activeId });
-      if (currentProj) {
-        const visualConfig = isThumbnail
-          ? {
-              ...currentProj.visualConfig,
-              thumbnailReferenceImages: updatedImages,
-              thumbnailSceneReferenceImages: updatedImages,
-            }
-          : {
-              ...currentProj.visualConfig,
-              referenceImages: updatedImages,
-              styleReferenceImages: updatedImages,
-              sceneReferenceImages: updatedImages,
-            };
-        const updatedProj: VideoProject = {
-          ...currentProj,
-          visualConfig,
-        };
-        onUpdateProject(updatedProj, true);
-      }
-    }
-  };
-
-  const handleDeleteReferenceImage = (targetIndex: number) => {
-    deleteAssetAndUpdateProject(referenceImages, targetIndex, setReferenceImages, false);
-  };
-
-  const handleDeleteThumbnailReferenceImage = (targetIndex: number) => {
-    deleteAssetAndUpdateProject(thumbnailReferenceImages, targetIndex, setThumbnailReferenceImages, true);
   };
 
   const handleMusicUpload = (files: FileList) => {
@@ -473,12 +408,10 @@ export default function AutoVideoGenerator({
                 T={T}
               />
 
-              <ImageReferenceSection
-                referenceImages={referenceImages}
-                setReferenceImages={setReferenceImages}
-                handleReferenceFilesUpload={handleReferenceFilesUpload}
-                onDeleteImage={handleDeleteReferenceImage}
-                T={T}
+              <StylePresetSelector
+                selectedStyle={stylePreset}
+                onSelectStyle={setStylePreset}
+                language={currentLang}
               />
             </div>
 
@@ -489,10 +422,8 @@ export default function AutoVideoGenerator({
               setProjectName={setProjectName}
               thumbnailCount={thumbnailCount}
               setThumbnailCount={setThumbnailCount}
-              thumbnailReferenceImages={thumbnailReferenceImages}
-              setThumbnailReferenceImages={setThumbnailReferenceImages}
-              handleThumbnailReferenceFilesUpload={handleThumbnailReferenceFilesUpload}
-              onDeleteThumbnailImage={handleDeleteThumbnailReferenceImage}
+              thumbnailStylePreset={thumbnailStylePreset}
+              setThumbnailStylePreset={setThumbnailStylePreset}
               backgroundMode={thumbnailBackgroundMode}
               setBackgroundMode={setThumbnailBackgroundMode}
               textInImageMode={thumbnailTextInImageMode}

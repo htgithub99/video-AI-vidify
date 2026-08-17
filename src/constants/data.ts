@@ -150,18 +150,21 @@ export const emotionMap = {
 } as const;
 
 export const stylePresetsKeywords = {
-  Realistic: "hyperrealistic, 8k resolution, highly detailed photographic style, natural lighting, realistic textures",
-  Historical: "historical accuracy, period-accurate costume design, aged sepia tone, archival epic style, ancient realism, vintage atmosphere",
-  Watercolor: "watercolor wash, soft paint strokes, artistic ink bleed, traditional texture, delicate hand-painted illustration",
-  "Oil Painting": "classic oil on canvas, textured brush strokes, impasto technique, Rembrandt lighting, fine art masterpiece",
-  Stickman: "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, thin tubular black arms and legs, distinct stable hair silhouette, minimal oval facial features, thick clean hand-drawn black outlines, flat solid clothing colors, no gradients, no realistic shading",
-  Anime: "modern anime style, vibrant cel shading, beautiful hand-drawn key frames, Kyoto Animation style aesthetic, colorful studio lighting",
-  Comic: "comic book illustration, bold ink outlines, halftone dot textures, dramatic marvel action panel style, colored graphic novel",
-  "Black & White": "monochrome photography, high contrast black and white film grain, classic noir shading, deep dramatic shadows",
-  Cinematic: "cinematic film still, anamorphic lens flare, dramatic volumetric lighting, Panavision 35mm look, shallow depth of field, blockbuster color grading",
-  Documentary: "raw documentary photography, photojournalism style, unposed authentic moment, natural ambient light, candid coverage",
-  "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets",
+  Stickman: "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading",
+  "2D Vector": "2D flat vector cartoon illustration, vibrant pastel colors, clean bold outlines, minimalist design, stylized characters",
+  Anime: "modern anime style, vibrant cel shading, clean hand-drawn keyframe linework, Kyoto Animation aesthetic, expressive anime eyes, studio lighting",
+  "3D Pixar": "3D cute animated cartoon render, smooth clay-like shading, Pixar aesthetic, soft ambient studio lighting, vibrant saturated colors",
+  Comic: "comic book illustration style, bold ink outlines, dynamic action composition, halftone dot shading, graphic novel artwork",
+  Cinematic: "cinematic film still, photorealistic, shot on 35mm lens, natural filmic lighting, rich atmospheric depth of field, dramatic cinematic composition",
+  Watercolor: "artistic watercolor wash illustration, soft paint bleed, subtle ink linework on textured paper, delicate pastel palette",
+  Cyberpunk: "cyberpunk neon aesthetic, glowing neon lights, futuristic dark atmosphere, high contrast moody shadows, volumetric fog",
+  "Oil Painting": "classic oil on canvas painting, textured visible brush strokes, impasto technique, dramatic chiaroscuro lighting",
   "Pixel Art": "8-bit retro pixel art, detailed vintage sprite design, limited color palette, clean grid pixels, nostalgic 90s arcade game look",
+  Realistic: "cinematic film still, photorealistic, natural lighting, high depth of field, authentic textures",
+  Historical: "historical accuracy, period-accurate costume design, aged sepia tone, archival epic style, ancient realism",
+  "Black & White": "monochrome photography, high contrast black and white film grain, classic noir shading, deep dramatic shadows",
+  Documentary: "raw documentary photography, photojournalism style, unposed authentic moment, natural ambient light",
+  "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets",
 } as const;
 
 export const GEMINI_UNSUPPORTED_ERROR_KEYWORDS = ["not found", "404", "unsupported"] as const;

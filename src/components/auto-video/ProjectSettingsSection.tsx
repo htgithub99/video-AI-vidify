@@ -1,25 +1,22 @@
 import React, { useState } from "react";
 import _ from "lodash";
-import { ChevronDown, ImageIcon, Layout, Music, Plus, Trash2, Volume2 } from "lucide-react";
-import { Tooltip } from "../ui/Tooltip";
+import { ChevronDown, ImageIcon, Layout, Music, Trash2, Volume2 } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { BackgroundMode, ImageFocusMode, ThumbnailTextMode } from "../../types";
 import { BackgroundModeSelect } from "./BackgroundModeSelect";
 import { ThumbnailTextModeSelect } from "./ThumbnailTextModeSelect";
 import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage, PIPELINE_STEPS } from "../../constants/enums";
-import { ReferenceImageCard } from "./ReferenceImageCard";
 import { ImagePreviewModal } from "./ImagePreviewModal";
+import { StylePresetSelector } from "./StylePresetSelector";
 
 interface ProjectSettingsSectionProps {
   projectName: string;
   setProjectName: (val: string) => void;
   thumbnailCount: number;
   setThumbnailCount: (val: number) => void;
-  thumbnailReferenceImages: string[];
-  setThumbnailReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
-  handleThumbnailReferenceFilesUpload: (files: FileList) => void;
-  onDeleteThumbnailImage?: (index: number) => void;
+  thumbnailStylePreset: string;
+  setThumbnailStylePreset: (val: string) => void;
   backgroundMode: BackgroundMode;
   setBackgroundMode: (value: BackgroundMode) => void;
   textInImageMode: ThumbnailTextMode;
@@ -38,10 +35,8 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   setProjectName,
   thumbnailCount,
   setThumbnailCount,
-  thumbnailReferenceImages,
-  setThumbnailReferenceImages,
-  handleThumbnailReferenceFilesUpload,
-  onDeleteThumbnailImage,
+  thumbnailStylePreset,
+  setThumbnailStylePreset,
   backgroundMode,
   setBackgroundMode,
   textInImageMode,
@@ -56,42 +51,11 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-  const handleRemoveImage = (targetIndex: number) => {
-    if (onDeleteThumbnailImage) {
-      onDeleteThumbnailImage(targetIndex);
-      return;
-    }
-    setThumbnailReferenceImages((prev) => _.filter(prev, (_v, i) => !_.isEqual(i, targetIndex)));
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!_.isEmpty(e.dataTransfer.files)) {
-      handleThumbnailReferenceFilesUpload(e.dataTransfer.files);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   const handleMusicInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       onMusicUpload(event.target.files);
     }
   };
-
-  const handleThumbFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleThumbnailReferenceFilesUpload(e.target.files);
-    }
-  };
-
-  const photoCountLabel = T.photoCount
-    ? T.photoCount(_.size(thumbnailReferenceImages))
-    : _.join([_.size(thumbnailReferenceImages), REFACTOR_CONSTANTS.VD_BLANK, T.photos || REFACTOR_CONSTANTS.VD_EMPTY_STRING], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
   return (
     <div className="space-y-4">
@@ -140,115 +104,56 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-1">
-        <div className="lg:col-span-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Music className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {T.musicOptionalLabel || T.musicUploadLabel}
-              </span>
-            </div>
-            {musicAssetUrl && onRemoveMusic && (
-              <button
-                type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-                onClick={onRemoveMusic}
-                title={T.musicRemoveTooltip}
-                className="text-[10px] text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 flex items-center gap-1 transition-colors font-medium"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>{T.removeBtn}</span>
-              </button>
-            )}
-          </div>
+      <div className="pt-2 border-t border-slate-800/60">
+        <StylePresetSelector
+          selectedStyle={thumbnailStylePreset}
+          onSelectStyle={setThumbnailStylePreset}
+          language={language}
+          label="Phong cách riêng cho ảnh bìa (Thumbnail Style)"
+          accentColor="purple"
+        />
+      </div>
 
-          {musicAssetUrl ? (
-            <div className="space-y-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Volume2 className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
-                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">
-                  {T.musicLoaded}
-                </span>
-              </div>
-              <audio controls src={musicAssetUrl} className="w-full h-7 rounded" />
-            </div>
-          ) : (
-            <Tooltip content={T.musicUploadTooltip} position="top" className="w-full block">
-              <label className="w-full h-28 flex flex-col items-center justify-center p-3 cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-purple-500/80 dark:hover:border-purple-400 bg-white dark:bg-slate-900/60 hover:bg-purple-50/30 dark:hover:bg-purple-950/20 transition-all shadow-sm hover:shadow group">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-1 transition-transform group-hover:scale-110">
-                  <Music className="w-4 h-4" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                  {T.musicUploadLabel}
-                </span>
-                <span className="text-[9px] font-medium text-slate-400 dark:text-slate-400 text-center">
-                  {T.musicUploadSub}
-                </span>
-                <input
-                  type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-                  accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL}
-                  className="hidden"
-                  onChange={handleMusicInputChange}
-                />
-              </label>
-            </Tooltip>
+      <div className="pt-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Music className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              {T.musicOptionalLabel || T.musicUploadLabel}
+            </span>
+          </div>
+          {musicAssetUrl && onRemoveMusic && (
+            <button
+              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+              onClick={onRemoveMusic}
+              title={T.musicRemoveTooltip}
+              className="text-[10px] text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 flex items-center gap-1 transition-colors font-medium"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>{T.removeBtn}</span>
+            </button>
           )}
         </div>
 
-        <div className="lg:col-span-8 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                {T.thumbSceneReferenceUploadTitle}
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:inline">
-                ({T.thumbSceneReferenceUploadSub})
-              </span>
-            </div>
-            <span className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500">
-              {photoCountLabel}
+        {musicAssetUrl ? (
+          <div className="flex items-center gap-3 bg-purple-50/70 dark:bg-slate-900/60 border border-purple-200 dark:border-slate-800 rounded-xl p-2 shadow-2xs">
+            <Volume2 className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+            <audio controls src={musicAssetUrl} className="flex-1 h-7 rounded" />
+          </div>
+        ) : (
+          <label className="flex items-center justify-center gap-2 p-2.5 cursor-pointer rounded-xl border border-dashed border-purple-300 dark:border-slate-800 hover:border-purple-500/80 dark:hover:border-purple-400 bg-purple-50/40 dark:bg-slate-900/40 hover:bg-purple-50/70 dark:hover:bg-purple-950/20 transition-all shadow-2xs group">
+            <Music className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 transition-transform group-hover:scale-110" />
+            <span className="text-xs font-semibold text-purple-700 dark:text-slate-300 group-hover:text-purple-600 dark:group-hover:text-purple-400">
+              {T.musicUploadLabel || "Tải lên file nhạc nền (MP3, WAV...)"}
             </span>
-          </div>
-
-          <div
-            className="flex flex-wrap items-center gap-2.5"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <Tooltip content={T.thumbSceneReferenceUploadSub} position="top">
-              <label className="group relative flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-purple-500/80 dark:hover:border-purple-400 bg-white dark:bg-slate-900/60 hover:bg-purple-50/30 dark:hover:bg-purple-950/20 cursor-pointer transition-all duration-200 shadow-sm hover:shadow shrink-0">
-                <div className="w-8 h-8 rounded-xl bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-1 transition-transform group-hover:scale-110">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span className="text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                  {T.addCoverPhoto || T.thumbSceneReferenceUploadTitle}
-                </span>
-                <span className="text-[9px] font-medium text-slate-400 dark:text-slate-400">{T.uploadDragOrSelect}</span>
-                <input
-                  type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
-                  accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
-                  multiple
-                  className="hidden"
-                  onChange={handleThumbFileInputChange}
-                />
-              </label>
-            </Tooltip>
-
-            {_.map(thumbnailReferenceImages, (imgSrc, idx) => (
-              <ReferenceImageCard
-                key={idx}
-                imageSrc={imgSrc}
-                index={idx}
-                badgePrefix={REFACTOR_CONSTANTS.HASH_PREFIX}
-                deleteTooltip={T.deleteThumbSceneReferenceTooltip || T.deleteCoverPhotoTooltip}
-                previewTooltip={T.viewLargeImage}
-                onPreview={setPreviewImage}
-                onDelete={handleRemoveImage}
-              />
-            ))}
-          </div>
-        </div>
+            <input
+              type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
+              accept={REFACTOR_CONSTANTS.ACCEPT_AUDIO_ALL}
+              className="hidden"
+              onChange={handleMusicInputChange}
+            />
+          </label>
+        )}
       </div>
 
       <ImagePreviewModal imageUrl={previewImage} onClose={() => setPreviewImage(null)} />

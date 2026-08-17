@@ -7,7 +7,7 @@ import { getProfiles, launchLoginBrowser, deleteProfile } from "../services/prof
 import { getLocalAccounts, saveLocalAccounts } from "../services/accountRotatorService.js";
 
 import { jsonUtils } from "../../lib/json.js";
-import { generateContentWithRetry, isAiProviderAvailable, isGeminiProviderAvailable } from "../services/geminiService.js";
+import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { assertResponseContract, ResponseContractName } from "../services/responseContractService.js";
 import { checkCache, setCache } from "../services/cacheService.js";
@@ -19,7 +19,6 @@ import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
 import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js";
-import { createSoftStyleDirective, normalizeExtractedStyle, normalizeVisualStyleProfile, resolveNegativeStylePrompt } from "../../services/styleReferenceService.js";
 import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
@@ -60,8 +59,6 @@ import {
   getCharacterExtractPrompt,
   getCharacterRewriteBatchPrompt,
   getCharacterRewriteThumbnailsBatchPrompt,
-  STYLE_EXTRACTION_PROMPT,
-  THUMBNAIL_STYLE_EXTRACTION_PROMPT,
   getMultiStepHookPrompt,
   getCombinedScriptPrompt,
   getAudioQualityPrompt,
@@ -114,7 +111,6 @@ import {
   SCRIPT_PLAN_RESPONSE_SCHEMA,
   CHAPTER_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
-  VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
   SCRIPT_PROMPT_CONFIG,
@@ -123,6 +119,7 @@ import {
   getVietnameseDiacriticsRestorationPrompt,
   RESPONSE_CONTRACT_CONFIG,
   SYSTEM_FETCH_CONFIG,
+  resolveStylePreset,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
@@ -135,7 +132,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 
-import { AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, StyleReferencePurpose, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
+import { AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
@@ -221,70 +218,48 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
 router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { images } = req.body;
-    if (!images || !_.isArray(images) || _.isEmpty(images)) {
-      return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("IMAGES_REQUIRED", isVi) });
-    }
+    const { visualConfig, style } = req.body;
+    
+    // Ưu tiên nạp trực tiếp từ Curated Style Preset
+    const requestedStyle = style || visualConfig?.style || req.body?.stylePreset || req.body?.targetStyle;
+    const preset = resolveStylePreset(requestedStyle);
 
-    const parts: any[] = [];
-    const contentHashes: string[] = [];
-    for (const imgBase64 of images) {
-      const { data, mimeType } = await readStyleReferenceImage(imgBase64);
-      contentHashes.push(createHash("sha256").update(data).digest("hex"));
-      parts.push({
-        inlineData: {
-          data,
-          mimeType,
-        },
-      });
-    }
-
-    const purpose = _.isEqual(req.body.purpose, StyleReferencePurpose.Thumbnail)
-      ? StyleReferencePurpose.Thumbnail
-      : StyleReferencePurpose.Scene;
-    const cachePayload = {
-      purpose,
-      profileVersion: STYLE_EXTRACTION_CONFIG.PROFILE_VERSION,
-      contentHashes: _.sortBy(_.uniq(contentHashes)),
+    const styleProfile = {
+      medium: preset.name,
+      characterType: preset.characterRule,
+      characterDna: preset.characterRule,
+      lineDna: "clean uniform line art",
+      shapeLanguage: "minimal stylized geometric shapes",
+      colorDna: "preset coordinated palette",
+      colorPhilosophy: "clean visual clarity",
+      renderingDna: "clean stylized rendering",
+      lightingStyle: "even stylized illumination",
+      texture: "digital clean",
+      detailLevel: "optimized",
+      visualComplexity: "high clarity",
+      periodCues: "",
+      worldRendering: preset.defaultBackgroundMode === "white" ? "pure solid white background" : "contextual minimal environment",
+      compositionLanguage: "centered composition with negative space",
+      facialExpressionLanguage: "clear expressive facial features",
+      overallMood: "engaging and stylized",
+      adaptiveElements: "Script controls character and action",
+      negativeStylePrompt: preset.negativePrompt,
+      sampleSpecificContent: [],
+      lockedStyleElements: ["medium", "renderingDna"],
+      flexibleElements: ["character pose", "action", "composition"],
     };
-    const cachedStyle = checkCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, Boolean(req.body?.bypassCache));
-    if (cachedStyle) return res.json(cachedStyle);
 
-    if (!(await isGeminiProviderAvailable())) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, retryable: true });
-    }
+    const result = {
+      style: preset.positivePrompt,
+      styleProfile,
+      negativeStylePrompt: preset.negativePrompt,
+      fingerprint: createHash("sha256").update(`${preset.id}:${Date.now()}`).digest("hex"),
+    };
 
-    parts.push({
-      text: _.isEqual(purpose, StyleReferencePurpose.Thumbnail)
-        ? THUMBNAIL_STYLE_EXTRACTION_PROMPT
-        : STYLE_EXTRACTION_PROMPT,
-    });
-
-    const response = await generateContentWithRetry({
-      contents: parts,
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA },
-      task: { capability: AiTaskCapability.StyleExtraction },
-    }, 0);
-
-    if (response && response.text) {
-      const backgroundMode = req.body?.backgroundMode || req.body?.visualConfig?.styleBackgroundMode;
-      const styleProfile = normalizeVisualStyleProfile(safeParseJSON(response.text, {}));
-      const extracted = createSoftStyleDirective(styleProfile, backgroundMode) || normalizeExtractedStyle(response.text);
-      const negativeStylePrompt = resolveNegativeStylePrompt(styleProfile);
-      const result = {
-        style: extracted,
-        styleProfile,
-        negativeStylePrompt,
-        fingerprint: createHash("sha256").update(_.join([STYLE_EXTRACTION_CONFIG.PROFILE_VERSION, purpose, ..._.sortBy(_.uniq(contentHashes))], ":")).digest("hex"),
-      };
-      setCache(API_ROUTES.PIPELINE_EXTRACT_STYLE, cachePayload, result);
-      return res.json(result);
-    } else {
-      throw new Error(getBackendMsg("STYLE_EXTRACTION_ERR", isVi));
-    }
+    return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.STYLE_EXTRACTION_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, retryable: true, rotationLogs: error.rotationLogs });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("STYLE_EXTRACTION_ERR", isVi) });
   }
 });
 

@@ -14,7 +14,7 @@ import {
 } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
-import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
+import { resolveStylePreset } from "../constants/stylePresets";
 
 const VALID_LAYOUT_IDS = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
 const VALID_TYPOGRAPHY_IDS = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
@@ -135,27 +135,18 @@ export const createThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
   style: string,
   aspectRatio: string,
-  hasReferences: boolean = false,
-  _characters: CharacterConfig[] = [],
+  _hasReferences?: boolean,
+  _characters?: CharacterConfig[],
 ): string => {
-  const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
+  const preset = resolveStylePreset(thumbnail.style || style);
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
-
-  if (!_.isEmpty(basePrompt) && !DETECTOR_VIETNAMESE_REGEX.test(basePrompt)) {
-    let combined = basePrompt;
-    if (hasText && !combined.includes(headline)) {
-      combined = `${combined} ${_.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)}`;
-    }
-    return appendImagePromptAspectRatio(sanitizeImagePrompt(combined), aspectRatio);
-  }
-
   const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
 
   const parts = _.compact([
-    hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_LOCK_DIRECTIVE : style,
+    preset.positivePrompt,
     _.replace(THUMBNAIL_PROMPT_CONFIG.LAYOUT_DIRECTIVE_TEMPLATE, "{layout}", layoutDesc),
-    basePrompt,
+    thumbnail.subjectFocus ? `Focus subject: ${thumbnail.subjectFocus}` : "",
     hasText
       ? _.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)
       : THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_DIRECTIVE,

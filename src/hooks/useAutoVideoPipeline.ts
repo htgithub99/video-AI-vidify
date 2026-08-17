@@ -90,6 +90,7 @@ import { acceptGeneratedThumbnail } from "../services/thumbnailQualityPipelineSe
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../services/imageGenerationContinuityService";
 import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { compileImagePrompt } from "../services/imagePromptCompilerService";
+import { resolveStylePreset } from "../constants/stylePresets";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import { Lang } from "../lib/lang";
@@ -633,8 +634,9 @@ export function useAutoVideoPipeline(
         newProj = scriptUpdatedProj;
       }
 
-      let currentStylePreset = newProj.visualConfig.referencePrompt || newProj.visualConfig.style || config.stylePreset;
-      let currentThumbnailStyle = newProj.visualConfig.thumbnailReferencePrompt || config.thumbnailStylePreset || currentStylePreset;
+      const curatedPreset = resolveStylePreset(newProj.visualConfig.style || config.stylePreset || newProj.visualConfig.referencePrompt);
+      let currentStylePreset = curatedPreset.positivePrompt;
+      let currentThumbnailStyle = resolveStylePreset(config.thumbnailStylePreset || newProj.visualConfig.thumbnailReferencePrompt || currentStylePreset).positivePrompt;
       const hasStyleReferences = !_.isEmpty(newProj.visualConfig.styleReferenceImages);
 
       if (!isStoryboardCached || config.forceRegenerateScenes || requiresVisualReferenceMigration) {
@@ -645,6 +647,7 @@ export function useAutoVideoPipeline(
             style: currentStylePreset,
             referencePrompt: currentStylePreset,
             thumbnailReferencePrompt: currentThumbnailStyle,
+            negativeStylePrompt: curatedPreset.negativePrompt,
             styleReferenceLocked: hasStyleReferences,
           },
           visualBible: {
