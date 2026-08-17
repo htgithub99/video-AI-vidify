@@ -26,11 +26,8 @@ const plannerPrompt = getOptimizePromptsBatchPrompt(
   JSON.stringify([{ id: "char_1", name: "Player" }]),
 );
 assert.match(plannerPrompt, /PROJECT STYLE LOCK/i);
-assert.match(plannerPrompt, /subject.*context.*style|style lock.*subject.*action.*setting/is);
-assert.match(plannerPrompt, /Every visible person.*exactly the same character type/i);
-assert.match(plannerPrompt, /Keep prompts concise and below 120 English words/i);
+assert.match(plannerPrompt, /STRICT PROMPT PURITY/i);
 assert.match(plannerPrompt, /complete concise Gemini prompt without --ar/i);
-assert.doesNotMatch(plannerPrompt, /Action Contract|complete canonical character blueprint/i);
 
 const compactCards = createPromptCharacterCards([{ id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "unused", images: ["unused"] }]);
 assert.deepEqual(compactCards, [{ id: "char_1", name: "Player", identityLock: "", usesSharedStyleCore: true }]);

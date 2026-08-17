@@ -52,20 +52,27 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const handleMusicInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
+    if (event.target.files && event.target.files.length > 0) {
       onMusicUpload(event.target.files);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center font-mono font-bold text-xs">
-          {PIPELINE_STEPS.STEP_4}
-        </span>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec4TitleTooltip}>
-          <ImageIcon className="w-3.5 h-3.5 text-purple-400" /> {T.sec4Title}
-        </h3>
+    <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20">
+            {PIPELINE_STEPS.STEP_4}
+          </span>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={T.sec4TitleTooltip}>
+            <ImageIcon className="w-3.5 h-3.5 text-purple-400" /> {T.sec4Title}
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
+          <Layout className="w-3 h-3 text-purple-400" />
+          <span className="font-semibold text-slate-300">{thumbnailCount} {T.lblThumbnails || "ảnh bìa"}</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
@@ -76,7 +83,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             placeholder={REFACTOR_CONSTANTS.PROJECT_NAME_PLACEHOLDER}
-            className="w-full bg-slate-955 border border-slate-800 focus:border-purple-500/80 text-slate-200 p-2 rounded-xl text-xs outline-none transition-colors"
+            className="w-full bg-slate-955/90 border border-slate-800/90 focus:border-purple-500/80 text-slate-200 p-2.5 rounded-xl text-xs outline-none transition-colors"
           />
         </div>
 
@@ -86,7 +93,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
 
         <div className="space-y-1">
           <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblThumbCount}</span>
-          <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-2.5 py-2 focus-within:border-purple-500/50 transition-colors">
+          <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-purple-500/60 transition-colors">
             <Layout className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
             <select
               value={thumbnailCount}
@@ -104,12 +111,12 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-800/60">
+      <div className="pt-2 border-t border-slate-800/80">
         <StylePresetSelector
           selectedStyle={thumbnailStylePreset}
           onSelectStyle={setThumbnailStylePreset}
           language={language}
-          label="Phong cách riêng cho ảnh bìa (Thumbnail Style)"
+          label="Phong cách ảnh bìa"
           accentColor="purple"
         />
       </div>
@@ -117,17 +124,17 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
       <div className="pt-2 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Music className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            <Music className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-xs font-bold text-slate-200">
               {T.musicOptionalLabel || T.musicUploadLabel}
             </span>
           </div>
-          {musicAssetUrl && onRemoveMusic && (
+
+          {!_.isEmpty(musicAssetUrl) && onRemoveMusic && (
             <button
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
               onClick={onRemoveMusic}
-              title={T.musicRemoveTooltip}
-              className="text-[10px] text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 flex items-center gap-1 transition-colors font-medium"
+              className="flex items-center gap-1 text-[11px] font-mono text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3 h-3" />
               <span>{T.removeBtn}</span>
@@ -136,14 +143,14 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
         </div>
 
         {musicAssetUrl ? (
-          <div className="flex items-center gap-3 bg-purple-50/70 dark:bg-slate-900/60 border border-purple-200 dark:border-slate-800 rounded-xl p-2 shadow-2xs">
-            <Volume2 className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+          <div className="flex items-center gap-3 bg-purple-50 border border-purple-200 rounded-xl p-2 shadow-xs">
+            <Volume2 className="w-4 h-4 text-purple-600 shrink-0" />
             <audio controls src={musicAssetUrl} className="flex-1 h-7 rounded" />
           </div>
         ) : (
-          <label className="flex items-center justify-center gap-2 p-2.5 cursor-pointer rounded-xl border border-dashed border-purple-300 dark:border-slate-800 hover:border-purple-500/80 dark:hover:border-purple-400 bg-purple-50/40 dark:bg-slate-900/40 hover:bg-purple-50/70 dark:hover:bg-purple-950/20 transition-all shadow-2xs group">
-            <Music className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 transition-transform group-hover:scale-110" />
-            <span className="text-xs font-semibold text-purple-700 dark:text-slate-300 group-hover:text-purple-600 dark:group-hover:text-purple-400">
+          <label className="flex items-center justify-center gap-2 p-2.5 cursor-pointer rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/60 hover:bg-purple-100/70 transition-colors shadow-xs">
+            <Music className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+            <span className="text-xs font-bold text-purple-700">
               {T.musicUploadLabel || "Tải lên file nhạc nền (MP3, WAV...)"}
             </span>
             <input

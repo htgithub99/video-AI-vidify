@@ -51,7 +51,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
             <FileText className="w-3.5 h-3.5 text-emerald-400" /> {T.sec1Title}
           </h3>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-950/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
+        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <span>{wordCount} {T.lblWords || "từ"}</span>
           <span className="text-slate-600">•</span>
           <span>{charCount} {T.lblChars || "ký tự"}</span>
@@ -60,26 +60,32 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
 
       <div className="grid grid-cols-2 gap-3">
         {([
-          { type: ProjectInputType.Script, icon: <FileText className="w-4 h-4 text-rose-500" />, label: T.inputTypeScript, tooltip: T.inputTypeScriptTooltip },
-          { type: ProjectInputType.Idea, icon: <Sparkles className="w-4 h-4 text-amber-400" />, label: T.inputTypeIdea, tooltip: T.inputTypeIdeaTooltip },
-        ] as const).map(({ type, icon, label, tooltip }) => (
-          <Button
-            key={type}
-            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-            variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
-            onClick={() => setInputType(type)}
-            className={cn(
-              "p-3 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between cursor-pointer",
-              _.isEqual(inputType, type)
-                ? "bg-gradient-to-r from-rose-500/15 to-amber-500/10 border-rose-500/60 text-rose-300 ring-1 ring-rose-500/30 font-bold shadow-md shadow-rose-950/50"
-                : "bg-slate-950/70 border-slate-800/80 text-slate-400 hover:border-slate-700 hover:text-slate-200",
-            )}
-            title={tooltip}
-          >
-            <div className="flex items-center gap-2.5">{icon}<span className="text-xs font-semibold">{label}</span></div>
-            {_.isEqual(inputType, type) && <Check className="w-4 h-4 text-rose-400" />}
-          </Button>
-        ))}
+          { type: ProjectInputType.Script, icon: <FileText className="w-4 h-4 text-rose-600" />, label: T.inputTypeScript, tooltip: T.inputTypeScriptTooltip },
+          { type: ProjectInputType.Idea, icon: <Sparkles className="w-4 h-4 text-amber-600" />, label: T.inputTypeIdea, tooltip: T.inputTypeIdeaTooltip },
+        ] as const).map(({ type, icon, label, tooltip }) => {
+          const isSelected = _.isEqual(inputType, type);
+          return (
+            <Button
+              key={type}
+              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+              variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
+              onClick={() => setInputType(type)}
+              className={cn(
+                "p-3 rounded-2xl border-2 text-left transition-all duration-200 flex items-center justify-between cursor-pointer min-h-[50px]",
+                isSelected
+                  ? "bg-rose-500/15 border-rose-500/80 text-rose-600 font-black shadow-xs ring-1 ring-rose-500/30"
+                  : "bg-slate-955/70 border-slate-800/80 text-slate-700 hover:border-slate-700 hover:text-slate-100 font-bold",
+              )}
+              title={tooltip}
+            >
+              <div className="flex items-center gap-2.5">
+                {icon}
+                <span className="text-xs">{label}</span>
+              </div>
+              {isSelected && <Check className="w-4 h-4 text-rose-600 stroke-[3]" />}
+            </Button>
+          );
+        })}
       </div>
 
       <div className="relative">
@@ -88,7 +94,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
           value={scriptContent}
           onChange={(e) => setScriptContent(e.target.value)}
           placeholder={_.isEqual(inputType, ProjectInputType.Script) ? T.scriptPlaceholderScript : T.scriptPlaceholderIdea}
-          className="w-full bg-slate-950/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/30 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-none shadow-inner transition-all placeholder:text-slate-500 font-sans"
+          className="w-full bg-slate-955/90 border border-slate-800/90 focus:border-rose-500/80 focus:ring-1 focus:ring-rose-500/30 text-slate-100 p-3.5 rounded-2xl text-xs leading-relaxed outline-none resize-none shadow-inner transition-all placeholder:text-slate-500 font-sans"
         />
       </div>
 
@@ -101,16 +107,16 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
         ].map(({ label, icon, value, onChange, options, optionGroups }) => (
           <div key={label} className="space-y-1.5">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block truncate">{label}</span>
-            <div className="relative flex items-center bg-slate-950/80 border border-slate-800/80 rounded-xl px-3 py-2.5 focus-within:border-rose-500/60 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all hover:border-slate-700/80">
+            <div className="relative flex items-center bg-slate-955/80 border border-slate-800/80 rounded-xl px-3 py-2.5 focus-within:border-rose-500/60 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all hover:border-slate-700/80">
               {icon}
               <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                 {optionGroups
                   ? _.map(optionGroups, (group) => (
-                    <optgroup key={group.label} label={group.label} className="bg-slate-950 text-slate-400">
-                      {_.map(group.options, (option) => <option key={option} value={option} className="bg-slate-950 text-slate-300">{genreLabels[option as keyof typeof genreLabels] || option}</option>)}
+                    <optgroup key={group.label} label={group.label} className="bg-slate-955 text-slate-400">
+                      {_.map(group.options, (option) => <option key={option} value={option} className="bg-slate-955 text-slate-300">{genreLabels[option as keyof typeof genreLabels] || option}</option>)}
                     </optgroup>
                   ))
-                  : _.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-950 text-slate-300">{o.label}</option>)}
+                  : _.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
             </div>

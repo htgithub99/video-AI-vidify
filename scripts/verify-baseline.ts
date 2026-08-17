@@ -118,7 +118,7 @@ assert(evaluateFinalQuality(project).publishable, "thumbnail incorrectly blocked
 const satiricalGenres = [VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY];
 assert(_.isEqual(GENRE_OPTION_GROUPS[0].options, satiricalGenres), "satirical genre group changed");
 const visibleGenres = _.flatMap(GENRE_OPTION_GROUPS, "options");
-assert(visibleGenres.length === 14 && _.uniq(visibleGenres).length === visibleGenres.length, "genre list is not compact and unique");
+assert(visibleGenres.length === 16 && _.uniq(visibleGenres).length === visibleGenres.length, "genre list is not compact and unique");
 assert(normalizeGenreValue(VideoGenre.STORYTELLING) === VideoGenre.STORY_DRIVEN_VIDEO_ESSAY && normalizeGenreValue("Documentary") === VideoGenre.HISTORY && normalizeGenreValue("Education") === VideoGenre.NARRATIVE_EXPLAINER && normalizeGenreValue(VideoGenre.PHILOSOPHY) === VideoGenre.PSYCHOLOGY, "legacy genre normalization failed");
 
 const publishableProject: any = {

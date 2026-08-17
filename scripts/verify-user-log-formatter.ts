@@ -17,9 +17,9 @@ for (const log of technicalLogs) {
   assert.ok(userMessage.length > 0);
 }
 
-assert.match(formatUserFacingLog("Missing API key", "vi"), /Cấu hình/);
+assert.match(formatUserFacingLog("Missing API key", "vi"), /cấu hình/i);
 assert.match(formatUserFacingLog("429 quota exceeded", "vi"), /giới hạn/);
-assert.equal(getUserLogBadges("vi").ERROR_BADGE, "LỖI");
+assert.equal(getUserLogBadges("vi").ERROR_BADGE, "CẦN LƯU Ý");
 assert.equal(getUserLogBadges("en").SUCCESS_BADGE, "DONE");
 
 writeVerificationLog("User-facing log assertions passed");

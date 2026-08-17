@@ -34,18 +34,26 @@ export const compileImagePrompt = (
   scene: StoryboardScene,
   options: ImagePromptCompilerOptions = {},
 ): string => {
-  const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
-  if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
-    return appendImagePromptAspectRatio(sanitizeImagePrompt(existingPrompt), options.aspectRatio);
+  const preset = resolveStylePreset(options.targetStyle);
+  
+  let narrative = compactSceneField(scene.visualIntent || scene.visibleAction || scene.reaction || scene.composition);
+  
+  if (_.isEmpty(narrative)) {
+    const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
+    if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
+      narrative = compactWords(existingPrompt, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+    }
   }
 
-  const preset = resolveStylePreset(options.targetStyle);
-  const narrative = compactSceneField(scene.visualIntent || scene.visibleAction || scene.script);
+  if (_.isEmpty(narrative)) {
+    narrative = compactSceneField(scene.script);
+  }
 
   const promptParts = [
     preset.positivePrompt,
-    narrative ? `Depicting: ${narrative}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    scene.shotSize ? `Shot size: ${scene.shotSize}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    narrative ? `Scene depicting: ${narrative}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    preset.characterRule ? `Character styling: ${preset.characterRule}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    scene.shotSize ? `Shot type: ${scene.shotSize}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     scene.cameraAngle ? `Camera angle: ${scene.cameraAngle}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,
@@ -60,7 +68,7 @@ export const compileImagePrompt = (
 export const compileStoryboardPrompts = (
   scenes: StoryboardScene[],
   options: ImagePromptCompilerOptions = {},
-): StoryboardScene[] => _.map(scenes, scene => ({
+): StoryboardScene[] => _.map(scenes, (scene) => ({
   ...scene,
   prompt: compileImagePrompt(scene, options),
 }));

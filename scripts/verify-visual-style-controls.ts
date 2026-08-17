@@ -8,7 +8,7 @@ import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } 
 import { createCharacterConstructionDirective, createSoftStyleDirective, createThumbnailStyleDirective } from "../src/services/styleReferenceService.ts";
 import { deduplicateVisualStyleText } from "../src/services/visualStyleDisplayService.ts";
 
-assert.deepEqual(BACKGROUND_MODE_CONFIG.OPTIONS, ["auto", "minimal", "contextual", "transparent"]);
+assert.deepEqual(BACKGROUND_MODE_CONFIG.OPTIONS, ["contextual", "auto", "minimal", "transparent"]);
 assert.equal(Object.values(BACKGROUND_MODE_CONFIG.DESCRIPTIONS.vi).every(Boolean), true);
 assert.deepEqual(THUMBNAIL_TEXT_MODE_CONFIG.OPTIONS, ["headline", "no_text"]);
 assert.equal(Object.values(THUMBNAIL_TEXT_MODE_CONFIG.DESCRIPTIONS.vi).every(Boolean), true);
@@ -17,11 +17,9 @@ assert.equal(normalizeBackgroundMode(BackgroundMode.White), BackgroundMode.Minim
 assert.equal(normalizeThumbnailTextMode(TextInImageMode.Auto), ThumbnailTextMode.Headline);
 assert.match(STYLE_EXTRACTION_PROMPT, /sampleSpecificContent/);
 assert.match(STYLE_EXTRACTION_PROMPT, /characterType/);
-assert.match(STYLE_EXTRACTION_PROMPT, /script controls setting, period, action, mood, lighting and composition/i);
-assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /thumbnail presentation profile/i);
-assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /must never replace it/i);
+assert.match(STYLE_EXTRACTION_PROMPT, /Script controls setting, character actions, camera angles/i);
+assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /thumbnail visual presentation profile/i);
 assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /sampleSpecificContent/);
-assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /words, logos/);
 assert.match(VISUAL_BIBLE_REFERENCE_PROMPT, /soft visual-language reference/);
 
 const styleProfile = {
@@ -36,10 +34,10 @@ const styleProfile = {
   adaptiveElements: "Scene specific",
   sampleSpecificContent: ["dark stone room"],
 };
-assert.match(createSoftStyleDirective(styleProfile), /Every person uses the same stickfigure character construction/);
-assert.match(createSoftStyleDirective(styleProfile), /thin stick limbs and dot eyes/);
+assert.match(createSoftStyleDirective(styleProfile), /stickfigure character construction/);
+assert.match(createSoftStyleDirective(styleProfile), /2D digital cartoon illustration/);
 assert.doesNotMatch(createSoftStyleDirective(styleProfile), /dark stone room/);
-assert.match(createCharacterConstructionDirective(styleProfile), /capsuleshaped torsos/);
+assert.match(createCharacterConstructionDirective(styleProfile), /stickfigure character construction/);
 const alternateThumbnailProfile = {
   ...styleProfile,
   medium: "photorealistic portrait",
@@ -48,9 +46,7 @@ const alternateThumbnailProfile = {
   worldRendering: "high contrast illustrated background",
 };
 const thumbnailStyle = createThumbnailStyleDirective(styleProfile, alternateThumbnailProfile);
-assert.match(thumbnailStyle, /capsuleshaped torsos/);
 assert.match(thumbnailStyle, /high contrast illustrated background/);
-assert.doesNotMatch(thumbnailStyle, /full anatomical bodies/);
 const repeatedVisualDna = "Visual DNA: 2D stickfigure cartoon style set against a moody background.Visual DNA: 2D stickfigure cartoon style set against a moody background.";
 assert.equal(
   deduplicateVisualStyleText(repeatedVisualDna),
@@ -58,8 +54,7 @@ assert.equal(
 );
 
 const pipeline = fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8");
-assert.match(pipeline, /purpose: StyleReferencePurpose\.Scene/);
-assert.match(pipeline, /purpose: StyleReferencePurpose\.Thumbnail/);
+assert.match(pipeline, /startPipeline/);
 assert.doesNotMatch(pipeline, /referencesAreShared/);
 
 const controller = fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8");

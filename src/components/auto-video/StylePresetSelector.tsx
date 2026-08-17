@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import _ from "lodash";
 import { Palette, Check, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory } from "../../constants/stylePresets";
+import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory, resolveStylePreset } from "../../constants/stylePresets";
 import { cn } from "../../lib/utils";
 
 interface StylePresetSelectorProps {
@@ -19,82 +19,69 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   label = "Phong cách hình ảnh",
   accentColor = "blue",
 }) => {
-  const isVi = language === "vi";
-  const isPurple = accentColor === "purple";
+  const isVi = _.isEqual(language, "vi");
+  const isPurple = _.isEqual(accentColor, "purple");
   const [activeCategory, setActiveCategory] = useState<StyleCategory>("all");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const presetsList = useMemo(() => Object.values(CURATED_STYLE_PRESETS), []);
+  const presetsList = useMemo(() => _.values(CURATED_STYLE_PRESETS), []);
 
   const currentPreset = useMemo(() => {
-    return _.find(presetsList, (p) => 
-      p.id === selectedStyle || 
-      _.isEqual(_.toLower(p.name), _.toLower(selectedStyle)) ||
-      _.some(p.keywords, (k) => _.includes(_.toLower(selectedStyle), _.toLower(k)))
-    ) || CURATED_STYLE_PRESETS.stickman;
-  }, [presetsList, selectedStyle]);
+    return resolveStylePreset(selectedStyle);
+  }, [selectedStyle]);
 
   const filteredPresets = useMemo(() => {
-    if (activeCategory === "all") return presetsList;
-    return presetsList.filter((p) => p.category === activeCategory);
+    if (_.isEqual(activeCategory, "all")) return presetsList;
+    return _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));
   }, [presetsList, activeCategory]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Palette className={cn("w-3.5 h-3.5", isPurple ? "text-purple-400" : "text-blue-400")} />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
+        <div className="flex items-center gap-2">
+          <Palette className={cn("w-4 h-4", isPurple ? "text-purple-400" : "text-blue-400")} />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono">
             {label}
-          </span>
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.2 rounded-md font-mono font-bold border",
-            isPurple 
-              ? "bg-purple-500/10 text-purple-400 border-purple-500/20" 
-              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-          )}>
-            {presetsList.length} Styles
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsDetailOpen(!isDetailOpen)}
-          className={cn(
-            "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-semibold transition-all cursor-pointer",
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono",
             isPurple
-              ? "bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-              : "bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
-          )}
-          title={isVi ? "Xem chi tiết quy tắc phong cách" : "View style rules"}
-        >
-          <span className="text-sm">{currentPreset.icon}</span>
-          <span className="font-bold truncate max-w-[130px] sm:max-w-none">
-            {isVi ? currentPreset.nameVi : currentPreset.name}
-          </span>
-          {isDetailOpen ? (
-            <ChevronUp className="w-3.5 h-3.5 opacity-70" />
-          ) : (
-            <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-          )}
-        </button>
+              ? "bg-purple-950 border-purple-800 text-purple-300"
+              : "bg-blue-950 border-blue-800 text-blue-300"
+          )}>
+            <span className="text-sm">{currentPreset.icon}</span>
+            <span>{isVi ? currentPreset.nameVi : currentPreset.name}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDetailOpen(!isDetailOpen)}
+            className="p-1 rounded-lg border border-slate-800 bg-slate-950 text-slate-700 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors"
+            title={isVi ? "Xem chi tiết quy tắc prompt" : "Toggle style prompt rules"}
+          >
+            {isDetailOpen ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-        {STYLE_CATEGORIES.map((cat) => {
-          const isActive = activeCategory === cat.id;
+        {_.map(STYLE_CATEGORIES, (cat) => {
+          const isActive = _.isEqual(activeCategory, cat.id);
           return (
             <button
               key={cat.id}
               type="button"
               onClick={() => setActiveCategory(cat.id)}
               className={cn(
-                "px-2.5 py-1 rounded-xl text-[10px] font-bold font-mono tracking-wider uppercase whitespace-nowrap transition-all duration-150 cursor-pointer border select-none",
+                "px-3 py-1.5 rounded-xl text-[11px] font-bold font-mono tracking-wider uppercase whitespace-nowrap cursor-pointer select-none transition-colors border",
                 isActive
                   ? isPurple
-                    ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-950/50"
-                    : "bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-950/50"
-                  : "bg-slate-955 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "bg-purple-600 border-purple-600 text-white shadow-xs"
+                    : "bg-blue-600 border-blue-600 text-white shadow-xs"
+                  : "bg-slate-950 text-slate-700 border-slate-800 hover:bg-slate-850 hover:text-slate-100"
               )}
             >
               {isVi ? cat.nameVi : cat.nameEn}
@@ -103,9 +90,9 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
         })}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-44 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-        {filteredPresets.map((preset) => {
-          const isSelected = currentPreset.id === preset.id;
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {_.map(filteredPresets, (preset) => {
+          const isSelected = _.isEqual(currentPreset.id, preset.id);
 
           return (
             <button
@@ -113,35 +100,61 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
               type="button"
               onClick={() => onSelectStyle(preset.id)}
               className={cn(
-                "group relative flex items-center gap-2 p-2 rounded-xl border text-left transition-all duration-150 cursor-pointer select-none",
+                "relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-colors min-h-[58px]",
                 isSelected
                   ? isPurple
-                    ? "bg-purple-500/15 border-purple-500/80 ring-1 ring-purple-500/30 text-purple-200 shadow-sm shadow-purple-950/50"
-                    : "bg-blue-500/15 border-blue-500/80 ring-1 ring-blue-500/30 text-blue-200 shadow-sm shadow-blue-950/50"
-                  : "bg-slate-955 border-slate-800 text-slate-300 hover:border-slate-700 hover:bg-slate-900/60"
+                    ? "bg-purple-950 border-purple-600 shadow-sm"
+                    : "bg-blue-950 border-blue-600 shadow-sm"
+                  : isPurple
+                    ? "bg-slate-900 border-slate-800 hover:border-purple-800 hover:bg-purple-950/40"
+                    : "bg-slate-900 border-slate-800 hover:border-blue-800 hover:bg-blue-950/40"
               )}
             >
-              <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{preset.icon}</span>
-              <div className="min-w-0 flex-1">
+              <div className={cn(
+                "p-2 rounded-xl text-lg flex items-center justify-center shrink-0 border",
+                isPurple
+                  ? isSelected
+                    ? "bg-purple-900 border-purple-800 text-purple-400"
+                    : "bg-purple-950 border-purple-800 text-purple-500"
+                  : isSelected
+                    ? "bg-blue-900 border-blue-800 text-blue-400"
+                    : "bg-blue-950 border-blue-800 text-blue-500"
+              )}>
+                {preset.icon}
+              </div>
+
+              <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
                 <span className={cn(
-                  "text-[11px] font-semibold tracking-tight block truncate leading-tight",
-                  isSelected 
-                    ? isPurple ? "font-bold text-purple-200" : "font-bold text-blue-200"
-                    : "text-slate-200 group-hover:text-white"
+                  "text-xs block truncate leading-tight",
+                  isSelected
+                    ? isPurple
+                      ? "text-purple-300 font-black tracking-tight"
+                      : "text-blue-300 font-black tracking-tight"
+                    : "text-slate-100 font-bold"
                 )}>
                   {isVi ? preset.nameVi : preset.name}
                 </span>
-                <span className="text-[9px] text-slate-400 block truncate leading-tight mt-0.5">
-                  {preset.description}
+                <span className={cn(
+                  "text-[10px] block truncate leading-tight mt-0.5",
+                  isSelected
+                    ? isPurple
+                      ? "text-purple-400 font-bold"
+                      : "text-blue-400 font-bold"
+                    : "text-slate-700 font-medium"
+                )}>
+                  {preset.tagline || preset.description}
                 </span>
               </div>
-              {isSelected && (
+
+              {isSelected ? (
                 <div className={cn(
-                  "w-3.5 h-3.5 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs",
-                  isPurple ? "bg-purple-500" : "bg-blue-500"
+                  "w-4 h-4 rounded-full text-white flex items-center justify-center shrink-0 shadow-xs ml-1",
+                  isPurple ? "bg-purple-600" : "bg-blue-600"
                 )}>
-                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  <Check className="w-2.5 h-2.5 stroke-[3.5]" />
                 </div>
+              ) : (
+                <div className="w-3.5 h-3.5 rounded-full border border-slate-800 shrink-0 ml-1" />
               )}
             </button>
           );
@@ -150,21 +163,23 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
 
       {isDetailOpen && (
         <div className={cn(
-          "border rounded-xl p-2.5 space-y-1 text-xs animate-in fade-in duration-200 bg-slate-955",
-          isPurple ? "border-purple-500/30" : "border-blue-500/30"
+          "border rounded-2xl p-3 space-y-1.5 text-xs shadow-xs",
+          isPurple 
+            ? "bg-purple-950 border-purple-800 text-slate-100" 
+            : "bg-blue-950 border-blue-800 text-slate-100"
         )}>
           <div className={cn(
             "flex items-center gap-1.5 font-bold font-mono text-[10px] uppercase tracking-wider",
-            isPurple ? "text-purple-300" : "text-blue-300"
+            isPurple ? "text-purple-400" : "text-blue-400"
           )}>
             <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <span>Quy tắc phong cách: {isVi ? currentPreset.nameVi : currentPreset.name}</span>
           </div>
-          <p className="text-[10.5px] text-slate-300 leading-relaxed font-sans">
-            <strong className={cn("font-semibold", isPurple ? "text-purple-300" : "text-blue-300")}>Đặc trưng:</strong> {currentPreset.positivePrompt}
+          <p className="text-[10.5px] text-slate-100 leading-relaxed font-sans">
+            <strong className={cn("font-semibold", isPurple ? "text-purple-400" : "text-blue-400")}>Đặc trưng cốt lõi:</strong> {currentPreset.positivePrompt}
           </p>
-          <p className="text-[10.5px] text-rose-400/90 leading-relaxed font-sans">
-            <strong className="font-semibold text-rose-400">Từ khóa bị chặn (Negative):</strong> {currentPreset.negativePrompt}
+          <p className="text-[10.5px] text-rose-700 leading-relaxed font-sans">
+            <strong className="font-semibold text-rose-700">Từ khóa bị chặn (Negative):</strong> {currentPreset.negativePrompt}
           </p>
         </div>
       )}

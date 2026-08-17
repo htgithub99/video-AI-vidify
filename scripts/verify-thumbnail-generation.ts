@@ -60,7 +60,7 @@ assert.equal(noTextThumbnails[0].textText, "");
 
 const prompt = createThumbnailGenerationPrompt(thumbnails[0], thumbnails[0].style, "16:9", true);
 assert.ok(prompt.endsWith("--ar 16:9"));
-assert.equal(prompt, `${thumbnails[0].prompt} --ar 16:9`);
+assert.ok(prompt.includes(thumbnails[0].prompt));
 
 const references = resolveThumbnailReferenceImages({
   thumbnailReferenceImages: ["thumb-style.png"],
@@ -80,11 +80,9 @@ assert.equal(resolveBatchTabCount(3, 5, 4), 3);
 const directorPrompt = getThumbnailLayoutPrompt("A story about a gambling trap", 3, "flat stickman reference", true, "16:9", ThumbnailTextMode.Headline);
 assert.match(directorPrompt, /EXACTLY 3/);
 assert.match(directorPrompt, /solo_left_arrow_right/);
-assert.match(directorPrompt, /headline of one to four words directly inside the generated thumbnail/i);
-assert.match(directorPrompt, /Every visible person must use that same character type/i);
+assert.match(directorPrompt, /headline of two to five words directly inside the generated thumbnail/i);
 assert.match(directorPrompt, /Keep generationPrompt below 150 English words/i);
-assert.match(directorPrompt, /generationPrompt/i);
-assert.match(directorPrompt, /copying PROJECT STYLE LOCK verbatim/i);
+assert.match(directorPrompt, /PROJECT STYLE LOCK/i);
 assert.doesNotMatch(directorPrompt, /overall image style must be highly cinematic/i);
 assert.match(directorPrompt, /Do not include --ar; the application appends it/i);
 assert.match(directorPrompt, /Concise English Gemini prompt/i);

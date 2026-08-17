@@ -21,7 +21,6 @@ import {
   CONTENT_TYPES,
   CONTENT_TYPE_HEADER,
   REFACTOR_CONSTANTS,
-  DEFAULT_PROJECT_CONFIGS,
   API_HEADERS,
   STORAGE_KEYS,
 } from "../constants";
@@ -300,40 +299,44 @@ export default function AutoVideoGenerator({
       }
 
       if (changed) {
-        pipelineActions.setActiveCreatedProject(updatedProject);
+        setActiveCreatedProject(updatedProject);
         await onUpdateProject(updatedProject, true);
       }
 
+      toast.success(regenerationTexts.voice || regenerationTexts.failed);
+
       if (isVoice) {
-        await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
+        await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: false });
       } else if (isImages) {
-        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
+        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: false });
       } else if (isVideos) {
-        await handleStartAutoGenerate({ resumeMode: true });
+        await handleStartAutoGenerate({ resumeMode: false });
       }
+    } catch (err: any) {
+      toast.error(err.message || regenerationTexts.failed);
     } finally {
       setRegeneratingTarget(null);
     }
   };
 
-  const handleVoiceSelectAndClose = (voice: CatalogVoice) => {
-    setVoiceURI(voice.voice_id);
-    setVoiceName(voice.name);
-    setVoiceProvider(voice.provider || DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
+  const handleVoiceSelectAndClose = (v: CatalogVoice) => {
+    setVoiceURI(v.voice_id);
+    setVoiceName(v.name);
+    setVoiceProvider(v.provider || "");
     setIsVoiceDialogOpen(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-955 overflow-hidden text-slate-100 font-sans">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 overflow-y-auto lg:overflow-hidden">
-        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 border-r border-slate-800/80 space-y-6 scrollbar-none">
+    <div className="h-full flex flex-col overflow-y-auto bg-slate-955 font-sans text-slate-100">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
+        <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 scrollbar-none">
           <PresetSection
             presets={presets}
             selectedPresetId={selectedPresetId}
-            handleApplyPreset={handleApplyPreset}
             presetNameInputState={presetNameInputState}
             setPresetNameInputState={setPresetNameInputState}
             handleSavePreset={handleSavePreset}
+            handleApplyPreset={handleApplyPreset}
             handleDeletePreset={handleDeletePreset}
             T={T}
             truncateWords={truncateWords}
@@ -357,8 +360,6 @@ export default function AutoVideoGenerator({
               T={T}
             />
 
-            <div className="border-t border-slate-800/80 my-2" />
-
             <VoiceSelectionSection
               voiceName={voiceName}
               voiceURI={voiceURI}
@@ -372,9 +373,7 @@ export default function AutoVideoGenerator({
               T={T}
             />
 
-            <div className="border-t border-slate-800/80 my-2" />
-
-            <div className="space-y-4">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
               <GenerationSettingsSection
                 generationMode={generationMode}
                 setGenerationMode={setGenerationMode}
@@ -408,14 +407,15 @@ export default function AutoVideoGenerator({
                 T={T}
               />
 
-              <StylePresetSelector
-                selectedStyle={stylePreset}
-                onSelectStyle={setStylePreset}
-                language={currentLang}
-              />
+              <div className="pt-2 border-t border-slate-800/80">
+                <StylePresetSelector
+                  selectedStyle={stylePreset}
+                  onSelectStyle={setStylePreset}
+                  language={currentLang}
+                  accentColor="blue"
+                />
+              </div>
             </div>
-
-            <div className="border-t border-slate-800/80 my-2" />
 
             <ProjectSettingsSection
               projectName={projectName}

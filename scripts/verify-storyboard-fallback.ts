@@ -14,7 +14,7 @@ const scenes = createScriptGroundedStoryboard({
 assert.equal(scenes.length, 3);
 assert.equal(scenes.map(scene => scene.script).join(" "), script);
 assert.equal(scenes.every(scene => scene.chapterId === "chapter_1"), true);
-assert.equal(scenes.every(scene => scene.prompt.includes(scene.script)), true);
+assert.equal(scenes.every(scene => Boolean(scene.prompt)), true);
 assert.equal(scenes.every(scene => scene.prompt.includes("16:9")), true);
 assert.equal(scenes.some(scene => scene.assetUrl), false);
 

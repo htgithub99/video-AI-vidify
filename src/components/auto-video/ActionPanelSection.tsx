@@ -1,6 +1,6 @@
 import React from "react";
 import _ from "lodash";
-import { Zap, X, Sparkles, Activity } from "lucide-react";
+import { Zap, X, Activity } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 
@@ -31,14 +31,6 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
     <div className="bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-slate-800/90 p-5 rounded-3xl space-y-4 shadow-2xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl group hover:border-rose-500/30 transition-all duration-500">
       <div className="absolute -top-12 -right-12 w-36 h-36 bg-gradient-to-br from-rose-500/20 to-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
       <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-gradient-to-tr from-violet-600/15 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-      <div className="space-y-1.5 relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px] font-mono font-bold tracking-wide uppercase">
-          <Sparkles className="w-3 h-3 text-rose-400 animate-pulse" />
-          <span>{T.rightActionTitle}</span>
-        </div>
-        <p className="text-xs text-slate-400 leading-relaxed font-sans">{T.rightActionSub}</p>
-      </div>
 
       <div className="flex items-center gap-3 w-full relative z-10">
         <Button

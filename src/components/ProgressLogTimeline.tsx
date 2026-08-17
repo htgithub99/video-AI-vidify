@@ -18,7 +18,6 @@ import { PROGRESS_LOG_CONFIG, ProgressLogTone } from "../constants/progressLog";
 import { SecurityConstants } from "../constants/security";
 import { AppTheme } from "../constants/enums";
 import { cn } from "../lib/utils";
-import { formatUserFacingLog } from "../lib/userLogFormatter";
 
 interface ProgressLogTimelineProps {
   logs: string[];
@@ -49,27 +48,16 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
   return matchedTone || ProgressLogTone.Info;
 };
 
-const parseProgressLog = (log: string, language?: string) => {
+const parseProgressLog = (log: string) => {
   const rawLog = _.toString(log);
   const timeMatch = rawLog.match(PROGRESS_LOG_CONFIG.TIME_PATTERN);
-  const message = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
-  const cleanMessage = _.trim(message.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
-
-  const stepMatch = cleanMessage.match(PROGRESS_LOG_CONFIG.STEP_PATTERN);
-
-  let stepLabel = "";
-  let finalMessage = cleanMessage;
-
-  if (stepMatch) {
-    stepLabel = stepMatch[1];
-    finalMessage = _.trim(cleanMessage.substring(stepMatch[0].length));
-  }
+  const messageWithoutTime = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
+  const cleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
 
   return {
     time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
-    message: formatUserFacingLog(finalMessage, language),
-    stepLabel,
-    tone: resolveProgressLogTone(message),
+    message: cleanMessage,
+    tone: resolveProgressLogTone(messageWithoutTime),
   };
 };
 
@@ -97,16 +85,16 @@ const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: A
 
 ProgressLogIcon.displayName = "ProgressLogIcon";
 
-export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogTimelineProps) => {
-  const entries = useMemo(() => _.map(logs, log => parseProgressLog(log, language)), [logs, language]);
+export const ProgressLogTimeline = memo(({ logs, theme }: ProgressLogTimelineProps) => {
+  const entries = useMemo(() => _.map(logs, log => parseProgressLog(log)), [logs]);
   const isLightTheme = _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleCopy = (text: string, index: number) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch(_.noop);
     setCopiedIndex(index);
     setTimeout(() => {
-      setCopiedIndex((prev) => (prev === index ? null : prev));
+      setCopiedIndex((prev) => (_.isEqual(prev, index) ? null : prev));
     }, 2000);
   };
 
@@ -119,8 +107,8 @@ export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogT
 
       {_.map(entries, (entry, index) => {
         const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
-        const isError = entry.tone === ProgressLogTone.Error;
-        const isCopied = copiedIndex === index;
+        const isError = _.isEqual(entry.tone, ProgressLogTone.Error);
+        const isCopied = _.isEqual(copiedIndex, index);
 
         return (
           <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, "group/log relative")}>
@@ -135,11 +123,6 @@ export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogT
               PROGRESS_LOG_CONFIG.CLASSES.MESSAGE,
               isLightTheme ? style.textLight : style.textDark
             )}>
-              {!_.isEmpty(entry.stepLabel) && (
-                <span className={PROGRESS_LOG_CONFIG.CLASSES.STEP_LABEL}>
-                  {entry.stepLabel}:
-                </span>
-              )}
               {entry.message}
             </span>
 
@@ -149,7 +132,7 @@ export const ProgressLogTimeline = memo(({ logs, theme, language }: ProgressLogT
                   type="button"
                   onClick={() => handleCopy(entry.message, index)}
                   className={cn(
-                    "p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm",
+                    "p-1.5 rounded-lg transition-all flex items-center justify-center opacity-80 hover:opacity-100 shadow-sm cursor-pointer",
                     isCopied
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
                       : "bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"

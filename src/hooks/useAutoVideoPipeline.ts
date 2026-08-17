@@ -1048,67 +1048,12 @@ export function useAutoVideoPipeline(
       const shouldRegenerateThumbnails = Boolean(config.forceRegenerateScenes)
         || invalidationState.regenerateThumbnails;
       let preparedSeoData: unknown = cachedSeoData;
-      let preparedThumbnails: ThumbnailItem[] = [];
-      let sharedThumbnailBatchItems: Array<{
-        sceneId: string;
-        idempotencyKey: string;
-        prompt: string;
-        generateType: GenerateType.Image;
-        referenceImages: string[];
-        continuityKey: string;
-      }> = [];
-      if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
-        if (!preparedSeoData && seoRequest) {
-          const seoRes = await seoRequest;
-          preparedSeoData = seoRes.success && seoRes.data
-            ? seoRes.data
-            : createSourceGroundedSeo(realScript, newProj.seoConfig);
-        }
-        const cachedThumbnails = _.defaultTo(newProj.thumbnails, []);
-        preparedThumbnails = config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(cachedThumbnails)
-          ? _.cloneDeep(cachedThumbnails)
-          : [];
-        if (_.isEmpty(preparedThumbnails)) {
-          const thumbnailPlan = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, {
-            rewrittenScript: realScript,
-            config: voiceUpdatedProj.config,
-            visualConfig: { ...voiceUpdatedProj.visualConfig, thumbnailReferencePrompt: currentThumbnailStyle },
-            bypassCache: true,
-          }, requestSignal);
-          preparedThumbnails = _.cloneDeep(_.defaultTo(thumbnailPlan.data?.thumbnails, []));
-        }
-        const thumbnailReferenceImages = resolveThumbnailReferenceImages(voiceUpdatedProj.visualConfig);
-        sharedThumbnailBatchItems = _.map(
-          _.filter(preparedThumbnails, thumbnail => _.isEmpty(thumbnail.imageUrl)),
-          thumbnail => {
-            const thumbnailStyle = _.toString(_.defaultTo(thumbnail.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
-            const prompt = createThumbnailGenerationPrompt(
-              thumbnail,
-              thumbnailStyle,
-              config.aspectRatio,
-              !_.isEmpty(thumbnailReferenceImages),
-              voiceUpdatedProj.visualConfig.characters,
-            );
-            thumbnail.generationPrompt = prompt;
-            thumbnail.generationStatus = SceneAssetStatus.Generating;
-            thumbnail.generationError = undefined;
-            return {
-              sceneId: thumbnail.id,
-              idempotencyKey: _.join([voiceUpdatedProj.id, thumbnail.id, "thumbnail"], ":"),
-              prompt,
-              generateType: GenerateType.Image,
-              referenceImages: thumbnailReferenceImages,
-              continuityKey: createThumbnailContinuityKey(),
-            };
-          },
-        );
-        if (!_.isEmpty(preparedThumbnails)) {
-          voiceUpdatedProj = {
-            ...voiceUpdatedProj,
-            thumbnails: preparedThumbnails,
-          };
-          await syncProject(voiceUpdatedProj);
-        }
+
+      if (!preparedSeoData && seoRequest) {
+        const seoRes = await seoRequest;
+        preparedSeoData = seoRes.success && seoRes.data
+          ? seoRes.data
+          : createSourceGroundedSeo(realScript, newProj.seoConfig);
       }
 
       const visualDependencies = {
@@ -1163,11 +1108,7 @@ export function useAutoVideoPipeline(
         const checkpointProject = {
           ...voiceUpdatedProj,
           storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
-          thumbnails: _.isEmpty(preparedThumbnails)
-            ? (config.forceRegenerateScenes
-                ? _.map(_.defaultTo(voiceUpdatedProj.thumbnails, []), t => ({ ...t, imageUrl: undefined, generationStatus: undefined, generationPrompt: undefined }))
-                : voiceUpdatedProj.thumbnails)
-            : _.cloneDeep(preparedThumbnails),
+          thumbnails: voiceUpdatedProj.thumbnails,
         };
         imageCheckpointQueue = imageCheckpointQueue.then(() => syncProject(checkpointProject));
         return imageCheckpointQueue;
@@ -1201,7 +1142,7 @@ export function useAutoVideoPipeline(
         };
       };
 
-      if (_.some([!_.isEmpty(targetScenesToGen), !_.isEmpty(sharedThumbnailBatchItems)])) {
+      if (!_.isEmpty(targetScenesToGen)) {
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
           const sceneBatchItems = _.map(targetScenesToGen, (scene) => {
@@ -1216,7 +1157,7 @@ export function useAutoVideoPipeline(
               generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
             };
           });
-          const batchItems = _.concat(sceneBatchItems, sharedThumbnailBatchItems);
+          const batchItems = sceneBatchItems;
           let completedCount = SecurityConstants.ZERO;
           let batchFailureCount = SecurityConstants.ZERO;
 
@@ -1233,14 +1174,6 @@ export function useAutoVideoPipeline(
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
               const totalScenes = _.size(targetScenesToGen);
               appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
-              void persistImageCheckpoint();
-              return;
-            }
-            const thumbnail = _.find(preparedThumbnails, item => _.isEqual(item.id, result.sceneId));
-            if (thumbnail && !_.isEmpty(imageUrl)) {
-              thumbnail.imageUrl = imageUrl;
-              thumbnail.generationStatus = SceneAssetStatus.Generated;
-              thumbnail.generationError = undefined;
               void persistImageCheckpoint();
             }
           };
@@ -1260,11 +1193,6 @@ export function useAutoVideoPipeline(
                 if (failedScene && !hasSceneAsset(failedScene)) {
                   failedScene.assetStatus = SceneAssetStatus.Failed;
                   failedScene.assetError = failureReason;
-                }
-                const failedThumbnail = _.find(preparedThumbnails, (item) => _.isEqual(item.id, result.sceneId));
-                if (failedThumbnail && _.isEmpty(failedThumbnail.imageUrl)) {
-                  failedThumbnail.generationStatus = SceneAssetStatus.Failed;
-                  failedThumbnail.generationError = failureReason;
                 }
                 void persistImageCheckpoint();
               },
@@ -1391,9 +1319,7 @@ export function useAutoVideoPipeline(
       const imageUpdatedProj = {
         ...voiceUpdatedProj,
         storyboard: realScenes as VideoProject["storyboard"],
-        thumbnails: _.isEmpty(preparedThumbnails)
-          ? voiceUpdatedProj.thumbnails
-          : preparedThumbnails,
+        thumbnails: voiceUpdatedProj.thumbnails,
       };
       await syncProject(imageUpdatedProj);
 
@@ -1425,9 +1351,7 @@ export function useAutoVideoPipeline(
         }
       }
 
-      if (!isThumbsCached && !_.isEmpty(preparedThumbnails)) {
-        thumbnailsList = preparedThumbnails;
-      } else if (!isThumbsCached) {
+      if (!isThumbsCached) {
         let parsedThumbs: ThumbnailItem[] = [];
 
         if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(existingThumbs)) {

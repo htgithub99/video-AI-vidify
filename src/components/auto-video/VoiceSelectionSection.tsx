@@ -1,5 +1,6 @@
+import React from "react";
 import _ from "lodash";
-import { ChevronDown, Mic } from "lucide-react";
+import { ChevronDown, Mic, Volume2 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { VoiceSelectionDialog, type Voice as CatalogVoice } from "../VoiceSelectionDialog";
@@ -33,12 +34,21 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
   T,
 }) => {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center font-mono font-bold text-xs">{PIPELINE_STEPS.STEP_2}</span>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
-          <Mic className="w-3.5 h-3.5 text-rose-500" /> {T.sec2Title}
-        </h3>
+    <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-amber-500/20">
+            {PIPELINE_STEPS.STEP_2}
+          </span>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={T.sec2TitleTooltip}>
+            <Mic className="w-3.5 h-3.5 text-amber-400" /> {T.sec2Title}
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
+          <Volume2 className="w-3 h-3 text-amber-400" />
+          <span className="font-semibold text-slate-300">{voiceProvider || "AI Voice"}</span>
+        </div>
       </div>
 
       <div>
@@ -46,23 +56,27 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
           onClick={() => setIsVoiceDialogOpen(true)}
-          className="w-full bg-slate-955/80 border border-slate-800 hover:border-rose-500/50 rounded-xl p-3 text-left flex items-center justify-between transition-all group h-auto"
+          className="w-full bg-slate-955/90 border border-slate-800/90 hover:border-amber-500/60 rounded-2xl p-3 text-left flex items-center justify-between transition-all group h-auto cursor-pointer shadow-sm hover:shadow-amber-950/20"
           title={T.voiceBtnTooltip}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500">
-              <Mic className="w-5 h-5" />
+            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:scale-105 transition-transform">
+              <Mic className="w-4 h-4" />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <Tooltip content={voiceName || voiceURI} position="top">
-                <span className="font-bold text-slate-100 text-xs group-hover:text-rose-400 transition-colors">
-                  {truncateWords(voiceName || voiceURI, 4)}
+                <span className="font-bold text-slate-100 text-xs group-hover:text-amber-400 transition-colors">
+                  {truncateWords(voiceName || voiceURI, 5)}
                 </span>
               </Tooltip>
-              <span className="text-[9px] text-slate-400 font-mono uppercase bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded">{voiceProvider}</span>
+              {!_.isEmpty(voiceProvider) && (
+                <span className="text-[9px] text-amber-400/90 font-mono font-semibold uppercase bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                  {voiceProvider}
+                </span>
+              )}
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-rose-400" />
+          <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors" />
         </Button>
       </div>
 
@@ -71,12 +85,12 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
           key={voiceDialogPersistenceScope}
           isOpen={isVoiceDialogOpen}
           onClose={() => setIsVoiceDialogOpen(false)}
-          currentLang={currentLang}
+          currentLang={_.isEqual(currentLang, "en") ? "en" : "vi"}
           selectedVoiceId={voiceURI}
           favoriteVoices={[]}
-          onToggleFavoriteVoice={() => { }}
-          persistenceScope={voiceDialogPersistenceScope}
+          onToggleFavoriteVoice={_.noop}
           onSelectVoice={handleVoiceSelect}
+          persistenceScope={voiceDialogPersistenceScope}
         />
       )}
     </div>
