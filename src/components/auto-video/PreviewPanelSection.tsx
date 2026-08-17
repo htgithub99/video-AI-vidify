@@ -10,6 +10,7 @@ interface PreviewPanelSectionProps {
   projectName: string;
   activeCreatedProject: any;
   isProcessing: boolean;
+  regeneratingTarget?: string | null;
   onSelectProject: (id: string) => void;
   handleRegenerate: (target: string) => Promise<void>;
   T: any;
@@ -21,6 +22,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
   projectName,
   activeCreatedProject,
   isProcessing,
+  regeneratingTarget = null,
   onSelectProject,
   handleRegenerate,
   T,
@@ -42,6 +44,11 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
       setLoadingTarget(null);
     }
   }, [isProcessing]);
+
+  const isVoiceActive = _.isEqual(loadingTarget, REGENERATION_TARGET.VOICE) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.VOICE));
+  const isImagesActive = _.isEqual(loadingTarget, REGENERATION_TARGET.IMAGES) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.IMAGES));
+  const isRenderActive = _.isEqual(loadingTarget, REGENERATION_TARGET.RENDER) || (isProcessing && _.isEqual(regeneratingTarget, REGENERATION_TARGET.RENDER));
+  const isAnyDisabled = isProcessing || !_.isNull(loadingTarget) || !_.isNull(regeneratingTarget);
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl flex-1 flex flex-col justify-between">
@@ -97,12 +104,12 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           <Button 
             size={REFACTOR_CONSTANTS.SIZE_SM as any} 
             variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED as any} 
-            disabled={isProcessing || loadingTarget !== null} 
+            disabled={isAnyDisabled} 
             onClick={() => onRegenerate(REGENERATION_TARGET.VOICE)}
             title={regenerationTexts.voice}
             className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-blue-400/30 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loadingTarget === REGENERATION_TARGET.VOICE ? (
+            {isVoiceActive ? (
               <RefreshCw className="w-4 h-4 text-cyan-100 animate-spin" />
             ) : (
               <Mic className="w-4 h-4 text-cyan-100" />
@@ -112,12 +119,12 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           <Button 
             size={REFACTOR_CONSTANTS.SIZE_SM as any} 
             variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED as any} 
-            disabled={isProcessing || loadingTarget !== null} 
+            disabled={isAnyDisabled} 
             onClick={() => onRegenerate(REGENERATION_TARGET.IMAGES)} 
             title={regenerationTexts.images}
             className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-purple-400/30 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-purple-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loadingTarget === REGENERATION_TARGET.IMAGES ? (
+            {isImagesActive ? (
               <RefreshCw className="w-4 h-4 text-pink-100 animate-spin" />
             ) : (
               <ImageIcon className="w-4 h-4 text-pink-100" />
@@ -127,12 +134,12 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({
           <Button 
             size={REFACTOR_CONSTANTS.SIZE_SM as any} 
             variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED as any} 
-            disabled={isProcessing || loadingTarget !== null} 
+            disabled={isAnyDisabled} 
             onClick={() => onRegenerate(REGENERATION_TARGET.RENDER)} 
             title={regenerationTexts.render}
             className="py-2.5 px-2 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 border border-emerald-400/30 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-4 h-4 text-teal-100 ${loadingTarget === REGENERATION_TARGET.RENDER ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-teal-100 ${isRenderActive ? 'animate-spin' : ''}`} />
             <span className="truncate">{regenerationTexts.render}</span>
           </Button>
         </div>

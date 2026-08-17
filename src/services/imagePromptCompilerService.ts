@@ -274,7 +274,9 @@ export const compileImagePrompt = (
 
   let rawPrompt: string;
   if (isAiOptimizedPrompt) {
-    rawPrompt = existingPrompt;
+    rawPrompt = isReferenceLocked && !_.includes(existingPrompt, STYLE_REFERENCE_DIRECTIVES.REFERENCE_MATCH_DIRECTIVE)
+      ? _.join([STYLE_REFERENCE_DIRECTIVES.REFERENCE_MATCH_DIRECTIVE, existingPrompt], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR)
+      : existingPrompt;
   } else {
     const clauses = buildPromptClauses(scene, options);
     rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);

@@ -993,8 +993,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
           const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
           if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          
-          // Bỏ bước chọn tạo ảnh: trực tiếp upload 1 ảnh tham chiếu và nhập prompt
+
           await configureGeminiMediaInput(activePage!, visualConfig);
 
           if (forceSetting) {
@@ -1095,13 +1094,25 @@ const resolveBatchAssetType = (
     : GenerateType.Image
 );
 
-const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisualConfig): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => ({
-  ...visualConfig,
-  generateType: resolveBatchAssetType(item),
-  referenceImages: _.isEmpty(item.referenceImages)
+const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisualConfig): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => {
+  const fallbackRefs = !_.isEmpty(visualConfig?.referenceImages)
     ? visualConfig.referenceImages
-    : item.referenceImages,
-});
+    : !_.isEmpty(visualConfig?.sceneReferenceImages)
+      ? visualConfig.sceneReferenceImages
+      : visualConfig?.styleReferenceImages;
+
+  const resolvedRefs = !_.isEmpty(item?.referenceImages)
+    ? item.referenceImages
+    : fallbackRefs;
+
+  return {
+    ...visualConfig,
+    generateType: resolveBatchAssetType(item),
+    referenceImages: resolvedRefs,
+    sceneReferenceImages: resolvedRefs,
+    styleReferenceImages: resolvedRefs,
+  };
+};
 
 export async function closeAllBatchPages() {
   await closeActiveBrowser();
@@ -1363,8 +1374,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
               const modelConfigured = await configureGeminiModel(page, itemVisualConfig);
               if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-              
-              // Bỏ bước chọn tạo ảnh: trực tiếp upload 1 ảnh tham chiếu và nhập prompt
+
               await configureGeminiMediaInput(page, itemVisualConfig);
 
               if (forceSetting) {
@@ -1800,37 +1810,81 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
     }
   }
 
-  const isAlreadyUploaded = _.isEqual(roomReferenceUploadedMap.get(page), true);
-  if (isAlreadyUploaded) {
+  const rawReferences = !_.isEmpty(visualConfig?.referenceImages)
+    ? visualConfig.referenceImages
+    : !_.isEmpty(visualConfig?.sceneReferenceImages)
+      ? visualConfig.sceneReferenceImages
+      : visualConfig?.styleReferenceImages;
+  const allReferenceFiles = createGeminiReferenceFiles(rawReferences);
+  if (_.isEmpty(allReferenceFiles)) return;
+
+  const currentChipCount = await page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS).count().catch(() => 0);
+  if (_.gt(currentChipCount, SecurityConstants.ZERO)) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_REUSE);
     return;
   }
 
-  const rawReferences = visualConfig?.referenceImages || visualConfig?.sceneReferenceImages;
-  const allReferenceFiles = createGeminiReferenceFiles(rawReferences);
-  if (_.isEmpty(allReferenceFiles)) return;
-
   const referenceFiles = [_.first(allReferenceFiles)!];
 
+  let uploadSuccess = false;
   let referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
-  const hasInput = _.gt(await referenceInput.count(), SecurityConstants.ZERO);
 
-  if (!hasInput) {
-    const plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
-    if (await plusButton.isVisible().catch(() => false)) {
-      await plusButton.click().catch(() => {});
-      await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
-      referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+  if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
+    try {
+      await referenceInput.setInputFiles(referenceFiles);
+      uploadSuccess = true;
+    } catch {
+      uploadSuccess = false;
     }
   }
 
-  if (_.lte(await referenceInput.count(), SecurityConstants.ZERO)) {
+  if (!uploadSuccess) {
+    let plusButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.PLUS_BUTTON).first();
+    if (!await plusButton.isVisible().catch(() => false)) {
+      plusButton = page.locator('.input-area, .chat-input, input-area, form').locator('button').first();
+    }
+    if (await plusButton.isVisible().catch(() => false)) {
+      await plusButton.click().catch(() => {});
+      await randomDelay(GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MIN_MS, GEMINI_CHAT_VIDEO_INPUT_CONFIG.ASPECT_DELAY_MAX_MS);
+    }
+
+    referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+    if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
+      try {
+        await referenceInput.setInputFiles(referenceFiles);
+        uploadSuccess = true;
+      } catch {}
+    }
+
+    if (!uploadSuccess) {
+      const uploadMenuItem = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.UPLOAD_MENU_ITEM).first();
+      if (await uploadMenuItem.isVisible().catch(() => false)) {
+        try {
+          const [fileChooser] = await Promise.all([
+            page.waitForEvent('filechooser', { timeout: 8000 }).catch(() => null),
+            uploadMenuItem.click().catch(() => {}),
+          ]);
+          if (fileChooser) {
+            await fileChooser.setFiles(referenceFiles);
+            uploadSuccess = true;
+          }
+        } catch {
+          referenceInput = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_INPUT).first();
+          if (_.gt(await referenceInput.count().catch(() => 0), SecurityConstants.ZERO)) {
+            await referenceInput.setInputFiles(referenceFiles).catch(() => {});
+            uploadSuccess = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!uploadSuccess) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_REFERENCE_INPUT_NOT_FOUND);
     return;
   }
 
   try {
-    await referenceInput.setInputFiles(referenceFiles);
     await page.waitForFunction(
       ({ selector, expectedCount }) => document.querySelectorAll(selector).length >= expectedCount,
       { selector: GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS, expectedCount: SecurityConstants.DEFAULT_AMOUNT },

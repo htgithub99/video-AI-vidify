@@ -613,9 +613,10 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
 export const GEMINI_CHAT_VIDEO_SELECTORS = {
   ASPECT_BUTTON: 'input-companion-chip button[aria-haspopup="menu"], button[aria-label*="16:9"], button[aria-label*="9:16"]',
   ASPECT_OPTIONS: '[role="menuitemradio"]',
-  REFERENCE_INPUT: 'input[type="file"], input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
-  REFERENCE_CHIPS: '.attachment-container, [data-test-id*="attachment"], async-processing-chip, mat-chip, .image-preview, .thumbnail-container, input-companion-uploader .attachment-container, input-companion-uploader [data-test-id*="attachment"], input-companion-uploader async-processing-chip',
-  PLUS_BUTTON: 'button:has(mat-icon), button[aria-label*="tệp" i], button[aria-label*="file" i], button[aria-label*="thêm" i], button[aria-label*="add" i], button[data-test-id*="plus" i]',
+  REFERENCE_INPUT: 'input[type="file"].hidden-file-input, uploader input[type="file"], input[type="file"], input-companion-uploader input[type="file"], input[name="Filedata"][type="file"]',
+  REFERENCE_CHIPS: '.attachment-container, [data-test-id*="attachment"], async-processing-chip, mat-chip, .image-preview, .thumbnail-container, input-companion-uploader .attachment-container, input-companion-uploader [data-test-id*="attachment"], input-companion-uploader async-processing-chip, [aria-label*="xóa" i], [aria-label*="remove" i], [aria-label*="delete" i]',
+  PLUS_BUTTON: 'button:has(mat-icon[data-mat-icon-name="add"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon:has-text("add")), button:has(mat-icon[data-mat-icon-name="attach_file"]), button:has(mat-icon[fonticon="attach_file"]), button[aria-label*="Mở rộng menu" i], button[aria-label*="Tuỳ chọn" i], button[aria-label*="Tải lên" i], button[aria-label*="Thêm tệp" i], button[aria-label*="Upload" i], button[data-test-id*="plus" i], button[data-test-id*="attach" i], input-area button:first-child, .input-area button:first-child',
+  UPLOAD_MENU_ITEM: 'button[data-test-id="local-images-files-uploader-button"], images-files-uploader button, button[aria-label*="Tải tệp lên" i], [data-test-id="uploader-images-files-button-advanced"] button, button[data-test-id="hidden-local-image-upload-button"], button.hidden-local-file-image-selector-button, [role="menuitem"]:has-text("Tải tệp"), [role="menuitem"]:has-text("Upload"), button:has-text("Tải tệp")',
   PROCESSING: "async-processing-chip",
   GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
 } as const;

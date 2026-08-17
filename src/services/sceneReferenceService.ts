@@ -170,7 +170,7 @@ const addReference = (
 
 export const createSceneGenerationContext = (
   scene: StoryboardScene,
-  visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages">,
+  visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">,
 ): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
@@ -180,6 +180,9 @@ export const createSceneGenerationContext = (
   addReference(images, roles, _.first(visualConfig.styleReferenceImages), SCENE_REFERENCE_CONFIG.STYLE_ROLE);
   _.forEach(visualConfig.sceneReferenceImages, image => {
     addReference(images, roles, image, SCENE_REFERENCE_CONFIG.SCENE_ROLE);
+  });
+  _.forEach(visualConfig.referenceImages, image => {
+    addReference(images, roles, image, SCENE_REFERENCE_CONFIG.STYLE_ROLE);
   });
 
   return {

@@ -34,7 +34,7 @@ export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({
       <img
         src={imageSrc}
         alt={badgeLabel}
-        className="w-full h-full object-cover rounded-2xl transition-transform duration-300 group-hover:scale-105"
+        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         onError={handleImageError}
       />
       <div className="absolute inset-0 bg-slate-100 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-600 -z-10">

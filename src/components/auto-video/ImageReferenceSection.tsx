@@ -78,13 +78,13 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
       >
         <Tooltip content={T.sceneReferenceUploadSub} position="top">
           <label className="group relative flex flex-col items-center justify-center w-28 h-28 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-blue-500/80 dark:hover:border-blue-400 bg-white dark:bg-slate-900/60 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 cursor-pointer transition-all duration-200 shadow-sm hover:shadow shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1.5 transition-transform group-hover:scale-110">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-1 transition-transform group-hover:scale-110">
               <Plus className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold tracking-tight text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <span className="text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
               {T.addPhoto || T.sceneReferenceUploadTitle}
             </span>
-            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-400 mt-0.5">{T.uploadDragOrSelect}</span>
+            <span className="text-[9px] font-medium text-slate-400 dark:text-slate-400">{T.uploadDragOrSelect}</span>
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}
               accept={REFACTOR_CONSTANTS.ACCEPT_IMAGE_ALL}
