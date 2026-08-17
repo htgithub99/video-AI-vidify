@@ -44,13 +44,10 @@ export const distributeItemsByContinuity = <T extends ContinuityBatchItem>(
   );
 
   const workerQueues = _.times(workerCount, () => [] as T[]);
-  const lanes = _.values(_.groupBy(items, item => item.continuityKey || IMAGE_GENERATION_CONTINUITY_CONFIG.ENVIRONMENT_LANE));
 
-  _.forEach(lanes, laneItems => {
-    const targetIndex = _.minBy(_.range(workerCount), index => _.size(workerQueues[index]))!;
-    _.forEach(laneItems, item => {
-      workerQueues[targetIndex].push(item);
-    });
+  _.forEach(items, (item, index) => {
+    const targetWorkerIndex = index % workerCount;
+    workerQueues[targetWorkerIndex].push(item);
   });
 
   return workerQueues;

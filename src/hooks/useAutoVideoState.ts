@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import _ from "lodash";
 import {
   VideoProject,
@@ -17,9 +17,10 @@ import {
   ImageFocusMode,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
-import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue } from "../constants";
+import { AUTO_VIDEO_DEFAULTS, REFACTOR_CONSTANTS, DEFAULT_PROJECT_CONFIGS, MEDIA_MIX_CONFIG, normalizeGenreValue, STORAGE_KEYS } from "../constants";
 import { PRESET_CONSTANTS, AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import { jsonUtils } from "../lib/json";
+import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
 import { Lang } from "../lib/lang";
 import { getAutoVideoConfigStorageKey } from "./autoVideoPipelineUtils";
@@ -155,6 +156,17 @@ export interface AutoVideoFormActions {
 const buildInitialProjectName = (): string =>
   `${PRESET_CONSTANTS.PROJECT_NAME_PREFIX}${new Date().toISOString().slice(REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_0, REFACTOR_CONSTANTS.AVG_DATE_FORMAT_SLICE_10)}`;
 
+const readSynchronousCache = (projectId?: string | null): CachedGeneratorConfig | null => {
+  try {
+    const key = getAutoVideoConfigStorageKey(projectId);
+    const raw = storageUtils.get(key);
+    if (raw) return jsonUtils.safeParse<CachedGeneratorConfig>(raw, null);
+    const globalRaw = storageUtils.get(STORAGE_KEYS.AUTO_GENERATOR_CONFIG);
+    if (globalRaw) return jsonUtils.safeParse<CachedGeneratorConfig>(globalRaw, null);
+  } catch {}
+  return null;
+};
+
 const applyProjectToState = (proj: VideoProject, actions: AutoVideoFormActions) => {
   if (proj.input) {
     if (proj.input.type) actions.setInputType(proj.input.type);
@@ -213,65 +225,133 @@ export function useAutoVideoState(
     projectsRef.current = projects;
   }, [projects]);
 
-  const [inputType, setInputType] = useState<ProjectInputType>(ProjectInputType.Script);
-  const [scriptContent, setScriptContent] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [genre, setGenre] = useState<string>(DEFAULT_PROJECT_CONFIGS.GENRE);
-  const [language, setLanguage] = useState<ProjectLanguage>(ProjectLanguage.VI);
-  const [duration, setDuration] = useState<string>(DEFAULT_PROJECT_CONFIGS.DURATION);
+  const initialCachedConfig = useMemo(() => readSynchronousCache(selectedProjectId), []);
+
+  const [inputType, setInputType] = useState<ProjectInputType>(
+    initialCachedConfig?.inputType || ProjectInputType.Script
+  );
+  const [scriptContent, setScriptContent] = useState<string>(
+    initialCachedConfig?.scriptContent ?? REFACTOR_CONSTANTS.VD_EMPTY_STRING
+  );
+  const [genre, setGenre] = useState<string>(
+    initialCachedConfig?.genre ? normalizeGenreValue(initialCachedConfig.genre) : DEFAULT_PROJECT_CONFIGS.GENRE
+  );
+  const [language, setLanguage] = useState<ProjectLanguage>(
+    initialCachedConfig?.language || ProjectLanguage.VI
+  );
+  const [duration, setDuration] = useState<string>(
+    initialCachedConfig?.duration || DEFAULT_PROJECT_CONFIGS.DURATION
+  );
   const [rewriteLevel] = useState<number>(3);
   const [similarityReduction] = useState<number>(3);
   const [creativityLevel] = useState<number>(3);
   const [factCheck] = useState<boolean>(true);
   const [audience] = useState<string>(DEFAULT_PROJECT_CONFIGS.AUDIENCE);
   const [writingStyle] = useState<string>(DEFAULT_PROJECT_CONFIGS.WRITING_STYLE);
-  const [splitStrategy, setSplitStrategy] = useState<string>(REFACTOR_CONSTANTS.AVG_SPLIT_MIXED);
+  const [splitStrategy, setSplitStrategy] = useState<string>(
+    initialCachedConfig?.splitStrategy || REFACTOR_CONSTANTS.AVG_SPLIT_MIXED
+  );
 
   const [hookStrategy] = useState<string>(DEFAULT_PROJECT_CONFIGS.HOOK_TYPE);
   const [hookDuration] = useState<number>(10);
   const [hookPosition] = useState<string>(REFACTOR_CONSTANTS.AVG_START_POS);
 
-  const [voiceProvider, setVoiceProvider] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER);
+  const [voiceProvider, setVoiceProvider] = useState<string>(
+    initialCachedConfig?.voiceProvider || DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER
+  );
   const [voiceSpeed] = useState<number>(1.0);
   const [voicePitch] = useState<number>(1.0);
   const [voiceVolume] = useState<number>(1.0);
-  const [voiceURI, setVoiceURI] = useState<string>(DEFAULT_PROJECT_CONFIGS.VOICE_URI);
-  const [voiceName, setVoiceName] = useState<string>(PRESET_CONSTANTS.DEFAULT_VOICE_NAME);
+  const [voiceURI, setVoiceURI] = useState<string>(
+    initialCachedConfig?.voiceURI || DEFAULT_PROJECT_CONFIGS.VOICE_URI
+  );
+  const [voiceName, setVoiceName] = useState<string>(
+    initialCachedConfig?.voiceName || PRESET_CONSTANTS.DEFAULT_VOICE_NAME
+  );
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
-  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(ImageGenerationMode.LabsFlow);
-  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(ImageGeneratorEngine.Veo3);
-  const [generateType, setGenerateType] = useState<GenerateType>(GenerateType.Image);
-  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS);
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.NineSixteen);
+  const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(
+    initialCachedConfig?.generationMode || ImageGenerationMode.LabsFlow
+  );
+  const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(
+    initialCachedConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3
+  );
+  const [generateType, setGenerateType] = useState<GenerateType>(
+    initialCachedConfig?.generateType || GenerateType.Image
+  );
+  const [maxVideoScenes, setMaxVideoScenes] = useState<number>(
+    initialCachedConfig?.maxVideoScenes ?? MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS
+  );
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(
+    initialCachedConfig?.aspectRatio || AspectRatio.NineSixteen
+  );
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);
   const [videoDuration] = useState<string>(REFACTOR_CONSTANTS.AVG_DEFAULT_DURATION);
-  const [chromeHeadless, setChromeHeadless] = useState<boolean>(AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS);
+  const [chromeHeadless, setChromeHeadless] = useState<boolean>(
+    initialCachedConfig?.chromeHeadless ?? AUTO_VIDEO_DEFAULTS.CHROME_HEADLESS
+  );
   const [geminiChatSpeed] = useState<GeminiChatSpeed>(GeminiChatSpeed.Fast);
   const [batchDelay] = useState<BatchDelayOption>(BatchDelayOption.Random123);
 
-  const [stylePreset, setStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_STYLE_PRESET);
-  const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Contextual);
+  const [stylePreset, setStylePreset] = useState<string>(
+    initialCachedConfig?.stylePreset || PRESET_CONSTANTS.DEFAULT_STYLE_PRESET
+  );
+  const [styleBackgroundMode, setStyleBackgroundMode] = useState<BackgroundMode>(
+    initialCachedConfig?.styleBackgroundMode
+      ? normalizeBackgroundMode(initialCachedConfig.styleBackgroundMode)
+      : BackgroundMode.Contextual
+  );
   const [styleTextInImageMode, setStyleTextInImageMode] = useState<TextInImageMode>(SCENE_TEXT_MODE);
-  const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
-  const [thumbnailImageFocusMode, setThumbnailImageFocusMode] = useState<ImageFocusMode>(ImageFocusMode.Default);
-  const [referenceImages, setReferenceImages] = useState<string[]>([]);
-  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>([]);
+  const [imageFocusMode, setImageFocusMode] = useState<ImageFocusMode>(
+    initialCachedConfig?.imageFocusMode || ImageFocusMode.Default
+  );
+  const [thumbnailImageFocusMode, setThumbnailImageFocusMode] = useState<ImageFocusMode>(
+    initialCachedConfig?.thumbnailImageFocusMode || ImageFocusMode.Default
+  );
+  const [referenceImages, setReferenceImages] = useState<string[]>(
+    initialCachedConfig?.referenceImages || []
+  );
+  const [sceneReferenceImages, setSceneReferenceImages] = useState<string[]>(
+    initialCachedConfig?.sceneReferenceImages || []
+  );
   const [characterImages] = useState<string[]>([]);
 
-  const [thumbnailCount, setThumbnailCount] = useState<number>(2);
-  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET);
-  const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(BackgroundMode.Auto);
-  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<ThumbnailTextMode>(ThumbnailTextMode.Headline);
-  const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>([]);
-  const [thumbnailSceneReferenceImages, setThumbnailSceneReferenceImages] = useState<string[]>([]);
+  const [thumbnailCount, setThumbnailCount] = useState<number>(
+    initialCachedConfig?.thumbnailCount ?? 2
+  );
+  const [thumbnailStylePreset, setThumbnailStylePreset] = useState<string>(
+    initialCachedConfig?.thumbnailStylePreset || PRESET_CONSTANTS.DEFAULT_THUMB_STYLE_PRESET
+  );
+  const [thumbnailBackgroundMode, setThumbnailBackgroundMode] = useState<BackgroundMode>(
+    initialCachedConfig?.thumbnailBackgroundMode
+      ? normalizeBackgroundMode(initialCachedConfig.thumbnailBackgroundMode)
+      : BackgroundMode.Auto
+  );
+  const [thumbnailTextInImageMode, setThumbnailTextInImageMode] = useState<ThumbnailTextMode>(
+    initialCachedConfig?.thumbnailTextInImageMode
+      ? normalizeThumbnailTextMode(initialCachedConfig.thumbnailTextInImageMode)
+      : ThumbnailTextMode.Headline
+  );
+  const [thumbnailReferenceImages, setThumbnailReferenceImages] = useState<string[]>(
+    initialCachedConfig?.thumbnailReferenceImages || []
+  );
+  const [thumbnailSceneReferenceImages, setThumbnailSceneReferenceImages] = useState<string[]>(
+    initialCachedConfig?.thumbnailSceneReferenceImages || []
+  );
 
-  const [projectName, setProjectName] = useState<string>(buildInitialProjectName);
-  const [resumeMode, setResumeMode] = useState<boolean>(AUTO_VIDEO_DEFAULTS.RESUME_MODE);
+  const [projectName, setProjectName] = useState<string>(
+    initialCachedConfig?.projectName || buildInitialProjectName
+  );
+  const [resumeMode, setResumeMode] = useState<boolean>(
+    initialCachedConfig?.resumeMode ?? AUTO_VIDEO_DEFAULTS.RESUME_MODE
+  );
   const [showAdvancedImageSettings, setShowAdvancedImageSettings] = useState<boolean>(false);
   const [ffmpegQuality] = useState<VideoQuality>(VideoQuality.HIGHEST);
-  const [musicAssetUrl, setMusicAssetUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const [musicAssetUrl, setMusicAssetUrl] = useState<string>(
+    initialCachedConfig?.musicAssetUrl ?? REFACTOR_CONSTANTS.VD_EMPTY_STRING
+  );
+  const [isConfigLoaded] = useState(true);
 
   const actions: AutoVideoFormActions = {
     setInputType,
@@ -314,7 +394,8 @@ export function useAutoVideoState(
       const parsed = await jsonUtils.getAsyncItem<CachedGeneratorConfig | null>(
         getAutoVideoConfigStorageKey(projectId),
         null
-      );
+      ) || readSynchronousCache(projectId);
+
       const foundProj = projectId ? _.find(projectsRef.current, { id: projectId }) : undefined;
       const projectStyleReferenceImages = _.defaultTo(foundProj?.visualConfig?.styleReferenceImages, []);
       const projectSceneReferenceImages = _.defaultTo(foundProj?.visualConfig?.sceneReferenceImages, []);
@@ -390,16 +471,9 @@ export function useAutoVideoState(
   }, [T.errLoadConfig]);
 
   useEffect(() => {
-    let isCancelled = false;
-    const loadSelectedConfig = async () => {
-      setIsConfigLoaded(false);
-      await loadConfig(selectedProjectId);
-      if (!isCancelled) setIsConfigLoaded(true);
-    };
-    loadSelectedConfig();
-    return () => {
-      isCancelled = true;
-    };
+    if (selectedProjectId) {
+      void loadConfig(selectedProjectId);
+    }
   }, [selectedProjectId, loadConfig]);
 
   useEffect(() => {
@@ -438,10 +512,12 @@ export function useAutoVideoState(
       chromeHeadless,
       musicAssetUrl,
     };
-    void jsonUtils.setAsyncItem(
-      getAutoVideoConfigStorageKey(selectedProjectId),
-      config
-    );
+
+    const targetKey = getAutoVideoConfigStorageKey(selectedProjectId);
+    const serialized = jsonUtils.safeStringify(config);
+    storageUtils.set(targetKey, serialized);
+    storageUtils.set(STORAGE_KEYS.AUTO_GENERATOR_CONFIG, serialized);
+    void storageUtils.setAsync(targetKey, serialized);
   }, [
     isConfigLoaded, selectedProjectId,
     inputType, scriptContent, genre, language, duration, splitStrategy,

@@ -19,7 +19,6 @@ import { captureDomDiagnostics } from "./domDiagnosticsService.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
-import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 
@@ -1467,7 +1466,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       };
     };
 
-    const workerQueues = distributeItemsByContinuity(items, _.size(activePages));
+    const sharedQueue = [...items];
 
     const createReplacementWorkerPage = async (tabIndex: number): Promise<Page | null> => {
       for (
@@ -1484,10 +1483,10 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       return null;
     };
 
-    const runWorker = async (page: Page, tabIndex: number, queue: BatchImageItem[]) => {
+    const runWorker = async (page: Page, tabIndex: number) => {
       let workerPage = page;
-      while (queue.length > 0) {
-        const item = queue.shift();
+      while (sharedQueue.length > 0) {
+        const item = sharedQueue.shift();
         if (!item) break;
         let itemSucceeded = false;
 
@@ -1519,7 +1518,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           }
           const failedPage = workerPage;
           globalBatchPages = _.without(globalBatchPages, failedPage);
-          if (_.isEmpty(queue)) return;
+          if (_.isEmpty(sharedQueue)) return;
           const replacementPage = await createReplacementWorkerPage(tabIndex);
           if (!replacementPage) return;
           workerPage = replacementPage;
@@ -1527,14 +1526,14 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           continue;
         }
 
-        if (_.size(queue)) {
+        if (sharedQueue.length > 0) {
           const delayTime = await applyBatchDelay(visualConfig);
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_NEXT_DELAY.replace("{0}", (tabIndex + 1).toString()).replace("{1}", delayTime.toString()));
         }
       }
     };
 
-    const workers = _.map(activePages, (page, idx) => runWorker(page, idx, workerQueues[idx]));
+    const workers = _.map(activePages, (page, idx) => runWorker(page, idx));
     await Promise.all(workers);
 
     _.forEach(_.filter(items, item => !_.some(results, { sceneId: item.sceneId })), (item) => {
