@@ -338,6 +338,8 @@ export default function AutoVideoGenerator({
         }
       }
 
+      pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+
       let updatedProject = _.cloneDeep(project);
       let changed = false;
       const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
@@ -347,6 +349,12 @@ export default function AutoVideoGenerator({
       if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
         _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
         _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+        updatedProject.renderedVideoUrl = undefined;
+        updatedProject.storyboard = _.map(_.defaultTo(updatedProject.storyboard, []), sc => ({
+          ...sc,
+          audioUrl: undefined,
+          audioBase64: undefined,
+        }));
         changed = true;
       } else if (isImages) {
         updatedProject = clearAllProjectVisualOutputs(updatedProject);
