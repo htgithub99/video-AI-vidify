@@ -28,10 +28,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
   const isReady = !_.isEmpty(_.trim(scriptContent));
 
   return (
-    <div className="bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-slate-800/90 p-5 rounded-3xl space-y-4 shadow-2xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl group hover:border-rose-500/30 transition-all duration-500">
-      <div className="absolute -top-12 -right-12 w-36 h-36 bg-gradient-to-br from-rose-500/20 to-amber-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-      <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-gradient-to-tr from-violet-600/15 to-transparent rounded-full blur-3xl pointer-events-none" />
-
+    <div className="bg-slate-900/90 dark:bg-slate-900/90 border border-slate-700/60 dark:border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-center relative overflow-hidden shrink-0 backdrop-blur-xl transition-all duration-300">
       <div className="flex items-center gap-3 w-full relative z-10">
         <Button
           variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
@@ -39,41 +36,49 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
           onClick={() => { void handleStartAutoGenerate(); }}
           disabled={isProcessing || !isReady}
           isLoading={isProcessing && !isCancelling}
-          className="flex-1 py-4 text-sm font-extrabold bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 border border-rose-400/40 text-white rounded-2xl shadow-xl shadow-rose-600/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 group/btn cursor-pointer"
+          className={`flex-1 py-4 text-sm font-extrabold text-white rounded-2xl shadow-xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer border ${
+            isProcessing
+              ? "bg-gradient-to-r from-amber-500 via-rose-500 to-rose-600 border-amber-300/40 shadow-rose-500/30"
+              : !isReady
+                ? "bg-slate-800/80 border-slate-700 text-slate-400 opacity-60 cursor-not-allowed shadow-none"
+                : "bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 hover:from-amber-400 hover:via-rose-450 hover:to-pink-500 active:scale-95 border-rose-400/40 shadow-rose-500/35 hover:shadow-rose-500/50"
+          }`}
           title={T.startBtnTooltip}
         >
-          <Zap className="w-5 h-5 text-amber-300 fill-amber-300 shrink-0 group-hover/btn:scale-110 transition-transform" />
-          <span className="truncate tracking-wide">{isProcessing ? T.startBtnProcessing : T.startBtnStart}</span>
+          <Zap className={`w-5 h-5 shrink-0 ${isReady ? "text-amber-300 fill-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]" : "text-slate-500"}`} />
+          <span className="truncate tracking-wide font-black text-white drop-shadow-sm">
+            {isProcessing ? T.startBtnProcessing : T.startBtnStart}
+          </span>
         </Button>
 
         {isProcessing && (
           <Button
-            variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+            variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
             size={REFACTOR_CONSTANTS.SIZE_LG}
             onClick={cancelPipeline}
             disabled={isCancelling}
             isLoading={isCancelling}
-            className="flex-1 py-4 text-sm font-bold border border-red-500/40 bg-red-950/30 hover:bg-red-950/60 text-red-300 rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-950/50"
+            className="flex-1 py-4 text-sm font-bold bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:from-red-700 active:to-rose-800 border border-red-400/50 text-white rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-xl shadow-red-600/30 active:scale-95"
             title={T.cancelBtnTooltip}
           >
-            <X className="w-4 h-4 text-red-400 shrink-0" />
-            <span className="truncate">{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
+            <X className="w-4 h-4 text-white shrink-0 drop-shadow-sm" />
+            <span className="truncate font-extrabold text-white tracking-wide">{isCancelling ? T.cancelBtnCancelling : T.cancelBtn}</span>
           </Button>
         )}
       </div>
 
       {(isProcessing || _.gt(stepProgress, 0)) && (
-        <div className="space-y-2 pt-1 text-left relative z-10 bg-slate-950/60 border border-slate-800/80 p-3 rounded-2xl">
-          <div className="flex justify-between items-center text-[11px] font-mono font-bold">
-            <span className="text-rose-400 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 animate-spin text-rose-400" />
+        <div className="space-y-2 pt-1 text-left relative z-10 bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner">
+          <div className="flex justify-between items-center text-xs font-mono font-bold">
+            <span className="text-amber-400 flex items-center gap-1.5 font-bold">
+              <Activity className="w-3.5 h-3.5 animate-spin text-amber-400" />
               {T.progressNodeLabel} [{currentStepIndex}/4]
             </span>
-            <span className="text-amber-300 font-extrabold">{stepProgress}%</span>
+            <span className="text-emerald-400 font-black tracking-wider text-sm">{stepProgress}%</span>
           </div>
-          <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800/80 p-0.5">
+          <div className="w-full bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700/80 p-0.5 shadow-inner">
             <div
-              className="bg-gradient-to-r from-rose-600 via-amber-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-rose-500/50"
+              className="bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-400 h-full rounded-full transition-all duration-500 shadow-md shadow-emerald-500/50"
               style={{ width: `${stepProgress}%` }}
             />
           </div>

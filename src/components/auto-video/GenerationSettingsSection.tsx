@@ -104,7 +104,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAssetType}</span>
+            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || "Nội dung cần tạo"}</span>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
               <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select
@@ -120,9 +120,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                 }}
                 className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
               >
-                <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.assetTypeImage}</option>
-                <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.assetTypeVideo}</option>
-                <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.assetTypeMediaMix}</option>
+                <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || "Chỉ tạo hình ảnh"}</option>
+                <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || "Chỉ tạo video"}</option>
+                <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || "Kết hợp ảnh và video"}</option>
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
             </div>

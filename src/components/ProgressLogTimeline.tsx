@@ -48,11 +48,20 @@ const resolveProgressLogTone = (message: string): ProgressLogTone => {
   return matchedTone || ProgressLogTone.Info;
 };
 
+const formatSeamlessMessage = (msg: string): string => {
+  return _.reduce(
+    PROGRESS_LOG_CONFIG.SEAMLESS_REPLACEMENTS,
+    (acc, rule) => acc.replace(rule.pattern, rule.replacement),
+    msg
+  );
+};
+
 const parseProgressLog = (log: string) => {
   const rawLog = _.toString(log);
   const timeMatch = rawLog.match(PROGRESS_LOG_CONFIG.TIME_PATTERN);
   const messageWithoutTime = _.trim(rawLog.replace(PROGRESS_LOG_CONFIG.TIME_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
-  const cleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
+  const rawCleanMessage = _.trim(messageWithoutTime.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
+  const cleanMessage = formatSeamlessMessage(rawCleanMessage);
 
   return {
     time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),

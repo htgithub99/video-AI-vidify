@@ -14,7 +14,6 @@ const getChildrenText = (node: React.ReactNode): string => {
   return "";
 };
 
-
 export const Button: React.FC<IBaseButtonProps> = ({ 
   children, 
   variant = "primary", 
@@ -64,12 +63,9 @@ export const Button: React.FC<IBaseButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <span className="flex items-center gap-1.5 justify-center [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden">
-          <svg className="animate-spin h-4 w-4 text-current shrink-0 app-loading-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          {children}
+        <span className="inline-flex items-center gap-2 justify-center w-full [&_svg:not(.app-loading-spinner)]:hidden [&_img]:hidden">
+          <span className="w-4 h-4 rounded-full border-2 border-current/30 border-t-current animate-spin shrink-0 app-loading-spinner inline-block" />
+          <span className="truncate">{children}</span>
         </span>
       ) : (
         children

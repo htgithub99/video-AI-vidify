@@ -797,7 +797,7 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_RENDER_GEN: "📌 [Bước 4/4] Đang ghép nối hình ảnh, âm thanh và hoàn thiện video chất lượng cao...",
   LOG_RENDER_SUCCESS: "🎉 HOÀN THÀNH TẠO VIDEO! Bạn đã có thể xem hoặc tải video về máy.",
   ERR_RENDER_NO_URL: "Không tìm thấy tệp video sau khi hoàn tất xuất bản",
-  ERR_AUTO_GEN_FAILED: "❌ Quy trình tạo video gặp sự cố: {0}",
+  ERR_AUTO_GEN_FAILED: "❌ Quy trình tạo video gặp sự cố do {0}",
   CHARACTER_ID_DEFAULT: "char_1",
   DEFAULT_SCENE_DURATION: 5,
   AVG_AUDIO_URL_KEY: "audioUrl",

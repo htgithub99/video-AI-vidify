@@ -1390,8 +1390,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 || isConfigChanged
                 || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
-              const modelConfigured = await configureGeminiModel(page, itemVisualConfig);
-              if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+              await configureGeminiModel(page, itemVisualConfig).catch(() => false);
 
               await configureGeminiMediaInput(page, itemVisualConfig);
 

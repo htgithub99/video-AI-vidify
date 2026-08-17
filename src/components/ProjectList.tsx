@@ -342,7 +342,10 @@ export default function ProjectList({
                             <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
                               <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
                               {project.config.genre && (
-                                <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/70 text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm">
+                                <div
+                                  className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis"
+                                  title={getGenreLabel(project.config.genre, currentLang)}
+                                >
                                   {getGenreLabel(project.config.genre, currentLang)}
                                 </div>
                               )}

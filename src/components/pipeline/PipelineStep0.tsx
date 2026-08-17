@@ -127,11 +127,11 @@ export default function PipelineStep0(props: PipelineWizardState) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-5 h-full justify-stretch">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-slate-300 block font-mono uppercase">{t.sourceType}</label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="text-xs font-semibold text-slate-300 block font-mono uppercase tracking-wider">{t.sourceType}</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button
                 type="button"
-                variant="ghost"
+                variant="unstyled"
                 onClick={() =>
                   setProject((prev) => ({
                     ...prev,
@@ -142,21 +142,34 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   }))
                 }
                 className={cn(
-                  "p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none",
+                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
                   _.isEqual(currentInputType, ProjectInputType.Script)
-                    ? "bg-rose-500/10 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-800 hover:scale-[1.01] hover:shadow-md hover:text-slate-200"
+                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850"
                 )}
               >
-                <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.originalScript}</span>
-                <span className={cn("text-[11px] font-medium leading-relaxed block", _.isEqual(currentInputType, ProjectInputType.Script) ? "text-rose-400/80" : "text-slate-400")}>
-                  {t.originalScriptDesc}
-                </span>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    _.isEqual(currentInputType, ProjectInputType.Script)
+                      ? "bg-rose-500/20 text-rose-500"
+                      : "bg-slate-800 text-slate-400"
+                  )}>
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs block uppercase tracking-wider">{t.originalScript}</span>
+                    <span className="text-[10px] font-medium opacity-80 block">{t.originalScriptDesc}</span>
+                  </div>
+                </div>
+                {_.isEqual(currentInputType, ProjectInputType.Script) && (
+                  <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />
+                )}
               </Button>
 
               <Button
                 type="button"
-                variant="ghost"
+                variant="unstyled"
                 onClick={() =>
                   setProject((prev) => ({
                     ...prev,
@@ -167,16 +180,29 @@ export default function PipelineStep0(props: PipelineWizardState) {
                   }))
                 }
                 className={cn(
-                  "p-4 rounded-xl border text-left cursor-pointer transition-all duration-300 outline-none flex flex-col items-start justify-start gap-1 h-auto w-full shadow-none",
+                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
                   _.isEqual(currentInputType, ProjectInputType.Idea)
-                    ? "bg-rose-500/10 border-rose-500 text-rose-500 ring-2 ring-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)] scale-[1.01]"
-                    : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700 hover:bg-slate-800 hover:scale-[1.01] hover:shadow-md hover:text-slate-200"
+                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
+                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850"
                 )}
               >
-                <span className="font-bold text-sm block mb-1 uppercase tracking-wider">{t.storyIdea}</span>
-                <span className={cn("text-[11px] font-medium leading-relaxed block", _.isEqual(currentInputType, ProjectInputType.Idea) ? "text-rose-400/80" : "text-slate-400")}>
-                  {t.storyIdeaDesc}
-                </span>
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    _.isEqual(currentInputType, ProjectInputType.Idea)
+                      ? "bg-amber-500/20 text-amber-500"
+                      : "bg-slate-800 text-slate-400"
+                  )}>
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-xs block uppercase tracking-wider">{t.storyIdea}</span>
+                    <span className="text-[10px] font-medium opacity-80 block">{t.storyIdeaDesc}</span>
+                  </div>
+                </div>
+                {_.isEqual(currentInputType, ProjectInputType.Idea) && (
+                  <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />
+                )}
               </Button>
             </div>
           </div>
