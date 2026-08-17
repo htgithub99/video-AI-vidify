@@ -29,30 +29,42 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
       durationSeconds: scene.duration,
       status: AudioCueStatus.Planned,
     });
-    // 1. Hook Impact SFX for opening scene
     if (index === 0) {
       cues.push({
         id: `cue_${scene.id}_sfx_impact`,
         sceneId: scene.id,
         type: AudioCueType.SoundEffect,
-        description: "Cinematic subtle impact / bass hit to grab attention",
-        emotionalIntent: "Hook attention",
+        description: SOUND_DESIGN_CONFIG.HOOK_SFX_DESCRIPTION,
+        emotionalIntent: SOUND_DESIGN_CONFIG.HOOK_SFX_INTENT,
         startOffsetSeconds: 0,
-        durationSeconds: 1.2,
+        durationSeconds: SOUND_DESIGN_CONFIG.HOOK_SFX_DURATION_SECONDS,
         status: AudioCueStatus.Planned,
       });
     }
 
-    // 2. Transition Whoosh SFX for scene transitions
-    if (index > 0 && (scene.transition === "cross_dissolve" || scene.transition === "fade_black" || /pan/i.test(scene.cameraMotion || ""))) {
+    if (index > 0 && scene.transition && !_.isEqual(scene.transition, SOUND_DESIGN_CONFIG.CUT_TRANSITION)) {
+      const isDynamic = SOUND_DESIGN_CONFIG.DYNAMIC_TRANSITION_PATTERN.test(scene.transition);
       cues.push({
-        id: `cue_${scene.id}_sfx_whoosh`,
+        id: `cue_${scene.id}_sfx_transition`,
         sceneId: scene.id,
         type: AudioCueType.SoundEffect,
-        description: "Subtle dynamic whoosh transition sound effect",
-        emotionalIntent: "Scene transition flow",
-        startOffsetSeconds: Math.max(0, sceneStartSeconds - 0.2),
-        durationSeconds: 0.8,
+        description: isDynamic ? SOUND_DESIGN_CONFIG.DYNAMIC_TRANSITION_DESCRIPTION : SOUND_DESIGN_CONFIG.SMOOTH_TRANSITION_DESCRIPTION,
+        emotionalIntent: SOUND_DESIGN_CONFIG.TRANSITION_INTENT,
+        startOffsetSeconds: Math.max(0, sceneStartSeconds - SOUND_DESIGN_CONFIG.TRANSITION_OFFSET_SECONDS),
+        durationSeconds: isDynamic ? SOUND_DESIGN_CONFIG.DYNAMIC_TRANSITION_DURATION : SOUND_DESIGN_CONFIG.SMOOTH_TRANSITION_DURATION,
+        status: AudioCueStatus.Planned,
+      });
+    }
+
+    if (scene.reaction && SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_PATTERN.test(scene.reaction)) {
+      cues.push({
+        id: `cue_${scene.id}_sfx_reaction`,
+        sceneId: scene.id,
+        type: AudioCueType.SoundEffect,
+        description: SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_DESCRIPTION,
+        emotionalIntent: SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_INTENT,
+        startOffsetSeconds: sceneStartSeconds + SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_OFFSET_SECONDS,
+        durationSeconds: SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_DURATION_SECONDS,
         status: AudioCueStatus.Planned,
       });
     }

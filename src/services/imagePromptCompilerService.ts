@@ -264,26 +264,15 @@ export const compileImagePrompt = (
   scene: StoryboardScene,
   options: ImagePromptCompilerOptions = {},
 ): string => {
-  const visualBible = options.visualBible;
-  const isReferenceLocked = Boolean(options.referenceLocked || visualBible?.styleReferenceLocked);
-
-  const existingPrompt = _.trim(_.toString(scene.prompt));
-  const isAiOptimizedPrompt = !_.isEmpty(existingPrompt)
-    && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)
-    && _.size(_.words(existingPrompt)) > 15;
-
-  let rawPrompt: string;
-  if (isAiOptimizedPrompt && !isReferenceLocked) {
-    rawPrompt = existingPrompt;
-  } else {
-    const clauses = buildPromptClauses(scene, options);
-    rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
+  if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
+    return appendImagePromptAspectRatio(sanitizeImagePrompt(existingPrompt), options.aspectRatio);
   }
 
-  const cleanedPrompt = deduplicatePromptSentences(removeConflictingStyleTerms(rawPrompt, isReferenceLocked));
-  const sanitizedPrompt = sanitizeImagePrompt(cleanedPrompt);
-
-  return appendImagePromptAspectRatio(sanitizedPrompt, options.aspectRatio);
+  const clauses = buildPromptClauses(scene, options);
+  const rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+  const cleanedPrompt = deduplicatePromptSentences(removeConflictingStyleTerms(rawPrompt, Boolean(options.referenceLocked)));
+  return appendImagePromptAspectRatio(sanitizeImagePrompt(cleanedPrompt), options.aspectRatio);
 };
 
 export const compileStoryboardPrompts = (

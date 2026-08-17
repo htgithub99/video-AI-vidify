@@ -699,12 +699,12 @@ export const getSceneDetailBatchPrompt = (
 ): string => {
   const promptStructureBlueprint = hasStyleReference
     ? `- [STYLE REFERENCE MANDATE]: An uploaded style reference image is attached. DO NOT hardcode rigid vector/stick-figure style descriptions in text. The image generator will adopt the visual art style from the attached style reference image.
-- Format each scene prompt strictly as: "Strict style match: accurately follow the exact visual art style, rendering medium, color palette, and aesthetic of the uploaded style reference image. [Main Subject Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
+- Format each scene prompt strictly as a single self-contained complete prompt: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image. [Main Subject Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
     : hasSceneReference
       ? `- [SCENE REFERENCE MANDATE]: An uploaded scene/character reference image is attached. Focus on preserving the character and subject identity from the attached reference image while rendering in the "${visualStyle}" style.
-- Format each scene prompt strictly as: "Strict character match: accurately preserve the character design, outfit, and appearance from the attached reference image. [Art style/Medium: ${visualStyle}] of [Main Character Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
-      : `- If the scene has a character: [Art style/Medium] of [Main Character/Subject] + [Action/Expression] + [Clothing details/Identifying features] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].
-- If the scene does NOT have a character: [Art style/Medium of Main Subject (Object/Environment/Landscape/Phenomenon)] + [Details/Action/State] + [Surrounding background] + [Lighting/Atmosphere] + [Camera angle/composition/lens].`;
+- Format each scene prompt strictly as a single self-contained complete prompt: "Strict character match: accurately preserve the character design, outfit, and appearance from the attached reference image. [Art style/Medium: ${visualStyle}] of [Main Character Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
+      : `- [STORY-DRIVEN VISUAL STYLE MANDATE]: No reference images are attached. You MUST dynamically deduce and craft the most evocative, coherent art style and rendering medium (e.g. cinematic digital illustration, moody oil painting, vivid anime, expressive watercolor, documentary photography, etc.) tailored specifically to the narrative genre ("${genre}"), mood, and storytelling context of the script.
+- Format each scene prompt strictly as a single self-contained complete prompt written entirely by you: "[Story-grounded Art Style & Medium] of [Main Character / Subject Action & Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]. Do not leave any placeholders."`;
 
   return `You are an elite AI Video Director and Visual Designer.
 Your task is to take a batch of storyboard scenes (which already have their script text) and generate high-quality, detailed visual prompts and camera directions for each of them.
@@ -714,7 +714,7 @@ ${aspectRatio}
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 Use the following visual specifications as your core style and identity reference:
-- General Visual Style: ${hasStyleReference ? "Follow attached style reference image" : visualStyle}
+- General Visual Style: ${hasStyleReference ? "Follow attached style reference image" : (hasSceneReference ? visualStyle : "Dynamically deduce from story context and script theme")}
 - Color Palette / Reference Style: ${referenceStyle || "Not specified"}
 - Primary Landscape/Environment Specs:
   ${landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive the environment, setting, and background details from each scene's script context."}

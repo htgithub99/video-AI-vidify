@@ -10,12 +10,11 @@ import {
 import { CharacterConfig, ThumbnailItem, ThumbnailTextMode, VisualConfig } from "../types";
 import {
   appendImagePromptAspectRatio,
-  deduplicatePromptSentences,
   sanitizeImagePrompt,
 } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
-import { removeConflictingStyleTerms } from "./styleReferenceService";
+import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 
 const VALID_LAYOUT_IDS = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
 const VALID_TYPOGRAPHY_IDS = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
@@ -132,55 +131,35 @@ export const createSourceGroundedThumbnailIdeas = (
   return normalizeThumbnailIdeas(generatedItems, requestedCount, textMode);
 };
 
-const resolveThumbnailProtagonistDna = (character?: CharacterConfig): string => {
-  if (!character) return "";
-  const dnaParts = _.compact([
-    character.name ? _.replace(THUMBNAIL_PROMPT_CONFIG.CHARACTER_NAME_TEMPLATE, "{name}", character.name) : "",
-    character.genderPresentation ? _.replace(THUMBNAIL_PROMPT_CONFIG.GENDER_SUBJECT_TEMPLATE, "{gender}", character.genderPresentation) : "",
-    character.hair,
-    character.silhouette,
-    character.signatureClothing,
-  ]);
-  return _.isEmpty(dnaParts)
-    ? ""
-    : _.replace(THUMBNAIL_PROMPT_CONFIG.PROTAGONIST_LOCK_TEMPLATE, "{dna}", _.join(dnaParts, ", "));
-};
-
 export const createThumbnailGenerationPrompt = (
   thumbnail: ThumbnailItem,
   style: string,
   aspectRatio: string,
   hasReferences: boolean = false,
-  characters: CharacterConfig[] = [],
+  _characters: CharacterConfig[] = [],
 ): string => {
-  let basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
-  basePrompt = _.trim(basePrompt.replace(/--ar\s+\d+:\d+/gi, ""));
+  const basePrompt = _.trim(thumbnail.generationPrompt || thumbnail.prompt);
+  if (!_.isEmpty(basePrompt) && !DETECTOR_VIETNAMESE_REGEX.test(basePrompt)) {
+    return appendImagePromptAspectRatio(sanitizeImagePrompt(basePrompt), aspectRatio);
+  }
+
   const headline = _.trim(thumbnail.textText || "");
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
-  const styleDirective = style || thumbnail.style || "";
   const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
-  const characterDirective = resolveThumbnailProtagonistDna(_.first(characters));
 
   const parts = _.compact([
-    !hasReferences && styleDirective && _.replace(THUMBNAIL_PROMPT_CONFIG.STYLE_DIRECTIVE_TEMPLATE, "{style}", styleDirective),
-    !hasReferences && characterDirective,
-    hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_LOCK_DIRECTIVE : "",
+    hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_LOCK_DIRECTIVE : style,
     _.replace(THUMBNAIL_PROMPT_CONFIG.LAYOUT_DIRECTIVE_TEMPLATE, "{layout}", layoutDesc),
-    removeConflictingStyleTerms(basePrompt, hasReferences),
+    basePrompt,
     hasText
       ? _.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)
       : THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_DIRECTIVE,
-    hasText && thumbnail.accentWords?.length
-      ? _.replace(THUMBNAIL_PROMPT_CONFIG.ACCENT_WORDS_TEMPLATE, "{words}", _.join(thumbnail.accentWords, ", "))
-      : "",
     THUMBNAIL_PROMPT_CONFIG.COMPOSITION_DIRECTIVE,
     THUMBNAIL_PROMPT_CONFIG.SAFE_ZONE_DIRECTIVE,
   ]);
 
   const rawCombined = _.join(parts, " ");
-  const deduplicated = deduplicatePromptSentences(rawCombined);
-
-  return appendImagePromptAspectRatio(sanitizeImagePrompt(deduplicated), aspectRatio);
+  return appendImagePromptAspectRatio(sanitizeImagePrompt(rawCombined), aspectRatio);
 };
 
 export const getThumbnailPlanningIssues = (

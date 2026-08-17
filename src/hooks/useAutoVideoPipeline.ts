@@ -89,6 +89,7 @@ import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from
 import { acceptGeneratedThumbnail } from "../services/thumbnailQualityPipelineService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../services/imageGenerationContinuityService";
 import { clearSceneVisualAsset } from "../services/projectRegenerationService";
+import { compileImagePrompt } from "../services/imagePromptCompilerService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import { Lang } from "../lib/lang";
@@ -570,7 +571,7 @@ export function useAutoVideoPipeline(
         setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
       }
 
-      if (config.resumeMode && !invalidationState.regenerateStoryboard && !_.isEmpty(newProj.storyboard)) {
+      if (config.resumeMode && !invalidationState.regenerateStoryboard && !config.forceRegenerateScenes && !_.isEmpty(newProj.storyboard)) {
         realScenes = _.cloneDeep(newProj.storyboard!) as StoryboardScene[];
         isStoryboardCached = true;
         appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
@@ -722,7 +723,11 @@ export function useAutoVideoPipeline(
             imageQuality: newProj.visualConfig.quality,
           },
           visualStyle: storyboardStyle,
-          referenceImages: [],
+          referenceImages: _.compact(_.concat(
+            _.castArray(config.referenceImages || []),
+            _.castArray(config.sceneReferenceImages || []),
+            _.castArray(newProj.visualConfig?.styleReferenceImages || []),
+          )),
           referenceStyle: storyboardStyle,
           referenceCharacters: jsonUtils.safeStringify(_.map(analyzedCharacters, (character) => ({
             name: character.name,
@@ -1094,6 +1099,13 @@ export function useAutoVideoPipeline(
             };
           },
         );
+        if (!_.isEmpty(preparedThumbnails)) {
+          voiceUpdatedProj = {
+            ...voiceUpdatedProj,
+            thumbnails: preparedThumbnails,
+          };
+          await syncProject(voiceUpdatedProj);
+        }
       }
 
       const visualDependencies = {
@@ -1158,15 +1170,28 @@ export function useAutoVideoPipeline(
         return imageCheckpointQueue;
       };
 
+      const hasReferenceImages = Boolean(
+        !_.isEmpty(voiceUpdatedProj.visualConfig?.referenceImages) ||
+        !_.isEmpty(voiceUpdatedProj.visualConfig?.sceneReferenceImages) ||
+        !_.isEmpty(voiceUpdatedProj.visualConfig?.styleReferenceImages)
+      );
+
       const createSceneRequestContext = (scene: StoryboardScene) => {
         const context = createSceneGenerationContext(
           scene,
           voiceUpdatedProj.visualConfig,
         );
+        const compiledPrompt = compileImagePrompt(scene, {
+          referenceLocked: hasReferenceImages,
+          aspectRatio: config.aspectRatio,
+          targetStyle: currentStylePreset,
+          visualBible: voiceUpdatedProj.visualBible,
+          characters: voiceUpdatedProj.visualConfig?.characters,
+        });
         return {
           ...context,
           prompt: adaptImagePromptForEngine(
-            context.prompt,
+            compiledPrompt,
             executionVisualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
             config.aspectRatio,
           ),

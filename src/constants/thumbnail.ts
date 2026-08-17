@@ -293,7 +293,7 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   ID_PREFIX: "th_",
   STYLE_DIRECTIVE_TEMPLATE: "Visual style: {style}.",
   PROTAGONIST_LOCK_TEMPLATE: "Protagonist visual lock: {dna}.",
-  REFERENCE_LOCK_DIRECTIVE: "Preserve reference character anatomy, proportions, and line work strictly.",
+  REFERENCE_LOCK_DIRECTIVE: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image.",
   LAYOUT_DIRECTIVE_TEMPLATE: "Thumbnail layout: {layout}.",
   HEADLINE_DIRECTIVE_TEMPLATE: "Render large bold uppercase headline text: \"{headline}\" cleanly in heavy condensed typography with high visual contrast.",
   TEXT_FREE_DIRECTIVE: "Completely text-free thumbnail image, no readable words or letters.",
