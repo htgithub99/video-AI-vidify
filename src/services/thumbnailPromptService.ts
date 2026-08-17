@@ -15,6 +15,7 @@ import {
 } from "./imagePromptQualityService";
 import { smartSplitSentences } from "../lib/textProcessor";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
+import { removeConflictingStyleTerms } from "./styleReferenceService";
 
 const VALID_LAYOUT_IDS = new Set<string>(_.map(THUMBNAIL_LAYOUT_CATALOG, "id"));
 const VALID_TYPOGRAPHY_IDS = new Set<string>(_.map(THUMBNAIL_TYPOGRAPHY_CATALOG, "id"));
@@ -161,11 +162,11 @@ export const createThumbnailGenerationPrompt = (
   const characterDirective = resolveThumbnailProtagonistDna(_.first(characters));
 
   const parts = _.compact([
-    styleDirective && _.replace(THUMBNAIL_PROMPT_CONFIG.STYLE_DIRECTIVE_TEMPLATE, "{style}", styleDirective),
-    characterDirective,
+    !hasReferences && styleDirective && _.replace(THUMBNAIL_PROMPT_CONFIG.STYLE_DIRECTIVE_TEMPLATE, "{style}", styleDirective),
+    !hasReferences && characterDirective,
     hasReferences ? THUMBNAIL_PROMPT_CONFIG.REFERENCE_LOCK_DIRECTIVE : "",
     _.replace(THUMBNAIL_PROMPT_CONFIG.LAYOUT_DIRECTIVE_TEMPLATE, "{layout}", layoutDesc),
-    basePrompt,
+    removeConflictingStyleTerms(basePrompt, hasReferences),
     hasText
       ? _.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)
       : THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_DIRECTIVE,

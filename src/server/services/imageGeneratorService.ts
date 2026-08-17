@@ -10,10 +10,9 @@ chromium.use(stealthPlugin());
 import { EXTERNAL_URLS, BACKEND_MESSAGES, PROMPT_FILLER_WORDS, NON_ALPHANUMERIC_SPACE_REGEX, PLAYWRIGHT_SUBMIT_ICON_REGEX, PLAYWRIGHT_SUBMIT_TEXT_REGEX, IMAGE_GEN_IMAGEN_EXACT_REGEX, IMAGE_GEN_IMAGEN_FALLBACK_REGEX, IMAGE_GEN_LABS_EXACT_REGEX, IMAGE_GEN_LABS_FALLBACK_REGEX, IMAGE_GEN_VEO_EXACT_REGEX, IMAGE_GEN_VEO_FALLBACK_REGEX, GEMINI_MODEL_PRO_REGEX, GEMINI_MODEL_FLASH_REGEX, GEMINI_MODEL_FLASH_FAMILY_REGEX, GEMINI_MODEL_FLASH_LITE_REGEX, CONTENT_TYPES, COMMON_STRINGS, URL_CONSTANTS, IMAGE_ID_URL_REGEX, REFACTOR_CONSTANTS, BASE64_IMAGE_MIME_REGEX, GEMINI_BATCH_SETUP_CONFIG, GEMINI_CHAT_RECOVERY_CONFIG, GEMINI_CHAT_VIDEO_INPUT_CONFIG, GEMINI_CHAT_VIDEO_SELECTORS, GEMINI_CHAT_PACING_CONFIG, PIPELINE_CONFIG, GEMINI_DOM_DIAGNOSTICS_CONFIG, GEMINI_MEDIA_EXTRACTION_CONFIG, GEMINI_MEDIA_ERRORS, GEMINI_MODEL_SELECTION_CONFIG } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
-import { randomDelay, getBatchDelayMs } from "../../lib/shared-utils.js";
+import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
 import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
 import { BrowserContext, Locator, Page } from "playwright";
-import { delayAsync } from "../../lib/shared-utils.js";
 import _ from "lodash";
 import { removeVideoAudioTrack } from "../utils/videoAssetProcessor.js";
 import { captureDomDiagnostics } from "./domDiagnosticsService.js";
@@ -22,6 +21,7 @@ import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
+import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 
 interface BrowserSession {
   context: BrowserContext;
@@ -1267,7 +1267,10 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
 
     const generateOnTab = async (page: Page, item: BatchImageItem, tabIndex: number): Promise<BatchImageResult> => {
       const itemVisualConfig = getBatchItemVisualConfig(item, visualConfig);
-      const finalPrompt = item.prompt || "";
+      const hasRefs = !_.isEmpty(itemVisualConfig.referenceImages)
+        || !_.isEmpty(itemVisualConfig.sceneReferenceImages)
+        || !_.isEmpty(itemVisualConfig.styleReferenceImages);
+      const finalPrompt = removeConflictingStyleTerms(item.prompt || "", hasRefs);
 
       let success = false;
       let base64Result: string | null = null;
@@ -1760,6 +1763,7 @@ export const createGeminiReferenceFiles = (referenceImages: unknown) => (
 );
 
 async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
+  await page.bringToFront().catch(() => {});
   const isVideoGeneration = _.some(
     [visualConfig?.generateType],
     (generateType) => _.isEqual(generateType, GenerateType.Video),

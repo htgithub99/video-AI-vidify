@@ -1579,6 +1579,13 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           subtitle: s.subtitle
         })), null, 2);
 
+        const hasStyleReference = Boolean(!_.isEmpty(config?.styleReferenceImages));
+        const hasSceneReference = Boolean(
+          !_.isEmpty(referenceImages) ||
+          !_.isEmpty(config?.referenceImages) ||
+          !_.isEmpty(config?.sceneReferenceImages)
+        );
+
         const batchPrompt = getSceneDetailBatchPrompt(
           minimalScenesJson,
           visualStyle,
@@ -1593,6 +1600,8 @@ router.post("/storyboard", async (req: Request, res: Response) => {
           config?.styleBackgroundMode ? (BACKGROUND_MODE_CONFIG.DIRECTIVES as any)[config.styleBackgroundMode] : undefined,
           config?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[config.styleTextInImageMode] : undefined,
           config?.imageFocusMode ? resolveImageFocusDirective(config.imageFocusMode, config.styleBackgroundMode) : undefined,
+          hasStyleReference,
+          hasSceneReference,
         );
 
         try {

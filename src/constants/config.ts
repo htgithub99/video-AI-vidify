@@ -335,7 +335,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   COMPOSITION_MAX_WORDS: 16,
   CONTINUITY_MAX_WORDS: 8,
   LOCKED_REFERENCE_STYLE: "Use the attached reference as a flexible visual guide for medium, character construction, line work and color behavior. Let the script decide the setting, action, mood, lighting and composition",
-  CONFLICTING_STYLE_PATTERN: /\b(?:photorealistic|hyperrealistic|3d\s+render|octane\s+render|cinematic\s+realism|realistic\s+cinematic|dramatic\s+lighting|volumetric\s+lighting|shot\s+on\s+\d+mm)\b/gi,
+  CONFLICTING_STYLE_PATTERN: /\b(?:photorealistic|hyperrealistic|3d\s+render|octane\s+render|cinematic\s+realism|realistic\s+cinematic|dramatic\s+lighting|volumetric\s+lighting|shot\s+on\s+\d+mm|strict\s+character\s+visual\s+lock[^.]*|every\s+person[^.]*stickfigure[^.]*|round\s+head\s+shape[^.]*|pill\s+shaped\s+torso[^.]*|stick\s+limbs[^.]*|simplified\s+facial\s+dots[^.]*|minimal\s+vector\s+graphic[^.]*|universal\s+character\s+anatomy\s+rule[^.]*|distinct\s+character\s+visuals[^.]*|natural\s+single-jointed\s+limb\s+posing[^.]*)\b\.?/gi,
   NARRATIVE_IGNORE_PREFIX: "Editorial visual grounded only in this narration:",
   SPACE_SEPARATOR: " ",
   PLURAL_SUFFIX: "s",

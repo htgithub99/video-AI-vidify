@@ -246,7 +246,7 @@ const buildPromptClauses = (
     masterPrefix,
     createNarrativeClause(scene),
     compactSceneField(scene.visibleAction),
-    createCharacterClause(scene, _.defaultTo(options.characters, [])),
+    !isReferenceLocked && createCharacterClause(scene, _.defaultTo(options.characters, [])),
     scene.reaction && applyTemplate(IMAGE_PROMPT_COMPILER_CONFIG.REACTION_TEMPLATE, { value: compactSceneField(scene.reaction) }),
     buildStateChangeClause(scene),
     createLocationClause(scene, visualBible),
@@ -273,10 +273,8 @@ export const compileImagePrompt = (
     && _.size(_.words(existingPrompt)) > 15;
 
   let rawPrompt: string;
-  if (isAiOptimizedPrompt) {
-    rawPrompt = isReferenceLocked && !_.includes(existingPrompt, STYLE_REFERENCE_DIRECTIVES.REFERENCE_MATCH_DIRECTIVE)
-      ? _.join([STYLE_REFERENCE_DIRECTIVES.REFERENCE_MATCH_DIRECTIVE, existingPrompt], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR)
-      : existingPrompt;
+  if (isAiOptimizedPrompt && !isReferenceLocked) {
+    rawPrompt = existingPrompt;
   } else {
     const clauses = buildPromptClauses(scene, options);
     rawPrompt = _.join(clauses, IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
