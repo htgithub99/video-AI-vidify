@@ -645,7 +645,7 @@ export function useAutoVideoPipeline(
         setStepProgress(REFACTOR_CONSTANTS.AUTO_PROGRESS_SCRIPT_COMPLETE);
       }
 
-      if (config.resumeMode && !invalidationState.regenerateStoryboard && !config.forceRegenerateScenes && !_.isEmpty(newProj.storyboard)) {
+      if (config.resumeMode && !invalidationState.regenerateStoryboard && !_.isEmpty(newProj.storyboard)) {
         realScenes = _.cloneDeep(newProj.storyboard!) as StoryboardScene[];
         isStoryboardCached = true;
         appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
