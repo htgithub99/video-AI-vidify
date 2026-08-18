@@ -41,6 +41,7 @@ const regeneratedProject = clearProjectImageOutputs(mockProject);
 assert.equal(regeneratedProject.visualConfig.referencePrompt, "Flat stick-figure illustration");
 assert.equal(regeneratedProject.storyboard[0].assetUrl, undefined);
 assert.equal(regeneratedProject.thumbnails.length, 0);
+assert.equal(regeneratedProject.storyboard[0].prompt, "");
 
 // Prompt của phân cảnh phải sạch hoàn toàn nhãn lý thuyết
 assert.doesNotMatch(regeneratedProject.storyboard[0].prompt, /Line art:|Palette:|Rendering:|Strict character visual lock:/);
@@ -51,6 +52,7 @@ const compiledScenePrompt = compileImagePrompt(regeneratedProject.storyboard[0],
   targetStyle: regeneratedProject.visualConfig.style,
 });
 assert.doesNotMatch(compiledScenePrompt, /Line art:|Palette:|Rendering:/);
+assert.doesNotMatch(compiledScenePrompt, /industrial hazard/i);
 assert.ok(compiledScenePrompt.includes("--ar 16:9"));
 
 // 3. Kiểm tra Prompt Thumbnail theo ma trận tò mò CTR

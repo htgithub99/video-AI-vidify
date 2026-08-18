@@ -1,10 +1,9 @@
 import _ from "lodash";
 import { CharacterConfig, GenerateType, StoryboardScene, VideoProject } from "../types";
-import { sanitizeImagePrompt } from "./imagePromptQualityService";
 
 export const clearSceneVisualAsset = (scene: StoryboardScene): StoryboardScene => ({
   ...scene,
-  prompt: scene.prompt ? sanitizeImagePrompt(scene.prompt) : scene.prompt,
+  prompt: "",
   generationPrompt: undefined,
   assetType: undefined,
   assetUrl: undefined,

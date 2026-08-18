@@ -100,7 +100,7 @@ export const createVisualPlanningPayload = (scenes: StoryboardScene[]): Record<s
   scenes,
   scene => _.pick(scene, [
     "id", "chapterId", "script", "subtitle", "narrativeBeatId", "characterStateBefore",
-    "characterStateAfter", "callbackId", "characterIds", "characterStage", "locationId", "propIds", "prompt",
+    "characterStateAfter", "callbackId", "characterIds", "characterStage", "locationId", "propIds",
     "visualIntent", "visibleAction", "reaction", "expectedSubjectCount",
   ]),
 );

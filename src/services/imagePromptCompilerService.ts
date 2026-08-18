@@ -47,23 +47,10 @@ const resolveCharacterDirective = (options: ImagePromptCompilerOptions): string 
   return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
 };
 
-const cleanPromptNarrative = (rawPrompt: string): string => {
-  const cleaned = rawPrompt
-    .replace(/--ar\s+\d+:\d+/gi, "")
-    .replace(/Completely text-free[^.]*\.?/gi, "")
-    .replace(/strictly no text[^.]*\.?/gi, "")
-    .trim();
-  return compactWords(cleaned, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS * 2);
-};
-
 const extractNarrativeText = (scene: StoryboardScene): string => {
   const visualDesc = compactSceneField(scene.visibleAction || scene.visualIntent || scene.reaction || scene.composition);
   if (!_.isEmpty(visualDesc)) {
     return visualDesc;
-  }
-  const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
-  if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
-    return cleanPromptNarrative(existingPrompt);
   }
   return compactSceneField(scene.script || scene.subtitle);
 };
