@@ -17,6 +17,22 @@ export interface CuratedStylePreset {
   keywords: string[];
 }
 
+export const STYLE_PRESET_CONFIG = {
+  DEFAULT_ID: "stickman",
+  CUSTOM_ID: "custom",
+  CUSTOM_NAME: "Tùy chỉnh",
+  CUSTOM_NAME_VI: "Tùy chỉnh",
+  CUSTOM_CATEGORY: "all" as StyleCategory,
+  CUSTOM_ICON: "🎨",
+  CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản",
+  CUSTOM_BG_MODE: "contextual" as const,
+  MIN_CUSTOM_PROMPT_LENGTH: 30,
+  KEYWORD_LENGTH_KEY: "keywordLength",
+  WORD_BOUNDARY_PREFIX: "\\b",
+  WORD_BOUNDARY_SUFFIX: "\\b",
+  REGEX_FLAG_I: "i",
+} as const;
+
 export const STYLE_CATEGORIES: { id: StyleCategory; nameVi: string; nameEn: string }[] = [
   { id: "all", nameVi: "Tất cả (16)", nameEn: "All (16)" },
   { id: "cartoon_2d", nameVi: "2D & Hoạt hình", nameEn: "2D & Anime" },
@@ -51,7 +67,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "photorealistic, 3D render, realistic human skin, gritty texture, noise, volumetric lighting, dark realism, complex textures, blurry, photographic, sketches",
     defaultBackgroundMode: "contextual",
     characterRule: "stylized 2D cartoon proportions, smooth vector shapes, clean geometric features",
-    keywords: ["vector", "2d", "cartoon", "hoạt hình 2d", "vector 2d", "flat vector", "phẳng", "kurzgesagt"],
+    keywords: ["vector_2d", "vector 2d", "flat vector", "kurzgesagt", "infographic vector"],
   },
   anime: {
     id: "anime",
@@ -93,7 +109,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "realistic human proportions, scary, horror, photorealistic, adult anatomy, gritty, dark, mature, ugly, realistic skin",
     defaultBackgroundMode: "contextual",
     characterRule: "chibi 1:2 body ratio, giant sparkling eyes, cute rounded limbs, playful animated expressions",
-    keywords: ["chibi", "cute", "dễ thương", "đầu to", "đáng yêu", "kawaii"],
+    keywords: ["chibi", "kawaii", "chibi 2d", "cute chibi", "đầu to"],
   },
   comic: {
     id: "comic",
@@ -107,7 +123,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "photorealistic, 3D smooth render, soft airbrush, blurry, stick figure, low detail, muddy, pastel, flat boring",
     defaultBackgroundMode: "contextual",
     characterRule: "heroic or dramatic comic book proportions, bold expressive cross-hatching, sharp ink shadows",
-    keywords: ["comic", "manga", "truyện tranh", "comic book", "graphic novel", "marvel", "dc", "superhero"],
+    keywords: ["comic", "comic book", "graphic novel", "marvel", "dc", "superhero", "truyện tranh comic"],
   },
   webtoon: {
     id: "webtoon",
@@ -135,7 +151,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "photorealistic, 2D flat, stick figure, rough sketch, gritty realism, grotesque, horror, bad anatomy, clay texture, sharp noise, dull lighting",
     defaultBackgroundMode: "contextual",
     characterRule: "cute 3D cartoon proportions, big expressive eyes, smooth stylized surfaces, charming friendly poses",
-    keywords: ["3d", "pixar", "chibi 3d", "3d render", "hoạt hình 3d", "cute 3d", "disney", "disney 3d"],
+    keywords: ["pixar_3d", "pixar", "disney 3d", "3d pixar", "disney animation"],
   },
   hyper_3d: {
     id: "hyper_3d",
@@ -149,7 +165,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "2D flat, cartoon, drawing, sketch, stick figure, low poly, noisy, oversaturated cheap render, blurry, amateur 3D",
     defaultBackgroundMode: "contextual",
     characterRule: "high-fidelity 3D human or character model with micro-detail textures and realistic subsurface skin",
-    keywords: ["unreal engine", "ue5", "cgi", "3d siêu thực", "octane", "ray tracing", "blockbuster"],
+    keywords: ["hyper_3d", "unreal engine", "ue5", "octane", "ray tracing", "3d cgi", "3d siêu thực"],
   },
   cinematic: {
     id: "cinematic",
@@ -163,7 +179,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "cartoon, anime, 2D vector, stick figure, illustration, drawing, painting, 3D render, low quality, oversaturated, plastic skin, fake lighting",
     defaultBackgroundMode: "contextual",
     characterRule: "realistic human anatomy, authentic facial expressions, natural clothing textures, cinematic wardrobe",
-    keywords: ["cinematic", "realistic", "tả thực", "điện ảnh", "photorealistic", "người thật", "film", "35mm"],
+    keywords: ["cinematic", "photorealistic", "người thật", "35mm", "panavision", "hollywood", "tả thực"],
   },
   claymation: {
     id: "claymation",
@@ -177,7 +193,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "2D flat, digital smooth render, photorealistic human, sharp vector, stick figure, CGI glossy, smooth plastic",
     defaultBackgroundMode: "contextual",
     characterRule: "sculpted clay character with tactile handmade clay details, playful proportions and subtle clay creases",
-    keywords: ["claymation", "clay", "đất nặn", "stop motion", "aardman", "plasticine"],
+    keywords: ["claymation", "đất nặn", "stop motion", "aardman", "plasticine"],
   },
   cyberpunk: {
     id: "cyberpunk",
@@ -191,7 +207,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "stick figure, bright pastel cartoon, watercolor, daytime sunlight, vintage, rustic, dull lighting, low contrast",
     defaultBackgroundMode: "contextual",
     characterRule: "futuristic tech-wear styling, neon reflections on clothing and skin, cybernetic accents",
-    keywords: ["cyberpunk", "neon", "futuristic", "tương lai", "neon dark", "sci-fi", "blade runner"],
+    keywords: ["cyberpunk", "neon dark", "sci-fi", "blade runner", "thành phố neon"],
   },
   watercolor: {
     id: "watercolor",
@@ -205,7 +221,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "photorealistic, 3D CGI render, vector, harsh digital lines, stick figure, neon, high contrast harsh shadows, oversaturated, glossy",
     defaultBackgroundMode: "contextual",
     characterRule: "delicate watercolor figure with soft color washes and expressive hand-painted outlines",
-    keywords: ["watercolor", "màu nước", "tranh vẽ", "paint", "artistic", "thủy mặc", "loang nước"],
+    keywords: ["watercolor", "màu nước", "thủy mặc", "loang nước", "tranh màu nước"],
   },
   retro_90s: {
     id: "retro_90s",
@@ -219,7 +235,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "modern sharp 3D, CGI, photorealistic, vector, stick figure, ultra-crisp modern digital glossy, clean vector",
     defaultBackgroundMode: "contextual",
     characterRule: "classic 1990s anime character silhouette with soft nostalgic features and retro styling",
-    keywords: ["90s", "retro anime", "vintage", "vhs", "lo-fi", "hoài niệm", "anime cổ điển"],
+    keywords: ["retro_90s", "retro anime", "vintage anime", "vhs", "lo-fi", "anime 90s", "anime cổ điển"],
   },
   paper_cutout: {
     id: "paper_cutout",
@@ -233,7 +249,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "photorealistic human, smooth gradient 3D render, anime lineart, stick figure, blurry, flat 2D, noisy",
     defaultBackgroundMode: "contextual",
     characterRule: "layered paper cutout character with distinct geometric silhouette and shadow depth",
-    keywords: ["paper", "cắt giấy", "origami", "paper cutout", "xếp giấy", "paper craft"],
+    keywords: ["paper_cutout", "paper craft", "paper cutout", "cắt giấy", "origami", "xếp giấy"],
   },
   pixel_art: {
     id: "pixel_art",
@@ -247,41 +263,90 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     negativePrompt: "smooth curves, high resolution vector, 3D render, photorealistic, blur, anti-aliased smudge, modern drawing, photographic",
     defaultBackgroundMode: "contextual",
     characterRule: "pixelated sprite character with distinct retro gaming proportions and clean pixel silhouette",
-    keywords: ["pixel", "pixel art", "8-bit", "16-bit", "retro", "game arcade", "pixel game"],
+    keywords: ["pixel_art", "pixel", "pixel art", "8-bit", "16-bit", "arcade sprite", "pixel game"],
   },
 };
 
-export const DEFAULT_STYLE_PRESET_ID = "stickman";
+export const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
+
+const findByPresetId = (normalized: string): CuratedStylePreset | undefined => {
+  return CURATED_STYLE_PRESETS[normalized];
+};
+
+const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => {
+  return _.find(CURATED_STYLE_PRESETS, (preset) =>
+    _.isEqual(_.trim(preset.positivePrompt), trimmed) ||
+    _.isEqual(_.toLower(_.trim(preset.positivePrompt)), normalized),
+  );
+};
+
+const findByPresetName = (normalized: string): CuratedStylePreset | undefined => {
+  return _.find(CURATED_STYLE_PRESETS, (preset) =>
+    _.isEqual(_.toLower(preset.name), normalized) ||
+    _.isEqual(_.toLower(preset.nameVi), normalized),
+  );
+};
+
+const findByKeywords = (normalized: string): CuratedStylePreset | undefined => {
+  const allPresets = _.values(CURATED_STYLE_PRESETS);
+  const candidates: { preset: CuratedStylePreset; keywordLength: number }[] = [];
+
+  _.forEach(allPresets, (preset) => {
+    _.forEach(preset.keywords, (keyword) => {
+      const escaped = _.escapeRegExp(_.toLower(keyword));
+      const regex = new RegExp(
+        `${STYLE_PRESET_CONFIG.WORD_BOUNDARY_PREFIX}${escaped}${STYLE_PRESET_CONFIG.WORD_BOUNDARY_SUFFIX}`,
+        STYLE_PRESET_CONFIG.REGEX_FLAG_I,
+      );
+      if (regex.test(normalized)) {
+        candidates.push({ preset, keywordLength: keyword.length });
+      }
+    });
+  });
+
+  if (_.isEmpty(candidates)) return undefined;
+  const bestCandidate = _.maxBy(candidates, STYLE_PRESET_CONFIG.KEYWORD_LENGTH_KEY);
+  return bestCandidate?.preset;
+};
+
+const createCustomPreset = (prompt: string): CuratedStylePreset => ({
+  id: STYLE_PRESET_CONFIG.CUSTOM_ID,
+  name: STYLE_PRESET_CONFIG.CUSTOM_NAME,
+  nameVi: STYLE_PRESET_CONFIG.CUSTOM_NAME_VI,
+  category: STYLE_PRESET_CONFIG.CUSTOM_CATEGORY,
+  icon: STYLE_PRESET_CONFIG.CUSTOM_ICON,
+  tagline: STYLE_PRESET_CONFIG.CUSTOM_TAGLINE,
+  description: prompt,
+  positivePrompt: prompt,
+  negativePrompt: CURATED_STYLE_PRESETS[DEFAULT_STYLE_PRESET_ID].negativePrompt,
+  defaultBackgroundMode: STYLE_PRESET_CONFIG.CUSTOM_BG_MODE,
+  characterRule: "",
+  keywords: [],
+});
 
 export const resolveStylePreset = (input?: string): CuratedStylePreset => {
   if (!input || !_.isString(input)) {
     return CURATED_STYLE_PRESETS[DEFAULT_STYLE_PRESET_ID];
   }
 
-  const normalized = _.toLower(_.trim(input));
+  const trimmed = _.trim(input);
+  const normalized = _.toLower(trimmed);
 
-  if (CURATED_STYLE_PRESETS[normalized]) {
-    return CURATED_STYLE_PRESETS[normalized];
+  const matchedById = findByPresetId(normalized);
+  if (matchedById) return matchedById;
+
+  const matchedByPrompt = findByExactPrompt(trimmed, normalized);
+  if (matchedByPrompt) return matchedByPrompt;
+
+  const matchedByName = findByPresetName(normalized);
+  if (matchedByName) return matchedByName;
+
+  const matchedByKeyword = findByKeywords(normalized);
+  if (matchedByKeyword) return matchedByKeyword;
+
+  if (_.gt(_.size(trimmed), STYLE_PRESET_CONFIG.MIN_CUSTOM_PROMPT_LENGTH)) {
+    return createCustomPreset(trimmed);
   }
 
-  const matchedByName = _.find(CURATED_STYLE_PRESETS, (preset) =>
-    _.isEqual(_.toLower(preset.name), normalized) ||
-    _.isEqual(_.toLower(preset.nameVi), normalized)
-  );
-  if (matchedByName) {
-    return matchedByName;
-  }
-
-  const matchedExactKeyword = _.find(CURATED_STYLE_PRESETS, (preset) =>
-    _.some(preset.keywords, (keyword) => _.isEqual(_.toLower(keyword), normalized))
-  );
-  if (matchedExactKeyword) {
-    return matchedExactKeyword;
-  }
-
-  const matchedPartial = _.find(CURATED_STYLE_PRESETS, (preset) =>
-    _.some(preset.keywords, (keyword) => _.includes(normalized, _.toLower(keyword)))
-  );
-
-  return matchedPartial || CURATED_STYLE_PRESETS[DEFAULT_STYLE_PRESET_ID];
+  return CURATED_STYLE_PRESETS[DEFAULT_STYLE_PRESET_ID];
 };
