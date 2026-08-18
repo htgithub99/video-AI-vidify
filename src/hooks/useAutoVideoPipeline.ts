@@ -180,6 +180,29 @@ export interface PipelineActions {
   setRenderedVideoUrl: React.Dispatch<React.SetStateAction<string>>;
 }
 
+const createFallbackCharacterProfile = (stylePresetName?: string): Record<string, any> => {
+  const activePreset = resolveStylePreset(stylePresetName);
+  return {
+    name: "Main Character",
+    description: activePreset.characterRule || activePreset.description,
+    prompt: activePreset.characterRule || activePreset.positivePrompt,
+    narrativeRole: "protagonist",
+    genderPresentation: "neutral",
+    ageRange: "20s",
+    ethnicitySkinTone: "fair",
+    bodyBuild: "standard",
+    faceShape: "standard",
+    eyes: "expressive",
+    nose: "",
+    hair: "styled",
+    signatureClothing: "casual",
+    accessories: "",
+    colorPalette: "harmonious",
+    silhouette: "recognizable",
+    timelineStages: [],
+  };
+};
+
 export function useAutoVideoPipeline(
   projects: VideoProject[],
   onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void,
@@ -702,10 +725,15 @@ export function useAutoVideoPipeline(
             || config.stylePreset,
         }, requestSignal);
         throwIfCancelled();
-        let rawAnalyzedCharacters = analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)
+        let rawAnalyzedCharacters: any[] = analyzeCharacterRes.success && _.isArray(analyzeCharacterRes.data?.characters)
           ? _.take(analyzeCharacterRes.data.characters, REFACTOR_CONSTANTS.HOOK_COUNT)
           : [];
-        if (_.isEmpty(rawAnalyzedCharacters)) appendLog(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+        if (_.isEmpty(rawAnalyzedCharacters)) {
+          appendLog(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+          rawAnalyzedCharacters = [
+            createFallbackCharacterProfile(config.stylePreset || newProj.visualConfig.style),
+          ];
+        }
         if (!_.isEmpty(rawAnalyzedCharacters)) {
           analyzedCharacters = normalizeCharacterLibrary(_.map(
             rawAnalyzedCharacters,

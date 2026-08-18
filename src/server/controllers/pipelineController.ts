@@ -14,7 +14,7 @@ import { checkCache, setCache } from "../services/cacheService.js";
 import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { getSafeFolderName } from "./projectController.js";
 import JSZip from "jszip";
-import { safeParseJSON, formatTime } from "../utils/helpers.js";
+import { safeParseJSON, formatTime, extractCharacterListFromParsedJSON } from "../utils/helpers.js";
 import { resolveImageFocusDirective } from "../../lib/imagePromptDirectives.js";
 import { listTemplates, saveTemplate, deleteTemplate, renameTemplate } from "../utils/capcutTemplateManager.js";
 import { PIPELINE_CONFIG, FFMPEG_RENDER_CONSTANTS, PROJECT_ASSET_GROUP, PROJECT_VISUAL_ASSET_CONFIG, REFERENCE_ASSET_GROUP, PROJECT_ASSET_ROUTE, PROJECT_ASSET_INVALID_REQUEST, BACKGROUND_MODE_CONFIG, TEXT_IN_IMAGE_MODE_CONFIG, FREE_AI_PROVIDER_LOGS, STYLE_EXTRACTION_CONFIG, PIPELINE_SERVER_ERRORS, PIPELINE_SERVER_LOGS, STORYBOARD_FALLBACK_CONFIG, RENDER_QUEUE_CONFIG, CONTENT_SAFETY_CONFIG, FINAL_MULTIMODAL_QA_CONFIG, FACT_RESEARCH_CONFIG, SCRIPT_PLAN_CONFIG, SEO_FALLBACK_CONFIG, ADVISORY_QA_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../../constants/config.js";
@@ -591,7 +591,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
     });
 
     const parsed = safeParseJSON(response.text, []);
-    const characters = _.take(_.isArray(parsed) ? parsed : [], REFACTOR_CONSTANTS.HOOK_COUNT);
+    const characters = extractCharacterListFromParsedJSON(parsed, REFACTOR_CONSTANTS.HOOK_COUNT);
     const result = { characters };
     setCache(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, req.body, result);
     return res.json(result);
