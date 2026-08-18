@@ -40,6 +40,8 @@ import {
   GEMINI_MEDIA_EXTRACTION_CONFIG,
   GEMINI_MEDIA_ERRORS,
   GEMINI_MODEL_SELECTION_CONFIG,
+  GEMINI_ACTIVE_VIDEO_MODE_REGEX,
+  GEMINI_ACTIVE_IMAGE_MODE_REGEX,
 } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
 import { appLog, appError, createAppError } from "../../lib/logger.js";
@@ -1790,6 +1792,35 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
   const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
 
+  const activeModeRegex = isVideo ? GEMINI_ACTIVE_VIDEO_MODE_REGEX : GEMINI_ACTIVE_IMAGE_MODE_REGEX;
+  const hasActiveGenerateType = async (): Promise<boolean> => {
+    const candidates = page.locator(GeminiChatSelector.ActiveGenerateType);
+    const candidateCount = await candidates.count();
+    for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
+      const candidate = candidates.nth(index);
+      if (!(await candidate.isVisible().catch(() => false))) continue;
+      const label = _.trim(_.join([
+        await candidate.innerText().catch(() => ""),
+        await candidate.getAttribute("aria-label").catch(() => ""),
+      ], " "));
+      if (activeModeRegex.test(label)) return true;
+    }
+    return false;
+  };
+  const waitForActiveGenerateType = async (): Promise<boolean> => {
+    const maximumPolls = Math.ceil(
+      GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_MODE_TIMEOUT_MS
+      / GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS,
+    );
+    for (let poll = SecurityConstants.ZERO; poll < maximumPolls; poll++) {
+      if (await hasActiveGenerateType()) return true;
+      await delayAsync(GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS);
+    }
+    return false;
+  };
+
+  if (await hasActiveGenerateType()) return true;
+
   const plusBtn = page.locator(GeminiChatSelector.PlusButton).first();
   const selectionTimeout = GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS;
   try {
@@ -1826,11 +1857,13 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     await selectedOption.click();
     await randomDelay(800, 1400);
     const menuClosed = await selectedOption.isHidden().catch(() => true);
-    if (menuClosed) {
+    const modeActive = menuClosed && await waitForActiveGenerateType();
+    if (modeActive) {
       await captureGeminiDomState(page, isVideo ? "video_type_selected" : "image_type_selected");
       appLog((usedFallback ? BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK : BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS).replace("{0}", targetText));
       return true;
     }
+    await captureGeminiDomState(page, isVideo ? "video_type_chip_missing" : "image_type_chip_missing");
   }
 
   await captureGeminiDomState(page, isVideo ? "video_type_option_missing" : "image_type_option_missing");

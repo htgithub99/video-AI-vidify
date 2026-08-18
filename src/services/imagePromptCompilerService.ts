@@ -41,7 +41,6 @@ const compactScriptSource = (value: unknown): string => {
 const getCharacterIdentityProfile = (character: CharacterConfig, scene: StoryboardScene): string => {
   const stage = _.find(character.timelineStages, item => _.isEqual(item.id, scene.characterStage) || _.isEqual(item.label, scene.characterStage));
   const details = _.compact([
-    character.description,
     character.genderPresentation,
     character.ageRange,
     character.ethnicitySkinTone,
@@ -56,6 +55,7 @@ const getCharacterIdentityProfile = (character: CharacterConfig, scene: Storyboa
     character.silhouette,
     stage?.outfit,
     stage?.visibleCondition,
+    character.description,
   ]);
   return compactWords(_.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS * 2);
 };

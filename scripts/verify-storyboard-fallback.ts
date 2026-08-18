@@ -25,6 +25,20 @@ assert.ok(hydratedScenes[0].reaction);
 assert.ok(hydratedScenes[0].composition);
 assert.notEqual(hydratedScenes[0].prompt, "");
 
+const modernOfficeScene = ensureScriptGroundedSceneDetails([{
+  ...scenes[0],
+  script: "Nhân viên trao đổi về khoảng cách thu nhập trong phòng họp công ty.",
+  subtitle: "Nhân viên trao đổi về khoảng cách thu nhập trong phòng họp công ty.",
+  prompt: "",
+  visualIntent: "A female employee stands in a mystic immortal hall with floating spiritual energy.",
+  visibleAction: "She climbs celestial stairs while magical talismans glow.",
+  lighting: "moonlit magical rim light",
+}]);
+assert.equal(modernOfficeScene[0].visibleAction, modernOfficeScene[0].script);
+assert.equal(modernOfficeScene[0].lighting, undefined);
+assert.equal(modernOfficeScene[0].prompt.includes("immortal hall"), false);
+assert.equal(modernOfficeScene[0].prompt.includes("celestial stairs"), false);
+
 const sparseStoryboard = ensureStoryboardScriptCoverage([scenes[0]], {
   rewrittenScript: script,
   chapters: [{ id: "chapter_1", title: "Má»Ÿ Ä‘áº§u", scriptSegment: script }],

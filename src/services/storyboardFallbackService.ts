@@ -9,6 +9,7 @@ import {
   SplitStrategy,
   STORYBOARD_FALLBACK_CONFIG,
 } from "../constants";
+import { FANTASY_LEAK_REGEX, FANTASY_STORY_REGEX } from "../constants/regexes";
 import { smartSplitSentences, splitSentenceSafely } from "../lib/textProcessor";
 import { Chapter, ShotPurpose, StoryboardScene, VisualBible } from "../types";
 import { assignStoryboardChapterIds } from "../utils/storyboardChapterUtils";
@@ -37,6 +38,11 @@ const PARAGRAPH_SPLIT_STRATEGIES: SplitStrategy[] = [
   SplitStrategy.SLOWPACED,
   SplitStrategy.SUPER_SLOW,
 ];
+
+const isUnsupportedFantasyLeak = (value: unknown, script: string): boolean => (
+  FANTASY_LEAK_REGEX.test(_.toString(value))
+  && !FANTASY_STORY_REGEX.test(script)
+);
 
 const createNarrationSegments = (script: string, splitStrategy: SplitStrategy): string[] => {
   const maxWords = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy)
@@ -101,14 +107,27 @@ const createScriptGroundedScene = (script: string, index: number): StoryboardSce
 const hydrateScriptGroundedScene = (scene: StoryboardScene, index: number): StoryboardScene => {
   const script = _.trim(scene.script || scene.subtitle);
   const baseline = createScriptGroundedScene(script, index);
+  const visualIntent = isUnsupportedFantasyLeak(scene.visualIntent, script)
+    ? baseline.visualIntent
+    : (scene.visualIntent || baseline.visualIntent);
+  const visibleAction = isUnsupportedFantasyLeak(scene.visibleAction, script)
+    ? baseline.visibleAction
+    : (scene.visibleAction || baseline.visibleAction);
+  const reaction = isUnsupportedFantasyLeak(scene.reaction, script)
+    ? baseline.reaction
+    : (scene.reaction || baseline.reaction);
+  const lighting = isUnsupportedFantasyLeak(scene.lighting, script)
+    ? undefined
+    : scene.lighting;
   return {
     ...baseline,
     ...scene,
     script,
     subtitle: _.trim(scene.subtitle || script),
-    visualIntent: scene.visualIntent || baseline.visualIntent,
-    visibleAction: scene.visibleAction || baseline.visibleAction,
-    reaction: scene.reaction || baseline.reaction,
+    visualIntent,
+    visibleAction,
+    reaction,
+    lighting,
     shotSize: scene.shotSize || baseline.shotSize,
     cameraAngle: scene.cameraAngle || baseline.cameraAngle,
     composition: scene.composition || baseline.composition,

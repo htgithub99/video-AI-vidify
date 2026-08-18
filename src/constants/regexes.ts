@@ -82,6 +82,7 @@ export const URL_ENCODED_LITERAL_COMMA_REGEX = /,/g;
 export const ALPHANUMERIC_ONLY_REGEX = /[^a-z0-9]/g;
 export const SINGLE_QUOTE_REGEX = /'/g;
 
+
 export const LAST_WORD_IN_SENTENCE_REGEX = /(\b[a-zA-ZÀ-ỹ]+)$/;
 export const SENTENCE_PUNCTUATION_END_REGEX = /[伤害,.;:—\-\s]+$/;
 export const DIGIT_REGEX = /\d/;
@@ -92,3 +93,7 @@ export const DETECTOR_VIETNAMESE_REGEX = /[áàảãạăắằẳẵặâấầ
 export const LEADING_HASHTAGS_REGEX = /^#+/;
 export const REGEX_AUTO_MODE_PATH = /\[AUTO-MODE\] Project created at:\s*(.+)/i;
 export const IMAGE_ID_URL_REGEX = /[?&](id|docid|name)=([^&]+)/;
+export const FANTASY_LEAK_REGEX = /\b(?:fantasy|mystic(?:al)?|magic(?:al)?|immortal|cultivat(?:or|ion)|celestial|spiritual energy|talisman|temple|ancient seal|floating (?:stairs|energy|runes?)|moonlit.*magical|magical.*moonlit)\b/i;
+export const FANTASY_STORY_REGEX = /\b(?:fantasy|magic(?:al)?|wizard|witch|spell|immortal|cultivat(?:or|ion)|celestial|spiritual|talisman|temple|ancient kingdom|tu tien|tien hiep|phep thuat|than tien|tu tien|linh luc|tien nhan)\b/i;
+export const GEMINI_ACTIVE_VIDEO_MODE_REGEX = /^\s*(?:video|tạo video|create video|generate video)\s*$/i;
+export const GEMINI_ACTIVE_IMAGE_MODE_REGEX = /^\s*(?:hình ảnh|image|images)\s*$/i;
