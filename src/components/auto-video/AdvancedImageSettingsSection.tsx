@@ -10,6 +10,7 @@ import { BackgroundModeSelect } from "./BackgroundModeSelect";
 import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage } from "../../constants/enums";
 import { SceneTextModeSelect } from "./SceneTextModeSelect";
+import { ADVANCED_SETTING_GROUPS } from "../../constants/texts";
 
 interface AdvancedImageSettingsSectionProps {
   showAdvancedImageSettings: boolean;
@@ -28,46 +29,31 @@ interface AdvancedImageSettingsSectionProps {
   T: any;
 }
 
-const CHROME_OPTION_GROUPS = {
-  vi: [
-    {
-      label: "Trình duyệt tự động",
-      options: [
-        { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: "Chạy ngầm", desc: "Chạy ẩn ngầm không mở cửa sổ trình duyệt khi AI tạo ảnh và video" },
-        { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: "Hiển thị cửa sổ", desc: "Mở cửa sổ trình duyệt để theo dõi trực quan quá trình tạo" },
-      ],
-    },
-  ],
-  en: [
-    {
-      label: "Browser Mode",
-      options: [
-        { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: "Headless", desc: "Run in background without opening browser window" },
-        { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: "Windowed", desc: "Show browser window visually during generation" },
-      ],
-    },
-  ],
-};
+const buildOptionGroups = (lang: AppLanguage) => {
+  const isVi = _.isEqual(lang, AppLanguage.VI);
+  const texts = isVi ? ADVANCED_SETTING_GROUPS.vi : ADVANCED_SETTING_GROUPS.en;
 
-const RESUME_OPTION_GROUPS = {
-  vi: [
+  const chromeGroups = [
     {
-      label: "Tiến trình tạo video",
+      label: texts.chromeGroup,
       options: [
-        { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: "Dùng lại nội dung đã có", desc: "Tái sử dụng kịch bản, giọng đọc và các ảnh phân cảnh đã tạo thành công trước đó để tiết kiệm thời gian và chi phí" },
-        { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: "Bắt đầu tạo mới", desc: "Tạo mới toàn bộ kịch bản, giọng đọc và phân cảnh từ đầu" },
+        { value: REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS, label: texts.headlessLabel, desc: texts.headlessDesc },
+        { value: REFACTOR_CONSTANTS.CHROME_MODE_WINDOWED, label: texts.windowedLabel, desc: texts.windowedDesc },
       ],
     },
-  ],
-  en: [
+  ];
+
+  const resumeGroups = [
     {
-      label: "Generation Flow",
+      label: texts.resumeGroup,
       options: [
-        { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: "Resume Existing", desc: "Reuse previously generated script, voice, and scene images to save time and tokens" },
-        { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: "Start Fresh", desc: "Generate fresh script, voice, and visual assets from scratch" },
+        { value: REFACTOR_CONSTANTS.RESUME_MODE_RESUME, label: texts.resumeLabel, desc: texts.resumeDesc },
+        { value: REFACTOR_CONSTANTS.RESUME_MODE_NEW, label: texts.newLabel, desc: texts.newDesc },
       ],
     },
-  ],
+  ];
+
+  return { chromeGroups, resumeGroups };
 };
 
 export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSectionProps> = ({
@@ -86,9 +72,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   language,
   T,
 }) => {
-  const isVi = _.isEqual(language, AppLanguage.VI);
-  const chromeGroups = CHROME_OPTION_GROUPS[isVi ? "vi" : "en"];
-  const resumeGroups = RESUME_OPTION_GROUPS[isVi ? "vi" : "en"];
+  const { chromeGroups, resumeGroups } = buildOptionGroups(language);
 
   const currentChromeValue = chromeHeadless
     ? REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS
@@ -101,8 +85,8 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
   return (
     <div className={cn(AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_CLASS, showAdvancedImageSettings && AUTO_GENERATOR_CONSTANTS.ADVANCED_PANEL_OPEN_CLASS)}>
       <Button
-        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON as any}
-        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED as any}
+        type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+        variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
         onClick={() => setShowAdvancedImageSettings(!showAdvancedImageSettings)}
         aria-expanded={showAdvancedImageSettings}
         className={AUTO_GENERATOR_CONSTANTS.ADVANCED_TRIGGER_CLASS}
@@ -152,7 +136,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select
                 value={currentChromeValue}
-                onChange={(e) => setChromeHeadless(e.target.value === REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS)}
+                onChange={(e) => setChromeHeadless(_.isEqual(e.target.value, REFACTOR_CONSTANTS.CHROME_MODE_HEADLESS))}
                 className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
               >
                 {_.map(chromeGroups, (group) => (
@@ -182,7 +166,7 @@ export const AdvancedImageSettingsSection: React.FC<AdvancedImageSettingsSection
               <RefreshCw className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select
                 value={currentResumeValue}
-                onChange={(e) => setResumeMode(e.target.value === REFACTOR_CONSTANTS.RESUME_MODE_RESUME)}
+                onChange={(e) => setResumeMode(_.isEqual(e.target.value, REFACTOR_CONSTANTS.RESUME_MODE_RESUME))}
                 className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
               >
                 {_.map(resumeGroups, (group) => (

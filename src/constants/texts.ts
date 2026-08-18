@@ -70,12 +70,14 @@ export const SCENE_SPLIT_PROMPTS = {
   VN: {
     DEFAULT_SCRIPT: (idx: number) => `Chi tiết cốt truyện hấp dẫn phần ${idx} tiếp nối mạch truyện đầy lôi cuốn.`,
     EFFECTS: (style: string) => `Phủ hiệu ứng ánh sáng dịu nhẹ phong cách ${style}`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
   EN: {
     DEFAULT_SCRIPT: (idx: number) => `Interesting plot detail part ${idx} continuing the engaging narrative.`,
     EFFECTS: (style: string) => `Soft light leaks overlays adhering to ${style} feel`,
-    PROMPT: (context: string, style: string, aspectRatio: string) => `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
+    PROMPT: (context: string, style: string, aspectRatio: string) =>
+      `Stunning high-quality design depicting: ${context}. Adhering to ${style} style, rich colors, custom cinematic camera composition, dramatic storytelling lighting, detailed award-winning masterpiece. --ar ${aspectRatio}`,
   },
 };
 
@@ -120,7 +122,7 @@ export const QUOTA_TEXTS = {
     CHARS: "Chars",
     VIDEO: "Video",
     IMAGE: "Image",
-  }
+  },
 };
 
 export const TRANSFER_ENCODINGS = {
@@ -433,7 +435,7 @@ export const PIPELINE_STEP5_TEXTS = {
   en: {
     VIDEO_ZIP_NAME: "independent_video_list.zip",
     IMAGE_ZIP_NAME: "independent_image_list.zip",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP6_TEXTS = {
@@ -479,7 +481,7 @@ export const SETTINGS_TEXTS = {
     SSE_MODE: "SSE Stream",
     BATCH_MODE: "Batch",
     CLEAR_BTN: "Clear",
-  }
+  },
 } as const;
 
 export const SETTINGS_VIEW_TEXTS = {
@@ -520,7 +522,7 @@ export const SETTINGS_VIEW_TEXTS = {
     ADD_BTN_TOOLTIP: "Add account to list",
     NO_ACCOUNTS: "No accounts",
     HIDDEN_PWD: "••••••••",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP2_TEXTS = {
@@ -535,7 +537,7 @@ export const PIPELINE_STEP2_TEXTS = {
     THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
     BATCH_COUNT_LABEL: "Images & Titles",
     CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
-  }
+  },
 } as const;
 
 export const CURL_KEYWORDS = {
@@ -794,7 +796,7 @@ export const PIPELINE_STEP4_TEXTS = {
   RENDER_FFMPEG_SUCCESS: "Đã xuất video FFmpeg thành công!",
   RENDER_FFMPEG_ERR: "Lỗi render: ",
   NO_FFMPEG_VIDEO: "Chưa có video FFmpeg.",
-  USE_CREATE_BTN_HINT: "Vui lòng sử dụng tính năng \"Tạo Video Ngay\" ở khung bên phải.",
+  USE_CREATE_BTN_HINT: 'Vui lòng sử dụng tính năng "Tạo Video Ngay" ở khung bên phải.',
   EXPORTING_FFMPEG: "Đang xuất video FFmpeg...",
   BTN_DOWNLOAD_HINT: "Tải video về máy",
   PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...",
@@ -921,7 +923,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     styleUploadSub: "Nhân vật hoặc bối cảnh",
     styleUploadEmpty: "Không có ảnh mẫu.",
     sceneReferenceTitle: "Ảnh tham chiếu tạo cảnh",
-    sceneReferenceDescription: "Chỉ các ảnh trong mục này được gửi kèm tới Gemini/Veo khi tạo từng phân cảnh. Ảnh phong cách và ảnh bìa không được dùng làm tham chiếu cảnh.",
+    sceneReferenceDescription:
+      "Chỉ các ảnh trong mục này được gửi kèm tới Gemini/Veo khi tạo từng phân cảnh. Ảnh phong cách và ảnh bìa không được dùng làm tham chiếu cảnh.",
     sceneReferenceUploadTitle: "Tải ảnh tham chiếu",
     sceneReferenceUploadSub: "Nhân vật hoặc bối cảnh",
     sceneReferenceAlt: "Ảnh tham chiếu",
@@ -973,7 +976,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     lblChromeHeadlessTooltip: "Cấu hình Chrome chạy ngầm hoặc hiển thị cửa sổ",
     optionHeadless: "Chạy ngầm",
     optionWindowed: "Hiển thị",
-    optionResume: "Dùng lại nội dung đã có",
+    optionResume: "Dùng lại nội dung",
     optionNew: "Bắt đầu tạo mới",
     logResumeProject: (name: string) => `♻️ Sử dụng lại dự án: [${name}]. Chế độ chạy tiếp tục đang hoạt động.`,
     logResumeScript: "♻️ Sử dụng lại Kịch bản & Phân cảnh đã tạo từ phiên chạy trước.",
@@ -983,13 +986,16 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeAlignment: "♻️ Sử dụng lại Căn khớp & Phân đoạn âm thanh đã tạo.",
     logResumeSeo: "♻️ Sử dụng lại dữ liệu SEO đã tạo từ phiên chạy trước.",
     logBatchImageStreamStart: "🚀 Bắt đầu tạo ảnh hàng loạt bằng Gemini Chat qua luồng Stream...",
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) =>
+      `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
     logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId}: ${warn}`,
     logBatchStreamErrorFallback: (msg: string) => `❌ Lỗi luồng tạo ảnh hàng loạt: ${msg}. Chuyển sang cơ chế dự phòng sinh tuần tự...`,
     logFallbackSceneError: (id: string) => `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) => `⚠️ [Bước 3.2] Tạo ảnh hàng loạt thất bại ${failed}/${total}. Nguyên nhân: ${reason}. Chuyển sang tạo dự phòng tuần tự.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
+      `⚠️ [Bước 3.2] Tạo ảnh hàng loạt thất bại ${failed}/${total}. Nguyên nhân: ${reason}. Chuyển sang tạo dự phòng tuần tự.`,
     logFallbackProgress: (current: number, total: number) => `🎨 [Bước 3.3] Đang tạo ảnh dự phòng ${current}/${total}...`,
-    logImageGenerationSummary: (success: number, failed: number, total: number) => `${failed > 0 ? "⚠️" : "✅"} [Bước 3.4] Hoàn tất sinh ảnh: ${success}/${total} thành công, ${failed} thất bại.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number) =>
+      `${failed > 0 ? "⚠️" : "✅"} [Bước 3.4] Hoàn tất sinh ảnh: ${success}/${total} thành công, ${failed} thất bại.`,
     startBtnProcessing: "Đang Tạo Video...",
     startBtnStart: " Bắt Đầu Tạo",
     startBtnTooltip: "Khởi động luồng tạo video tự động 1-Click",
@@ -1016,8 +1022,10 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Mở dự án này trong AI Studio",
     alertEmptyScript: "Vui lòng nhập Kịch bản hoặc Ý tưởng ở phần Cấu hình.",
     logPipelineStart: "🚀 KHỞI ĐỘNG QUY TRÌNH TẠO VIDEO TỰ ĐỘNG",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
-    logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
+      `⚙️ Đã thiết lập yêu cầu tạo video (Thời lượng: ${duration}, ${resume ? "tiếp tục phiên làm việc" : "tạo mới"}).`,
+    logProjectResolved: (_id: string, reused: boolean) =>
+      `📁 ${reused ? "Đã kết nối lại không gian làm việc" : "Đã khởi tạo không gian làm việc thành công"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Đang đọc và phân tích dữ liệu đầu vào để chuẩn bị kịch bản...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Kịch bản đã hoàn thành (${words} từ, ${chapters} chương).`,
     logStoryboardRequestDetail: (_strategy: string, _hasStyleRefs: boolean) => `🎬 Đang lên ý tưởng hình ảnh cho từng phân cảnh...`,
@@ -1029,7 +1037,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Đã căn khớp chính xác thời gian cho ${aligned} phân cảnh.`,
-    logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) => `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
+    logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) =>
+      `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
     logRenderJob: (_jobId: string) => `🧩 Đang tiến hành lắp ráp và kết xuất video ở chế độ chạy nền...`,
     logPipelineElapsed: (seconds: number) => `⏱️ Tuyệt vời! Hoàn tất mọi công đoạn trong ${Math.round(seconds)} giây.`,
     logPipelineFailedElapsed: (seconds: number) => `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.`,
@@ -1121,7 +1130,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     styleUploadSub: "Learn visual style",
     styleUploadEmpty: "No style images",
     sceneReferenceTitle: "Scene reference images",
-    sceneReferenceDescription: "Only images in this section are attached to Gemini/Veo for scene generation. Style and thumbnail images are not used as scene references.",
+    sceneReferenceDescription:
+      "Only images in this section are attached to Gemini/Veo for scene generation. Style and thumbnail images are not used as scene references.",
     sceneReferenceUploadTitle: "Upload references",
     sceneReferenceUploadSub: "Characters, objects, or locations",
     sceneReferenceAlt: "Scene reference image",
@@ -1183,13 +1193,16 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logResumeAlignment: "♻️ Reusing generated voice alignments.",
     logResumeSeo: "♻️ Reusing SEO data from previous session.",
     logBatchImageStreamStart: "🚀 Starting batch image generation using Gemini Chat stream...",
-    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) => `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
+    logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) =>
+      `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
     logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
     logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to sequential generation...`,
     logFallbackSceneError: (id: string) => `⚠️ Error generating fallback image for scene ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) => `⚠️ [Step 3.2] Batch generation failed for ${failed}/${total}. Reason: ${reason}. Switching to sequential fallback.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
+      `⚠️ [Step 3.2] Batch generation failed for ${failed}/${total}. Reason: ${reason}. Switching to sequential fallback.`,
     logFallbackProgress: (current: number, total: number) => `🎨 [Step 3.3] Generating fallback image ${current}/${total}...`,
-    logImageGenerationSummary: (success: number, failed: number, total: number) => `${failed > 0 ? "⚠️" : "✅"} [Step 3.4] Image generation finished: ${success}/${total} succeeded, ${failed} failed.`,
+    logImageGenerationSummary: (success: number, failed: number, total: number) =>
+      `${failed > 0 ? "⚠️" : "✅"} [Step 3.4] Image generation finished: ${success}/${total} succeeded, ${failed} failed.`,
     startBtnProcessing: "Creating Video...",
     startBtnStart: "🚀 Start Creating",
     startBtnTooltip: "Launch 1-Click automated video creation pipeline",
@@ -1216,8 +1229,10 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     openStudioTooltip: "Open this project in AI Studio",
     alertEmptyScript: "Please enter Script or Idea in configuration.",
     logPipelineStart: "🚀 LAUNCHING ONE-CLICK AUTOMATED VIDEO PIPELINE",
-    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) => `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
-    logProjectResolved: (_id: string, reused: boolean) => `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
+    logConfigSummary: (_genre: string, _language: string, duration: string, _mode: string, resume: boolean) =>
+      `⚙️ Setup video request (Target: ${duration}, ${resume ? "resuming project" : "new project"}).`,
+    logProjectResolved: (_id: string, reused: boolean) =>
+      `📁 ${reused ? "Workspace reconnected successfully" : "Workspace initialized successfully"}.`,
     logScriptRequestDetail: (_characters: number, _inputType: string) => `📝 Reading and analyzing input data to prepare script...`,
     logScriptResultDetail: (words: number, chapters: number) => `✓ Script is ready (${words} words, ${chapters} chapters).`,
     logStoryboardRequestDetail: (_strategy: string, _hasStyleRefs: boolean) => `🎬 Analyzing script and creating visual scenes...`,
@@ -1229,7 +1244,8 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ SEO metadata and ${thumbnails} catchy thumbnails generated.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Synchronizing voiceover with visual scenes...`,
     logAlignmentResultDetail: (aligned: number, _seconds: number) => `✓ Flawlessly aligned audio for ${aligned} scenes.`,
-    logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) => `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
+    logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) =>
+      `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
     logRenderJob: (_jobId: string) => `🧩 Assembling and rendering video in the background...`,
     logPipelineElapsed: (seconds: number) => `⏱️ Awesome! Everything completed in ${Math.round(seconds)} seconds.`,
     logPipelineFailedElapsed: (seconds: number) => `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.`,
@@ -1329,7 +1345,7 @@ export const VOICE_DIALOG_TEXTS = {
     loadingMore: "Loading more...",
     selectedLabel: "Selected",
     favoriteTooltip: "Favorite",
-  }
+  },
 } as const;
 
 export const PIPELINE_STEP4_SHORT_TEXTS = {
@@ -1356,7 +1372,7 @@ export const PIPELINE_STEP4_SHORT_TEXTS = {
     SRT_TOOLTIP: "Download synchronized SRT subtitle file",
     PREVIEW_BTN: "Preview",
     PREVIEW_TOOLTIP: "Preview currently active video scene",
-  }
+  },
 } as const;
 
 export const PRESET_CONSTANTS = {
@@ -1373,3 +1389,31 @@ export const PRESET_CONSTANTS = {
   DEFAULT_CAMERA_MOTION: "default",
   DEFAULT_TRANSITION: "default",
 } as const;
+
+export const ADVANCED_SETTING_GROUPS = {
+  vi: {
+    chromeGroup: "Trình duyệt tự động",
+    resumeGroup: "Tiến trình tạo video",
+    headlessLabel: "Chạy ngầm",
+    headlessDesc: "Chạy ẩn ngầm không mở cửa sổ trình duyệt khi AI tạo ảnh và video",
+    windowedLabel: "Hiển thị cửa sổ",
+    windowedDesc: "Mở cửa sổ trình duyệt để theo dõi trực quan quá trình tạo",
+    resumeLabel: "Dùng lại nội dung",
+    resumeDesc: "Tái sử dụng kịch bản, giọng đọc và các ảnh phân cảnh đã tạo thành công trước đó để tiết kiệm thời gian và chi phí",
+    newLabel: "Bắt đầu tạo mới",
+    newDesc: "Tạo mới toàn bộ kịch bản, giọng đọc và phân cảnh từ đầu",
+  },
+  en: {
+    chromeGroup: "Browser Mode",
+    resumeGroup: "Generation Flow",
+    headlessLabel: "Headless",
+    headlessDesc: "Run in background without opening browser window",
+    windowedLabel: "Windowed",
+    windowedDesc: "Show browser window visually during generation",
+    resumeLabel: "Resume Existing",
+    resumeDesc: "Reuse previously generated script, voice, and scene images to save time and tokens",
+    newLabel: "Start Fresh",
+    newDesc: "Generate fresh script, voice, and visual assets from scratch",
+  },
+} as const;
+

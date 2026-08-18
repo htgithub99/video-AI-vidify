@@ -43,6 +43,7 @@ import {
   API_ROUTES, CONTENT_TYPES, CONTENT_TYPE_HEADER,
   REFACTOR_CONSTANTS, SecurityConstants, STORAGE_KEYS,
   API_HEADERS, PIPELINE_CLIENT_ERRORS, SplitStrategy,
+  PROJECT_ASSET_GROUP, HTTP_METHODS,
 } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
 import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, REFERENCE_ASSET_GROUP } from "../constants/config";
@@ -409,6 +410,22 @@ export function useAutoVideoPipeline(
           ? selectedProj.name
           : (_.trim(config.projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
+        if (selectedProj?.id) {
+          const deleteAssetGroups = [
+            PROJECT_ASSET_GROUP.VOICES,
+            PROJECT_ASSET_GROUP.VISUALS,
+            PROJECT_ASSET_GROUP.VIDEOS,
+          ];
+          for (const group of deleteAssetGroups) {
+            try {
+              await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${selectedProj.id}/${group}`, {
+                method: HTTP_METHODS.DELETE,
+                headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
+              });
+            } catch (_) {}
+          }
+        }
+
         newProj = {
           id: newProjectId,
           parentId: isChildProject ? selectedProj.parentId : undefined,
@@ -486,6 +503,15 @@ export function useAutoVideoPipeline(
           },
           seoConfig: { numTitles: 3, numDescriptions: 1, numHashtags: 5, numTags: 10 },
           creditsUsed: 0,
+          scriptRewritten: undefined,
+          chapters: [],
+          factCheckNotes: undefined,
+          storyboard: [],
+          thumbnails: [],
+          renderedVideoUrl: undefined,
+          seo: undefined,
+          manualReviewItems: [],
+          generationLogs: [],
         };
       }
 
