@@ -30,6 +30,7 @@ export const SCENE_REFERENCE_CONFIG = {
   TRANSIENT_STYLE_PATTERN: /\b(?:cinematic|dramatic|volumetric)\s+lighting\b|\b(?:sharp\s+detail|high\s+quality|photorealistic|3d\s+render)\b/gi,
   DUPLICATE_SEPARATOR_PATTERN: /\s*,\s*,+/g,
   PEOPLE_PATTERN: /\b(?:person|people|character|characters|figure|figures|man|men|woman|women|boy|boys|girl|girls|child|children|family|families|worker|workers|official|officials|crowd|gambler|gamblers|player|players|youth|teenager|teenagers)\b/i,
+  SINGLE_CHARACTER_SUBJECT_PATTERN: /\b(?:person|character|man|woman|male|female|worker|employee|professional|office worker|girl|boy|she|he|her|him|nhan vien|phu nu|co ay|anh ay)\b/i,
   CONTINUING_PRONOUN_PATTERN: /^(?:anh|co|ong|ba|han|nguoi nay|he|she|him|her|his|their)\b/i,
 } as const;
 
@@ -125,14 +126,27 @@ const isCharacterMentioned = (sceneText: string, character: CharacterConfig): bo
 };
 
 export const resolveSceneCharacterIds = (
-  scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle">,
+  scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">,
   characters: CharacterConfig[],
 ): string[] => {
   const validIds = new Set(_.map(characters, "id"));
   const explicitIds = _.filter(_.uniq(scene.characterIds), id => validIds.has(id));
   if (!_.isEmpty(explicitIds)) return explicitIds;
-  const sceneText = _.join(_.compact([scene.prompt, scene.script, scene.subtitle]), " ");
-  return _.map(_.filter(characters, character => isCharacterMentioned(sceneText, character)), "id");
+  const sceneText = _.join(_.compact([
+    scene.prompt,
+    scene.script,
+    scene.subtitle,
+    scene.visualIntent,
+    scene.visibleAction,
+    scene.reaction,
+  ]), " ");
+  const matchedIds = _.map(_.filter(characters, character => isCharacterMentioned(sceneText, character)), "id");
+  if (_.isEmpty(matchedIds)
+    && _.isEqual(_.size(characters), 1)
+    && SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_SUBJECT_PATTERN.test(normalizeSearchText(sceneText))) {
+    return [characters[0].id];
+  }
+  return matchedIds;
 };
 
 export const resolveStoryboardCharacterIds = (

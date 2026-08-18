@@ -235,6 +235,8 @@ Write one natural, highly descriptive English paragraph in this exact 5-block or
 
 [HARD RULES]
 - STYLE SCOPE: The PROJECT STYLE LOCK controls only rendering language (medium, linework/materials, palette behavior, lighting and visual quality). It MUST NOT overwrite the story-defined character identity, age, gender presentation, costume, era, location, props, or action. When style and character/story details appear to conflict, character cards and the current scene narration take precedence.
+- CHARACTER BIBLE IS THE SINGLE SOURCE OF TRUTH: Preserve each listed character's facial identity, facial proportions, eyes, nose, jawline, skin tone, hairstyle, hair color, body proportions, distinctive features, signature accessories, and core costume identity. Expression, pose, camera, lighting, and environment may vary without changing identity. Never redesign, beautify, age, de-age, or reinterpret a character.
+- VISUAL ACTION REQUIRED: Convert abstract narration into one drawable action, visible body language, a readable expression, and a story-specific environment with relevant props. Do not output a generic portrait or an empty background when the narration provides concrete context.
 - STRICT NARRATIVE GROUNDING: Every image MUST feel like a direct visual illustration of the dialogue/narration. Avoid vague or static poses when the script describes dynamic events.
 - STRICT PROMPT PURITY: NEVER output rigid style labels ("Line art:", "Palette:", "Rendering:") or theoretical anatomy ("stickfigure construction", "round head shape", "pill shaped torso").
 - 100% USER CONFIGURATION ADHERENCE: If user selected contextual background, NEVER output solid white background; always draw the story environment. If user selected white/minimal background, NEVER render room outlines or scenery. If user selected no_text, NEVER render text.
@@ -452,6 +454,11 @@ Use the following visual specifications as your core style and identity referenc
   * Manual/Ref Characters: ${referenceCharacters ? referenceCharacters : "None provided"}
   * Auto-extracted Character Specs: ${characterSpecs ? characterSpecs : "None provided"}
   (If both are provided, merge them logically. If neither is available, dynamically design the character's physical appearance appropriate to the theme).
+
+[STYLE SCOPE — HARD RULE FOR EVERY PRESET]
+- The selected style controls only the medium, line/render quality, shading, palette behavior, and cinematic treatment.
+- The script and character cards are authoritative for the era, occupation, identity, clothing, action, props, and environment.
+- Never infer or import a setting, costume, prop, architecture, supernatural effect, historical period, or technology solely from a style name or its style adjectives. For example, a modern office story rendered in a donghua style remains a modern office story: no immortal halls, ancient robes, floating talismans, celestial stairs, treasure chests, or magical particles unless the script explicitly asks for them.
 
 [SOFT VISUAL ALIGNMENT DIRECTIVES (CREATIVE CONSISTENCY)]
 You MUST apply these alignment rules to ensure visual consistency without restricting natural artistic variety:
@@ -708,8 +715,8 @@ export const getSceneDetailBatchPrompt = (
       ? `- [SCENE REFERENCE MANDATE]: An uploaded scene/character reference image is attached.
 - STRICT PROMPT PURITY RULE: NEVER prefix scene prompts with style labels like "Line art:", "Palette:", "Rendering:".
 - Format each scene prompt strictly as: "Strict character match: accurately preserve the character design, outfit, and appearance from the attached reference image. [Art style/Medium: ${visualStyle}] of [Main Character Action/Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]."`
-      : `- [STORY-DRIVEN VISUAL STYLE MANDATE]: No reference images are attached. You MUST dynamically deduce and craft the most evocative, coherent art style and rendering medium (e.g. cinematic digital illustration, moody oil painting, vivid anime, expressive watercolor, documentary photography, etc.) tailored specifically to the narrative genre ("${genre}"), mood, and storytelling context of the script.
-- Format each scene prompt strictly as a single self-contained complete prompt written entirely by you: "[Story-grounded Art Style & Medium] of [Main Character / Subject Action & Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]. Do not leave any placeholders."`;
+      : `- [PROMPT-ONLY STYLE MANDATE]: No reference images are attached. Use the selected visual style only as a rendering language; do not invent a new genre, era, setting, character design, or costume from it. Derive all story content from the script and character cards.
+- Format each scene prompt strictly as a single self-contained complete prompt written entirely by you: "[Main Character / Subject Action & Expression] + [Surrounding environment and context from script] + [Lighting/Atmosphere] + [Camera angle/composition/lens]. Do not leave any placeholders."`;
 
   return `You are an elite AI Video Director and Visual Designer.
 Your task is to take a batch of storyboard scenes (which already have their script text) and generate high-quality, detailed visual prompts and camera directions for each of them.
@@ -719,7 +726,7 @@ ${aspectRatio}
 
 [VISUAL REFERENCE SOURCE MATERIALS (CRITICAL CONTEXT)]
 Use the following visual specifications as your core style and identity reference:
-- General Visual Style: ${hasStyleReference ? "Follow attached style reference image" : (hasSceneReference ? visualStyle : "Dynamically deduce from story context and script theme")}
+- General Visual Style: ${hasStyleReference ? "Follow attached style reference image" : visualStyle}
 - Color Palette / Reference Style: ${hasAnyReference ? "Follow attached reference image palette" : (referenceStyle || "Not specified")}
 - Primary Landscape/Environment Specs:
   ${hasAnyReference ? "Dynamically derive environment from each scene's script context" : (landscapeSpecs ? landscapeSpecs : "None provided. Dynamically derive environment from each scene's script context.")}
@@ -734,6 +741,10 @@ Use the following visual specifications as your core style and identity referenc
 3. Genre-Adaptive Visualization:
    Embody this guideline for the "${genre}" genre:
    ${genreVisualGuideline}
+
+[STYLE SCOPE — HARD RULE FOR EVERY PRESET]
+- Style governs rendering only. The script and character cards govern story facts.
+- Never add unrelated fantasy, historical, futuristic, luxury, or symbolic elements just because the selected style suggests them. A modern worker remains in modern workwear and a modern workplace unless the scene text says otherwise.
 
 [STRICT NARRATIVE RELEVANCY & ANCHORING]
 [VIDEO STORYBOARD DIRECTING RULES]

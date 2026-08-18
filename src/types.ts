@@ -807,7 +807,7 @@ export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",
   CreateImageVi = "Tạo hình ảnh",
   CreateVideoRegexStr = "Tạo video|Video|Create video|Generate video",
-  CreateImageRegexStr = "Tạo hình ảnh|Tạo ảnh|Vẽ hình ảnh|Hình ảnh|Create image|Generate image|Create images|Image",
+  CreateImageRegexStr = "Tạo hình ảnh|Tạo ảnh|Vẽ hình ảnh|Create (?:an )?image|Generate (?:an )?image|Create images|Generate images",
 }
 
 export enum ImageModelLabel {

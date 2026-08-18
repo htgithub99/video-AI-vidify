@@ -347,7 +347,17 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CHARACTER_STYLING_PREFIX: "Character styling: ",
   SHOT_TYPE_PREFIX: "Shot type: ",
   CAMERA_ANGLE_PREFIX: "Camera angle: ",
+  VISUAL_INTENT_PREFIX: "Visual intent: ",
+  VISIBLE_ACTION_PREFIX: "Visible action: ",
+  REACTION_PREFIX: "Emotion and body language: ",
+  ENVIRONMENT_PREFIX: "Environment and story props: ",
+  SCENE_NARRATIVE_PREFIX: "Scene: ",
+  COMPOSITION_PREFIX: "Composition: ",
+  LIGHTING_PREFIX: "Scene-appropriate lighting: ",
   CHARACTER_IDENTITY_MAX_WORDS: 24,
+  CHARACTER_CONSISTENCY_LOCK: "Character consistency lock: preserve the exact same facial identity, proportions, skin tone, hair, signature features, accessories, and core costume across scenes. Expression, pose, camera, lighting, and environment may vary, but never redesign, age, beautify, or reinterpret the character",
+  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate characters, extra limbs, extra fingers, malformed hands, distorted faces, inconsistent facial features, random hairstyle changes, or random costume redesign",
+  STORY_FIDELITY_LOCK: "Story fidelity lock: the selected style controls rendering language only. Preserve the script-defined era, location, occupation, costume, props, and event. Do not introduce genre-specific fantasy, historical, futuristic, luxury, or symbolic elements unless the scene explicitly requires them",
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {

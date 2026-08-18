@@ -1791,43 +1791,53 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
   const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
 
   const plusBtn = page.locator(GeminiChatSelector.PlusButton).first();
-  if (!(await plusBtn.isVisible())) {
+  const selectionTimeout = GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS;
+  try {
+    await plusBtn.waitFor({ state: "visible", timeout: selectionTimeout });
+  } catch {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_NOT_FOUND);
     return false;
   }
 
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_GEN_TYPE.replace("{0}", targetText));
-  await randomDelay(800, 1500);
-  await plusBtn.click();
-  await randomDelay(1000, 1800);
-  await captureGeminiDomState(page, isVideo ? "video_type_menu_open" : "image_type_menu_open");
+  for (let attempt = 0; attempt < GEMINI_MODEL_SELECTION_CONFIG.MAX_ATTEMPTS; attempt++) {
+    await randomDelay(800, 1500);
+    await plusBtn.click();
+    await randomDelay(500, 900);
+    await captureGeminiDomState(page, isVideo ? "video_type_menu_open" : "image_type_menu_open");
 
-  const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions).filter({ hasText: targetRegex }).first();
-
-  if (await optionBtn.isVisible()) {
-    await randomDelay(500, 1000);
-    await optionBtn.click();
-    await randomDelay(1200, 2000);
-    await captureGeminiDomState(page, isVideo ? "video_type_selected" : "image_type_selected");
-    appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS.replace("{0}", targetText));
-    return true;
-  } else {
+    const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions).filter({ hasText: targetRegex }).first();
     const optionBtnFallback = page.locator("button").filter({ hasText: targetRegex }).first();
-    if (await optionBtnFallback.isVisible()) {
-      await randomDelay(500, 1000);
-      await optionBtnFallback.click();
-      await randomDelay(1200, 2000);
-      await captureGeminiDomState(page, isVideo ? "video_type_selected_fallback" : "image_type_selected_fallback");
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK.replace("{0}", targetText));
+    let selectedOption = optionBtn;
+    let usedFallback = false;
+    try {
+      await selectedOption.waitFor({ state: "visible", timeout: selectionTimeout });
+    } catch {
+      selectedOption = optionBtnFallback;
+      usedFallback = true;
+      try {
+        await selectedOption.waitFor({ state: "visible", timeout: selectionTimeout });
+      } catch {
+        continue;
+      }
+    }
+
+    await randomDelay(300, 700);
+    await selectedOption.click();
+    await randomDelay(800, 1400);
+    const menuClosed = await selectedOption.isHidden().catch(() => true);
+    if (menuClosed) {
+      await captureGeminiDomState(page, isVideo ? "video_type_selected" : "image_type_selected");
+      appLog((usedFallback ? BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK : BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS).replace("{0}", targetText));
       return true;
-    } else {
-      await captureGeminiDomState(page, isVideo ? "video_type_option_missing" : "image_type_option_missing");
-      appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", targetText));
-      await page.keyboard.press("Escape");
-      await randomDelay(500, 800);
-      return false;
     }
   }
+
+  await captureGeminiDomState(page, isVideo ? "video_type_option_missing" : "image_type_option_missing");
+  appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", targetText));
+  await page.keyboard.press("Escape");
+  await randomDelay(500, 800);
+  return false;
 }
 
 export const createGeminiReferenceFiles = (referenceImages: unknown) =>
