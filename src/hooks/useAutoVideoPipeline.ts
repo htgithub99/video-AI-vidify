@@ -76,7 +76,7 @@ import { applyOptionalMusicAsset, createAudioCueSheet } from "../services/soundD
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
 import { appendImagePromptAspectRatio, evaluateImagePrompts } from "../services/imagePromptQualityService";
-import { createScriptGroundedStoryboard, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
+import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
 import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
@@ -1055,6 +1055,11 @@ export function useAutoVideoPipeline(
         ) || voiceUpdatedProj.visualConfig?.thumbnailReferencePrompt || config.thumbnailStylePreset;
       }
 
+      realScenes = ensureScriptGroundedSceneDetails(realScenes as StoryboardScene[], {
+        aspectRatio: config.aspectRatio,
+        targetStyle: currentStylePreset,
+        visualBible: voiceUpdatedProj.visualBible,
+      });
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
         ...scene,

@@ -220,7 +220,6 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
   try {
     const { visualConfig, style } = req.body;
     
-    // Ưu tiên nạp trực tiếp từ Curated Style Preset
     const requestedStyle = style || visualConfig?.style || req.body?.stylePreset || req.body?.targetStyle;
     const preset = resolveStylePreset(requestedStyle);
 
@@ -427,7 +426,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       });
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
-    plannedScenes = _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene);
+    plannedScenes = ensureScriptGroundedSceneDetails(
+      _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene),
+      { aspectRatio: aspectRatio || AspectRatio.SixteenNine, targetStyle: visualStyle, visualBible: resolvedVisualBible },
+    );
     const promptQa = validateCompiledImagePrompts(plannedScenes, {
       backgroundMode: resolvedVisualConfig.styleBackgroundMode,
       textMode: resolvedVisualConfig.styleTextInImageMode,

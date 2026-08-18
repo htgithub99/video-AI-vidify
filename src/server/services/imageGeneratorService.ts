@@ -1029,7 +1029,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
           if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
 
-          await configureGeminiGenerateType(activePage!, visualConfig).catch(() => {});
+          const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
+          if (!generateTypeConfigured) {
+            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
+          }
           await configureGeminiMediaInput(activePage!, visualConfig);
 
           if (forceSetting) {
@@ -1432,7 +1435,10 @@ export async function generateBatchImagesWithGeminiChat(
               const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
               await configureGeminiModel(page, itemVisualConfig).catch(() => false);
-              await configureGeminiGenerateType(page, itemVisualConfig).catch(() => {});
+              const generateTypeConfigured = await configureGeminiGenerateType(page, itemVisualConfig);
+              if (!generateTypeConfigured) {
+                throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", _.isEqual(itemVisualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
+              }
               await configureGeminiMediaInput(page, itemVisualConfig);
 
               if (forceSetting) {
@@ -1779,7 +1785,7 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   return false;
 }
 
-export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig) {
+export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
   const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
@@ -1787,7 +1793,7 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
   const plusBtn = page.locator(GeminiChatSelector.PlusButton).first();
   if (!(await plusBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_PLUS_NOT_FOUND);
-    return;
+    return false;
   }
 
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_GEN_TYPE.replace("{0}", targetText));
@@ -1804,6 +1810,7 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     await randomDelay(1200, 2000);
     await captureGeminiDomState(page, isVideo ? "video_type_selected" : "image_type_selected");
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS.replace("{0}", targetText));
+    return true;
   } else {
     const optionBtnFallback = page.locator("button").filter({ hasText: targetRegex }).first();
     if (await optionBtnFallback.isVisible()) {
@@ -1812,11 +1819,13 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
       await randomDelay(1200, 2000);
       await captureGeminiDomState(page, isVideo ? "video_type_selected_fallback" : "image_type_selected_fallback");
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK.replace("{0}", targetText));
+      return true;
     } else {
       await captureGeminiDomState(page, isVideo ? "video_type_option_missing" : "image_type_option_missing");
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", targetText));
       await page.keyboard.press("Escape");
       await randomDelay(500, 800);
+      return false;
     }
   }
 }

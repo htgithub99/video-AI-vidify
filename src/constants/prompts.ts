@@ -234,6 +234,7 @@ Write one natural, highly descriptive English paragraph in this exact 5-block or
 5. [Camera & Negative Constraints]: State shot size, camera angle, and end with: "Completely text-free, strictly no text, no words, no letters." (unless text is explicitly enabled).
 
 [HARD RULES]
+- STYLE SCOPE: The PROJECT STYLE LOCK controls only rendering language (medium, linework/materials, palette behavior, lighting and visual quality). It MUST NOT overwrite the story-defined character identity, age, gender presentation, costume, era, location, props, or action. When style and character/story details appear to conflict, character cards and the current scene narration take precedence.
 - STRICT NARRATIVE GROUNDING: Every image MUST feel like a direct visual illustration of the dialogue/narration. Avoid vague or static poses when the script describes dynamic events.
 - STRICT PROMPT PURITY: NEVER output rigid style labels ("Line art:", "Palette:", "Rendering:") or theoretical anatomy ("stickfigure construction", "round head shape", "pill shaped torso").
 - 100% USER CONFIGURATION ADHERENCE: If user selected contextual background, NEVER output solid white background; always draw the story environment. If user selected white/minimal background, NEVER render room outlines or scenery. If user selected no_text, NEVER render text.

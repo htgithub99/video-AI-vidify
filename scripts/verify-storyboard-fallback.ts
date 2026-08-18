@@ -20,6 +20,9 @@ assert.equal(scenes.some(scene => scene.assetUrl), false);
 
 const hydratedScenes = ensureScriptGroundedSceneDetails([{ ...scenes[0], prompt: "", visibleAction: "" }]);
 assert.equal(hydratedScenes[0].visibleAction, scenes[0].script);
+assert.ok(hydratedScenes[0].visualIntent);
+assert.ok(hydratedScenes[0].reaction);
+assert.ok(hydratedScenes[0].composition);
 assert.notEqual(hydratedScenes[0].prompt, "");
 
 const sparseStoryboard = ensureStoryboardScriptCoverage([scenes[0]], {

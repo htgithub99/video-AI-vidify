@@ -30,6 +30,13 @@ const compactSceneField = (value: unknown): string => {
   return compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
+const compactScriptSource = (value: unknown): string => {
+  const str = _.trim(_.toString(value));
+  return _.isEmpty(str)
+    ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING
+    : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+};
+
 const resolveCharacterDirective = (options: ImagePromptCompilerOptions): string => {
   if (!_.isEmpty(options.characters)) {
     const descriptions = _.compact(_.map(options.characters, (character) => {
@@ -52,7 +59,7 @@ const extractNarrativeText = (scene: StoryboardScene): string => {
   if (!_.isEmpty(visualDesc)) {
     return visualDesc;
   }
-  return compactSceneField(scene.script || scene.subtitle);
+  return compactScriptSource(scene.script || scene.subtitle);
 };
 
 export const compileImagePrompt = (
