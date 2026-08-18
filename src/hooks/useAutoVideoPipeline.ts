@@ -1197,6 +1197,70 @@ export function useAutoVideoPipeline(
       };
 
       if (!_.isEmpty(targetScenesToGen)) {
+        const runSequentialGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
+          for (let i = 0; i < scenesToProcess.length; i++) {
+            throwIfCancelled();
+            const sc = scenesToProcess[i];
+            if (hasSceneAsset(sc)) continue;
+
+            const requestContext = createSceneRequestContext(sc);
+            sc.generationPrompt = requestContext.prompt;
+            const sceneGenerateType = resolveSceneGenerateType(sc.id, executionVisualConfig.generateType, videoSceneIds);
+
+            if (isFallback) {
+              appendLog(T.logFallbackProgress(i + 1, scenesToProcess.length));
+            } else {
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
+                .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
+                .replace(SecurityConstants.PLACEHOLDER_1, String(scenesToProcess.length)));
+            }
+
+            try {
+              const imageResult = await generateProjectImageOnce({
+                sceneId: sc.id,
+                prompt: requestContext.prompt,
+                referenceImages: requestContext.referenceImages,
+                generateType: sceneGenerateType,
+              }, () => ({
+                prompt: requestContext.prompt,
+                style: currentStylePreset,
+                resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                bypassCache: false,
+                engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
+                sandboxConfig: sandboxConfigPayload,
+                visualConfig: visualConfigPayload ? { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: sceneGenerateType } : visualConfigPayload,
+              }), requestSignal);
+
+              if (imageResult.success) {
+                const base64Val = imageResult.base64;
+                const fallbackUrl = imageResult.fallbackUrl;
+                if (base64Val) {
+                  const dataUrl = _.join([
+                    _.isEqual(sceneGenerateType, GenerateType.Video) ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
+                    base64Val,
+                  ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+                  sc.assetUrl = dataUrl;
+                  sc.assetUrls = [dataUrl];
+                } else if (fallbackUrl) {
+                  sc.assetUrl = fallbackUrl;
+                  sc.assetUrls = [fallbackUrl];
+                }
+                sc.assetType = sceneGenerateType;
+                sc.assetStatus = SceneAssetStatus.Generated;
+                appendAssetRevision(sc, sc.assetUrl, SceneAssetStatus.Generated);
+                sc.assetError = undefined;
+                await persistImageCheckpoint();
+              } else {
+                throw new Error(_.defaultTo(imageResult.warning, REFACTOR_CONSTANTS.ERR_UNKNOWN));
+              }
+            } catch (error) {
+              sc.assetStatus = SceneAssetStatus.Failed;
+              sc.assetError = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_UNKNOWN;
+              appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
+            }
+          }
+        };
+
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
           const sceneBatchItems = _.map(targetScenesToGen, (scene) => {
@@ -1255,72 +1319,27 @@ export function useAutoVideoPipeline(
               throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_CANCELLED);
             }
             appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems)));
+
+            const missingScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
+            if (!_.isEmpty(missingScenes) && !cancellationRef.current) {
+              appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(targetScenesToGen), "chuyển sang tạo dự phòng tuần tự"));
+              await runSequentialGeneration(missingScenes, true);
+            }
           } catch (generationError) {
+            if (cancellationRef.current) throw generationError;
             const failureReason = generationError instanceof Error
               ? generationError.message
               : REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
-            _.forEach(targetScenesToGen, (scene) => {
-              if (hasSceneAsset(scene)) return;
-              scene.assetStatus = SceneAssetStatus.Failed;
-              scene.assetError = failureReason;
-            });
-            await persistImageCheckpoint();
-            throw generationError;
+            appendLog(T.logBatchStreamErrorFallback(failureReason));
+            const missingScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
+            if (!_.isEmpty(missingScenes)) {
+              await runSequentialGeneration(missingScenes, true);
+            }
           } finally {
             await imageCheckpointQueue;
           }
         } else {
-          for (let i = 0; i < targetScenesToGen.length; i++) {
-            const sc = targetScenesToGen[i];
-            const requestContext = createSceneRequestContext(sc);
-            sc.generationPrompt = requestContext.prompt;
-            const sceneGenerateType = resolveSceneGenerateType(sc.id, executionVisualConfig.generateType, videoSceneIds);
-            appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
-              .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
-              .replace(SecurityConstants.PLACEHOLDER_1, String(targetScenesToGen.length)));
-            try {
-              const imageResult = await generateProjectImageOnce({
-                sceneId: sc.id,
-                prompt: requestContext.prompt,
-                referenceImages: requestContext.referenceImages,
-                generateType: sceneGenerateType,
-              }, () => ({
-                prompt: requestContext.prompt,
-                style: currentStylePreset,
-                resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
-                bypassCache: false,
-                engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
-                sandboxConfig: sandboxConfigPayload,
-                visualConfig: visualConfigPayload ? { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: sceneGenerateType } : visualConfigPayload,
-              }), requestSignal);
-              if (imageResult.success) {
-                const base64Val = imageResult.base64;
-                const fallbackUrl = imageResult.fallbackUrl;
-                if (base64Val) {
-                  const dataUrl = _.join([
-                    _.isEqual(sceneGenerateType, GenerateType.Video) ? REFACTOR_CONSTANTS.DATA_VIDEO_BASE64_PREFIX : REFACTOR_CONSTANTS.AVG_DATA_IMAGE_BASE64_PREFIX,
-                    base64Val,
-                  ], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-                  sc.assetUrl = dataUrl;
-                  sc.assetUrls = [dataUrl];
-                } else if (fallbackUrl) {
-                  sc.assetUrl = fallbackUrl;
-                  sc.assetUrls = [fallbackUrl];
-                }
-                sc.assetType = sceneGenerateType;
-                  sc.assetStatus = SceneAssetStatus.Generated;
-                  appendAssetRevision(sc, sc.assetUrl, SceneAssetStatus.Generated);
-                sc.assetError = undefined;
-                await persistImageCheckpoint();
-              } else {
-                throw new Error(_.defaultTo(imageResult.warning, REFACTOR_CONSTANTS.ERR_UNKNOWN));
-              }
-            } catch (error) {
-              sc.assetStatus = SceneAssetStatus.Failed;
-              sc.assetError = error instanceof Error ? error.message : REFACTOR_CONSTANTS.ERR_UNKNOWN;
-              appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
-            }
-          }
+          await runSequentialGeneration(targetScenesToGen, false);
         }
       }
       const technicallyValidScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene));

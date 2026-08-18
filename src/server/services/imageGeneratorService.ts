@@ -993,6 +993,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
           if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
 
+          await configureGeminiGenerateType(activePage!, visualConfig, forceSetting).catch(() => {});
           await configureGeminiMediaInput(activePage!, visualConfig);
 
           if (forceSetting) {
@@ -1023,7 +1024,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           await waitForGeminiPageIdle(activePage!, visualConfig);
           if (base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video)
             && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio)) {
-            throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
+            appLog(`[GeminiChat] Ảnh đã tạo có tỉ lệ hơi khác (${visualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`);
           }
           if (base64Result) {
             success = true;
@@ -1391,7 +1392,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
 
               await configureGeminiModel(page, itemVisualConfig).catch(() => false);
-
+              await configureGeminiGenerateType(page, itemVisualConfig, forceSetting).catch(() => {});
               await configureGeminiMediaInput(page, itemVisualConfig);
 
               if (forceSetting) {
@@ -1422,7 +1423,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               await waitForGeminiPageIdle(page, itemVisualConfig);
               if (base64Result && !_.isEqual(itemVisualConfig.generateType, GenerateType.Video)
                 && !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio)) {
-                throw new Error(REFACTOR_CONSTANTS.IMAGE_ASPECT_MISMATCH);
+                appLog(`[GeminiChat Batch] Ảnh đã tạo cho scene ${item.sceneId} có tỉ lệ hơi khác (${itemVisualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`);
               }
               if (base64Result) {
                 success = true;
@@ -2186,9 +2187,19 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
       if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX)) {
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
         return base64Data;
-      } else {
-        appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data));
       }
+
+      try {
+        if (await mediaElement.isVisible().catch(() => false)) {
+          const screenshotBuf = await mediaElement.screenshot({ type: "jpeg", quality: 95 });
+          if (screenshotBuf && screenshotBuf.length > 500) {
+            await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
+            return screenshotBuf.toString("base64");
+          }
+        }
+      } catch {}
+
+      appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data || "null"));
     } else if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.VIDEO_TAG)) {
       const base64Data = await mediaElement.evaluate(async (videoEl, extractionConfig) => {
         const sourceUrl = (videoEl as HTMLVideoElement).currentSrc
@@ -2277,6 +2288,17 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return secondaryBase64;
   }
+
+  try {
+    const fallbackElement = page.locator(mediaSelector).last();
+    if (await fallbackElement.isVisible().catch(() => false)) {
+      const screenshotBuf = await fallbackElement.screenshot({ type: "jpeg", quality: 95 });
+      if (screenshotBuf && screenshotBuf.length > 500) {
+        appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
+        return screenshotBuf.toString("base64");
+      }
+    }
+  } catch {}
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
 }
