@@ -306,11 +306,11 @@ export default function AutoVideoGenerator({
       toast.success(regenerationTexts.voice || regenerationTexts.failed);
 
       if (isVoice) {
-        await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: false });
+        await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
       } else if (isImages) {
-        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: false });
+        await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
       } else if (isVideos) {
-        await handleStartAutoGenerate({ resumeMode: false });
+        await handleStartAutoGenerate({ resumeMode: true });
       }
     } catch (err: any) {
       toast.error(err.message || regenerationTexts.failed);
