@@ -249,61 +249,73 @@ export default function AutoVideoGenerator({
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);
 
+  const deleteProjectRegenerationAssets = async (projectId: string, target: string): Promise<boolean> => {
+    const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
+      ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
+      : _.isEqual(target, REGENERATION_TARGET.IMAGES)
+        ? [PROJECT_ASSET_GROUP.VISUALS]
+        : [PROJECT_ASSET_GROUP.VIDEOS];
+
+    for (const group of groups) {
+      const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${projectId}/${group}`, {
+        method: HTTP_METHODS.DELETE,
+        headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
+      });
+      if (!response.ok) return false;
+    }
+    return true;
+  };
+
+  const applyProjectRegenerationReset = (project: VideoProject, target: string): { updatedProject: VideoProject; changed: boolean } => {
+    let updatedProject = _.cloneDeep(project);
+    let changed = false;
+    const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
+    const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
+    const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
+
+    if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
+      _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+      updatedProject.renderedVideoUrl = undefined;
+      updatedProject.storyboard = _.map(_.defaultTo(updatedProject.storyboard, []), sc => ({
+        ...sc,
+        audioUrl: undefined,
+        audioBase64: undefined,
+      }));
+      changed = true;
+    } else if (isImages) {
+      updatedProject = clearAllProjectVisualOutputs(updatedProject);
+      changed = true;
+    } else if (isVideos) {
+      updatedProject = clearProjectVideoOutputs(updatedProject);
+      changed = true;
+    }
+    return { updatedProject, changed };
+  };
+
   const handleRegenerate = async (target: string) => {
     const project = activeCreatedProject;
     if (!project || isProcessing) return;
 
     setRegeneratingTarget(target);
     try {
-      const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
-        ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
-        : _.isEqual(target, REGENERATION_TARGET.IMAGES)
-          ? [PROJECT_ASSET_GROUP.VISUALS]
-          : [PROJECT_ASSET_GROUP.VIDEOS];
-
-      for (const group of groups) {
-        const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${project.id}/${group}`, {
-          method: HTTP_METHODS.DELETE,
-          headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-        });
-        if (!response.ok) {
-          toast.error(regenerationTexts.failed);
-          return;
-        }
+      const isDeleteSuccess = await deleteProjectRegenerationAssets(project.id, target);
+      if (!isDeleteSuccess) {
+        toast.error(regenerationTexts.failed);
+        return;
       }
 
       pipelineActions.setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-      let updatedProject = _.cloneDeep(project);
-      let changed = false;
-      const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
-      const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
-      const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
-
-      if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
-        _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-        updatedProject.renderedVideoUrl = undefined;
-        updatedProject.storyboard = _.map(_.defaultTo(updatedProject.storyboard, []), sc => ({
-          ...sc,
-          audioUrl: undefined,
-          audioBase64: undefined,
-        }));
-        changed = true;
-      } else if (isImages) {
-        updatedProject = clearAllProjectVisualOutputs(updatedProject);
-        changed = true;
-      } else if (isVideos) {
-        updatedProject = clearProjectVideoOutputs(updatedProject);
-        changed = true;
-      }
-
+      const { updatedProject, changed } = applyProjectRegenerationReset(project, target);
       if (changed) {
         setActiveCreatedProject(updatedProject);
         await onUpdateProject(updatedProject, true);
       }
 
-      toast.success(regenerationTexts.voice || regenerationTexts.failed);
+      const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
+      const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
+      const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
 
       if (isVoice) {
         await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
@@ -322,7 +334,7 @@ export default function AutoVideoGenerator({
   const handleVoiceSelectAndClose = (v: CatalogVoice) => {
     setVoiceURI(v.voice_id);
     setVoiceName(v.name);
-    setVoiceProvider(v.provider || "");
+    setVoiceProvider(v.provider || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
     setIsVoiceDialogOpen(false);
   };
 

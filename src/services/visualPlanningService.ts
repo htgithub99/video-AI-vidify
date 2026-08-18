@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG } from "../constants/config";
+import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG, VISUAL_CONTINUITY_CONFIG } from "../constants/config";
 import { CharacterConfig, ShotPurpose, StoryboardScene, TextInImageMode, VisualBible } from "../types";
 import { resolveSceneCharacterIds } from "./sceneReferenceService";
 
@@ -11,19 +11,38 @@ export interface VisualPlanningOptions {
   textMode?: TextInImageMode;
 }
 
+const extractCharacterVisualDetails = (character: Partial<CharacterConfig>): string[] => _.compact([
+  character.description,
+  character.genderPresentation,
+  character.ageRange,
+  character.ethnicitySkinTone,
+  character.bodyBuild,
+  character.faceShape,
+  character.hair,
+  character.eyes,
+  character.signatureClothing,
+  character.accessories,
+  character.colorPalette,
+  character.silhouette,
+]);
+
 export const createVisualCharacterCards = (characters: Array<Partial<CharacterConfig>>): Record<string, unknown>[] => _.map(
   characters,
-  character => ({
-    ..._.pick(character, ["id", "name", "narrativeRole", "genderPresentation"]),
-    identityLock: _.join(_.compact([
-      character.genderPresentation,
-      character.hair,
-      character.silhouette,
-      character.signatureClothing,
-      character.accessories,
-    ]), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR),
-    usesSharedStyleCore: true,
-  }),
+  character => {
+    const visualDetails = extractCharacterVisualDetails(character);
+    const identityLock = !_.isEmpty(visualDetails)
+      ? _.join(visualDetails, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR)
+      : (character.description || character.name || IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING);
+
+    return {
+      id: character.id || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_ID,
+      name: character.name || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_NAME,
+      narrativeRole: character.narrativeRole || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_ROLE,
+      description: character.description || identityLock,
+      identityLock,
+      usesSharedStyleCore: true,
+    };
+  },
 );
 
 export const normalizeVisualShotPlan = (
@@ -53,6 +72,7 @@ export const normalizeVisualShotPlan = (
       IMAGE_PROMPT_METADATA_CONFIG.MAX_SUBJECT_COUNT,
     )
     : undefined;
+
   return {
     ...baseScene,
     ..._.pick(source, [

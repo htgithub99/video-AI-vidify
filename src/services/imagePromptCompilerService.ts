@@ -30,31 +30,52 @@ const compactSceneField = (value: unknown): string => {
   return compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
-export const compileImagePrompt = (
-  scene: StoryboardScene,
-  options: ImagePromptCompilerOptions = {},
-): string => {
-  const preset = resolveStylePreset(options.targetStyle);
-  
+const resolveCharacterDirective = (options: ImagePromptCompilerOptions): string => {
+  if (!_.isEmpty(options.characters)) {
+    const descriptions = _.compact(_.map(options.characters, (character) => {
+      const name = _.trim(_.get(character, "name", ""));
+      const desc = _.trim(_.get(character, "description", ""));
+      if (_.isEmpty(name) && _.isEmpty(desc)) return null;
+      return desc ? `${name ? `${name}: ` : ""}${desc}` : name;
+    }));
+    if (!_.isEmpty(descriptions)) {
+      return `${IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_VISUAL_PREFIX}${_.join(descriptions, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR)}`;
+    }
+  } else if (!_.isEmpty(_.get(options.visualBible, "characterSpecs"))) {
+    return `${IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_VISUAL_PREFIX}${_.trim(options.visualBible?.characterSpecs || "")}`;
+  }
+  return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+};
+
+const extractNarrativeText = (scene: StoryboardScene): string => {
   let narrative = compactSceneField(scene.visualIntent || scene.visibleAction || scene.reaction || scene.composition);
-  
   if (_.isEmpty(narrative)) {
     const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
     if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
       narrative = compactWords(existingPrompt, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
     }
   }
-
   if (_.isEmpty(narrative)) {
     narrative = compactSceneField(scene.script);
   }
+  return narrative;
+};
+
+export const compileImagePrompt = (
+  scene: StoryboardScene,
+  options: ImagePromptCompilerOptions = {},
+): string => {
+  const preset = resolveStylePreset(options.targetStyle);
+  const narrative = extractNarrativeText(scene);
+  const characterDirective = resolveCharacterDirective(options);
 
   const promptParts = [
     preset.positivePrompt,
-    narrative ? `Scene depicting: ${narrative}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    preset.characterRule ? `Character styling: ${preset.characterRule}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    scene.shotSize ? `Shot type: ${scene.shotSize}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    scene.cameraAngle ? `Camera angle: ${scene.cameraAngle}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    characterDirective,
+    narrative ? `${IMAGE_PROMPT_COMPILER_CONFIG.SCENE_DEPICTING_PREFIX}${narrative}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    preset.characterRule ? `${IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_STYLING_PREFIX}${preset.characterRule}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    scene.shotSize ? `${IMAGE_PROGORITHM_COMPILER_SHOT_TYPE(scene.shotSize)}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    scene.cameraAngle ? `${IMAGE_PROMPT_COMPILER_CONFIG.CAMERA_ANGLE_PREFIX}${scene.cameraAngle}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.NO_GRID_DIRECTIVE,
@@ -64,6 +85,8 @@ export const compileImagePrompt = (
   const cleanedPrompt = deduplicatePromptSentences(sanitizeImagePrompt(rawPrompt));
   return appendImagePromptAspectRatio(cleanedPrompt, options.aspectRatio);
 };
+
+const IMAGE_PROGORITHM_COMPILER_SHOT_TYPE = (shotSize: string): string => `${IMAGE_PROMPT_COMPILER_CONFIG.SHOT_TYPE_PREFIX}${shotSize}`;
 
 export const compileStoryboardPrompts = (
   scenes: StoryboardScene[],

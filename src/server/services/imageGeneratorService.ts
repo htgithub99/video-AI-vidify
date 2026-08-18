@@ -2071,13 +2071,6 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   await mediaContainer.waitFor({ state: "visible", timeout: mediaReadyTimeout }).catch(() => undefined);
 
   if (!(await mediaContainer.isVisible().catch(() => false))) {
-    const globalMedia = page.locator(mediaSelector).last();
-    if (await globalMedia.isVisible().catch(() => false)) {
-      mediaContainer = globalMedia;
-    }
-  }
-
-  if (!(await mediaContainer.isVisible().catch(() => false))) {
     await captureGeminiDomState(page, isVideoGeneration ? "video_timeout" : "image_timeout");
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_CONTAINER);
     const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
@@ -2191,8 +2184,11 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 
       try {
         if (await mediaElement.isVisible().catch(() => false)) {
-          const screenshotBuf = await mediaElement.screenshot({ type: "jpeg", quality: 95 });
-          if (screenshotBuf && screenshotBuf.length > 500) {
+          const screenshotBuf = await mediaElement.screenshot({
+            type: "jpeg",
+            quality: GEMINI_MEDIA_EXTRACTION_CONFIG.SCREENSHOT_QUALITY,
+          });
+          if (screenshotBuf && _.gt(screenshotBuf.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_BUFFER_LENGTH)) {
             await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
             return screenshotBuf.toString("base64");
           }
@@ -2242,16 +2238,10 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO
     : GEMINI_CHAT_MEDIA_SELECTORS.image;
 
-  let mediaLoc = page.locator(GeminiChatSelector.Response).last().locator(mediaSelector).first();
-  const isFoundInLatest = await mediaLoc.isVisible().catch(() => false);
-  if (!isFoundInLatest) {
-    const globalMedia = page.locator(mediaSelector).last();
-    if (await globalMedia.isVisible().catch(() => false)) {
-      mediaLoc = globalMedia;
-    }
-  }
+  const latestResponse = page.locator(GeminiChatSelector.Response).last();
+  const mediaLoc = latestResponse.locator(mediaSelector).first();
 
-  await mediaLoc.waitFor({ state: "visible", timeout: 30000 }).catch(() => undefined);
+  await mediaLoc.waitFor({ state: "visible", timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.MEDIA_WAIT_TIMEOUT_MS }).catch(() => undefined);
 
   const base64 = await getBase64FromBlobUrl(page, mediaLoc);
   if (base64) {
@@ -2261,11 +2251,10 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
       : base64;
   }
 
-  const secondaryBase64 = await page.evaluate(async (selector) => {
-    const imgs = document.querySelectorAll(selector);
-    const lastImg = imgs[imgs.length - 1] as HTMLImageElement | undefined;
-    if (!lastImg) return null;
-    const src = lastImg.currentSrc || lastImg.src || lastImg.getAttribute("src") || "";
+  const secondaryBase64 = await latestResponse.evaluate(async (responseEl, selector) => {
+    const img = responseEl.querySelector(selector) as HTMLImageElement | null;
+    if (!img) return null;
+    const src = img.currentSrc || img.src || img.getAttribute("src") || "";
     if (!src) return null;
     if (src.startsWith("data:image")) return src.split(",")[1];
     try {
@@ -2290,10 +2279,12 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   }
 
   try {
-    const fallbackElement = page.locator(mediaSelector).last();
-    if (await fallbackElement.isVisible().catch(() => false)) {
-      const screenshotBuf = await fallbackElement.screenshot({ type: "jpeg", quality: 95 });
-      if (screenshotBuf && screenshotBuf.length > 500) {
+    if (await mediaLoc.isVisible().catch(() => false)) {
+      const screenshotBuf = await mediaLoc.screenshot({
+        type: "jpeg",
+        quality: GEMINI_MEDIA_EXTRACTION_CONFIG.SCREENSHOT_QUALITY,
+      });
+      if (screenshotBuf && _.gt(screenshotBuf.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_BUFFER_LENGTH)) {
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
         return screenshotBuf.toString("base64");
       }

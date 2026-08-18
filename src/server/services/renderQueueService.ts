@@ -37,6 +37,8 @@ type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" |
   heartbeatAt?: string;
 };
 
+const MAX_STALE_JOB_AGE_MS = 10 * 60 * 1000;
+
 const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   ...job,
   createdAt: new Date(job.createdAt),
@@ -62,12 +64,22 @@ class RenderQueueService {
   public async initialize(): Promise<void> {
     if (this.initialized) return;
     const storedJobs = await getRenderJobsFromDb<StoredRenderJob>();
-    _.forEach(storedJobs, storedJob => {
+    const now = Date.now();
+
+    _.forEach(storedJobs, (storedJob) => {
       const job = hydrateRenderJob(storedJob);
-      if (_.some(RENDER_QUEUE_CONFIG.RECOVERABLE_STATUSES, status => _.isEqual(status, job.status))) {
-        job.status = JobStatus.PENDING;
-        job.error = undefined;
-        this.queue.push(job);
+      const isRecoverable = _.some(RENDER_QUEUE_CONFIG.RECOVERABLE_STATUSES, (status) => _.isEqual(status, job.status));
+      if (isRecoverable) {
+        const jobAge = _.subtract(now, job.createdAt.getTime());
+        if (_.gt(jobAge, MAX_STALE_JOB_AGE_MS) || _.isEqual(job.status, JobStatus.PROCESSING)) {
+          job.status = JobStatus.CANCELLED;
+          job.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
+          void this.persist(job);
+        } else {
+          job.status = JobStatus.PENDING;
+          job.error = undefined;
+          this.queue.push(job);
+        }
       }
       this.jobsMap.set(job.id, job);
     });
@@ -77,6 +89,19 @@ class RenderQueueService {
 
   public async addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): Promise<RenderJob> {
     await this.initialize();
+    const targetProjectId = payload.projectId;
+    if (targetProjectId) {
+      this.queue = _.reject(this.queue, (pendingJob) => {
+        if (_.isEqual(pendingJob.payload.projectId, targetProjectId)) {
+          pendingJob.status = JobStatus.CANCELLED;
+          pendingJob.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
+          void this.persist(pendingJob);
+          return true;
+        }
+        return false;
+      });
+    }
+
     const now = new Date();
     const job: RenderJob = {
       id: jobId,
@@ -127,6 +152,28 @@ class RenderQueueService {
     await saveRenderJobToDb(job);
   }
 
+  private async executeRenderWithRetries(
+    job: RenderJob,
+    abortSignal: AbortSignal,
+    onProgressUpdate: (progress: number) => void,
+  ): Promise<string> {
+    let lastError: unknown;
+    for (let attempt = SecurityConstants.ZERO; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)) {
+      try {
+        return await renderFFmpegVideo({
+          ...job.payload,
+          safeProfile: _.isEqual(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT),
+        }, onProgressUpdate, abortSignal);
+      } catch (error) {
+        lastError = error;
+        if (_.lt(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT)) {
+          logger.warn(RENDER_QUEUE_CONFIG.RETRY_WARNING, error);
+        }
+      }
+    }
+    throw lastError;
+  }
+
   private async processQueue(): Promise<void> {
     if (this.isProcessing || _.isEmpty(this.queue)) return;
     this.isProcessing = true;
@@ -140,37 +187,26 @@ class RenderQueueService {
     const abortController = new AbortController();
     this.abortControllers.set(job.id, abortController);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     try {
-      const renderPromise = (async (): Promise<string> => {
-        let lastError: unknown;
-        for (let attempt = 0; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt++) {
-          try {
-            return await renderFFmpegVideo({
-              ...job.payload,
-              safeProfile: attempt === FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT,
-            }, progress => {
-              if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
-              job.progress = progress;
-              job.heartbeatAt = new Date();
-              job.updatedAt = job.heartbeatAt;
-              if (_.subtract(Date.now(), lastPersistedAt) >= RENDER_QUEUE_CONFIG.PROGRESS_PERSIST_INTERVAL_MS) {
-                lastPersistedAt = Date.now();
-                void this.persist(job);
-              }
-            }, abortController.signal);
-          } catch (error) {
-            lastError = error;
-            if (attempt < FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT) logger.warn(RENDER_QUEUE_CONFIG.RETRY_WARNING, error);
-          }
+      const renderPromise = this.executeRenderWithRetries(job, abortController.signal, (progress) => {
+        if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
+        job.progress = progress;
+        job.heartbeatAt = new Date();
+        job.updatedAt = job.heartbeatAt;
+        if (_.gte(_.subtract(Date.now(), lastPersistedAt), RENDER_QUEUE_CONFIG.PROGRESS_PERSIST_INTERVAL_MS)) {
+          lastPersistedAt = Date.now();
+          void this.persist(job);
         }
-        throw lastError;
-      })();
+      });
+
       const timeoutPromise = new Promise<never>((_resolve, reject) => {
         timeoutId = setTimeout(() => {
           abortController.abort();
           reject(new Error(RENDER_QUEUE_CONFIG.TIMEOUT_ERROR));
         }, RENDER_QUEUE_CONFIG.JOB_TIMEOUT_MS);
       });
+
       const url = await Promise.race([renderPromise, timeoutPromise]);
       if (_.isEqual(job.status, JobStatus.CANCELLED)) return;
       job.url = url;
