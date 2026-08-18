@@ -48,6 +48,12 @@ const resolveTypographyId = (
   return THUMBNAIL_PROMPT_CONFIG.DEFAULT_TYPOGRAPHY_ID;
 };
 
+const cleanTextValue = (val: unknown): string => {
+  const str = _.trim(_.toString(val));
+  if (_.isEmpty(str)) return "";
+  return str.replace(/^["'«“]+|["'»”]+$/g, "").normalize("NFC");
+};
+
 const normalizeThumbnail = (
   source: Partial<ThumbnailItem>,
   index: number,
@@ -59,8 +65,8 @@ const normalizeThumbnail = (
   const typographyId = resolveTypographyId(source.typographyId, layoutDefinition.typographyId);
   const typographyDefinition = _.find(THUMBNAIL_TYPOGRAPHY_CATALOG, { id: typographyId })!;
   const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
-  const textText = hasText ? _.trim(_.toString(source.textText)).normalize("NFC") : "";
-  const generationPrompt = _.trim(_.toString(source.generationPrompt || source.prompt));
+  const textText = hasText ? cleanTextValue(source.textText) : "";
+  const generationPrompt = cleanTextValue(source.generationPrompt || source.prompt);
 
   return {
     id: `${THUMBNAIL_PROMPT_CONFIG.ID_PREFIX}${_.add(index, 1)}`,
@@ -119,7 +125,7 @@ export const createSourceGroundedThumbnailIdeas = (
       prompt,
       style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
       hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText),
-      textText: _.trim(_.toString(source)).normalize("NFC"),
+      textText: cleanTextValue(source),
       generationPrompt: prompt,
       layoutId: layout.id,
       layout: layout.composition,
@@ -139,14 +145,14 @@ export const createThumbnailGenerationPrompt = (
   _characters?: CharacterConfig[],
 ): string => {
   const preset = resolveStylePreset(thumbnail.style || style);
-  const headline = _.trim(thumbnail.textText || "");
+  const headline = cleanTextValue(thumbnail.textText);
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
   const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
 
   const parts = _.compact([
     preset.positivePrompt,
     _.replace(THUMBNAIL_PROMPT_CONFIG.LAYOUT_DIRECTIVE_TEMPLATE, "{layout}", layoutDesc),
-    thumbnail.subjectFocus ? `Focus subject: ${thumbnail.subjectFocus}` : "",
+    thumbnail.subjectFocus ? `${THUMBNAIL_PROMPT_CONFIG.SUBJECT_FOCUS_PREFIX}${thumbnail.subjectFocus}` : "",
     hasText
       ? _.replace(THUMBNAIL_PROMPT_CONFIG.HEADLINE_DIRECTIVE_TEMPLATE, "{headline}", headline)
       : THUMBNAIL_PROMPT_CONFIG.TEXT_FREE_DIRECTIVE,
@@ -167,8 +173,8 @@ export const getThumbnailPlanningIssues = (
   _.lt(_.size(generatedItems), requestedCount) ? [THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.INSUFFICIENT_COUNT] : [],
   _.flatMap(generatedItems, item => {
     const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
-    const generationPrompt = _.trim(_.toString(item.generationPrompt || item.prompt));
-    const headline = _.trim(_.toString(item.textText)).normalize("NFC");
+    const generationPrompt = cleanTextValue(item.generationPrompt || item.prompt);
+    const headline = cleanTextValue(item.textText);
     const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
     const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
     IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;

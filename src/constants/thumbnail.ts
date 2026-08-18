@@ -298,6 +298,7 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   HEADLINE_DIRECTIVE_TEMPLATE: "Render large bold uppercase headline text: \"{headline}\" cleanly in heavy condensed typography with high visual contrast.",
   TEXT_FREE_DIRECTIVE: "Completely text-free thumbnail image, no readable words or letters.",
   ACCENT_WORDS_TEMPLATE: "Key visual accent words: {words}.",
+  SUBJECT_FOCUS_PREFIX: "Focus subject: ",
   COMPOSITION_DIRECTIVE: "Single continuous composition, single frame, vibrant saturated colors, seamless atmospheric background with NO solid white boxes, NO blank rectangles, and NO artificial white patches.",
   SAFE_ZONE_DIRECTIVE: "Ensure bottom-right area keeps uncluttered ambient background for timestamp readability without adding white blocks.",
   CHARACTER_NAME_TEMPLATE: "character {name}",

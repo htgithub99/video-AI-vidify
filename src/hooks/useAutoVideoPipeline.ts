@@ -377,6 +377,7 @@ export function useAutoVideoPipeline(
         newProjectId = existingTargetProj.id;
         newProj = {
           ...existingTargetProj,
+          thumbnails: config.forceRegenerateScenes ? [] : existingTargetProj.thumbnails,
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           activeRunId: pipelineRunLease.runId,
           input: { type: config.inputType, content: config.scriptContent },
@@ -394,6 +395,12 @@ export function useAutoVideoPipeline(
             splitStrategy: config.splitStrategy,
             musicAssetUrl: config.musicAssetUrl,
           },
+          hookConfig: {
+            ...existingTargetProj.hookConfig,
+            type: config.hookStrategy,
+            duration: config.hookDuration,
+            positions: config.hookPosition as HookPosition,
+          },
           voiceConfig: {
             ...existingTargetProj.voiceConfig,
             provider: config.voiceProvider,
@@ -405,6 +412,9 @@ export function useAutoVideoPipeline(
           },
           visualConfig: {
             ...existingTargetProj.visualConfig,
+            style: config.stylePreset || existingTargetProj.visualConfig.style,
+            referencePrompt: config.stylePreset || existingTargetProj.visualConfig.referencePrompt,
+            thumbnailReferencePrompt: config.thumbnailStylePreset || config.stylePreset || existingTargetProj.visualConfig.thumbnailReferencePrompt,
             generationMode: config.generationMode,
             imageGeneratorEngine: config.imageGeneratorEngine,
             generateType: config.generateType,
@@ -417,6 +427,20 @@ export function useAutoVideoPipeline(
             thumbnailBackgroundMode: config.thumbnailBackgroundMode,
             thumbnailTextInImageMode: config.thumbnailTextInImageMode,
             thumbnailImageFocusMode: config.thumbnailImageFocusMode,
+            thumbnailCount: config.thumbnailCount,
+            batchDelay: config.batchDelay,
+            geminiChatSpeed: config.geminiChatSpeed,
+            promptInputMethod: config.promptInputMethod,
+            videoDuration: config.videoDuration,
+            generateCount: config.sampleCount,
+            styleReferenceImages: config.referenceImages,
+            sceneReferenceImages: config.sceneReferenceImages,
+            thumbnailReferenceImages: config.thumbnailReferenceImages,
+            thumbnailSceneReferenceImages: config.thumbnailSceneReferenceImages,
+            referenceImages: _.take(
+              _.uniq(_.concat(config.referenceImages || [], config.sceneReferenceImages || [])),
+              SCENE_REFERENCE_CONFIG.MAX_IMAGES,
+            ),
           },
         };
         setActiveCreatedProject(newProj);
@@ -683,7 +707,7 @@ export function useAutoVideoPipeline(
         newProj = scriptUpdatedProj;
       }
 
-      const curatedPreset = resolveStylePreset(newProj.visualConfig.style || config.stylePreset || newProj.visualConfig.referencePrompt);
+      const curatedPreset = resolveStylePreset(config.stylePreset || newProj.visualConfig.style || newProj.visualConfig.referencePrompt);
       let currentStylePreset = curatedPreset.positivePrompt;
       let currentThumbnailStyle = resolveStylePreset(config.thumbnailStylePreset || newProj.visualConfig.thumbnailReferencePrompt || currentStylePreset).positivePrompt;
       const hasStyleReferences = !_.isEmpty(newProj.visualConfig.styleReferenceImages);
@@ -1580,12 +1604,11 @@ export function useAutoVideoPipeline(
         _.size(thumbnailsList),
       ));
 
-      let slicedUpdatedProj: VideoProject = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList };
-      if (globalAudioBase64) {
-        if (alignmentCompleted) appendLog(T.logResumeAlignment);
-        slicedUpdatedProj = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList, storyboard: realScenes as VideoProject["storyboard"] };
-        await syncProject(slicedUpdatedProj);
+      let slicedUpdatedProj: VideoProject = { ...imageUpdatedProj, seo: seoData as VideoProject["seo"], thumbnails: thumbnailsList, storyboard: realScenes as VideoProject["storyboard"] };
+      if (globalAudioBase64 && alignmentCompleted) {
+        appendLog(T.logResumeAlignment);
       }
+      await syncProject(slicedUpdatedProj);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.ALIGN_DONE);
 
       const voiceQualityResult = await assessVoiceAdvisory({

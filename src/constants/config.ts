@@ -844,6 +844,8 @@ export const AUTO_GENERATOR_CONSTANTS = {
   UI_THUMBNAILS_UNRENDERED: "Chưa vẽ",
   UI_THUMBNAILS_DOWNLOAD: "Tải ảnh",
   UI_THUMBNAILS_DOWNLOAD_TOOLTIP: "Tải ảnh bìa này về máy tính",
+  UI_THUMBNAILS_SAMPLE_UNIT: "mẫu",
+  UI_THUMBNAILS_ZOOM_TOOLTIP: "Bấm để xem ảnh phóng to",
   UI_SEO_HASHTAGS: "Hashtags",
   UI_SEO_TAGS: "Từ khóa",
   UI_THUMBNAILS_FILE_PREFIX: "thumbnail-",

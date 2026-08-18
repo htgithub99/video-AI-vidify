@@ -48,17 +48,11 @@ const resolveCharacterDirective = (options: ImagePromptCompilerOptions): string 
 };
 
 const extractNarrativeText = (scene: StoryboardScene): string => {
-  let narrative = compactSceneField(scene.visualIntent || scene.visibleAction || scene.reaction || scene.composition);
-  if (_.isEmpty(narrative)) {
-    const existingPrompt = _.trim(_.toString(scene.prompt || scene.generationPrompt));
-    if (!_.isEmpty(existingPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(existingPrompt)) {
-      narrative = compactWords(existingPrompt, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
-    }
+  const visualDesc = compactSceneField(scene.visualIntent || scene.visibleAction || scene.reaction || scene.composition);
+  if (!_.isEmpty(visualDesc)) {
+    return visualDesc;
   }
-  if (_.isEmpty(narrative)) {
-    narrative = compactSceneField(scene.script);
-  }
-  return narrative;
+  return compactSceneField(scene.script || scene.subtitle);
 };
 
 export const compileImagePrompt = (
