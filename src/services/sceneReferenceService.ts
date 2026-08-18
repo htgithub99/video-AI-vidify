@@ -155,40 +155,16 @@ export const resolveStoryboardCharacterIds = (
   });
 };
 
-const addReference = (
-  images: string[],
-  roles: string[],
-  image: string | undefined,
-  roleTemplate: string,
-  roleValue?: string,
-): void => {
-  if (_.isEmpty(image) || _.includes(images, image) || _.gte(_.size(images), SCENE_REFERENCE_CONFIG.MAX_IMAGES)) return;
-  images.push(image!);
-  const imageNumber = _.toString(_.size(images));
-  roles.push(_.replace(_.replace(roleTemplate, "{0}", imageNumber), "{1}", roleValue || "character"));
-};
-
 export const createSceneGenerationContext = (
   scene: StoryboardScene,
   visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">,
 ): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
-  const images: string[] = [];
-  const roles: string[] = [];
-
-  addReference(images, roles, _.first(visualConfig.styleReferenceImages), SCENE_REFERENCE_CONFIG.STYLE_ROLE);
-  _.forEach(visualConfig.sceneReferenceImages, image => {
-    addReference(images, roles, image, SCENE_REFERENCE_CONFIG.SCENE_ROLE);
-  });
-  _.forEach(visualConfig.referenceImages, image => {
-    addReference(images, roles, image, SCENE_REFERENCE_CONFIG.STYLE_ROLE);
-  });
-
   return {
     characterIds,
     prompt: scene.prompt || scene.script,
-    referenceImages: images,
-    referenceRoles: roles,
+    referenceImages: [],
+    referenceRoles: [],
   };
 };

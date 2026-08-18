@@ -51,7 +51,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     positivePrompt: "minimalist 2D black-ink stick-figure illustration, pure white background, high-contrast monochrome vector line art, uniform 4px-style black outlines, circular heads, simple stick limbs and hands, sparse expressive eyes and eyebrows, one clear action per frame, clean educational explainer visual, consistent character design",
     negativePrompt: "any color, gradients, gray wash, 3D render, photorealism, realistic skin, painterly texture, detailed scenery, drop shadows, complex shading, text, watermark, blur, noise",
     defaultBackgroundMode: "white",
-    characterRule: "Preserve circular head, thin stick limbs, simple hands, black-only uniform line weight, and pure white negative space in every scene.",
+    characterRule: "Use circular heads, thin stick limbs, simple hands, and black-only uniform line weight; preserve the story-defined character identity, action, props, and setting in every scene.",
     keywords: ["người que", "stickman", "nguoi que", "stick figure", "đen trắng", "hình que"],
   },
   gai_xinh_2d: {
@@ -62,10 +62,10 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     icon: "✨",
     tagline: "Thời thượng • Sắc nét",
     description: "Webtoon romance hiện đại, nét mực tinh gọn, màu sạch và nhân vật thời trang, thanh lịch.",
-    positivePrompt: "polished modern Korean webtoon illustration, 2D digital comic art, elegant adult female character, refined almond-shaped eyes, clean tapered ink lines, soft cel shading with subtle blush, contemporary stylish clothing, restrained pastel-and-jewel-tone palette, bright editorial lighting, attractive but natural facial proportions, consistent webtoon character model",
-    negativePrompt: "photorealism, 3D CGI, western superhero comic, chibi proportions, childlike appearance, sexualized pose, rough sketch, mismatched eyes, malformed hands, muddy palette, heavy grain, text, watermark",
+    positivePrompt: "polished modern Korean webtoon illustration, 2D digital comic art, refined almond-shaped eyes, clean tapered ink lines, soft cel shading with subtle blush, restrained pastel-and-jewel-tone palette, bright editorial lighting, attractive natural facial proportions, consistent webtoon character model",
+    negativePrompt: "photorealism, 3D CGI, western superhero comic, accidental chibi proportions, rough sketch, mismatched eyes, malformed hands, muddy palette, heavy grain, text, watermark",
     defaultBackgroundMode: "contextual",
-    characterRule: "Use elegant adult webtoon proportions, clear almond eyes, glossy stylized hair masses, thin tapered linework, and clean cel-shaded skin consistently.",
+    characterRule: "Use natural story-appropriate character proportions, clear almond eyes, glossy stylized hair masses, thin tapered linework, and clean cel-shaded skin; preserve the narrative gender, age, costume, role, action, and setting.",
     keywords: ["gái xinh", "gái xinh 2d", "hot girl", "nữ thần", "gai xinh", "webtoon", "manhwa"],
   },
   hoat_hinh_mat_hip: {
@@ -79,7 +79,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     positivePrompt: "playful 2D comedy cartoon, oversized round head and small compact body, horizontal bean-shaped squinting eyes, arched brows, wide exaggerated comic mouth, thick uniform black outlines, simple rounded shapes, bright flat color fills, minimal props, clean cheerful explainer-animation frame, consistent chibi proportions",
     negativePrompt: "photorealism, realistic anatomy, 3D CGI, anime detailed eyes, dark gritty mood, thin sketchy lines, gradients, dramatic rendering, busy background, text, watermark, blur",
     defaultBackgroundMode: "minimal",
-    characterRule: "Lock the oversized round head, compact body, bean-shaped squinting eyes, thick outline weight, and exaggerated comedy expression across all scenes.",
+    characterRule: "Use oversized round heads, compact bodies, bean-shaped squinting eyes, thick outline weight, and exaggerated comedy expressions; preserve each character's story-defined identity, costume, role, action, and environment.",
     keywords: ["mắt híp", "hoạt hình mắt híp", "hài bựa", "nhóc tóc đỏ", "én", "vui nhộn", "mat hip"],
   },
   tho_bay_mau: {
@@ -93,7 +93,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     positivePrompt: "Vietnamese satirical folk-cartoon illustration, minimalist 2D animation, rounded capsule-shaped torso, round head, dot eyes and small expressive mouth, bold even black ink outlines, warm muted folk palette of ochre, terracotta, teal and cream, simple paper-like flat fills, witty everyday storytelling, clean uncluttered composition, consistent character silhouette",
     negativePrompt: "photorealism, 3D CGI, glossy plastic, anime action style, hyper-detailed skin, neon cyberpunk, dark horror mood, thin realistic anatomy, gradients, text, watermark, blur",
     defaultBackgroundMode: "contextual",
-    characterRule: "Keep the capsule torso, round head, dot eyes, minimal limbs, bold black outline, and muted folk palette unchanged between scenes.",
+    characterRule: "Use capsule-like simplified forms, dot eyes, minimal limbs, bold black outlines, and a muted folk palette; preserve the story-defined identity, costume, era, action, props, and environment between scenes.",
     keywords: ["thỏ bảy màu", "tho bay mau", "dân gian", "cổ tích", "bá hộ", "trạng quỳnh", "việt nam"],
   },
   gau_truc_hai: {
@@ -104,10 +104,10 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     icon: "🐼",
     tagline: "Meme bựa • Cổ trang",
     description: "Meme hoạt hình đầu gấu trúc, biểu cảm lầy lội; trang phục kiếm hiệp cổ trang dễ nhận diện.",
-    positivePrompt: "humorous 2D panda-head meme cartoon, round white panda head, symmetrical black ears and black eye patches, deliberately exaggerated deadpan human-like comic expression, simplified ancient Chinese wuxia robe and hair accessories, bold clean outlines, flat warm colors, one readable comedic reaction, light parchment or simple scenic background, consistent panda head shape",
+    positivePrompt: "humorous 2D panda-head meme cartoon, round white panda head, symmetrical black ears and black eye patches, deliberately exaggerated deadpan human-like comic expression, bold clean outlines, flat warm colors, one readable comedic reaction, consistent panda head shape",
     negativePrompt: "photorealistic human face, realistic panda, serious portrait, 3D CGI, western superhero comic, cyberpunk neon, malformed ears, asymmetrical eye patches, horror, text, watermark, blur, low resolution",
     defaultBackgroundMode: "contextual",
-    characterRule: "Always retain the round white panda head, two black ears, balanced black eye patches, flat comic expression, and simplified wuxia costume; avoid realistic fur.",
+    characterRule: "Retain the round white panda head, two black ears, balanced black eye patches, and flat comic expression; preserve the story-defined costume, era, role, action, props, and environment, and avoid realistic fur.",
     keywords: ["gấu trúc", "gấu trúc hài", "panda meme", "gấu trúc bựa", "cổ trang", "gau truc", "ảnh chế"],
   },
   ve_tay_don_gian: {
@@ -121,7 +121,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     positivePrompt: "hand-drawn indie editorial cartoon, loose confident black ink contours with intentional line variation, off-white paper background, limited two-color accent palette, simple everyday clothing and props, understated facial features, observational slice-of-life humor, airy negative space, lightly imperfect human-made linework, consistent sketch vocabulary",
     negativePrompt: "3D CGI, photorealism, glossy anime, polished vector-perfect lines, dense crosshatching, neon glow, volumetric lighting, elaborate colorful scenery, text, watermark, blur",
     defaultBackgroundMode: "white",
-    characterRule: "Keep loose ink-line variation, off-white paper ground, limited accents, simple everyday clothes, and relaxed stylized facial features in every frame.",
+    characterRule: "Keep loose ink-line variation, off-white paper ground, limited accents, and relaxed stylized facial features; preserve the story-defined costume, era, role, action, props, and environment in every frame.",
     keywords: ["vẽ tay", "vẽ tay đơn giản", "ve tay", "đời sống", "châm biếm", "indie", "anh da đen"],
   },
   tien_hiep_3d: {

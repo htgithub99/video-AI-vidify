@@ -93,6 +93,7 @@ export const sanitizeImagePrompt = (prompt: string): string => {
     .replace(/with circular joints/gi, "")
     .replace(/circular joints/gi, "")
     .replace(/joint (?:dots|balls|spheres)/gi, "")
+    .replace(/\.{2,}/g, ".")
     .replace(/\s+/g, " ")
     .trim();
   return cleaned;

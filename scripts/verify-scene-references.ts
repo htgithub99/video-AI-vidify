@@ -49,10 +49,7 @@ const context = createSceneGenerationContext(scene, {
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
   sceneReferenceImages: ["/assets/projects/test/references/scene/scene.png"],
 });
-assert.deepEqual(context.referenceImages, [
-  "/assets/projects/test/references/style/style.png",
-  "/assets/projects/test/references/scene/scene.png",
-]);
+assert.deepEqual(context.referenceImages, []);
 assert.equal(context.prompt, scene.prompt);
 
 const nodeContext = createSceneGenerationContext(scene, {
@@ -60,9 +57,7 @@ const nodeContext = createSceneGenerationContext(scene, {
   styleReferenceImages: ["/assets/projects/test/references/style/style.png"],
   sceneReferenceImages: [],
 });
-assert.deepEqual(nodeContext.referenceImages, [
-  "/assets/projects/test/references/style/style.png",
-]);
+assert.deepEqual(nodeContext.referenceImages, []);
 assert.equal(nodeContext.prompt, scene.prompt);
 
 const finalizedPrompt = "Complete AI-authored scene prompt with identity, white canvas, no text, and medium shot";
@@ -75,7 +70,7 @@ const finalizedContext = createSceneGenerationContext({
   sceneReferenceImages: [],
 });
 assert.equal(finalizedContext.prompt, `${finalizedPrompt} --ar 16:9`);
-assert.deepEqual(finalizedContext.referenceImages, ["/assets/projects/test/references/style/style.png"]);
+assert.deepEqual(finalizedContext.referenceImages, []);
 
 const multiCharacterContext = createSceneGenerationContext({
   ...scene,

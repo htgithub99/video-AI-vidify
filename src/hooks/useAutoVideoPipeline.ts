@@ -86,7 +86,7 @@ import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline } from "../services/voiceTimelineService";
 import { assessVoiceAdvisory } from "../services/voiceQualityRepairService";
 import { createSubtitleCues } from "../services/subtitleService";
-import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../services/thumbnailPromptService";
+import { createThumbnailGenerationPrompt } from "../services/thumbnailPromptService";
 import { acceptGeneratedThumbnail } from "../services/thumbnailQualityPipelineService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../services/imageGenerationContinuityService";
 import { clearSceneVisualAsset } from "../services/projectRegenerationService";
@@ -1107,8 +1107,13 @@ export function useAutoVideoPipeline(
         style: currentStylePreset,
         qualityMode: _.defaultTo(voiceUpdatedProj.visualConfig.qualityMode, QualityMode.Balanced),
         generateCount: resolveQualityProfile(voiceUpdatedProj.visualConfig.qualityMode).draftCandidates,
-        sceneReferenceImages: config.sceneReferenceImages,
-        referenceImages: _.take(_.uniq(_.concat(config.referenceImages, config.sceneReferenceImages)), SCENE_REFERENCE_CONFIG.MAX_IMAGES),
+        // Prompt-only generation: Gemini must not receive style, scene, or
+        // character image references from any generation path.
+        styleReferenceImages: [],
+        sceneReferenceImages: [],
+        referenceImages: [],
+        thumbnailReferenceImages: [],
+        thumbnailSceneReferenceImages: [],
         contentLanguage: config.language,
       };
 
@@ -1481,7 +1486,7 @@ export function useAutoVideoPipeline(
             if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(thumb.imageUrl)) return false;
             return true;
           });
-          const thumbnailReferenceImages = resolveThumbnailReferenceImages(imageUpdatedProj.visualConfig);
+          const thumbnailReferenceImages: string[] = [];
 
           if (config.resumeMode && !shouldRegenerateThumbnails) {
             _.forEach(parsedThumbs, (thumb, idx) => {

@@ -2,6 +2,7 @@ import _ from "lodash";
 import { IMAGE_PROMPT_COMPILER_CONFIG } from "../constants/config";
 import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 import { resolveStylePreset } from "../constants/stylePresets";
+import { resolveSceneCharacterIds } from "./sceneReferenceService";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
 import {
   appendImagePromptAspectRatio,
@@ -37,9 +38,11 @@ const compactScriptSource = (value: unknown): string => {
     : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
-const resolveCharacterDirective = (options: ImagePromptCompilerOptions): string => {
+const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptCompilerOptions): string => {
   if (!_.isEmpty(options.characters)) {
-    const descriptions = _.compact(_.map(options.characters, (character) => {
+    const characterIds = resolveSceneCharacterIds(scene, options.characters);
+    const sceneCharacters = _.filter(options.characters, character => _.includes(characterIds, character.id));
+    const descriptions = _.compact(_.map(sceneCharacters, (character) => {
       const name = _.trim(_.get(character, "name", ""));
       const desc = _.trim(_.get(character, "description", ""));
       if (_.isEmpty(name) && _.isEmpty(desc)) return null;
@@ -68,7 +71,7 @@ export const compileImagePrompt = (
 ): string => {
   const preset = resolveStylePreset(options.targetStyle);
   const narrative = extractNarrativeText(scene);
-  const characterDirective = resolveCharacterDirective(options);
+  const characterDirective = resolveCharacterDirective(scene, options);
 
   const promptParts = [
     preset.positivePrompt,
