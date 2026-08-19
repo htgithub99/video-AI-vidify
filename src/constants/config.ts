@@ -329,7 +329,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
     worldRendering: 6,
   },
   NARRATIVE_MAX_WORDS: 60,
-  SCENE_FIELD_MAX_WORDS: 50,
+  SCENE_FIELD_MAX_WORDS: 28,
   LOCATION_MAX_WORDS: 20,
   PROP_MAX_WORDS: 15,
   COMPOSITION_MAX_WORDS: 25,
@@ -342,7 +342,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   NON_WHITESPACE_REGEX: /[^\s]+/g,
   SINGLE_SUBJECT_COUNT: 1,
   EMPTY_STRING: "",
-  CHARACTER_VISUAL_PREFIX: "Character visual details: ",
+  CHARACTER_VISUAL_PREFIX: "",
   SCENE_DEPICTING_PREFIX: "Scene depicting: ",
   CHARACTER_STYLING_PREFIX: "Character styling: ",
   SHOT_TYPE_PREFIX: "Shot type: ",
@@ -354,10 +354,10 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   SCENE_NARRATIVE_PREFIX: "Scene: ",
   COMPOSITION_PREFIX: "Composition: ",
   LIGHTING_PREFIX: "Scene-appropriate lighting: ",
-  CHARACTER_IDENTITY_MAX_WORDS: 20,
-  CHARACTER_CONSISTENCY_LOCK: "Continuity: preserve the exact face, hair, proportions, signature outfit, and accessories; change only pose and expression",
-  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs or fingers, distorted face, hairstyle change, or costume redesign",
-  STORY_FIDELITY_LOCK: "Story facts override style: preserve the narrated era, location, role, outfit, action, and props; add no unrelated genre elements",
+  CHARACTER_IDENTITY_MAX_WORDS: 24,
+  CHARACTER_CONSISTENCY_LOCK: "preserving the same face, hair, outfit, and proportions as every other scene",
+  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs, distorted face, hairstyle or outfit changes",
+  STORY_FIDELITY_LOCK: "Keep the narrated setting, era, action, and props; add no unrelated genre elements",
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {

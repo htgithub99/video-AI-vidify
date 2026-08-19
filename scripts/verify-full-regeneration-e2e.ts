@@ -53,7 +53,7 @@ const compiledScenePrompt = compileImagePrompt(regeneratedProject.storyboard[0],
 });
 assert.doesNotMatch(compiledScenePrompt, /Line art:|Palette:|Rendering:/);
 assert.doesNotMatch(compiledScenePrompt, /industrial hazard/i);
-assert.match(compiledScenePrompt, /Scene:/);
+assert.match(compiledScenePrompt, /Một người phụ nữ đứng trước khu vực nguy hiểm trong nhà máy/);
 assert.ok(compiledScenePrompt.includes("--ar 16:9"));
 
 // 3. Kiểm tra Prompt Thumbnail theo ma trận tò mò CTR
