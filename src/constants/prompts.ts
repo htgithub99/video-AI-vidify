@@ -1242,6 +1242,7 @@ PROJECT-WIDE STYLE BIBLE RULE:
 - The supplied style is one shared construction system for the entire cast, never a per-character inspiration.
 - Every character must use the same medium, head-to-body ratio, torso and limb construction, facial simplification, line language, coloring, shading, and rendering depth.
 - Character fields describe identity only. They must not introduce photorealism, anime anatomy, stick limbs, 3D rendering, or another medium unless that construction is already present in the shared style.
+- If the target style is 3D, use stylized natural adult human proportions. Never use chibi, a two-head-tall body, oversized head, tiny limbs, baby-like anatomy, or childlike proportions unless the user explicitly selected a chibi/cartoon preset.
 
 STRICT LANGUAGE AND IDENTITY RULES:
 - Write every "description" and "prompt" value entirely in natural English, regardless of the script language.

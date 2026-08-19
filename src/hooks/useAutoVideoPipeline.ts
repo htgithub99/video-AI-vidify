@@ -75,7 +75,7 @@ import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rollo
 import { applyOptionalMusicAsset, createAudioCueSheet } from "../services/soundDesignService";
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
-import { appendImagePromptAspectRatio, evaluateImagePrompts } from "../services/imagePromptQualityService";
+import { evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
 import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
@@ -1063,7 +1063,12 @@ export function useAutoVideoPipeline(
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
         ...scene,
-        prompt: appendImagePromptAspectRatio(scene.prompt || "", config.aspectRatio),
+        prompt: compileImagePrompt(scene, {
+          aspectRatio: config.aspectRatio,
+          targetStyle: currentStylePreset,
+          characters: voiceUpdatedProj.visualConfig.characters,
+          visualBible: voiceUpdatedProj.visualBible,
+        }),
       }));
       const imagePromptQa = evaluateImagePrompts(realScenes as StoryboardScene[], {
         backgroundMode: config.styleBackgroundMode,
@@ -1107,8 +1112,6 @@ export function useAutoVideoPipeline(
         style: currentStylePreset,
         qualityMode: _.defaultTo(voiceUpdatedProj.visualConfig.qualityMode, QualityMode.Balanced),
         generateCount: resolveQualityProfile(voiceUpdatedProj.visualConfig.qualityMode).draftCandidates,
-        // Prompt-only generation: Gemini must not receive style, scene, or
-        // character image references from any generation path.
         styleReferenceImages: [],
         sceneReferenceImages: [],
         referenceImages: [],

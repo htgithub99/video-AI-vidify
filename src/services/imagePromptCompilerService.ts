@@ -38,7 +38,11 @@ const compactScriptSource = (value: unknown): string => {
     : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
-const getCharacterIdentityProfile = (character: CharacterConfig, scene: StoryboardScene): string => {
+const THREE_D_STYLE_PATTERN = /(?:\b3d\b|donghua|xianxia|unreal engine|tien[_ ]hiep)/i;
+const CHIBI_CHARACTER_TERMS_PATTERN = /\b(?:adorable\s+)?chibi(?:\s+style)?\b|\b\d+[- ]head[- ]tall\s+chibi\s+proportions?\b|\btiny\s+(?:cute\s+)?hands?\s+and\s+feet\b|\boversized\s+sparkling\s+eyes\b/gi;
+const NATURAL_3D_ANATOMY_LOCK = "3D anatomy lock: use stylized natural adult human proportions, a proportionate head and limbs, and anatomically plausible hands. No chibi, oversized head, or childlike body proportions";
+
+const getCharacterIdentityProfile = (character: CharacterConfig, scene: StoryboardScene, targetStyle?: string): string => {
   const stage = _.find(character.timelineStages, item => _.isEqual(item.id, scene.characterStage) || _.isEqual(item.label, scene.characterStage));
   const details = _.compact([
     character.genderPresentation,
@@ -57,7 +61,14 @@ const getCharacterIdentityProfile = (character: CharacterConfig, scene: Storyboa
     stage?.visibleCondition,
     character.description,
   ]);
-  return compactWords(_.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS * 2);
+  const identity = _.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
+  const styleSafeIdentity = THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
+    ? _.trim(identity
+      .replace(CHIBI_CHARACTER_TERMS_PATTERN, "")
+      .replace(/\s*,\s*,+/g, ", ")
+      .replace(/^\s*,\s*|\s*,\s*$/g, ""))
+    : identity;
+  return compactWords(styleSafeIdentity, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS * 2);
 };
 
 const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptCompilerOptions): string => {
@@ -66,7 +77,7 @@ const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptC
     const sceneCharacters = _.filter(options.characters, character => _.includes(characterIds, character.id));
     const descriptions = _.compact(_.map(sceneCharacters, (character) => {
       const name = _.trim(_.get(character, "name", IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING));
-      const desc = getCharacterIdentityProfile(character, scene);
+      const desc = getCharacterIdentityProfile(character, scene, options.targetStyle);
       if (_.isEmpty(name) && _.isEmpty(desc)) return null;
       return desc ? `${name ? `${name}: ` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING}${desc}` : name;
     }));
@@ -89,6 +100,8 @@ const resolveSceneEnvironment = (scene: StoryboardScene, visualBible?: VisualBib
   return compactWords(_.join(_.compact([locationText, propText]), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_MAX_WORDS);
 };
 
+const DISTINCT_ADJACENT_BEAT_DIRECTIVE = "Distinct adjacent beat: change blocking, pose, camera distance, and focal prop";
+
 export const compileImagePrompt = (
   scene: StoryboardScene,
   options: ImagePromptCompilerOptions = {},
@@ -105,19 +118,21 @@ export const compileImagePrompt = (
 
   const promptParts = [
     preset.positivePrompt,
-    characterDirective,
-    characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    IMAGE_PROMPT_COMPILER_CONFIG.STORY_FIDELITY_LOCK,
     visualIntent ? `${IMAGE_PROMPT_COMPILER_CONFIG.VISUAL_INTENT_PREFIX}${visualIntent}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     visibleAction ? `${IMAGE_PROMPT_COMPILER_CONFIG.VISIBLE_ACTION_PREFIX}${visibleAction}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     reaction ? `${IMAGE_PROMPT_COMPILER_CONFIG.REACTION_PREFIX}${reaction}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     environment ? `${IMAGE_PROMPT_COMPILER_CONFIG.ENVIRONMENT_PREFIX}${environment}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     !visualIntent && !visibleAction && narrativeFallback ? `${IMAGE_PROMPT_COMPILER_CONFIG.SCENE_NARRATIVE_PREFIX}${narrativeFallback}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    characterDirective,
+    characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    IMAGE_PROMPT_COMPILER_CONFIG.STORY_FIDELITY_LOCK,
     preset.characterRule ? `${IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_STYLING_PREFIX}${preset.characterRule}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     scene.shotSize ? `${IMAGE_PROGORITHM_COMPILER_SHOT_TYPE(scene.shotSize)}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     scene.cameraAngle ? `${IMAGE_PROMPT_COMPILER_CONFIG.CAMERA_ANGLE_PREFIX}${scene.cameraAngle}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     composition ? `${IMAGE_PROMPT_COMPILER_CONFIG.COMPOSITION_PREFIX}${composition}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     lighting ? `${IMAGE_PROMPT_COMPILER_CONFIG.LIGHTING_PREFIX}${lighting}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    DISTINCT_ADJACENT_BEAT_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS,
     IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_FRAME_DIRECTIVE,

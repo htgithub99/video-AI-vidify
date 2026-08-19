@@ -354,10 +354,10 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   SCENE_NARRATIVE_PREFIX: "Scene: ",
   COMPOSITION_PREFIX: "Composition: ",
   LIGHTING_PREFIX: "Scene-appropriate lighting: ",
-  CHARACTER_IDENTITY_MAX_WORDS: 24,
-  CHARACTER_CONSISTENCY_LOCK: "Character consistency lock: preserve the exact same facial identity, proportions, skin tone, hair, signature features, accessories, and core costume across scenes. Expression, pose, camera, lighting, and environment may vary, but never redesign, age, beautify, or reinterpret the character",
-  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate characters, extra limbs, extra fingers, malformed hands, distorted faces, inconsistent facial features, random hairstyle changes, or random costume redesign",
-  STORY_FIDELITY_LOCK: "Story fidelity lock: the selected style controls rendering language only. Preserve the script-defined era, location, occupation, costume, props, and event. Do not introduce genre-specific fantasy, historical, futuristic, luxury, or symbolic elements unless the scene explicitly requires them",
+  CHARACTER_IDENTITY_MAX_WORDS: 20,
+  CHARACTER_CONSISTENCY_LOCK: "Continuity: preserve the exact face, hair, proportions, signature outfit, and accessories; change only pose and expression",
+  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs or fingers, distorted face, hairstyle change, or costume redesign",
+  STORY_FIDELITY_LOCK: "Story facts override style: preserve the narrated era, location, role, outfit, action, and props; add no unrelated genre elements",
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {
@@ -432,14 +432,54 @@ export const GEMINI_REQUEST_POLICY = {
   TOKEN_ESTIMATE_CHARACTERS: 4,
   MODEL_INDEX_RESET_MS: 180_000,
 } as const;
-export const FREE_AI_PROVIDER_CONFIG = { CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["gpt-oss-120b", "zai-glm-4.7"] }, GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.6-27b"], scriptModels: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] }, AUTHORIZATION_HEADER: "Authorization", BEARER_PREFIX: "Bearer ", CONTENT_TYPE_HEADER: "Content-Type", JSON_CONTENT_TYPE: "application/json", DEFAULT_TEMPERATURE: 0.7, JSON_RESPONSE_TYPE: "json_object", REQUEST_TIMEOUT_MS: 45000, DEFAULT_MAX_OUTPUT_TOKENS: 2048, PROMPT_VERSION: "vidify-baseline-v2", EMPTY_RESPONSE_ERROR: "empty_provider_response", PROVIDER_BLOCK_STATUSES: [401, 402, 403], PROVIDER_BLOCK_COOLDOWN_MS: 43200000, MODEL_RATE_LIMIT_COOLDOWN_MS: 60000, TOOLLESS_FALLBACK_CATEGORIES: ["zero_quota", "daily_quota", "rate_limit"], TOOLLESS_FALLBACK_DIRECTIVE: "The requested external tool is unavailable because its free quota is exhausted. Complete the task using only the supplied context and general knowledge. Never invent citations, URLs, quotations, studies, dates, statistics, or claims of verification. Explicitly mark unavailable evidence as unsupported and use cautious qualitative wording." } as const;
-export const FREE_AI_PROVIDER_LOGS = { NO_KEYS: "[AI Router] Không tìm thấy khóa Cerebras/Groq; chuyển sang Gemini.", TOOL_REQUIRED: "[AI Router] Tác vụ cần công cụ hoặc dữ liệu đa phương tiện; chuyển sang Gemini.", TOOLLESS_FALLBACK: "[AI Router] Gemini đã hết quota miễn phí; chuyển tác vụ sang Groq không dùng công cụ tìm kiếm.", CALLING: (provider: string, model: string) => `[AI Router] Đang gọi ${provider}: ${model}.`, SUCCESS: (provider: string, model: string) => `[AI Router] ${provider}/${model} phản hồi thành công.`, FAILED: (provider: string, model: string, reason: string) => `[AI Router] ${provider}/${model} thất bại: ${reason}.`, FALLBACK: "[AI Router] Các provider miễn phí mới không khả dụng; chuyển sang Gemini." } as const;
+
+export const FREE_AI_PROVIDER_CONFIG = {
+  CEREBRAS: {
+    id: "cerebras",
+    url: "https://api.cerebras.ai/v1/chat/completions",
+    models: ["gpt-oss-120b", "zai-glm-4.7"],
+  },
+  GROQ: {
+    id: "groq",
+    url: "https://api.groq.com/openai/v1/chat/completions",
+    models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.6-27b"],
+    scriptModels: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"],
+    toolModels: ["groq/compound-mini", "groq/compound"],
+  },
+  AUTHORIZATION_HEADER: "Authorization",
+  BEARER_PREFIX: "Bearer ",
+  CONTENT_TYPE_HEADER: "Content-Type",
+  JSON_CONTENT_TYPE: "application/json",
+  DEFAULT_TEMPERATURE: 0.7,
+  JSON_RESPONSE_TYPE: "json_object",
+  REQUEST_TIMEOUT_MS: 45000,
+  DEFAULT_MAX_OUTPUT_TOKENS: 2048,
+  PROMPT_VERSION: "vidify-baseline-v2",
+  EMPTY_RESPONSE_ERROR: "empty_provider_response",
+  PROVIDER_BLOCK_STATUSES: [401, 402, 403],
+  PROVIDER_BLOCK_COOLDOWN_MS: 43200000,
+  MODEL_RATE_LIMIT_COOLDOWN_MS: 60000,
+  TOOLLESS_FALLBACK_CATEGORIES: ["zero_quota", "daily_quota", "rate_limit"],
+  TOOLLESS_FALLBACK_DIRECTIVE: "The requested external tool is unavailable because its free quota is exhausted. Complete the task using only the supplied context and general knowledge. Never invent citations, URLs, quotations, studies, dates, statistics, or claims of verification. Explicitly mark unavailable evidence as unsupported and use cautious qualitative wording.",
+} as const;
+
+export const FREE_AI_PROVIDER_LOGS = {
+  NO_KEYS: "[AI Router] Không tìm thấy khóa Cerebras/Groq; chuyển sang Gemini.",
+  TOOL_REQUIRED: "[AI Router] Tác vụ cần công cụ hoặc dữ liệu đa phương tiện; chuyển sang Gemini.",
+  TOOLLESS_FALLBACK: "[AI Router] Gemini đã hết quota miễn phí; chuyển tác vụ sang Groq không dùng công cụ tìm kiếm.",
+  CALLING: (provider: string, model: string) => `[AI Router] Đang gọi ${provider}: ${model}.`,
+  SUCCESS: (provider: string, model: string) => `[AI Router] ${provider}/${model} phản hồi thành công.`,
+  FAILED: (provider: string, model: string, reason: string) => `[AI Router] ${provider}/${model} thất bại: ${reason}.`,
+  FALLBACK: "[AI Router] Các provider miễn phí mới không khả dụng; chuyển sang Gemini.",
+} as const;
+
 export const VOICE_TTS_ROUTING_CONFIG = {
   PREMIUM_VOICE_MARKER: "premium",
   IDENTITY_KEYS: ["provider", "voiceURI"],
   GENERATED_AUDIO_KEYS: ["audioBase64", "audioUrl", "audioQa", "timingLog"],
   SCENE_AUDIO_KEYS: ["audioBase64", "audioUrl"],
 } as const;
+
 export const STYLE_EXTRACTION_CONFIG = {
   ASSET_PREFIX: "/assets/",
   HTTP_PREFIXES: ["http://", "https://"],
@@ -447,6 +487,7 @@ export const STYLE_EXTRACTION_CONFIG = {
   UNAVAILABLE_ERROR: "Chưa thể phân tích phong cách từ ảnh tham chiếu. Hãy kiểm tra kết nối rồi thử lại.",
   MIME_BY_EXTENSION: { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" },
 } as const;
+
 export const STYLE_LOCK_CONFIG = {
   SHARED_PERSON_RULE: "Every person uses exactly this same character type, body construction, line work, coloring, and rendering style",
   SHARED_PERSON_PATTERN: /every person uses/i,
@@ -502,7 +543,15 @@ export const STYLE_DIRECTIVE_CONFIG = {
   SMOOTH_LIMBS_REPLACEMENT: "smooth continuous stick limbs",
 } as const;
 
-export const REFERENCE_ASSET_GROUP = { STYLE:"style",SCENE:"scene",THUMBNAIL:"thumbnail",CHARACTER:"character",UPSCALED:"upscaled",AUDIO:"audio" } as const;
+export const REFERENCE_ASSET_GROUP = {
+  STYLE: "style",
+  SCENE: "scene",
+  THUMBNAIL: "thumbnail",
+  CHARACTER: "character",
+  UPSCALED: "upscaled",
+  AUDIO: "audio",
+} as const;
+
 export const PROJECT_ASSET_ROUTE = "/project-assets/:projectId/:group";
 export const PROJECT_ASSET_INVALID_REQUEST = "Invalid project asset request";
 
@@ -511,6 +560,7 @@ export const REGENERATION_TARGET = {
   IMAGES: "images",
   RENDER: "render",
 } as const;
+
 export const REGENERATION_TEXTS = {
   vi: { voice: "Tạo lại voice", images: "Tạo lại ảnh", render: "Ghép lại", failed: "Không thể xóa tài nguyên cũ. Vui lòng thử lại." },
   en: { voice: "Redo voice", images: "Redo images", render: "Render again", failed: "Could not remove old assets. Please try again." },
@@ -689,13 +739,12 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   DATA_URL_PREFIX: "data:",
   BLOB_URL_PREFIX: "blob:",
   HTTP_URL_PREFIX: "http",
-  URL_PREFIXES: ["blob:", "http", "data:"],
+  URL_PREFIXES: ["blob:", "http"],
   DATA_INDEX: 1,
   CANVAS_CONTEXT: "2d",
   IMAGE_MIME_TYPE: "image/jpeg",
   IMAGE_QUALITY: 0.95,
   IMAGE_READY_TIMEOUT_MS: 15000,
-  SCREENSHOT_QUALITY: 95,
   MEDIA_WAIT_TIMEOUT_MS: 30000,
   MIN_BUFFER_LENGTH: 500,
   PAGE_IDLE_TIMEOUT_MS: 180000,

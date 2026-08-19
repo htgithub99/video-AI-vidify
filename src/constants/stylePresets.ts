@@ -132,10 +132,10 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     icon: "⚔️",
     tagline: "Đồ họa 3D • Tu tiên",
     description: "Ngôn ngữ render donghua 3D điện ảnh: chất liệu tinh xảo, ánh sáng huyền ảo và không khí kỳ ảo; nhân vật/bối cảnh vẫn theo cốt truyện.",
-    positivePrompt: "premium Chinese 3D donghua visual language, cinematic stylized 3D animation, refined anime-inspired facial construction, detailed hair strands, physically based character and environment materials, polished high-end production-quality render",
-    negativePrompt: "2D flat cartoon, stick figure, low-poly geometry, cheap mobile-game render, plastic skin, distorted anatomy, extra fingers, inconsistent costume, cluttered effects, oversaturated neon, text, watermark, blur",
+    positivePrompt: "premium Chinese 3D donghua visual language, cinematic stylized 3D animation, refined anime-inspired facial construction, natural adult human proportions, detailed hair strands, physically based character and environment materials, polished high-end production-quality render",
+    negativePrompt: "chibi, childlike proportions, oversized head, tiny limbs, 2D flat cartoon, stick figure, low-poly geometry, cheap mobile-game render, plastic skin, distorted anatomy, extra fingers, inconsistent costume, cluttered effects, oversaturated neon, text, watermark, blur",
     defaultBackgroundMode: "contextual",
-    characterRule: "Maintain premium 3D donghua facial construction, hair design, and material quality while preserving the story-defined identity, costume, era, role, action, props, and environment; donghua rendering must not automatically introduce cultivation, robes, temples, or magic.",
+    characterRule: "Maintain premium 3D donghua facial construction, hair design, and material quality with natural adult human proportions, anatomically plausible hands and limbs, and no chibi exaggeration. Preserve the story-defined identity, costume, era, role, action, props, and environment; donghua rendering must not automatically introduce cultivation, robes, temples, or magic.",
     keywords: ["3d tiên hiệp", "tiên hiệp", "tu tiên", "3d trung quốc", "tiên nghịch", "đấu phá", "tien hiep", "xianxia", "donghua", "immortal cultivator", "unreal engine 5"],
   },
 };

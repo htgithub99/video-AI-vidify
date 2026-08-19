@@ -1033,7 +1033,12 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
 
           const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
           if (!generateTypeConfigured) {
-            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
+            throw new Error(
+              BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(
+                "{0}",
+                _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi,
+              ),
+            );
           }
           await configureGeminiMediaInput(activePage!, visualConfig);
 
@@ -1439,7 +1444,14 @@ export async function generateBatchImagesWithGeminiChat(
               await configureGeminiModel(page, itemVisualConfig).catch(() => false);
               const generateTypeConfigured = await configureGeminiGenerateType(page, itemVisualConfig);
               if (!generateTypeConfigured) {
-                throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace("{0}", _.isEqual(itemVisualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
+                throw new Error(
+                  BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(
+                    "{0}",
+                    _.isEqual(itemVisualConfig.generateType, GenerateType.Video)
+                      ? GeminiChatTextOption.CreateVideoVi
+                      : GeminiChatTextOption.CreateImageVi,
+                  ),
+                );
               }
               await configureGeminiMediaInput(page, itemVisualConfig);
 
@@ -1799,19 +1811,13 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
       const candidate = candidates.nth(index);
       if (!(await candidate.isVisible().catch(() => false))) continue;
-      const label = _.trim(_.join([
-        await candidate.innerText().catch(() => ""),
-        await candidate.getAttribute("aria-label").catch(() => ""),
-      ], " "));
+      const label = _.trim(_.join([await candidate.innerText().catch(() => ""), await candidate.getAttribute("aria-label").catch(() => "")], " "));
       if (activeModeRegex.test(label)) return true;
     }
     return false;
   };
   const waitForActiveGenerateType = async (): Promise<boolean> => {
-    const maximumPolls = Math.ceil(
-      GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_MODE_TIMEOUT_MS
-      / GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS,
-    );
+    const maximumPolls = Math.ceil(GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_MODE_TIMEOUT_MS / GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS);
     for (let poll = SecurityConstants.ZERO; poll < maximumPolls; poll++) {
       if (await hasActiveGenerateType()) return true;
       await delayAsync(GEMINI_MODEL_SELECTION_CONFIG.SELECTION_POLL_MS);
@@ -1857,10 +1863,12 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     await selectedOption.click();
     await randomDelay(800, 1400);
     const menuClosed = await selectedOption.isHidden().catch(() => true);
-    const modeActive = menuClosed && await waitForActiveGenerateType();
+    const modeActive = menuClosed && (await waitForActiveGenerateType());
     if (modeActive) {
       await captureGeminiDomState(page, isVideo ? "video_type_selected" : "image_type_selected");
-      appLog((usedFallback ? BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK : BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS).replace("{0}", targetText));
+      appLog(
+        (usedFallback ? BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_FALLBACK : BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_SUCCESS).replace("{0}", targetText),
+      );
       return true;
     }
     await captureGeminiDomState(page, isVideo ? "video_type_chip_missing" : "image_type_chip_missing");
@@ -2223,11 +2231,6 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
       return null;
     }
 
-    if (_.startsWith(src, GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_URL_PREFIX)) {
-      const parts = _.split(src, GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR);
-      return _.defaultTo(_.get(parts, SecurityConstants.DEFAULT_AMOUNT), null);
-    }
-
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACTING_MEDIA.replace("{0}", tagName).replace("{1}", src));
     await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.URL_DETECTED);
 
@@ -2254,38 +2257,13 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
               reader.onerror = reject;
               reader.readAsDataURL(blob);
             });
-          } catch (fetchError) {
-            try {
-              const img = imgEl as HTMLImageElement;
-              if (!img.complete || img.naturalWidth === 0) {
-                await new Promise((resolve, reject) => {
-                  img.onload = resolve;
-                  img.onerror = reject;
-                  setTimeout(reject, extractionConfig.imageReadyTimeoutMs);
-                });
-              }
-              const canvas = document.createElement("canvas");
-              canvas.width = img.naturalWidth || img.width || 800;
-              canvas.height = img.naturalHeight || img.height || 450;
-              const ctx = canvas.getContext(extractionConfig.canvasContext);
-              if (!ctx) return extractionConfig.errorPrefix + extractionConfig.canvasContextError;
-              ctx.drawImage(img, 0, 0);
-              return canvas.toDataURL(extractionConfig.imageMimeType, extractionConfig.imageQuality).split(extractionConfig.dataSeparator)[
-                extractionConfig.dataIndex
-              ];
-            } catch (canvasError: unknown) {
-              return extractionConfig.errorPrefix + (canvasError instanceof Error ? canvasError.message : String(canvasError));
-            }
+          } catch (fetchError: unknown) {
+            return extractionConfig.errorPrefix + (fetchError instanceof Error ? fetchError.message : String(fetchError));
           }
         },
         {
           errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX,
           emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE,
-          canvasContextError: GEMINI_MEDIA_EXTRACTION_CONFIG.CANVAS_CONTEXT_ERROR,
-          imageReadyTimeoutMs: GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_TIMEOUT_MS,
-          canvasContext: GEMINI_MEDIA_EXTRACTION_CONFIG.CANVAS_CONTEXT,
-          imageMimeType: GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_MIME_TYPE,
-          imageQuality: GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_QUALITY,
           dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR,
           dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
         },
@@ -2295,19 +2273,6 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
         return base64Data;
       }
-
-      try {
-        if (await mediaElement.isVisible().catch(() => false)) {
-          const screenshotBuf = await mediaElement.screenshot({
-            type: "jpeg",
-            quality: GEMINI_MEDIA_EXTRACTION_CONFIG.SCREENSHOT_QUALITY,
-          });
-          if (screenshotBuf && _.gt(screenshotBuf.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_BUFFER_LENGTH)) {
-            await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
-            return screenshotBuf.toString("base64");
-          }
-        }
-      } catch {}
 
       appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_FAILED.replace("{0}", base64Data || "null"));
     } else if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.VIDEO_TAG)) {
@@ -2369,7 +2334,6 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
       if (!img) return null;
       const src = img.currentSrc || img.src || img.getAttribute("src") || "";
       if (!src) return null;
-      if (src.startsWith("data:image")) return src.split(",")[1];
       try {
         const resp = await fetch(src);
         const blob = await resp.blob();
@@ -2391,19 +2355,6 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return secondaryBase64;
   }
-
-  try {
-    if (await mediaLoc.isVisible().catch(() => false)) {
-      const screenshotBuf = await mediaLoc.screenshot({
-        type: "jpeg",
-        quality: GEMINI_MEDIA_EXTRACTION_CONFIG.SCREENSHOT_QUALITY,
-      });
-      if (screenshotBuf && _.gt(screenshotBuf.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_BUFFER_LENGTH)) {
-        appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
-        return screenshotBuf.toString("base64");
-      }
-    }
-  } catch {}
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
 }
