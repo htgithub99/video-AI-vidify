@@ -271,10 +271,10 @@ export function useAutoVideoState(
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState<boolean>(false);
 
   const [generationMode, setGenerationMode] = useState<ImageGenerationMode>(
-    initialCachedConfig?.generationMode || ImageGenerationMode.LabsFlow
+    initialCachedConfig?.generationMode || ImageGenerationMode.GeminiChat
   );
   const [imageGeneratorEngine, setImageGeneratorEngine] = useState<ImageGeneratorEngine>(
-    initialCachedConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3
+    initialCachedConfig?.imageGeneratorEngine || ImageGeneratorEngine.LabsSandbox
   );
   const [generateType, setGenerateType] = useState<GenerateType>(
     initialCachedConfig?.generateType || GenerateType.Image
@@ -283,7 +283,7 @@ export function useAutoVideoState(
     initialCachedConfig?.maxVideoScenes ?? MEDIA_MIX_CONFIG.DEFAULT_MAX_VIDEOS
   );
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(
-    initialCachedConfig?.aspectRatio || AspectRatio.NineSixteen
+    initialCachedConfig?.aspectRatio || AspectRatio.SixteenNine
   );
   const [promptInputMethod] = useState<PromptInputMethod>(PromptInputMethod.Paste);
   const [sampleCount] = useState<number>(1);

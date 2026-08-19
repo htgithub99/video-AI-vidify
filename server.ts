@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-
 import path from "path";
 import { exec } from "child_process";
 import _ from "lodash";

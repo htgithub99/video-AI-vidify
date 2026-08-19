@@ -338,6 +338,8 @@ export const REFACTOR_CONSTANTS = {
   LOG_ERROR_LOADING_SANDBOX: "ERROR_LOADING_SANDBOX",
 
   KEY_SELECTED_AUTO_PROJECT: "selected_auto_project_id",
+  KEY_AUTO_PIPELINE_CURRENT_LOGS: "auto_pipeline_current_logs",
+  KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX: "auto_pipeline_logs_",
   STATUS_GENERATING: "Generating",
   STATUS_CANCELLED: "Cancelled",
   PIPELINE_RUN_LOCK_PREFIX: "vidify_pipeline_run_lock_",

@@ -69,12 +69,14 @@ const API_KEY_ALIASES = {
 export function getResolvedLicenseKey(req?: any): string {
   const ctx = requestContext.getStore();
   const sources = [
+    process.env.VIDIFY_LICENSE_KEY,
+    process.env.VITE_LICENSE_KEY,
+    process.env.LICENSE_KEY,
     _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_HEADERS, SecurityConstants.HEADER_LICENSE_KEY]),
     _.get(ctx, SecurityConstants.STORE_LICENSE_KEY),
     _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.STORE_LICENSE_KEY]),
     _.get(req, [REFACTOR_CONSTANTS.REQ_PROP_BODY, SecurityConstants.PROP_LICENSE_KEY_GAS]),
-    process.env.LICENSE_KEY,
-    SecurityConstants.DEFAULT_LICENSE_KEY
+    SecurityConstants.DEFAULT_LICENSE_KEY,
   ];
   return extractFirstNonEmptyString(sources);
 }

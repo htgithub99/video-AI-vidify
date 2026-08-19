@@ -8,7 +8,7 @@ import SettingsView from "./components/SettingsView.tsx";
 import DashboardView from "./components/DashboardView.tsx";
 import TabContentLoading from "./components/TabContentLoading.tsx";
 
-import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
+import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGenerationMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
 import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS } from "./constants";
@@ -452,7 +452,8 @@ export default function App() {
         density: 5,
         characterConsistency: true,
         assetsMode: AssetsMode.Mixed,
-        imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+        generationMode: ImageGenerationMode.GeminiChat,
+        imageGeneratorEngine: ImageGeneratorEngine.LabsSandbox,
         generateType: GenerateType.Image,
         aspectRatio: AspectRatio.SixteenNine,
         promptInputMethod: PromptInputMethod.Paste,

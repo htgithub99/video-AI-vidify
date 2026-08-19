@@ -44,8 +44,20 @@ const validateLicenseApi = async (key: string) => {
 };
 
 const getInitialLicenseKey = (): string | null => {
+  const envKey =
+    (import.meta as any).env?.VITE_LICENSE_KEY ||
+    (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
+    (import.meta as any).env?.LICENSE_KEY;
+
+  if (!_.isEmpty(envKey) && _.isString(envKey)) {
+    const cleanEnvKey = _.trim(envKey);
+    localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, cleanEnvKey);
+    return cleanEnvKey;
+  }
+
   const stored = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-  if (!_.isEmpty(stored)) return stored;
+  if (!_.isEmpty(stored)) return _.trim(stored);
+
   if (!_.isEmpty(SecurityConstants.DEFAULT_LICENSE_KEY)) {
     localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, SecurityConstants.DEFAULT_LICENSE_KEY);
     return SecurityConstants.DEFAULT_LICENSE_KEY;
@@ -57,11 +69,31 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
   const queryClient = useQueryClient();
   const [licenseKey, setLicenseKeyState] = useState<string | null>(getInitialLicenseKey);
 
+  useEffect(() => {
+    if (!licenseKey) {
+      fetch(`${API_ROUTES.LICENSE}/default-key`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.license_key) {
+            setLicenseKeyState(data.license_key);
+            localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, data.license_key);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [licenseKey]);
+
   const clearInvalidLicenseState = useCallback(() => {
     clearBrowserLicenseSession();
-    if (!_.isEmpty(SecurityConstants.DEFAULT_LICENSE_KEY)) {
-      setLicenseKeyState(SecurityConstants.DEFAULT_LICENSE_KEY);
-      localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, SecurityConstants.DEFAULT_LICENSE_KEY);
+    const envKey =
+      (import.meta as any).env?.VITE_LICENSE_KEY ||
+      (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
+      (import.meta as any).env?.LICENSE_KEY;
+    const fallbackKey = !_.isEmpty(envKey) ? _.trim(envKey) : SecurityConstants.DEFAULT_LICENSE_KEY;
+
+    if (!_.isEmpty(fallbackKey)) {
+      setLicenseKeyState(fallbackKey);
+      localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, fallbackKey);
     } else {
       setLicenseKeyState(null);
     }

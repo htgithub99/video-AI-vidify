@@ -63,8 +63,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <select
                 value={generationMode}
                 onChange={(e) => {
-                  setGenerationMode(e.target.value as ImageGenerationMode);
-                  setImageGeneratorEngine(ImageGeneratorEngine.Veo3);
+                  const mode = e.target.value as ImageGenerationMode;
+                  setGenerationMode(mode);
+                  setImageGeneratorEngine(
+                    _.isEqual(mode, ImageGenerationMode.GeminiChat)
+                      ? ImageGeneratorEngine.LabsSandbox
+                      : ImageGeneratorEngine.Veo3
+                  );
                 }}
                 className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
               >

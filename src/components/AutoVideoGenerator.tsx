@@ -109,7 +109,12 @@ export default function AutoVideoGenerator({
       setActiveCreatedProject(foundProj);
       storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
       pipelineActions.setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      pipelineActions.setLogs(foundProj.generationLogs || []);
+      const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
+      const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
+      const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
+      if (!_.isEmpty(projectLogs)) {
+        pipelineActions.setLogs(projectLogs);
+      }
     }
   }, [selectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, pipelineActions]);
 
@@ -121,7 +126,12 @@ export default function AutoVideoGenerator({
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    pipelineActions.setLogs((prev) => [...prev, `[${timestamp}] ${msg}`]);
+    const formatted = `[${timestamp}] ${msg}`;
+    pipelineActions.setLogs((prev) => {
+      const updated = [...prev, formatted];
+      storageUtils.set(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS, jsonUtils.safeStringify(updated));
+      return updated;
+    });
   };
 
   const handleSavePreset = async () => {

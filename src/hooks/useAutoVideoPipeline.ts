@@ -226,7 +226,16 @@ export function useAutoVideoPipeline(
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [stepProgress, setStepProgress] = useState<number>(0);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<string[]>(() => {
+    try {
+      const cached = storageUtils.get(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS);
+      if (cached) {
+        const parsed = jsonUtils.safeParse<string[]>(cached, []);
+        if (Array.isArray(parsed) && !_.isEmpty(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
 
@@ -240,7 +249,10 @@ export function useAutoVideoPipeline(
           if (foundProj) {
             setActiveCreatedProject(foundProj);
             if (foundProj.renderedVideoUrl) setRenderedVideoUrl(foundProj.renderedVideoUrl);
-            if (foundProj.generationLogs) setLogs(foundProj.generationLogs);
+            const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
+            const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
+            const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
+            if (!_.isEmpty(projectLogs)) setLogs(projectLogs);
           }
         }
       } catch (e) {
@@ -261,7 +273,10 @@ export function useAutoVideoPipeline(
       setActiveCreatedProject(foundProj);
       storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
       setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      setLogs(foundProj.generationLogs || []);
+      const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
+      const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
+      const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
+      setLogs(projectLogs || []);
     }
   }, [projects, activeCreatedProject]);
 
@@ -276,7 +291,10 @@ export function useAutoVideoPipeline(
       setActiveCreatedProject(foundProj);
       storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, selectedProjectId);
       setRenderedVideoUrl(foundProj.renderedVideoUrl || REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      setLogs(foundProj.generationLogs || []);
+      const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
+      const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
+      const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
+      setLogs(projectLogs || []);
     }
   };
 
@@ -322,6 +340,11 @@ export function useAutoVideoPipeline(
       const formatted = `[${timestamp}] ${msg}`;
       currentLogs = _.concat(currentLogs, formatted);
       setLogs(_.clone(currentLogs));
+      storageUtils.set(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS, jsonUtils.safeStringify(currentLogs));
+      const targetId = activeCreatedProject?.id || config.selectedProjectId;
+      if (targetId) {
+        storageUtils.set(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${targetId}`, jsonUtils.safeStringify(currentLogs));
+      }
     };
 
     const pipelineStartedAt = Date.now();

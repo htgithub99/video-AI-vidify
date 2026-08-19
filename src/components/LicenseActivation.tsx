@@ -55,7 +55,13 @@ const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
 
 export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { licenseInfo, isLoading, activateLicense, logoutLicense } = useLicense();
-  const [inputKey, setInputKey] = useState(SecurityConstants.EMPTY_STRING);
+  const [inputKey, setInputKey] = useState(() => {
+    const envKey =
+      (import.meta as any).env?.VITE_LICENSE_KEY ||
+      (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
+      (import.meta as any).env?.LICENSE_KEY;
+    return !_.isEmpty(envKey) ? _.trim(envKey) : SecurityConstants.DEFAULT_LICENSE_KEY;
+  });
   const [errorMsg, setErrorMsg] = useState(SecurityConstants.EMPTY_STRING);
   const [successMsg, setSuccessMsg] = useState(SecurityConstants.EMPTY_STRING);
   const [isActivating, setIsActivating] = useState(false);
