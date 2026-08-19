@@ -1067,7 +1067,10 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
           }
           base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
-          await waitForGeminiPageIdle(activePage!, visualConfig);
+          if (base64Result) {
+            success = true;
+            consecutiveGeminiErrors = 0;
+          }
           if (
             base64Result &&
             !_.isEqual(visualConfig.generateType, GenerateType.Video) &&
@@ -1075,10 +1078,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           ) {
             appLog(`[GeminiChat] Ảnh đã tạo có tỉ lệ hơi khác (${visualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`);
           }
-          if (base64Result) {
-            success = true;
-            consecutiveGeminiErrors = 0;
-          } else {
+          if (!base64Result) {
             throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
           }
         } catch (error: unknown) {
@@ -1495,7 +1495,10 @@ export async function generateBatchImagesWithGeminiChat(
                 );
               }
               base64Result = await waitForDownloadAndGetBase64(page, itemVisualConfig, initialResponseCount);
-              await waitForGeminiPageIdle(page, itemVisualConfig);
+              if (base64Result) {
+                success = true;
+                batchPagesErrors.set(page, 0);
+              }
               if (
                 base64Result &&
                 !_.isEqual(itemVisualConfig.generateType, GenerateType.Video) &&
@@ -1505,10 +1508,7 @@ export async function generateBatchImagesWithGeminiChat(
                   `[GeminiChat Batch] Ảnh đã tạo cho scene ${item.sceneId} có tỉ lệ hơi khác (${itemVisualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`,
                 );
               }
-              if (base64Result) {
-                success = true;
-                batchPagesErrors.set(page, 0);
-              } else {
+              if (!base64Result) {
                 throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
               }
             } catch (err: any) {
