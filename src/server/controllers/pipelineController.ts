@@ -120,6 +120,7 @@ import {
   RESPONSE_CONTRACT_CONFIG,
   SYSTEM_FETCH_CONFIG,
   resolveStylePreset,
+  STYLE_IDENTITY_BOUNDARY,
 } from "../../constants";
 
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
@@ -222,11 +223,16 @@ router.post(ROUTER_PATHS.EXTRACT_STYLE, async (req: Request, res: Response) => {
     
     const requestedStyle = style || visualConfig?.style || req.body?.stylePreset || req.body?.targetStyle;
     const preset = resolveStylePreset(requestedStyle);
+    const styleMedium = preset.category === "3d_cinematic"
+      ? "cinematic stylized 3D rendering"
+      : preset.category === "cartoon_2d"
+        ? "stylized 2D illustration"
+        : "custom visual rendering";
 
     const styleProfile = {
-      medium: preset.name,
-      characterType: preset.characterRule,
-      characterDna: preset.characterRule,
+      medium: styleMedium,
+      characterType: STYLE_IDENTITY_BOUNDARY,
+      characterDna: STYLE_IDENTITY_BOUNDARY,
       lineDna: "clean uniform line art",
       shapeLanguage: "minimal stylized geometric shapes",
       colorDna: "preset coordinated palette",

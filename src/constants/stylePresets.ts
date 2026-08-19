@@ -33,6 +33,8 @@ export const STYLE_PRESET_CONFIG = {
   REGEX_FLAG_I: "i",
 } as const;
 
+export const STYLE_IDENTITY_BOUNDARY = "Style applies only to rendering, linework, shape language, palette, materials, and lighting. Character name, gender, age, face, hair, body, wardrobe, role, and setting must come only from the story character card and current scene.";
+
 export const STYLE_CATEGORIES: { id: StyleCategory; nameVi: string; nameEn: string }[] = [
   { id: "all", nameVi: "Tất cả (7)", nameEn: "All (7)" },
   { id: "cartoon_2d", nameVi: "2D & Hoạt hình", nameEn: "2D & Cartoon" },
@@ -104,10 +106,10 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     icon: "🐼",
     tagline: "Meme bựa • Cổ trang",
     description: "Meme hoạt hình đầu gấu trúc, biểu cảm lầy lội; trang phục kiếm hiệp cổ trang dễ nhận diện.",
-    positivePrompt: "humorous 2D panda-head meme cartoon, round white panda head, symmetrical black ears and black eye patches, deliberately exaggerated deadpan human-like comic expression, bold clean outlines, flat warm colors, one readable comedic reaction, consistent panda head shape",
-    negativePrompt: "photorealistic human face, realistic panda, serious portrait, 3D CGI, western superhero comic, cyberpunk neon, malformed ears, asymmetrical eye patches, horror, text, watermark, blur, low resolution",
+    positivePrompt: "humorous Vietnamese meme-cartoon visual language, bold clean outlines, flat warm colors, simplified rounded facial planes, deliberately exaggerated deadpan comic expression, one readable comedic reaction, consistent graphic construction",
+    negativePrompt: "photorealism, realistic animal anatomy, serious portrait, 3D CGI, western superhero comic, cyberpunk neon, horror, text, watermark, blur, low resolution",
     defaultBackgroundMode: "contextual",
-    characterRule: "Retain the round white panda head, two black ears, balanced black eye patches, and flat comic expression. Preserve the story-defined costume, era, role, action, props, and environment; the meme face must not force ancient clothing, a wuxia setting, or realistic fur.",
+    characterRule: "Use bold outlines, flat warm colors, rounded graphic shapes, and readable deadpan comedy expression. Preserve the story-defined character identity, costume, era, role, action, props, and environment; never replace a story character with an animal, mascot, or genre-specific stock character.",
     keywords: ["gấu trúc", "gấu trúc hài", "panda meme", "gấu trúc bựa", "cổ trang", "gau truc", "ảnh chế"],
   },
   ve_tay_don_gian: {
@@ -172,7 +174,7 @@ const findByKeywords = (normalized: string): CuratedStylePreset | undefined => {
         STYLE_PRESET_CONFIG.REGEX_FLAG_I,
       );
       if (regex.test(normalized)) {
-        candidates.push({ preset, keywordLength: keyword.length });
+        candidates.push({ preset, keywordLength: _.size(keyword) });
       }
     });
   });

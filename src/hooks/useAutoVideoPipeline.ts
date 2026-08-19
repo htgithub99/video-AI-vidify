@@ -181,12 +181,11 @@ export interface PipelineActions {
   setRenderedVideoUrl: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const createFallbackCharacterProfile = (stylePresetName?: string): Record<string, any> => {
-  const activePreset = resolveStylePreset(stylePresetName);
+const createFallbackCharacterProfile = (_stylePresetName?: string): Record<string, any> => {
   return {
-    name: "Main Character",
-    description: activePreset.characterRule || activePreset.description,
-    prompt: activePreset.characterRule || activePreset.positivePrompt,
+    name: "An",
+    description: "",
+    prompt: "",
     narrativeRole: "protagonist",
     genderPresentation: "neutral",
     ageRange: "20s",
@@ -195,7 +194,7 @@ const createFallbackCharacterProfile = (stylePresetName?: string): Record<string
     faceShape: "standard",
     eyes: "expressive",
     nose: "",
-    hair: "styled",
+    hair: "",
     signatureClothing: "casual",
     accessories: "",
     colorPalette: "harmonious",
