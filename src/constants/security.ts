@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 export enum LicenseStatus {
   ACTIVE = 'ACTIVE',
   REVOKED = 'REVOKED',
@@ -449,3 +451,9 @@ export const UIConstants = {
   LANG_VI: 'VN',
   LANG_EN: 'EN',
 } as const;
+
+export const getClientEnvironmentLicenseKey = (): string => {
+  const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
+  const envKey = _.get(metaEnv, 'VITE_LICENSE_KEY') || _.get(metaEnv, 'VIDIFY_LICENSE_KEY') || _.get(metaEnv, 'LICENSE_KEY');
+  return !_.isEmpty(envKey) ? _.trim(envKey) : SecurityConstants.DEFAULT_LICENSE_KEY;
+};

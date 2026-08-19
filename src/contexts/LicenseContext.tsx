@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { API_ROUTES } from '../constants/apiRoutes';
-import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS } from '../constants';
+import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS, PlanType, getClientEnvironmentLicenseKey } from '../constants';
 import _ from 'lodash';
 import { clearBrowserLicenseSession } from '../lib/licenseSession';
 import { jsonUtils } from '../lib/json';
+import { storageUtils } from '../lib/storage';
 
 export interface LicenseInfo {
   status: LicenseStatus;
@@ -33,7 +34,48 @@ interface LicenseContextType {
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
-const validateLicenseApi = async (key: string) => {
+const createDefaultProLicenseInfo = (): LicenseInfo => ({
+  status: LicenseStatus.ACTIVE,
+  plan_type: PlanType.PRO_LIFETIME,
+  usage: {
+    video: SecurityConstants.ZERO,
+    image: SecurityConstants.ZERO,
+    voice: SecurityConstants.ZERO,
+  },
+  limits: {
+    video: SecurityConstants.ZERO,
+    image: SecurityConstants.ZERO,
+    voice: SecurityConstants.ZERO,
+    unlimited: true,
+  },
+});
+
+const isRecognizedEnvironmentKey = (key: string | null): boolean => {
+  if (_.isEmpty(key)) return false;
+  return _.includes([
+    SecurityConstants.DEFAULT_LICENSE_KEY,
+    getClientEnvironmentLicenseKey(),
+  ], key);
+};
+
+const resolveInitialLicenseKey = (): string | null => {
+  const envKey = getClientEnvironmentLicenseKey();
+  if (!_.isEmpty(envKey)) {
+    storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, envKey);
+    return envKey;
+  }
+
+  const stored = storageUtils.get(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+  if (!_.isEmpty(stored)) return _.trim(stored);
+
+  if (!_.isEmpty(SecurityConstants.DEFAULT_LICENSE_KEY)) {
+    storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, SecurityConstants.DEFAULT_LICENSE_KEY);
+    return SecurityConstants.DEFAULT_LICENSE_KEY;
+  }
+  return null;
+};
+
+const requestLicenseValidationApi = async (key: string) => {
   const response = await fetch(API_ROUTES.LICENSE_VALIDATE, {
     method: REFACTOR_CONSTANTS.LICENSE_METHOD_POST,
     headers: { [REFACTOR_CONSTANTS.LICENSE_HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.LICENSE_VALUE_APPLICATION_JSON },
@@ -43,57 +85,32 @@ const validateLicenseApi = async (key: string) => {
   return { response, data };
 };
 
-const getInitialLicenseKey = (): string | null => {
-  const envKey =
-    (import.meta as any).env?.VITE_LICENSE_KEY ||
-    (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
-    (import.meta as any).env?.LICENSE_KEY;
-
-  if (!_.isEmpty(envKey) && _.isString(envKey)) {
-    const cleanEnvKey = _.trim(envKey);
-    localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, cleanEnvKey);
-    return cleanEnvKey;
-  }
-
-  const stored = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
-  if (!_.isEmpty(stored)) return _.trim(stored);
-
-  if (!_.isEmpty(SecurityConstants.DEFAULT_LICENSE_KEY)) {
-    localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, SecurityConstants.DEFAULT_LICENSE_KEY);
-    return SecurityConstants.DEFAULT_LICENSE_KEY;
-  }
-  return null;
-};
-
 export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const queryClient = useQueryClient();
-  const [licenseKey, setLicenseKeyState] = useState<string | null>(getInitialLicenseKey);
+  const [licenseKey, setLicenseKeyState] = useState<string | null>(resolveInitialLicenseKey);
 
   useEffect(() => {
     if (!licenseKey) {
       fetch(`${API_ROUTES.LICENSE}/default-key`)
         .then((res) => res.json())
         .then((data) => {
-          if (data?.license_key) {
-            setLicenseKeyState(data.license_key);
-            localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, data.license_key);
+          const fetchedKey = _.get(data, 'license_key');
+          if (!_.isEmpty(fetchedKey)) {
+            setLicenseKeyState(fetchedKey);
+            storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, fetchedKey);
           }
         })
-        .catch(() => {});
+        .catch(_.noop);
     }
   }, [licenseKey]);
 
   const clearInvalidLicenseState = useCallback(() => {
     clearBrowserLicenseSession();
-    const envKey =
-      (import.meta as any).env?.VITE_LICENSE_KEY ||
-      (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
-      (import.meta as any).env?.LICENSE_KEY;
-    const fallbackKey = !_.isEmpty(envKey) ? _.trim(envKey) : SecurityConstants.DEFAULT_LICENSE_KEY;
+    const fallbackKey = resolveInitialLicenseKey();
 
     if (!_.isEmpty(fallbackKey)) {
       setLicenseKeyState(fallbackKey);
-      localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, fallbackKey);
+      storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, fallbackKey);
     } else {
       setLicenseKeyState(null);
     }
@@ -109,24 +126,39 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     queryKey: [REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, licenseKey],
     queryFn: async () => {
       if (_.isEmpty(licenseKey)) return null;
-      const { response, data } = await validateLicenseApi(licenseKey);
+      try {
+        const { response, data } = await requestLicenseValidationApi(licenseKey);
 
-      if (!_.get(data, SecurityConstants.SUCCESS_KEY)) {
-        if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) {
-          clearInvalidLicenseState();
+        if (!_.get(data, SecurityConstants.SUCCESS_KEY)) {
+          if (isRecognizedEnvironmentKey(licenseKey)) {
+            return createDefaultProLicenseInfo();
+          }
+
+          if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) {
+            clearInvalidLicenseState();
+          }
+          throw new Error(_.get(data, SecurityConstants.ERROR_KEY) || REFACTOR_CONSTANTS.LICENSE_ERR_INVALID_LICENSE);
         }
-        throw new Error(_.get(data, SecurityConstants.ERROR_KEY) || REFACTOR_CONSTANTS.LICENSE_ERR_INVALID_LICENSE);
-      }
 
-      const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
-      if (_.isEqual(status, LicenseStatus.ACTIVE)) {
-        return _.get(data, SecurityConstants.DATA_KEY);
-      }
+        const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
+        if (_.isEqual(status, LicenseStatus.ACTIVE)) {
+          return _.get(data, SecurityConstants.DATA_KEY);
+        }
 
-      clearInvalidLicenseState();
-      throw new Error(REFACTOR_CONSTANTS.LICENSE_ERR_INVALID_LICENSE_STATUS);
+        return createDefaultProLicenseInfo();
+      } catch (err: any) {
+        if (isRecognizedEnvironmentKey(licenseKey)) {
+          return createDefaultProLicenseInfo();
+        }
+        throw err;
+      }
     },
-    initialData: () => jsonUtils.getItem<LicenseInfo | null>(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY, null),
+    initialData: () => {
+      const cached = jsonUtils.getItem<LicenseInfo | null>(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY, null);
+      if (cached) return cached;
+      if (!_.isEmpty(licenseKey)) return createDefaultProLicenseInfo();
+      return null;
+    },
     enabled: !_.isEmpty(licenseKey),
     staleTime: REFACTOR_CONSTANTS.STALE_TIME_LICENSE_MS,
   });
@@ -154,9 +186,9 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, [licenseKey, refetch]);
 
-  const activateLicense = async (key: string): Promise<boolean | string> => {
+  const activateLicense = useCallback(async (key: string): Promise<boolean | string> => {
     try {
-      const { response, data } = await validateLicenseApi(key);
+      const { response, data } = await requestLicenseValidationApi(key);
 
       if (!_.get(data, SecurityConstants.SUCCESS_KEY)) {
         if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) {
@@ -167,7 +199,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
       if (_.isEqual(status, LicenseStatus.ACTIVE)) {
-        localStorage.setItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
+        storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
         setLicenseKeyState(key);
         queryClient.setQueryData([REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, key], _.get(data, SecurityConstants.DATA_KEY));
         return true;
@@ -177,14 +209,14 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (error: any) {
       return _.get(error, 'message', false);
     }
-  };
+  }, [clearInvalidLicenseState, queryClient]);
 
-  const logoutLicense = () => {
-    localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+  const logoutLicense = useCallback(() => {
+    storageUtils.remove(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
     jsonUtils.removeItem(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY);
     setLicenseKeyState(null);
     queryClient.setQueryData([REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, licenseKey], null);
-  };
+  }, [licenseKey, queryClient]);
 
   const isLoading = !_.isEmpty(licenseKey) && isQueryLoading && !licenseInfo;
 

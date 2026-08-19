@@ -1,7 +1,7 @@
-import React, { useState, useEffect, FC, FormEvent } from 'react';
+import React, { useState, useEffect, FC, FormEvent, useCallback, useMemo } from 'react';
 import { useLicense } from '../contexts/LicenseContext';
 import { KeyRound, Loader2, AlertCircle, Check, X } from 'lucide-react';
-import { SecurityMessages, PlanType, SecurityConstants, LicenseStatus } from '../constants/security';
+import { SecurityMessages, PlanType, SecurityConstants, LicenseStatus, getClientEnvironmentLicenseKey } from '../constants/security';
 import _ from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -53,18 +53,12 @@ const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
   );
 };
 
-export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children }) => {
   const { licenseInfo, isLoading, activateLicense, logoutLicense } = useLicense();
-  const [inputKey, setInputKey] = useState(() => {
-    const envKey =
-      (import.meta as any).env?.VITE_LICENSE_KEY ||
-      (import.meta as any).env?.VIDIFY_LICENSE_KEY ||
-      (import.meta as any).env?.LICENSE_KEY;
-    return !_.isEmpty(envKey) ? _.trim(envKey) : SecurityConstants.DEFAULT_LICENSE_KEY;
-  });
-  const [errorMsg, setErrorMsg] = useState(SecurityConstants.EMPTY_STRING);
-  const [successMsg, setSuccessMsg] = useState(SecurityConstants.EMPTY_STRING);
-  const [isActivating, setIsActivating] = useState(false);
+  const [inputKey, setInputKey] = useState<string>(getClientEnvironmentLicenseKey);
+  const [errorMsg, setErrorMsg] = useState<string>(SecurityConstants.EMPTY_STRING);
+  const [successMsg, setSuccessMsg] = useState<string>(SecurityConstants.EMPTY_STRING);
+  const [isActivating, setIsActivating] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isLoading && _.isNil(licenseInfo)) {
@@ -78,20 +72,7 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [isLoading, licenseInfo]);
 
-  useEffect(() => {
-    const cleanKey = _.trim(inputKey);
-    if (_.isNil(licenseInfo) && !isLoading && !isActivating && !_.isEmpty(cleanKey) && _.isEmpty(errorMsg)) {
-      setIsActivating(true);
-      void activateLicense(cleanKey).then((result) => {
-        setIsActivating(false);
-        if (result !== true && _.isString(result)) {
-          setErrorMsg(result);
-        }
-      });
-    }
-  }, [licenseInfo, isLoading, isActivating, inputKey, errorMsg, activateLicense]);
-
-  const handleFormSubmit = async (e: FormEvent) => {
+  const handleFormSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     const cleanKey = _.trim(inputKey);
     if (_.isEmpty(cleanKey)) return;
@@ -108,9 +89,17 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
       setTimeout(() => setSuccessMsg(SecurityConstants.EMPTY_STRING), SecurityConstants.TOAST_DURATION);
     }
     setIsActivating(false);
-  };
+  }, [activateLicense, inputKey]);
 
-  if (isLoading || (isActivating && _.isNil(licenseInfo) && _.isEmpty(errorMsg))) {
+  const isProPlan = useMemo(() => {
+    return _.includes(_.get(licenseInfo, 'plan_type', SecurityConstants.EMPTY_STRING), PlanType.PRO);
+  }, [licenseInfo]);
+
+  const isRevoked = useMemo(() => {
+    return _.isEqual(_.get(licenseInfo, 'status'), LicenseStatus.REVOKED);
+  }, [licenseInfo]);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-955 text-slate-205">
         <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
@@ -186,9 +175,6 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
       </>
     );
   }
-
-  const isProPlan = _.includes(licenseInfo.plan_type, PlanType.PRO);
-  const isRevoked = _.isEqual(licenseInfo.status, LicenseStatus.REVOKED);
 
   return (
     <>

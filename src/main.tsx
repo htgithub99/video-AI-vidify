@@ -81,8 +81,10 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
   }
 };
 
+import { storageUtils } from "./lib/storage";
+
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const licenseKey = localStorage.getItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY;
+  const licenseKey = storageUtils.get(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY;
   const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
   
   const requestInit = init || {};
