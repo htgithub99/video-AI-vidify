@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { SecurityConstants } from "../constants";
+import { SecurityConstants, REFACTOR_CONSTANTS } from "../constants";
 
 const COOKIE_SEPARATOR = ";";
 const COOKIE_VALUE_SEPARATOR = "=";
@@ -20,8 +20,9 @@ const getCookieDomains = (): string[] => _.compact([
 ]);
 
 export const clearBrowserLicenseSession = (): void => {
-  window.localStorage.clear();
-  window.sessionStorage.clear();
+  window.sessionStorage.removeItem(SecurityConstants.SESSION_TOKEN_KEY);
+  window.localStorage.removeItem(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
+  window.localStorage.removeItem(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY);
 
   _.forEach(_.split(document.cookie, COOKIE_SEPARATOR), (cookie) => {
     const cookieName = _.trim(_.first(_.split(cookie, COOKIE_VALUE_SEPARATOR)) || SecurityConstants.EMPTY_STRING);

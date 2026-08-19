@@ -78,6 +78,19 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [isLoading, licenseInfo]);
 
+  useEffect(() => {
+    const cleanKey = _.trim(inputKey);
+    if (_.isNil(licenseInfo) && !isLoading && !isActivating && !_.isEmpty(cleanKey) && _.isEmpty(errorMsg)) {
+      setIsActivating(true);
+      void activateLicense(cleanKey).then((result) => {
+        setIsActivating(false);
+        if (result !== true && _.isString(result)) {
+          setErrorMsg(result);
+        }
+      });
+    }
+  }, [licenseInfo, isLoading, isActivating, inputKey, errorMsg, activateLicense]);
+
   const handleFormSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const cleanKey = _.trim(inputKey);
@@ -97,7 +110,7 @@ export const LicenseActivation: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsActivating(false);
   };
 
-  if (isLoading) {
+  if (isLoading || (isActivating && _.isNil(licenseInfo) && _.isEmpty(errorMsg))) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-955 text-slate-205">
         <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
