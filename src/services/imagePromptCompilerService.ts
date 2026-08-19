@@ -1,10 +1,10 @@
 import _ from "lodash";
-import { IMAGE_PROMPT_COMPILER_CONFIG } from "../constants/config";
-import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
-import { resolveStylePreset } from "../constants/stylePresets";
-import { resolveSceneCharacterIds } from "./sceneReferenceService";
-import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
-import { appendImagePromptAspectRatio, deduplicatePromptSentences, sanitizeImagePrompt } from "./imagePromptQualityService";
+import { IMAGE_PROMPT_COMPILER_CONFIG } from "../constants/config.js";
+import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes.js";
+import { resolveStylePreset } from "../constants/stylePresets.js";
+import { resolveSceneCharacterIds } from "./sceneReferenceService.js";
+import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
+import { appendImagePromptAspectRatio, deduplicatePromptSentences, sanitizeImagePrompt } from "./imagePromptQualityService.js";
 
 export interface ImagePromptCompilerOptions {
   aspectRatio?: string;
@@ -30,13 +30,7 @@ const compactScriptSource = (value: unknown): string => {
   return _.isEmpty(str) ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
-const THREE_D_STYLE_PATTERN = /(?:\b3d\b|donghua|xianxia|unreal engine|tien[_ ]hiep)/i;
-const CHIBI_CHARACTER_TERMS_PATTERN =
-  /\b(?:adorable\s+)?chibi(?:\s+style)?\b|\b\d+[- ]head[- ]tall\s+chibi\s+proportions?\b|\btiny\s+(?:cute\s+)?hands?\s+and\s+feet\b|\boversized\s+sparkling\s+eyes\b/gi;
-const NATURAL_3D_ANATOMY_LOCK = "Natural adult 3D proportions, anatomically plausible hands, no chibi";
-
-const getCharacterIdentityProfile = (character: CharacterConfig, scene: StoryboardScene, targetStyle?: string): string => {
-  const stage = _.find(character.timelineStages, (item) => _.isEqual(item.id, scene.characterStage) || _.isEqual(item.label, scene.characterStage));
+const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: string): string => {
   const details = _.compact([
     character.genderPresentation,
     character.ageRange,
@@ -46,38 +40,43 @@ const getCharacterIdentityProfile = (character: CharacterConfig, scene: Storyboa
     character.eyes,
     character.nose,
     character.hair,
-    character.signatureClothing,
     character.accessories,
-    character.colorPalette,
-    character.silhouette,
-    stage?.outfit,
-    stage?.visibleCondition,
-    character.description,
   ]);
   const identity = _.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
-  const styleSafeIdentity = THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
+  const styleSafeIdentity = IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
     ? _.trim(
         identity
-          .replace(CHIBI_CHARACTER_TERMS_PATTERN, "")
-          .replace(/\s*,\s*,+/g, ", ")
-          .replace(/^\s*,\s*|\s*,\s*$/g, ""),
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.CHIBI_CHARACTER_TERMS_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING)
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_TARGET)
+          .replace(IMAGE_PROMPT_COMPILER_CONFIG.TRIM_COMMA_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING),
       )
     : identity;
-  return compactWords(styleSafeIdentity, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS * 2);
+  return compactWords(styleSafeIdentity, _.multiply(IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS, 2));
+};
+
+const getSceneWardrobe = (character: CharacterConfig, scene: StoryboardScene): string => {
+  const stage = _.find(character.timelineStages, (item) => _.isEqual(item.id, scene.characterStage) || _.isEqual(item.label, scene.characterStage));
+  const outfit = _.trim(_.toString(stage?.outfit || character.signatureClothing));
+  return outfit ? `${IMAGE_PROMPT_COMPILER_CONFIG.WEARING_PREFIX}${outfit}` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+};
+
+const resolveSceneCharacters = (scene: StoryboardScene, characters?: CharacterConfig[]): CharacterConfig[] => {
+  if (_.isEmpty(characters)) return [];
+  const characterIds = resolveSceneCharacterIds(scene, characters);
+  return !_.isEmpty(characterIds)
+    ? _.filter(characters, (character) => _.includes(characterIds, character.id))
+    : _.isEqual(_.size(characters), IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_SUBJECT_COUNT) && !_.isEmpty(scene.visibleAction || scene.visualIntent || scene.script)
+      ? characters
+      : [];
 };
 
 const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptCompilerOptions): string => {
   if (!_.isEmpty(options.characters)) {
-    const characterIds = resolveSceneCharacterIds(scene, options.characters);
-    const sceneCharacters = !_.isEmpty(characterIds)
-      ? _.filter(options.characters, (character) => _.includes(characterIds, character.id))
-      : _.isEqual(_.size(options.characters), 1) && !_.isEmpty(scene.visibleAction || scene.visualIntent || scene.script)
-        ? options.characters
-        : [];
+    const sceneCharacters = resolveSceneCharacters(scene, options.characters);
     const descriptions = _.compact(
       _.map(sceneCharacters, (character) => {
         const name = _.trim(_.get(character, "name", IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING));
-        const desc = getCharacterIdentityProfile(character, scene, options.targetStyle);
+        const desc = getCharacterIdentityProfile(character, options.targetStyle);
         if (_.isEmpty(name) && _.isEmpty(desc)) return null;
         return desc ? `${name ? `${name}: ` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING}${desc}` : name;
       }),
@@ -90,6 +89,9 @@ const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptC
   }
   return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
 };
+
+const resolveSceneWardrobeDirective = (scene: StoryboardScene, characters?: CharacterConfig[]): string =>
+  _.join(_.compact(_.map(resolveSceneCharacters(scene, characters), (character) => getSceneWardrobe(character, scene))), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR);
 
 const getSceneNarrativeFallback = (scene: StoryboardScene): string => compactScriptSource(scene.script || scene.subtitle);
 
@@ -122,6 +124,7 @@ const resolveSceneEnvironment = (scene: StoryboardScene, visualBible?: VisualBib
 export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptCompilerOptions = {}): string => {
   const preset = resolveStylePreset(options.targetStyle);
   const characterDirective = resolveCharacterDirective(scene, options);
+  const wardrobeDirective = resolveSceneWardrobeDirective(scene, options.characters);
   const environment = resolveSceneEnvironment(scene, options.visualBible);
   const visualIntent = compactSceneField(scene.visualIntent);
   const visibleAction = compactSceneField(scene.visibleAction);
@@ -131,17 +134,21 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const narrativeFallback = getSceneNarrativeFallback(scene);
   const sceneVariation = compactWords(
     _.join(
-      _.compact(!_.isEmpty(visibleAction) ? [visibleAction, reaction, environment] : [visualIntent, reaction, environment, narrativeFallback]),
+      _.compact(
+        !_.isEmpty(visibleAction)
+          ? [visibleAction, wardrobeDirective, reaction, environment]
+          : [visualIntent, wardrobeDirective, reaction, environment, narrativeFallback],
+      ),
       IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
     ),
-    42,
+    IMAGE_PROMPT_COMPILER_CONFIG.SCENE_VARIATION_MAX_WORDS,
   );
 
   const promptParts = [
     preset.positivePrompt,
     characterDirective,
     characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
-    THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
+    IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     sceneVariation,
     _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
     IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
@@ -150,14 +157,8 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
 
   const rawPrompt = _.join(_.compact(promptParts), IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
   const cleanedPrompt = deduplicatePromptSentences(sanitizeImagePrompt(rawPrompt))
-    .replace(
-      /\. preserving the same face, hair, outfit, and proportions as every other scene\./i,
-      ", preserving the same face, hair, outfit, and proportions as every other scene.",
-    )
-    .replace(
-      /\. Natural adult 3D proportions, anatomically plausible hands, no chibi\./i,
-      ", with natural adult 3D proportions and anatomically plausible hands, never chibi.",
-    );
+    .replace(IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_TARGET)
+    .replace(IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_TARGET);
   return appendImagePromptAspectRatio(cleanedPrompt, options.aspectRatio);
 };
 

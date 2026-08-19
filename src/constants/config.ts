@@ -355,9 +355,21 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   COMPOSITION_PREFIX: "Composition: ",
   LIGHTING_PREFIX: "Scene-appropriate lighting: ",
   CHARACTER_IDENTITY_MAX_WORDS: 24,
-  CHARACTER_CONSISTENCY_LOCK: "preserving the same face, hair, outfit, and proportions as every other scene",
-  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs, distorted face, hairstyle or outfit changes",
+  CHARACTER_CONSISTENCY_LOCK: "preserving the same name, face, hair, distinguishing marks, and proportions as every other scene",
+  CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs, distorted face, changed hairstyle, or wardrobe unrelated to the current scene",
   STORY_FIDELITY_LOCK: "Keep the narrated setting, era, action, and props; add no unrelated genre elements",
+  SCENE_VARIATION_MAX_WORDS: 42,
+  WEARING_PREFIX: "wearing ",
+  THREE_D_STYLE_PATTERN: /(?:\b3d\b|donghua|xianxia|unreal engine|tien[_ ]hiep)/i,
+  CHIBI_CHARACTER_TERMS_PATTERN: /\b(?:adorable\s+)?chibi(?:\s+style)?\b|\b\d+[- ]head[- ]tall\s+chibi\s+proportions?\b|\btiny\s+(?:cute\s+)?hands?\s+and\s+feet\b|\boversized\s+sparkling\s+eyes\b/gi,
+  NATURAL_3D_ANATOMY_LOCK: "Natural adult 3D proportions, anatomically plausible hands, no chibi",
+  CONSISTENCY_REPLACE_PATTERN: /\. preserving the same name, face, hair, distinguishing marks, and proportions as every other scene\./i,
+  CONSISTENCY_REPLACE_TARGET: ", preserving the same name, face, hair, distinguishing marks, and proportions as every other scene.",
+  ANATOMY_REPLACE_PATTERN: /\. Natural adult 3D proportions, anatomically plausible hands, no chibi\./i,
+  ANATOMY_REPLACE_TARGET: ", with natural adult 3D proportions and anatomically plausible hands, never chibi.",
+  CLEAN_COMMA_REPLACE_PATTERN: /\s*,\s*,+/g,
+  CLEAN_COMMA_REPLACE_TARGET: ", ",
+  TRIM_COMMA_PATTERN: /^\s*,\s*|\s*,\s*$/g,
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {
@@ -371,6 +383,27 @@ export const VISUAL_CONTINUITY_CONFIG = {
   PROP_ID_PREFIX: "prop_",
   CHARACTER_ID_PREFIX: "char_",
   EMPTY_STAGE_ID: "base",
+  GENERIC_CHARACTER_NAME_PATTERN: /^(?:you|main character|protagonist|character|woman|man|female(?: character)?|male(?: character)?|former prisoner|hiring manager)$/i,
+  FALLBACK_NAMES: {
+    FEMALE: "Linh",
+    MALE: "Minh",
+    DEFAULT: "An",
+  },
+  GENDER_FEMALE_KEYWORD: "female",
+  GENDER_MALE_KEYWORD: "male",
+  CONTEXT_PICK_PREVIOUS_KEYS: [
+    "id", "characterIds", "characterStage", "locationId", "propIds", "visibleAction",
+    "characterStateAfter", "shotSize", "cameraAngle", "composition", "callbackId",
+  ] as const,
+  CONTEXT_PICK_NEXT_KEYS: [
+    "id", "characterIds", "characterStage", "locationId", "propIds", "visibleAction",
+    "characterStateBefore", "shotSize", "cameraAngle", "composition", "callbackId",
+  ] as const,
+  ERROR_PREFIXES: {
+    UNKNOWN_CHARACTER: "unknown_character:",
+    UNKNOWN_LOCATION: "unknown_location:",
+    UNKNOWN_PROP: "unknown_prop:",
+  },
   REQUIRED_REFERENCE_VIEWS: ["front", "side", "three_quarter", "expression"],
   TIMELINE_STAGES: [
     { id: "hopeful", label: "hopeful", expressionRange: "open and hopeful", posture: "upright", visibleCondition: "composed" },
