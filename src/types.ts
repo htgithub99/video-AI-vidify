@@ -1050,8 +1050,8 @@ export enum GeminiChatSelector {
 }
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image: "generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^=\"blob:\"], model-response img[src*=\"googleusercontent\"]",
-  video: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
+  image: "download-generated-image-button, [data-test-id=\"download-generated-image-button\"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^=\"blob:\"], model-response img[src*=\"googleusercontent\"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)",
+  video: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
   all: "img, video",
 } as const;
 

@@ -686,7 +686,7 @@ export const GEMINI_CHAT_VIDEO_SELECTORS = {
   PLUS_BUTTON: 'button:has(mat-icon[data-mat-icon-name="add"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon:has-text("add")), button:has(mat-icon[data-mat-icon-name="attach_file"]), button:has(mat-icon[fonticon="attach_file"]), button[aria-label*="Mở rộng menu" i], button[aria-label*="Tuỳ chọn" i], button[aria-label*="Tải lên" i], button[aria-label*="Thêm tệp" i], button[aria-label*="Upload" i], button[data-test-id*="plus" i], button[data-test-id*="attach" i], input-area button:first-child, .input-area button:first-child',
   UPLOAD_MENU_ITEM: 'button[data-test-id="local-images-files-uploader-button"], images-files-uploader button, button[aria-label*="Tải tệp lên" i], [data-test-id="uploader-images-files-button-advanced"] button, button[data-test-id="hidden-local-image-upload-button"], button.hidden-local-file-image-selector-button, [role="menuitem"]:has-text("Tải tệp"), [role="menuitem"]:has-text("Upload"), button:has-text("Tải tệp")',
   PROCESSING: "async-processing-chip",
-  GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src]",
+  GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
 } as const;
 
 export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
@@ -766,6 +766,23 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   VIDEO_TIMEOUT_ERROR: "Gemini chưa trả về video. Hãy thử lại sau.",
   IMAGE_TIMEOUT_ERROR: "Gemini chưa trả về ảnh. Hãy thử lại sau.",
   GENERATION_REJECTED_ERROR: "Gemini không thể tạo nội dung này. Hãy điều chỉnh mô tả và thử lại.",
+  FINISH_POLL_INTERVAL_MS: 1000,
+  BUTTON_DOWNLOAD_TIMEOUT_MS: 8000,
+  MIN_VALID_MEDIA_LENGTH: 200,
+  MIN_SCREENSHOT_LENGTH: 500,
+  DOWNLOAD_BUTTON_SELECTORS: [
+    "download-generated-image-button button",
+    "download-generated-image-button",
+    'gem-icon-button[data-test-id="download-generated-image-button"] button',
+    'gem-icon-button[data-test-id="download-generated-image-button"]',
+    'button[aria-label*="Tải xuống" i]',
+    'button[aria-label*="Download" i]',
+    'button[data-test-id*="download" i]',
+    "a[download]",
+  ],
+  EXCLUDED_IMAGE_SELECTOR: "img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon), img.image",
+  BUSY_ELEMENT_SELECTOR: '[aria-busy="true"], thinking-overlay, async-processing-chip',
+  BUTTON_DOWNLOAD_LOG: "[GeminiChat] Tải media thành công qua nút Download của Gemini.",
   GENERATION_ERROR_PATTERNS: [
     "i'm unable to create images",
     "i am unable to create images",
