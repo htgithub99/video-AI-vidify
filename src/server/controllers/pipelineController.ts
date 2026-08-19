@@ -1159,9 +1159,9 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       : languageIntegrityFailed
       ? (isVi ? PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_VI : PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID_EN)
       : missingFreeAiKeys
-      ? (isVi ? "Chưa có khóa Groq hoặc Cerebras miễn phí; Gemini dự phòng cũng không phản hồi. Hãy thêm ít nhất một khóa free trong Cài đặt rồi tiếp tục dự án." : "No free Groq or Cerebras key is configured, and the Gemini fallback also failed. Add at least one free key in Settings, then resume the project.")
+      ? (isVi ? "Chưa có khóa Groq hoặc Cerebras miễn phí và Gemini dự phòng không phản hồi. Vui lòng thêm ít nhất một khóa miễn phí trong phần cài đặt rồi tiếp tục dự án." : "No free Groq or Cerebras key is configured, and the Gemini fallback also failed. Add at least one free key in Settings, then resume the project.")
       : attemptedFreeAi
-        ? (isVi ? "Các AI miễn phí đang tạm hết hạn mức hoặc không phản hồi. Hệ thống đã thử toàn bộ model miễn phí trước Gemini; hãy tiếp tục lại dự án sau ít phút." : "The free AI providers are temporarily rate-limited or unavailable. All free models were tried before Gemini; resume the project in a few minutes.")
+        ? (isVi ? "Các dịch vụ AI miễn phí đang tạm hết hạn mức hoặc không phản hồi. Hệ thống đã thử toàn bộ mô hình trước Gemini, vui lòng tiếp tục lại dự án sau ít phút." : "The free AI providers are temporarily rate-limited or unavailable. All free models were tried before Gemini; resume the project in a few minutes.")
         : getGeminiUserMessage(error, isVi);
     res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
       error: errorMessage,
