@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import _ from "lodash";
+import { toast } from "sonner";
 import {
   VideoProject,
   ProjectInputType,
@@ -282,7 +283,7 @@ export function useAutoVideoPipeline(
   const startPipeline = async (config: PipelineConfig) => {
     if (processingRef.current) return;
     if (_.isEmpty(_.trim(config.scriptContent))) {
-      alert(T.alertEmptyScript);
+      toast.warning(T.alertEmptyScript);
       return;
     }
     processingRef.current = true;
@@ -296,7 +297,7 @@ export function useAutoVideoPipeline(
     const pipelineRunLease = acquirePipelineRunLease(pipelineTargetKey);
     if (!pipelineRunLease.acquired) {
       processingRef.current = false;
-      alert(REFACTOR_CONSTANTS.ERR_PIPELINE_ALREADY_RUNNING);
+      toast.warning(REFACTOR_CONSTANTS.ERR_PIPELINE_ALREADY_RUNNING);
       return;
     }
 
