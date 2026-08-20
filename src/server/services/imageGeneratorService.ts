@@ -862,13 +862,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 const isCaptchaOrChallengeActive = async (page: Page): Promise<boolean> => {
   if (page.isClosed()) return false;
   const currentUrl = page.url();
-  if (
-    _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.CHALLENGE_URL_KEYWORD) ||
-    _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.SORRY_URL_KEYWORD) ||
-    _.includes(currentUrl, GEMINI_CHAT_RECOVERY_CONFIG.ACCOUNTS_URL_KEYWORD)
-  ) {
-    return true;
-  }
+  const isChallengeUrl = _.some([GEMINI_CHAT_RECOVERY_CONFIG.CHALLENGE_URL_KEYWORD, GEMINI_CHAT_RECOVERY_CONFIG.SORRY_URL_KEYWORD, GEMINI_CHAT_RECOVERY_CONFIG.ACCOUNTS_URL_KEYWORD], kw => _.includes(currentUrl, kw));
+  if (isChallengeUrl) return true;
   try {
     const hasChallengeFrame =
       (await page.locator('iframe[src*="recaptcha"], iframe[src*="challenge"], iframe[src*="arkose"], #captcha, div[class*="captcha"]').count()) > 0;
@@ -1071,11 +1066,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
             success = true;
             consecutiveGeminiErrors = 0;
           }
-          if (
-            base64Result &&
-            !_.isEqual(visualConfig.generateType, GenerateType.Video) &&
-            !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio)
-          ) {
+          const isAspectRatioMismatch = base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video) && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio);
+          if (isAspectRatioMismatch) {
             appLog(`[GeminiChat] Ảnh đã tạo có tỉ lệ hơi khác (${visualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`);
           }
           if (!base64Result) {
@@ -1146,7 +1138,7 @@ const getBatchItemVisualConfig = (
   item: BatchImageItem,
   visualConfig: GeminiVisualConfig,
 ): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => {
-  const isThumbnail = _.startsWith(_.toString(item.sceneId), "thumb_") || _.startsWith(_.toString(item.sceneId), "thumbnail_");
+  const isThumbnail = _.some(["th_", "thumb_", "thumbnail_"], prefix => _.startsWith(_.toString(item.sceneId), prefix));
 
   let targetReferences: any[] = [];
   if (isThumbnail) {
@@ -1499,11 +1491,8 @@ export async function generateBatchImagesWithGeminiChat(
                 success = true;
                 batchPagesErrors.set(page, 0);
               }
-              if (
-                base64Result &&
-                !_.isEqual(itemVisualConfig.generateType, GenerateType.Video) &&
-                !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio)
-              ) {
+              const isBatchAspectRatioMismatch = base64Result && !_.isEqual(itemVisualConfig.generateType, GenerateType.Video) && !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio);
+              if (isBatchAspectRatioMismatch) {
                 appLog(
                   `[GeminiChat Batch] Ảnh đã tạo cho scene ${item.sceneId} có tỉ lệ hơi khác (${itemVisualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`,
                 );

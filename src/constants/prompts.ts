@@ -200,7 +200,6 @@ export const getOptimizePromptsBatchPrompt = (
   continuityContext: string = "",
   locationLibraryJson: string = "",
   propLibraryJson: string = "",
-  correctionIssuesJson: string = "",
 ): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
 
 ${UNTRUSTED_INPUT_RULE}
@@ -226,12 +225,14 @@ ${referenceStyle || visualStyle || "Use one coherent visual style for every pers
 ${getPromptDirectiveSection(backgroundDirective, textDirective, focusDirective)}
 
 [GEMINI PROMPT GOLDEN FORMULA - DEEP STORY & DIALOGUE ALIGNMENT]
-Write one natural, highly descriptive English paragraph in this exact 5-block order:
+Write one natural, continuous English paragraph of 70-120 words in this exact order. Do not print section labels:
 1. [Style Anchor]: Start with the PROJECT STYLE LOCK instruction at the beginning. NEVER prefix the prompt with style labels like "Line art:", "Palette:", "Rendering:", or "Medium:".
-2. [Main Subject / Character]: Describe the main subject or recurring character naturally (role, hairstyle, skin tone, clothing matching the scene). Never use raw ID tags like char_1 in the prompt text.
-3. [Accurate Dialogue & Story Action]: The prompt MUST literally and visually depict what is being spoken in the scene's narration/dialogue. Describe the characters actively performing the specific action, movement, emotional reaction, or dramatic interaction corresponding to this script moment.
-4. [Story Environment & Props]: If Background Mode is 'contextual' or 'auto', build a rich, detailed story environment with specific objects and lighting that visually represent the scene narration. If Background Mode is 'white' or 'minimal', enforce pure solid white background (#FFFFFF).
-5. [Camera & Negative Constraints]: State shot size, camera angle, and end with: "Completely text-free, strictly no text, no words, no letters." (unless text is explicitly enabled).
+2. [Character Identity]: Name every recurring character and include only the fixed identity markers from the matching character card. Clothing follows the current place, time and activity while preserving established signature markers. Never use raw IDs such as char_1 in prompt prose.
+3. [Visible Action]: Depict one concrete physical action that directly illustrates the exact current narration beat.
+4. [Visible Reaction]: Describe readable facial expression and body language caused by that action; never use an abstract emotion label by itself.
+5. [Environment and Story Evidence]: Show the specific location, props and visible real-world evidence that make the narration understandable without captions. For contextual/auto backgrounds, never substitute an empty studio backdrop. For white/minimal mode, use pure solid white (#FFFFFF).
+6. [Composition and Lighting]: State shot size, camera angle, subject placement, depth relationship and physically plausible scene lighting once.
+7. [Negative Constraints]: End with: "Completely text-free, strictly no text, no words, no letters, no logos, no watermark, no split screen, no collage, no duplicated character." unless text is explicitly enabled.
 
 [HARD RULES]
 - STYLE SCOPE: The PROJECT STYLE LOCK controls only rendering language (medium, linework/materials, palette behavior, lighting and visual quality). It MUST NOT overwrite the story-defined character identity, age, gender presentation, costume, era, location, props, or action. When style and character/story details appear to conflict, character cards and the current scene narration take precedence.
@@ -240,13 +241,11 @@ Write one natural, highly descriptive English paragraph in this exact 5-block or
 - STRICT NARRATIVE GROUNDING: Every image MUST feel like a direct visual illustration of the dialogue/narration. Avoid vague or static poses when the script describes dynamic events.
 - STRICT PROMPT PURITY: NEVER output rigid style labels ("Line art:", "Palette:", "Rendering:") or theoretical anatomy ("stickfigure construction", "round head shape", "pill shaped torso").
 - 100% USER CONFIGURATION ADHERENCE: If user selected contextual background, NEVER output solid white background; always draw the story environment. If user selected white/minimal background, NEVER render room outlines or scenery. If user selected no_text, NEVER render text.
-- NO VIETNAMESE IN PROMPT: The image prompt, 'visualIntent', and 'visibleAction' MUST be written ENTIRELY in English. Do NOT inject Vietnamese text into the visual prompt.
+- NO VIETNAMESE IN PROMPT: The image prompt, visualIntent, visibleAction, reaction, and composition MUST be written ENTIRELY in English. Do NOT inject Vietnamese text into the visual prompt.
 - Do not include --ar in prompt text because the engine handles aspect ratio separately.
 
-${correctionIssuesJson ? `[ONE CORRECTION PASS]\nFix only these issues and return the full result again:\n${correctionIssuesJson}` : ""}
-
 Output ONLY this JSON array shape:
-[{"id":"scene_id","prompt":"complete concise Gemini prompt without --ar","visualIntent":"clear English description of what viewers understand","visibleAction":"one clear English physical action illustrating the dialogue","characterIds":["char_1"],"expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"shotPurpose":"action","shotSize":"medium shot","cameraAngle":"eye-level angle","composition":"clear subject placement","locationId":"loc_id or empty string","propIds":["prop_id"],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate light"}]
+[{"id":"scene_id","prompt":"one continuous 70-120 word English paragraph following the required order without labels or --ar","visualIntent":"clear English description of what viewers understand","visibleAction":"one clear English physical action illustrating the dialogue","reaction":"visible English facial expression and body-language response","characterIds":["char_1"],"expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"shotPurpose":"action","shotSize":"medium shot","cameraAngle":"eye-level angle","composition":"clear subject placement and depth relationship","locationId":"loc_id or empty string","propIds":["prop_id"],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate physically plausible light"}]
 
 Input scenes:
 ${chunkJson}`;

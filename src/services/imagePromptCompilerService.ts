@@ -5,6 +5,7 @@ import { resolveStylePreset } from "../constants/stylePresets.js";
 import { resolveSceneCharacterIds } from "./sceneReferenceService.js";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
 import { appendImagePromptAspectRatio, deduplicatePromptSentences, sanitizeImagePrompt } from "./imagePromptQualityService.js";
+import { createSoftStyleDirective } from "./styleReferenceService.js";
 
 export interface ImagePromptCompilerOptions {
   aspectRatio?: string;
@@ -122,7 +123,17 @@ const resolveSceneEnvironment = (scene: StoryboardScene, visualBible?: VisualBib
 };
 
 export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptCompilerOptions = {}): string => {
+  const aiAuthoredPrompt = _.trim(_.toString(scene.prompt));
+  if (!_.isEmpty(aiAuthoredPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(aiAuthoredPrompt)) {
+    return appendImagePromptAspectRatio(
+      deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt)),
+      options.aspectRatio,
+    );
+  }
   const preset = resolveStylePreset(options.targetStyle);
+  const styleAnchor = options.visualBible?.styleProfile
+    ? createSoftStyleDirective(options.visualBible.styleProfile)
+    : preset.positivePrompt;
   const characterDirective = resolveCharacterDirective(scene, options);
   const wardrobeDirective = resolveSceneWardrobeDirective(scene, options.characters);
   const environment = resolveSceneEnvironment(scene, options.visualBible);
@@ -136,7 +147,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
     _.join(
       _.compact(
         !_.isEmpty(visibleAction)
-          ? [visibleAction, wardrobeDirective, reaction, environment]
+          ? [visibleAction, visualIntent, wardrobeDirective, reaction, environment]
           : [visualIntent, wardrobeDirective, reaction, environment, narrativeFallback],
       ),
       IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
@@ -145,7 +156,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   );
 
   const promptParts = [
-    preset.positivePrompt,
+    styleAnchor,
     characterDirective,
     characterDirective ? IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_CONSISTENCY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,

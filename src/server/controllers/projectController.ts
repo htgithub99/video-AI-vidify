@@ -502,6 +502,16 @@ function cleanupUnusedReferenceFiles(newProject: any, referencesDir: string): vo
       });
     }
 
+    if (_.isArray(newProject.storyboard)) {
+      _.forEach(newProject.storyboard, (scene: any) => {
+        addRef(scene?.assetUrl);
+        addRefList(scene?.assetUrls);
+        if (_.isArray(scene?.assetRevisions)) {
+          _.forEach(scene.assetRevisions, (revision: any) => addRef(revision?.assetUrl));
+        }
+      });
+    }
+
     const cfg = newProject.config || {};
     addRefList(cfg.referenceImages);
     addRefList(cfg.thumbnailReferenceImages);

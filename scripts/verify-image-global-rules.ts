@@ -27,10 +27,14 @@ const plannerPrompt = getOptimizePromptsBatchPrompt(
 );
 assert.match(plannerPrompt, /PROJECT STYLE LOCK/i);
 assert.match(plannerPrompt, /STRICT PROMPT PURITY/i);
-assert.match(plannerPrompt, /complete concise Gemini prompt without --ar/i);
+assert.match(plannerPrompt, /one continuous 70-120 word English paragraph/i);
+assert.match(plannerPrompt, /"reaction":"visible English facial expression and body-language response"/i);
 
 const compactCards = createPromptCharacterCards([{ id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "unused", images: ["unused"] }]);
-assert.deepEqual(compactCards, [{ id: "char_1", name: "Player", identityLock: "", usesSharedStyleCore: true }]);
+assert.equal(compactCards[0].id, "char_1");
+assert.equal(compactCards[0].name, "Player");
+assert.equal(compactCards[0].identityLock, "unused");
+assert.equal(compactCards[0].usesSharedStyleCore, true);
 assert.deepEqual(createBatchContinuityContext([{ id: "a" }, { id: "b" }, { id: "c" }], 1, 1), { previousScene: { id: "a" }, nextScene: { id: "c" } });
 
 writeVerificationLog("Global image-prompt rule assertions passed");

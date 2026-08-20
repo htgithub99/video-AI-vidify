@@ -1230,6 +1230,55 @@ export function useAutoVideoPipeline(
       const remainingVideoSlots = _.max([_.subtract(_.defaultTo(executionVisualConfig.maxVideoScenes, SecurityConstants.ZERO), existingVideoCount), SecurityConstants.ZERO])!;
       const videoSceneIds = await selectVideoSceneIds(targetScenesToGen, executionVisualConfig.generateType, remainingVideoSlots);
 
+      let unifiedBatchThumbnails: ThumbnailItem[] | null = null;
+      let unifiedThumbnailItems: Array<{
+        sceneId: string; prompt: string; generateType: GenerateType.Image;
+        referenceImages: string[]; continuityKey: string; idempotencyKey: string;
+      }> = [];
+      if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+        const reusableThumbnails = config.resumeMode && !shouldRegenerateThumbnails
+          ? _.defaultTo(newProj.thumbnails, [])
+          : [];
+        if (!_.isEmpty(reusableThumbnails) && _.every(reusableThumbnails, thumb => !_.isEmpty(thumb.imageUrl))) {
+          unifiedBatchThumbnails = _.cloneDeep(reusableThumbnails);
+          appendLog(T.logResumeThumbnails);
+        } else {
+          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_GEN);
+          const thumbnailPlan = await safeSystemFetch(API_ROUTES.PIPELINE_THUMBNAILS, {
+            rewrittenScript: realScript,
+            config: voiceUpdatedProj.config,
+            visualConfig: { ...voiceUpdatedProj.visualConfig, thumbnailReferencePrompt: currentThumbnailStyle },
+            bypassCache: true,
+          }, requestSignal);
+          unifiedBatchThumbnails = thumbnailPlan.success && _.isArray(thumbnailPlan.data?.thumbnails)
+            ? thumbnailPlan.data.thumbnails
+            : [];
+          const thumbnailReferenceImages: string[] = [];
+          unifiedThumbnailItems = _.map(
+            _.filter(unifiedBatchThumbnails, thumb => _.isEmpty(thumb.imageUrl)),
+            thumb => {
+              const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
+              const generationPrompt = createThumbnailGenerationPrompt(
+                thumb,
+                thumbnailStyle,
+                config.aspectRatio,
+                false,
+                voiceUpdatedProj.visualConfig.characters,
+              );
+              thumb.generationPrompt = generationPrompt;
+              return {
+                sceneId: thumb.id,
+                idempotencyKey: _.join([voiceUpdatedProj.id, "thumbnail", thumb.id], ":"),
+                prompt: generationPrompt,
+                generateType: GenerateType.Image,
+                referenceImages: thumbnailReferenceImages,
+                continuityKey: createThumbnailContinuityKey(),
+              };
+            },
+          );
+        }
+      }
+
       if (config.resumeMode && !shouldRegenerateSceneAssets) {
         (realScenes as VideoProject["storyboard"])!.forEach((sc, idx) => {
           if (hasSceneAsset(sc)) {
@@ -1243,7 +1292,7 @@ export function useAutoVideoPipeline(
         const checkpointProject = {
           ...voiceUpdatedProj,
           storyboard: _.cloneDeep(realScenes) as VideoProject["storyboard"],
-          thumbnails: voiceUpdatedProj.thumbnails,
+          thumbnails: _.cloneDeep(unifiedBatchThumbnails || voiceUpdatedProj.thumbnails),
         };
         imageCheckpointQueue = imageCheckpointQueue.then(() => syncProject(checkpointProject));
         return imageCheckpointQueue;
@@ -1277,7 +1326,7 @@ export function useAutoVideoPipeline(
         };
       };
 
-      if (!_.isEmpty(targetScenesToGen)) {
+      if (!_.isEmpty(targetScenesToGen) || !_.isEmpty(unifiedThumbnailItems)) {
         const runSequentialGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
           for (let i = 0; i < scenesToProcess.length; i++) {
             throwIfCancelled();
@@ -1356,12 +1405,21 @@ export function useAutoVideoPipeline(
               generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
             };
           });
-          const batchItems = sceneBatchItems;
+          const batchItems = _.concat(sceneBatchItems, unifiedThumbnailItems);
           let completedCount = SecurityConstants.ZERO;
           let batchFailureCount = SecurityConstants.ZERO;
 
           const applyResult = (result: ProjectImageResult) => {
             const imageUrl = createProjectImageUrl(result);
+            const thumbnail = _.find(unifiedBatchThumbnails || [], item => _.isEqual(item.id, result.sceneId));
+            if (thumbnail && !_.isEmpty(imageUrl)) {
+              thumbnail.imageUrl = imageUrl;
+              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_BATCH_SUCCESS
+                .replace(SecurityConstants.PLACEHOLDER_0, _.toString(_.size(_.filter(unifiedBatchThumbnails, item => !_.isEmpty(item.imageUrl)))))
+                .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(unifiedBatchThumbnails))));
+              void persistImageCheckpoint();
+              return;
+            }
             const scene = _.find(realScenes as VideoProject["storyboard"], (item) => _.isEqual(item.id, result.sceneId));
             if (_.every([scene, !_.isEmpty(imageUrl)], Boolean)) {
               scene!.assetUrl = imageUrl;
@@ -1388,6 +1446,10 @@ export function useAutoVideoPipeline(
                 if (result.success) { applyResult(result); return; }
                 batchFailureCount = _.add(batchFailureCount, SecurityConstants.DEFAULT_AMOUNT);
                 const failureReason = _.defaultTo(result.warning, REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR);
+                if (_.some(unifiedBatchThumbnails || [], item => _.isEqual(item.id, result.sceneId))) {
+                  void persistImageCheckpoint();
+                  return;
+                }
                 const failedScene = _.find(realScenes as VideoProject["storyboard"], (item) => _.isEqual(item.id, result.sceneId));
                 if (failedScene && !hasSceneAsset(failedScene)) {
                   failedScene.assetStatus = SceneAssetStatus.Failed;
@@ -1473,7 +1535,7 @@ export function useAutoVideoPipeline(
       const imageUpdatedProj = {
         ...voiceUpdatedProj,
         storyboard: realScenes as VideoProject["storyboard"],
-        thumbnails: voiceUpdatedProj.thumbnails,
+        thumbnails: unifiedBatchThumbnails || voiceUpdatedProj.thumbnails,
       };
       await syncProject(imageUpdatedProj);
 
@@ -1493,8 +1555,8 @@ export function useAutoVideoPipeline(
         }
       }
 
-      let thumbnailsList: ThumbnailItem[] = [];
-      let isThumbsCached = false;
+      let thumbnailsList: ThumbnailItem[] = unifiedBatchThumbnails || [];
+      let isThumbsCached = unifiedBatchThumbnails !== null;
       let existingThumbs: ThumbnailItem[] = [];
       if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
         existingThumbs = newProj.thumbnails!;

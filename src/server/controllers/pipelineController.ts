@@ -3334,13 +3334,43 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
   try {
     const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId, subtitleMode, audioTracks } = req.body;
     const jobId = randomUUID();
+    const safeProjectId = path.basename(_.toString(projectId));
+    const dataRoot = path.resolve(getDataDirectory());
+    const projectRoot = path.resolve(dataRoot, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId);
+    const resolveExistingAsset = (assetUrl: unknown): string => {
+      const value = _.trim(_.toString(assetUrl));
+      if (_.isEmpty(value) || _.startsWith(value, "data:")) return value;
+      const relativePath = _.trimStart(_.split(value, "?")[0], "/\\");
+      const candidate = path.resolve(dataRoot, relativePath);
+      return _.startsWith(_.toLower(candidate), _.toLower(`${projectRoot}${path.sep}`)) && fs.existsSync(candidate)
+        ? value
+        : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+    };
+    const recoverSceneAsset = (scene: any): any => {
+      if (!_.isEmpty(resolveExistingAsset(scene?.imageUrl)) || !_.isEmpty(scene?.imageBase64)) return scene;
+      const sceneId = path.basename(_.toString(scene?.id));
+      const assetType = _.toString(scene?.assetType);
+      const candidateDirectories = _.isEqual(assetType, GenerateType.Video) ? ["videos", "images"] : ["images", "videos"];
+      const candidateExtensions = _.isEqual(assetType, GenerateType.Video)
+        ? ["mp4", "webm", "mov", "jpg", "jpeg", "png", "webp"]
+        : ["jpg", "jpeg", "png", "webp", "mp4", "webm", "mov"];
+      const recoveredPath = _.find(
+        _.flatMap(candidateDirectories, directory => _.map(candidateExtensions, extension => path.join(projectRoot, directory, `${sceneId}.${extension}`))),
+        candidate => fs.existsSync(candidate) && fs.statSync(candidate).isFile(),
+      );
+      if (_.isEmpty(recoveredPath)) return scene;
+      const recoveredUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${safeProjectId}/${path.relative(projectRoot, recoveredPath!).replace(/\\/g, "/")}`;
+      logger.warn(`[Render] Recovered missing visual asset for ${sceneId}: ${recoveredUrl}`);
+      return { ...scene, imageUrl: recoveredUrl };
+    };
+    const recoveredScenes = _.map(_.castArray(scenes), recoverSceneAsset);
 
     const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
 
     await renderQueueService.addJob(
       jobId,
       {
-        scenes,
+        scenes: recoveredScenes,
         globalAudioUrl,
         globalAudioBase64,
         quality: quality as VideoQuality,
