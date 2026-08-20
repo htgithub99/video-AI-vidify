@@ -2359,6 +2359,15 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
     const audioPath = path.join(tempDir, `${ALIGN_CONFIG.AUDIO_PREFIX}${sessionId}${ALIGN_CONFIG.WAV_EXT}`);
     const scenesPath = path.join(tempDir, `${ALIGN_CONFIG.SCENES_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
     const outputPath = path.join(tempDir, `${ALIGN_CONFIG.OUTPUT_PREFIX}${sessionId}${ALIGN_CONFIG.JSON_EXT}`);
+    const removeTempAlignDirectoryIfEmpty = () => {
+      try {
+        if (fs.existsSync(tempDir) && _.isEmpty(fs.readdirSync(tempDir))) fs.rmdirSync(tempDir);
+      } catch (error: any) {
+        if (!_.includes(["ENOENT", "ENOTEMPTY", "EBUSY"], error?.code)) {
+          logger.warn(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, error);
+        }
+      }
+    };
 
     const audioBuffer = Buffer.from(audioBase64, REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding);
     fs.writeFileSync(audioPath, audioBuffer);
@@ -2383,6 +2392,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
             } catch (cleanupErr) { }
+            removeTempAlignDirectoryIfEmpty();
             return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
               success: false,
               error: getBackendMsg("VOICE_ALIGN_INSTALL_ERR", isVi).replace("{0}", installError.message),
@@ -2437,8 +2447,11 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           try {
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
             if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
           } catch (err) {
             logger.error(VOICE_ALIGN_LOGS.ERR_DELETE_TEMP_FILES, err);
+          } finally {
+            removeTempAlignDirectoryIfEmpty();
           }
         };
 
