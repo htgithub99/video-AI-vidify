@@ -1288,10 +1288,7 @@ export default function PipelineStep1(props: PipelineWizardState) {
                   } else if (engine === ImageGeneratorEngine.LabsSandbox) {
                     modelLabel = ImageModelLabel.LabsSandbox;
                   }
-                  if (
-                    project.visualConfig?.generationMode ===
-                    ImageGenerationMode.GeminiChat
-                  ) {
+                  if (project.visualConfig?.generationMode === ImageGenerationMode.GeminiChat) {
                     return `GEMINI ROOM • ${modelLabel}`;
                   }
                   return modelLabel;

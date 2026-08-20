@@ -79,10 +79,10 @@ import { createShadowComparison } from "../services/shadowComparisonService";
 import { evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
-import { createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
+import { createCharacterIdentityDescription, createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
 import { createThumbnailStyleDirective } from "../services/styleReferenceService";
-import { normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
+import { hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
 import { alignVoiceTimeline } from "../services/voiceTimelineService";
 import { assessVoiceAdvisory } from "../services/voiceQualityRepairService";
@@ -748,6 +748,18 @@ export function useAutoVideoPipeline(
           },
           visualBible: {
             ...newProj.visualBible,
+            ...(config.forceRegenerateScenes ? {
+              colorPalette: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              characterSpecs: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              landscapeSpecs: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              lightingMood: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              background: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              lineStyle: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              colorMode: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              shading: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+              textPolicy: "No readable text unless the current scene explicitly requires it.",
+              styleProfile: undefined,
+            } : {}),
             visualStyle: currentStylePreset,
             styleReferenceLocked: hasStyleReferences,
             locations: _.defaultTo(newProj.visualBible?.locations, []),
@@ -763,7 +775,9 @@ export function useAutoVideoPipeline(
         _.isEqual(character.name, PRESET_CONSTANTS.CHARACTER_NAME),
         _.isEqual(character.description, PRESET_CONSTANTS.CHARACTER_BIO),
       ]));
-      if (!isScriptCached || _.isEmpty(analyzedCharacters) || hasLegacyCharacterProfile) {
+      const hasStyleContaminatedCharacterProfile = hasStyleContaminatedCharacterLibrary(analyzedCharacters);
+      const shouldAnalyzeCharacters = !isScriptCached || config.forceRegenerateScenes || _.isEmpty(analyzedCharacters) || hasLegacyCharacterProfile || hasStyleContaminatedCharacterProfile;
+      if (shouldAnalyzeCharacters) {
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_CHAR_ANALYZE);
         const analyzeCharacterRes = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
           script: realScript,
@@ -805,6 +819,12 @@ export function useAutoVideoPipeline(
               characterImages: [],
               characterExtracted: false,
               characterConsistency: !_.isEmpty(analyzedCharacters),
+            },
+            visualBible: {
+              ...newProj.visualBible,
+              characterSpecs: _.join(_.map(analyzedCharacters, (character) => (
+                `${character.name}: ${createCharacterIdentityDescription(character)}`
+              )), "\n"),
             },
           };
           await syncProject(newProj);
@@ -1062,12 +1082,13 @@ export function useAutoVideoPipeline(
           promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
           bypassCache: true,
         }, requestSignal);
-        if (optimizeRes.success && optimizeRes.data?.storyboard) {
+        if (optimizeRes.success && optimizeRes.data?.storyboard && optimizeRes.data?.promptQa?.passed) {
           realScenes = optimizeRes.data.storyboard;
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
           shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
         } else {
+          if (config.forceRegenerateScenes) throw new Error(optimizeRes.error || optimizeRes.data?.error || REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
           appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
         }
       } else {

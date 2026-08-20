@@ -31,8 +31,11 @@ import { fetchVoiceCatalog } from "../../services/voiceCatalogService";
 import { createProjectImageUrl, generateProjectImages, hasSceneAsset, resolveSceneGenerateType, selectVideoSceneIds, type ProjectImageResult } from "../../services/projectImageGenerationService";
 import { createThumbnailGenerationPrompt, resolveThumbnailReferenceImages } from "../../services/thumbnailPromptService";
 import { acceptGeneratedThumbnail } from "../../services/thumbnailQualityPipelineService";
-import { createSceneGenerationContext } from "../../services/sceneReferenceService";
+import { createCharacterIdentityDescription, createSceneGenerationContext } from "../../services/sceneReferenceService";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
+import { compileImagePrompt } from "../../services/imagePromptCompilerService";
+import { resolveStylePreset } from "../../constants/stylePresets";
+import { hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary } from "../../services/visualContinuityService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../../services/imageGenerationContinuityService";
 import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
 import { createThumbnailStyleDirective } from "../../services/styleReferenceService";
@@ -1332,6 +1335,7 @@ export function usePipelineWizard(props: any) {
     force = false,
     isBatch = false,
     requestedGenerateType?: GenerateType.Image | GenerateType.Video,
+    rewriteBeforeGeneration = false,
   ) => {
     logAction("handleRenderSceneImage");
     const isForce = force === true;
@@ -1345,8 +1349,66 @@ export function usePipelineWizard(props: any) {
     }
     try {
       const sourceScene = _.find(project.storyboard, { id: sceneId });
-      const generationContext = sourceScene
-        ? createSceneGenerationContext({ ...sourceScene, prompt: customPrompt }, project.visualConfig)
+      let plannedScene = sourceScene ? { ...sourceScene } : undefined;
+      let generationCharacters = _.defaultTo(project.visualConfig.characters, []);
+      let generationVisualBible = project.visualBible;
+      const cleanStyle = resolveStylePreset(project.visualConfig.stylePreset || project.visualConfig.style).positivePrompt;
+
+      if (rewriteBeforeGeneration && sourceScene) {
+        if (hasStyleContaminatedCharacterLibrary(generationCharacters)) {
+          const characterResult = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
+            script: project.scriptRewritten || _.join(_.map(project.storyboard, "script"), " "),
+            visualStyle: cleanStyle,
+          });
+          if (!characterResult.success || !_.isArray(characterResult.data?.characters) || _.isEmpty(characterResult.data.characters)) {
+            throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
+          }
+          generationCharacters = normalizeCharacterLibrary(_.map(characterResult.data.characters, (character: any, index: number) => ({
+            ...character,
+            id: character.id || `char_${_.add(index, 1)}`,
+            prompt: character.prompt || character.description,
+            images: [],
+            extracted: false,
+          })));
+        }
+
+        const cleanVisualBible = {
+          ...project.visualBible,
+          colorPalette: "",
+          characterSpecs: _.join(_.map(generationCharacters, character => `${character.name}: ${createCharacterIdentityDescription(character)}`), "\n"),
+          landscapeSpecs: "",
+          lightingMood: "",
+          background: "",
+          lineStyle: "",
+          colorMode: "",
+          shading: "",
+          textPolicy: "No readable text unless the current scene explicitly requires it.",
+          styleProfile: undefined,
+          visualStyle: cleanStyle,
+        };
+        generationVisualBible = cleanVisualBible;
+        const optimizeResult = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
+          storyboard: [{ ...sourceScene, prompt: "", generationPrompt: undefined }],
+          visualConfig: { ...project.visualConfig, style: cleanStyle, referencePrompt: cleanStyle, characters: generationCharacters },
+          visualBible: cleanVisualBible,
+          aspectRatio: project.visualConfig.aspectRatio,
+          language: project.config.language,
+          bypassCache: true,
+        });
+        if (!optimizeResult.success || !_.first(optimizeResult.data?.storyboard) || !optimizeResult.data?.promptQa?.passed) {
+          throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
+        }
+        plannedScene = _.first(optimizeResult.data.storyboard) as StoryboardScene;
+        customPrompt = compileImagePrompt(plannedScene, {
+          aspectRatio: project.visualConfig.aspectRatio,
+          targetStyle: cleanStyle,
+          characters: generationCharacters,
+          visualBible: cleanVisualBible,
+        });
+      }
+
+      const generationContext = plannedScene
+        ? createSceneGenerationContext({ ...plannedScene, prompt: customPrompt }, { ...project.visualConfig, characters: generationCharacters })
         : { prompt: customPrompt, referenceImages: project.visualConfig.referenceImages || [] };
       const finalPrompt = appendImagePromptAspectRatio(generationContext.prompt, project.visualConfig.aspectRatio);
       const sceneGenerateType = requestedGenerateType
@@ -1403,7 +1465,7 @@ export function usePipelineWizard(props: any) {
         const updated = (prev.storyboard || []).map((sc) => {
           if (sc.id === sceneId) {
             return {
-              ...sc,
+              ...(plannedScene || sc),
               prompt: customPrompt,
               generationPrompt: finalPrompt,
               assetUrl: imageUrl,
@@ -1414,7 +1476,22 @@ export function usePipelineWizard(props: any) {
           }
           return sc;
         });
-        const updatedProject = { ...prev, storyboard: updated };
+        const updatedProject = {
+          ...prev,
+          storyboard: updated,
+          ...(rewriteBeforeGeneration ? {
+            visualConfig: {
+              ...prev.visualConfig,
+              style: cleanStyle,
+              referencePrompt: cleanStyle,
+              characters: generationCharacters,
+              characterPrompt: _.get(_.first(generationCharacters), "prompt", ""),
+              characterAnalysis: _.join(_.map(generationCharacters, character => `${character.name} ${character.description || ""}`), "\n"),
+              characterConsistency: !_.isEmpty(generationCharacters),
+            },
+            visualBible: generationVisualBible,
+          } : {}),
+        };
         setTimeout(() => {
           onSaveProject(updatedProject, true);
         }, 0);

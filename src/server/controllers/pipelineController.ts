@@ -143,7 +143,7 @@ import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
-import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
+import { createBatchContinuityContext, createPromptCharacterCards, createVisualPlanningPayload, getVisualShotPlanIssues, normalizeVisualShotPlan } from "../services/imagePromptPlanningService.js";
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService.js";
 import { validateCompiledImagePrompts } from "../../services/imagePromptValidationService.js";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../../services/storyboardFallbackService.js";
@@ -356,10 +356,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
   const cachedPrompts = checkCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, Boolean(req.body?.bypassCache));
   if (cachedPrompts) return res.json(cachedPrompts);
 
-  if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_PLANNING_UNAVAILABLE, retryable: true });
-  }
-
   try {
     const sourceScenes = _.filter(storyboard as StoryboardScene[], scene => !_.isEmpty(scene.script || scene.subtitle));
 
@@ -414,17 +410,47 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)),
         jsonUtils.safeStringify(resolvedVisualBible.locations || []),
         jsonUtils.safeStringify(resolvedVisualBible.props || []),
-        jsonUtils.safeStringify([]),
       );
+      const sceneIds = _.map(chunkItem, item => _.toString(_.get(item, "id")));
+      const planningString = { type: "string" } as const;
       const response = await generateContentWithRetry({
         contents: prompt,
-        config: { responseMimeType: CONTENT_TYPES.JSON },
+        config: {
+          responseMimeType: CONTENT_TYPES.JSON,
+          responseJsonSchema: {
+            type: "array",
+            minItems: chunkItem.length,
+            maxItems: chunkItem.length,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
+              properties: {
+                id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
+                visibleAction: planningString, reaction: planningString,
+                characterIds: { type: "array", items: planningString }, expectedSubjectCount: { type: "integer", minimum: 0 },
+                allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" },
+                shotPurpose: planningString, shotSize: planningString, cameraAngle: planningString, composition: planningString,
+                locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
+                continuityNotes: planningString, lighting: planningString,
+              },
+            },
+          },
+        },
         task: { capability: AiTaskCapability.VisualPlanning },
       });
       const parsed = safeParseJSON(response.text, []);
-      _.forEach(_.isArray(parsed) ? parsed : [], item => {
-        const baseScene = _.find(plannedScenes, { id: item.id });
-        if (baseScene) optimizedMap.set(item.id, normalizeVisualShotPlan(item, baseScene, {
+      const parsedItems: any[] = _.isArray(parsed) ? parsed : [];
+      const returnedById = _.keyBy(parsedItems, item => _.toString(item.id));
+      _.forEach(chunkItem, sourceItem => {
+        const sceneId = _.toString(_.get(sourceItem, "id"));
+        const baseScene = _.find(plannedScenes, { id: sceneId });
+        const returnedItem = returnedById[sceneId];
+        if (!baseScene) return;
+        if (!returnedItem) throw createAppError(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: ${sceneId}:result:missing_scene`);
+        const issues = getVisualShotPlanIssues(returnedItem, baseScene);
+        if (!_.isEmpty(issues)) throw createAppError(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: ${_.join(issues, ", ")}`);
+        optimizedMap.set(sceneId, normalizeVisualShotPlan(returnedItem, baseScene, {
           characters,
           visualBible: resolvedVisualBible,
           textMode: resolvedVisualConfig.styleTextInImageMode,
@@ -456,7 +482,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED, retryable: true, rotationLogs: error.rotationLogs });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED, retryable: false, rotationLogs: error.rotationLogs });
   }
 });
 

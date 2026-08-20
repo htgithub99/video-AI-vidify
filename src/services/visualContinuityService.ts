@@ -7,6 +7,21 @@ export interface VisualContinuityReport {
   passed: boolean;
 }
 
+const STYLE_CONTAMINATED_CHARACTER_PATTERN = /\b(?:rendering language|visual language|graphic outlines?|flat color fills?|cel shading|deadpan|anime-influenced|dot nose|rounded facial plane|chibi|stick[- ]figure|panda|mascot|donghua|xianxia|cinematic lighting)\b/i;
+
+export const hasStyleContaminatedCharacterLibrary = (characters?: CharacterConfig[]): boolean => _.some(
+  _.defaultTo(characters, []),
+  (character) => STYLE_CONTAMINATED_CHARACTER_PATTERN.test(_.join(_.compact([
+    character.description,
+    character.prompt,
+    character.faceShape,
+    character.eyes,
+    character.nose,
+    character.hair,
+    character.silhouette,
+  ]), " ")),
+);
+
 const normalizeIdentifier = (value: string, prefix: string, index: number): string => {
   const normalized = _.kebabCase(value);
   return normalized ? `${prefix}${normalized}` : `${prefix}${_.add(index, 1)}`;

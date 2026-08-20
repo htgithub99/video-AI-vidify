@@ -24,11 +24,7 @@ const resolveWorldRendering = (worldRendering: string, backgroundMode?: string):
     );
     return contextualResult || STYLE_DIRECTIVE_CONFIG.CONTEXTUAL_ENVIRONMENT_TEXT;
   }
-  if (
-    _.isEqual(backgroundMode, STYLE_DIRECTIVE_CONFIG.MINIMAL_MODE) ||
-    _.isEqual(backgroundMode, STYLE_DIRECTIVE_CONFIG.WHITE_MODE) ||
-    _.isEqual(backgroundMode, STYLE_DIRECTIVE_CONFIG.SOLID_MODE)
-  ) {
+  if (_.includes([STYLE_DIRECTIVE_CONFIG.MINIMAL_MODE, STYLE_DIRECTIVE_CONFIG.WHITE_MODE, STYLE_DIRECTIVE_CONFIG.SOLID_MODE], backgroundMode)) {
     return STYLE_DIRECTIVE_CONFIG.MINIMAL_ENVIRONMENT_TEXT;
   }
   if (_.isEqual(backgroundMode, STYLE_DIRECTIVE_CONFIG.TRANSPARENT_MODE)) {

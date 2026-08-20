@@ -62,10 +62,8 @@ export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
   const currentLock = readLock(lease.targetKey);
   const ownerId = getOwnerId();
   
-  if (
-    _.isEqual(currentLock?.runId, lease.runId) ||
-    (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)))
-  ) {
+  const isLockRenewable = _.isEqual(currentLock?.runId, lease.runId) || (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)));
+  if (isLockRenewable) {
     const refreshedLock: PipelineRunLock = {
       runId: lease.runId,
       targetKey: lease.targetKey,

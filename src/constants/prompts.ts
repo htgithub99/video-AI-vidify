@@ -280,15 +280,8 @@ export const getChapterWriterPrompt = (
   const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
   const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
 
-  if (
-    [
-      SplitStrategy.WORD,
-      SplitStrategy.ULTRADENSE,
-      SplitStrategy.HYPERDENSE,
-      SplitStrategy.SHORT_SENTENCE,
-      SplitStrategy.HIGHPACED,
-    ].includes(splitStrategy as SplitStrategy)
-  ) {
+  const shortSentenceStrategies = [SplitStrategy.WORD, SplitStrategy.ULTRADENSE, SplitStrategy.HYPERDENSE, SplitStrategy.SHORT_SENTENCE, SplitStrategy.HIGHPACED];
+  if (_.includes(shortSentenceStrategies, splitStrategy as SplitStrategy)) {
     sentenceLengthDirective = `\n[MANDATORY SENTENCE STRUCTURE DIRECTIVE - SHORT SENTENCES]:
 - You MUST write the script segments of this chapter using EXTREMELY SHORT, simple, and independent sentences (strictly maximum 10 to 15 words per sentence).
 - ABSOLUTELY DO NOT write long complex compound sentences, run-on sentences, or use complex conjunctions to join multiple clauses. Do not use many commas to link separate thoughts.

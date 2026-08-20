@@ -1,9 +1,38 @@
 import _ from "lodash";
 import { IMAGE_PROMPT_COMPILER_CONFIG, IMAGE_PROMPT_METADATA_CONFIG, VISUAL_CONTINUITY_CONFIG } from "../constants/config";
+import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 import { CharacterConfig, ShotPurpose, StoryboardScene, TextInImageMode, VisualBible } from "../types";
 import { resolveSceneCharacterIds } from "./sceneReferenceService";
 
 const SHOT_PURPOSES = Object.values(ShotPurpose);
+const PHYSICAL_ACTION_PATTERN = /\b(?:walks?|steps?|sits?|stands?|turns?|reaches?|opens?|closes?|places?|picks?|sets?|holds?|puts?|counts?|sorts?|reads?|checks?|reviews?|types?|writes?|calls?|speaks?|asks?|answers?|hands?|receives?|pays?|hides?|removes?|packs?|leaves?|enters?|exits?|looks?|watches?|waits?|leans?|covers?|wipes?|pushes?|pulls?|carries?|drops?|tears?|folds?|points?|gestures?|shakes?|nods?|runs?|stops?|scrolls?|taps?|locks?|unlocks?|sends?|shows?|faces?)\b/i;
+
+const normalizePlanningText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value)))), " ");
+
+export const getVisualShotPlanIssues = (
+  source: Partial<StoryboardScene>,
+  baseScene: StoryboardScene,
+): string[] => {
+  const issues: string[] = [];
+  const requiredFields: Array<keyof Pick<StoryboardScene, "visualIntent" | "visibleAction" | "reaction" | "composition">> = [
+    "visualIntent", "visibleAction", "reaction", "composition",
+  ];
+  _.forEach(requiredFields, field => {
+    const value = _.trim(_.toString(source[field]));
+    if (_.isEmpty(value)) issues.push(`${baseScene.id}:${field}:missing`);
+    else if (DETECTOR_VIETNAMESE_REGEX.test(value)) issues.push(`${baseScene.id}:${field}:must_be_english`);
+  });
+  const action = _.trim(_.toString(source.visibleAction));
+  const normalizedAction = normalizePlanningText(action);
+  const normalizedScript = normalizePlanningText(baseScene.script || baseScene.subtitle);
+  if (!_.isEmpty(normalizedAction) && _.isEqual(normalizedAction, normalizedScript)) {
+    issues.push(`${baseScene.id}:visibleAction:copied_from_script`);
+  }
+  if (!_.isEmpty(action) && !PHYSICAL_ACTION_PATTERN.test(action)) {
+    issues.push(`${baseScene.id}:visibleAction:no_observable_physical_verb`);
+  }
+  return _.uniq(issues);
+};
 
 export interface VisualPlanningOptions {
   characters?: CharacterConfig[];
