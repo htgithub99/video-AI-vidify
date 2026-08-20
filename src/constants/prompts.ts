@@ -200,6 +200,7 @@ export const getOptimizePromptsBatchPrompt = (
   continuityContext: string = "",
   locationLibraryJson: string = "",
   propLibraryJson: string = "",
+  correctionIssuesJson: string = "",
 ): string => `You write clear image-generation prompts for Gemini. Return one complete prompt for every input scene.
 
 ${UNTRUSTED_INPUT_RULE}
@@ -244,6 +245,11 @@ Write one natural, continuous English paragraph of 70-120 words in this exact or
 - NO VIETNAMESE IN PROMPT: The image prompt, visualIntent, visibleAction, reaction, and composition MUST be written ENTIRELY in English. Do NOT inject Vietnamese text into the visual prompt.
 - TEXT LANGUAGE LOCK: textOverlay is the only exception to the English technical-field rule. When textAllowed=true, textOverlay MUST be ${isVi ? "natural Vietnamese with complete correct diacritics" : "natural English with no Vietnamese words or diacritics"}; copy that exact string once into the prompt as the only requested visible text. When textAllowed=false, textOverlay MUST be an empty string and the prompt must forbid all visible text.
 - Do not include --ar in prompt text because the engine handles aspect ratio separately.
+
+${correctionIssuesJson ? `[FINAL CORRECTION ATTEMPT]
+Your previous response was rejected for these exact validation issues:
+${correctionIssuesJson}
+Return the COMPLETE corrected JSON array for EVERY input scene below. Do not return patches, explanations, omitted scenes, or only the failed scenes. Re-read each scene's script and regenerate every required field yourself. This is the only correction attempt, so resolve every listed issue while preserving the exact scene IDs and array length.` : ""}
 
 Output ONLY this JSON array shape:
 [{"id":"scene_id","prompt":"one continuous 70-120 word English paragraph following the required order without labels or --ar; only the exact textOverlay may use the selected user language","visualIntent":"clear English description of what viewers understand","visibleAction":"one clear English physical action illustrating the dialogue","reaction":"visible English facial expression and body-language response","characterIds":["char_1"],"expectedSubjectCount":1,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"empty when text is forbidden, otherwise exact visible text in the selected user language","shotPurpose":"action","shotSize":"medium shot","cameraAngle":"eye-level angle","composition":"clear subject placement and depth relationship","locationId":"loc_id or empty string","propIds":["prop_id"],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate physically plausible light"}]

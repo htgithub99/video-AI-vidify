@@ -133,7 +133,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";
 
-import { AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
+import { AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, HookVersion, ProjectLanguage, SceneAssetStatus, StoryboardScene, TextInImageMode, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
 import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
@@ -389,10 +389,11 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const planningPayload = createVisualPlanningPayload(plannedScenes);
     const chunks = _.chunk(planningPayload, chunkSize);
     const optimizedMap = new Map<string, StoryboardScene>();
+    const planningWarnings: string[] = [];
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunkItem = chunks[chunkIndex];
       const chunkStartIndex = _.multiply(chunkIndex, chunkSize);
-      const prompt = getOptimizePromptsBatchPrompt(
+      const createPlanningPrompt = (correctionIssuesJson: string = "") => getOptimizePromptsBatchPrompt(
         visualStyle,
         targetStyle,
         jsonUtils.safeStringify(chunkItem),
@@ -410,46 +411,113 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         jsonUtils.safeStringify(createBatchContinuityContext(plannedScenes, chunkStartIndex, chunkItem.length)),
         jsonUtils.safeStringify(resolvedVisualBible.locations || []),
         jsonUtils.safeStringify(resolvedVisualBible.props || []),
+        correctionIssuesJson,
       );
       const sceneIds = _.map(chunkItem, item => _.toString(_.get(item, "id")));
       const planningString = { type: "string" } as const;
-      const response = await generateContentWithRetry({
-        contents: prompt,
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          responseJsonSchema: {
-            type: "array",
-            minItems: chunkItem.length,
-            maxItems: chunkItem.length,
-            items: {
-              type: "object",
-              additionalProperties: false,
-              required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
-              properties: {
-                id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
-                visibleAction: planningString, reaction: planningString,
-                characterIds: { type: "array", items: planningString }, expectedSubjectCount: { type: "integer", minimum: 0 },
-                allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" }, textOverlay: planningString,
-                shotPurpose: planningString, shotSize: planningString, cameraAngle: planningString, composition: planningString,
-                locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
-                continuityNotes: planningString, lighting: planningString,
-              },
-            },
+      const planningSchema = {
+        type: "array",
+        minItems: chunkItem.length,
+        maxItems: chunkItem.length,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
+          properties: {
+            id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
+            visibleAction: planningString, reaction: planningString,
+            characterIds: { type: "array", items: planningString }, expectedSubjectCount: { type: "integer", minimum: 0 },
+            allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" }, textOverlay: planningString,
+            shotPurpose: planningString, shotSize: planningString, cameraAngle: planningString, composition: planningString,
+            locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
+            continuityNotes: planningString, lighting: planningString,
           },
         },
-        task: { capability: AiTaskCapability.VisualPlanning },
-      });
-      const parsed = safeParseJSON(response.text, []);
-      const parsedItems: any[] = _.isArray(parsed) ? parsed : [];
+      } as const;
+      const requestVisualPlan = async (contents: string): Promise<any[]> => {
+        const response = await generateContentWithRetry({
+          contents,
+          config: {
+            responseMimeType: CONTENT_TYPES.JSON,
+            responseJsonSchema: planningSchema,
+          },
+          task: { capability: AiTaskCapability.VisualPlanning },
+        });
+        const parsed = safeParseJSON(response.text, []);
+        return _.isArray(parsed) ? parsed : [];
+      };
+      const collectPlanningIssues = (items: any[]): string[] => {
+        const issues: string[] = [];
+        const returnedIds = _.map(items, item => _.toString(_.get(item, "id")));
+        const duplicateIds = _.map(
+          _.filter(_.groupBy(returnedIds), group => _.gt(group.length, 1)),
+          group => group[0],
+        );
+        _.forEach(duplicateIds, id => issues.push(`${id || "unknown"}:id:duplicate`));
+        _.forEach(_.difference(returnedIds, sceneIds), id => issues.push(`${id || "unknown"}:id:unexpected`));
+        _.forEach(_.difference(sceneIds, returnedIds), id => issues.push(`${id}:result:missing_scene`));
+        if (!_.isEqual(items.length, chunkItem.length)) issues.push(`result:wrong_scene_count:${items.length}/${chunkItem.length}`);
+
+        const englishRequiredFields = ["prompt", "visualIntent", "visibleAction", "reaction", "shotPurpose", "shotSize", "cameraAngle", "composition", "continuityNotes", "lighting"];
+        _.forEach(items, item => {
+          const sceneId = _.toString(_.get(item, "id"));
+          const baseScene = _.find(plannedScenes, { id: sceneId });
+          if (!baseScene) return;
+          issues.push(...getVisualShotPlanIssues(item, baseScene));
+          _.forEach(englishRequiredFields, field => {
+            const value = _.trim(_.toString(_.get(item, field)));
+            if (_.isEmpty(value)) issues.push(`${sceneId}:${field}:missing`);
+          });
+          if (!_.isArray(_.get(item, "characterIds"))) issues.push(`${sceneId}:characterIds:must_be_array`);
+          if (!_.isArray(_.get(item, "propIds"))) issues.push(`${sceneId}:propIds:must_be_array`);
+          if (!_.isInteger(_.get(item, "expectedSubjectCount")) || _.lt(_.get(item, "expectedSubjectCount"), 0)) {
+            issues.push(`${sceneId}:expectedSubjectCount:invalid`);
+          }
+          if (!_.isBoolean(_.get(item, "allowBackgroundPeople"))) issues.push(`${sceneId}:allowBackgroundPeople:must_be_boolean`);
+          if (!_.includes(["single_frame", "split_screen", "collage"], _.get(item, "layout"))) issues.push(`${sceneId}:layout:invalid`);
+          if (!_.isBoolean(_.get(item, "textAllowed"))) issues.push(`${sceneId}:textAllowed:must_be_boolean`);
+          const textAllowed = _.get(item, "textAllowed");
+          const textOverlay = _.trim(_.toString(_.get(item, "textOverlay")));
+          if (_.isEqual(textAllowed, true) && _.isEmpty(textOverlay)) issues.push(`${sceneId}:textOverlay:required_when_text_allowed`);
+          if (_.isEqual(textAllowed, false) && !_.isEmpty(textOverlay)) issues.push(`${sceneId}:textOverlay:must_be_empty_when_text_forbidden`);
+          if (_.isEqual(resolvedVisualConfig.styleTextInImageMode, TextInImageMode.NoText) && !_.isEqual(textAllowed, false)) {
+            issues.push(`${sceneId}:textAllowed:must_be_false_in_no_text_mode`);
+          }
+        });
+        return _.uniq(issues);
+      };
+
+      let parsedItems = await requestVisualPlan(createPlanningPrompt());
+      const firstParsedItems = parsedItems;
+      const firstPlanningIssues = collectPlanningIssues(firstParsedItems);
+      let planningIssues = firstPlanningIssues;
+      if (!_.isEmpty(planningIssues)) {
+        parsedItems = await requestVisualPlan(createPlanningPrompt(jsonUtils.safeStringify(planningIssues)));
+        planningIssues = collectPlanningIssues(parsedItems);
+      }
+      if (!_.isEmpty(planningIssues)) {
+        // One semantic correction attempt is the hard cap. Continue with the most
+        // complete AI-authored scene result available; never make a third AI call.
+        const firstById = _.keyBy(firstParsedItems, item => _.toString(item.id));
+        const secondById = _.keyBy(parsedItems, item => _.toString(item.id));
+        parsedItems = _.compact(_.map(sceneIds, sceneId => {
+          const firstItem = firstById[sceneId];
+          const secondItem = secondById[sceneId];
+          const firstIssueCount = _.filter(firstPlanningIssues, issue => _.startsWith(issue, `${sceneId}:`)).length;
+          const secondIssueCount = _.filter(planningIssues, issue => _.startsWith(issue, `${sceneId}:`)).length;
+          if (!secondItem) return firstItem;
+          if (!firstItem) return secondItem;
+          return _.lte(secondIssueCount, firstIssueCount) ? secondItem : firstItem;
+        }));
+        planningWarnings.push(...planningIssues);
+        appWarn(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: continuing_after_final_correction: ${_.join(planningIssues, ", ")}`);
+      }
       const returnedById = _.keyBy(parsedItems, item => _.toString(item.id));
       _.forEach(chunkItem, sourceItem => {
         const sceneId = _.toString(_.get(sourceItem, "id"));
         const baseScene = _.find(plannedScenes, { id: sceneId });
         const returnedItem = returnedById[sceneId];
-        if (!baseScene) return;
-        if (!returnedItem) throw createAppError(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: ${sceneId}:result:missing_scene`);
-        const issues = getVisualShotPlanIssues(returnedItem, baseScene);
-        if (!_.isEmpty(issues)) throw createAppError(`${PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED}: ${_.join(issues, ", ")}`);
+        if (!baseScene || !returnedItem) return;
         optimizedMap.set(sceneId, normalizeVisualShotPlan(returnedItem, baseScene, {
           characters,
           visualBible: resolvedVisualBible,
@@ -458,10 +526,9 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       });
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
-    plannedScenes = ensureScriptGroundedSceneDetails(
-      _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene),
-      { aspectRatio: aspectRatio || AspectRatio.SixteenNine, targetStyle: visualStyle, visualBible: resolvedVisualBible },
-    );
+    // Every semantic planning field above has passed the AI response contract. Do not
+    // synthesize or replace scene meaning in code after the single correction attempt.
+    plannedScenes = _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene);
     const promptQa = validateCompiledImagePrompts(plannedScenes, {
       backgroundMode: resolvedVisualConfig.styleBackgroundMode,
       textMode: resolvedVisualConfig.styleTextInImageMode,
@@ -476,7 +543,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     }));
     const scenesById = _.keyBy(finalizedScenes, "id");
     const updatedStoryboard = _.map(storyboard as StoryboardScene[], scene => scenesById[scene.id] || scene);
-    const result = { success: true, storyboard: updatedStoryboard, promptQa };
+    const result = { success: true, storyboard: updatedStoryboard, promptQa, planningWarnings: _.uniq(planningWarnings) };
     setCache(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, req.body, result);
     if (!promptQa.passed) appWarn(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_QUALITY_REJECTED);
     return res.json(result);

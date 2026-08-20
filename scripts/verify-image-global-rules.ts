@@ -30,6 +30,30 @@ assert.match(plannerPrompt, /STRICT PROMPT PURITY/i);
 assert.match(plannerPrompt, /one continuous 70-120 word English paragraph/i);
 assert.match(plannerPrompt, /"reaction":"visible English facial expression and body-language response"/i);
 
+const correctionPrompt = getOptimizePromptsBatchPrompt(
+  "flat 2D cartoon",
+  "bold black outlines and flat colors",
+  JSON.stringify([{ id: "sc_1", script: "A bowl covers four pieces", prompt: "" }]),
+  "16:9",
+  undefined,
+  false,
+  undefined,
+  undefined,
+  undefined,
+  "auto",
+  "auto",
+  "default",
+  "No reference image will be attached.",
+  "",
+  "",
+  "",
+  "",
+  JSON.stringify(["sc_1:visibleAction:no_observable_physical_verb"]),
+);
+assert.match(correctionPrompt, /FINAL CORRECTION ATTEMPT/i);
+assert.match(correctionPrompt, /COMPLETE corrected JSON array for EVERY input scene/i);
+assert.match(correctionPrompt, /sc_1:visibleAction:no_observable_physical_verb/i);
+
 const compactCards = createPromptCharacterCards([{ id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "unused", images: ["unused"] }]);
 assert.equal(compactCards[0].id, "char_1");
 assert.equal(compactCards[0].name, "Player");
