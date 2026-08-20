@@ -22,6 +22,8 @@ const mockProject: any = {
     {
       id: "sc_1",
       script: "Một người phụ nữ đứng trước khu vực nguy hiểm trong nhà máy",
+      visibleAction: "A female worker stops at the edge of a hazardous factory work zone",
+      textAllowed: false,
       prompt: "Line art: clean black lines. A female worker facing an industrial hazard on the factory floor",
       assetUrl: "/assets/projects/video_1/images/sc_1.png",
       assetStatus: "completed",
@@ -53,7 +55,9 @@ const compiledScenePrompt = compileImagePrompt(regeneratedProject.storyboard[0],
 });
 assert.doesNotMatch(compiledScenePrompt, /Line art:|Palette:|Rendering:/);
 assert.doesNotMatch(compiledScenePrompt, /industrial hazard/i);
-assert.match(compiledScenePrompt, /Một người phụ nữ đứng trước khu vực nguy hiểm trong nhà máy/);
+assert.match(compiledScenePrompt, /A female worker stops at the edge of a hazardous factory work zone/);
+assert.doesNotMatch(compiledScenePrompt, /Một người phụ nữ/);
+assert.match(compiledScenePrompt, /Completely text-free scene/);
 assert.ok(compiledScenePrompt.includes("--ar 16:9"));
 
 // 3. Kiểm tra Prompt Thumbnail theo ma trận tò mò CTR

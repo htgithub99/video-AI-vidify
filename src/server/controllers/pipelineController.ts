@@ -424,12 +424,12 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
+              required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
               properties: {
                 id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
                 visibleAction: planningString, reaction: planningString,
                 characterIds: { type: "array", items: planningString }, expectedSubjectCount: { type: "integer", minimum: 0 },
-                allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" },
+                allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" }, textOverlay: planningString,
                 shotPurpose: planningString, shotSize: planningString, cameraAngle: planningString, composition: planningString,
                 locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
                 continuityNotes: planningString, lighting: planningString,

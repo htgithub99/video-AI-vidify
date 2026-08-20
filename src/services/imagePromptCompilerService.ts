@@ -18,9 +18,14 @@ export interface ImagePromptCompilerOptions {
 const compactWords = (value: string, maximumWords: number): string =>
   _.join(_.take(_.words(value, IMAGE_PROMPT_COMPILER_CONFIG.NON_WHITESPACE_REGEX), maximumWords), IMAGE_PROMPT_COMPILER_CONFIG.SPACE_SEPARATOR);
 
+const hasVietnameseNarration = (value: unknown): boolean => _.gte(
+  _.size(_.toString(value).match(new RegExp(DETECTOR_VIETNAMESE_REGEX.source, "gi")) || []),
+  3,
+);
+
 const compactSceneField = (value: unknown): string => {
   const str = _.trim(_.toString(value));
-  if (_.isEmpty(str) || DETECTOR_VIETNAMESE_REGEX.test(str)) {
+  if (_.isEmpty(str) || hasVietnameseNarration(str)) {
     return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
   }
   return compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
@@ -28,7 +33,9 @@ const compactSceneField = (value: unknown): string => {
 
 const compactScriptSource = (value: unknown): string => {
   const str = _.trim(_.toString(value));
-  return _.isEmpty(str) ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+  return _.isEmpty(str) || hasVietnameseNarration(str)
+    ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING
+    : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
 };
 
 const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: string): string => {
@@ -123,10 +130,19 @@ const resolveSceneEnvironment = (scene: StoryboardScene, visualBible?: VisualBib
 };
 
 export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptCompilerOptions = {}): string => {
+  const textOverlay = _.trim(_.toString(scene.textOverlay));
+  const textPolicyDirective = _.isEqual(scene.textAllowed, false)
+    ? IMAGE_PROMPT_COMPILER_CONFIG.STRICT_NO_TEXT_DIRECTIVE
+    : (!_.isEmpty(textOverlay)
+      ? _.replace(IMAGE_PROMPT_COMPILER_CONFIG.TEXT_OVERLAY_DIRECTIVE_TEMPLATE, "{text}", textOverlay)
+      : IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE);
   const aiAuthoredPrompt = _.trim(_.toString(scene.prompt));
-  if (!_.isEmpty(aiAuthoredPrompt) && !DETECTOR_VIETNAMESE_REGEX.test(aiAuthoredPrompt)) {
+  const technicalPromptText = _.isEmpty(textOverlay) ? aiAuthoredPrompt : _.replace(aiAuthoredPrompt, textOverlay, "");
+  if (!_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
+    const cleanedAiPrompt = deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt));
+    const policyLockedPrompt = _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
     return appendImagePromptAspectRatio(
-      deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt)),
+      deduplicatePromptSentences(policyLockedPrompt),
       options.aspectRatio,
     );
   }
@@ -162,7 +178,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
     IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(options.targetStyle)) ? IMAGE_PROMPT_COMPILER_CONFIG.NATURAL_3D_ANATOMY_LOCK : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING,
     sceneVariation,
     _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
-    IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE,
+    textPolicyDirective,
     IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS,
   ];
 

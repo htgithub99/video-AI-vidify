@@ -278,6 +278,9 @@ export const IMAGE_PROMPT_QA_CONFIG = {
     GENERIC_CENTERED_PORTRAIT: "generic_centered_portrait",
     ENGINE_SYNTAX_CONFLICT: "engine_syntax_conflict",
     AI_ASPECT_RATIO: "ai_prompt_contains_aspect_ratio",
+    NON_ENGLISH_PROMPT: "image_prompt_must_be_english",
+    MISSING_TEXT_OVERLAY: "text_enabled_scene_missing_overlay",
+    FORBIDDEN_TEXT_OVERLAY: "no_text_scene_contains_overlay",
   },
   WARNING_CODES: {
     PROMPT_TOO_SHORT: "image_prompt_too_short",
@@ -299,6 +302,8 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   DEFAULT_LIGHTING: "natural scene-appropriate lighting",
   DEFAULT_LAYOUT: "single_frame",
   NO_TEXT_DIRECTIVE: "No readable text, letters, numbers, logos, or watermarks",
+  STRICT_NO_TEXT_DIRECTIVE: "Completely text-free scene: do not render captions, subtitles, speech bubbles, signs, labels, interface text, letters, words, numbers, logos, or watermarks anywhere in the image",
+  TEXT_OVERLAY_DIRECTIVE_TEMPLATE: "Render exactly one readable text string, copied character-for-character in the project's selected language: \"{text}\". Do not render translations, captions, supporting copy, or any other words, letters, or numbers",
   NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
   SINGLE_FRAME_DIRECTIVE: "one continuous frame without panels or collage",
   DISTINCT_CHARACTER_VISUALS_DIRECTIVE: "Distinct character visuals: secondary characters, mentors, or clients must wear contrasting clothing colors (e.g. navy, grey, green, or brown) to clearly distinguish them from the main protagonist",

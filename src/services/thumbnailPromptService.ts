@@ -147,7 +147,11 @@ export const createThumbnailGenerationPrompt = (
   const preset = resolveStylePreset(thumbnail.style || style);
   const headline = cleanTextValue(thumbnail.textText);
   const hasText = thumbnail.hasText && !_.isEmpty(headline);
-  const layoutDesc = thumbnail.layout || THUMBNAIL_LAYOUT_CATALOG[0].composition;
+  const layoutDesc = _.get(
+    _.find(THUMBNAIL_LAYOUT_CATALOG, { id: thumbnail.layoutId as ThumbnailLayoutId }),
+    "composition",
+    THUMBNAIL_LAYOUT_CATALOG[0].composition,
+  );
 
   const parts = _.compact([
     preset.positivePrompt,

@@ -52,6 +52,10 @@ const isEncodedMediaSource = (value?: string): boolean => {
   return _.gte(source.length, 256) && _.isEqual(source.length % 4, 0) && RAW_BASE64_PATTERN.test(source);
 };
 
+export const resolveEncodedMediaSource = (...values: Array<string | undefined>): string | undefined => (
+  _.find(values, value => isEncodedMediaSource(value))
+);
+
 const parsePythonResult = (stdout: string): Record<string, unknown> | undefined => (
   _.findLast(
     _.map(
@@ -218,8 +222,8 @@ export const renderFFmpegVideo = async (
       resolveLocalAssetPath(scene.audioUrl),
       resolveLocalAssetPath(scene.audioBase64),
     ]);
-    const encodedMedia = isEncodedMediaSource(scene.imageBase64) ? scene.imageBase64 : undefined;
-    const encodedAudio = isEncodedMediaSource(scene.audioBase64) ? scene.audioBase64 : undefined;
+    const encodedMedia = resolveEncodedMediaSource(scene.imageBase64, scene.imageUrl);
+    const encodedAudio = resolveEncodedMediaSource(scene.audioBase64, scene.audioUrl);
     if (_.isEmpty(mediaPath) && _.isEmpty(encodedMedia)) {
       throw new Error(`Scene ${scene.id} has no valid visual asset`);
     }

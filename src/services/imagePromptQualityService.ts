@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { BackgroundMode, CharacterConfig, ImagePromptQualityIssue, ImagePromptQualityReport, StoryboardScene, TextInImageMode, VisualBible } from "../types";
 import { IMAGE_PROMPT_QA_CONFIG } from "../constants/config";
+import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 
 export interface ImagePromptQualityOptions {
   backgroundMode?: BackgroundMode;
@@ -19,6 +20,10 @@ const PEOPLE_FORBIDDEN_PATTERN = /\b(?:objects? or environment only|do not add p
 const TEXT_FORBIDDEN_PATTERN = /\b(?:no text or logos|do not generate text|free of readable text)\b/i;
 const QUOTED_TEXT_REQUEST_PATTERN = /\s*(?:with|showing|displaying|containing|bearing)?\s*(?:a\s+)?(?:clear\s+|readable\s+)?(?:vietnamese\s+)?(?:text|caption|label|lettering|words?)(?:\s+caption)?(?:\s+(?:reading|saying|labeled|labelled))?\s*['"][^'"]*['"]/gi;
 const LABELED_TEXT_REQUEST_PATTERN = /\s*(?:showing|displaying|bearing)?\s*(?:a\s+)?(?:segment\s+)?(?:labeled|labelled|reading|saying)\s*['"][^'"]*['"]/gi;
+const hasVietnameseNarration = (value: unknown): boolean => _.gte(
+  _.size(_.toString(value).match(new RegExp(DETECTOR_VIETNAMESE_REGEX.source, "gi")) || []),
+  3,
+);
 
 const getQaTokens = (value: unknown): string[] => _.uniq(_.filter(
   _.words(_.toLower(_.deburr(_.toString(value)))),
@@ -139,6 +144,8 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
   _.forEach(sanitizedScenes, (scene, index) => {
     const wordCount = _.size(_.words(scene.prompt));
     if (_.isEmpty(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.EMPTY_PROMPT, "blocking"));
+    const technicalPromptText = _.isEmpty(scene.textOverlay) ? scene.prompt : _.replace(scene.prompt, scene.textOverlay, "");
+    if (hasVietnameseNarration(technicalPromptText)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.NON_ENGLISH_PROMPT, "blocking"));
     if (!IMAGE_PROMPT_QA_CONFIG.CAMERA_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_CAMERA, "blocking"));
     if (_.isEqual(TextInImageMode.NoText, options.textMode) && IMAGE_PROMPT_QA_CONFIG.READABLE_TEXT_REQUEST_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.READABLE_TEXT, "blocking"));
     if (PEOPLE_REQUEST_PATTERN.test(scene.prompt) && PEOPLE_FORBIDDEN_PATTERN.test(scene.prompt)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.PEOPLE_CONFLICT, "blocking"));
@@ -155,6 +162,8 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
       const propIds = new Set(_.map(options.visualBible?.props, "id"));
       if (_.isEmpty(_.trim(scene.visualIntent))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_VISUAL_INTENT, "warning"));
       if (_.isEmpty(_.trim(scene.visibleAction))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_VISIBLE_ACTION, "warning"));
+      if (scene.textAllowed && _.isEmpty(_.trim(scene.textOverlay))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_TEXT_OVERLAY, "blocking"));
+      if (!scene.textAllowed && !_.isEmpty(_.trim(scene.textOverlay))) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.FORBIDDEN_TEXT_OVERLAY, "blocking"));
       if (!_.isEmpty(scene.visibleAction) && IMAGE_PROMPT_QA_CONFIG.ABSTRACT_ONLY_PATTERN.test(_.trim(scene.visibleAction))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ABSTRACT_ACTION, "warning"));
       if (!_.isNumber(scene.expectedSubjectCount)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_SUBJECT_COUNT, "warning"));
       if (_.some(scene.characterIds, id => !characterIds.has(id))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_CHARACTER_ID, "warning"));

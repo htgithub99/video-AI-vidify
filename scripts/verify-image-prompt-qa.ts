@@ -13,6 +13,7 @@ assert(!evaluateImagePrompts([createScene("sc_1", `${validPrompt}, certificate w
 assert(!evaluateImagePrompts([createScene("sc_1", `${validPrompt}, a worker, objects or environment only; do not add people`)], { backgroundMode: BackgroundMode.White }).passed, "People/no-people contradiction was accepted.");
 assert(!/Cáº£nh tá»‰nh/.test(removeGeneratedTextRequests("A trophy with Vietnamese text 'Cáº£nh tá»‰nh', medium shot")), "Quoted generated text request was not removed.");
 assert(!evaluateImagePrompts([createScene("sc_1", "flat illustration without camera direction")], { textMode: TextInImageMode.NoText }).passed, "Prompt without camera direction was accepted.");
+assert(!evaluateImagePrompts([createScene("sc_vi", "Flat cartoon medium shot of Mai at home, Đừng tin vào lời nói, no readable text")], { textMode: TextInImageMode.NoText }).passed, "Vietnamese narration leaked into an image prompt.");
 const referenceStyle = "chibi stickman cartoon illustration, oversized round head, small rounded bean-shaped torso, distinct stable hair silhouette, flat solid colors";
 const aiPrompt = "Stunning high-quality design depicting: Nam at a table, Realistic Cinematic, 3D Render, Dramatic Lighting";
 const preservedPrompt = enforceImagePromptStyle(aiPrompt, referenceStyle, "Nam sits at a table", "medium shot", TextInImageMode.Auto, "16:9");
@@ -57,6 +58,22 @@ const softStylePrompt = compileImagePrompt({
 assert(/property contract|modern office/i.test(softStylePrompt), "Script-grounded narrative was lost.");
 assert(!/dungeon|candle|wooden door/i.test(softStylePrompt), "Sample-specific content leaked into the prompt.");
 assert(softStylePrompt.split(/\s+/).length <= 160, "Soft style prompt became overly constrained.");
+
+const noTextPrompt = compileImagePrompt({
+  id: "sc_no_text",
+  prompt: "Flat cartoon illustration of Mai counting coins at a small table, medium side-angle shot with warm lamp light.",
+  textAllowed: false,
+} as any, { aspectRatio: "16:9" });
+assert(/Completely text-free scene/i.test(noTextPrompt), "Strict no-text policy was not appended to the final generation prompt.");
+
+const vietnameseOverlayPrompt = compileImagePrompt({
+  id: "sc_vi_overlay",
+  prompt: "Flat editorial illustration of Mai checking a bank transfer on her phone, close-up side-angle shot with warm room lighting.",
+  textAllowed: true,
+  textOverlay: "ĐÃ NHẬN 20 TRIỆU",
+} as any, { aspectRatio: "16:9" });
+assert(vietnameseOverlayPrompt.includes('"ĐÃ NHẬN 20 TRIỆU"'), "Vietnamese text overlay was not preserved exactly.");
+assert(/Render exactly one readable text string/i.test(vietnameseOverlayPrompt), "Text overlay exclusivity was not enforced.");
 
 const exactStyleLock = "Flat stickman illustration with round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
 const actionLockedScene = {

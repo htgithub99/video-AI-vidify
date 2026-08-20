@@ -5,6 +5,7 @@ import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_CONFIG } from "../constan
 import { blobToBase64 } from "../lib/fileUtils";
 import { logger } from "../utils/logger";
 import type { PipelineConfig } from "./useAutoVideoPipeline";
+import { resolveStylePreset } from "../constants/stylePresets";
 
 export { applyBackgroundMode, applyImageFocusMode, applyTextInImageMode } from "../lib/imagePromptDirectives";
 
@@ -18,6 +19,7 @@ export interface ReferenceChangeState {
   hasVisualOverrides: boolean;
   shouldRegenerateSceneAssets: boolean;
   shouldRegenerateStoryboard: boolean;
+  shouldRegenerateThumbnails: boolean;
 }
 
 export interface PipelineInvalidationState {
@@ -131,6 +133,7 @@ export const getReferenceChangeState = (
     shouldRegenerateStoryboard: styleChanged || characterChanged,
     hasVisualOverrides: _.some([styleChanged, thumbnailChanged, characterChanged]),
     shouldRegenerateSceneAssets: styleChanged || sceneChanged || characterChanged,
+    shouldRegenerateThumbnails: styleChanged || thumbnailChanged || characterChanged,
   };
 };
 
@@ -211,6 +214,12 @@ export const getPipelineInvalidationState = (
   const hasScript = !_.isEmpty(project.scriptRewritten);
   const hasStoryboard = !_.isEmpty(project.storyboard);
   const hasVoice = !_.isEmpty(project.voiceConfig?.audioUrl) || !_.isEmpty(project.voiceConfig?.audioBase64);
+  const previousThumbnailStyle = resolveStylePreset(
+    project.visualConfig?.thumbnailReferencePrompt || project.visualConfig?.style,
+  ).positivePrompt;
+  const requestedThumbnailStyle = resolveStylePreset(
+    config.thumbnailStylePreset || config.stylePreset,
+  ).positivePrompt;
 
   let regenerateScript = inputChanged || scriptConfigChanged || !project.contentSafety?.allowed || !hasScript;
   let regenerateStoryboard = regenerateScript || storyboardConfigChanged || storyboardVisualConfigChanged || references.shouldRegenerateStoryboard || !hasStoryboard;
@@ -237,12 +246,12 @@ export const getPipelineInvalidationState = (
     regenerateSeo: regenerateScript,
     regenerateThumbnails: regenerateScript
       || Boolean(config.forceRegenerateScenes)
-      || references.hasVisualOverrides
+      || references.shouldRegenerateThumbnails
       || !_.isEqual(project.visualConfig?.thumbnailCount, config.thumbnailCount)
       || !_.isEqual(project.visualConfig?.thumbnailBackgroundMode, config.thumbnailBackgroundMode)
       || !_.isEqual(project.visualConfig?.thumbnailTextInImageMode, config.thumbnailTextInImageMode)
       || !_.isEqual(project.visualConfig?.thumbnailImageFocusMode, config.thumbnailImageFocusMode)
-      || !_.isEqual(project.visualConfig?.thumbnailReferencePrompt, config.thumbnailStylePreset),
+      || !_.isEqual(previousThumbnailStyle, requestedThumbnailStyle),
   };
 };
 

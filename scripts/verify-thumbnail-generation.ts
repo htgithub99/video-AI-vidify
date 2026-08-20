@@ -60,7 +60,10 @@ assert.equal(noTextThumbnails[0].textText, "");
 
 const prompt = createThumbnailGenerationPrompt(thumbnails[0], thumbnails[0].style, "16:9", true);
 assert.ok(prompt.endsWith("--ar 16:9"));
-assert.ok(prompt.includes(thumbnails[0].prompt));
+assert.ok(prompt.includes(thumbnails[0].textText));
+assert.doesNotMatch(prompt, /\d+(?:-\d+)?%/);
+assert.match(prompt, /Do not render any other words, letters, numbers, percentages, measurements, template labels, layout annotations, or supporting copy/i);
+assert.equal(THUMBNAIL_LAYOUT_CATALOG.every(layout => !/\d+(?:-\d+)?%/.test(layout.composition)), true);
 
 const references = resolveThumbnailReferenceImages({
   thumbnailReferenceImages: ["thumb-style.png"],
