@@ -31,6 +31,7 @@
     "dist-desktop",
     "builds",
     "electron-dist",
-    "electron-dist-v2"
+    "electron-dist-v2",
+    "vite.config.ts.timestamp-*.mjs"
   ]
 }

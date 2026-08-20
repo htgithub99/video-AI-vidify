@@ -9,6 +9,9 @@ import random
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
+
+SCENE_RENDER_TIMEOUT_SECONDS = 180
+MAX_DIAGNOSTIC_BYTES = 1024 * 1024
 from PIL import Image, ImageFilter, ImageEnhance, ImageDraw
 
 class FFMPEG_CONSTANTS:
@@ -1155,6 +1158,14 @@ def main():
             else:
                 scene_id = scene.get("id") or idx
                 raise Exception(f"Scene {scene_id} has no real visual asset")
+
+            if not is_video:
+                scene_id = scene.get("id") or idx
+                try:
+                    with Image.open(mediaPath) as image_file:
+                        image_file.verify()
+                except Exception as error:
+                    raise Exception(f"Scene {scene_id} has an invalid image asset: {error}")
             
             hasAudio = False
             audio_owned = False
@@ -1286,11 +1297,22 @@ def main():
             ])
 
             stderr_text = ""
-            with open(diagnostic_path, "w+", encoding=FFMPEG_CONSTANTS.UTF8) as diagnostic_file:
-                completed = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=diagnostic_file, text=True)
+            try:
+                completed = subprocess.run(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=SCENE_RENDER_TIMEOUT_SECONDS,
+                )
                 return_code = completed.returncode
-                diagnostic_file.seek(0)
-                stderr_text = diagnostic_file.read()
+                stderr_text = (completed.stderr or "")[-MAX_DIAGNOSTIC_BYTES:]
+            except subprocess.TimeoutExpired as error:
+                stderr_text = str(error)
+                return_code = -1
+
+            with open(diagnostic_path, "w", encoding=FFMPEG_CONSTANTS.UTF8) as diagnostic_file:
+                diagnostic_file.write(stderr_text[-MAX_DIAGNOSTIC_BYTES:])
 
             if return_code != 0:
                 diagnostic = " ".join(stderr_text.strip().splitlines()[-6:])

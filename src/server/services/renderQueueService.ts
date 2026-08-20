@@ -89,6 +89,25 @@ class RenderQueueService {
 
   public async addJob(jobId: string, payload: FFmpegRenderOptions, licenseKey?: string): Promise<RenderJob> {
     await this.initialize();
+    for (const [activeJobId, controller] of this.abortControllers) {
+      const activeJob = this.jobsMap.get(activeJobId);
+      if (activeJob && _.isEqual(activeJob.status, JobStatus.PROCESSING)) {
+        activeJob.status = JobStatus.CANCELLED;
+        activeJob.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
+        activeJob.completedAt = new Date();
+        activeJob.updatedAt = activeJob.completedAt;
+        controller.abort();
+        await this.persist(activeJob);
+      }
+    }
+    this.queue = _.reject(this.queue, (pendingJob) => {
+      pendingJob.status = JobStatus.CANCELLED;
+      pendingJob.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
+      pendingJob.completedAt = new Date();
+      pendingJob.updatedAt = pendingJob.completedAt;
+      void this.persist(pendingJob);
+      return true;
+    });
     const targetProjectId = payload.projectId;
     if (targetProjectId) {
       this.queue = _.reject(this.queue, (pendingJob) => {
@@ -116,9 +135,10 @@ class RenderQueueService {
     this.jobsMap.set(jobId, job);
     await this.persist(job);
     logger.info(
-      REFACTOR_CONSTANTS.RENDER_LOG_ADDED
-        .replace(SecurityConstants.PLACEHOLDER_0, jobId)
-        .replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue))),
+      REFACTOR_CONSTANTS.RENDER_LOG_ADDED.replace(SecurityConstants.PLACEHOLDER_0, jobId).replace(
+        SecurityConstants.PLACEHOLDER_1,
+        _.toString(_.size(this.queue)),
+      ),
     );
     void this.processQueue();
     return job;
@@ -152,18 +172,22 @@ class RenderQueueService {
     await saveRenderJobToDb(job);
   }
 
-  private async executeRenderWithRetries(
-    job: RenderJob,
-    abortSignal: AbortSignal,
-    onProgressUpdate: (progress: number) => void,
-  ): Promise<string> {
+  private async executeRenderWithRetries(job: RenderJob, abortSignal: AbortSignal, onProgressUpdate: (progress: number) => void): Promise<string> {
     let lastError: unknown;
-    for (let attempt = SecurityConstants.ZERO; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)) {
+    for (
+      let attempt = SecurityConstants.ZERO;
+      attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS;
+      attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)
+    ) {
       try {
-        return await renderFFmpegVideo({
-          ...job.payload,
-          safeProfile: _.isEqual(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT),
-        }, onProgressUpdate, abortSignal);
+        return await renderFFmpegVideo(
+          {
+            ...job.payload,
+            safeProfile: _.isEqual(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT),
+          },
+          onProgressUpdate,
+          abortSignal,
+        );
       } catch (error) {
         lastError = error;
         if (_.lt(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT)) {
@@ -229,9 +253,10 @@ class RenderQueueService {
         job.completedAt = new Date();
         job.updatedAt = job.completedAt;
         await this.persist(job);
-        logger.error(REFACTOR_CONSTANTS.RENDER_LOG_FAILED
-          .replace(SecurityConstants.PLACEHOLDER_0, job.id)
-          .replace(SecurityConstants.PLACEHOLDER_1, job.error), error);
+        logger.error(
+          REFACTOR_CONSTANTS.RENDER_LOG_FAILED.replace(SecurityConstants.PLACEHOLDER_0, job.id).replace(SecurityConstants.PLACEHOLDER_1, job.error),
+          error,
+        );
       }
     } finally {
       if (timeoutId) clearTimeout(timeoutId);

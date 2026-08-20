@@ -23,9 +23,34 @@ const cleanupDirectory = (directoryPath: string): void => {
   }
 };
 
+const cleanupAbandonedRenderDirectories = (activeDirectory: string): void => {
+  const dataDirectory = path.resolve(getDataDirectory());
+  try {
+    _.forEach(fs.readdirSync(dataDirectory, { withFileTypes: true }), (entry) => {
+      if (!entry.isDirectory() || !_.startsWith(entry.name, FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX)) return;
+      const candidate = path.resolve(dataDirectory, entry.name);
+      if (!_.isEqual(candidate, activeDirectory) && _.isEqual(path.dirname(candidate), dataDirectory)) {
+        cleanupDirectory(candidate);
+      }
+    });
+  } catch (error) {
+    logger.warn(FFMPEG_RENDER_CONSTANTS.LOG_CLEANUP_WARNING, dataDirectory, error);
+  }
+};
+
 const getFirstValue = <T>(values: Array<T | undefined>): T | undefined => (
   _.find(values, (value) => !_.isNil(value))
 );
+
+const BASE64_DATA_PREFIX = /^data:[\w.+-]+\/[\w.+-]+;base64,/i;
+const RAW_BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
+
+const isEncodedMediaSource = (value?: string): boolean => {
+  const source = _.trim(_.toString(value));
+  if (_.isEmpty(source)) return false;
+  if (BASE64_DATA_PREFIX.test(source)) return true;
+  return _.gte(source.length, 256) && _.isEqual(source.length % 4, 0) && RAW_BASE64_PATTERN.test(source);
+};
 
 const parsePythonResult = (stdout: string): Record<string, unknown> | undefined => (
   _.findLast(
@@ -126,6 +151,7 @@ export const renderFFmpegVideo = async (
   }
 
   const tempDir = path.join(getDataDirectory(), `${FFMPEG_RENDER_CONSTANTS.TEMP_DIR_PREFIX}${uuidv4()}`);
+  cleanupAbandonedRenderDirectories(tempDir);
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
   }
@@ -184,14 +210,23 @@ export const renderFFmpegVideo = async (
     fs.writeFileSync(globalAudioPath, Buffer.from(globalAudioData, "base64"));
   }
   const renderScenes = _.map(scenesVal, (scene) => {
-    const mediaSource = getFirstValue([scene.imageBase64, scene.imageUrl]);
-    const audioSource = getFirstValue([scene.audioBase64, scene.audioUrl]);
-    const mediaPath = resolveLocalAssetPath(mediaSource);
-    const audioPath = resolveLocalAssetPath(audioSource);
+    const mediaPath = getFirstValue([
+      resolveLocalAssetPath(scene.imageUrl),
+      resolveLocalAssetPath(scene.imageBase64),
+    ]);
+    const audioPath = getFirstValue([
+      resolveLocalAssetPath(scene.audioUrl),
+      resolveLocalAssetPath(scene.audioBase64),
+    ]);
+    const encodedMedia = isEncodedMediaSource(scene.imageBase64) ? scene.imageBase64 : undefined;
+    const encodedAudio = isEncodedMediaSource(scene.audioBase64) ? scene.audioBase64 : undefined;
+    if (_.isEmpty(mediaPath) && _.isEmpty(encodedMedia)) {
+      throw new Error(`Scene ${scene.id} has no valid visual asset`);
+    }
     return {
       ...scene,
-      [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : mediaSource,
-      [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : audioSource,
+      [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : encodedMedia,
+      [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : encodedAudio,
       [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath,
       [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
     };
@@ -240,6 +275,11 @@ export const renderFFmpegVideo = async (
       maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
       signal,
     });
+    const terminateRendererTree = (): void => {
+      if (!renderer.pid || !_.isEqual(process.platform, "win32")) return;
+      execFile("taskkill", ["/PID", _.toString(renderer.pid), "/T", "/F"], { windowsHide: true }, () => undefined);
+    };
+    signal?.addEventListener("abort", terminateRendererTree, { once: true });
     let stdout = SecurityConstants.EMPTY_STRING;
     let stderr = SecurityConstants.EMPTY_STRING;
     let progressBuffer = SecurityConstants.EMPTY_STRING;
@@ -263,6 +303,7 @@ export const renderFFmpegVideo = async (
         else reject(new Error(_.trim(stderr) || _.toString(_.get(parsePythonResult(stdout), FFMPEG_RENDER_KEYS.ERROR)) || FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON));
       });
     });
+    signal?.removeEventListener("abort", terminateRendererTree);
     const result = parsePythonResult(stdout);
 
     if (_.every([result, _.get(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean)) {

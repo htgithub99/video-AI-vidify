@@ -2,6 +2,8 @@ import _ from "lodash";
 
 export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "artistic_retro";
 
+export type BackgroundMode = "minimal" | "contextual" | "white";
+
 export interface CuratedStylePreset {
   id: string;
   name: string;
@@ -12,9 +14,15 @@ export interface CuratedStylePreset {
   description: string;
   positivePrompt: string;
   negativePrompt: string;
-  defaultBackgroundMode: "minimal" | "contextual" | "white";
+  defaultBackgroundMode: BackgroundMode;
   characterRule: string;
   keywords: string[];
+}
+
+export interface StyleCategoryItem {
+  id: StyleCategory;
+  nameVi: string;
+  nameEn: string;
 }
 
 export const STYLE_PRESET_CONFIG = {
@@ -25,17 +33,18 @@ export const STYLE_PRESET_CONFIG = {
   CUSTOM_CATEGORY: "all" as StyleCategory,
   CUSTOM_ICON: "🎨",
   CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản",
-  CUSTOM_BG_MODE: "contextual" as const,
+  CUSTOM_BG_MODE: "contextual" as BackgroundMode,
   MIN_CUSTOM_PROMPT_LENGTH: 30,
   KEYWORD_LENGTH_KEY: "keywordLength",
   WORD_BOUNDARY_PREFIX: "\\b",
   WORD_BOUNDARY_SUFFIX: "\\b",
   REGEX_FLAG_I: "i",
+  EMPTY_STRING: "",
 } as const;
 
 export const STYLE_IDENTITY_BOUNDARY = "Style applies only to rendering, linework, shape language, palette, materials, and lighting. Character name, gender, age, face, hair, body, wardrobe, role, and setting must come only from the story character card and current scene.";
 
-export const STYLE_CATEGORIES: { id: StyleCategory; nameVi: string; nameEn: string }[] = [
+export const STYLE_CATEGORIES: StyleCategoryItem[] = [
   { id: "all", nameVi: "Tất cả (7)", nameEn: "All (7)" },
   { id: "cartoon_2d", nameVi: "2D & Hoạt hình", nameEn: "2D & Cartoon" },
   { id: "3d_cinematic", nameVi: "3D & Điện ảnh", nameEn: "3D & Cinema" },
@@ -49,11 +58,11 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     category: "cartoon_2d",
     icon: "🏃",
     tagline: "Tối giản • Nền trắng",
-    description: "Minh họa người que 2D đơn sắc, nét đen đồng nhất trên nền trắng; tối ưu cho video giải thích rõ ràng.",
-    positivePrompt: "minimalist 2D black-ink stick-figure illustration, high-contrast monochrome vector line art, uniform black outlines, circular heads, simple stick limbs and hands, sparse expressive eyes and eyebrows, one clear action per frame, clean educational explainer visual, consistent character design",
+    description: "Minh họa sơ đồ người que 2D đơn sắc, nét đen đồng nhất trên nền trắng; chỉ quy định cách thể hiện, không cung cấp ngoại hình nhân vật mẫu.",
+    positivePrompt: "minimalist 2D black-ink stick-figure illustration medium, high-contrast monochrome vector linework, uniform black stroke weight, sparse symbolic detail, pure white background, one clearly readable action per frame, clean educational explainer composition",
     negativePrompt: "any color, gradients, gray wash, 3D render, photorealism, realistic skin, painterly texture, detailed scenery, drop shadows, complex shading, text, watermark, blur, noise",
     defaultBackgroundMode: "white",
-    characterRule: "Use circular heads, thin stick limbs, simple hands, and black-only uniform line weight. Render the story-defined action, props, and setting as minimal readable line-art context; never replace them with a generic blank scene.",
+    characterRule: "Apply only the monochrome stick-figure abstraction and uniform line treatment. Derive every identity cue, distinguishing feature, action, prop, and setting from the story character card and current scene; do not copy a sample character design.",
     keywords: ["người que", "stickman", "nguoi que", "stick figure", "đen trắng", "hình que"],
   },
   gai_xinh_2d: {
@@ -63,11 +72,11 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     category: "cartoon_2d",
     icon: "✨",
     tagline: "Thời thượng • Sắc nét",
-    description: "Webtoon romance hiện đại, nét mực tinh gọn, màu sạch và nhân vật thời trang, thanh lịch.",
-    positivePrompt: "polished Korean webtoon visual language, 2D digital comic art, refined almond-shaped eyes, clean tapered ink lines, soft cel shading with subtle blush, restrained pastel-and-jewel-tone palette, editorial lighting, attractive natural facial proportions, consistent webtoon character model",
+    description: "Ngôn ngữ webtoon 2D hiện đại với nét mực tinh gọn, cel shading sạch và bảng màu biên tập; không mang ngoại hình nhân vật mẫu vào truyện.",
+    positivePrompt: "polished Korean webtoon rendering language, 2D digital comic medium, clean tapered ink linework, controlled soft cel shading, restrained pastel-and-jewel-tone palette, crisp color separation, editorial lighting, polished consistent panel rendering",
     negativePrompt: "photorealism, 3D CGI, western superhero comic, accidental chibi proportions, rough sketch, mismatched eyes, malformed hands, muddy palette, heavy grain, text, watermark",
     defaultBackgroundMode: "contextual",
-    characterRule: "Use natural story-appropriate character proportions, clear almond eyes, glossy stylized hair masses, thin tapered linework, and clean cel-shaded skin. Preserve the narrative gender, age, era, costume, role, action, props, and setting; webtoon styling must not make a historical or fantasy story modern.",
+    characterRule: "Apply only webtoon linework, cel shading, palette, and editorial lighting. Character name, gender, age, face, eyes, hair, body, clothing, role, action, and setting must remain exactly story-defined.",
     keywords: ["gái xinh", "gái xinh 2d", "hot girl", "nữ thần", "gai xinh", "webtoon", "manhwa"],
   },
   hoat_hinh_mat_hip: {
@@ -77,40 +86,40 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     category: "cartoon_2d",
     icon: "😆",
     tagline: "Đầu to • Hài hước",
-    description: "Hoạt hình hài 2D đầu to, mắt híp hình hạt đỗ và biểu cảm cường điệu, màu phẳng tươi sáng.",
-    positivePrompt: "playful 2D comedy cartoon, oversized round head and small compact body, horizontal bean-shaped squinting eyes, arched brows, wide exaggerated comic mouth, thick uniform black outlines, simple rounded shapes, bright flat color fills, clean readable explainer-animation frame, consistent chibi proportions",
+    description: "Hoạt hình hài 2D với nét đậm, hình khối đồ họa mềm và màu phẳng tươi sáng; ngoại hình cụ thể vẫn lấy từ nhân vật trong truyện.",
+    positivePrompt: "playful 2D comedy-cartoon rendering language, thick uniform black outlines, simple rounded graphic shape language, bright flat color fills, minimal shading, lively visual timing, clean readable explainer-animation composition",
     negativePrompt: "photorealism, realistic anatomy, 3D CGI, anime detailed eyes, dark gritty mood, thin sketchy lines, gradients, dramatic rendering, busy background, text, watermark, blur",
     defaultBackgroundMode: "minimal",
-    characterRule: "Use oversized round heads, compact bodies, bean-shaped squinting eyes, thick outline weight, and exaggerated comedy expressions. Preserve each character's story-defined identity, era, costume, role, action, relevant props, and environment rather than adding generic joke props.",
+    characterRule: "Apply only the bold outline, rounded graphic language, flat colors, and comedy-cartoon rendering. Do not impose a preset head, eye, mouth, body, hairstyle, costume, or expression; all character facts and reactions come from the story.",
     keywords: ["mắt híp", "hoạt hình mắt híp", "hài bựa", "nhóc tóc đỏ", "én", "vui nhộn", "mat hip"],
   },
-  tho_bay_mau: {
-    id: "tho_bay_mau",
-    name: "Tho Bay Mau Style",
-    nameVi: "Thỏ Bảy Màu",
+  hoat_hinh_2d_vn: {
+    id: "hoat_hinh_2d_vn",
+    name: "Vietnamese 2D Cartoon",
+    nameVi: "Hoạt Hình 2D VN",
     category: "cartoon_2d",
     icon: "🍵",
-    tagline: "Cổ tích • Dân gian VN",
-    description: "Hoạt hình châm biếm Việt Nam: hình khối tối giản, nét mực đậm và bảng màu dân gian ấm.",
-    positivePrompt: "Vietnamese satirical folk-cartoon visual language, minimalist 2D animation, rounded capsule-shaped torso, round head, dot eyes and small expressive mouth, bold even black ink outlines, warm muted folk palette of ochre, terracotta, teal and cream, simple paper-like flat fills, clean uncluttered composition, consistent character silhouette",
-    negativePrompt: "photorealism, 3D CGI, glossy plastic, anime action style, hyper-detailed skin, neon cyberpunk, dark horror mood, thin realistic anatomy, gradients, text, watermark, blur",
+    tagline: "Nét đậm • Dân gian VN",
+    description: "Phong cách hoạt hình 2D tối giản Việt Nam: nét viền đen đậm, màu ấm và biểu cảm châm biếm hài hước.",
+    positivePrompt: "satirical Vietnamese 2D cartoon visual language, clean minimalist 2D animation aesthetic, bold black ink outlines, warm muted color palette of ochre, terracotta, teal and cream, smooth flat color fills, clean uncluttered composition, consistent stylized graphic linework",
+    negativePrompt: "photorealism, 3D CGI, animal head, rabbit ears, animal mascot, glossy plastic, anime hyper-detail, neon cyberpunk, dark horror mood, gradients, text, watermark, blur",
     defaultBackgroundMode: "contextual",
-    characterRule: "Use capsule-like simplified forms, dot eyes, minimal limbs, bold black outlines, and a muted folk palette. Preserve the story-defined identity, costume, era, action, props, and environment between scenes; folk-cartoon treatment must not invent a rural or historical setting.",
-    keywords: ["thỏ bảy màu", "tho bay mau", "dân gian", "cổ tích", "bá hộ", "trạng quỳnh", "việt nam"],
+    characterRule: "Apply only bold black linework, warm flat colors, minimal shading, and clean Vietnamese editorial-cartoon rendering. Preserve all character anatomy, identity, wardrobe, action, props, era, and setting from the story; introduce no mascot or sample character.",
+    keywords: ["hoạt hình 2d vn", "hoạt hình vn", "hoat hinh 2d vn", "thỏ bảy màu", "tho bay mau", "dân gian", "châm biếm", "nét đậm", "việt nam"],
   },
-  gau_truc_hai: {
-    id: "gau_truc_hai",
-    name: "Funny Panda Meme",
-    nameVi: "Gấu Trúc Hài",
+  meme_hai_huoc_2d: {
+    id: "meme_hai_huoc_2d",
+    name: "2D Comedy Meme",
+    nameVi: "Meme Hài Hước 2D",
     category: "cartoon_2d",
-    icon: "🐼",
-    tagline: "Meme bựa • Cổ trang",
-    description: "Meme hoạt hình đầu gấu trúc, biểu cảm lầy lội; trang phục kiếm hiệp cổ trang dễ nhận diện.",
-    positivePrompt: "humorous Vietnamese meme-cartoon visual language, bold clean outlines, flat warm colors, simplified rounded facial planes, deliberately exaggerated deadpan comic expression, one readable comedic reaction, consistent graphic construction",
-    negativePrompt: "photorealism, realistic animal anatomy, serious portrait, 3D CGI, western superhero comic, cyberpunk neon, horror, text, watermark, blur, low resolution",
+    icon: "😏",
+    tagline: "Châm biếm • Hài hước",
+    description: "Phong cách meme 2D hài hước: biểu cảm châm biếm sinh động, nét vẽ đồ họa gọn gàng và màu phẳng dễ nhận diện.",
+    positivePrompt: "humorous 2D comic-meme rendering language, bold clean graphic outlines, flat warm color fills, simplified graphic shape language, high visual readability, punchy reaction staging, consistent clean cartoon finish",
+    negativePrompt: "photorealism, realistic animal anatomy, animal head, panda mascot, 3D CGI, western superhero comic, cyberpunk neon, horror, text, watermark, blur, low resolution",
     defaultBackgroundMode: "contextual",
-    characterRule: "Use bold outlines, flat warm colors, rounded graphic shapes, and readable deadpan comedy expression. Preserve the story-defined character identity, costume, era, role, action, props, and environment; never replace a story character with an animal, mascot, or genre-specific stock character.",
-    keywords: ["gấu trúc", "gấu trúc hài", "panda meme", "gấu trúc bựa", "cổ trang", "gau truc", "ảnh chế"],
+    characterRule: "Apply only meme-comic linework, flat colors, graphic simplification, and reaction staging. Do not copy a mascot, animal head, stock face, costume, or emotion; identity and reaction must come from the story scene.",
+    keywords: ["meme hài hước 2d", "meme hài", "meme 2d", "meme hai huoc 2d", "gấu trúc hài", "panda meme", "gấu trúc bựa", "ảnh chế", "hài hước"],
   },
   ve_tay_don_gian: {
     id: "ve_tay_don_gian",
@@ -120,10 +129,10 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     icon: "✏️",
     tagline: "Phóng khoáng • Đời sống",
     description: "Minh họa mực tay phóng khoáng cho các tình huống đời sống, nét vẽ tự nhiên và nền thoáng.",
-    positivePrompt: "hand-drawn indie editorial cartoon, loose confident black ink contours with intentional line variation, off-white paper texture, limited two-color accent palette, understated facial features, airy negative space, lightly imperfect human-made linework, consistent sketch vocabulary",
+    positivePrompt: "hand-drawn indie editorial illustration medium, loose confident black ink contours with intentional line variation, off-white paper texture, limited two-color accent palette, airy negative space, lightly imperfect human-made linework, consistent sketch vocabulary",
     negativePrompt: "3D CGI, photorealism, glossy anime, polished vector-perfect lines, dense crosshatching, neon glow, volumetric lighting, elaborate colorful scenery, text, watermark, blur",
     defaultBackgroundMode: "white",
-    characterRule: "Keep loose ink-line variation, off-white paper texture, limited accents, and relaxed stylized facial features. Preserve the story-defined costume, era, role, action, props, and environment in every frame; do not reduce a narrative scene to generic everyday life.",
+    characterRule: "Apply only loose ink-line variation, paper texture, limited accents, and airy editorial composition. Preserve the complete story-defined character identity, clothing, role, action, props, era, and environment.",
     keywords: ["vẽ tay", "vẽ tay đơn giản", "ve tay", "đời sống", "châm biếm", "indie", "anh da đen"],
   },
   tien_hiep_3d: {
@@ -133,19 +142,25 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     category: "3d_cinematic",
     icon: "⚔️",
     tagline: "Đồ họa 3D • Tu tiên",
-    description: "Ngôn ngữ render donghua 3D điện ảnh: chất liệu tinh xảo, ánh sáng huyền ảo và không khí kỳ ảo; nhân vật/bối cảnh vẫn theo cốt truyện.",
-    positivePrompt: "premium Chinese 3D donghua visual language, cinematic stylized 3D animation, refined anime-inspired facial construction, natural adult human proportions, detailed hair strands, physically based character and environment materials, polished high-end production-quality render",
+    description: "Ngôn ngữ render donghua 3D điện ảnh với vật liệu PBR, ánh sáng thể tích và độ hoàn thiện cao; không tự thêm ngoại hình, cổ trang hay tiên hiệp vào nhân vật.",
+    positivePrompt: "premium Chinese 3D donghua rendering language, cinematic stylized 3D animation medium, physically based materials, refined surface detail, controlled subsurface scattering, cinematic volumetric lighting, polished high-end production-quality render",
     negativePrompt: "chibi, childlike proportions, oversized head, tiny limbs, 2D flat cartoon, stick figure, low-poly geometry, cheap mobile-game render, plastic skin, distorted anatomy, extra fingers, inconsistent costume, cluttered effects, oversaturated neon, text, watermark, blur",
     defaultBackgroundMode: "contextual",
-    characterRule: "Maintain premium 3D donghua facial construction, hair design, and material quality with natural adult human proportions, anatomically plausible hands and limbs, and no chibi exaggeration. Preserve the story-defined identity, costume, era, role, action, props, and environment; donghua rendering must not automatically introduce cultivation, robes, temples, or magic.",
+    characterRule: "Apply only donghua 3D rendering, materials, surface finish, lighting, and cinematic depth. Name, gender, age, face, eyes, hair, body proportions, clothing, role, action, props, era, and setting come only from the story; introduce no cultivator, robe, temple, weapon, or magic unless narrated.",
     keywords: ["3d tiên hiệp", "tiên hiệp", "tu tiên", "3d trung quốc", "tiên nghịch", "đấu phá", "tien hiep", "xianxia", "donghua", "immortal cultivator", "unreal engine 5"],
   },
 };
 
 export const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
 
+const LEGACY_STYLE_ID_ALIASES: Record<string, string> = {
+  tho_bay_mau: "hoat_hinh_2d_vn",
+  gau_truc_hai: "meme_hai_huoc_2d",
+};
+
 const findByPresetId = (normalized: string): CuratedStylePreset | undefined => {
-  return CURATED_STYLE_PRESETS[normalized];
+  const resolvedId = _.get(LEGACY_STYLE_ID_ALIASES, normalized, normalized);
+  return CURATED_STYLE_PRESETS[resolvedId];
 };
 
 const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => {
@@ -195,7 +210,7 @@ const createCustomPreset = (prompt: string): CuratedStylePreset => ({
   positivePrompt: prompt,
   negativePrompt: CURATED_STYLE_PRESETS[DEFAULT_STYLE_PRESET_ID].negativePrompt,
   defaultBackgroundMode: STYLE_PRESET_CONFIG.CUSTOM_BG_MODE,
-  characterRule: "",
+  characterRule: STYLE_PRESET_CONFIG.EMPTY_STRING,
   keywords: [],
 });
 
