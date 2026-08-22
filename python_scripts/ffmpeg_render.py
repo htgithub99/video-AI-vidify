@@ -225,7 +225,7 @@ def create_subtitle_filter(subtitle_path):
     subtitle_style = (
         "FontName=Arial,FontSize=13,PrimaryColour=&H00FFFFFF,"
         "OutlineColour=&H90000000,BackColour=&H50000000,"
-        "BorderStyle=1,Outline=1.4,Shadow=0,Alignment=2,MarginV=52,"
+        "BorderStyle=1,Outline=1.4,Shadow=0,Alignment=2,MarginV=28,"
         "Bold=0,Spacing=0.2"
     )
     return f"subtitles=filename='{os.path.basename(subtitle_path)}':force_style='{subtitle_style}'"

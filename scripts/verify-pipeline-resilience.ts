@@ -69,7 +69,7 @@ const semanticSubtitleCues = createSceneSubtitleCues({
   subtitle: "Mai ký vào bảng chấm công với những điều khoản phạt vô lý, nhưng quản lý chỉ mỉm cười rồi giữ lại bản hợp đồng.",
 } as any);
 assert(semanticSubtitleCues.length >= 2, "long subtitle was not split into readable semantic cues");
-assert(semanticSubtitleCues.every(cue => cue.text.split("\n").length <= 2), "subtitle cue exceeded two lines");
+assert(semanticSubtitleCues.every(cue => cue.text.split("\n").length === 1), "subtitle cue must use exactly one line");
 assert(semanticSubtitleCues.every(cue => cue.text.split("\n").every(line => line.length <= 42)), "subtitle line exceeded safe horizontal length");
 assert(semanticSubtitleCues.some(cue => cue.text.toLowerCase().startsWith("nhưng")), "subtitle did not preserve the semantic contrast boundary");
 const autoGeneratorSource = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");

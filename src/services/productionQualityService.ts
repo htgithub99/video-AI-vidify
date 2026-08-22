@@ -15,7 +15,7 @@ export const DEFAULT_VOICE_ARC: VoiceArc = {
 export const PRODUCTION_QA_THRESHOLDS = {
   MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
   MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
-  MAX_SUBTITLE_LINES: 2,
+  MAX_SUBTITLE_LINES: 1,
   MAX_SUBTITLE_CHARS_PER_LINE: 42,
   MAX_SUBTITLE_CHARS_PER_SECOND: 21,
   MIN_SUBTITLE_DURATION_SECONDS: 1.2,
@@ -48,11 +48,11 @@ export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityRep
   const blockingErrors = _.compact([
     !hasSubtitleContent && "subtitle_content_missing",
     _.isEmpty(subtitleCues) && "subtitle_cues_missing",
-    !_.isEmpty(lineErrors) && "subtitle_more_than_two_lines",
+    !_.isEmpty(lineErrors) && "subtitle_more_than_one_line",
     !_.isEmpty(longLines) && "subtitle_line_too_long",
     !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient",
   ]) as string[];
-  const warnings = _.compact([!_.isEmpty(lineErrors) && "subtitle_more_than_two_lines", !_.isEmpty(longLines) && "subtitle_line_too_long", !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient", "subtitle_focal_position_requires_preview_qc"]);
+  const warnings = _.compact([!_.isEmpty(lineErrors) && "subtitle_more_than_one_line", !_.isEmpty(longLines) && "subtitle_line_too_long", !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient", "subtitle_focal_position_requires_preview_qc"]);
   return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 

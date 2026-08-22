@@ -3,9 +3,7 @@ import { PRODUCTION_QA_THRESHOLDS } from "./productionQualityService";
 import { StoryboardScene, SubtitleCue } from "../types";
 import { smartSplitSentences } from "../lib/textProcessor";
 
-const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE
-  * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES
-  - 10;
+const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE;
 const SEMANTIC_BREAK_PATTERN = /[,;:—]\s+|\s+(?:nhưng|vì|khi|rồi|còn|tuy nhiên|sau đó|đồng thời|while|but|because|when|then|however|meanwhile)\s+/gi;
 
 const splitLongWord = (word: string): string[] => _.map(
@@ -54,7 +52,8 @@ const createBalancedSubtitleLines = (text: string): string[] => {
   const words = _.flatMap(_.words(text, /[^\s]+/g), word => (
     _.size(word) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE ? splitLongWord(word) : [word]
   ));
-  if (_.size(_.join(words, " ")) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, " ")];
+  if (_.isEqual(PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES, 1)
+    || _.size(_.join(words, " ")) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, " ")];
   const candidates = _.compact(_.map(_.range(1, words.length), index => {
     const first = _.join(_.slice(words, 0, index), " ");
     const second = _.join(_.slice(words, index), " ");
