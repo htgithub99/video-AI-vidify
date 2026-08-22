@@ -12,6 +12,7 @@ import { normalizeHookScore, normalizeScriptQualityReport, parseTargetDurationSe
 import { AiTaskCapability, routeAiTask } from "../src/server/services/taskRouterService.ts";
 import { GenerateType, ImageGeneratorEngine, SceneAssetStatus, TextInImageMode } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
+import { getChapterWriterPrompt, getHookGeneratorPrompt } from "../src/constants/prompts.ts";
 
 const assert = (condition: unknown, message: string): void => {
   if (!condition) throw new Error(message);
@@ -120,6 +121,15 @@ assert(_.isEqual(GENRE_OPTION_GROUPS[0].options, satiricalGenres), "satirical ge
 const visibleGenres = _.flatMap(GENRE_OPTION_GROUPS, "options");
 assert(visibleGenres.length === 16 && _.uniq(visibleGenres).length === visibleGenres.length, "genre list is not compact and unique");
 assert(normalizeGenreValue(VideoGenre.STORYTELLING) === VideoGenre.STORY_DRIVEN_VIDEO_ESSAY && normalizeGenreValue("Documentary") === VideoGenre.HISTORY && normalizeGenreValue("Education") === VideoGenre.NARRATIVE_EXPLAINER && normalizeGenreValue(VideoGenre.PHILOSOPHY) === VideoGenre.PSYCHOLOGY, "legacy genre normalization failed");
+const satiricalChapterPrompt = getChapterWriterPrompt("Chương 1", "Mô tả", VideoGenre.SATIRICAL_LIFE_AUTO, "Documentary", true, "", "", 220, "sentence", "Trạng thái");
+assert(/SATIRICAL SPOKEN-LANGUAGE CONTRACT/.test(satiricalChapterPrompt), "satirical spoken-language contract missing");
+assert(/Never begin three consecutive sentences with "Bạn"/.test(satiricalChapterPrompt), "satirical syntax variation rule missing");
+assert(/hồi chuông cảnh tỉnh/.test(satiricalChapterPrompt), "satirical anti-AI prose list missing");
+const naturalVietnamesePrompt = getHookGeneratorPrompt(3, "Một chủ đề", VideoGenre.HISTORY, "Story", 10, "vi");
+const naturalEnglishPrompt = getHookGeneratorPrompt(3, "A topic", VideoGenre.HISTORY, "Story", 10, "en");
+assert(/NATURAL VIETNAMESE VOICE CONTRACT/.test(naturalVietnamesePrompt) && /hồi chuông cảnh tỉnh/.test(naturalVietnamesePrompt), "global natural Vietnamese contract missing");
+assert(/NATURAL ENGLISH VOICE CONTRACT/.test(naturalEnglishPrompt) && /in today's world/.test(naturalEnglishPrompt), "global natural English contract missing");
+assert(!/SATIRICAL SPOKEN-LANGUAGE CONTRACT/.test(naturalEnglishPrompt), "satirical voice leaked into a non-satirical genre");
 
 const publishableProject: any = {
   ...project,
