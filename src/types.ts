@@ -514,6 +514,8 @@ export interface StoryboardScene {
   visualIntent?: string;
   visibleAction?: string;
   reaction?: string;
+  storyEvidence?: string;
+  visualHook?: string;
   characterStateBefore?: string;
   characterStateAfter?: string;
   shotSize?: string;
@@ -1040,10 +1042,10 @@ export enum GeminiChatSelector {
   ModelMenu = "[data-test-id=\"gem-mode-menu\"]",
   ModelOption = "gem-menu-item[role=\"menuitem\"][data-test-id^=\"bard-mode-option-\"]",
   ModelLabel = ".label",
-  PlusButton = "button[aria-label*=\"tải lên\" i], button[aria-label*=\"công cụ\" i], button[aria-label*=\"thêm\" i], button[aria-label*=\"upload\" i], button[aria-label*=\"tool\" i], button[aria-label*=\"add\" i], gem-icon-button:has(mat-icon[fonticon=\"plus\"]) button, gem-icon-button[data-test-id=\"action-menu-button\"] button, button:has(mat-icon[fonticon=\"add\"])",
+  PlusButton = "button[aria-label*=\"tải lên\" i], button[aria-label*=\"thêm tệp\" i], button[aria-label*=\"upload\" i], button[aria-label*=\"add files\" i], gem-icon-button:has(mat-icon[fonticon=\"plus\"]) button, gem-icon-button[data-test-id=\"action-menu-button\"] button, gem-icon-button[data-test-id=\"action-menu-button\"], button:has(mat-icon[fonticon=\"add\"])",
   MenuOptions = ".cdk-overlay-pane button, mat-menu button, [role=\"menuitem\"]",
   PlusMenuOptions = ".cdk-overlay-pane button, mat-action-list button, [role=\"menuitem\"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item",
-  ActiveGenerateType = "button, [role=\"button\"], [aria-label], [data-test-id], .input-area-switch",
+  ActiveGenerateType = "gem-button[data-test-id=\"deselect-drawer-item-gem-button\"], button, [role=\"button\"], [aria-label], [data-test-id], .input-area-switch",
   SendButton = "button[aria-label*=\"Gửi\" i], button[aria-label*=\"Send\" i], gem-icon-button.send-button button, div.send-button-container button",
   GenerationBusy = "gem-icon-button.send-button.stop",
   ResponseGenerationBusy = ".model-response-label-announcer[aria-busy=\"true\"], [data-test-id=\"image-loading-overlay\"]:not(.done-generating)",

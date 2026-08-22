@@ -306,6 +306,7 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   TEXT_OVERLAY_DIRECTIVE_TEMPLATE: "Render exactly one readable text string, copied character-for-character in the project's selected language: \"{text}\". Do not render translations, captions, supporting copy, or any other words, letters, or numbers",
   NO_EXTRA_PEOPLE_DIRECTIVE: "No unrelated background people",
   SINGLE_FRAME_DIRECTIVE: "one continuous frame without panels or collage",
+  FULL_BLEED_DIRECTIVE: "Full-bleed edge-to-edge composition filling the entire canvas; never present the scene inside a white margin, outer border, picture frame, mat, card, page, mockup, interface chrome, letterbox, or pillarbox",
   DISTINCT_CHARACTER_VISUALS_DIRECTIVE: "Distinct character visuals: secondary characters, mentors, or clients must wear contrasting clothing colors (e.g. navy, grey, green, or brown) to clearly distinguish them from the main protagonist",
   UNIFORM_CHARACTER_DIRECTIVE: "Universal character anatomy rule: every character in the scene (including background figures, crowd, boss, clients, and brokers) must strictly share the exact same character anatomy construction, matching the project visual anchor",
   NATURAL_LIMB_DIRECTIVE: "Natural single-jointed limb posing without extra joints, disjointed elbows, or mutated arms",
@@ -623,6 +624,7 @@ export const FFMPEG_RENDER_CONSTANTS = {
   CONFIG_FILE_NAME: "render_config.json",
   SCRIPT_PATH: "python_scripts/ffmpeg_render.py",
   GLOBAL_AUDIO_FILE_NAME: "global_voice.mp3",
+  SCENE_CACHE_DIR_NAME: "_render_cache",
   ENCODING_UTF8: "utf-8",
   FFMPEG_FALLBACK_CMD: "ffmpeg",
   MAX_SCENE_WORKERS: 4,
@@ -637,7 +639,7 @@ export const FFMPEG_RENDER_CONSTANTS = {
   CLEANUP_MAX_RETRIES: 8,
   CLEANUP_RETRY_DELAY_MS: 150,
   LOG_CLEANUP_WARNING: "FFmpeg temporary directory cleanup deferred",
-  DEFAULT_SUBTITLE_MODE: SubtitleMode.BurnIn,
+  DEFAULT_SUBTITLE_MODE: SubtitleMode.Both,
   MAX_RENDER_ATTEMPTS: 2,
   SAFE_PROFILE_ATTEMPT: 1,
 } as const;
@@ -669,6 +671,7 @@ export const FFMPEG_RENDER_KEYS = {
   SUBTITLE_MODE: "subtitleMode",
   AUDIO_TRACKS: "audioTracks",
   SAFE_PROFILE: "safeProfile",
+  SCENE_CACHE_DIR: "sceneCacheDir",
   SUCCESS: "success",
   PROGRESS: "progress",
   URL: "url",
@@ -711,7 +714,7 @@ export const GEMINI_CHAT_VIDEO_INPUT_CONFIG = {
   UPLOAD_VERIFY_TIMEOUT_MS: 15000,
   PROCESSING_APPEAR_TIMEOUT_MS: 15000,
   MEDIA_READY_TIMEOUT_MS: 180000,
-  VIDEO_READY_TIMEOUT_MS: 600000,
+  VIDEO_READY_TIMEOUT_MS: 300000,
   VIDEO_SOURCE_POLL_MS: 500,
   VIDEO_SOURCE_POLL_ATTEMPTS: 30,
 } as const;
@@ -729,10 +732,14 @@ export const GEMINI_CHAT_VIDEO_SELECTORS = {
 
 export const GEMINI_DOM_DIAGNOSTICS_CONFIG = {
   FILE_NAME: "gemini_dom_diagnostics.jsonl",
-  MAX_ELEMENTS: 160,
+  MAX_FILE_BYTES: 25 * 1024 * 1024,
+  RETAINED_FILE_BYTES: 5 * 1024 * 1024,
+  DETAILED_STATE_PATTERN: /(?:error|failed|timeout|missing|rejected|extract_start|url_detected|ready)/i,
+  MINIMAL_MAX_ELEMENTS: 12,
+  MAX_ELEMENTS: 80,
   MAX_CLASS_NAME_LENGTH: 300,
   MAX_TEXT_LENGTH: 300,
-  MAX_HTML_LENGTH: 1200,
+  MAX_HTML_LENGTH: 600,
   SELECTOR: [
     "model-response",
     "thinking-overlay",
@@ -809,6 +816,10 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
   MIN_VALID_MEDIA_LENGTH: 200,
   MIN_SCREENSHOT_LENGTH: 500,
   DOWNLOAD_BUTTON_SELECTORS: [
+    'generated-video gem-icon-button[fonticonname="download"] button',
+    'generated-video gem-icon-button[fonticonname="download"]',
+    'video-player gem-icon-button[fonticonname="download"] button',
+    'video-player gem-icon-button[fonticonname="download"]',
     "download-generated-image-button button",
     "download-generated-image-button",
     'gem-icon-button[data-test-id="download-generated-image-button"] button',
@@ -1241,7 +1252,7 @@ export const SOUND_DESIGN_CONFIG = {
 
 export const RENDER_QUEUE_CONFIG = {
   JOB_TIMEOUT_MS: 7_200_000,
-  PROGRESS_PERSIST_INTERVAL_MS: 2_000,
+  PROGRESS_PERSIST_INTERVAL_MS: 10_000,
   RECOVERABLE_STATUSES: ["pending", "processing"],
   CANCELLED_ERROR: "render_cancelled",
   TIMEOUT_ERROR: "render_timeout",

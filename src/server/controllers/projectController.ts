@@ -668,6 +668,22 @@ export const updateProject = async (request: Request, response: Response) => {
     if (oldProject) {
       let newProject = request.body;
 
+      const failedBeforeProducingStoryboard = _.includes(
+        [REFACTOR_CONSTANTS.STATUS_PARTIAL, REFACTOR_CONSTANTS.STATUS_FAILED],
+        newProject.status,
+      ) && _.isEmpty(newProject.storyboard) && !_.isEmpty(oldProject.storyboard);
+      if (failedBeforeProducingStoryboard && !newProject.isRecreatingStoryboard) {
+        newProject = {
+          ...newProject,
+          storyboard: oldProject.storyboard,
+          thumbnails: _.isEmpty(newProject.thumbnails) ? oldProject.thumbnails : newProject.thumbnails,
+          voiceConfig: _.isEmpty(newProject.voiceConfig?.audioUrl) && _.isEmpty(newProject.voiceConfig?.audioBase64)
+            ? oldProject.voiceConfig
+            : newProject.voiceConfig,
+          renderedVideoUrl: newProject.renderedVideoUrl || oldProject.renderedVideoUrl,
+        };
+      }
+
       if (newProject.name && oldProject.name && !_.eq(newProject.name, oldProject.name)) {
         const assetsDir = path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME);
         const oldDir = path.join(assetsDir, getSafeFolderName(oldProject.name));

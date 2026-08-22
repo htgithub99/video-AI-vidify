@@ -1,33 +1,23 @@
 import { VideoGenre } from "./enums";
 
-const SATIRICAL_LIFE_GUIDELINE = `SATIRICAL / SOCIAL DARKSIDE STORYTELLING (SIGNATURE VIRAL NARRATIVE FORMULA):
-- SECOND-PERSON POV ("BẠN" / "YOU") MANDATORY: Always address the viewer directly as "Bạn" (You) throughout the entire story. Put the viewer directly into the shoes of the protagonist, exposing their inner greed, naive justifications, psychological descent, and inevitable downfall ("Bạn trượt ra khỏi bụng mẹ...", "Bạn ngồi trong căn phòng ngột ngạt...", "Bạn nghĩ mình khôn ngoan nhưng thực ra bạn chỉ là món gọi thêm...").
-- THE "LOW-STEP TRAP" FORMULA (BẪY BẬC THỀM THẤP):
-  + The trap NEVER begins with an obvious cliff or crime. It always starts with a gentle, seemingly harmless lower step ("chỉ ngồi nói chuyện rót nước", "chỉ dự tiệc kín", "chỉ bật livestream tâm sự", "em cứ ở đây anh khác lo").
-  + The protagonist always rationalizes their moral compromises: "Mình có làm gì bẩn thỉu đâu, mình chỉ ngồi một lúc", "Tội lỗi thì khó nuốt nhưng nếu được bọc bằng tiền người ta vẫn sẽ cố nuốt cho trôi", "Chỉ cần kiếm đủ một con số rồi biến mất".
-- PRECISE TIME ANCHORS & REALISTIC CHRONOLOGICAL FLOW:
-  + Open scenes and transitions with realistic, gritty time anchors: "8:00 sáng...", "9:53 sáng, hai ngày sau khi trở về...", "7:40 tối...", "Gần 2:00 sáng...", "Đến ngày thứ bảy...", "Một tuần trước ngày cưới...".
-  + TEMPORAL REALISM: Realistic progression across days, weeks, months, or years without illogical jumps.
-- ARITHMETICAL & FINANCIAL CONTINUITY:
-  + Use exact, cold financial figures: "3 triệu", "20 triệu", "40 triệu", "130 triệu một đêm", "2 tỷ 700 triệu", "100 đô", "món nợ 9 chữ số".
-  + Track money with mathematical precision (gross earnings, agent cuts, bribes, scams, lost balance).
-- GRITTY VIETNAMESE SATIRE DICTION & CYNICAL METAPHORS:
-  + Use sharp, biting, unembellished Vietnamese street-smart diction, dark humor, and vivid real-life metaphors:
-    * "Tấm chiếu mới", "bộ não dính đờm", "nội tạng biểu tình", "tiền chưa kịp ấm đít".
-    * "Ảnh trên mạng như thần tiên tỷ tỷ, mở cam thường lại biến thành tiểu yêu quái ở núi Yên Lãng".
-    * "Hai người nổ ra cuộc cãi vã căng thẳng, bạn cãi còn hắn thì vã".
-    * "Đừng để bọn này phải dùng đến kiến thức vật lý".
-    * "Cái bẫy lừa người ta bằng dục vọng và trói họ lại bằng sự xấu hổ".
-    * "Thời gian trôi qua như chó chạy ngoài đồng".
-    * "Người có tên tuổi thì không thiếu, thứ thiếu là người vừa chịu đi vừa chưa bị đám khách này dùng qua".
-    * "Có tiền chỉ giúp bạn mua vé để chạy, nó không xóa được tên bạn khỏi những tờ giấy bạn đã ký".
-    * "Bạn nghĩ mình đưa camera vào để nắm thóp người giàu, nhưng không biết nó là nhát dao đâm ngược lại chính bạn".
-- ESCALATING STAKES & INESCAPABLE COLLAPSE:
-  + Vulnerability/Naivety -> Low-step bait & First quick money -> Illusion of mastery/False freedom -> Deeper complicity & Raising stakes -> Sudden reality check / Police raid / Irreversible betrayal -> Cold realization & Moral emptiness.
-- STRICTLY FORBIDDEN:
-  + No generic fairy-tale endings or preachiness.
-  + No "it was just a dream" cop-outs. The consequences (prison, broken family, public shame, being a disposable pawn) must be irreversible.
-  + Narrative MUST feel realistic, dark, satirical, and intellectually punchy from start to finish.`;
+const SATIRICAL_LIFE_GUIDELINE = `DARKLY SATIRICAL VIETNAMESE STORYTELLING (DRY, CONVERSATIONAL VIDEO-ESSAY PERSONA):
+- GENRE PERSONA OVERRIDES GENERIC STYLE LABELS: Even when the user selects "Professional" or "Documentary", keep the factual discipline but write the narration with a dry, street-smart, conversational satirical voice rather than formal corporate prose.
+- NARRATOR PERSONA: Sound like an observant Vietnamese friend calmly explaining an absurd situation. Prefer natural spoken Vietnamese, restrained sarcasm, ironic understatement and precise everyday details. Never sound like a lecturer delivering a moral verdict.
+- COMIC ENGINE: Repeatedly establish a reasonable expectation, reveal the uncomfortable reality, then end on a concise undercut or punchline. Use controlled exaggeration, ironic contrast, rule-of-three, callbacks and self-aware transitions. Aim for a meaningful comic turn every 2-4 sentences without turning every line into a joke.
+- POINT OF VIEW: Second-person "bạn" is the default immersive lens, but vary sentence openings and occasionally step back to expose the wider mechanism. Do not mechanically begin every sentence with "Bạn".
+- STORY-FIRST IMMERSION: For a premise framed as "why it is terrible to be/do X", default to an immersive lived-experience story rather than a topical report. Give the central person a stable name, concrete starting situation, immediate need, recurring object and a causal sequence of choices. Let viewers enter rooms, hear rules, notice transactions and experience reversals alongside that person.
+- TRUTH STATUS: If the source identifies a verifiable real person or case, preserve that factual identity and scope. Otherwise write a clearly representative composite scenario grounded in realistic mechanisms; never falsely claim that an invented person, quote or event is a documented true case.
+- SCENE CHAIN: Each paragraph must contain a new event, decision, interaction or consequence. Use specific micro-scenes and short quoted rules when supported by the premise. Analysis comes after the event it explains, never as a free-floating lecture.
+- ADAPTIVE FORMAT PALETTE: Choose the format that best exposes the exact premise: immersive second-person story, observational social essay, mock survival guide, unwritten-rules countdown, day-in-the-life escalation, misconception-versus-reality reversal, character case study, institutional absurdity breakdown, transformation timeline, or tragicomic cautionary tale. Do not combine every format and do not reuse one fixed downfall template for unrelated topics.
+- ADAPTIVE SATIRE INTENSITY: Everyday inconveniences should stay playful and recognizably ordinary; workplace or social hypocrisy may become sharper; exploitation and tragedy require restrained dark humor with more empathy and fewer jokes. Never manufacture crime, scandal, sexual danger, public humiliation, death, prison or total ruin merely to make the story feel darker.
+- STORY SHAPE: Build a causal progression appropriate to the selected format. A low-step trap is one available shape, not a mandatory formula. The central contradiction must evolve, and each beat must add a new mechanism, consequence, perspective or callback rather than restating the premise.
+- SATIRE MUST PUNCH UP: Target exploitative systems, manipulative intermediaries, hypocritical customers, predatory incentives, status games, institutional doublespeak and social pressure. A vulnerable protagonist may make flawed choices, but must remain recognizably human.
+- STRICT HUMAN-DIGNITY RULE: Never shame victims, sex workers, poor people, workers, addicts or other vulnerable groups. Never equate income, sexuality, poverty or bad decisions with lost dignity or worth. Forbidden moralizing includes claims equivalent to "buông thả", "nhân phẩm đã mất", "đáng bị trừng phạt" or treating suffering as deserved retribution.
+- NATURAL HUMOR: Use fresh Vietnamese observations and modern analogies that fit the exact situation. Avoid recycled meme slang, random insults, cruelty, body-shaming, dehumanizing metaphors and joke lists pasted into narration.
+- PACING FOR TTS: Alternate short punchlines with clear explanatory sentences. Keep one main idea per sentence, minimize ornamental visual description, and place the strongest word near the end of a sentence. Visual staging belongs in storyboard prompts, not narration.
+- FACTUAL AND CAUSAL DISCIPLINE: Use exact timestamps, money or statistics only when supplied or supported and genuinely useful. Never fabricate precision for drama. Preserve mathematical and chronological continuity whenever such facts exist.
+- ENDING: Finish with an ironic callback, revealing observation or compact insight. No sermon, generic life lesson, forced CTA, fairy-tale redemption or humiliation-as-entertainment.
+- The result must remain funny, clear and intellectually sharp while preserving empathy and factual scope from beginning to end.`;
 
 const getSatiricalLifeGuideline = (structure: string): string => `${SATIRICAL_LIFE_GUIDELINE}\n- Primary sub-genre focus: ${structure}`;
 
@@ -50,11 +40,11 @@ const STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE = `STORY-DRIVEN VIDEO ESSAY & NARRAT
   + Wrap up with an intellectual reflection and conversational CTA ("Các bạn thấy sao về câu chuyện này? Hãy để lại cảm nghĩ bên dưới...").`;
 
 export const VI_GENRE_GUIDELINES: Record<string, string> = {
-  [VideoGenre.SATIRICAL_LIFE_AUTO]: getSatiricalLifeGuideline("Automatically orchestrate the optimal satirical narrative formula: Shocking/Grounded Opening ('Bạn...') -> Low-step insidious trap -> Psychological descent & moral rationalizations -> False sense of mastery -> Abrupt reality check & irreversible downfall."),
-  [VideoGenre.TRANSFORMATION_TIMELINE]: getSatiricalLifeGuideline("Chronological transformation across days, months, or years; each timestamp triggers an irreversible moral or psychological shift."),
-  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: getSatiricalLifeGuideline("Exposing unwritten rules and dark realities of specific industries or underground rings (Pimping, Red-light districts, Live streamers, Shady real-estate, Fake KOLs, Dark finance). Dissect how human dignity is commodified into disposable pawns."),
-  [VideoGenre.DOWNFALL_CONSEQUENCE]: getSatiricalLifeGuideline("Downfall and retribution: Small initial ethical compromises inevitably escalate into an inescapable trap and severe life-altering consequences."),
-  [VideoGenre.DARK_COMEDY_TRAGEDY]: getSatiricalLifeGuideline("Dark comedy and tragedy: Utilize razor-sharp irony, cynical real-life metaphors, and biting dialogue to expose human greed and social absurdity."),
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: getSatiricalLifeGuideline("FORMAT AUTO-DIRECTOR: Diagnose whether the premise is best served by an immersive story, observational essay, mock guide, misconception reversal, institutional breakdown, timeline or tragicomic case study. Select exactly one dominant format and an optional secondary device. Preserve variety in hook, escalation and ending; a downfall is never mandatory."),
+  [VideoGenre.TRANSFORMATION_TIMELINE]: getSatiricalLifeGuideline("EVOLVING CALLBACK TIMELINE: Track a visible change across meaningful stages, using time only when it marks a real shift. Revisit one object, promise, habit or phrase whose meaning changes at each stage. Avoid timestamp spam, repetitive before-and-after beats and an automatically catastrophic ending."),
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: getSatiricalLifeGuideline("IMMERSIVE UNWRITTEN-RULES STORY: Follow one named worker through a concrete shift, decision chain or representative case. Reveal incentives, euphemisms, gatekeepers and power asymmetry only through what the character sees, is told, pays, signs, loses or chooses. Contrast official promises with actual practice. The protagonist anchors continuity while satire targets the people and structures holding power and preserves worker dignity."),
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: getSatiricalLifeGuideline("DOMINO CAUSALITY: Trace how one convenient compromise changes the next available choice. Let a recurring rationalization mutate into an ironic callback as control narrows. Consequences must be proportionate and causally earned; emphasize recognition and mechanism rather than divine punishment, humiliation or moral retribution."),
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: getSatiricalLifeGuideline("LAUGHTER WITH A COST: Begin with recognizable absurdity, let humor expose denial or institutional cruelty, then gradually reduce joke density as the human cost becomes clear. The ending should echo an earlier joke with changed meaning, producing discomfort and insight rather than a cruel punchline."),
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
   [VideoGenre.NARRATIVE_EXPLAINER]: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
   [VideoGenre.CHARACTER_PSYCHOLOGY]: `${STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE}\n- Primary sub-genre focus: In-depth character psychology, hidden motivations, power calculations, and moral dilemmas illustrated through vivid real-life scenes.`,
@@ -92,11 +82,11 @@ export const VI_AUDIENCE_GUIDELINES: Record<string, string> = {
 };
 
 export const EN_GENRE_GUIDELINES: Record<string, string> = {
-  [VideoGenre.SATIRICAL_LIFE_AUTO]: SATIRICAL_LIFE_GUIDELINE,
-  [VideoGenre.TRANSFORMATION_TIMELINE]: SATIRICAL_LIFE_GUIDELINE,
-  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: SATIRICAL_LIFE_GUIDELINE,
-  [VideoGenre.DOWNFALL_CONSEQUENCE]: SATIRICAL_LIFE_GUIDELINE,
-  [VideoGenre.DARK_COMEDY_TRAGEDY]: SATIRICAL_LIFE_GUIDELINE,
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: getSatiricalLifeGuideline("FORMAT AUTO-DIRECTOR: Select the single strongest format for the premise from immersive story, observational essay, mock guide, misconception reversal, institutional breakdown, timeline or tragicomic case study. A downfall is never mandatory."),
+  [VideoGenre.TRANSFORMATION_TIMELINE]: getSatiricalLifeGuideline("EVOLVING CALLBACK TIMELINE: Use meaningful stages and revisit one object, promise, habit or phrase whose meaning changes. Avoid timestamp spam, repetitive before-and-after beats and an automatically catastrophic ending."),
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: getSatiricalLifeGuideline("UNWRITTEN-RULES FIELD GUIDE: Contrast official promises with actual incentives, euphemisms, gatekeepers and power asymmetry. A single protagonist is optional; preserve worker dignity and target the structures holding power."),
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: getSatiricalLifeGuideline("DOMINO CAUSALITY: Show how each convenient compromise changes the next available choice. Use a mutating rationalization as callback and keep consequences proportionate, causal and free of moral retribution."),
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: getSatiricalLifeGuideline("LAUGHTER WITH A COST: Start from recognizable absurdity, reduce joke density as the human cost becomes clear, and end by changing the meaning of an earlier joke. Never make suffering itself the punchline."),
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
   [VideoGenre.NARRATIVE_EXPLAINER]: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
   [VideoGenre.CHARACTER_PSYCHOLOGY]: `${STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE}\n- Primary sub-genre focus: Character psychology and hidden motivations breakdown.`,

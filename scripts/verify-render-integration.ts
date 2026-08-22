@@ -61,6 +61,7 @@ const outputUrl = await renderFFmpegVideo({
   quality: VideoQuality.LOW,
   aspectRatio: "16:9",
   globalAudioBase64: createSilentWav(3),
+  autoMusicProfile: "satirical_editorial",
   subtitleMode: SubtitleMode.Both,
   scenes: renderScenes,
   audioTracks: [{
@@ -77,6 +78,9 @@ if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) throw new 
 const outputBytes = fs.statSync(outputPath).size;
 const { stdout } = await execFileAsync("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_type,codec_name,width,height", "-of", "json", outputPath]);
 const probe = JSON.parse(stdout);
+const { stderr: volumeProbe } = await execFileAsync("ffmpeg", ["-i", outputPath, "-af", "volumedetect", "-f", "null", "-"]);
+const meanVolume = Number(volumeProbe.match(/mean_volume:\s*(-?[\d.]+) dB/)?.[1] || -100);
+if (meanVolume < -80) throw new Error("Automatic music bed was not mixed into the silent narration test");
 const duration = Number(probe.format?.duration || 0);
 if (duration < 2.8 || duration > 3.2) throw new Error(`Unexpected rendered duration: ${duration}`);
 if (!probe.streams?.some((stream: any) => stream.codec_type === "video" && stream.width === 854 && stream.height === 480)) throw new Error("Rendered video stream is invalid");
@@ -85,4 +89,4 @@ if (!probe.streams?.some((stream: any) => stream.codec_type === "subtitle" && st
 const visualQaFrames = await readVisualQaAssets(outputUrl);
 if (visualQaFrames.length === 0 || visualQaFrames.some(frame => frame.mimeType !== "image/jpeg" || frame.data.length === 0)) throw new Error("Rendered video frames are unavailable for Vision QA");
 removeTestProject();
-process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));
+process.stdout.write(JSON.stringify({ outputUrl, bytes: outputBytes, duration, meanVolume, streams: probe.streams, visualQaFrameCount: visualQaFrames.length, passed: true }, null, 2));

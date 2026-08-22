@@ -139,6 +139,7 @@ import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
 import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
+import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes, removeRepeatedNarrationOpening } from "../../services/scriptContinuityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
 import { extractCleanChapterSegment } from "../services/chapterResponseService.js";
@@ -412,6 +413,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         jsonUtils.safeStringify(resolvedVisualBible.locations || []),
         jsonUtils.safeStringify(resolvedVisualBible.props || []),
         correctionIssuesJson,
+        _.toString(req.body?.genre || req.body?.config?.genre),
       );
       const sceneIds = _.map(chunkItem, item => _.toString(_.get(item, "id")));
       const planningString = { type: "string" } as const;
@@ -422,13 +424,13 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
+          required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
           properties: {
             id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
-            visibleAction: planningString, reaction: planningString,
+            visibleAction: planningString, reaction: planningString, storyEvidence: planningString, visualHook: planningString,
             characterIds: { type: "array", items: planningString }, expectedSubjectCount: { type: "integer", minimum: 0 },
             allowBackgroundPeople: { type: "boolean" }, layout: planningString, textAllowed: { type: "boolean" }, textOverlay: planningString,
-            shotPurpose: planningString, shotSize: planningString, cameraAngle: planningString, composition: planningString,
+            shotPurpose: { type: "string", enum: ["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"] }, shotSize: planningString, cameraAngle: planningString, composition: planningString,
             locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
             continuityNotes: planningString, lighting: planningString,
           },
@@ -458,7 +460,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         _.forEach(_.difference(sceneIds, returnedIds), id => issues.push(`${id}:result:missing_scene`));
         if (!_.isEqual(items.length, chunkItem.length)) issues.push(`result:wrong_scene_count:${items.length}/${chunkItem.length}`);
 
-        const englishRequiredFields = ["prompt", "visualIntent", "visibleAction", "reaction", "shotPurpose", "shotSize", "cameraAngle", "composition", "continuityNotes", "lighting"];
+        const englishRequiredFields = ["prompt", "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "shotPurpose", "shotSize", "cameraAngle", "composition", "continuityNotes", "lighting"];
         _.forEach(items, item => {
           const sceneId = _.toString(_.get(item, "id"));
           const baseScene = _.find(plannedScenes, { id: sceneId });
@@ -475,6 +477,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           }
           if (!_.isBoolean(_.get(item, "allowBackgroundPeople"))) issues.push(`${sceneId}:allowBackgroundPeople:must_be_boolean`);
           if (!_.includes(["single_frame", "split_screen", "collage"], _.get(item, "layout"))) issues.push(`${sceneId}:layout:invalid`);
+          if (!_.includes(["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"], _.get(item, "shotPurpose"))) issues.push(`${sceneId}:shotPurpose:invalid`);
           if (!_.isBoolean(_.get(item, "textAllowed"))) issues.push(`${sceneId}:textAllowed:must_be_boolean`);
           const textAllowed = _.get(item, "textAllowed");
           const textOverlay = _.trim(_.toString(_.get(item, "textOverlay")));
@@ -484,6 +487,38 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             issues.push(`${sceneId}:textAllowed:must_be_false_in_no_text_mode`);
           }
         });
+        const normalizeSceneMeaning = (item: any): string[] => _.uniq(_.words(_.deburr(_.toLower(_.join([
+          _.get(item, "visualIntent"),
+          _.get(item, "visibleAction"),
+          _.get(item, "reaction"),
+          _.get(item, "storyEvidence"),
+          _.get(item, "visualHook"),
+          _.get(item, "composition"),
+          _.get(item, "locationId"),
+          _.join(_.castArray(_.get(item, "propIds")), " "),
+        ], " ")))));
+        for (let itemIndex = 1; itemIndex < items.length; itemIndex++) {
+          const previousItem = items[itemIndex - 1];
+          const currentItem = items[itemIndex];
+          const previousMeaning = normalizeSceneMeaning(previousItem);
+          const currentMeaning = normalizeSceneMeaning(currentItem);
+          const union = _.union(previousMeaning, currentMeaning);
+          const similarity = _.isEmpty(union)
+            ? 1
+            : _.divide(_.intersection(previousMeaning, currentMeaning).length, union.length);
+          if (_.gte(_.min([previousMeaning.length, currentMeaning.length]) || 0, 8) && _.gte(similarity, 0.78)) {
+            issues.push(`${_.toString(_.get(currentItem, "id"))}:scene_meaning:too_similar_to:${_.toString(_.get(previousItem, "id"))}`);
+          }
+        }
+        for (let itemIndex = 2; itemIndex < items.length; itemIndex++) {
+          const shotPurposes = _.map(_.slice(items, itemIndex - 2, itemIndex + 1), item => _.get(item, "shotPurpose"));
+          const shotSizes = _.map(_.slice(items, itemIndex - 2, itemIndex + 1), item => _.toLower(_.trim(_.toString(_.get(item, "shotSize")))));
+          const cameraAngles = _.map(_.slice(items, itemIndex - 2, itemIndex + 1), item => _.toLower(_.trim(_.toString(_.get(item, "cameraAngle")))));
+          const sceneId = _.toString(_.get(items[itemIndex], "id"));
+          if (_.uniq(shotPurposes).length === 1) issues.push(`${sceneId}:editorial_rhythm:shotPurpose_repeated_three_times`);
+          if (_.uniq(shotSizes).length === 1) issues.push(`${sceneId}:editorial_rhythm:shotSize_repeated_three_times`);
+          if (_.uniq(cameraAngles).length === 1) issues.push(`${sceneId}:editorial_rhythm:cameraAngle_repeated_three_times`);
+        }
         return _.uniq(issues);
       };
 
@@ -673,7 +708,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
 router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) => {
   const isVi = req.body?.language === ProjectLanguage.VI || req.query?.lang !== ProjectLanguage.EN;
   try {
-    const { script, visualStyle } = req.body;
+    const { script, visualStyle, sourceContext } = req.body;
     if (!script) {
       return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: getBackendMsg("SCRIPT_REQUIRED", isVi) });
     }
@@ -684,7 +719,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
       return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: getBackendMsg("GEMINI_NOT_INIT", isVi) });
     }
 
-    const prompt = getCharacterAnalysisPrompt(script, _.toString(visualStyle));
+    const prompt = getCharacterAnalysisPrompt(script, _.toString(visualStyle), _.toString(sourceContext));
 
     const response = await generateContentWithRetry({
       contents: prompt,
@@ -1186,6 +1221,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       let cleanedSegment = await requestValidChapterSegment(
         `Original Context:\n${originalInput}\n\nConcept Sheet:\n${jsonUtils.safeStringify(scriptResult)}\n\n${contentControlDirective}\n\nChapter Prompt:\n${chapterPrompt}`,
       );
+      cleanedSegment = removeRepeatedNarrationOpening(cleanedSegment, fullScript);
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));const chapterMaximumWords = _.ceil(chapterWordTarget * (1 + SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
       for (let expansionIndex = 0; expansionIndex < REFACTOR_CONSTANTS.SCRIPT_CHAPTER_EXPANSION_RETRY_COUNT && _.size(_.words(cleanedSegment)) < chapterMinimumWords; expansionIndex++) {
         const currentWordCount = _.size(_.words(cleanedSegment));
@@ -1200,7 +1236,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           ),
         );
         if (_.isEmpty(continuation)) break;
-        cleanedSegment = _.trim(`${cleanedSegment} ${continuation}`);
+        const deduplicatedContinuation = removeRepeatedNarrationOpening(continuation, `${fullScript} ${cleanedSegment}`);
+        cleanedSegment = _.trim(`${cleanedSegment} ${deduplicatedContinuation}`);
       }
 
       completedChapters.push({
@@ -1216,7 +1253,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    const finalCleanScript = fullScript.trim();
+    const finalCleanScript = removeAdjacentRepeatedNarrationSentences(fullScript.trim());
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
     const scriptQaBase = normalizeScriptQualityReport({}, _.size(_.words(finalCleanScript)), targetDurationSeconds);
     const scriptQa = {
@@ -1474,7 +1511,8 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
 });
 
 router.post("/storyboard", async (req: Request, res: Response) => {
-  const { rewrittenScript, chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, bypassCache, voiceDuration } = req.body;
+  const { chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, bypassCache, voiceDuration } = req.body;
+  const rewrittenScript = removeAdjacentRepeatedNarrationSentences(_.toString(req.body.rewrittenScript));
 
   let syncedChapters = chapters;
   if (chapters && chapters.length > 0 && rewrittenScript) {
@@ -1769,6 +1807,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
         targetStyle: activeStyle || visualStyle,
         visualBible,
       });
+      data.scenes = removeAdjacentRepeatedStoryboardScenes(data.scenes);
       data.scenes = assignStoryboardChapterIds(data.scenes, syncedChapters);
     }
 
@@ -2061,6 +2100,7 @@ router.post("/voice", requireLicense(FeatureType.VOICE), async (req: Request, re
     const { finalVoiceId } = resolveVoiceRouting({ provider, voiceId: requestedVoiceId });
 
     if (!text || !text.trim()) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: PIPELINE_SERVER_ERRORS.VOICE_TEXT_REQUIRED });
+    text = removeAdjacentRepeatedNarrationSentences(text);
 
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, 'ai33Key', '');
@@ -3412,7 +3452,7 @@ router.delete(PROJECT_ASSET_ROUTE, requireLicense(FeatureType.VIDEO), async (req
 
 router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500MB }), requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
   try {
-    const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId, subtitleMode, audioTracks } = req.body;
+    const { scenes, globalAudioUrl, globalAudioBase64, quality, aspectRatio, projectId, subtitleMode, audioTracks, autoMusicProfile } = req.body;
     const jobId = randomUUID();
     const safeProjectId = path.basename(_.toString(projectId));
     const dataRoot = path.resolve(getDataDirectory());
@@ -3457,7 +3497,8 @@ router.post("/ffmpeg-render", express.json({ limit: SecurityConstants.LIMIT_500M
         aspectRatio: aspectRatio as string,
         projectId: projectId as string,
         subtitleMode,
-        audioTracks
+        audioTracks,
+        autoMusicProfile,
       },
       licenseKey
     );

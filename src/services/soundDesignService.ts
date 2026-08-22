@@ -2,12 +2,22 @@ import _ from "lodash";
 import { AudioCue, AudioCueSheet, AudioCueStatus, AudioCueType, StoryboardScene } from "../types";
 import { SOUND_DESIGN_CONFIG } from "../constants/config";
 
+export const resolveAutomaticMusicProfile = (genre: string = ""): string => {
+  const normalized = _.deburr(_.toLower(genre));
+  if (/satir|cham biem|comedy|hai huoc|career|darkside/.test(normalized)) return "satirical_editorial";
+  if (/action|sport|gaming|kinh di|horror|mystery/.test(normalized)) return "tension_pulse";
+  if (/children|kid|thieu nhi|family|travel|food/.test(normalized)) return "light_warm";
+  if (/meditat|sleep|healing|tam ly|reflect|tragedy/.test(normalized)) return "reflective_ambient";
+  return "documentary_editorial";
+};
+
 const visibleActionText = (scene: StoryboardScene): string => _.toString(scene.visibleAction);
 
 export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet => {
   const cues: AudioCue[] = [];
   const totalDuration = _.sumBy(scenes, scene => scene.duration);
   let sceneStartSeconds = 0;
+  let lastTransitionSfxIndex = -4;
   cues.push({
     id: SOUND_DESIGN_CONFIG.MAIN_MUSIC_CUE_ID,
     sceneId: _.get(_.first(scenes), "id", SOUND_DESIGN_CONFIG.TIMELINE_SCENE_ID),
@@ -42,7 +52,9 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
       });
     }
 
-    if (index > 0 && scene.transition && !_.isEqual(scene.transition, SOUND_DESIGN_CONFIG.CUT_TRANSITION)) {
+    const emphaticPurpose = _.includes(["reveal", "punchline", "chapter_turn"], _.toLower(_.toString(scene.shotPurpose)));
+    const transitionSfxHasBreathingRoom = _.gte(index - lastTransitionSfxIndex, 4);
+    if (index > 0 && scene.transition && !_.isEqual(scene.transition, SOUND_DESIGN_CONFIG.CUT_TRANSITION) && (emphaticPurpose || transitionSfxHasBreathingRoom)) {
       const isDynamic = SOUND_DESIGN_CONFIG.DYNAMIC_TRANSITION_PATTERN.test(scene.transition);
       cues.push({
         id: `cue_${scene.id}_sfx_transition`,
@@ -54,6 +66,7 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
         durationSeconds: isDynamic ? SOUND_DESIGN_CONFIG.DYNAMIC_TRANSITION_DURATION : SOUND_DESIGN_CONFIG.SMOOTH_TRANSITION_DURATION,
         status: AudioCueStatus.Planned,
       });
+      lastTransitionSfxIndex = index;
     }
 
     if (scene.reaction && SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_PATTERN.test(scene.reaction)) {
@@ -69,19 +82,19 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
       });
     }
 
-    _.forEach(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => {
-      if (!item.pattern.test(visibleActionText(scene))) return;
+    const visibleActionCue = _.find(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => item.pattern.test(visibleActionText(scene)));
+    if (visibleActionCue) {
       cues.push({
         id: `cue_${scene.id}_sfx_${cues.length}`,
         sceneId: scene.id,
         type: AudioCueType.SoundEffect,
-        description: item.description,
+        description: visibleActionCue.description,
         emotionalIntent: SOUND_DESIGN_CONFIG.SOUND_EFFECT_INTENT,
         startOffsetSeconds: sceneStartSeconds,
         durationSeconds: Math.min(SOUND_DESIGN_CONFIG.MAX_SOUND_EFFECT_DURATION_SECONDS, scene.duration),
         status: AudioCueStatus.Planned,
       });
-    });
+    }
     sceneStartSeconds = _.add(sceneStartSeconds, scene.duration);
   });
   return {

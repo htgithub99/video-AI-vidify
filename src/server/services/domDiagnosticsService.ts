@@ -30,7 +30,26 @@ export interface DomDiagnosticCaptureOptions {
   maxHtmlLength: number;
   prioritySelector?: string;
   errorMessageTemplate: string;
+  maxFileBytes?: number;
+  retainedFileBytes?: number;
+  detailedStatePattern?: RegExp;
+  minimalMaxElements?: number;
 }
+
+const rotateDiagnosticFile = (filePath: string, maxFileBytes: number, retainedFileBytes: number): void => {
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).size < maxFileBytes) return;
+  const fileSize = fs.statSync(filePath).size;
+  const bytesToKeep = Math.min(retainedFileBytes, fileSize);
+  const descriptor = fs.openSync(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(bytesToKeep);
+    fs.readSync(descriptor, buffer, 0, bytesToKeep, fileSize - bytesToKeep);
+    const firstLineBreak = buffer.indexOf(10);
+    fs.writeFileSync(filePath, firstLineBreak >= 0 ? buffer.subarray(firstLineBreak + 1) : buffer);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+};
 
 const sanitizeOuterHtml = (html: string, maxLength: number): string => (
   _.truncate(
@@ -45,6 +64,10 @@ export const captureDomDiagnostics = async (
   options: DomDiagnosticCaptureOptions,
 ): Promise<void> => {
   try {
+    const detailedCapture = options.detailedStatePattern?.test(state) ?? true;
+    const effectiveMaxElements = detailedCapture
+      ? options.maxElements
+      : Math.min(options.minimalMaxElements || options.maxElements, options.maxElements);
     const elements = await page.evaluate(({ selector, prioritySelector, limits }) => {
       const priorityElements = prioritySelector
         ? Array.from(document.querySelectorAll(prioritySelector))
@@ -74,7 +97,7 @@ export const captureDomDiagnostics = async (
       selector: options.selector,
       prioritySelector: options.prioritySelector,
       limits: {
-        maxElements: options.maxElements,
+        maxElements: effectiveMaxElements,
         maxClassNameLength: options.maxClassNameLength,
         maxTextLength: options.maxTextLength,
         maxHtmlLength: options.maxHtmlLength,
@@ -85,8 +108,14 @@ export const captureDomDiagnostics = async (
       ...element,
       html: sanitizeOuterHtml(element.html, options.maxHtmlLength),
     }));
+    const diagnosticPath = path.join(getDataDirectory(), options.fileName);
+    rotateDiagnosticFile(
+      diagnosticPath,
+      options.maxFileBytes || Number.MAX_SAFE_INTEGER,
+      options.retainedFileBytes || 0,
+    );
     fs.appendFileSync(
-      path.join(getDataDirectory(), options.fileName),
+      diagnosticPath,
       `${jsonUtils.safeStringify({ capturedAt: new Date().toISOString(), state, url: page.url(), elements: sanitizedElements })}\n`,
       "utf8",
     );

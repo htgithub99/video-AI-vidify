@@ -35,10 +35,11 @@ import { createCharacterIdentityDescription, createSceneGenerationContext } from
 import { appendImagePromptAspectRatio } from "../../services/imagePromptQualityService";
 import { compileImagePrompt } from "../../services/imagePromptCompilerService";
 import { resolveStylePreset } from "../../constants/stylePresets";
-import { hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary } from "../../services/visualContinuityService";
+import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary } from "../../services/visualContinuityService";
 import { createSceneContinuityKey, createThumbnailContinuityKey } from "../../services/imageGenerationContinuityService";
 import { clearBlockedAudioSource, hasProductionAudioSource, isBlockedAudioSource, isProductionAudioSource } from "../../services/productionAudioService";
 import { createThumbnailStyleDirective } from "../../services/styleReferenceService";
+import { removeAdjacentRepeatedStoryboardScenes } from "../../services/scriptContinuityService";
 
 let activePreviewToken = 0;
 let activeCloudPreviewAudio: any = null;
@@ -1355,10 +1356,17 @@ export function usePipelineWizard(props: any) {
       const cleanStyle = resolveStylePreset(project.visualConfig.stylePreset || project.visualConfig.style).positivePrompt;
 
       if (rewriteBeforeGeneration && sourceScene) {
-        if (hasStyleContaminatedCharacterLibrary(generationCharacters)) {
+        const characterSourceContext = _.join(_.compact([
+          project.input?.content,
+          _.get(project.narrativePlan, "centralQuestion"),
+          _.get(project.narrativePlan, "viewerPromise"),
+        ]), "\n");
+        if (hasStyleContaminatedCharacterLibrary(generationCharacters) || hasSourceGenderConflict(characterSourceContext, generationCharacters)) {
           const characterResult = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
             script: project.scriptRewritten || _.join(_.map(project.storyboard, "script"), " "),
             visualStyle: cleanStyle,
+            sourceContext: characterSourceContext,
+            bypassCache: true,
           });
           if (!characterResult.success || !_.isArray(characterResult.data?.characters) || _.isEmpty(characterResult.data.characters)) {
             throw new Error(PIPELINE_CLIENT_ERRORS.CHARACTER_ANALYSIS_FAILED);
@@ -1393,9 +1401,10 @@ export function usePipelineWizard(props: any) {
           visualBible: cleanVisualBible,
           aspectRatio: project.visualConfig.aspectRatio,
           language: project.config.language,
+          genre: project.config.genre,
           bypassCache: true,
         });
-        if (!optimizeResult.success || !_.first(optimizeResult.data?.storyboard) || !optimizeResult.data?.promptQa?.passed) {
+        if (!optimizeResult.success || !_.first(optimizeResult.data?.storyboard)) {
           throw new Error(PIPELINE_CLIENT_ERRORS.PROMPT_GENERATION_FAILED);
         }
         plannedScene = _.first(optimizeResult.data.storyboard) as StoryboardScene;
@@ -1790,16 +1799,52 @@ export function usePipelineWizard(props: any) {
     setInfoMsg(t.optimizingPrompts || txt.OPTIMIZING_PROMPTS_FALLBACK);
 
     try {
+      const characterSourceContext = _.join(_.compact([
+        project.input?.content,
+        _.get(project.narrativePlan, "centralQuestion"),
+        _.get(project.narrativePlan, "viewerPromise"),
+      ]), "\n");
+      let optimizedCharacters = _.defaultTo(project.visualConfig.characters, []);
+      if (hasStyleContaminatedCharacterLibrary(optimizedCharacters) || hasSourceGenderConflict(characterSourceContext, optimizedCharacters)) {
+        const characterResult = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CHARACTER, {
+          script: project.scriptRewritten || _.join(_.map(project.storyboard, "script"), " "),
+          visualStyle: resolveStylePreset(project.visualConfig.stylePreset || project.visualConfig.style).positivePrompt,
+          sourceContext: characterSourceContext,
+          bypassCache: true,
+        });
+        if (characterResult.success && _.isArray(characterResult.data?.characters) && !_.isEmpty(characterResult.data.characters)) {
+          optimizedCharacters = normalizeCharacterLibrary(_.map(characterResult.data.characters, (character: any, index: number) => ({
+            ...character,
+            id: character.id || `char_${_.add(index, 1)}`,
+            prompt: character.prompt || character.description,
+            images: [],
+            extracted: false,
+          })));
+        }
+      }
       const payload = {
         storyboard: project.storyboard,
-        visualConfig: project.visualConfig,
+        visualConfig: { ...project.visualConfig, characters: optimizedCharacters },
+        visualBible: {
+          ...project.visualBible,
+          characterSpecs: _.join(_.map(optimizedCharacters, character => `${character.name}: ${createCharacterIdentityDescription(character)}`), "\n"),
+        },
         aspectRatio: project.visualConfig.aspectRatio,
         language: project.config.language,
+        genre: project.config.genre,
       };
       const { success, data, error } = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, payload);
 
       if (success && data?.storyboard) {
-        setProject((prev) => ({ ...prev, storyboard: data.storyboard }));
+        setProject((prev) => ({
+          ...prev,
+          storyboard: data.storyboard,
+          visualConfig: { ...prev.visualConfig, characters: optimizedCharacters },
+          visualBible: {
+            ...prev.visualBible,
+            characterSpecs: _.join(_.map(optimizedCharacters, character => `${character.name}: ${createCharacterIdentityDescription(character)}`), "\n"),
+          },
+        }));
         setInfoMsg(t.optimizePromptsSuccess || txt.OPTIMIZE_PROMPTS_SUCCESS_FALLBACK);
       } else {
         throw new Error(error || data?.error || txt.OPTIMIZATION_FAILED);
@@ -3324,7 +3369,7 @@ export function usePipelineWizard(props: any) {
 
     try {
       const vConfig = voiceConfigOverride || project.voiceConfig || PipelineConstants.DEFAULT_VOICE_CONFIG;
-      const updatedScenes = [...scenes];
+      const updatedScenes = removeAdjacentRepeatedStoryboardScenes(scenes);
 
       let fullScript = project.scriptRewritten || "";
       if (!fullScript) {

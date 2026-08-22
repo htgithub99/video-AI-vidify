@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-export const IMAGE_PROMPT_PIPELINE_VERSION = "gemini-simple-style-lock-v6";
+export const IMAGE_PROMPT_PIPELINE_VERSION = "full-bleed-media-v13";
 
 export const GLOBAL_IMAGE_PROMPT_MASTER_RULE = {
   STORY: "Make the scene's meaning immediately understandable through a concrete subject, action, reaction, setting, or consequence.",
@@ -10,7 +10,7 @@ export const GLOBAL_IMAGE_PROMPT_MASTER_RULE = {
   DIRECTION: "Choose the clearest composition, camera distance, perspective, lighting, and amount of environment for the individual scene instead of filling a rigid template.",
   TEXT: "Prefer visual storytelling; request readable text only when exact wording is essential and otherwise keep the image free of invented writing.",
   REFERENCES: "Use an attached style reference only for visual language and never copy its subjects or composition unless the scene explicitly requires them.",
-  OUTPUT: "Write one natural, self-contained generation prompt with no commentary or model-specific aspect-ratio parameter.",
+  OUTPUT: "Write one natural, self-contained generation prompt with no commentary or model-specific aspect-ratio parameter. The generated scene must fill the entire canvas edge to edge, never appearing inside a white margin, picture frame, mat, card, page, mockup, interface, letterbox, or pillarbox.",
 } as const;
 
 export const IMAGE_PROMPT_FINAL_SECTION_ORDER = [
@@ -44,3 +44,5 @@ export const createGlobalImagePromptPlanningRules = (): string => _.join(
 );
 
 export const IMAGE_PROMPT_FINAL_ORDER_RULE = `Use these as a flexible checklist, not a mandatory template: ${_.join(IMAGE_PROMPT_FINAL_SECTION_ORDER, " -> ")}. Omit anything that does not improve the image.`;
+
+export const VIDEO_GENERATION_MOTION_DIRECTIVE = "Video motion direction: one continuous coherent editorial shot animating only the visible action described in this prompt; show a readable action arc with a clear initiation, physical progression, and natural consequence by the final frame; begin close to the source composition and preserve the same character identity, face, hair, anatomy, clothing, props, environment, lighting, and art style throughout; let subject motion carry the story while the camera remains stable or makes one subtle motivated move; include only physically plausible secondary environmental motion; no invented dialogue or lip-sync, unrelated gestures, idle posing, repeated action loop, internal cut, montage, scene change, crash zoom, whip pan, sudden reframing, frozen opening, end-card pose, flicker, duplicated subject, or visual morphing.";

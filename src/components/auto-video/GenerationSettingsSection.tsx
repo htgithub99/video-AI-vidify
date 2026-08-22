@@ -36,6 +36,10 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   T,
   mediaMixTexts,
 }) => {
+  const mixedTitle = mediaMixTexts?.mixed || "Ảnh + video";
+  const maxVideosLabel = mediaMixTexts?.maxVideos || "Video tối đa";
+  const maxVideosTooltip = mediaMixTexts?.maxVideosTooltip || "Số cảnh video tối đa do AI lựa chọn";
+  const selectingLabel = mediaMixTexts?.selecting || "AI chọn cảnh";
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -139,17 +143,17 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <div className="flex items-center justify-between">
               <span className="text-purple-300 font-bold flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                {mediaMixTexts.title}
+                {mixedTitle}
               </span>
               <span className="text-purple-400 font-mono text-[10px]">
-                {mediaMixTexts.badge(maxVideoScenes)}
+                {maxVideosLabel}: {maxVideoScenes}
               </span>
             </div>
-            <p className="text-slate-400 text-[11px] leading-relaxed">
-              {mediaMixTexts.desc}
+            <p className="text-slate-400 text-[11px] leading-relaxed" title={maxVideosTooltip}>
+              {selectingLabel}. {maxVideosTooltip}.
             </p>
             <div className="flex items-center gap-3 pt-1">
-              <span className="text-[10px] text-slate-400 whitespace-nowrap">{mediaMixTexts.sliderLabel}</span>
+              <span className="text-[10px] text-slate-400 whitespace-nowrap">{maxVideosLabel}</span>
               <input
                 type="range"
                 min={MEDIA_MIX_CONFIG.MIN_VIDEOS}

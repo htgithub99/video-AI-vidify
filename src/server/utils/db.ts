@@ -55,7 +55,7 @@ export async function getRenderJobFromDb<T>(id: string): Promise<T | null> {
   return row?.data ? jsonUtils.safeParse<T>(row.data, null) : null;
 }
 
-export async function saveRenderJobToDb(job: { id: string; status: string; updatedAt: Date | string }): Promise<void> {
+export async function saveRenderJobToDb(job: { id: string; status: string; updatedAt: Date | string } & Record<string, unknown>): Promise<void> {
   const db = await initDb();
   const updatedAt = job.updatedAt instanceof Date ? job.updatedAt.toISOString() : job.updatedAt;
   await db.run(SQL_STATEMENTS.INSERT_RENDER_JOB, [job.id, job.status, updatedAt, jsonUtils.safeStringify(job)]);

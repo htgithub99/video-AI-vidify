@@ -1,32 +1,73 @@
 import _ from "lodash";
 import { PRODUCTION_QA_THRESHOLDS } from "./productionQualityService";
 import { StoryboardScene, SubtitleCue } from "../types";
+import { smartSplitSentences } from "../lib/textProcessor";
+
+const MAX_CUE_CHARACTERS = PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE
+  * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES
+  - 10;
+const SEMANTIC_BREAK_PATTERN = /[,;:—]\s+|\s+(?:nhưng|vì|khi|rồi|còn|tuy nhiên|sau đó|đồng thời|while|but|because|when|then|however|meanwhile)\s+/gi;
 
 const splitLongWord = (word: string): string[] => _.map(
   _.range(0, _.size(word), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE),
   start => _.slice(word, start, start + PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE).join(""),
 );
 
-const createSubtitleLines = (text: string): string[] => {
+const findBestSemanticBreak = (text: string): number => {
+  const lowerBound = _.floor(text.length * 0.3);
+  const upperBound = _.ceil(text.length * 0.7);
+  const midpoint = text.length / 2;
+  const candidates: number[] = [];
+  for (const match of text.matchAll(SEMANTIC_BREAK_PATTERN)) {
+    const boundary = _.add(match.index || 0, match[0].length);
+    if (_.inRange(boundary, lowerBound, upperBound + 1)) candidates.push(boundary);
+  }
+  if (!_.isEmpty(candidates)) return _.minBy(candidates, boundary => Math.abs(boundary - midpoint))!;
+  const spaces = _.compact(_.map(text, (char, index) => (_.isEqual(char, " ") ? index + 1 : 0)));
+  return _.minBy(spaces, boundary => Math.abs(boundary - midpoint)) || text.length;
+};
+
+const splitSemanticPhrases = (text: string): string[] => _.flatMap(
+  smartSplitSentences(_.trim(text)),
+  sentence => {
+    const phrases: string[] = [];
+    const queue = [sentence];
+    while (!_.isEmpty(queue)) {
+      const phrase = _.trim(queue.shift());
+      if (_.size(phrase) <= MAX_CUE_CHARACTERS) {
+        if (!_.isEmpty(phrase)) phrases.push(phrase);
+        continue;
+      }
+      const breakAt = findBestSemanticBreak(phrase);
+      if (!_.inRange(breakAt, 1, phrase.length)) {
+        phrases.push(phrase);
+        continue;
+      }
+      queue.unshift(_.trim(phrase.slice(breakAt)));
+      queue.unshift(_.trim(phrase.slice(0, breakAt)));
+    }
+    return phrases;
+  },
+);
+
+const createBalancedSubtitleLines = (text: string): string[] => {
   const words = _.flatMap(_.words(text, /[^\s]+/g), word => (
     _.size(word) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE ? splitLongWord(word) : [word]
   ));
-  return _.reduce(words, (lines: string[], word) => {
-    const currentLine = _.last(lines);
-    const candidate = _.trim(_.join([currentLine, word], " "));
-    if (!currentLine || _.size(candidate) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) {
-      lines.push(word);
-    } else {
-      lines[lines.length - 1] = candidate;
-    }
-    return lines;
-  }, []);
+  if (_.size(_.join(words, " ")) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, " ")];
+  const candidates = _.compact(_.map(_.range(1, words.length), index => {
+    const first = _.join(_.slice(words, 0, index), " ");
+    const second = _.join(_.slice(words, index), " ");
+    if (_.some([first, second], line => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE)) return null;
+    return { lines: [first, second], imbalance: Math.abs(first.length - second.length) };
+  }));
+  return _.get(_.minBy(candidates, "imbalance"), "lines", [_.join(words, " ")]);
 };
 
 export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] => {
   const cueTexts = _.map(
-    _.chunk(createSubtitleLines(scene.subtitle || scene.script), PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES),
-    lines => _.join(lines, "\n"),
+    splitSemanticPhrases(scene.subtitle || scene.script),
+    phrase => _.join(createBalancedSubtitleLines(phrase), "\n"),
   );
   const cueWeights = _.map(cueTexts, text => _.max([
     _.size(_.replace(text, /\s/g, "")),

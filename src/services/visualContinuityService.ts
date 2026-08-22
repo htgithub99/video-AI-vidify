@@ -22,6 +22,18 @@ export const hasStyleContaminatedCharacterLibrary = (characters?: CharacterConfi
   ]), " ")),
 );
 
+const EXPLICIT_FEMALE_SOURCE_PATTERN = /\b(?:female|woman|women|girl|girls|mother|wife|daughter|girlfriend)\b|(?:nữ|phụ nữ|cô gái|các cô gái|con gái|người mẹ|người vợ|gái ngành)/i;
+const EXPLICIT_MALE_SOURCE_PATTERN = /\b(?:male|man|men|boy|boys|father|husband|son|boyfriend)\b|(?:nam giới|đàn ông|chàng trai|con trai|người cha|người chồng)/i;
+
+export const hasSourceGenderConflict = (source: string, characters?: CharacterConfig[]): boolean => {
+  const hasFemaleSource = EXPLICIT_FEMALE_SOURCE_PATTERN.test(source);
+  const hasMaleSource = EXPLICIT_MALE_SOURCE_PATTERN.test(source);
+  if (_.isEqual(hasFemaleSource, hasMaleSource)) return false;
+  const primaryGender = _.toLower(_.trim(_.toString(_.first(characters)?.genderPresentation)));
+  return (hasFemaleSource && _.includes(primaryGender, "male") && !_.includes(primaryGender, "female"))
+    || (hasMaleSource && _.includes(primaryGender, "female"));
+};
+
 const normalizeIdentifier = (value: string, prefix: string, index: number): string => {
   const normalized = _.kebabCase(value);
   return normalized ? `${prefix}${normalized}` : `${prefix}${_.add(index, 1)}`;

@@ -14,8 +14,8 @@ export const getVisualShotPlanIssues = (
   baseScene: StoryboardScene,
 ): string[] => {
   const issues: string[] = [];
-  const requiredFields: Array<keyof Pick<StoryboardScene, "visualIntent" | "visibleAction" | "reaction" | "composition">> = [
-    "visualIntent", "visibleAction", "reaction", "composition",
+  const requiredFields: Array<keyof Pick<StoryboardScene, "visualIntent" | "visibleAction" | "reaction" | "storyEvidence" | "visualHook" | "composition">> = [
+    "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "composition",
   ];
   _.forEach(requiredFields, field => {
     const value = _.trim(_.toString(source[field]));
@@ -41,7 +41,6 @@ export interface VisualPlanningOptions {
 }
 
 const extractCharacterVisualDetails = (character: Partial<CharacterConfig>): string[] => _.compact([
-  character.description,
   character.genderPresentation,
   character.ageRange,
   character.ethnicitySkinTone,
@@ -49,10 +48,6 @@ const extractCharacterVisualDetails = (character: Partial<CharacterConfig>): str
   character.faceShape,
   character.hair,
   character.eyes,
-  character.signatureClothing,
-  character.accessories,
-  character.colorPalette,
-  character.silhouette,
 ]);
 
 export const createVisualCharacterCards = (characters: Array<Partial<CharacterConfig>>): Record<string, unknown>[] => _.map(
@@ -67,7 +62,7 @@ export const createVisualCharacterCards = (characters: Array<Partial<CharacterCo
       id: character.id || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_ID,
       name: character.name || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_NAME,
       narrativeRole: character.narrativeRole || VISUAL_CONTINUITY_CONFIG.DEFAULT_CHARACTER_ROLE,
-      description: character.description || identityLock,
+      description: identityLock,
       identityLock,
       usesSharedStyleCore: true,
     };
@@ -87,12 +82,14 @@ export const normalizeVisualShotPlan = (
     _.uniq(_.map(_.castArray(source.characterIds), _.toString)),
     id => validCharacterIds.has(id),
   );
-  const inferredCharacterIds = resolveSceneCharacterIds({
-    characterIds: explicitCharacterIds,
-    prompt: _.toString(source.prompt || baseScene.prompt),
-    script: baseScene.script,
-    subtitle: baseScene.subtitle,
-  }, _.defaultTo(options.characters, []));
+  const inferredCharacterIds = _.isArray(source.characterIds)
+    ? []
+    : resolveSceneCharacterIds({
+        characterIds: explicitCharacterIds,
+        prompt: _.toString(source.prompt || baseScene.prompt),
+        script: baseScene.script,
+        subtitle: baseScene.subtitle,
+      }, _.defaultTo(options.characters, []));
   const characterIds = _.uniq(_.concat(explicitCharacterIds, inferredCharacterIds));
   const expectedSubjectCount = _.isNumber(source.expectedSubjectCount)
     ? _.clamp(
@@ -106,6 +103,7 @@ export const normalizeVisualShotPlan = (
     ...baseScene,
     ..._.pick(source, [
       "narrativeBeatId", "characterStage", "visualIntent", "visibleAction", "reaction",
+      "storyEvidence", "visualHook",
       "characterStateBefore", "characterStateAfter", "shotSize", "cameraAngle", "composition",
       "continuityFrom", "continuityNotes", "callbackId", "lighting", "textOverlay",
       "cameraMotion", "effects", "lightingEffect", "transition", "prompt",
@@ -127,9 +125,13 @@ export const normalizeVisualShotPlan = (
 
 export const createVisualPlanningPayload = (scenes: StoryboardScene[]): Record<string, unknown>[] => _.map(
   scenes,
-  scene => _.pick(scene, [
-    "id", "chapterId", "script", "subtitle", "narrativeBeatId", "characterStateBefore",
-    "characterStateAfter", "callbackId", "characterIds", "characterStage", "locationId", "propIds",
-    "visualIntent", "visibleAction", "reaction", "expectedSubjectCount",
-  ]),
+  (scene, index) => ({
+    ..._.pick(scene, [
+      "id", "chapterId", "script", "subtitle", "narrativeBeatId", "characterStateBefore",
+      "characterStateAfter", "callbackId", "characterIds", "characterStage", "locationId", "propIds",
+      "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "expectedSubjectCount",
+    ]),
+    previousNarration: _.toString(scenes[index - 1]?.script || scenes[index - 1]?.subtitle),
+    nextNarration: _.toString(scenes[index + 1]?.script || scenes[index + 1]?.subtitle),
+  }),
 );

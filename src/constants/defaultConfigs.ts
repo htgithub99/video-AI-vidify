@@ -8,7 +8,7 @@ export const SCENE_DENSITY_MAP = {
   [SceneDensity.THEO_DOAN]: { maxChars: 350, label: "Paragraph-based (Slow-paced)" },
 } as const;
 
-export const boundaries = [".", "!", "?", "\n"];
+export const boundaries = [".", "!", "?", "…", "\n"];
 
 export const pauseChars = [" ", ",", "."];
 export const closedKeywords = ["closed", "close", "context"];

@@ -39,6 +39,27 @@ type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" |
 
 const MAX_STALE_JOB_AGE_MS = 10 * 60 * 1000;
 
+const isPersistableAssetUrl = (value: unknown): boolean => {
+  const source = _.trim(_.toString(value));
+  return !_.isEmpty(source) && !_.startsWith(source, "data:") && !/^[A-Za-z0-9+/]{256,}={0,2}$/.test(source);
+};
+
+const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOptions => ({
+  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile"]),
+  globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
+  scenes: _.map(payload.scenes, scene => ({
+    ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose"]),
+    imageUrl: isPersistableAssetUrl(scene.imageUrl) ? scene.imageUrl : undefined,
+    audioUrl: isPersistableAssetUrl(scene.audioUrl) ? scene.audioUrl : undefined,
+  })),
+  audioTracks: _.map(payload.audioTracks, track => _.pick(track, ["id", "type", "assetUrl", "startSeconds", "durationSeconds", "volumeDb", "fadeInSeconds", "fadeOutSeconds", "loop"])),
+});
+
+const hasRecoverablePersistedPayload = (job: RenderJob): boolean => _.every(
+  job.payload?.scenes,
+  scene => isPersistableAssetUrl(scene.imageUrl),
+);
+
 const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   ...job,
   createdAt: new Date(job.createdAt),
@@ -71,7 +92,7 @@ class RenderQueueService {
       const isRecoverable = _.some(RENDER_QUEUE_CONFIG.RECOVERABLE_STATUSES, (status) => _.isEqual(status, job.status));
       if (isRecoverable) {
         const jobAge = _.subtract(now, job.createdAt.getTime());
-        if (_.gt(jobAge, MAX_STALE_JOB_AGE_MS) || _.isEqual(job.status, JobStatus.PROCESSING)) {
+        if (_.gt(jobAge, MAX_STALE_JOB_AGE_MS) || _.isEqual(job.status, JobStatus.PROCESSING) || !hasRecoverablePersistedPayload(job)) {
           job.status = JobStatus.CANCELLED;
           job.error = RENDER_QUEUE_CONFIG.CANCELLED_ERROR;
           void this.persist(job);
@@ -169,7 +190,7 @@ class RenderQueueService {
   }
 
   private async persist(job: RenderJob): Promise<void> {
-    await saveRenderJobToDb(job);
+    await saveRenderJobToDb({ ...job, payload: createLightweightPayload(job.payload) });
   }
 
   private async executeRenderWithRetries(job: RenderJob, abortSignal: AbortSignal, onProgressUpdate: (progress: number) => void): Promise<string> {

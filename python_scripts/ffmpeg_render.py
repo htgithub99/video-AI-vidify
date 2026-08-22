@@ -8,6 +8,8 @@ import math
 import random
 import re
 import threading
+import hashlib
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 
 SCENE_RENDER_TIMEOUT_SECONDS = 180
@@ -62,6 +64,7 @@ class FFMPEG_CONSTANTS:
     MINUTES_PER_HOUR = 60
     SECONDS_PER_MINUTE = 60
     DEFAULT_TRIM_SECONDS = 0.25
+    VIDEO_CONTENT_FOCUS_RATIO = 0.18
     MIN_USABLE_VIDEO_SECONDS = 0.5
     ZERO_SECONDS = 0.0
     DEFAULT_MAX_WORKERS = 1
@@ -86,6 +89,9 @@ class FFMPEG_CONSTANTS:
     KEY_MAX_SCENE_WORKERS = "maxSceneWorkers"
     KEY_VIDEO_TRIM_START_SECONDS = "videoTrimStartSeconds"
     KEY_VIDEO_TRIM_END_SECONDS = "videoTrimEndSeconds"
+    KEY_SCENE_CACHE_DIR = "sceneCacheDir"
+    SCENE_CACHE_VERSION = "scene-cache-v1"
+    SCENE_CACHE_MIN_BYTES = 1024
     KEY_SUBTITLE = "subtitle"
     KEY_SUBTITLE_CUES = "subtitleCues"
     KEY_SUBTITLE_CUE_TEXT = "text"
@@ -161,6 +167,11 @@ class FFMPEG_CONSTANTS:
     SHORT_SCENE_LIGHTING_EFFECTS = {"strobe", "flicker"}
     SHORT_SCENE_VISUAL_EFFECTS = {"glitch", "vhs", "pixelate"}
     SHORT_SCENE_VISUAL_FALLBACK = "soft_focus"
+    COMFORT_MIN_INTENSE_DURATION = 3.5
+    COMFORT_EFFECT_COOLDOWN_SCENES = 6
+    DISRUPTIVE_LIGHTING_EFFECTS = {"strobe", "flicker", "exposure_pulse"}
+    DISRUPTIVE_VISUAL_EFFECTS = {"glitch", "vhs", "pixelate", "chromatic_aberration"}
+    DISRUPTIVE_TRANSITIONS = {"flash", "whip_left", "whip_right", "glitch_transition", "zoom_transition"}
     MOTION_STYLE_BY_ID = {
         "zoom_in": 0, "zoom_out": 1, "pan_left": 2, "pan_right": 3,
         "pan_up": 4, "pan_down": 5, "diagonal_down_right": 6,
@@ -211,7 +222,13 @@ def create_subtitle_file(temp_dir, scenes, durations):
     return subtitle_path if entries else None
 
 def create_subtitle_filter(subtitle_path):
-    return f"subtitles=filename='{os.path.basename(subtitle_path)}'"
+    subtitle_style = (
+        "FontName=Arial,FontSize=13,PrimaryColour=&H00FFFFFF,"
+        "OutlineColour=&H90000000,BackColour=&H50000000,"
+        "BorderStyle=1,Outline=1.4,Shadow=0,Alignment=2,MarginV=52,"
+        "Bold=0,Spacing=0.2"
+    )
+    return f"subtitles=filename='{os.path.basename(subtitle_path)}':force_style='{subtitle_style}'"
 
 def add_subtitle_input(command, subtitle_path, subtitle_input_index):
     if not subtitle_path:
@@ -310,6 +327,89 @@ def get_media_duration(ffmpeg_cmd, media_path):
     except (OSError, ValueError, subprocess.SubprocessError):
         return FFMPEG_CONSTANTS.ZERO_SECONDS
 
+def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
+    profiles = {
+        "satirical_editorial": (110.0, 164.81, 220.0, 0.38),
+        "tension_pulse": (55.0, 82.41, 110.0, 0.55),
+        "light_warm": (130.81, 196.0, 261.63, 0.24),
+        "reflective_ambient": (73.42, 110.0, 146.83, 0.12),
+        "documentary_editorial": (82.41, 123.47, 164.81, 0.18),
+    }
+    frequencies = profiles.get(profile, profiles["documentary_editorial"])
+    output_path = os.path.join(temp_dir, "automatic_music_bed.wav")
+    duration = max(1.0, float(duration_seconds))
+    command = [ffmpeg_cmd, "-y"]
+    for frequency in frequencies[:3]:
+        command.extend([
+            "-f", "lavfi", "-i",
+            f"sine=frequency={frequency}:sample_rate=48000:duration={duration}",
+        ])
+    filter_graph = (
+        f"[0:a][1:a][2:a]amix=inputs=3:weights='0.55 0.3 0.15':normalize=0,"
+        f"lowpass=f=1100,tremolo=f={frequencies[3]}:d=0.22,"
+        f"aecho=0.8:0.22:180|360:0.16|0.08,"
+        f"loudnorm=I=-24:TP=-6:LRA=7,"
+        f"aformat=channel_layouts=stereo[music]"
+    )
+    command.extend([
+        "-filter_complex", filter_graph,
+        "-map", "[music]", "-c:a", "pcm_s16le", output_path,
+    ])
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        return output_path if os.path.exists(output_path) else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+def create_automatic_accent_track(ffmpeg_cmd, temp_dir, scenes, profile):
+    accent_times = [0.12]
+    timeline_seconds = 0.0
+    last_accent_seconds = -20.0
+    for scene in scenes:
+        purpose = str(scene.get("shotPurpose", "")).lower()
+        transition = str(scene.get("transition", "")).lower()
+        is_emphasis = purpose in ("reveal", "punchline", "chapter_turn", "turning_point")
+        is_chapter_boundary = transition == "fade_black"
+        if is_emphasis and timeline_seconds - last_accent_seconds >= 8.0:
+            accent_times.append(max(0.0, timeline_seconds + 0.08))
+            last_accent_seconds = timeline_seconds
+        elif is_chapter_boundary and timeline_seconds - last_accent_seconds >= 15.0:
+            accent_times.append(max(0.0, timeline_seconds + float(scene.get("duration", 0))))
+            last_accent_seconds = timeline_seconds
+        timeline_seconds += float(scene.get("duration", 0))
+    accent_times = accent_times[:6]
+    if not accent_times:
+        return None
+    base_frequency = 520 if profile in ("satirical_editorial", "light_warm") else 95
+    output_path = os.path.join(temp_dir, "automatic_accent_track.wav")
+    command = [ffmpeg_cmd, "-y"]
+    for index, _ in enumerate(accent_times):
+        frequency = base_frequency * (1.0 + (index % 2) * 0.5)
+        command.extend([
+            "-f", "lavfi", "-i",
+            f"sine=frequency={frequency}:sample_rate=48000:duration=0.42",
+        ])
+    filters = []
+    labels = []
+    for index, accent_time in enumerate(accent_times):
+        delay_ms = round(accent_time * 1000)
+        label = f"accent{index}"
+        filters.append(
+            f"[{index}:a]afade=t=out:st=0.04:d=0.38,volume=-8dB,adelay={delay_ms}:all=1[{label}]"
+        )
+        labels.append(f"[{label}]")
+    filters.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0,apad[accents]")
+    command.extend([
+        "-filter_complex", ";".join(filters),
+        "-map", "[accents]", "-t", str(max(1.0, timeline_seconds)),
+        "-c:a", "pcm_s16le", output_path,
+    ])
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        return output_path if os.path.exists(output_path) else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
 def validate_rendered_output(ffmpeg_cmd, media_path, width, height, expected_duration, audio_required):
     if not os.path.exists(media_path) or os.path.getsize(media_path) < 1024:
         raise Exception("Final render is missing or empty")
@@ -355,15 +455,40 @@ def get_video_trim_filter(ffmpeg_cmd, media_path, trim_start, trim_end, output_d
     )
     safe_start = min(safe_start, maximum_trim)
     safe_end = min(safe_end, maximum_trim - safe_start)
-    end_position = max(
-        safe_start + FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS,
-        source_duration - safe_end,
-    )
+    usable_end = max(safe_start + FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS, source_duration - safe_end)
+    usable_duration = max(usable_end - safe_start, FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS)
+    selected_duration = min(max(float(output_duration), FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS), usable_duration)
+    selection_slack = max(usable_duration - selected_duration, FFMPEG_CONSTANTS.ZERO_SECONDS)
+    # Generated clips commonly spend their first frames establishing the shot,
+    # while strong zooms, morphs, or end poses tend to appear in the latter half.
+    # Select an early-middle window so short voice scenes retain the principal
+    # action without including either unstable edge.
+    safe_start += selection_slack * FFMPEG_CONSTANTS.VIDEO_CONTENT_FOCUS_RATIO
+    end_position = min(usable_end, safe_start + selected_duration)
     return FFMPEG_CONSTANTS.VIDEO_TRIM_FILTER.format(
         safe_start,
         end_position,
         output_duration,
     )
+
+def update_hash_from_file(digest, file_path):
+    if not file_path or not os.path.exists(file_path):
+        digest.update(b"missing")
+        return
+    with open(file_path, "rb") as source_file:
+        while True:
+            chunk = source_file.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+
+def create_scene_cache_key(media_path, audio_path, render_signature):
+    digest = hashlib.sha256()
+    digest.update(FFMPEG_CONSTANTS.SCENE_CACHE_VERSION.encode(FFMPEG_CONSTANTS.UTF8))
+    digest.update(json.dumps(render_signature, sort_keys=True, ensure_ascii=True).encode(FFMPEG_CONSTANTS.UTF8))
+    update_hash_from_file(digest, media_path)
+    update_hash_from_file(digest, audio_path)
+    return digest.hexdigest()
 
 def get_native_image_filter(style_index, width, height, fps, total_frames, safe_profile, fade_filter):
     filters = [FFMPEG_CONSTANTS.IMAGE_SCALE_FILTER.format(width, height)]
@@ -690,13 +815,13 @@ def get_crop_coordinates(style, t_smooth, w_new, h_new, width, height):
         x0 = x_max * (0.2 + 0.6 * t_smooth)
         y0 = y_max * (0.5 - 0.2 * arc_phase)
     elif style == 9:
-        z = 1.03 + 0.03 * math.sin(t_smooth * math.pi)
+        z = 1.035 + 0.015 * t_smooth
         w_crop = width / z
         h_crop = height / z
         x_max = w_new - w_crop
         y_max = h_new - h_crop
-        drift_x = 0.5 + 0.1 * math.sin(t_smooth * math.pi * 1.5)
-        drift_y = 0.5 + 0.1 * math.cos(t_smooth * math.pi * 1.2)
+        drift_x = 0.47 + 0.06 * t_smooth
+        drift_y = 0.49 + 0.02 * t_smooth
         x0 = x_max * drift_x
         y0 = y_max * drift_y
     elif style == 10:
@@ -1094,6 +1219,9 @@ def main():
         finalOutputUrl = config.get("finalOutputUrl")
         scenes = config.get("scenes", [])
         safe_profile = bool(config.get(FFMPEG_CONSTANTS.KEY_SAFE_PROFILE, False))
+        scene_cache_dir = config.get(FFMPEG_CONSTANTS.KEY_SCENE_CACHE_DIR)
+        if scene_cache_dir:
+            os.makedirs(scene_cache_dir, exist_ok=True)
         video_trim_start = config.get(
             FFMPEG_CONSTANTS.KEY_VIDEO_TRIM_START_SECONDS,
             FFMPEG_CONSTANTS.DEFAULT_TRIM_SECONDS,
@@ -1140,6 +1268,8 @@ def main():
             source_audio_path = scene.get(FFMPEG_CONSTANTS.KEY_AUDIO_PATH)
             duration = scene.get(FFMPEG_CONSTANTS.KEY_DURATION, FFMPEG_CONSTANTS.DEFAULT_SCENE_DURATION)
             transition = scene.get(FFMPEG_CONSTANTS.KEY_TRANSITION, FFMPEG_CONSTANTS.EMPTY_STRING)
+            if scene.get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT) in FFMPEG_CONSTANTS.DISRUPTIVE_LIGHTING_EFFECTS:
+                scene[FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT] = FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT
             if float(duration or FFMPEG_CONSTANTS.DEFAULT_SCENE_DURATION) < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION:
                 if scene.get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT) in FFMPEG_CONSTANTS.SHORT_SCENE_LIGHTING_EFFECTS:
                     scene[FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT] = FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT
@@ -1198,13 +1328,34 @@ def main():
         chosen_transitions = []
         prev_style = -1
         prev_trans = None
+        same_motion_run = 0
+        same_transition_run = 0
+        last_intense_effect_index = -FFMPEG_CONSTANTS.COMFORT_EFFECT_COOLDOWN_SCENES
+        last_disruptive_transition_index = -FFMPEG_CONSTANTS.COMFORT_EFFECT_COOLDOWN_SCENES
 
         for i, scene in enumerate(scenes):
             camera_motion = scene.get(FFMPEG_CONSTANTS.KEY_CAMERA_MOTION, FFMPEG_CONSTANTS.EMPTY_STRING)
             style_idx = 12 if safe_profile or scene_durations[i] < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION else map_motion_to_style(camera_motion, i, prev_style, num_styles=20)
+            if style_idx == 9:
+                style_idx = 12 if i % 4 == 0 else 0
+            same_motion_run = same_motion_run + 1 if style_idx == prev_style else 1
+            if style_idx != 12 and same_motion_run > 2:
+                style_idx = 12
+                same_motion_run = 1
             chosen_styles.append(style_idx)
             if style_idx != 12:
                 prev_style = style_idx
+
+            requested_effect = str(scene.get(FFMPEG_CONSTANTS.KEY_EFFECTS) or "").lower().strip()
+            if requested_effect in FFMPEG_CONSTANTS.DISRUPTIVE_VISUAL_EFFECTS:
+                intense_allowed = (
+                    scene_durations[i] >= FFMPEG_CONSTANTS.COMFORT_MIN_INTENSE_DURATION
+                    and i - last_intense_effect_index >= FFMPEG_CONSTANTS.COMFORT_EFFECT_COOLDOWN_SCENES
+                )
+                if intense_allowed:
+                    last_intense_effect_index = i
+                else:
+                    scene[FFMPEG_CONSTANTS.KEY_EFFECTS] = FFMPEG_CONSTANTS.EMPTY_STRING
 
             transition_meta = scene_transitions[i]
             trans_type = FFMPEG_CONSTANTS.TRANS_CUT if safe_profile else get_transition_type(i, transition_meta, prev_trans)
@@ -1212,6 +1363,19 @@ def main():
                 trans_type = FFMPEG_CONSTANTS.TRANS_CUT
             if scene_is_video[i] or (i + 1 < len(scenes) and scene_is_video[i + 1]):
                 trans_type = FFMPEG_CONSTANTS.TRANS_CUT
+            if trans_type in FFMPEG_CONSTANTS.DISRUPTIVE_TRANSITIONS:
+                disruptive_allowed = (
+                    scene_durations[i] >= FFMPEG_CONSTANTS.COMFORT_MIN_INTENSE_DURATION
+                    and i - last_disruptive_transition_index >= FFMPEG_CONSTANTS.COMFORT_EFFECT_COOLDOWN_SCENES
+                )
+                if disruptive_allowed:
+                    last_disruptive_transition_index = i
+                else:
+                    trans_type = FFMPEG_CONSTANTS.TRANS_CUT
+            same_transition_run = same_transition_run + 1 if trans_type == prev_trans else 1
+            if trans_type != FFMPEG_CONSTANTS.TRANS_CUT and same_transition_run > 2:
+                trans_type = FFMPEG_CONSTANTS.TRANS_CUT
+                same_transition_run = 1
             chosen_transitions.append(trans_type)
             prev_trans = trans_type
 
@@ -1222,6 +1386,7 @@ def main():
             print(json.dumps({"progress": progress}), flush=True)
 
         def render_scene(i):
+            nonlocal completed_scene_count
             idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
             scene_id = scenes[i].get("id") or idx
             diagnostic_path = os.path.join(tempDir, f"scene_{idx}_ffmpeg.log")
@@ -1282,6 +1447,33 @@ def main():
                     vf_effect,
                 )
 
+            cache_path = None
+            if scene_cache_dir:
+                cache_key = create_scene_cache_key(
+                    mediaPath,
+                    audioPath,
+                    {
+                        "sceneId": scene_id,
+                        "duration": actual_duration,
+                        "isVideo": is_video,
+                        "width": width,
+                        "height": height,
+                        "fps": fps,
+                        "bitrate": bitrate,
+                        "videoFilter": video_filter,
+                        "audioFilter": af_effect,
+                        "hasAudio": bool(audioPath),
+                        "safeProfile": safe_profile,
+                    },
+                )
+                cache_path = os.path.join(scene_cache_dir, f"{scene_id}_{cache_key}.mp4")
+                if os.path.exists(cache_path) and os.path.getsize(cache_path) > FFMPEG_CONSTANTS.SCENE_CACHE_MIN_BYTES:
+                    shutil.copy2(cache_path, outPath)
+                    with progress_lock:
+                        completed_scene_count += 1
+                        emit_progress(max(1, round(completed_scene_count * 90 / len(scenes))))
+                    return FFMPEG_CONSTANTS.CONCAT_PREFIX.format(idx)
+
             cmd.extend([
                 "-map", "0:v:0",
                 "-map", "1:a:0",
@@ -1318,7 +1510,24 @@ def main():
                 diagnostic = " ".join(stderr_text.strip().splitlines()[-6:])
                 raise Exception(FFMPEG_CONSTANTS.PART_ERROR_TEMPLATE.format(scene_id, return_code, diagnostic))
 
-            nonlocal completed_scene_count
+            if cache_path:
+                temporary_cache_path = f"{cache_path}.{threading.get_ident()}.tmp"
+                try:
+                    shutil.copy2(outPath, temporary_cache_path)
+                    os.replace(temporary_cache_path, cache_path)
+                    for cached_name in os.listdir(scene_cache_dir):
+                        if cached_name.startswith(f"{scene_id}_") and cached_name != os.path.basename(cache_path):
+                            try:
+                                os.remove(os.path.join(scene_cache_dir, cached_name))
+                            except OSError:
+                                pass
+                except OSError:
+                    try:
+                        if os.path.exists(temporary_cache_path):
+                            os.remove(temporary_cache_path)
+                    except OSError:
+                        pass
+
             with progress_lock:
                 completed_scene_count += 1
                 emit_progress(max(1, round(completed_scene_count * 90 / len(scenes))))
@@ -1371,6 +1580,48 @@ def main():
             global_audio_duration = get_media_duration(ffmpegCmd, globalAudioPath)
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
                 expected_output_duration = global_audio_duration
+            auto_music_profile = config.get("autoMusicProfile")
+            has_music_track = any(track.get("type") == "music" for track in audio_tracks)
+            if auto_music_profile and not has_music_track:
+                automatic_music_path = create_automatic_music_bed(
+                    ffmpegCmd,
+                    tempDir,
+                    expected_output_duration,
+                    auto_music_profile,
+                )
+                if automatic_music_path:
+                    automatic_fade_seconds = min(2.0, expected_output_duration / 4.0)
+                    audio_tracks.append({
+                        "id": "automatic_music_bed",
+                        "type": "music",
+                        "assetPath": automatic_music_path,
+                        "startSeconds": 0,
+                        "durationSeconds": expected_output_duration,
+                        "volumeDb": -10,
+                        "loop": False,
+                        "fadeInSeconds": automatic_fade_seconds,
+                        "fadeOutSeconds": automatic_fade_seconds,
+                    })
+            has_sound_effect_track = any(track.get("type") == "sfx" for track in audio_tracks)
+            if auto_music_profile and not has_sound_effect_track:
+                automatic_accent_path = create_automatic_accent_track(
+                    ffmpegCmd,
+                    tempDir,
+                    scenes,
+                    auto_music_profile,
+                )
+                if automatic_accent_path:
+                    audio_tracks.append({
+                        "id": "automatic_editorial_accents",
+                        "type": "sfx",
+                        "assetPath": automatic_accent_path,
+                        "startSeconds": 0,
+                        "durationSeconds": expected_output_duration,
+                        "volumeDb": -6,
+                        "loop": False,
+                        "fadeInSeconds": 0,
+                        "fadeOutSeconds": 0,
+                    })
             mergeAudioCmd = [
                 ffmpegCmd, "-y", "-i", tempFinalPath, "-i", globalAudioPath,
             ]
@@ -1403,8 +1654,10 @@ def main():
                         fade_out_seconds,
                     ))
                 filters.append(FFMPEG_CONSTANTS.AUDIO_TRACK_DELAY_FILTER.format(delay_milliseconds))
+                prepared_label = f"prepared{track_index}"
                 output_label = f"mix{track_index}"
-                mix_filters.append(f"[{input_index}:a]{','.join(filters)}[{output_label}]")
+                mix_filters.append(f"[{input_index}:a]{','.join(filters)}[{prepared_label}]")
+                mix_filters.append(f"[{prepared_label}]anull[{output_label}]")
                 mix_inputs.append(f"[{output_label}]")
             if mix_filters:
                 mix_filters.append(f"{''.join(mix_inputs)}{FFMPEG_CONSTANTS.AUDIO_MIX_FILTER.format(len(mix_inputs))}[mixed]")

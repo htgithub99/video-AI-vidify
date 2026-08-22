@@ -88,6 +88,10 @@ const captureGeminiDomState = (page: Page, state: string): Promise<void> =>
     maxTextLength: GEMINI_DOM_DIAGNOSTICS_CONFIG.MAX_TEXT_LENGTH,
     maxHtmlLength: GEMINI_DOM_DIAGNOSTICS_CONFIG.MAX_HTML_LENGTH,
     errorMessageTemplate: GEMINI_DOM_DIAGNOSTICS_CONFIG.ERROR_MESSAGE,
+    maxFileBytes: GEMINI_DOM_DIAGNOSTICS_CONFIG.MAX_FILE_BYTES,
+    retainedFileBytes: GEMINI_DOM_DIAGNOSTICS_CONFIG.RETAINED_FILE_BYTES,
+    detailedStatePattern: GEMINI_DOM_DIAGNOSTICS_CONFIG.DETAILED_STATE_PATTERN,
+    minimalMaxElements: GEMINI_DOM_DIAGNOSTICS_CONFIG.MINIMAL_MAX_ELEMENTS,
   });
 
 export async function smoothMouseMove(page: Page, locator: Locator) {
@@ -922,7 +926,9 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let success = false;
   let base64Result: string | null = null;
   let roomAttempts = SecurityConstants.ZERO;
-  const maxRoomAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
+  const maxRoomAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video)
+    ? 2
+    : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
 
@@ -992,7 +998,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       }
 
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = 2;
+      const maxReloadAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 1 : 2;
 
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
@@ -1166,6 +1172,7 @@ const getBatchItemVisualConfig = (
   return {
     ...visualConfig,
     generateType: resolveBatchAssetType(item),
+    imageGeneratorEngine: visualConfig.imageGeneratorEngine,
     referenceImages: targetReferences,
     sceneReferenceImages: visualConfig?.sceneReferenceImages,
     styleReferenceImages: visualConfig?.styleReferenceImages,
@@ -1333,7 +1340,9 @@ export async function generateBatchImagesWithGeminiChat(
       let success = false;
       let base64Result: string | null = null;
       let roomAttempts = SecurityConstants.ZERO;
-      const maxRoomAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
+      const maxRoomAttempts = _.isEqual(itemVisualConfig.generateType, GenerateType.Video)
+        ? 2
+        : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
 
       try {
         while (roomAttempts < maxRoomAttempts && !success) {
@@ -1385,7 +1394,7 @@ export async function generateBatchImagesWithGeminiChat(
           }
 
           let reloadAttempts = SecurityConstants.ZERO;
-          const maxReloadAttempts = 2;
+          const maxReloadAttempts = _.isEqual(itemVisualConfig.generateType, GenerateType.Video) ? 1 : 2;
 
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
@@ -1732,10 +1741,10 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   let targetModelText = GeminiChatModelName.Pro;
   let targetModelRegex = GEMINI_MODEL_PRO_REGEX;
   let fallbackModelRegex: RegExp | null = null;
-  if (engine === ImageGeneratorEngine.LabsSandbox) {
+  if (_.includes([ImageGeneratorEngine.LabsSandbox, ImageGeneratorEngine.Veo3Lite], engine)) {
     targetModelText = GeminiChatModelName.FlashLite;
     targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
-  } else if (engine === ImageGeneratorEngine.Veo3) {
+  } else if (_.includes([ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Fast], engine)) {
     targetModelText = GeminiChatModelName.Flash;
     targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
@@ -1791,15 +1800,24 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
 export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
-  const targetRegex = isVideo ? new RegExp(GeminiChatTextOption.CreateVideoRegexStr, "i") : new RegExp(GeminiChatTextOption.CreateImageRegexStr, "i");
 
   const activeModeRegex = isVideo ? GEMINI_ACTIVE_VIDEO_MODE_REGEX : GEMINI_ACTIVE_IMAGE_MODE_REGEX;
   const hasActiveGenerateType = async (): Promise<boolean> => {
+    const selectedModeChip = page.locator('gem-button[data-test-id="deselect-drawer-item-gem-button"]').first();
+    if (await selectedModeChip.isVisible().catch(() => false)) {
+      const selectedModeLabel = _.trim(await selectedModeChip.innerText().catch(() => ""));
+      if (activeModeRegex.test(selectedModeLabel)) return true;
+    }
+
     const candidates = page.locator(GeminiChatSelector.ActiveGenerateType);
     const candidateCount = await candidates.count();
     for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
       const candidate = candidates.nth(index);
       if (!(await candidate.isVisible().catch(() => false))) continue;
+      const belongsToNavigation = await candidate.evaluate((element: HTMLElement) => Boolean(element.closest(
+        'bard-sidenav-container, bard-sidenav, side-navigation-content, nav, [role="navigation"], [data-test-id="videos-side-nav-entry-button"]',
+      ))).catch(() => false);
+      if (belongsToNavigation) continue;
       const label = _.trim(_.join([await candidate.innerText().catch(() => ""), await candidate.getAttribute("aria-label").catch(() => "")], " "));
       if (activeModeRegex.test(label)) return true;
     }
@@ -1832,21 +1850,31 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
     await randomDelay(500, 900);
     await captureGeminiDomState(page, isVideo ? "video_type_menu_open" : "image_type_menu_open");
 
-    const optionBtn = page.locator(GeminiChatSelector.PlusMenuOptions).filter({ hasText: targetRegex }).first();
-    const optionBtnFallback = page.locator("button").filter({ hasText: targetRegex }).first();
+    const exactOptionRegex = isVideo
+      ? /^\s*(?:Tạo video|Video|Create video|Generate video)\s*$/i
+      : /^\s*(?:Tạo hình ảnh|Tạo ảnh|Vẽ hình ảnh|Create (?:an )?image|Generate (?:an )?image|Create images|Generate images)\s*$/i;
+    const findExactVisibleOption = async (locator: Locator): Promise<Locator | null> => {
+      const count = await locator.count();
+      for (let optionIndex = SecurityConstants.ZERO; optionIndex < count; optionIndex++) {
+        const option = locator.nth(optionIndex);
+        if (!(await option.isVisible().catch(() => false))) continue;
+        const optionLabel = _.trim(_.join([
+          await option.innerText().catch(() => ""),
+          await option.getAttribute("aria-label").catch(() => ""),
+        ], " "));
+        if (exactOptionRegex.test(optionLabel)) return option;
+      }
+      return null;
+    };
+    const optionBtn = await findExactVisibleOption(page.locator(GeminiChatSelector.PlusMenuOptions));
+    const optionBtnFallback = await findExactVisibleOption(page.locator("button"));
     let selectedOption = optionBtn;
     let usedFallback = false;
-    try {
-      await selectedOption.waitFor({ state: "visible", timeout: selectionTimeout });
-    } catch {
+    if (!selectedOption) {
       selectedOption = optionBtnFallback;
       usedFallback = true;
-      try {
-        await selectedOption.waitFor({ state: "visible", timeout: selectionTimeout });
-      } catch {
-        continue;
-      }
     }
+    if (!selectedOption) continue;
 
     await randomDelay(300, 700);
     await selectedOption.click();
@@ -1908,9 +1936,7 @@ async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualC
   await page.bringToFront().catch(() => {});
   const isVideoGeneration = _.some([visualConfig?.generateType], (generateType) => _.isEqual(generateType, GenerateType.Video));
   if (isVideoGeneration) {
-    const targetRatio = _.includes([AspectRatio.SixteenNine, AspectRatio.NineSixteen], visualConfig?.aspectRatio)
-      ? visualConfig.aspectRatio
-      : AspectRatio.SixteenNine;
+    const targetRatio = visualConfig?.aspectRatio || AspectRatio.SixteenNine;
     const aspectButton = page.locator(GEMINI_CHAT_VIDEO_SELECTORS.ASPECT_BUTTON).first();
 
     if (await aspectButton.isVisible()) {
@@ -2123,7 +2149,14 @@ const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfi
     });
 };
 
-const tryDownloadViaButton = async (page: Page, container: Locator): Promise<string | null> => {
+export const isDownloadedVideoBuffer = (buffer: Buffer): boolean => {
+  if (_.lt(buffer.length, 12)) return false;
+  const isIsoBaseMedia = _.isEqual(buffer.subarray(4, 8).toString("ascii"), "ftyp");
+  const isWebM = _.isEqual(buffer.subarray(0, 4).toString("hex"), "1a45dfa3");
+  return isIsoBaseMedia || isWebM;
+};
+
+const tryDownloadViaButton = async (page: Page, container: Locator, requireVideo: boolean = false): Promise<string | null> => {
   const downloadButtonSelectors = GEMINI_MEDIA_EXTRACTION_CONFIG.DOWNLOAD_BUTTON_SELECTORS;
 
   for (const selector of downloadButtonSelectors) {
@@ -2144,6 +2177,10 @@ const tryDownloadViaButton = async (page: Page, container: Locator): Promise<str
             }
             const buffer = Buffer.concat(chunks);
             if (_.gt(buffer.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH)) {
+              if (requireVideo && !isDownloadedVideoBuffer(buffer)) {
+                appLog(GEMINI_MEDIA_ERRORS.VIDEO_REQUEST_RETURNED_IMAGE);
+                continue;
+              }
               appLog(GEMINI_MEDIA_EXTRACTION_CONFIG.BUTTON_DOWNLOAD_LOG);
               return buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
             }
@@ -2208,6 +2245,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   const pollIntervalMs = GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS;
   const maxAttempts = Math.ceil(mediaReadyTimeout / pollIntervalMs);
   let isMediaFound = false;
+  const generationFailurePattern = /(?:couldn['’]?t generate|unable to generate|generation failed|something went wrong|không thể tạo|tạo video thất bại|đã xảy ra lỗi)/i;
 
   for (let i = SecurityConstants.ZERO; i < maxAttempts; i++) {
     const hasDownloadBtn = await latestResponse
@@ -2218,7 +2256,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
 
     const hasMedia = await mediaContainer.isVisible().catch(() => false);
 
-    if (hasDownloadBtn || hasMedia) {
+    if ((isVideoGeneration && hasMedia) || (!isVideoGeneration && (hasDownloadBtn || hasMedia))) {
       isMediaFound = true;
       break;
     }
@@ -2227,7 +2265,15 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       .evaluate((el: HTMLElement, busySelector: string) => Boolean(el.querySelector(busySelector)), GEMINI_MEDIA_EXTRACTION_CONFIG.BUSY_ELEMENT_SELECTOR)
       .catch(() => false);
 
-    if (!isBusy && _.gt(i, 5)) {
+    if (isVideoGeneration && !isBusy && _.gt(i, 5)) {
+      const responseText = await latestResponse.innerText().catch(() => "");
+      if (generationFailurePattern.test(responseText)) {
+        await captureGeminiDomState(page, "video_generation_rejected");
+        throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace("{mediaType}", GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE));
+      }
+    }
+
+    if (!isVideoGeneration && !isBusy && _.gt(i, 5)) {
       const anyImg = await latestResponse
         .locator(GEMINI_MEDIA_EXTRACTION_CONFIG.EXCLUDED_IMAGE_SELECTOR)
         .first()
@@ -2354,6 +2400,34 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
         return base64Data;
       }
     } else if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.VIDEO_TAG)) {
+      // Gemini serves completed videos from an authenticated cross-origin
+      // contribution.usercontent.google.com URL. Fetching that URL inside the
+      // page is subject to CORS and can return null even though the <video>
+      // element plays correctly. Playwright's request context shares the
+      // browser context cookies and is therefore the reliable primary path.
+      if (/^https?:\/\//i.test(src)) {
+        try {
+          const response = await page.context().request.get(src, {
+            headers: {
+              referer: page.url(),
+            },
+            timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS,
+          });
+          if (response.ok()) {
+            const buffer = await response.body();
+            if (
+              _.gt(buffer.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH) &&
+              isDownloadedVideoBuffer(buffer)
+            ) {
+              await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.VIDEO_SUCCESS);
+              return buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
+            }
+          }
+        } catch (requestError: unknown) {
+          appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERROR.replace("{0}", getErrorMessage(requestError)));
+        }
+      }
+
       const base64Data = await mediaElement
         .evaluate(
           async (videoEl, extractionConfig) => {
@@ -2385,6 +2459,8 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
         .catch(() => null);
 
       if (base64Data) {
+        const buffer = Buffer.from(base64Data, REFACTOR_CONSTANTS.ENCODING_BASE64);
+        if (!isDownloadedVideoBuffer(buffer)) return null;
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.VIDEO_SUCCESS);
         return base64Data;
       }
@@ -2401,7 +2477,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const latestResponse = page.locator(GeminiChatSelector.Response).last();
 
-  const buttonDownloadedBase64 = await tryDownloadViaButton(page, latestResponse);
+  const buttonDownloadedBase64 = await tryDownloadViaButton(page, latestResponse, isVideoGeneration);
   if (buttonDownloadedBase64) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return isVideoGeneration ? removeVideoAudioTrack(buttonDownloadedBase64) : buttonDownloadedBase64;
@@ -2418,7 +2494,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     return isVideoGeneration ? removeVideoAudioTrack(base64) : base64;
   }
 
-  const secondaryBase64 = await latestResponse
+  const secondaryBase64 = isVideoGeneration ? null : await latestResponse
     .evaluate(async (responseEl, excludedSelector) => {
       const img = responseEl.querySelector(excludedSelector) as HTMLImageElement | null;
       if (!img) return null;
@@ -2459,7 +2535,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     return secondaryBase64;
   }
 
-  const fallbackBtnDownload = await tryDownloadViaButton(page, page.locator("body"));
+  const fallbackBtnDownload = await tryDownloadViaButton(page, page.locator("body"), isVideoGeneration);
   if (fallbackBtnDownload) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return isVideoGeneration ? removeVideoAudioTrack(fallbackBtnDownload) : fallbackBtnDownload;

@@ -48,7 +48,6 @@ const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: s
     character.eyes,
     character.nose,
     character.hair,
-    character.accessories,
   ]);
   const identity = _.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
   const styleSafeIdentity = IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
@@ -140,9 +139,17 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const technicalPromptText = _.isEmpty(textOverlay) ? aiAuthoredPrompt : _.replace(aiAuthoredPrompt, textOverlay, "");
   if (!_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
     const cleanedAiPrompt = deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt));
-    const policyLockedPrompt = _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+    const alreadyHasNoTextPolicy = _.isEqual(scene.textAllowed, false)
+      && /(?:completely text-free|strictly no text|no readable text)/i.test(cleanedAiPrompt);
+    const policyLockedPrompt = alreadyHasNoTextPolicy
+      ? cleanedAiPrompt
+      : _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+    const fullBleedPrompt = _.join(
+      [_.trimEnd(policyLockedPrompt, ". "), IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE],
+      IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR,
+    );
     return appendImagePromptAspectRatio(
-      deduplicatePromptSentences(policyLockedPrompt),
+      deduplicatePromptSentences(fullBleedPrompt),
       options.aspectRatio,
     );
   }
@@ -156,6 +163,8 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const visualIntent = compactSceneField(scene.visualIntent);
   const visibleAction = compactSceneField(scene.visibleAction);
   const reaction = compactSceneField(scene.reaction);
+  const storyEvidence = compactSceneField(scene.storyEvidence);
+  const visualHook = compactSceneField(scene.visualHook);
   const composition = compactSceneField(scene.composition);
   const lighting = compactSceneField(scene.lighting);
   const narrativeFallback = getSceneNarrativeFallback(scene);
@@ -163,8 +172,8 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
     _.join(
       _.compact(
         !_.isEmpty(visibleAction)
-          ? [visibleAction, visualIntent, wardrobeDirective, reaction, environment]
-          : [visualIntent, wardrobeDirective, reaction, environment, narrativeFallback],
+          ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment]
+          : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback],
       ),
       IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
     ),
@@ -179,6 +188,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
     sceneVariation,
     _.join(_.compact([scene.shotSize, scene.cameraAngle, composition, lighting]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR),
     textPolicyDirective,
+    IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE,
     IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_NEGATIVE_CONSTRAINTS,
   ];
 

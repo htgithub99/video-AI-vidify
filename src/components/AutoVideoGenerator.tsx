@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
@@ -255,6 +255,29 @@ export default function AutoVideoGenerator({
       musicAssetUrl,
     })
   );
+
+  // The automatic pipeline runs in the browser. A tab reload destroys the
+  // in-memory async chain, but its latest project checkpoint intentionally
+  // remains `Generating`. Resume that orphaned run once after hydration so a
+  // reload cannot leave an otherwise recoverable video permanently stuck.
+  const recoveredPipelineProjectIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isConfigLoaded || isProcessing || !activeCreatedProject) return;
+    if (!_.isEqual(activeCreatedProject.status, REFACTOR_CONSTANTS.STATUS_GENERATING)) return;
+    if (_.isEmpty(activeCreatedProject.activeRunId)) return;
+    if (recoveredPipelineProjectIdsRef.current.has(activeCreatedProject.id)) return;
+    if (!_.isEqual(selectedProjectId, activeCreatedProject.id)) return;
+    if (_.isEmpty(_.trim(scriptContent))) return;
+
+    recoveredPipelineProjectIdsRef.current.add(activeCreatedProject.id);
+    void handleStartAutoGenerate({ resumeMode: true });
+  }, [
+    activeCreatedProject,
+    isConfigLoaded,
+    isProcessing,
+    scriptContent,
+    selectedProjectId,
+  ]);
 
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);

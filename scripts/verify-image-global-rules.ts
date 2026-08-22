@@ -3,6 +3,7 @@ import { GLOBAL_IMAGE_PROMPT_MASTER_RULE, IMAGE_PROMPT_FINAL_SECTION_ORDER, crea
 import { getOptimizePromptsBatchPrompt } from "../src/constants/prompts.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { createBatchContinuityContext, createPromptCharacterCards } from "../src/server/services/imagePromptPlanningService.ts";
+import { hasSourceGenderConflict } from "../src/services/visualContinuityService.ts";
 
 assert.equal(Object.keys(GLOBAL_IMAGE_PROMPT_MASTER_RULE).length, 8);
 assert.deepEqual(IMAGE_PROMPT_FINAL_SECTION_ORDER, [
@@ -27,8 +28,9 @@ const plannerPrompt = getOptimizePromptsBatchPrompt(
 );
 assert.match(plannerPrompt, /PROJECT STYLE LOCK/i);
 assert.match(plannerPrompt, /STRICT PROMPT PURITY/i);
-assert.match(plannerPrompt, /one continuous 70-120 word English paragraph/i);
-assert.match(plannerPrompt, /"reaction":"visible English facial expression and body-language response"/i);
+assert.match(plannerPrompt, /one continuous 60-95 word English paragraph/i);
+assert.match(plannerPrompt, /"storyEvidence":"specific drawable evidence proving the current narration"/i);
+assert.match(plannerPrompt, /"visualHook":"one story-grounded focal contrast/i);
 
 const correctionPrompt = getOptimizePromptsBatchPrompt(
   "flat 2D cartoon",
@@ -60,5 +62,7 @@ assert.equal(compactCards[0].name, "Player");
 assert.equal(compactCards[0].identityLock, "unused");
 assert.equal(compactCards[0].usesSharedStyleCore, true);
 assert.deepEqual(createBatchContinuityContext([{ id: "a" }, { id: "b" }, { id: "c" }], 1, 1), { previousScene: { id: "a" }, nextScene: { id: "c" } });
+assert.equal(hasSourceGenderConflict("Tại sao thật tệ khi là Gái Ngành?", [{ genderPresentation: "male" }] as any), true);
+assert.equal(hasSourceGenderConflict("A story about a young woman", [{ genderPresentation: "female" }] as any), false);
 
 writeVerificationLog("Global image-prompt rule assertions passed");

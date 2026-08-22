@@ -88,6 +88,7 @@ export interface FFmpegRenderOptions {
     effects?: string;
     lightingEffect?: string;
     transition?: string;
+    shotPurpose?: string;
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;
@@ -96,6 +97,7 @@ export interface FFmpegRenderOptions {
   projectId?: string;
   subtitleMode?: SubtitleMode;
   audioTracks?: RenderAudioTrack[];
+  autoMusicProfile?: string;
   safeProfile?: boolean;
 }
 
@@ -213,17 +215,18 @@ export const renderFFmpegVideo = async (
     globalAudioPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.GLOBAL_AUDIO_FILE_NAME);
     fs.writeFileSync(globalAudioPath, Buffer.from(globalAudioData, "base64"));
   }
+  const hasGlobalNarration = !_.isEmpty(globalAudioPath);
   const renderScenes = _.map(scenesVal, (scene) => {
     const mediaPath = getFirstValue([
       resolveLocalAssetPath(scene.imageUrl),
       resolveLocalAssetPath(scene.imageBase64),
     ]);
-    const audioPath = getFirstValue([
+    const audioPath = hasGlobalNarration ? undefined : getFirstValue([
       resolveLocalAssetPath(scene.audioUrl),
       resolveLocalAssetPath(scene.audioBase64),
     ]);
     const encodedMedia = resolveEncodedMediaSource(scene.imageBase64, scene.imageUrl);
-    const encodedAudio = resolveEncodedMediaSource(scene.audioBase64, scene.audioUrl);
+    const encodedAudio = hasGlobalNarration ? undefined : resolveEncodedMediaSource(scene.audioBase64, scene.audioUrl);
     if (_.isEmpty(mediaPath) && _.isEmpty(encodedMedia)) {
       throw new Error(`Scene ${scene.id} has no valid visual asset`);
     }
@@ -261,7 +264,9 @@ export const renderFFmpegVideo = async (
     [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
     [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
+    autoMusicProfile: _.toString(options.autoMusicProfile),
     [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
+    [FFMPEG_RENDER_KEYS.SCENE_CACHE_DIR]: path.join(outputDir, FFMPEG_RENDER_CONSTANTS.SCENE_CACHE_DIR_NAME),
   };
   const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
   fs.writeFileSync(

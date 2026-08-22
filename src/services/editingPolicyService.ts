@@ -22,6 +22,8 @@ export const EDITING_POLICY_CONSTANTS = {
   SHOT_CLOSE_PATTERN: /close|extreme/i,
   DISSOLVE_INTERVAL_MOD: 4,
   DISSOLVE_TARGET_INDEX: 2,
+  SHORT_SCENE_SECONDS: 2.75,
+  INTENSE_EFFECT_COOLDOWN_SCENES: 6,
 } as const;
 
 const SAFE_FLAT_EFFECTS = new Set<string>([
@@ -47,6 +49,10 @@ const VALID_MOTIONS = new Set<string>([
   EDITING_POLICY_CONSTANTS.MOTION_DRIFT,
   EDITING_POLICY_CONSTANTS.MOTION_STATIC,
 ]);
+
+const DISRUPTIVE_EFFECTS = new Set<string>(["glitch", "vhs", "pixelate", "chromatic_aberration"]);
+const DISRUPTIVE_LIGHTING = new Set<string>(["strobe", "flicker", "exposure_pulse"]);
+const EMPHATIC_SHOT_PURPOSES = new Set<string>(["reveal", "punchline"]);
 
 const MOTION_RHYTHM = [
   EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN,
@@ -112,7 +118,11 @@ const resolveCinematicCameraMotion = (
   totalScenes: number,
   flatStyle: boolean = false,
 ): string => {
-  if (flatStyle) return EDITING_POLICY_CONSTANTS.MOTION_DRIFT;
+  if (_.lt(_.defaultTo(scene.duration, 0), EDITING_POLICY_CONSTANTS.SHORT_SCENE_SECONDS)) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
+  if (flatStyle) {
+    if (_.includes(["reaction", "emotional_hold"], _.toLower(_.toString(scene.shotPurpose)))) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
+    return index % 4 === 0 ? EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT : EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN;
+  }
   const explicitMotion = _.trim(scene.cameraMotion || EDITING_POLICY_CONSTANTS.EMPTY_STRING);
   const normalizedExplicit = _.replace(
     _.toLower(explicitMotion),
@@ -164,15 +174,22 @@ export const applyProfessionalEditingPolicy = (
   let lastShotSize: string | undefined = undefined;
   let lastCameraAngle: string | undefined = undefined;
   let lastComposition: string | undefined = undefined;
+  let lastIntenseEffectIndex = -EDITING_POLICY_CONSTANTS.INTENSE_EFFECT_COOLDOWN_SCENES;
 
   return _.map(scenes, (scene, index) => {
     const requestedEffect = _.toLower(_.trim(scene.effects || EDITING_POLICY_CONSTANTS.EMPTY_STRING));
-    const effects = flatStyle && !SAFE_FLAT_EFFECTS.has(requestedEffect)
+    const intenseEffectAllowed = _.gte(index - lastIntenseEffectIndex, EDITING_POLICY_CONSTANTS.INTENSE_EFFECT_COOLDOWN_SCENES)
+      && _.gte(_.defaultTo(scene.duration, 0), EDITING_POLICY_CONSTANTS.SHORT_SCENE_SECONDS)
+      && EMPHATIC_SHOT_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose)));
+    const disruptiveEffectRequested = DISRUPTIVE_EFFECTS.has(requestedEffect);
+    const effects = (flatStyle && !SAFE_FLAT_EFFECTS.has(requestedEffect)) || (disruptiveEffectRequested && !intenseEffectAllowed)
       ? EDITING_POLICY_CONSTANTS.EMPTY_STRING
       : scene.effects;
-    const lightingEffect = flatStyle
+    if (disruptiveEffectRequested && intenseEffectAllowed && effects) lastIntenseEffectIndex = index;
+    const requestedLighting = _.toLower(_.trim(scene.lightingEffect || EDITING_POLICY_CONSTANTS.EMPTY_STRING));
+    const lightingEffect = flatStyle || DISRUPTIVE_LIGHTING.has(requestedLighting)
       ? EDITING_POLICY_CONSTANTS.LIGHTING_NATURAL
-      : scene.lightingEffect;
+      : (scene.lightingEffect || EDITING_POLICY_CONSTANTS.LIGHTING_NATURAL);
 
     const cameraMotion = resolveCinematicCameraMotion(scene, index, total, flatStyle);
     const shotSize = resolveCinematicShotSize(scene.shotSize, lastShotSize, index);
@@ -200,4 +217,3 @@ export const applyProfessionalEditingPolicy = (
     };
   });
 };
-

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "../constants";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VIDEO_GENERATION_MOTION_DIRECTIVE } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -75,6 +75,13 @@ export const getSceneAssetSummary = (scenes: StoryboardScene[]): SceneAssetSumma
 };
 
 export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty(value);
+
+export const prepareProjectMediaPrompt = (item: ProjectImageItem): string => {
+  const prompt = _.trim(item.prompt);
+  if (!_.isEqual(item.generateType, GenerateType.Video)) return prompt;
+  if (/Video motion direction:/i.test(prompt)) return prompt;
+  return _.join([_.trimEnd(prompt, ". "), VIDEO_GENERATION_MOTION_DIRECTIVE], ". ");
+};
 
 const hasImageResult = (result?: ProjectImageResult): boolean => (
   _.every([
@@ -161,14 +168,110 @@ export const selectVideoSceneIds = async (
       id: scene.id,
       script: scene.script,
       prompt: scene.prompt,
+      visualIntent: scene.visualIntent,
+      visibleAction: scene.visibleAction,
+      reaction: scene.reaction,
+      storyEvidence: scene.storyEvidence,
+      visualHook: scene.visualHook,
+      shotPurpose: scene.shotPurpose,
+      shotSize: scene.shotSize,
+      composition: scene.composition,
+      duration: scene.duration,
+      chapterId: scene.chapterId,
+      transition: scene.transition,
       cameraMotion: scene.cameraMotion,
     })),
     maxVideoScenes,
   });
-  return _.take(
-    _.uniq(_.get(response.data, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, [])),
+  const validSceneIds = new Set(_.map(scenes, "id"));
+  const selectedIds: string[] = _.take(
+    _.uniq(_.filter(
+      _.map(_.castArray(_.get(response.data, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY, [])), _.toString),
+      id => validSceneIds.has(id),
+    )),
     maxVideoScenes,
   );
+  return rankEditorialVideoSceneIds(scenes, selectedIds, maxVideoScenes);
+};
+
+const ACTION_PATTERN = /\b(?:walk(?:s|ed|ing)?|run(?:s|ning)?|turn(?:s|ed|ing)?|open(?:s|ed|ing)?|close(?:s|d|ing)?|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|drive|drives|driving|travel(?:s|ed|ing)?|fall(?:s|ing)?|rise|rises|rising|fight(?:s|ing)?|dance|dances|dancing|move(?:s|d|ing)?|pour(?:s|ed|ing)?|throw(?:s|ing)?|drop(?:s|ped|ping)?|reveal(?:s|ed|ing)?|transform(?:s|ed|ing)?|collapse|collapses|collapsed|chase|chases|chasing|exchange(?:s|d|ing)?|hand(?:s|ed|ing)? over|sign(?:s|ed|ing)?|hide|hides|hiding|discover(?:s|ed|ing)?|fold(?:s|ed|ing)?|unfold(?:s|ed|ing)?|flip(?:s|ped|ping)?|tear(?:s|ing)?|giằng|bước|chạy|mở|đóng|đổ|ném|rơi|biến đổi|sụp đổ|đuổi|trao|nhận|ký|giấu|phát hiện|gấp|lật|xé)\b/i;
+const ENVIRONMENTAL_MOTION_PATTERN = /\b(?:rain|smoke|traffic|crowd|waves|wind|fire|machine|conveyor|storm|mưa|khói|giao thông|đám đông|sóng|gió|lửa|máy móc)\b/i;
+const DECORATIVE_GESTURE_PATTERN = /\b(?:stretch(?:es|ed|ing)?|lean(?:s|ed|ing)? back|pose|poses|posing|smile|smiles|smiling|stare|stares|staring|look|looks|looking|hold|holds|holding|sit|sits|sitting|stand|stands|standing|slump|slumps|slumping|drop(?:s|ped|ping)? (?:her |his )?head|head (?:in|into) (?:her |his )?hands|vươn vai|tạo dáng|mỉm cười|nhìn chằm chằm|đứng yên|ngồi yên|gục đầu|ôm đầu)\b/i;
+const STRONG_STORY_MOTION_PATTERN = /\b(?:walk(?:s|ed|ing)? (?:through|into|out|toward|past)|enter(?:s|ed|ing)?|exit(?:s|ed|ing)?|sign(?:s|ed|ing)? (?:a |the |her |his )?(?:paper|document|contract|form)|scrawl(?:s|ed|ing)? (?:a |the |her |his )?(?:name|signature)|hand(?:s|ed|ing)? over|exchange(?:s|d|ing)?|drop(?:s|ped|ping)? (?:a |the |her |his )?(?:phone|smartphone|document|glass|bag|object)|open(?:s|ed|ing)? (?:a |the )?(?:door|document|envelope|box)|flip(?:s|ped|ping)? (?:open )?(?:a |the )?(?:document|page|folder)|fold(?:s|ed|ing)? (?:a |the )?(?:uniform|garment|letter|document)|tear(?:s|ing)? (?:a |the )?(?:letter|document)|bước (?:vào|ra|qua|về phía)|ký|trao|nhận|mở (?:cửa|tài liệu|phong bì)|lật (?:tài liệu|trang giấy)|gấp (?:đồng phục|quần áo|lá thư))\b/i;
+const HIGH_VALUE_PURPOSES = new Set(["action", "reveal", "punchline", "callback", "montage"]);
+const STATIC_PURPOSES = new Set(["reaction", "emotional_hold"]);
+const MINIMUM_EDITORIAL_VIDEO_SCORE = 4;
+const ADJACENT_ESSENTIAL_SCORE = 9;
+
+export const rankEditorialVideoSceneIds = (
+  scenes: StoryboardScene[],
+  aiSelectedIds: string[],
+  maxVideoScenes: number,
+): string[] => {
+  const aiRank = new Map(_.map(aiSelectedIds, (id, index) => [id, _.subtract(aiSelectedIds.length, index)]));
+  const rankedCandidates = _.orderBy(
+    _.map(scenes, (scene, index) => {
+      const drawableMotion = _.join([scene.visibleAction, scene.prompt], " ");
+      const hasStrongStoryMotion = STRONG_STORY_MOTION_PATTERN.test(drawableMotion);
+      const hasEnvironmentalMotion = ENVIRONMENTAL_MOTION_PATTERN.test(drawableMotion);
+      const hasGeneralAction = ACTION_PATTERN.test(drawableMotion);
+      const isDecorativeGesture = DECORATIVE_GESTURE_PATTERN.test(drawableMotion);
+      const purpose = _.toLower(_.toString(scene.shotPurpose));
+      const motionEligible = hasStrongStoryMotion
+        || hasEnvironmentalMotion
+        || (hasGeneralAction && !isDecorativeGesture && _.includes(["action", "reveal", "montage", "callback"], purpose));
+      const motionScore = _.max([0, _.sum([
+        hasGeneralAction ? 5 : 0,
+        hasStrongStoryMotion ? 3 : 0,
+        hasEnvironmentalMotion ? 3 : 0,
+        isDecorativeGesture && !hasStrongStoryMotion ? -5 : 0,
+      ])])!;
+      return {
+        id: scene.id,
+        index,
+        chapterId: scene.chapterId,
+        motionEligible,
+        motionScore,
+        score: _.sum([
+        motionScore,
+        HIGH_VALUE_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? 4 : 0,
+        !_.isEmpty(scene.visualHook) && !_.isEmpty(scene.storyEvidence) ? 2 : 0,
+        _.inRange(_.defaultTo(scene.duration, 0), 3, 9) ? 2 : 0,
+        _.isEqual(scene.layout, "single_frame") ? 1 : 0,
+        STATIC_PURPOSES.has(_.toLower(_.toString(scene.shotPurpose))) ? -4 : 0,
+        _.isEqual(_.toLower(_.toString(scene.cameraMotion)), "static") ? -2 : 0,
+        _.isEmpty(scene.visibleAction) ? -2 : 0,
+        aiRank.has(scene.id) ? _.min([3, aiRank.get(scene.id)!]) : 0,
+      ]),
+      };
+    }),
+    ["score", "index"],
+    ["desc", "asc"],
+  );
+  const fallbackIds: string[] = [];
+  const coveredChapters = new Set<string>();
+  for (const candidate of rankedCandidates) {
+    if (!candidate.motionEligible) continue;
+    if (_.lt(candidate.motionScore, 3)) continue;
+    if (_.lt(candidate.score, MINIMUM_EDITORIAL_VIDEO_SCORE)) continue;
+    const adjacentSelection = _.some(fallbackIds, id => {
+      const selectedIndex = _.findIndex(scenes, { id });
+      return Math.abs(selectedIndex - candidate.index) < 2;
+    });
+    if (adjacentSelection && _.lt(candidate.score, ADJACENT_ESSENTIAL_SCORE)) continue;
+    const chapterKey = _.toString(candidate.chapterId);
+    const repeatsCoveredChapter = !_.isEmpty(chapterKey) && coveredChapters.has(chapterKey);
+    const uncoveredChaptersRemain = _.some(rankedCandidates, item => (
+      _.gte(item.score, MINIMUM_EDITORIAL_VIDEO_SCORE)
+      && !_.isEmpty(item.chapterId)
+      && !coveredChapters.has(_.toString(item.chapterId))
+    ));
+    if (repeatsCoveredChapter && uncoveredChaptersRemain && _.lt(candidate.score, ADJACENT_ESSENTIAL_SCORE)) continue;
+    fallbackIds.push(candidate.id);
+    if (!_.isEmpty(chapterKey)) coveredChapters.add(chapterKey);
+    if (_.gte(fallbackIds.length, maxVideoScenes)) break;
+  }
+  return _.sortBy(fallbackIds, id => _.findIndex(scenes, { id }));
 };
 
 export const resolveSceneGenerateType = (
@@ -195,7 +298,10 @@ export const generateProjectImages = async ({
   cancelRef,
   onBatchResult,
 }: ProjectImageGenerationConfig): Promise<ProjectImageGenerationSummary> => {
-  const uniqueItems = _.uniqBy(items, item => item.idempotencyKey || item.sceneId);
+  const uniqueItems = _.map(
+    _.uniqBy(items, item => item.idempotencyKey || item.sceneId),
+    item => ({ ...item, prompt: prepareProjectMediaPrompt(item) }),
+  );
   const resultsBySceneId = new Map<string, ProjectImageResult>();
   const reportMissingResults = (warning: string): void => {
     _.forEach(uniqueItems, item => {

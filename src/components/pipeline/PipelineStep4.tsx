@@ -32,6 +32,7 @@ import { jsonUtils } from "../../lib/json";
 import { resolveManualReview } from "../../services/manualReviewService";
 import { rollbackSceneAssetRevision } from "../../services/dependencyHashService";
 import { createRenderAudioTracks } from "../../services/audioMixService";
+import { resolveAutomaticMusicProfile } from "../../services/soundDesignService";
 import { createSubtitleCues } from "../../services/subtitleService";
 import { createAdvisoryFinalVideoReport } from "../../services/finalMultimodalQualityService";
 import { createManualReviewItems, evaluateFinalQuality } from "../../services/finalQualityService";
@@ -120,6 +121,9 @@ export default function PipelineStep4(props: PipelineWizardState) {
         aspectRatio: props.project.visualConfig.aspectRatio,
         subtitleMode: FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
         audioTracks: createRenderAudioTracks(props.project.audioCueSheet),
+        autoMusicProfile: _.isEmpty(props.project.config.musicAssetUrl)
+          ? resolveAutomaticMusicProfile(props.project.config.genre)
+          : undefined,
       };
       
       const response = await fetch(API_ROUTES.PIPELINE_FFMPEG_RENDER, {
