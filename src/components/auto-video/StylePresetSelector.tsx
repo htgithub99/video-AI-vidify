@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import _ from "lodash";
 import { Palette, Check, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
-import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory, resolveStylePreset } from "../../constants/stylePresets";
+import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory, getRecommendedStylePresetIds, resolveStylePreset } from "../../constants/stylePresets";
 import { cn } from "../../lib/utils";
 
 interface StylePresetSelectorProps {
@@ -10,6 +10,7 @@ interface StylePresetSelectorProps {
   language?: string;
   label?: string;
   accentColor?: "blue" | "purple";
+  genre?: string;
 }
 
 export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
@@ -18,6 +19,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   language = "vi",
   label = "Phong cách hình ảnh",
   accentColor = "blue",
+  genre,
 }) => {
   const isVi = _.isEqual(language, "vi");
   const isPurple = _.isEqual(accentColor, "purple");
@@ -25,15 +27,16 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const presetsList = useMemo(() => _.values(CURATED_STYLE_PRESETS), []);
+  const recommendedIds = useMemo(() => new Set(getRecommendedStylePresetIds(genre)), [genre]);
 
   const currentPreset = useMemo(() => {
     return resolveStylePreset(selectedStyle);
   }, [selectedStyle]);
 
   const filteredPresets = useMemo(() => {
-    if (_.isEqual(activeCategory, "all")) return presetsList;
-    return _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));
-  }, [presetsList, activeCategory]);
+    const categoryPresets = _.isEqual(activeCategory, "all") ? presetsList : _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));
+    return _.orderBy(categoryPresets, preset => recommendedIds.has(preset.id), "desc");
+  }, [presetsList, activeCategory, recommendedIds]);
 
   return (
     <div className="space-y-3">
@@ -155,6 +158,11 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
                 </div>
               ) : (
                 <div className="w-3.5 h-3.5 rounded-full border border-slate-800 shrink-0 ml-1" />
+              )}
+              {recommendedIds.has(preset.id) && (
+                <span className="absolute right-2 top-1 text-[8px] uppercase tracking-wide text-amber-400 font-bold">
+                  {isVi ? "Gợi ý" : "Recommended"}
+                </span>
               )}
             </button>
           );

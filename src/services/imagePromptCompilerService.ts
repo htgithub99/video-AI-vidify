@@ -33,9 +33,9 @@ const compactSceneField = (value: unknown): string => {
 
 const compactScriptSource = (value: unknown): string => {
   const str = _.trim(_.toString(value));
-  return _.isEmpty(str) || hasVietnameseNarration(str)
-    ? IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING
-    : compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+  if (_.isEmpty(str)) return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+  const compacted = compactWords(str, IMAGE_PROMPT_COMPILER_CONFIG.SCENE_FIELD_MAX_WORDS);
+  return hasVietnameseNarration(str) ? `literal narrated event to depict: ${compacted}` : compacted;
 };
 
 const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: string): string => {

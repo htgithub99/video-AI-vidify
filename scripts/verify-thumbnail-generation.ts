@@ -53,7 +53,9 @@ const sourceScript = "A player studies an empty wallet. A hostess reveals the hi
 const sourceThumbnails = createSourceGroundedThumbnailIdeas(sourceScript, 3, "flat editorial illustration");
 assert.equal(sourceThumbnails.length, 3);
 assert.equal(sourceThumbnails.every(thumbnail => sourceScript.includes(thumbnail.subjectFocus || "")), true);
-assert.equal(sourceThumbnails.every(thumbnail => thumbnail.hasText && Boolean(thumbnail.textText)), true);
+// A deterministic fallback must not manufacture or crop editorial copy. If AI is
+// unavailable it preserves the visual concept and leaves headline text empty.
+assert.equal(sourceThumbnails.every(thumbnail => !thumbnail.textText), true);
 
 const noTextThumbnails = normalizeThumbnailIdeas(generated, 2, "no_text");
 assert.equal(noTextThumbnails[0].hasText, false);

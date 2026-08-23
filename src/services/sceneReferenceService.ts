@@ -169,6 +169,26 @@ export const resolveStoryboardCharacterIds = (
   });
 };
 
+export const pruneUnsupportedSceneCharacterIds = (
+  scenes: StoryboardScene[],
+  characters: CharacterConfig[],
+): StoryboardScene[] => {
+  let previousCharacterIds: string[] = [];
+  return _.map(scenes, scene => {
+    const narration = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle]), " "));
+    const narrationMatchedIds = _.map(_.filter(characters, character => {
+      const stableName = normalizeSearchText(character.name);
+      return !_.isEmpty(stableName) && _.includes(` ${narration} `, ` ${stableName} `);
+    }), "id");
+    const characterIds = _.isEmpty(narrationMatchedIds)
+      && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration)
+      ? previousCharacterIds
+      : narrationMatchedIds;
+    if (!_.isEmpty(characterIds)) previousCharacterIds = characterIds;
+    return { ...scene, characterIds };
+  });
+};
+
 export const createSceneGenerationContext = (
   scene: StoryboardScene,
   visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">,

@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { normalizeThumbnailHeadline, normalizeThumbnailIdeas, getThumbnailPlanningIssues } from "../src/services/thumbnailPromptService.ts";
+import { THUMBNAIL_PROMPT_CONFIG } from "../src/constants/thumbnail.ts";
+import fs from "node:fs";
+
+assert.equal(
+  normalizeThumbnailHeadline("Bạn có biết kỹ sư Nhà Trần chứa một bí mật chưa được công khai?"),
+  "Bạn có biết kỹ sư Nhà Trần chứa một bí mật chưa được công khai?",
+);
+
+const normalized = normalizeThumbnailIdeas([{
+  prompt: 'Render headline "Bạn có biết bí mật Nhà Trần chưa được công khai" with one subject',
+  generationPrompt: 'Render headline "Bạn có biết bí mật Nhà Trần chưa được công khai" with one subject',
+  textText: "Bạn có biết bí mật Nhà Trần chưa được công khai",
+  hasText: true,
+}], 1, "headline");
+assert.equal(normalized[0].textText, "Bạn có biết bí mật Nhà Trần chưa được công khai");
+assert.match(normalized[0].generationPrompt || "", /Bạn có biết bí mật Nhà Trần chưa được công khai/);
+
+const issues = getThumbnailPlanningIssues([{
+  generationPrompt: "A prompt with Bạn có biết đây là một tiêu đề quá dài để đọc on the image",
+  textText: "Bạn có biết đây là một tiêu đề quá dài để đọc",
+  hasText: true,
+}], "headline");
+assert.ok(issues.includes(THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_TOO_LONG));
+assert.ok(issues.includes(THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_WEAK_PREFIX));
+const controllerSource = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
+assert.doesNotMatch(controllerSource, /previousChapterSummary\s*=\s*_\.truncate/);
+assert.match(controllerSource, /getThumbnailContractRepairPrompt/);
+console.log("Thumbnail headline contract assertions passed.");

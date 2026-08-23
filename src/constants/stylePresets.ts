@@ -1,6 +1,7 @@
 import _ from "lodash";
+import { VideoGenre } from "./enums";
 
-export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "artistic_retro";
+export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "documentary_editorial" | "infographic_concept" | "artistic_retro";
 
 export type BackgroundMode = "minimal" | "contextual" | "white";
 
@@ -45,9 +46,12 @@ export const STYLE_PRESET_CONFIG = {
 export const STYLE_IDENTITY_BOUNDARY = "Style applies only to rendering, linework, shape language, palette, materials, and lighting. Character name, gender, age, face, hair, body, wardrobe, role, and setting must come only from the story character card and current scene.";
 
 export const STYLE_CATEGORIES: StyleCategoryItem[] = [
-  { id: "all", nameVi: "Tất cả (7)", nameEn: "All (7)" },
+  { id: "all", nameVi: "Tất cả", nameEn: "All" },
   { id: "cartoon_2d", nameVi: "2D & Hoạt hình", nameEn: "2D & Cartoon" },
   { id: "3d_cinematic", nameVi: "3D & Điện ảnh", nameEn: "3D & Cinema" },
+  { id: "documentary_editorial", nameVi: "Tư liệu & Chân thực", nameEn: "Documentary & Real" },
+  { id: "infographic_concept", nameVi: "Infographic & Ý niệm", nameEn: "Infographic & Concept" },
+  { id: "artistic_retro", nameVi: "Nghệ thuật & Cổ điển", nameEn: "Artistic & Period" },
 ];
 
 export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
@@ -135,6 +139,96 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     characterRule: "Apply only loose ink-line variation, paper texture, limited accents, and airy editorial composition. Preserve the complete story-defined character identity, clothing, role, action, props, era, and environment.",
     keywords: ["vẽ tay", "vẽ tay đơn giản", "ve tay", "đời sống", "châm biếm", "indie", "anh da đen"],
   },
+  cinematic_photoreal: {
+    id: "cinematic_photoreal", name: "Cinematic Photoreal", nameVi: "Điện Ảnh Chân Thực", category: "3d_cinematic", icon: "🎬", tagline: "Phim truyện • Chân thực",
+    description: "Khung hình live-action chân thực cho kể chuyện, tiểu sử, tâm lý và tình huống đời sống; không áp diễn viên mẫu lên nhân vật.",
+    positivePrompt: "cinematic live-action photorealism, natural human skin texture, physically plausible environments, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, realistic fabric and material response, grounded production design, polished narrative-film composition",
+    negativePrompt: "3D CGI, plastic skin, beauty-filter face, chibi, anime, fantasy costume without story basis, excessive teal-orange grade, artificial glow, stock-photo smile, text, logo, watermark, frame, collage",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Apply only live-action photographic realism, filmic light, material response, and camera language. Preserve the exact named character DNA, age, ethnicity, body, face, hair, wardrobe continuity, action, era, and location from the story.",
+    keywords: ["điện ảnh chân thực", "cinematic photoreal", "live action", "phim truyện", "realistic cinematic"],
+  },
+  archival_documentary: {
+    id: "archival_documentary", name: "Archival Documentary", nameVi: "Tài Liệu Tư Liệu", category: "documentary_editorial", icon: "🗃️", tagline: "Tư liệu • Điều tra",
+    description: "Ngôn ngữ tài liệu dựa trên ảnh thật, bản đồ, hồ sơ và tái dựng có phân biệt rõ nguồn chứng cứ.",
+    positivePrompt: "evidence-led documentary visual language, authentic archival photography treatment, accurate maps plans documents and material evidence, restrained neutral color grade, editorial sequencing, factual geographic and period specificity, clean museum-quality presentation, clearly differentiated reconstruction imagery",
+    negativePrompt: "fabricated newspaper, fake quotation, invented document text, fantasy symbolism presented as fact, glossy commercial advertising, sensational gore, neon cyberpunk, inaccurate uniform, text artifacts, logo, watermark, decorative frame",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Rendering must preserve factual identity and provenance. Never redesign a real person, building, artifact, map, uniform, date, or location; AI reconstruction must remain visually documentary and must not impersonate archival evidence.",
+    keywords: ["tài liệu", "tư liệu", "archival documentary", "lịch sử", "hồ sơ", "documentary", "history"],
+  },
+  architecture_documentary: {
+    id: "architecture_documentary", name: "Architecture Documentary", nameVi: "Tài Liệu Kiến Trúc", category: "documentary_editorial", icon: "🏛️", tagline: "Công trình • Vật liệu",
+    description: "Ảnh kiến trúc chân thực kết hợp bản vẽ, mặt bằng, vật liệu và bối cảnh địa lý để giải thích công trình chính xác.",
+    positivePrompt: "professional architectural documentary photography, accurate building geometry and scale, rectilinear perspective control, natural daylight, truthful material texture, exterior and interior spatial continuity, site context, plan section and construction-detail editorial language, calm premium design-publication composition",
+    negativePrompt: "impossible geometry, invented facade, warped verticals, fantasy building additions, miniature toy look, overprocessed HDR, empty luxury-advertising gloss, fake blueprint labels, text, logo, watermark, white picture frame",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Architecture is the subject. Preserve the real building, plan, materials, structural logic, geography, period and scale; people remain contextually sized and story-defined rather than becoming fashion models.",
+    keywords: ["kiến trúc", "architecture", "công trình", "nội thất", "architectural documentary", "bản vẽ"],
+  },
+  science_infographic: {
+    id: "science_infographic", name: "Science Infographic", nameVi: "Khoa Học Infographic", category: "infographic_concept", icon: "🔬", tagline: "Chính xác • Dễ hiểu",
+    description: "Minh họa khoa học vector sắc nét, phân tầng rõ ràng và ưu tiên độ chính xác của cơ chế, tỷ lệ và cấu trúc.",
+    positivePrompt: "premium science-explainer infographic illustration, precise vector geometry, clean modular shapes, crisp flat color separation, dark navy and vivid accent palette, accurate scale relationships, layered process visualization, elegant educational composition, highly readable visual hierarchy without labels",
+    negativePrompt: "fake equations, pseudo-science symbols, inaccurate anatomy, impossible molecule, decorative data, excessive holograms, clutter, photoreal stock laboratory, gradients everywhere, text, numbers, logo, watermark",
+    defaultBackgroundMode: "minimal",
+    characterRule: "Apply only clean infographic geometry, palette, hierarchy and explanatory staging. Human identity and all scientific structures, quantities, processes and environments must remain source-accurate and scene-defined.",
+    keywords: ["khoa học", "science infographic", "infographic", "giải thích khoa học", "vector science", "education"],
+  },
+  editorial_explainer: {
+    id: "editorial_explainer", name: "Editorial Explainer", nameVi: "Giải Thích Biên Tập", category: "infographic_concept", icon: "🧩", tagline: "Báo chí • Giải thích",
+    description: "Đồ họa biên tập kết hợp người, vật thể, bản đồ và sơ đồ nguyên nhân–kết quả cho video giải thích và tin tức.",
+    positivePrompt: "modern editorial explainer illustration, clean geometric cut-paper shapes, restrained red blue cream and charcoal palette, sharp visual hierarchy, human-scale cause-and-effect staging, maps objects and contextual environments integrated into one coherent frame, premium newsroom graphics finish",
+    negativePrompt: "copied news branding, channel logo, mascot, generic corporate stock art, fake chart labels, floating random icons, glossy 3D, cinematic fantasy, crowded collage, text, watermark",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Apply only editorial geometry, palette, hierarchy and explanatory composition. Never copy a broadcaster's brand, presenter, studio, logo or exact layout; story facts and character DNA remain authoritative.",
+    keywords: ["giải thích", "editorial explainer", "video essay", "news graphic", "báo chí", "nguồn gốc sự kiện"],
+  },
+  true_crime_evidence: {
+    id: "true_crime_evidence", name: "True Crime Evidence", nameVi: "Hồ Sơ Trinh Thám", category: "documentary_editorial", icon: "🔎", tagline: "Chứng cứ • Căng thẳng",
+    description: "Tài liệu điều tra tiết chế, tập trung vào địa điểm, timeline và chứng cứ thay vì hình ảnh bạo lực hoặc biểu tượng sáo rỗng.",
+    positivePrompt: "restrained true-crime documentary visual language, low-key practical lighting, desaturated neutral palette, precise location and timeline evidence, forensic object inserts, investigative editorial composition, subtle film grain, respectful victim-centered framing, realistic night exteriors and interview-room atmosphere",
+    negativePrompt: "gore, corpse, blood spectacle, victim glamorization, horror monster, detective pinboard cliché without story evidence, fake police text, neon red overload, melodramatic silhouette, logo, watermark, collage frame",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Preserve real identities, dignity, chronology, evidence and locations. Never invent wounds, clues, police insignia or suspect appearance; suspense comes from verified details and composition, not sensational distortion.",
+    keywords: ["true crime", "trinh thám", "thám án", "hồ sơ vụ án", "crime documentary", "điều tra"],
+  },
+  psychology_editorial: {
+    id: "psychology_editorial", name: "Psychology Editorial", nameVi: "Tâm Lý Biên Tập", category: "infographic_concept", icon: "🧠", tagline: "Con người • Ý niệm",
+    description: "Minh họa tâm lý mang tính biên tập, dùng hành vi thật và ẩn dụ tiết chế để giải thích trạng thái tinh thần.",
+    positivePrompt: "thoughtful psychology editorial illustration, tactile paper-cut and soft painted texture, restrained muted palette with one emotional accent color, human behavior grounded in observable gestures, spatial metaphor used sparingly, calm negative space, sophisticated magazine composition",
+    negativePrompt: "literal brain floating in space, split-face cliché, random maze mirror, mental illness stigma, horror distortion, psychedelic overload, diagnosis text, fake medical chart, logo, watermark",
+    defaultBackgroundMode: "minimal",
+    characterRule: "Preserve exact human identity and show psychology through observable behavior, relationships and environment first. Use conceptual metaphor only when the narration is explicitly abstract and never portray it as literal fact.",
+    keywords: ["tâm lý", "psychology", "triết học", "philosophy", "ý niệm", "mental health editorial"],
+  },
+  historical_painterly: {
+    id: "historical_painterly", name: "Historical Painterly", nameVi: "Lịch Sử Hội Họa", category: "artistic_retro", icon: "📜", tagline: "Thời kỳ • Sử thi",
+    description: "Tái dựng lịch sử bằng minh họa hội họa điện ảnh có kiểm soát, ưu tiên trang phục, kiến trúc và công nghệ đúng thời kỳ.",
+    positivePrompt: "historically grounded painterly reconstruction, cinematic digital gouache and oil-brush texture, period-accurate clothing architecture tools vehicles and terrain, restrained earth pigments, atmospheric depth, museum illustration quality, readable military and civilian staging without heroic distortion",
+    negativePrompt: "anachronism, modern object, fantasy armor, wrong flag, invented insignia, glossy game concept art, divine glow, propaganda pose, inaccurate ethnicity, text, logo, watermark, ornate picture frame",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Apply only painterly medium, pigments and depth. Preserve verified person, faction, clothing, technology, geography and chronology; do not beautify, modernize or mythologize historical identity.",
+    keywords: ["lịch sử hội họa", "historical painterly", "tái dựng lịch sử", "sử thi", "history illustration"],
+  },
+  fantasy_concept_art: {
+    id: "fantasy_concept_art", name: "Fantasy Concept Art", nameVi: "Concept Art Kỳ Ảo", category: "3d_cinematic", icon: "🐉", tagline: "Lore • Thế giới",
+    description: "Concept art điện ảnh cho lore, thần thoại và thế giới giả tưởng, giữ đúng quy tắc thế giới và thiết kế nhân vật của câu chuyện.",
+    positivePrompt: "premium cinematic fantasy concept-art rendering, coherent world-building design language, large-scale environmental storytelling, painterly realism, controlled atmospheric perspective, material-specific costume and architecture, dramatic but readable light, consistent production-design bible quality",
+    negativePrompt: "generic game splash art, random magic effects, unrelated dragon, default medieval armor, chibi, neon clutter, character redesign, inconsistent faction costume, floating text, logo, watermark, decorative frame",
+    defaultBackgroundMode: "contextual",
+    characterRule: "Apply only concept-art medium, scale, atmosphere and production-design finish. Character species, face, body, costume, faction, magic system, architecture, props and geography must come exclusively from the established story world.",
+    keywords: ["concept art", "kỳ ảo", "fantasy", "lore", "world building", "thần thoại", "giải mã bí ẩn"],
+  },
+  product_review_studio: {
+    id: "product_review_studio", name: "Product Review Studio", nameVi: "Review Sản Phẩm", category: "documentary_editorial", icon: "📦", tagline: "Sản phẩm • So sánh",
+    description: "Ảnh review sạch, trung thực về hình dáng, vật liệu và thao tác sử dụng, phù hợp sản phẩm, công nghệ và top list.",
+    positivePrompt: "premium product-review studio photography, accurate product geometry and material finish, soft controlled key and rim light, neutral contextual surface, honest scale, practical hand interaction, comparison-ready composition, crisp commercial detail without misleading enhancement",
+    negativePrompt: "invented product feature, warped logo, fake UI, impossible reflection, luxury exaggeration, floating product, oversaturated glow, duplicated item, text, price tag, watermark, border frame",
+    defaultBackgroundMode: "minimal",
+    characterRule: "Product shape, controls, materials, scale and use must remain source-accurate. People and hands serve the demonstrated action; never alter the story-defined presenter or fabricate a feature for visual appeal.",
+    keywords: ["review", "sản phẩm", "product review", "công nghệ", "top list", "so sánh"],
+  },
   tien_hiep_3d: {
     id: "tien_hiep_3d",
     name: "3D Xianxia",
@@ -152,6 +246,30 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
 };
 
 export const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
+
+export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
+  [VideoGenre.SATIRICAL_LIFE_AUTO]: ["hoat_hinh_2d_vn", "meme_hai_huoc_2d", "ve_tay_don_gian"],
+  [VideoGenre.TRANSFORMATION_TIMELINE]: ["cinematic_photoreal", "editorial_explainer", "hoat_hinh_2d_vn"],
+  [VideoGenre.CAREER_SOCIAL_DARKSIDE]: ["hoat_hinh_2d_vn", "cinematic_photoreal", "true_crime_evidence"],
+  [VideoGenre.DOWNFALL_CONSEQUENCE]: ["cinematic_photoreal", "ve_tay_don_gian", "true_crime_evidence"],
+  [VideoGenre.DARK_COMEDY_TRAGEDY]: ["hoat_hinh_2d_vn", "ve_tay_don_gian", "cinematic_photoreal"],
+  [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: ["cinematic_photoreal", "editorial_explainer", "historical_painterly"],
+  [VideoGenre.NARRATIVE_EXPLAINER]: ["editorial_explainer", "science_infographic", "archival_documentary"],
+  [VideoGenre.CHARACTER_PSYCHOLOGY]: ["psychology_editorial", "cinematic_photoreal", "gai_xinh_2d"],
+  [VideoGenre.LORE_WORLD_BUILDING]: ["fantasy_concept_art", "tien_hiep_3d", "historical_painterly"],
+  History: ["archival_documentary", "historical_painterly", "architecture_documentary"],
+  Science: ["science_infographic", "editorial_explainer", "cinematic_photoreal"],
+  Psychology: ["psychology_editorial", "cinematic_photoreal", "ve_tay_don_gian"],
+  Review: ["product_review_studio", "editorial_explainer", "cinematic_photoreal"],
+  News: ["editorial_explainer", "archival_documentary", "cinematic_photoreal"],
+  "Top List": ["product_review_studio", "editorial_explainer", "cinematic_photoreal"],
+  "True Crime": ["true_crime_evidence", "archival_documentary", "cinematic_photoreal"],
+};
+
+export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(
+  _.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]),
+  presetId => Boolean(CURATED_STYLE_PRESETS[presetId]),
+);
 
 const LEGACY_STYLE_ID_ALIASES: Record<string, string> = {
   tho_bay_mau: "hoat_hinh_2d_vn",

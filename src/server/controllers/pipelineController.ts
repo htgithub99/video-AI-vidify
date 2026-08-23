@@ -71,6 +71,7 @@ import {
   ErrorMessage,
   getDurationText,
   getThumbnailLayoutPrompt,
+  getThumbnailContractRepairPrompt,
   GENRE_VISUAL_GUIDELINES,
   VideoGenre,
   SplitStrategy,
@@ -129,7 +130,7 @@ import {
 import { logger, getMessage, appLogStep, getBilingualMessage, appWarn, createAppError, appError } from "../../lib/logger.js";
 import { SecurityMessages } from "../../constants/security.js";
 
-import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages } from "../services/imageGeneratorService.js";
+import { generateImageWithPlaywright, generateBatchImagesWithGeminiChat, closeAllBatchPages, getOrLaunchGlobalBrowser } from "../services/imageGeneratorService.js";
 import { resolveApiKeys, getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { resolveVoiceRouting } from "../../lib/voiceRouting.js";
 import { validateFactPack } from "../services/factPackValidationService.js";
@@ -1297,7 +1298,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         title: chapter.title,
         scriptSegment: cleanedSegment,
       });
-      previousChapterSummary = _.truncate(cleanedSegment, { length: SCRIPT_PROMPT_CONFIG.PREVIOUS_CHAPTER_SUMMARY_LENGTH });
+      previousChapterSummary = cleanedSegment;
 
       fullScript += cleanedSegment + "\n\n";
     }
@@ -1543,7 +1544,8 @@ router.post(ROUTER_PATHS.SEARCH_ARCHIVAL_IMAGE, async (req: Request, res: Respon
   try {
     const query = _.trim(_.toString(req.body?.query));
     if (_.isEmpty(query)) return res.status(400).json({ success: false, warning: "archival_search_query_missing" });
-    const result = await searchArchivalImageWithChrome(query, req.body?.chromeHeadless !== false);
+    const browserSession = await getOrLaunchGlobalBrowser(req.body?.chromeHeadless);
+    const result = await searchArchivalImageWithChrome(query, req.body?.chromeHeadless !== false, browserSession.context);
     return res.status(result.success ? 200 : 404).json(result);
   } catch (error) {
     appWarn("Archival image search failed; scene will use AI generation.", error);
@@ -2106,6 +2108,8 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       thumbnailBackgroundDirective,
       thumbnailFocusDirective,
       _.isEmpty(thumbnailCharacters) ? "" : jsonUtils.safeStringify(thumbnailCharacters),
+      config.genre || "",
+      config.writingStyle || "",
     );
 
     const thumbParts: any[] = [];
@@ -2152,9 +2156,22 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       thumbnails: _.castArray(parsedResult.thumbnails || []),
     };
     if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
-    const planningIssues = getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
+    let planningIssues = getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
     if (!_.isEmpty(planningIssues)) {
       thumbLogs.push(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX} ${_.join(planningIssues, ", ")}`);
+      const repairResponse = await generateContentWithRetry({
+        contents: getThumbnailContractRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues),
+        config: { responseMimeType: "application/json" },
+        task: { capability: AiTaskCapability.Thumbnail },
+      });
+      const repairedResult = safeParseJSON(repairResponse.text, { concepts: [], thumbnails: [] });
+      const repairedThumbnails = _.castArray(repairedResult.thumbnails || []);
+      const repairedIssues = getThumbnailPlanningIssues(repairedThumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
+      if (!_.isEmpty(repairedThumbnails) && _.size(repairedIssues) < _.size(planningIssues)) {
+        thumbsResult = { concepts: _.castArray(repairedResult.concepts || []), thumbnails: repairedThumbnails };
+        planningIssues = repairedIssues;
+      }
+      if (repairResponse.rotationLogs) thumbLogs.push(...repairResponse.rotationLogs);
     }
 
     logThumbStep(`${PIPELINE_LOGS.THUMB_STEP1_DONE} ${(thumbsResult.concepts || []).length || 0} layouts.`);

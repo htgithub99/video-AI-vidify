@@ -80,7 +80,9 @@ import { createShadowComparison } from "../services/shadowComparisonService";
 import { evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
-import { createCharacterIdentityDescription, createSceneGenerationContext, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
+import { ensureMediaSourcePlan } from "../services/mediaSourcePlanningService";
+import { parseTargetDurationSeconds } from "../services/scriptQualityService";
+import { createCharacterIdentityDescription, createSceneGenerationContext, pruneUnsupportedSceneCharacterIds, resolveSceneCharacterIds, SCENE_REFERENCE_CONFIG } from "../services/sceneReferenceService";
 import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService";
 import { createThumbnailStyleDirective } from "../services/styleReferenceService";
 import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
@@ -339,15 +341,20 @@ export function useAutoVideoPipeline(
 
     let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
     setLogs(_.clone(currentLogs));
+    if (!config.resumeMode) {
+      storageUtils.set(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS, jsonUtils.safeStringify([]));
+    }
+    let currentLogProjectId = config.resumeMode
+      ? _.toString(config.selectedProjectId || activeCreatedProject?.id)
+      : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
     const appendLog = (msg: string) => {
       const timestamp = new Date().toLocaleTimeString();
       const formatted = `[${timestamp}] ${msg}`;
       currentLogs = _.concat(currentLogs, formatted);
       setLogs(_.clone(currentLogs));
       storageUtils.set(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS, jsonUtils.safeStringify(currentLogs));
-      const targetId = activeCreatedProject?.id || config.selectedProjectId;
-      if (targetId) {
-        storageUtils.set(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${targetId}`, jsonUtils.safeStringify(currentLogs));
+      if (currentLogProjectId) {
+        storageUtils.set(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${currentLogProjectId}`, jsonUtils.safeStringify(currentLogs));
       }
     };
 
@@ -645,6 +652,8 @@ export function useAutoVideoPipeline(
       config.musicAssetUrl = musicAssetUrl;
       newProj = { ...newProj, rollout: resolveRolloutConfig(newProjectId) };
       await storageUtils.setAsync(REFACTOR_CONSTANTS.KEY_SELECTED_AUTO_PROJECT, newProjectId);
+      currentLogProjectId = newProjectId;
+      storageUtils.set(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${newProjectId}`, jsonUtils.safeStringify(currentLogs));
       setActiveCreatedProject(newProj);
       currentProject = newProj;
 
@@ -1158,6 +1167,8 @@ export function useAutoVideoPipeline(
         targetStyle: currentStylePreset,
         visualBible: voiceUpdatedProj.visualBible,
       });
+      realScenes = ensureMediaSourcePlan(realScenes as StoryboardScene[], config.genre);
+      realScenes = pruneUnsupportedSceneCharacterIds(realScenes as StoryboardScene[], voiceUpdatedProj.visualConfig.characters || []);
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
         ...scene,
@@ -1624,7 +1635,8 @@ export function useAutoVideoPipeline(
             }
             appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems)));
 
-            const missingScenes = _.filter(remainingTargetScenes, (scene) => !hasSceneAsset(scene));
+            const failedSceneIds = new Set(generationSummary.failedSceneIds);
+            const missingScenes = _.filter(remainingTargetScenes, scene => failedSceneIds.has(scene.id) && !hasSceneAsset(scene));
             if (!_.isEmpty(missingScenes) && !cancellationRef.current) {
               appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(remainingTargetScenes), T.fallbackThreeTabsReason));
               await runThreeTabFallback(missingScenes);
@@ -1896,7 +1908,7 @@ export function useAutoVideoPipeline(
         audioUrl: globalAudioUrl,
         provider: _.toString(voiceUpdatedProj.voiceConfig.provider || config.voiceProvider),
         scenes: realScenes as StoryboardScene[],
-        targetDurationSeconds: calculateSceneDuration(realScenes as StoryboardScene[]),
+        targetDurationSeconds: parseTargetDurationSeconds(config.duration),
       });
       globalAudioBase64 = voiceQualityResult.audioBase64;
       globalAudioUrl = voiceQualityResult.audioUrl;

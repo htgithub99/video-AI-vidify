@@ -28,6 +28,7 @@ interface ProjectSettingsSectionProps {
   musicAssetUrl: string;
   onMusicUpload: (files: FileList) => void;
   onRemoveMusic?: () => void;
+  genre: string;
 }
 
 export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
@@ -48,6 +49,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   musicAssetUrl,
   onMusicUpload,
   onRemoveMusic,
+  genre,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -118,6 +120,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           language={language}
           label="Phong cách ảnh bìa"
           accentColor="purple"
+          genre={genre}
         />
       </div>
 

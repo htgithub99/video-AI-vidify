@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-export const IMAGE_PROMPT_PIPELINE_VERSION = "full-bleed-media-v13";
+export const IMAGE_PROMPT_PIPELINE_VERSION = "full-bleed-media-v14-archival-grounding";
 
 export const GLOBAL_IMAGE_PROMPT_MASTER_RULE = {
   STORY: "Make the scene's meaning immediately understandable through a concrete subject, action, reaction, setting, or consequence.",

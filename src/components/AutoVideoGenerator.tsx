@@ -112,9 +112,7 @@ export default function AutoVideoGenerator({
       const cachedLogsStr = storageUtils.get(`${REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_PROJECT_LOGS_PREFIX}${foundProj.id}`);
       const cachedLogs = cachedLogsStr ? jsonUtils.safeParse<string[]>(cachedLogsStr, []) : [];
       const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
-      if (!_.isEmpty(projectLogs)) {
-        pipelineActions.setLogs(projectLogs);
-      }
+      pipelineActions.setLogs(projectLogs || []);
     }
   }, [selectedProjectId, projects, isConfigLoaded, isProcessing, setActiveCreatedProject, pipelineActions]);
 
@@ -458,11 +456,13 @@ export default function AutoVideoGenerator({
                   onSelectStyle={setStylePreset}
                   language={currentLang}
                   accentColor="blue"
+                  genre={genre}
                 />
               </div>
             </div>
 
             <ProjectSettingsSection
+              genre={genre}
               projectName={projectName}
               setProjectName={setProjectName}
               thumbnailCount={thumbnailCount}

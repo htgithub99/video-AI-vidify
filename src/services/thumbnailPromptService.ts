@@ -54,6 +54,12 @@ const cleanTextValue = (val: unknown): string => {
   return str.replace(/^["'«“]+|["'»”]+$/g, "").normalize("NFC");
 };
 
+export const normalizeThumbnailHeadline = (value: unknown): string => {
+  // Preserve AI-authored meaning. Invalid editorial text is sent back to AI for a
+  // complete rewrite; code must never crop a phrase into a grammatical fragment.
+  return cleanTextValue(value).replace(/\s+/g, " ").trim().normalize("NFC");
+};
+
 const normalizeThumbnail = (
   source: Partial<ThumbnailItem>,
   index: number,
@@ -65,8 +71,10 @@ const normalizeThumbnail = (
   const typographyId = resolveTypographyId(source.typographyId, layoutDefinition.typographyId);
   const typographyDefinition = _.find(THUMBNAIL_TYPOGRAPHY_CATALOG, { id: typographyId })!;
   const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
-  const textText = hasText ? cleanTextValue(source.textText) : "";
-  const generationPrompt = cleanTextValue(source.generationPrompt || source.prompt);
+  const sourceHeadline = cleanTextValue(source.textText);
+  const textText = hasText ? normalizeThumbnailHeadline(sourceHeadline) : "";
+  const rawGenerationPrompt = cleanTextValue(source.generationPrompt || source.prompt);
+  const generationPrompt = rawGenerationPrompt;
 
   return {
     id: `${THUMBNAIL_PROMPT_CONFIG.ID_PREFIX}${_.add(index, 1)}`,
@@ -125,7 +133,7 @@ export const createSourceGroundedThumbnailIdeas = (
       prompt,
       style: style || THUMBNAIL_PROMPT_CONFIG.DEFAULT_STYLE,
       hasText: !_.isEqual(textMode, ThumbnailTextMode.NoText),
-      textText: cleanTextValue(source),
+      textText: "",
       generationPrompt: prompt,
       layoutId: layout.id,
       layout: layout.composition,
@@ -179,6 +187,7 @@ export const getThumbnailPlanningIssues = (
     const layout = _.find(THUMBNAIL_LAYOUT_CATALOG, { id: item.layoutId as ThumbnailLayoutId });
     const generationPrompt = cleanTextValue(item.generationPrompt || item.prompt);
     const headline = cleanTextValue(item.textText);
+    const headlineWordCount = _.size(_.words(headline, /[^\s]+/g));
     const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
     const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
     IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
@@ -190,6 +199,10 @@ export const getThumbnailPlanningIssues = (
       layout && !_.isEqual(item.typographyId, layout.typographyId) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.TYPOGRAPHY_MISMATCH,
       _.isEmpty(generationPrompt) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_PROMPT,
       hasText && _.isEmpty(headline) && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.MISSING_HEADLINE,
+      hasText && (headlineWordCount > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_WORDS || _.size(headline) > THUMBNAIL_PROMPT_CONFIG.MAX_TEXT_CHARACTERS)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_TOO_LONG,
+      hasText && THUMBNAIL_PROMPT_CONFIG.WEAK_HEADLINE_PREFIX_PATTERN.test(headline)
+        && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_WEAK_PREFIX,
       hasText && !_.isEmpty(headline) && !_.includes(generationPrompt.normalize("NFC"), headline)
         && THUMBNAIL_PROMPT_CONFIG.PLANNING_ISSUES.HEADLINE_NOT_IN_PROMPT,
       layout && _.includes(layout.arrowPolicy, "required") && !THUMBNAIL_PROMPT_CONFIG.ARROW_PATTERN.test(generationPrompt)

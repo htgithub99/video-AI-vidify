@@ -395,24 +395,25 @@ export const VOICE_PRESET_MAP: Record<string, string> = {
 };
 
 export const getDurationText = (isVi: boolean, durStr: string) => {
+  const spokenWordsPerMinute = isVi ? 250 : 150;
   if (durStr === "30s") {
     return {
-      targetWordCount: 80,
+      targetWordCount: _.round(spokenWordsPerMinute / 2),
       durationText: isVi ? "30 giây (30 seconds)" : "30 seconds",
     };
   }
   const match = durStr.match(/(\d+)/);
   if (match) {
     const mins = parseInt(match[1], 10);
-    const targetWordCount = mins * 150;
+    const targetWordCount = mins * spokenWordsPerMinute;
     const paragraphs = mins * 3;
     const durationText = isVi ? `${mins} phút (${mins} minutes). You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.` : `${mins} minutes. You MUST write at least ${paragraphs} deeply detailed paragraphs/sections to fill this time.`;
     return { targetWordCount, durationText, targetWordCountMin: Math.floor(targetWordCount * 0.95) };
   }
   return {
-    targetWordCount: 300,
+    targetWordCount: spokenWordsPerMinute * 2,
     durationText: isVi ? "2 phút (2 minutes)" : "2 minutes",
-    targetWordCountMin: Math.floor(300 * 0.95),
+    targetWordCountMin: Math.floor(spokenWordsPerMinute * 2 * 0.95),
   };
 };
 
