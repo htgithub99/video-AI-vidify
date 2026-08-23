@@ -19,6 +19,9 @@ const invalidation = fs.readFileSync(
 assert.doesNotMatch(pipelineController, /getScriptRepairPrompt|getStoryboardRepairPrompt/);
 assert.doesNotMatch(pipelineController, /getScriptEditorQaPrompt|getStoryboardDirectorQaPrompt/);
 assert.doesNotMatch(invalidation, /scriptQa\?\.passed|storyboardQa\?\.passed/);
+assert.doesNotMatch(autoPipeline, /throw new Error\(REFACTOR_CONSTANTS\.ERR_SCRIPT_QUALITY_REJECTED\)/);
+assert.doesNotMatch(autoPipeline, /cachedScriptQaRejected/);
+assert.match(autoPipeline, /WARN_SCRIPT_QA_CONTINUED/);
 assert.doesNotMatch(autoPipeline, /evaluateVisualAssetQuality|validateFinalVideo|repairSubtitleCues|repairEditingPlan/);
 
 const completeProject = {

@@ -5,6 +5,7 @@ import { resolveBatchTabCount } from "../src/services/batchGenerationPolicy.ts";
 import { createSourceGroundedThumbnailIdeas, createThumbnailGenerationPrompt, getThumbnailPlanningIssues, normalizeThumbnailIdeas, resolveThumbnailReferenceImages } from "../src/services/thumbnailPromptService.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { ThumbnailTextMode } from "../src/types.ts";
+import { PROJECT_IMAGE_FALLBACK_CONFIG } from "../src/constants/config.ts";
 
 const projectStyleLock = "Flat stick-figure illustration; every person uses round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
 const generated = [
@@ -77,6 +78,7 @@ const nodeReferences = resolveThumbnailReferenceImages({
 assert.deepEqual(nodeReferences, ["scene-style.png", "thumb-style.png", "thumb-layout.png"]);
 
 assert.equal(resolveBatchTabCount(3, 1, 3), 3);
+assert.equal(resolveBatchTabCount(8, 1, PROJECT_IMAGE_FALLBACK_CONFIG.TAB_CONCURRENCY), 3);
 assert.equal(resolveBatchTabCount(4, 2), 2);
 assert.equal(resolveBatchTabCount(3, 5, 4), 3);
 

@@ -206,7 +206,7 @@ export const REFACTOR_CONSTANTS = {
   ERR_VISUAL_QA_ASSET_INVALID: "Hình ảnh phân cảnh được chọn không hợp lệ hoặc không thể truy cập.",
   ERR_HOOK_VERSIONS_MISSING: "Không thể tạo được câu mở đầu nào phù hợp với nội dung kịch bản.",
   ERR_HOOK_QUALITY_REJECTED: "Các phương án câu mở đầu được tạo ra không đạt tiêu chuẩn về chất lượng và độ an toàn nội dung.",
-  ERR_SCRIPT_QUALITY_REJECTED: "Nội dung kịch bản không đạt tiêu chuẩn biên tập hoặc không khớp với thời lượng video yêu cầu.",
+  WARN_SCRIPT_QA_CONTINUED: "Kịch bản còn cảnh báo biên tập; hệ thống vẫn tiếp tục tạo voice, phân cảnh và hoàn thành video.",
   WARN_STORYBOARD_QA_RESULT: "Phân cảnh có điểm cần xem lại về tính liên tục hoặc độ đa dạng; hệ thống giữ nguyên nội dung.",
   IMAGE_DATA_URL_CAPTURE_REGEX: /^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i,
   AUDIO_DATA_URL_CAPTURE_REGEX: /^data:(audio\/(?:mpeg|mp3|wav|ogg));base64,(.+)$/i,
@@ -465,4 +465,5 @@ export const ROUTER_PATHS = {
   REFERENCE_AUDIO: "/reference-audio/:projectId",
   SELECT_VIDEO_SCENES: "/select-video-scenes",
   VALIDATE_SCENE_IMAGE: "/validate-scene-image",
+  SEARCH_ARCHIVAL_IMAGE: "/search-archival-image",
 } as const;

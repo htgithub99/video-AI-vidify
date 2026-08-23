@@ -1,5 +1,6 @@
+import React from "react";
 import _ from "lodash";
-import { ChevronDown, Save, Trash } from "lucide-react";
+import { Bookmark, ChevronDown, Save, Sparkles, Trash } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 
@@ -26,44 +27,86 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
   T,
   truncateWords,
 }) => {
+  const selectedPreset = _.find(presets, { id: selectedPresetId });
+  const activePresetLabel = selectedPreset?.name
+    ? truncateWords(selectedPreset.name, 3)
+    : T.presetDefaultOption || "-- Mặc định --";
+
   return (
-    <div className="flex items-center gap-1.5 lg:gap-3 bg-slate-955/50 p-1.5 rounded-xl border border-slate-800">
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] text-slate-400 font-mono">{T.presetLabel}</span>
-        <div className="relative flex items-center bg-slate-955/80 border border-slate-800/80 rounded-lg px-2.5 py-1">
-          <select
-            value={selectedPresetId}
-            onChange={(e) => handleApplyPreset(e.target.value)}
-            className="bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-5 appearance-none"
+    <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20">
+            <Bookmark className="w-3.5 h-3.5 text-purple-400" />
+          </span>
+          <h3
+            className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5"
+            title={T.presetLabel}
           >
-            <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-955 text-slate-300">{T.presetDefaultOption}</option>
-            {_.map(presets, (p) => (
-              <option key={p.id} value={p.id} className="bg-slate-955 text-slate-300" title={p.name}>
-                {truncateWords(p.name, 4)}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+            {_.trimEnd(T.presetLabel || "Mẫu cấu hình", ":")}
+          </h3>
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
+          <Sparkles className="w-3 h-3 text-purple-400" />
+          <span className="font-semibold text-slate-300">{activePresetLabel}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
-        <input
-          type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-          placeholder={T.presetNamePlaceholder}
-          value={presetNameInputState}
-          onChange={(e) => setPresetNameInputState(e.target.value)}
-          className="bg-slate-955 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 w-28 focus:outline-none focus:border-rose-500"
-        />
-        <Button variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY as any} size={REFACTOR_CONSTANTS.SIZE_XS as any} onClick={handleSavePreset} title={T.savePresetTooltip}>
-          <Save className="w-3.5 h-3.5 text-rose-400" /> {T.savePresetBtn}
-        </Button>
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div className="sm:col-span-6 flex items-center gap-2">
+          <div className="relative flex-1 flex items-center bg-slate-955/90 border border-slate-800/90 hover:border-purple-500/50 focus-within:border-purple-500 rounded-2xl px-3 py-2.5 transition-all shadow-sm">
+            <select
+              value={selectedPresetId}
+              onChange={(e) => handleApplyPreset(e.target.value)}
+              className="w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-6 appearance-none font-medium"
+            >
+              <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-900 text-slate-300">
+                {T.presetDefaultOption}
+              </option>
+              {_.map(presets, (p) => (
+                <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200" title={p.name}>
+                  {truncateWords(p.name, 5)}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
+          </div>
 
-        {selectedPresetId && (
-          <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST as any} size={REFACTOR_CONSTANTS.SIZE_XS as any} onClick={() => handleDeletePreset(selectedPresetId)} title={T.deletePresetTooltip}>
-            <Trash className="w-3.5 h-3.5 text-slate-500 hover:text-rose-500" />
+          {selectedPresetId && (
+            <Button
+              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+              variant={REFACTOR_CONSTANTS.VARIANT_GHOST as any}
+              size={REFACTOR_CONSTANTS.SIZE_SM as any}
+              onClick={() => handleDeletePreset(selectedPresetId)}
+              title={T.deletePresetTooltip}
+              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-2.5 h-auto shrink-0 shadow-none transition-all"
+            >
+              <Trash className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="sm:col-span-6 flex items-center gap-2">
+          <input
+            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
+            placeholder={T.presetNamePlaceholder}
+            value={presetNameInputState}
+            onChange={(e) => setPresetNameInputState(e.target.value)}
+            className="flex-1 bg-slate-955/90 border border-slate-800/90 hover:border-slate-700 focus:border-purple-500 rounded-2xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all shadow-sm"
+          />
+          <Button
+            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
+            variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY as any}
+            size={REFACTOR_CONSTANTS.SIZE_SM as any}
+            onClick={handleSavePreset}
+            title={T.savePresetTooltip}
+            className="bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 font-bold text-xs rounded-2xl px-3.5 py-2.5 h-auto shrink-0 shadow-none transition-all flex items-center gap-1.5"
+          >
+            <Save className="w-3.5 h-3.5 text-purple-400" />
+            <span>{T.savePresetBtn}</span>
           </Button>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -39,30 +39,31 @@ const GENTLE_TRANSITIONS = new Set<string>([
   EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK,
 ]);
 
-const VALID_MOTIONS = new Set<string>([
+const DISRUPTIVE_EFFECTS = new Set<string>(["glitch", "vhs", "pixelate", "chromatic_aberration"]);
+const DISRUPTIVE_LIGHTING = new Set<string>(["strobe", "flicker", "exposure_pulse"]);
+const EMPHATIC_SHOT_PURPOSES = new Set<string>(["reveal", "punchline"]);
+
+const SAFE_GENTLE_MOTIONS = new Set<string>([
   "zoom_in",
   "zoom_out",
   "pan_left",
   "pan_right",
   "pan_up",
   "pan_down",
-  EDITING_POLICY_CONSTANTS.MOTION_DRIFT,
   EDITING_POLICY_CONSTANTS.MOTION_STATIC,
 ]);
 
-const DISRUPTIVE_EFFECTS = new Set<string>(["glitch", "vhs", "pixelate", "chromatic_aberration"]);
-const DISRUPTIVE_LIGHTING = new Set<string>(["strobe", "flicker", "exposure_pulse"]);
-const EMPHATIC_SHOT_PURPOSES = new Set<string>(["reveal", "punchline"]);
+const UNCOMFORTABLE_MOTION_PATTERN = /(?:shake|shaky|jitter|jerk|handheld|drift|whip|bounce|pulse|random)/i;
 
-const MOTION_RHYTHM = [
-  EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN,
+const GENTLE_MOTION_RHYTHM = [
+  EDITING_POLICY_CONSTANTS.MOTION_STATIC,
   EDITING_POLICY_CONSTANTS.MOTION_PAN_RIGHT,
+  EDITING_POLICY_CONSTANTS.MOTION_STATIC,
   EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN,
+  EDITING_POLICY_CONSTANTS.MOTION_STATIC,
   EDITING_POLICY_CONSTANTS.MOTION_PAN_LEFT,
+  EDITING_POLICY_CONSTANTS.MOTION_STATIC,
   EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT,
-  EDITING_POLICY_CONSTANTS.MOTION_PAN_UP,
-  EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN,
-  EDITING_POLICY_CONSTANTS.MOTION_PAN_DOWN,
 ];
 
 const SHOT_LADDER = ["Wide shot", "Medium shot", "Close-up", "Medium shot"];
@@ -118,35 +119,17 @@ const resolveCinematicCameraMotion = (
   totalScenes: number,
   flatStyle: boolean = false,
 ): string => {
+  if (index === 0 || index === totalScenes - 1) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
   if (_.lt(_.defaultTo(scene.duration, 0), EDITING_POLICY_CONSTANTS.SHORT_SCENE_SECONDS)) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
-  if (flatStyle) {
-    if (_.includes(["reaction", "emotional_hold"], _.toLower(_.toString(scene.shotPurpose)))) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
-    return index % 4 === 0 ? EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT : EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN;
-  }
+
   const explicitMotion = _.trim(scene.cameraMotion || EDITING_POLICY_CONSTANTS.EMPTY_STRING);
-  const normalizedExplicit = _.replace(
-    _.toLower(explicitMotion),
-    EDITING_POLICY_CONSTANTS.NORMALIZE_REGEX,
-    "_",
-  );
-  if (VALID_MOTIONS.has(normalizedExplicit) && !_.isEqual(normalizedExplicit, "zoom_in")) {
-    return explicitMotion;
-  }
+  const normalizedExplicit = _.replace(_.toLower(explicitMotion), EDITING_POLICY_CONSTANTS.NORMALIZE_REGEX, "_");
+  if (UNCOMFORTABLE_MOTION_PATTERN.test(explicitMotion)) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
+  if (SAFE_GENTLE_MOTIONS.has(normalizedExplicit)) return explicitMotion;
 
-  if (index === 0) return EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN;
-  if (index === totalScenes - 1) return EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT;
-
-  const shotSize = _.toLower(_.toString(scene.shotSize));
-  if (EDITING_POLICY_CONSTANTS.SHOT_WIDE_PATTERN.test(shotSize)) {
-    return index % 2 === 0
-      ? EDITING_POLICY_CONSTANTS.MOTION_PAN_LEFT
-      : EDITING_POLICY_CONSTANTS.MOTION_PAN_RIGHT;
-  }
-  if (EDITING_POLICY_CONSTANTS.SHOT_CLOSE_PATTERN.test(shotSize)) {
-    return EDITING_POLICY_CONSTANTS.MOTION_ZOOM_IN;
-  }
-
-  return MOTION_RHYTHM[index % MOTION_RHYTHM.length];
+  // Flat/cartoon frames need less synthetic movement to keep line art stable.
+  if (flatStyle && index % 6 !== 3) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
+  return GENTLE_MOTION_RHYTHM[index % GENTLE_MOTION_RHYTHM.length];
 };
 
 const resolveCinematicShotSize = (

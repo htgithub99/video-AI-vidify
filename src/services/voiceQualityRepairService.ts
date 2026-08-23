@@ -1,6 +1,6 @@
 import { AudioQualityReport, StoryboardScene } from "../types";
 import { createAdvisoryAudioQuality } from "./audioQualityService";
-import { getVoiceTimelineDuration } from "./voiceTimelineService";
+import { decodeAudioDuration, getVoiceTimelineDuration } from "./voiceTimelineService";
 
 export interface VoiceQualityRepairOptions {
   audioBase64: string;
@@ -18,15 +18,22 @@ export interface VoiceQualityRepairResult {
   quality: AudioQualityReport;
 }
 
-export const assessVoiceAdvisory = ({
+export const assessVoiceAdvisory = async ({
   audioBase64,
   audioUrl,
   provider,
   scenes,
   targetDurationSeconds,
-}: VoiceQualityRepairOptions): VoiceQualityRepairResult => {
+}: VoiceQualityRepairOptions): Promise<VoiceQualityRepairResult> => {
+  let actualDurationSeconds = getVoiceTimelineDuration(scenes);
+  if (audioBase64) {
+    try {
+      const decodedDuration = await decodeAudioDuration(audioBase64);
+      if (decodedDuration > 0) actualDurationSeconds = decodedDuration;
+    } catch {}
+  }
   const quality = createAdvisoryAudioQuality(
-    getVoiceTimelineDuration(scenes),
+    actualDurationSeconds,
     targetDurationSeconds,
   );
 

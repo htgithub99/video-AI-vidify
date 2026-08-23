@@ -989,10 +989,11 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) =>
       `✅ Tạo ảnh thành công cho phân cảnh ${sceneId} (${completed}/${total})`,
     logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId} (${warn})`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Luồng tạo ảnh hàng loạt gặp sự cố (${msg}). Chuyển sang cơ chế dự phòng sinh tuần tự...`,
+    logBatchStreamErrorFallback: (msg: string) => `❌ Luồng tạo ảnh hàng loạt gặp sự cố (${msg}). Chuyển sang cơ chế dự phòng bằng 3 tab...`,
+    fallbackThreeTabsReason: "tạo đồng thời bằng 3 tab",
     logFallbackSceneError: (id: string) => `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
     logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
-      `⚠️ [Bước 3.2] Tạo ảnh hàng loạt chưa thành công cho ${failed}/${total} phân cảnh (${reason}). Chuyển sang tạo dự phòng tuần tự.`,
+      `⚠️ [Bước 3.2] Tạo ảnh hàng loạt chưa thành công cho ${failed}/${total} phân cảnh (${reason}). Chuyển sang tạo dự phòng bằng 3 tab.`,
     logFallbackProgress: (current: number, total: number) => `🎨 [Bước 3.3] Đang tạo ảnh dự phòng ${current}/${total}...`,
     logImageGenerationSummary: (success: number, failed: number, total: number) =>
       `${failed > 0 ? "⚠️" : "✅"} [Bước 3.4] Hoàn tất sinh ảnh với ${success}/${total} thành công và ${failed} thất bại.`,
@@ -1196,10 +1197,11 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number) =>
       `✅ Image generated successfully for scene ${sceneId} (${completed}/${total})`,
     logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to sequential generation...`,
+    logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to three concurrent tabs...`,
+    fallbackThreeTabsReason: "three concurrent tabs",
     logFallbackSceneError: (id: string) => `⚠️ Error generating fallback image for scene ${id}`,
     logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
-      `⚠️ [Step 3.2] Batch generation incomplete for ${failed}/${total} scenes (${reason}). Switching to sequential fallback.`,
+      `⚠️ [Step 3.2] Batch generation incomplete for ${failed}/${total} scenes (${reason}). Switching to three-tab fallback.`,
     logFallbackProgress: (current: number, total: number) => `🎨 [Step 3.3] Generating fallback image ${current}/${total}...`,
     logImageGenerationSummary: (success: number, failed: number, total: number) =>
       `${failed > 0 ? "⚠️" : "✅"} [Step 3.4] Image generation finished with ${success}/${total} succeeded and ${failed} failed.`,

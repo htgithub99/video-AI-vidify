@@ -107,6 +107,7 @@ export const normalizeVisualShotPlan = (
       "characterStateBefore", "characterStateAfter", "shotSize", "cameraAngle", "composition",
       "continuityFrom", "continuityNotes", "callbackId", "lighting", "textOverlay",
       "cameraMotion", "effects", "lightingEffect", "transition", "prompt",
+      "assetStrategy", "archivalSearchQuery", "archivalRationale",
     ]),
     shotPurpose,
     characterIds,
@@ -120,6 +121,9 @@ export const normalizeVisualShotPlan = (
     textAllowed: _.isEqual(options.textMode, TextInImageMode.Auto)
       ? Boolean(source.textAllowed)
       : !_.isEqual(options.textMode, TextInImageMode.NoText),
+    assetStrategy: _.isEqual(source.assetStrategy, "archival") ? "archival" : "ai_generated",
+    archivalSearchQuery: _.isEqual(source.assetStrategy, "archival") ? _.trim(_.toString(source.archivalSearchQuery)) : "",
+    archivalRationale: _.trim(_.toString(source.archivalRationale)),
   };
 };
 

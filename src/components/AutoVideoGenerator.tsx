@@ -53,7 +53,7 @@ interface AutoVideoGeneratorProps {
   selectedProjectId?: string | null;
   onSelectProject: (id: string) => void;
   onCreateProject: (name: string, desc: string) => Promise<void>;
-  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void;
+  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void;
   theme?: AppTheme;
 }
 

@@ -225,7 +225,7 @@ def create_subtitle_filter(subtitle_path):
     subtitle_style = (
         "FontName=Arial,FontSize=13,PrimaryColour=&H00FFFFFF,"
         "OutlineColour=&H90000000,BackColour=&H50000000,"
-        "BorderStyle=1,Outline=1.4,Shadow=0,Alignment=2,MarginV=28,"
+        "BorderStyle=1,Outline=1.8,Shadow=0,Alignment=2,MarginV=28,"
         "Bold=0,Spacing=0.2"
     )
     return f"subtitles=filename='{os.path.basename(subtitle_path)}':force_style='{subtitle_style}'"
@@ -1324,6 +1324,29 @@ def main():
             scene_media_owned.append(media_owned)
             scene_audio_owned.append(audio_owned)
 
+        globalAudioPath = config.get("globalAudioPath")
+        if globalAudioPath and os.path.exists(globalAudioPath):
+            global_audio_duration = get_media_duration(ffmpegCmd, globalAudioPath)
+            declared_scene_duration = sum(float(value or 0) for value in scene_durations)
+            if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS and declared_scene_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                duration_scale = global_audio_duration / declared_scene_duration
+                scaled_durations = []
+                scaled_cursor = 0.0
+                for scene_index, original_duration in enumerate(scene_durations):
+                    is_last_scene = scene_index == len(scene_durations) - 1
+                    scaled_duration = (
+                        max(0.0, global_audio_duration - scaled_cursor)
+                        if is_last_scene
+                        else max(0.05, float(original_duration) * duration_scale)
+                    )
+                    scaled_durations.append(scaled_duration)
+                    scaled_cursor += scaled_duration
+                    scenes[scene_index][FFMPEG_CONSTANTS.KEY_DURATION] = scaled_duration
+                    for cue in scenes[scene_index].get(FFMPEG_CONSTANTS.KEY_SUBTITLE_CUES, []):
+                        cue["startOffsetSeconds"] = float(cue.get("startOffsetSeconds", 0)) * duration_scale
+                        cue["durationSeconds"] = float(cue.get("durationSeconds", 0)) * duration_scale
+                scene_durations = scaled_durations
+
         chosen_styles = []
         chosen_transitions = []
         prev_style = -1
@@ -1337,7 +1360,7 @@ def main():
             camera_motion = scene.get(FFMPEG_CONSTANTS.KEY_CAMERA_MOTION, FFMPEG_CONSTANTS.EMPTY_STRING)
             style_idx = 12 if safe_profile or scene_durations[i] < FFMPEG_CONSTANTS.SHORT_SCENE_DURATION else map_motion_to_style(camera_motion, i, prev_style, num_styles=20)
             if style_idx == 9:
-                style_idx = 12 if i % 4 == 0 else 0
+                style_idx = 12
             same_motion_run = same_motion_run + 1 if style_idx == prev_style else 1
             if style_idx != 12 and same_motion_run > 2:
                 style_idx = 12
@@ -1570,7 +1593,6 @@ def main():
         subprocess.run(concatCmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
         emit_progress(94)
         
-        globalAudioPath = config.get("globalAudioPath")
         subtitle_mode = config.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_MODE, FFMPEG_CONSTANTS.SUBTITLE_MODE_BURN_IN)
         subtitle_path = create_subtitle_file(tempDir, scenes, scene_durations)
         audio_tracks = config.get(FFMPEG_CONSTANTS.KEY_AUDIO_TRACKS, [])

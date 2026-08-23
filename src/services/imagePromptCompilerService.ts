@@ -48,6 +48,9 @@ const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: s
     character.eyes,
     character.nose,
     character.hair,
+    character.silhouette,
+    character.colorPalette,
+    character.accessories,
   ]);
   const identity = _.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
   const styleSafeIdentity = IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
@@ -85,7 +88,7 @@ const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptC
         const name = _.trim(_.get(character, "name", IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING));
         const desc = getCharacterIdentityProfile(character, options.targetStyle);
         if (_.isEmpty(name) && _.isEmpty(desc)) return null;
-        return desc ? `${name ? `${name}: ` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING}${desc}` : name;
+        return desc ? `${name ? `${name}, the same recurring person in every scene: ` : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING}${desc}` : name;
       }),
     );
     if (!_.isEmpty(descriptions)) {
@@ -137,7 +140,14 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
       : IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE);
   const aiAuthoredPrompt = _.trim(_.toString(scene.prompt));
   const technicalPromptText = _.isEmpty(textOverlay) ? aiAuthoredPrompt : _.replace(aiAuthoredPrompt, textOverlay, "");
-  if (!_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
+  const hasStructuredStoryDirection = _.some([
+    scene.visibleAction,
+    scene.storyEvidence,
+    scene.visualIntent,
+    scene.reaction,
+    scene.visualHook,
+  ], value => !_.isEmpty(_.trim(_.toString(value))));
+  if (!hasStructuredStoryDirection && !_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
     const cleanedAiPrompt = deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt));
     const alreadyHasNoTextPolicy = _.isEqual(scene.textAllowed, false)
       && /(?:completely text-free|strictly no text|no readable text)/i.test(cleanedAiPrompt);

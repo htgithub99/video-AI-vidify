@@ -15,6 +15,9 @@ const getNaturalNarrationLanguageDirective = (isVi: boolean): string => isVi
 - Adapt vocabulary, emotional temperature, humor and sentence rhythm to the selected genre, audience and story. Do not force satire, slang, drama or second-person narration into genres that do not need them.
 - Prefer concrete nouns, active verbs and immediately understandable phrasing. Let the listener picture an event or example before explaining its meaning.
 - Vary sentence openings and length. Use punctuation as natural breathing points for Vietnamese TTS; avoid run-on sentences, uniform cadence and repeated transition templates.
+- Use culturally natural Vietnamese address, classifiers and relationship terms. Keep pronouns and social roles consistent with age, intimacy, hierarchy and setting; do not default every character to generic "bạn", "họ" or translated English forms of address.
+- Make numbers speakable for Vietnamese TTS: express percentages, money, dates, clock time, units and abbreviations the way a Vietnamese narrator would naturally say them while preserving their exact value. Do not leave ambiguous symbol-heavy strings in narration.
+- Prefer contemporary region-neutral Vietnamese understood nationwide. Use regional vocabulary, internet slang, English loanwords or youth catchphrases only when the selected audience, character and subject genuinely call for them; never use them as artificial engagement decoration.
 - Remove empty AI phrases such as "trong cuộc sống", "trong xã hội hiện đại", "không thể phủ nhận rằng", "mọi chuyện chưa dừng lại ở đó", "bức tranh đa chiều", "hồi chuông cảnh tỉnh", "bài học đắt giá" and "đằng sau vẻ hào nhoáng" unless the source literally requires them.
 - Never translate English idioms word for word, invent trendy slang, copy a creator's signature wording, or use a rhetorical question when a direct sentence is stronger.`
   : `[NATURAL ENGLISH VOICE CONTRACT - ALL GENRES]:
@@ -57,6 +60,14 @@ const getGenreStylePriorityDirective = (genre: string): string => SATIRICAL_GENR
 - Forbidden filler and AI prose include generic openings or transitions equivalent to "trong cuộc sống", "trong xã hội hiện đại", "không ai có thể ngờ rằng", "mọi chuyện chưa dừng lại ở đó", "định mệnh trớ trêu", "bức tranh đa chiều", "hồi chuông cảnh tỉnh", and "đằng sau vẻ hào nhoáng" unless the source literally requires that wording.
 - Dialogue, if used, must be brief, speakable and causally useful. Never invent a quotation as factual evidence, and never let dialogue turn into an explanation speech.
 - Preserve an original channel voice. Learn structural qualities such as immersion, cadence and causal escalation, but never copy another creator's signature phrases, recurring jokes or recognizable wording.`
+  + `
+[IMMERSIVE BEAT GRAMMAR]:
+- Write each story beat in this causal order: a concrete event happens; one specific visible or audible detail proves it; the affected person reacts through a brief action, body response or useful line of dialogue; only then may the narrator explain what changed and why it matters.
+- Never substitute atmosphere for progress. Rain, smoke, silence, darkness, a racing heart or a dramatic look counts only when attached to a new decision, rule, transaction, discovery or consequence.
+- Use dialogue as an action: a short rule, refusal, price, threat, confession or decision. Do not write dialogue that merely repeats the narrator's explanation.
+- Give each consecutive beat a different job. For a short video, compress the arc to hook, two or three setup turns, three or four escalating turns, reveal, then choice or payoff. Longer videos may breathe, but every segment must still alter the situation.
+- Let recurring objects return only when their narrative meaning changes. A phone, receipt, key, uniform, cup or message must not become decorative continuity wallpaper.
+- Before accepting the script, silently audit every paragraph: identify its new event, its concrete evidence, the character response and the changed consequence. Rewrite any paragraph that cannot answer all four without inventing facts.`
   : "";
 export const VIETNAMESE_CHAPTER_RETRY_DIRECTIVE = `CRITICAL MANDATE: The narration segment for this chapter MUST be written 100% in natural, grammatically correct VIETNAMESE WITH COMPLETE DIACRITICS AND TONES (Tiếng Việt có dấu đầy đủ: à, á, ả, ã, ạ, â, ê, ô, ơ, ư, đ...). ABSOLUTELY NEVER write unaccented or tone-less Vietnamese (e.g., NEVER write "Ban dang ngoi trong phong...", ALWAYS write "Bạn đang ngồi trong phòng..."). Return natural Vietnamese with complete diacritics and tones. Return only the required JSON object.`;
 export const ENGLISH_CHAPTER_RETRY_DIRECTIVE = `CRITICAL MANDATE: The narration segment for this chapter MUST be written 100% in natural, fluent ENGLISH. Follow all sentence structure and word count requirements strictly. Return only the required JSON object.`;
@@ -320,7 +331,7 @@ ${correctionIssuesJson}
 Return the COMPLETE corrected JSON array for EVERY input scene below. Do not return patches, explanations, omitted scenes, or only the failed scenes. Re-read each scene's script and regenerate every required field yourself. This is the only correction attempt, so resolve every listed issue while preserving the exact scene IDs and array length.` : ""}
 
 Output ONLY this JSON array shape:
-[{"id":"scene_id","prompt":"one continuous 60-95 word English paragraph following the required order without labels or --ar; only the exact textOverlay may use the selected user language","visualIntent":"what viewers understand from this exact voice beat","visibleAction":"one clear physical action or observable change illustrating the current line","reaction":"visible facial/body response; for an insert, the observable environmental response or consequence","storyEvidence":"specific drawable evidence proving the current narration","visualHook":"one story-grounded focal contrast, reveal, scale cue, depth device, decisive gesture or visual irony","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"empty when text is forbidden, otherwise exact visible text in the selected user language","shotPurpose":"setup","shotSize":"editorially motivated shot size","cameraAngle":"editorially motivated angle","composition":"clear focal hierarchy with foreground, subject/evidence and background relationship","locationId":"loc_id or empty string","propIds":[],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate physically plausible light"}]
+[{"id":"scene_id","prompt":"one continuous 60-95 word English paragraph following the required order without labels or --ar; only the exact textOverlay may use the selected user language","visualIntent":"what viewers understand from this exact voice beat","visibleAction":"one clear physical action or observable change illustrating the current line","reaction":"visible facial/body response; for an insert, the observable environmental response or consequence","storyEvidence":"specific drawable evidence proving the current narration","visualHook":"one story-grounded focal contrast, reveal, scale cue, depth device, decisive gesture or visual irony","characterIds":[],"expectedSubjectCount":0,"allowBackgroundPeople":false,"layout":"single_frame","textAllowed":false,"textOverlay":"empty when text is forbidden, otherwise exact visible text in the selected user language","shotPurpose":"setup","shotSize":"editorially motivated shot size","cameraAngle":"editorially motivated angle","composition":"clear focal hierarchy with foreground, subject/evidence and background relationship","locationId":"loc_id or empty string","propIds":[],"continuityFrom":"previous state or empty string","continuityNotes":"short identity and prop continuity","lighting":"scene-appropriate physically plausible light","assetStrategy":"archival only for verifiable real-world visual evidence, otherwise ai_generated","archivalSearchQuery":"precise English search query for a real photograph, map, plan, document or artifact; empty for ai_generated","archivalRationale":"why authentic evidence or AI reconstruction is editorially correct"}]
 
 Input scenes:
 ${chunkJson}`;
@@ -423,6 +434,39 @@ ${chapterTitle}
 
 [Existing segment]
 ${currentSegment}`;
+
+export const getFinalScriptEditorialPrompt = (
+  script: string,
+  genre: string,
+  isVi: boolean,
+  targetWordCount: number,
+): string => `You are the final senior narration editor. Polish the supplied complete video script once, then score the finished result.
+${UNTRUSTED_INPUT_RULE}
+
+Language: ${isVi ? "Natural spoken Vietnamese with complete correct diacritics" : "Natural idiomatic spoken English"}.
+Genre: ${genre || "Storytelling"}.
+Target length: remain within 90%-110% of ${targetWordCount} words.
+${getNaturalNarrationLanguageDirective(isVi)}
+
+MANDATORY EDITORIAL RULES:
+- Preserve every supported fact, number, proper name, event order, character identity and causal relationship. Do not invent a new event, quote, statistic, crime, outcome or moral claim.
+- Correct missing Vietnamese tones, malformed words, punctuation, translation-shaped syntax and TTS-hostile sentences.
+- Remove accidental repeated narration, including a hook duplicated verbatim by the first chapter. Preserve the hook's promise and make the later payoff recognizable without repeating its wording.
+- Replace generic dramatic metaphors and trailer language with exact lived detail. Do not repeatedly rely on words equivalent to "hệ thống", "sợi dây vô hình", "con tốt", "lật ngược ván cờ", "sự thật phơi bày", "định mệnh", "cái giá phải trả" or "nhát dao" when a concrete action, object, rule, transaction or consequence can carry the meaning.
+- For Vietnamese immersive storytelling, sound like a perceptive Vietnamese narrator recounting events that happened to one person: natural clauses, stable forms of address, specific ordinary objects, causal verbs and restrained observations. Avoid translated action-movie copy, excessive moral judgment and polished corporate vocabulary.
+- Make every paragraph advance an event, decision, mechanism, consequence or useful explanation. Remove empty suspense and generic AI prose.
+- For immersive narrative, enforce this beat grammar inside every paragraph: concrete event -> scene-specific visible or audible evidence -> human reaction or causally useful short dialogue -> interpretation/consequence. Never lead with abstract analysis when a supported event can be shown first.
+- Reject decorative atmosphere and repeated poses as story progress. Each paragraph must introduce a new rule, object state, transaction, reveal, decision or consequence; a recurring object may return only with changed meaning.
+- For a short script, make the complete arc legible as hook -> 2-3 setup turns -> 3-4 escalation turns -> reveal -> choice/payoff. Do not stretch one idea across several differently worded paragraphs.
+- Adapt cadence and vocabulary to the actual genre. Do not inject jokes into serious genres or flatten satire, horror, education, history and children's content into one generic voice.
+- Keep the opening immediately engaging and the ending complete for the intended story unit. If the source intentionally ends on a cliffhanger, sharpen that cliffhanger without inventing the next event.
+- Return the entire polished script, not notes or a partial patch. Scores must judge the polished script honestly.
+
+Return JSON only with this exact structure:
+{"scriptSegment":"complete polished narration","continuityScore":0,"repetitionScore":0,"factualityScore":0,"emotionalArcScore":0,"conversationalScore":0,"hookPayoffScore":0,"warnings":[],"suggestedPatches":[]}
+
+[COMPLETE SCRIPT]
+${script}`;
 
 export const getSceneImageQualityPrompt = (
   sceneId: string,
@@ -840,6 +884,8 @@ Use the following visual specifications as your core style and identity referenc
 
 [CRITICAL NARRATIVE VISUALIZATION MANDATE - NO METAPHORICAL FRAMING & SYMBOLIC COMPOSITION]
 - Translate abstract narration, emotional states, and invisible/metaphorical concepts into tangible, physically drawable objects, actions, and body language.
+- Never materialize a figure of speech as a prop or event. Phrases such as "sợi dây vô hình", "cắn ngược", "con tốt", "cái lõi của hệ thống", "vết dao", "vòng xoáy" or their English equivalents do NOT authorize ropes, biting, chess pieces, knives, machinery cores or vortices. Show the nearest real causal event named in the current beat or established immediately before it: who acts, what object changes hands, what evidence is revealed, and how the affected person reacts.
+- The visibleAction and storyEvidence fields must be verifiable against the narration and continuity context. If the current sentence is commentary, anchor its image to the concrete event that proves the commentary rather than inventing a symbolic tableau.
 - Never use words like "invisible", "unseen", or draw literal bookshelves/open books for phrases like "History textbooks often frame the Battle of the Little Bighorn". Show the actual battle instead, using natural composition (terrain, smoke, silhouettes) as the frame.
 - STORY-FIRST FRAME RULE: Treat every frame as one chronological instant from the lived story, not a topical illustration. Keep the named protagonist's identity and current timeline stage stable; show what the person is physically doing, the concrete object/person causing pressure, and visible evidence of the immediate consequence whenever the narration supports them.
 - ABSTRACT-NOUN BAN: A generic worried portrait, person looking at a screen, symbolic cage, floating money, anonymous silhouette or decorative city background is invalid unless that exact physical situation advances the current event. Prefer interaction, transaction, decision, concealment, refusal, discovery or aftermath.

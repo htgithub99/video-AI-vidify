@@ -520,9 +520,15 @@ export default function App() {
         if (!response.ok) {
           throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
         }
+        const savedProject = await response.json() as VideoProject;
+        setProjects((prev) => _.map(prev, (project) => (
+          _.isEqual(project.id, savedProject.id) ? savedProject : project
+        )));
         delete pendingSavesRef.current[updated.id];
+        return savedProject;
       } catch (e) {
         appError(ERROR_MESSAGES.AUTO_SAVE_ERR, e);
+        return undefined;
       }
     };
 
@@ -637,8 +643,8 @@ export default function App() {
                 theme={theme as any}
                 currentLang={currentLang}
                 project={activeProject}
-                onSaveProject={handleUpdateProject}
-                setProject={handleUpdateProject}
+                onSaveProject={async (project) => { await handleUpdateProject(project); }}
+                setProject={async (project) => { await handleUpdateProject(project); }}
                 onBackToDashboard={() => handleSelectProject(null)}
                 costTracker={costTracker}
                 setCostTracker={setCostTracker}

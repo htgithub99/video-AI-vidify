@@ -64,7 +64,7 @@ const deleteProjectAssetDirectory = (assetsRoot: string, folderName: string): vo
 };
 
 
-function processSceneAssets(scene: any, imageDir: string, videoDir: string, folderName: string): any {
+function processSceneAssets(scene: any, imageDir: string, videoDir: string, audioDir: string, folderName: string): any {
   const imgBase64 = _.get(scene, REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY);
   if (imgBase64 && !_.get(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY)) {
     _.set(scene, REFACTOR_CONSTANTS.AVG_ASSET_URL_KEY, imgBase64);
@@ -73,9 +73,23 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, fold
     delete scene[REFACTOR_CONSTANTS.AVG_IMAGE_BASE64_KEY];
   }
 
-  let { assetUrl, assetUrls, audioUrl } = scene;
+  let { assetUrl, assetUrls, audioUrl, audioBase64 } = scene;
   let sceneUpdated = false;
   assetUrls = assetUrls || [];
+
+  if (_.isString(audioBase64) && _.gt(_.size(audioBase64), COMMON_STRINGS.BASE64_AUDIO_LENGTH_THRESHOLD)) {
+    const sceneId = _.replace(_.toString(scene.id), /[^a-zA-Z0-9_-]/g, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+    const fileName = `${sceneId || COMMON_STRINGS.SCENE_PREFIX}${ALIGN_CONFIG.WAV_EXT}`;
+    const filePath = path.join(audioDir, fileName);
+    try {
+      fs.writeFileSync(filePath, Buffer.from(audioBase64, COMMON_STRINGS.BASE64));
+      audioUrl = `/${ASSETS_DIR_NAME}/${PROJECTS_DIR_NAME}/${folderName}/${VOICES_DIR_NAME}/${fileName}`;
+      audioBase64 = undefined;
+      sceneUpdated = true;
+    } catch (err) {
+      appError(`${ERROR_MESSAGES.WRITE_UNIFIED_AUDIO_ERR}${scene.id}`, err);
+    }
+  }
 
   const enforceCorrectFolder = (u: string | undefined) => {
     const assetsPrefix = `${COMMON_STRINGS.SLASH_PREFIX}${ASSETS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}${PROJECTS_DIR_NAME}${COMMON_STRINGS.SLASH_PREFIX}`;
@@ -150,7 +164,13 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, fold
   }
 
   if (sceneUpdated) {
-    return { ...scene, assetUrl, assetUrls, audioUrl, isUpdated: true };
+    const assetRevisions = _.map(scene.assetRevisions, (revision) => ({
+      ...revision,
+      assetUrl: (_.isEmpty(revision?.assetUrl) || (_.isString(revision?.assetUrl) && _.startsWith(revision.assetUrl, "data:")))
+        ? assetUrl
+        : revision?.assetUrl,
+    }));
+    return { ...scene, assetUrl, assetUrls, audioUrl, audioBase64, assetRevisions, isUpdated: true };
   }
   return scene;
 }
@@ -255,7 +275,7 @@ function convertBase64AssetsToFiles(projects: VideoProject[]): VideoProject[] {
     let storyboard = project.storyboard;
     if (_.isArray(storyboard)) {
       storyboard = _.map(storyboard, (scene) => {
-        const processed = processSceneAssets(scene, imageDir, videoDir, folderName);
+        const processed = processSceneAssets(scene, imageDir, videoDir, audioDir, folderName);
         if (processed.isUpdated) {
           storyboardUpdated = true;
           delete processed.isUpdated;

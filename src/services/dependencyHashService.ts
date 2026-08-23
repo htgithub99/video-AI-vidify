@@ -69,7 +69,7 @@ export const appendAssetRevision = (
     parentRevisionId: scene.assetRevisionId,
     createdAt: new Date().toISOString(),
     promptHash: scene.dependencyHash || createDependencyHash(scene.prompt),
-    assetUrl,
+    assetUrl: _.startsWith(assetUrl, "data:") ? "" : assetUrl,
     status,
     approvedAt: status === SceneAssetStatus.Approved ? new Date().toISOString() : undefined,
   };

@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
+import { VideoGenre } from "../constants/enums.js";
 import { HookScore, HookVersion, ScriptQualityReport } from "../types.js";
 
 export const SCRIPT_QUALITY_THRESHOLDS = {
@@ -16,6 +17,28 @@ export const SCRIPT_QUALITY_THRESHOLDS = {
 } as const;
 
 const HARD_SCRIPT_BLOCKER_PATTERN = /(?:empty|missing(?:_|\s)+(?:the(?:_|\s)+)?script|no(?:_|\s)+script|unintelligible|corrupt|malformed|child(?:_|\s)+sexual|sexual(?:_|\s)+exploitation|csam|doxx|privacy(?:_|\s)+violation|incitement|illegal(?:_|\s)+instructions?)/i;
+
+const VI_AI_PROSE_PATTERNS: ReadonlyArray<[string, RegExp]> = [
+  ["script_ai_prose_empty_transition", /(?:mọi chuyện chưa dừng lại ở đó|không ai có thể ngờ rằng|đằng sau vẻ hào nhoáng|bức tranh đa chiều|hồi chuông cảnh tỉnh|bài học đắt giá)/giu],
+  ["script_trailer_metaphor_overused", /(?:sợi dây vô hình|con tốt(?: thí)?|lật ngược ván cờ|sự thật phơi bày|cái giá phải trả|nhát dao|lõi của hệ thống)/giu],
+  ["script_suspense_template_overused", /bạn tưởng[^.!?…]{0,120}(?:nhưng|hóa ra)/giu],
+];
+
+export const detectVietnameseNarrationStyleWarnings = (script: string): string[] => _.compact(
+  _.map(VI_AI_PROSE_PATTERNS, ([warning, pattern]) => {
+    const matches = _.toString(script).match(pattern) || [];
+    const allowedCount = warning === "script_ai_prose_empty_transition" ? 0 : 1;
+    return matches.length > allowedCount ? warning : "";
+  }),
+);
+
+export const isSatiricalVideoGenre = (genre: unknown): boolean => new Set<string>([
+  VideoGenre.SATIRICAL_LIFE_AUTO,
+  VideoGenre.TRANSFORMATION_TIMELINE,
+  VideoGenre.CAREER_SOCIAL_DARKSIDE,
+  VideoGenre.DOWNFALL_CONSEQUENCE,
+  VideoGenre.DARK_COMEDY_TRAGEDY,
+]).has(_.toString(genre));
 
 const score = (value: unknown): number => _.clamp(_.toFinite(value), 0, 100);
 

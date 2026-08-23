@@ -25,23 +25,25 @@ const SATIRICAL_LIFE_GUIDELINE = `DARKLY SATIRICAL VIETNAMESE STORYTELLING (DRY,
 
 const getSatiricalLifeGuideline = (structure: string): string => `${SATIRICAL_LIFE_GUIDELINE}\n- Primary sub-genre focus: ${structure}`;
 
-const STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE = `STORY-DRIVEN VIDEO ESSAY & NARRATIVE EXPLAINER (SIGNATURE WITTY STORYTELLER FORMULA):
-- ENGAGING WITTY HOST PERSONA (GIỌNG DẪN TRUYỆN THÔNG THÁI, HÓM HỈNH, DÂN DÃ):
-  + Conversational, witty, intelligent, and humorous tone. Talk naturally with the audience like a smart, humorous friend explaining a fascinating book, movie, historical event, or concept ("Chào mừng các bạn đã quay trở lại...", "Tôi với các bạn có thể thắc mắc...", "Anh em xem chắc cũng nhận ra...", "Đến đây thì dù ghét nhưng cũng phải thừa nhận là...", "Quay trở lại với mạch truyện chính...").
-- ORIGIN, CONTEXT & BACKGROUND HOOKS:
-  + Open with an intriguing hook or scene, then seamlessly provide rich contextual backstory (author facts, historical era, original draft names, underlying social dynamics) to enrich the narrative before diving into the core plot.
-- MODERN METAPHORS & CLEVER STREET-SMART ANALOGIES (ẨN DỤ SO SÁNH ĐỜI THỰC ĐẮT GIÁ):
-  + Ingeniously translate classic, historical, or fantastical concepts into sharp, humorous modern analogies and pop-culture/gaming/social-media terms:
-    * "Winner của làng", "out meta", "flex chiến tích", "tẩy trắng", "đăng xuất khỏi server", "bùng kèo", "mắ ping", "chơi bài ngửa", "nước đi khá khôn".
-    * "Crow Control - CC (giải tán đám đông)", "combo chiêu thức", "nội tại", "thằng top 1 thì nhót rồi".
-    * "Vincom của thế giới phù thủy", "thay vì bắt Grab thì dùng bột dịch chuyển", "chatGPT lên AP", "trái ác quỷ".
-    * "Canh điền là từ hoa mỹ cho việc đi cày ruộng".
-- DEEP PSYCHOLOGICAL & CAUSAL ANALYSIS (BÓC TÁCH TÂM LÝ & GIẢI THÍCH CƠ CHẾ SÂU SẮC):
-  + Do NOT merely summarize events. ALWAYS dissect the hidden motivations, power plays, and psychology behind each action: Why did the villain act so softly? What dual purpose did this move achieve? What unwritten societal rule was at work?
-- DYNAMIC PACING, SUBTLE SATIRE & AUDIENCE CONNECTION:
-  + Balance rich academic insights with lively storytelling banter, vivid character quotes, and insightful philosophical punchlines.
-  + Natural chapter transitions ("Chương 1...", "Ba ngày sau sự kiện chấn động đó...", "Nhưng đời không cho ai tất cả...").
-  + Wrap up with an intellectual reflection and conversational CTA ("Các bạn thấy sao về câu chuyện này? Hãy để lại cảm nghĩ bên dưới...").`;
+const STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE = `STORY-DRIVEN EXPLAINER (NATURAL VIETNAMESE RETELLING WITH CAUSAL ANALYSIS):
+- Retell the source in chronological, easy-to-follow scenes. Open on the most revealing conflict, object or choice, then establish only the context needed to understand it.
+- For every major event, answer four questions in a natural flow: what happened, what concrete detail proves it, why the person acted that way, and what that action changed next. Explanation must grow out of the plot instead of interrupting it.
+- Sound like a well-read Vietnamese storyteller speaking to one listener: clear, lightly witty, observant and warm. Use familiar wording, but never paste trendy slang, gaming vocabulary, meme language or a canned host greeting merely to appear youthful.
+- Preserve names, relationships, chronology, social hierarchy, period vocabulary and the source's emotional logic. Clearly separate source events from interpretation; never invent dialogue, motive, author trivia or historical context.
+- Compress repeated source events, but keep the causal bridge between them. A listener who has never read or watched the source must always know who acts, what they want, what blocks them and why the next event follows.
+- Humor may clarify a contradiction or character flaw, but the analogy must fit this exact event and remain understandable without internet culture. Never turn a tragic character into the joke.
+- Alternate plot movement with concise interpretation. Do not stack several paragraphs of summary and then several paragraphs of abstract analysis.
+- End by resolving the opening question and identifying what the final choice reveals about the character, work or mechanism. Use a CTA only when requested; never use an automatic channel greeting or sign-off.
+- Keep the prose original. Match the reference format's clarity, causal depth, conversational pacing and restrained wit without copying a creator's signature phrases or recognizable verbal habits.`;
+
+const FACTUAL_DOCUMENTARY_GUIDELINE = `EVIDENCE-LED VIETNAMESE DOCUMENTARY:
+- Build the narrative from verified chronology, geography, people, primary decisions and material evidence. Begin with a consequential moment, then widen to the forces that made it possible.
+- Use a measured, confident Vietnamese documentary voice: concrete and vivid without epic exaggeration, propaganda cadence, faux mystery or unsupported certainty.
+- Every section must connect cause -> decision -> execution -> consequence. Dates, measurements, quotations, maps, building features and tactical claims must retain their exact sourced scope.
+- VISUAL SOURCE PRIORITY: request authentic archival photographs, maps, plans, drawings, documents, present-day location footage or licensed factual imagery for identifiable people, buildings, artifacts and historical events. Use AI imagery only for clearly framed reconstruction, spatial explanation or unavailable transitional atmosphere; never present an AI reconstruction as archival evidence.
+- For architecture, prioritize real exterior/interior photographs, site plans, sections, construction details, material close-ups and geographic context. AI may illustrate an unbuilt state or inaccessible historical phase only when the narration identifies it as reconstruction.
+- Organize visuals as evidence, not decoration: establish the place, inspect a detail, explain its function, compare before/after or plan/reality, then return to the human consequence.
+- If authentic visual evidence is unavailable, write conservatively and mark the visual need for sourcing rather than inventing a plausible-looking fact.`;
 
 export const VI_GENRE_GUIDELINES: Record<string, string> = {
   [VideoGenre.SATIRICAL_LIFE_AUTO]: getSatiricalLifeGuideline("FORMAT AUTO-DIRECTOR: Diagnose whether the premise is best served by an immersive story, observational essay, mock guide, misconception reversal, institutional breakdown, timeline or tragicomic case study. Select exactly one dominant format and an optional secondary device. Preserve variety in hook, escalation and ending; a downfall is never mandatory."),
@@ -55,8 +57,8 @@ export const VI_GENRE_GUIDELINES: Record<string, string> = {
   [VideoGenre.LORE_WORLD_BUILDING]: `${STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE}\n- Primary sub-genre focus: World breakdown, underlying magical/technological rules, historical context, subtle foreshadowing (lore), and deep causal origin of events.`,
   Storytelling: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
   Explanation: STORY_EXPLAINER_VIDEO_ESSAY_GUIDELINE,
-  History: "History Genre: Emphasize historical accuracy, realistic chronologies, key historical figures, geopolitical conflicts, and deep cause-effect analysis. Maintain an epic, immersive, and profound narrative tone.",
-  Documentary: "Documentary Genre: Authentic, investigative, and objective yet highly engaging. Combine realistic storytelling with concrete evidence, source context, and insightful analysis.",
+  History: FACTUAL_DOCUMENTARY_GUIDELINE,
+  Documentary: FACTUAL_DOCUMENTARY_GUIDELINE,
   Review: "Review Genre: Analyze pros and cons objectively, illustrate authentic user experiences, present balanced comparative arguments, and deliver sharp, definitive conclusions.",
   Education: "Education Genre: Clear, pedagogically engaging, thought-provoking, and scientifically grounded with high practical takeaways.",
   News: "News Genre: Fast-paced, up-to-date, direct, and objective. Deliver core breaking information within the first few seconds and analyze broader systemic impacts.",

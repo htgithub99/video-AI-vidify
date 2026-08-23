@@ -255,13 +255,17 @@ export const getPipelineInvalidationState = (
   };
 };
 
-export const hasCompleteSceneAlignment = (scenes: StoryboardScene[]): boolean => _.every(
+export const hasCompleteSceneAlignment = (scenes: StoryboardScene[], hasGlobalNarration: boolean = false): boolean => _.every(
   scenes,
-  (scene) => _.every([
+  (scene, index) => _.every([
     !_.isEmpty(scene.startTime),
     !_.isEmpty(scene.endTime),
     !_.isUndefined(scene.duration),
-    _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio)),
+    _.isFinite(scene._start),
+    _.isFinite(scene._end),
+    _.gte(_.toNumber(scene._end), _.toNumber(scene._start)),
+    index === 0 || Math.abs(_.toNumber(scene._start) - _.toNumber(scenes[index - 1]._end)) < 0.05,
+    hasGlobalNarration || _.some([scene.audioBase64, scene.audioUrl], (audio) => !_.isEmpty(audio)),
   ]),
 );
 

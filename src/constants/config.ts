@@ -360,8 +360,8 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   SCENE_NARRATIVE_PREFIX: "Scene: ",
   COMPOSITION_PREFIX: "Composition: ",
   LIGHTING_PREFIX: "Scene-appropriate lighting: ",
-  CHARACTER_IDENTITY_MAX_WORDS: 24,
-  CHARACTER_CONSISTENCY_LOCK: "preserving the same name, face, hair, distinguishing marks, and proportions as every other scene",
+  CHARACTER_IDENTITY_MAX_WORDS: 32,
+  CHARACTER_CONSISTENCY_LOCK: "identity lock: preserve this exact named person's gender presentation, age, ethnicity and skin tone, body build, face geometry, eye shape and color, nose, hair length and texture, silhouette, distinguishing marks, and proportions across every scene; change only expression, pose, story-required condition, and explicitly staged wardrobe",
   CHARACTER_NEGATIVE_CONSTRAINTS: "No duplicate people, extra limbs, distorted face, changed hairstyle, or wardrobe unrelated to the current scene",
   STORY_FIDELITY_LOCK: "Keep the narrated setting, era, action, and props; add no unrelated genre elements",
   SCENE_VARIATION_MAX_WORDS: 42,
@@ -376,6 +376,10 @@ export const IMAGE_PROMPT_COMPILER_CONFIG = {
   CLEAN_COMMA_REPLACE_PATTERN: /\s*,\s*,+/g,
   CLEAN_COMMA_REPLACE_TARGET: ", ",
   TRIM_COMMA_PATTERN: /^\s*,\s*|\s*,\s*$/g,
+} as const;
+
+export const PROJECT_IMAGE_FALLBACK_CONFIG = {
+  TAB_CONCURRENCY: 3,
 } as const;
 
 export const VISUAL_CONTINUITY_CONFIG = {

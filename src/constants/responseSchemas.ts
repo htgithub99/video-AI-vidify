@@ -63,6 +63,23 @@ export const CHAPTER_RESPONSE_SCHEMA = {
   type: "object", additionalProperties: false, required: ["scriptSegment"], properties: { scriptSegment: stringSchema },
 } as const;
 
+export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["scriptSegment", "continuityScore", "repetitionScore", "factualityScore", "emotionalArcScore", "conversationalScore", "hookPayoffScore", "warnings", "suggestedPatches"],
+  properties: {
+    scriptSegment: stringSchema,
+    continuityScore: numberScoreSchema,
+    repetitionScore: numberScoreSchema,
+    factualityScore: numberScoreSchema,
+    emotionalArcScore: numberScoreSchema,
+    conversationalScore: numberScoreSchema,
+    hookPayoffScore: numberScoreSchema,
+    warnings: stringArraySchema,
+    suggestedPatches: stringArraySchema,
+  },
+} as const;
+
 export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
   type: "object", required: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan", "factPack", "chapters"],
   properties: {

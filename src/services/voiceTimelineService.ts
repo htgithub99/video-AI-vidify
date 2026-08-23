@@ -32,6 +32,16 @@ export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[
   scene => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS),
 ) as StoryboardScene[];
 
+// A complete narration track is the render source of truth. Keeping every
+// aligned clip as base64 as well multiplies checkpoint payloads and can stall
+// browser-to-server project saves after image generation.
+export const removeRedundantSceneAudioBase64 = (
+  scenes: StoryboardScene[],
+  hasGlobalNarration: boolean,
+): StoryboardScene[] => hasGlobalNarration
+  ? _.map(scenes, scene => _.omit(scene, "audioBase64") as StoryboardScene)
+  : scenes;
+
 export const applyVoiceAlignments = (
   scenes: StoryboardScene[],
   alignments: VoiceAlignment[],
@@ -56,7 +66,7 @@ export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number => (
   || _.sumBy(scenes, scene => _.toNumber(scene.duration) || 0)
 );
 
-const decodeAudioDuration = async (audioBase64: string): Promise<number> => {
+export const decodeAudioDuration = async (audioBase64: string): Promise<number> => {
   const AudioContextConstructor = window.AudioContext;
   if (!AudioContextConstructor) return 0;
   const encodedAudio = _.last(_.split(audioBase64, VOICE_ALIGNMENT_CONFIG.BASE64_DELIMITER)) || audioBase64;

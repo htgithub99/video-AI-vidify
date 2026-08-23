@@ -22,6 +22,7 @@ import { resolveStoryboardCharacterIds, SCENE_REFERENCE_CONFIG } from "../../ser
 import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
+import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
 import {
@@ -48,6 +49,7 @@ import {
   getOptimizePromptsBatchPrompt,
   getChapterWriterPrompt,
   getChapterExpansionPrompt,
+  getFinalScriptEditorialPrompt,
   getScriptSplitPrompt,
   getSceneDetailBatchPrompt,
   getDetailedPromptBuilderPrompt,
@@ -110,6 +112,7 @@ import {
   HOOK_RESPONSE_SCHEMA,
   SCRIPT_PLAN_RESPONSE_SCHEMA,
   CHAPTER_RESPONSE_SCHEMA,
+  FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
   VISUAL_QA_RESPONSE_SCHEMA,
   VISUAL_BIBLE_RESPONSE_SCHEMA,
   FINAL_VIDEO_QA_RESPONSE_SCHEMA,
@@ -138,7 +141,7 @@ import { VideoQuality } from "../../constants/enums.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { applyDeterministicStoryboardCoverage, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { createUnavailableContentSafetyReport, normalizeContentSafety } from "../../services/contentSafetyService.js";
-import { normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
+import { detectVietnameseNarrationStyleWarnings, isSatiricalVideoGenre, normalizeScriptQualityReport, parseTargetDurationSeconds, rankHookVersions } from "../../services/scriptQualityService.js";
 import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes, removeRepeatedNarrationOpening } from "../../services/scriptContinuityService.js";
 import { resolveUsableHooks } from "../../services/hookResilienceService.js";
 import { CHAPTER_LANGUAGE_VALIDATION_CONFIG, ChapterLanguageIssue, validateChapterLanguage } from "../../services/chapterLanguageValidationService.js";
@@ -170,6 +173,37 @@ const waitForNextTtsPoll = async (attempts: number): Promise<void> => {
     await delayAsync(TTS_POLLING_CONFIG.INTERVAL_MS);
   }
 };
+
+const ensureHookLanguage = async (content: unknown, isVietnamese: boolean): Promise<string> => {
+  const hook = _.trim(_.toString(content));
+  if (_.isEmpty(hook) || validateChapterLanguage(hook, isVietnamese).valid) return hook;
+  if (!isVietnamese) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  try {
+    const response = await generateContentWithRetry({
+      contents: getVietnameseDiacriticsRestorationPrompt(hook),
+      config: {
+        responseMimeType: CONTENT_TYPES.JSON,
+        responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
+        maxOutputTokens: 512,
+      },
+      task: { capability: AiTaskCapability.ScriptWriting },
+    });
+    const restoredHook = extractCleanChapterSegment(response.text);
+    return validateChapterLanguage(restoredHook, true).valid
+      ? restoredHook
+      : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  } catch (error) {
+    appWarn(PIPELINE_SERVER_LOGS.INVALID_CHAPTER_LANGUAGE_DISCARDED, error);
+    return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+  }
+};
+
+const repairHookVersionsLanguage = async (versions: HookVersion[], isVietnamese: boolean): Promise<HookVersion[]> => _.compact(
+  await Promise.all(_.map(versions, async version => {
+    const content = await ensureHookLanguage(version.content, isVietnamese);
+    return _.isEmpty(content) ? null : { ...version, content };
+  })),
+);
 
 import { LicenseService } from "../services/licenseService.js";
 import { requireLicense } from "../middlewares/requireLicense.js";
@@ -424,7 +458,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting"],
+          required: ["id", "prompt", "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "characterIds", "expectedSubjectCount", "allowBackgroundPeople", "layout", "textAllowed", "textOverlay", "shotPurpose", "shotSize", "cameraAngle", "composition", "locationId", "propIds", "continuityFrom", "continuityNotes", "lighting", "assetStrategy", "archivalSearchQuery", "archivalRationale"],
           properties: {
             id: { type: "string", enum: sceneIds }, prompt: planningString, visualIntent: planningString,
             visibleAction: planningString, reaction: planningString, storyEvidence: planningString, visualHook: planningString,
@@ -433,6 +467,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             shotPurpose: { type: "string", enum: ["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"] }, shotSize: planningString, cameraAngle: planningString, composition: planningString,
             locationId: planningString, propIds: { type: "array", items: planningString }, continuityFrom: planningString,
             continuityNotes: planningString, lighting: planningString,
+            assetStrategy: { type: "string", enum: ["archival", "ai_generated"] }, archivalSearchQuery: planningString, archivalRationale: planningString,
           },
         },
       } as const;
@@ -479,6 +514,10 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
           if (!_.includes(["single_frame", "split_screen", "collage"], _.get(item, "layout"))) issues.push(`${sceneId}:layout:invalid`);
           if (!_.includes(["setup", "action", "reaction", "punchline", "reveal", "callback", "montage", "emotional_hold"], _.get(item, "shotPurpose"))) issues.push(`${sceneId}:shotPurpose:invalid`);
           if (!_.isBoolean(_.get(item, "textAllowed"))) issues.push(`${sceneId}:textAllowed:must_be_boolean`);
+          if (!_.includes(["archival", "ai_generated"], _.get(item, "assetStrategy"))) issues.push(`${sceneId}:assetStrategy:invalid`);
+          if (_.isEqual(_.get(item, "assetStrategy"), "archival") && _.isEmpty(_.trim(_.toString(_.get(item, "archivalSearchQuery"))))) {
+            issues.push(`${sceneId}:archivalSearchQuery:required_for_archival`);
+          }
           const textAllowed = _.get(item, "textAllowed");
           const textOverlay = _.trim(_.toString(_.get(item, "textOverlay")));
           if (_.isEqual(textAllowed, true) && _.isEmpty(textOverlay)) issues.push(`${sceneId}:textOverlay:required_when_text_allowed`);
@@ -895,7 +934,11 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   const isVi = language === ProjectLanguage.VI || config?.language === ProjectLanguage.VI;
 
   const cached = checkCache(API_ROUTES.PIPELINE_HOOKS, req.body, bypassCache);
-  if (cached) {
+  const cachedHooksLanguageValid = _.every(
+    _.castArray(cached?.versions),
+    version => validateChapterLanguage(_.get(version, "content"), isVi).valid,
+  );
+  if (cached && cachedHooksLanguageValid) {
     return res.json({ ...cached, cached: true });
   }
 
@@ -944,7 +987,8 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
     }
 
     logStep(getPipelineLog("HOOK_STEP3_DONE", isVi));
-    const usableVersions = resolveUsableHooks(versions, hookType, count, originalInput);
+    versions = await repairHookVersionsLanguage(versions, isVi);
+    const usableVersions = resolveUsableHooks(versions, hookType, count, originalInput, isVi);
     if (_.isEmpty(usableVersions)) throw createAppError(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
     const output = { versions: usableVersions, rotationLogs: multiStepLogs };
     setCache(API_ROUTES.PIPELINE_HOOKS, req.body, output);
@@ -962,9 +1006,10 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
 
 router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
   const { originalInput, inputType = "idea", config = {}, selectedHookText, bypassCache } = req.body;
+  const isVietnameseRequest = config.language === ProjectLanguage.VI;
 
   const cached = checkCache(API_ROUTES.PIPELINE_SCRIPT, req.body, bypassCache);
-  if (cached) {
+  if (cached && validateChapterLanguage(cached.rewrittenScript, isVietnameseRequest).valid) {
     return res.json({ ...cached, cached: true });
   }
 
@@ -1044,7 +1089,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         assertResponseContract(hookResult, ResponseContractName.Hook);
         if (hookResponse.aiMetadata) aiMetrics.push(hookResponse.aiMetadata);
         if (hookResult.versions && hookResult.versions.length > 0) {
-          generatedHookVersions = resolveUsableHooks(_.map(
+          const rawGeneratedHookVersions = _.map(
             _.take(hookResult.versions, hookCount),
             (version: any, index: number): HookVersion => ({
               id: version.id || `hk_${index + 1}`,
@@ -1052,8 +1097,14 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
               type: version.type || hookType,
               selected: false,
               score: version.score,
-            }),
-          ), hookType, hookCount, originalInput);
+            }));
+          generatedHookVersions = resolveUsableHooks(
+            await repairHookVersionsLanguage(rawGeneratedHookVersions, isVi),
+            hookType,
+            hookCount,
+            originalInput,
+            isVi,
+          );
           const selectedHook = _.find(generatedHookVersions, "selected");
           if (!selectedHook) throw new Error(REFACTOR_CONSTANTS.ERR_HOOK_QUALITY_REJECTED);
           activeHookText = selectedHook.content;
@@ -1062,11 +1113,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       } catch (hookError: any) {
         logger.error(LogEvent.ERROR_GENERATING_HOOKS, hookError);
         appWarn(REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING);
-        generatedHookVersions = resolveUsableHooks([], config.hookConfig.type, config.hookConfig.count, originalInput);
+        generatedHookVersions = resolveUsableHooks([], config.hookConfig.type, config.hookConfig.count, originalInput, isVi);
         activeHookText = _.toString(_.get(_.find(generatedHookVersions, "selected"), "content"));
       }
     }
 
+    activeHookText = await ensureHookLanguage(activeHookText, isVi);
     logStep(getPipelineLog("SCRIPT_STEP1", isVi));
 
     const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
@@ -1253,17 +1305,50 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(getPipelineLog("SCRIPT_STEP4", isVi));
     logStep(getPipelineLog("SCRIPT_STEP4_DONE", isVi));
 
-    const finalCleanScript = removeAdjacentRepeatedNarrationSentences(fullScript.trim());
+    let finalCleanScript = removeAdjacentRepeatedNarrationSentences(fullScript.trim());
     const targetDurationSeconds = parseTargetDurationSeconds(rawDurationText);
-    const scriptQaBase = normalizeScriptQualityReport({}, _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    let editorialQa: Record<string, unknown> = {};
+    try {
+      const editorialResponse = await generateContentWithRetry({
+        contents: getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount),
+        config: {
+          responseMimeType: CONTENT_TYPES.JSON,
+          responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
+          maxOutputTokens: _.clamp(targetWordCount * 4, 2048, 16384),
+        },
+        task: { capability: AiTaskCapability.ScriptWriting },
+      });
+      const editorialResult = safeParseJSON(editorialResponse.text, {});
+      const polishedScript = _.trim(_.toString(editorialResult.scriptSegment));
+      const polishedWordRatio = _.size(_.words(polishedScript)) / (_.max([1, targetWordCount]) || 1);
+      const languageValidation = validateChapterLanguage(polishedScript, isVi);
+      if (!_.isEmpty(polishedScript) && _.inRange(polishedWordRatio, 0.9, 1.100001) && languageValidation.valid) {
+        finalCleanScript = removeAdjacentRepeatedNarrationSentences(polishedScript);
+        editorialQa = editorialResult;
+      } else {
+        multiStepLogs.push("final_script_editor_output_rejected");
+      }
+      if (editorialResponse.aiMetadata) aiMetrics.push(editorialResponse.aiMetadata);
+      if (editorialResponse.rotationLogs) multiStepLogs.push(...editorialResponse.rotationLogs);
+    } catch (editorialError) {
+      appWarn("Final script editorial review unavailable; using validated chapter output.", editorialError);
+      multiStepLogs.push(ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING);
+    }
+    const finalLanguageValidation = validateChapterLanguage(finalCleanScript, isVi);
+    if (!finalLanguageValidation.valid) throw new Error(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
+    const scriptQaBase = normalizeScriptQualityReport(editorialQa, _.size(_.words(finalCleanScript)), targetDurationSeconds);
+    const deterministicStyleWarnings = isVi && isSatiricalVideoGenre(config.genre)
+      ? detectVietnameseNarrationStyleWarnings(finalCleanScript)
+      : [];
     const scriptQa = {
       ...scriptQaBase,
-      blockingErrors: [],
-      warnings: _.compact([
-        ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING,
+      warnings: _.uniq(_.compact([
+        ...scriptQaBase.warnings,
+        _.isEmpty(editorialQa) && ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING,
         !scriptQaBase.durationFit && ADVISORY_QA_CONFIG.SCRIPT_DURATION_WARNING,
-      ]),
-      passed: true,
+        ...deterministicStyleWarnings,
+      ])),
+      passed: scriptQaBase.passed && _.isEmpty(deterministicStyleWarnings),
     };
     const finalChapters = syncChaptersWithScript(finalCleanScript, completedChapters);
     const parsedData = {
@@ -1451,6 +1536,18 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
   } catch (error: any) {
     logger.error(LogEvent.VIDEO_SCENE_SELECTION_ERROR, error);
     return res.json({ videoSceneIds: [], rotationLogs: error.rotationLogs });
+  }
+});
+
+router.post(ROUTER_PATHS.SEARCH_ARCHIVAL_IMAGE, async (req: Request, res: Response) => {
+  try {
+    const query = _.trim(_.toString(req.body?.query));
+    if (_.isEmpty(query)) return res.status(400).json({ success: false, warning: "archival_search_query_missing" });
+    const result = await searchArchivalImageWithChrome(query, req.body?.chromeHeadless !== false);
+    return res.status(result.success ? 200 : 404).json(result);
+  } catch (error) {
+    appWarn("Archival image search failed; scene will use AI generation.", error);
+    return res.status(503).json({ success: false, warning: "archival_search_unavailable" });
   }
 });
 

@@ -47,7 +47,7 @@ import {
   PROJECT_ASSET_GROUP, HTTP_METHODS,
 } from "../constants";
 import { PRESET_CONSTANTS } from "../constants/texts";
-import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, REFERENCE_ASSET_GROUP } from "../constants/config";
+import { AUTO_GENERATOR_CONSTANTS, AUTO_VIDEO_PIPELINE_PROGRESS, FFMPEG_RENDER_CONSTANTS, PROJECT_IMAGE_FALLBACK_CONFIG, REFERENCE_ASSET_GROUP } from "../constants/config";
 import { IMAGE_PROMPT_PIPELINE_VERSION } from "../constants/imagePromptRules";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
@@ -85,7 +85,7 @@ import { adaptImagePromptForEngine } from "../services/imageEngineAdapterService
 import { createThumbnailStyleDirective } from "../services/styleReferenceService";
 import { hasSourceGenderConflict, hasStyleContaminatedCharacterLibrary, normalizeCharacterLibrary, validateVisualContinuity } from "../services/visualContinuityService";
 import { generateDirectedVoice } from "../services/voiceDirectionService";
-import { alignVoiceTimeline } from "../services/voiceTimelineService";
+import { alignVoiceTimeline, removeRedundantSceneAudioBase64 } from "../services/voiceTimelineService";
 import { assessVoiceAdvisory } from "../services/voiceQualityRepairService";
 import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes } from "../services/scriptContinuityService";
 import { createSubtitleCues } from "../services/subtitleService";
@@ -97,6 +97,7 @@ import { compileImagePrompt } from "../services/imagePromptCompilerService";
 import { getVisualShotPlanIssues } from "../services/visualPlanningService";
 import { resolveStylePreset } from "../constants/stylePresets";
 import { isHookTopicallyGrounded } from "../services/hookResilienceService";
+import { validateChapterLanguage } from "../services/chapterLanguageValidationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
 import { Lang } from "../lib/lang";
@@ -209,7 +210,7 @@ const createFallbackCharacterProfile = (_stylePresetName?: string): Record<strin
 
 export function useAutoVideoPipeline(
   projects: VideoProject[],
-  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<void> | void,
+  onUpdateProject: (project: VideoProject, immediate?: boolean) => Promise<VideoProject | void> | void,
   currentLang: Lang,
 ) {
   const T = AUTO_GENERATOR_PANEL_TEXTS[currentLang as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
@@ -653,7 +654,11 @@ export function useAutoVideoPipeline(
         const finalProj = { ...proj, activeRunId: isCompleted ? null : pipelineRunLease.runId, lastRunId: isCompleted ? pipelineRunLease.runId : proj.lastRunId, generationLogs: _.clone(currentLogs), updatedAt: new Date().toISOString() };
         currentProject = finalProj;
         setActiveCreatedProject(finalProj);
-        await onUpdateProject(finalProj, true);
+        const persistedProject = await onUpdateProject(finalProj, true);
+        if (persistedProject) {
+          currentProject = persistedProject;
+          setActiveCreatedProject(persistedProject);
+        }
       };
 
       await syncProject(newProj);
@@ -687,10 +692,13 @@ export function useAutoVideoPipeline(
 
       const cachedOpening = _.first(smartSplitSentences(realScript)) || realScript;
       const cachedNarrationIsOffTopic = isScriptCached && !isHookTopicallyGrounded(cachedOpening, config.scriptContent);
-      if (cachedNarrationIsOffTopic) {
+      const cachedNarrationLanguageInvalid = isScriptCached
+        && !validateChapterLanguage(realScript, _.isEqual(config.language, ProjectLanguage.VI)).valid;
+      if (cachedNarrationIsOffTopic || cachedNarrationLanguageInvalid) {
         isScriptCached = false;
         isStoryboardCached = false;
         shouldRegenerateSceneAssets = true;
+        config.forceRegenerateVoice = true;
         realScript = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
         realScenes = [];
       }
@@ -710,6 +718,9 @@ export function useAutoVideoPipeline(
         throwIfCancelled();
         if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
           throw new Error(scriptRes.error || scriptRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_SCRIPT_REWRITE);
+        }
+        if (_.isEqual(scriptRes.data.scriptQa?.passed, false)) {
+          appendLog(REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED);
         }
 
         realScript = scriptRes.data.rewrittenScript || config.scriptContent;
@@ -1038,7 +1049,8 @@ export function useAutoVideoPipeline(
         };
       }
 
-      const hasCachedAlignment = config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !didRepairRepeatedNarration && hasCompleteSceneAlignment(realScenes as StoryboardScene[]);
+      const hasGlobalNarration = !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl);
+      const hasCachedAlignment = config.resumeMode && isScriptCached && !config.forceRegenerateVoice && !didRepairRepeatedNarration && hasCompleteSceneAlignment(realScenes as StoryboardScene[], hasGlobalNarration);
       let alignmentCompleted = hasCachedAlignment;
       const alignmentRequest = globalAudioBase64 && !hasCachedAlignment
         ? (() => {
@@ -1058,6 +1070,7 @@ export function useAutoVideoPipeline(
         try {
           const alignmentResult = await alignmentRequest;
           realScenes = alignmentResult.scenes;
+          realScenes = removeRedundantSceneAudioBase64(realScenes, hasGlobalNarration);
           voiceUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
           await syncProject(voiceUpdatedProj);
           alignmentCompleted = true;
@@ -1269,7 +1282,11 @@ export function useAutoVideoPipeline(
         (scene) => _.isEqual(scene.assetType, GenerateType.Video) && hasSceneAsset(scene),
       ));
       const remainingVideoSlots = _.max([_.subtract(_.defaultTo(executionVisualConfig.maxVideoScenes, SecurityConstants.ZERO), existingVideoCount), SecurityConstants.ZERO])!;
-      const videoSceneIds = await selectVideoSceneIds(targetScenesToGen, executionVisualConfig.generateType, remainingVideoSlots);
+      const videoSceneIds = await selectVideoSceneIds(
+        _.filter(targetScenesToGen, scene => !_.isEqual(scene.assetStrategy, "archival")),
+        executionVisualConfig.generateType,
+        remainingVideoSlots,
+      );
 
       let unifiedBatchThumbnails: ThumbnailItem[] | null = null;
       let unifiedThumbnailItems: Array<{
@@ -1320,6 +1337,9 @@ export function useAutoVideoPipeline(
         }
       }
 
+      realScenes = removeRedundantSceneAudioBase64(realScenes, hasGlobalNarration);
+      voiceUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
+
       if (config.resumeMode && !shouldRegenerateSceneAssets) {
         (realScenes as VideoProject["storyboard"])!.forEach((sc, idx) => {
           if (hasSceneAsset(sc)) {
@@ -1368,11 +1388,34 @@ export function useAutoVideoPipeline(
       };
 
       if (!_.isEmpty(targetScenesToGen) || !_.isEmpty(unifiedThumbnailItems)) {
-        const runSequentialGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
-          for (let i = 0; i < scenesToProcess.length; i++) {
+        for (const archivalScene of _.filter(targetScenesToGen, scene => _.isEqual(scene.assetStrategy, "archival") && !hasSceneAsset(scene))) {
+          throwIfCancelled();
+          const archivalResult = await safeSystemFetch(API_ROUTES.PIPELINE_SEARCH_ARCHIVAL_IMAGE, {
+            query: archivalScene.archivalSearchQuery,
+            chromeHeadless: config.chromeHeadless,
+          }, requestSignal);
+          const archivalData = archivalResult.data;
+          if (archivalResult.success && archivalData?.success && archivalData?.base64) {
+            const mimeType = _.toString(archivalData.mimeType || "image/jpeg");
+            const dataUrl = `data:${mimeType};base64,${archivalData.base64}`;
+            archivalScene.assetUrl = dataUrl;
+            archivalScene.assetUrls = [dataUrl];
+            archivalScene.assetType = GenerateType.Image;
+            archivalScene.assetStatus = SceneAssetStatus.Generated;
+            archivalScene.archivalSourceUrl = _.toString(archivalData.sourceUrl);
+            archivalScene.archivalLicense = _.toString(archivalData.license);
+            appendAssetRevision(archivalScene, dataUrl, SceneAssetStatus.Generated);
+            await persistImageCheckpoint();
+          } else {
+            archivalScene.assetStrategy = "ai_generated";
+            appendLog(`Không tìm thấy tư liệu phù hợp cho ${archivalScene.id}; chuyển riêng cảnh này sang ảnh AI.`);
+          }
+        }
+        const remainingTargetScenes = _.filter(targetScenesToGen, scene => !hasSceneAsset(scene));
+        const runSceneGeneration = async (scenesToProcess: StoryboardScene[], isFallback = false): Promise<void> => {
+          const generateScene = async (sc: StoryboardScene, i: number): Promise<void> => {
             throwIfCancelled();
-            const sc = scenesToProcess[i];
-            if (hasSceneAsset(sc)) continue;
+            if (hasSceneAsset(sc)) return;
 
             const requestContext = createSceneRequestContext(sc);
             sc.generationPrompt = requestContext.prompt;
@@ -1463,12 +1506,15 @@ export function useAutoVideoPipeline(
                 appendLog(AUTO_GENERATOR_CONSTANTS.API_GEN_FALLBACK_WARN.replace(SecurityConstants.PLACEHOLDER_0, String(i + 1)));
               }
             }
+          };
+          for (let i = 0; i < scenesToProcess.length; i++) {
+            await generateScene(scenesToProcess[i], i);
           }
         };
 
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
-          const sceneBatchItems = _.map(targetScenesToGen, (scene) => {
+          const sceneBatchItems = _.map(remainingTargetScenes, (scene) => {
             const requestContext = createSceneRequestContext(scene);
             scene.generationPrompt = requestContext.prompt;
             return {
@@ -1504,10 +1550,50 @@ export function useAutoVideoPipeline(
               appendAssetRevision(scene!, imageUrl, SceneAssetStatus.Generated);
               scene!.assetError = undefined;
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
-              const totalScenes = _.size(targetScenesToGen);
+              const totalScenes = _.size(remainingTargetScenes);
               appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
               void persistImageCheckpoint();
             }
+          };
+
+          const runThreeTabFallback = async (missingScenes: StoryboardScene[]): Promise<void> => {
+            const fallbackItems = _.map(missingScenes, scene => {
+              const requestContext = createSceneRequestContext(scene);
+              scene.generationPrompt = requestContext.prompt;
+              return {
+                sceneId: scene.id,
+                idempotencyKey: _.join([voiceUpdatedProj.id, scene.id, scene.dependencyHash, "fallback"], ":"),
+                prompt: requestContext.prompt,
+                referenceImages: requestContext.referenceImages,
+                continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
+                generateType: GenerateType.Image,
+              };
+            });
+            let fallbackCompleted = 0;
+            await generateProjectImages({
+              items: fallbackItems,
+              visualConfig: {
+                ...visualConfigPayload,
+                generateType: GenerateType.Image,
+                batchTabCount: PROJECT_IMAGE_FALLBACK_CONFIG.TAB_CONCURRENCY,
+              },
+              style: currentStylePreset,
+              sandboxConfig: sandboxConfigPayload,
+              cancelRef: cancellationRef,
+              onBatchResult: result => {
+                if (result.success) {
+                  fallbackCompleted = _.add(fallbackCompleted, 1);
+                  appendLog(T.logFallbackProgress(fallbackCompleted, fallbackItems.length));
+                  applyResult(result);
+                  return;
+                }
+                const failedScene = _.find(missingScenes, { id: result.sceneId });
+                if (failedScene && !hasSceneAsset(failedScene)) {
+                  failedScene.assetStatus = SceneAssetStatus.Failed;
+                  failedScene.assetError = result.warning || REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
+                }
+              },
+            });
           };
 
           try {
@@ -1538,10 +1624,10 @@ export function useAutoVideoPipeline(
             }
             appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems)));
 
-            const missingScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
+            const missingScenes = _.filter(remainingTargetScenes, (scene) => !hasSceneAsset(scene));
             if (!_.isEmpty(missingScenes) && !cancellationRef.current) {
-              appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(targetScenesToGen), "chuyển sang tạo dự phòng tuần tự"));
-              await runSequentialGeneration(missingScenes, true);
+              appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(remainingTargetScenes), T.fallbackThreeTabsReason));
+              await runThreeTabFallback(missingScenes);
             }
           } catch (generationError) {
             if (cancellationRef.current) throw generationError;
@@ -1549,15 +1635,15 @@ export function useAutoVideoPipeline(
               ? generationError.message
               : REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
             appendLog(T.logBatchStreamErrorFallback(failureReason));
-            const missingScenes = _.filter(targetScenesToGen, (scene) => !hasSceneAsset(scene));
+            const missingScenes = _.filter(remainingTargetScenes, (scene) => !hasSceneAsset(scene));
             if (!_.isEmpty(missingScenes)) {
-              await runSequentialGeneration(missingScenes, true);
+              await runThreeTabFallback(missingScenes);
             }
           } finally {
             await imageCheckpointQueue;
           }
         } else {
-          await runSequentialGeneration(targetScenesToGen, false);
+          await runSceneGeneration(remainingTargetScenes, false);
         }
       }
       const technicallyValidScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene));

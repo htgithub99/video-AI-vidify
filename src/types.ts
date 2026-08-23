@@ -479,6 +479,8 @@ export interface StoryboardScene {
   startTime: string;
   endTime: string;
   duration: number;
+  _start?: number;
+  _end?: number;
   script: string;
   subtitle: string;
   subtitleCues?: SubtitleCue[];
@@ -526,6 +528,11 @@ export interface StoryboardScene {
   lighting?: string;
   callbackId?: string;
   textOverlay?: string;
+  assetStrategy?: "archival" | "ai_generated";
+  archivalSearchQuery?: string;
+  archivalRationale?: string;
+  archivalSourceUrl?: string;
+  archivalLicense?: string;
 }
 
 export interface SubtitleCue {

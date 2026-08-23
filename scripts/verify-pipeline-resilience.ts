@@ -6,6 +6,9 @@ import { createAudioCueSheet } from "../src/services/soundDesignService.ts";
 import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes } from "../src/services/scriptContinuityService.ts";
 import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerationService.ts";
 import { createSceneSubtitleCues } from "../src/services/subtitleService.ts";
+import { appendAssetRevision } from "../src/services/dependencyHashService.ts";
+import { removeRedundantSceneAudioBase64 } from "../src/services/voiceTimelineService.ts";
+import { hasCompleteSceneAlignment } from "../src/hooks/autoVideoPipelineUtils.ts";
 import fs from "node:fs";
 
 const values = new Map<string, string>();
@@ -28,6 +31,7 @@ const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
 
+
 const sourceHookText = "A real opening sentence from the supplied script.";
 const fallbackHooks = resolveUsableHooks([], "Auto", 3, sourceHookText);
 assert(fallbackHooks.length === 1 && fallbackHooks[0].content === sourceHookText, "source hook fallback changed the supplied content");
@@ -36,11 +40,24 @@ const groundedHooks = resolveUsableHooks([
   { id: "right", content: "Bạn tưởng gái ngành chỉ cần biết cười, nhưng hóa đơn ở đây luôn biết cách cười trước.", type: "contrast" },
 ], "Auto", 3, "Tại sao thật tệ khi là Gái Ngành?");
 assert(groundedHooks.length === 1 && groundedHooks[0].id === "right", "off-topic occupation hook passed topic grounding");
+const invalidVietnameseHooks = resolveUsableHooks([
+  { id: "missing_tones", content: "Ban tuong minh da thoat, nhung cai bay moi chi vua dong cua.", type: "contrast" },
+], "Auto", 3, "Bạn tưởng mình đã thoát khỏi cái bẫy.", true);
+assert(invalidVietnameseHooks.length === 1 && invalidVietnameseHooks[0].id !== "missing_tones", "unaccented Vietnamese hook entered the script");
 const first = acquirePipelineRunLease("project_1");
 const duplicate = acquirePipelineRunLease("project_1");
 assert(first.acquired && !duplicate.acquired, "duplicate pipeline run was accepted");
 releasePipelineRunLease(first);
 assert(acquirePipelineRunLease("project_1").acquired, "pipeline lease was not released");
+const stringOnlyTimeline = [{ id: "sc_1", startTime: "00:00", endTime: "00:03", duration: 3, audioBase64: "large-clip" }] as any;
+assert(!hasCompleteSceneAlignment(stringOnlyTimeline, true), "estimated string timeline was mistaken for backend voice alignment");
+const alignedScenes = [{ id: "sc_1", startTime: "00:00", endTime: "00:03", _start: 0, _end: 3, duration: 3, audioBase64: "large-clip" }] as any;
+const compactAlignedScenes = removeRedundantSceneAudioBase64(alignedScenes, true);
+assert(!compactAlignedScenes[0].audioBase64, "redundant aligned scene audio remained in the project checkpoint");
+assert(hasCompleteSceneAlignment(compactAlignedScenes, true), "global narration did not preserve reusable scene timing");
+const revisionScene = { id: "sc_revision", prompt: "prompt", assetRevisions: [] } as any;
+const embeddedRevision = appendAssetRevision(revisionScene, "data:image/jpeg;base64,AAAA", "generated" as any);
+assert(embeddedRevision.assetUrl === "", "embedded media leaked into asset revision history");
 const repeatedOpening = "Bạn nghĩ làm kỹ sư nữ là ngôi sao? Thực tế: mỗi buổi họp là một trận chiến giấu nụ cười. Bạn nghĩ làm kỹ sư nữ là ngôi sao và mỗi buổi họp là một trận chiến giấu nụ cười. Nội dung mới bắt đầu ở đây.";
 const repairedOpening = removeAdjacentRepeatedNarrationSentences(repeatedOpening);
 assert(!repairedOpening.includes("ngôi sao và mỗi buổi họp"), "cumulative hook restatement remained in narration");
@@ -96,7 +113,7 @@ const editScenes = applyProfessionalEditingPolicy([
   landscapeSpecs: "",
   lightingMood: "no shading",
 });
-assert(editScenes[0].effects === "" && editScenes[0].lightingEffect === "natural_light" && editScenes[0].cameraMotion === "Zoom Out", "flat-style comfort policy failed");
+assert(editScenes[0].effects === "" && editScenes[0].lightingEffect === "natural_light" && editScenes[0].cameraMotion === "static", "flat-style comfort policy failed");
 assert(editScenes[1].transition === "fade_black" && editScenes[2].transition === "cut", "chapter transition policy failed");
 const comfortScenes = applyProfessionalEditingPolicy([
   { id: "c1", chapterId: "c1", duration: 1.8, effects: "glitch", lightingEffect: "strobe", transition: "whip_left", cameraMotion: "handheld_soft", shotPurpose: "action" },
@@ -104,6 +121,15 @@ const comfortScenes = applyProfessionalEditingPolicy([
 ] as any, { visualStyle: "cinematic live action" } as any);
 assert(comfortScenes[0].cameraMotion === "static" && comfortScenes[0].effects === "" && comfortScenes[0].lightingEffect === "natural_light", "short-scene comfort policy failed");
 assert(comfortScenes[1].effects === "" && comfortScenes[1].lightingEffect === "natural_light" && comfortScenes[1].transition === "cut", "disruptive effect guard failed");
+assert(comfortScenes.every(scene => scene.cameraMotion === "static"), "short or uncomfortable motion must be neutralized");
+const gentleMotionScenes = applyProfessionalEditingPolicy([
+  { id: "g1", chapterId: "c1", duration: 5, cameraMotion: "static" },
+  { id: "g2", chapterId: "c1", duration: 5, cameraMotion: "Pan Right" },
+  { id: "g3", chapterId: "c1", duration: 5, cameraMotion: "shaky handheld" },
+  { id: "g4", chapterId: "c1", duration: 5, cameraMotion: "Zoom Out" },
+] as any, { visualStyle: "cinematic live action" } as any);
+assert(gentleMotionScenes[1].cameraMotion === "Pan Right", "gentle pan should remain available");
+assert(gentleMotionScenes[2].cameraMotion === "static", "shake and handheld motion must be removed");
 const cueSheet = createAudioCueSheet([
   { id: "s1", duration: 5, script: "A character waits", prompt: "one character portrait" },
 ] as any);
