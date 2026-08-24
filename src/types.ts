@@ -761,6 +761,8 @@ export interface PipelineRolloutConfig {
   releaseChannel: "stable" | "canary";
   canaryEnabled: boolean;
   shadowMode: boolean;
+  qaMode: "advisory";
+  maxEditorialRepairAttempts: 1;
   flags: {
     creativeBrief: boolean;
     scriptQa: boolean;

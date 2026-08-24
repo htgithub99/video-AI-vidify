@@ -101,10 +101,10 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
                         ? _.map(items, (t) => `#${t.replace(/^#+/, REFACTOR_CONSTANTS.VD_EMPTY_STRING)}`).join(" ")
                         : items.join(", ");
                       navigator.clipboard.writeText(textToCopy);
-                      toast.success(`Đã sao chép ${label.toLowerCase()}!`);
+                      toast.success(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TAGS);
                     }}
                     className="text-slate-500 hover:text-slate-100 p-1 rounded hover:bg-slate-900 shrink-0 h-auto"
-                    title={`Copy ${label}`}
+                    title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TAGS_TOOLTIP}
                   >
                     <Copy className="w-3.5 h-3.5" />
                   </Button>

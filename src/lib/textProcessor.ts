@@ -78,14 +78,8 @@ export const smartSplitSentences = (text: string): string[] => {
 
     if (_.includes(boundaries, char)) {
       if (_.eq(char, ".")) {
-        if (
-          _.gt(i, 0) &&
-          _.lt(i, _.subtract(text.length, 1)) &&
-          DIGIT_REGEX.test(text[i - 1]) &&
-          DIGIT_REGEX.test(text[i + 1])
-        ) {
-          continue;
-        }
+        const isDecimalNumber = _.gt(i, 0) && _.lt(i, _.subtract(text.length, 1)) && DIGIT_REGEX.test(text[i - 1]) && DIGIT_REGEX.test(text[i + 1]);
+        if (isDecimalNumber) continue;
 
         const lastWordMatch = currentSentence.slice(0, -1).match(LAST_WORD_IN_SENTENCE_REGEX);
         if (!_.isNil(lastWordMatch)) {

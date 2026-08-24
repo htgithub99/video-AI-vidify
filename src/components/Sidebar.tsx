@@ -186,7 +186,7 @@ export default function Sidebar({
           size="xs"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="w-full py-2 hover:bg-slate-850 flex items-center justify-center text-slate-400 hover:text-slate-200 shadow-none"
-          title={isCollapsed ? "Mở rộng" : "Thu gọn"}
+          title={isCollapsed ? (SIDEBAR_TEXTS[currentLang as keyof typeof SIDEBAR_TEXTS] || SIDEBAR_TEXTS.vi).EXPAND : (SIDEBAR_TEXTS[currentLang as keyof typeof SIDEBAR_TEXTS] || SIDEBAR_TEXTS.vi).COLLAPSE}
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </Button>

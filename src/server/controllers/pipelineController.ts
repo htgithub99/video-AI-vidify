@@ -23,6 +23,7 @@ import { hasValidImages } from "../services/imageAssetService.js";
 import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
+import { createGenreEditorialDirective } from "../../services/genreEditorialBlueprintService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
 import {
@@ -1125,7 +1126,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
 
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
-    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${contentControlDirective}`;
+    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${contentControlDirective}`;
 
     let groundedResearchResponse: any = null;
     if (config.factCheck) {
@@ -1669,6 +1670,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       GENRE_VISUAL_GUIDELINES[genre as VideoGenre] ||
       `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
 - Maintain context consistency and ensure the image details align with a ${genre} theme.`;
+    genreVisualGuideline = `${genreVisualGuideline}\n${createGenreEditorialDirective(genre)}`;
 
     const storyboardLogger = new StepLogger();
     const storyboardLogs = storyboardLogger.getLogs();
@@ -2110,6 +2112,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       _.isEmpty(thumbnailCharacters) ? "" : jsonUtils.safeStringify(thumbnailCharacters),
       config.genre || "",
       config.writingStyle || "",
+      createGenreEditorialDirective(config.genre || ""),
     );
 
     const thumbParts: any[] = [];

@@ -966,6 +966,7 @@ export const getThumbnailLayoutPrompt = (
   charactersJson: string = "",
   genre: string = "",
   writingStyle: string = "",
+  editorialBlueprint: string = "",
 ): string => `You are a senior YouTube thumbnail art director and CTR strategist.
 Analyze the script and create EXACTLY ${thumbnailCount} distinct ${aspectRatio} thumbnail concepts. Select each layout because it fits the story, not merely to force variety.
 
@@ -978,6 +979,7 @@ ${refImageStr || "Use one coherent visual style and one character type for every
 [USER CONFIGURATION]
 - Video genre: ${genre || "Infer the exact genre from the script"}
 - Narrative/editorial style: ${writingStyle || "Infer the most fitting editorial treatment from the script"}
+${editorialBlueprint}
 - Background mode: ${backgroundMode}
 - Background requirement: ${backgroundDirective || "Choose the background naturally from the content and composition."}
 - Text mode: ${textMode}

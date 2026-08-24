@@ -98,6 +98,7 @@ export const BACKEND_MESSAGES_LOCALIZED = {
     GEMINI_CHAT_RELOAD_FAILED: "Làm mới trang gặp sự cố.",
     GEMINI_CHAT_ATTEMPT_FAILED: "Lỗi tại lần thử {0} của phiên {1}.",
     GEMINI_CHAT_FAILED_COMPLETELY: "Quá trình tạo ảnh chưa hoàn tất.",
+    ASPECT_RATIO_DIFFERENCE_LOG: "Ảnh đã tạo có tỉ lệ hơi khác ({0}), vẫn chấp nhận sử dụng.",
     GEMINI_CHAT_FALLBACK_WARNING: "Tạo ảnh chính chưa thành công. Hệ thống đang tự động dùng phương án dự phòng.",
     GEMINI_CHAT_CONFIG_MODEL: "Đang cấu hình mô hình tạo ảnh...",
     GEMINI_CHAT_CURRENT_MODEL: "Mô hình hiện tại: {0}",

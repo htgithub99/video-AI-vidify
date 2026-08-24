@@ -254,11 +254,8 @@ export const drawSceneFrameToContext = (
 
   ctx.restore();
 
-  if (
-    !_.isNil(transitionProgress) &&
-    transitionProgress > 0 &&
-    !_.isNil(nextImgElement)
-  ) {
+  const shouldRenderTransition = !_.isNil(transitionProgress) && transitionProgress > 0 && !_.isNil(nextImgElement);
+  if (shouldRenderTransition) {
     const fadeAlpha = easeCubicInOut(transitionProgress);
     ctx.save();
     ctx.globalAlpha = fadeAlpha;

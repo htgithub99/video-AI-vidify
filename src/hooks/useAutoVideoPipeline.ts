@@ -66,7 +66,7 @@ import {
   type ProjectImageResult,
 } from "../services/projectImageGenerationService";
 import { resolveVisualConfig } from "../services/autoVideoConfigResolver";
-import { DEFAULT_VOICE_ARC, evaluateEdit, evaluateSubtitles } from "../services/productionQualityService";
+import { evaluateEdit, evaluateSubtitles, resolveGenreVoiceArc } from "../services/productionQualityService";
 import { appendAssetRevision, createSceneDependencyHash, inheritApprovedSceneAsset } from "../services/dependencyHashService";
 import { createManualReviewItems, evaluateFinalQuality } from "../services/finalQualityService";
 import { migrateVideoProject } from "../services/projectMigrationService";
@@ -964,7 +964,7 @@ export function useAutoVideoPipeline(
         appendLog(T.logStoryboardResultDetail(_.size(realScenes)));
         setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.STORYBOARD_DONE);
 
-        const audioCueSheet = applyOptionalMusicAsset(createAudioCueSheet(realScenes), config.musicAssetUrl);
+        const audioCueSheet = applyOptionalMusicAsset(createAudioCueSheet(realScenes, config.genre), config.musicAssetUrl);
         const storyboardUpdatedProj = { ...newProj, scriptRewritten: realScript, factCheckNotes, chapters, storyboard: realScenes as VideoProject["storyboard"], visualBible, storyboardQa, audioCueSheet };
         await syncProject(storyboardUpdatedProj);
         newProj = storyboardUpdatedProj;
@@ -999,9 +999,10 @@ export function useAutoVideoPipeline(
         age: AgeGroup.Adult,
         emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL,
       };
+      const genreVoiceArc = resolveGenreVoiceArc(config.genre);
       const generatePipelineVoice = () => generateDirectedVoice({
         text: realScript,
-        voiceArc: DEFAULT_VOICE_ARC,
+        voiceArc: genreVoiceArc,
         basePayload: voicePayload,
         signal: requestSignal,
       });
@@ -1042,7 +1043,7 @@ export function useAutoVideoPipeline(
             provider: directedVoice.provider || config.voiceProvider,
             audioBase64: globalAudioBase64,
             audioUrl: globalAudioUrl,
-            voiceArc: DEFAULT_VOICE_ARC,
+            voiceArc: genreVoiceArc,
           } as VoiceConfig,
         };
         await syncProject(voiceUpdatedProj);
@@ -1916,7 +1917,7 @@ export function useAutoVideoPipeline(
 
       slicedUpdatedProj = {
         ...slicedUpdatedProj,
-        audioCueSheet: applyOptionalMusicAsset(createAudioCueSheet(realScenes), config.musicAssetUrl),
+        audioCueSheet: applyOptionalMusicAsset(createAudioCueSheet(realScenes, config.genre), config.musicAssetUrl),
       };
 
       realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
@@ -1932,7 +1933,7 @@ export function useAutoVideoPipeline(
           audioBase64: globalAudioBase64,
           audioUrl: globalAudioUrl,
           provider: voiceQualityResult.provider,
-          voiceArc: DEFAULT_VOICE_ARC,
+          voiceArc: genreVoiceArc,
           audioQa: voiceQualityResult.quality,
         },
       };

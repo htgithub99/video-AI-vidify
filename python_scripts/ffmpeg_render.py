@@ -334,6 +334,12 @@ def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
         "light_warm": (130.81, 196.0, 261.63, 0.24),
         "reflective_ambient": (73.42, 110.0, 146.83, 0.12),
         "documentary_editorial": (82.41, 123.47, 164.81, 0.18),
+        "curious_explainer": (98.0, 146.83, 220.0, 0.26),
+        "forensic_restraint": (55.0, 73.42, 110.0, 0.10),
+        "clean_review": (110.0, 164.81, 246.94, 0.22),
+        "countdown_momentum": (123.47, 185.0, 246.94, 0.42),
+        "human_story_arc": (73.42, 123.47, 196.0, 0.14),
+        "world_discovery": (65.41, 98.0, 196.0, 0.20),
     }
     frequencies = profiles.get(profile, profiles["documentary_editorial"])
     output_path = os.path.join(temp_dir, "automatic_music_bed.wav")
@@ -380,7 +386,8 @@ def create_automatic_accent_track(ffmpeg_cmd, temp_dir, scenes, profile):
     accent_times = accent_times[:6]
     if not accent_times:
         return None
-    base_frequency = 520 if profile in ("satirical_editorial", "light_warm") else 95
+    bright_profiles = ("satirical_editorial", "light_warm", "clean_review", "countdown_momentum", "curious_explainer")
+    base_frequency = 520 if profile in bright_profiles else 95
     output_path = os.path.join(temp_dir, "automatic_accent_track.wav")
     command = [ffmpeg_cmd, "-y"]
     for index, _ in enumerate(accent_times):

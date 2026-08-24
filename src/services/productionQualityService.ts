@@ -2,6 +2,7 @@ import _ from "lodash";
 import { AssetAcceptance, AudioQualityReport, EditorQualityReport, SceneAssetStatus, StoryboardScene, SubtitleQualityReport, ThumbnailQualityReport, VoiceArc } from "../types.js";
 import { SceneVisualQuality } from "./sceneVisualQualityService.js";
 import { FLEXIBLE_DURATION_CONFIG } from "../constants/config.js";
+import { resolveGenreEditorialBlueprint } from "./genreEditorialBlueprintService.js";
 
 export const DEFAULT_VOICE_ARC: VoiceArc = {
   setup: { emotion: "restrained_unease", speed: 0.94, pauseScale: 1.15 },
@@ -10,6 +11,31 @@ export const DEFAULT_VOICE_ARC: VoiceArc = {
   climax: { emotion: "urgent_controlled", speed: 1.02, pauseScale: 0.9 },
   reckoning: { emotion: "quiet_remorse", speed: 0.91, pauseScale: 1.3 },
   resolution: { emotion: "warm_conviction", speed: 0.96, pauseScale: 1.1 },
+};
+
+const INFORMATIONAL_VOICE_ARC: VoiceArc = {
+  setup: { emotion: "curious_clear", speed: 0.98, pauseScale: 1.05 },
+  descent: { emotion: "focused_explanatory", speed: 1, pauseScale: 1 },
+  isolation: { emotion: "measured_detail", speed: 0.96, pauseScale: 1.1 },
+  climax: { emotion: "confident_reveal", speed: 1.01, pauseScale: 0.95 },
+  reckoning: { emotion: "balanced_assessment", speed: 0.97, pauseScale: 1.08 },
+  resolution: { emotion: "clear_conclusion", speed: 0.98, pauseScale: 1.05 },
+};
+
+const RESTRAINED_INVESTIGATION_VOICE_ARC: VoiceArc = {
+  setup: { emotion: "calm_forensic", speed: 0.93, pauseScale: 1.18 },
+  descent: { emotion: "controlled_inquiry", speed: 0.96, pauseScale: 1.08 },
+  isolation: { emotion: "compassionate_restraint", speed: 0.9, pauseScale: 1.25 },
+  climax: { emotion: "precise_evidence_reveal", speed: 0.97, pauseScale: 1.02 },
+  reckoning: { emotion: "careful_uncertainty", speed: 0.91, pauseScale: 1.25 },
+  resolution: { emotion: "measured_closure", speed: 0.93, pauseScale: 1.16 },
+};
+
+export const resolveGenreVoiceArc = (genre: string = ""): VoiceArc => {
+  const blueprintId = resolveGenreEditorialBlueprint(genre).id;
+  if (_.includes(["causal_explainer", "review_comparison", "ranked_list", "world_lore"], blueprintId)) return INFORMATIONAL_VOICE_ARC;
+  if (_.includes(["investigation", "evidence_documentary", "reflective_analysis"], blueprintId)) return RESTRAINED_INVESTIGATION_VOICE_ARC;
+  return DEFAULT_VOICE_ARC;
 };
 
 export const PRODUCTION_QA_THRESHOLDS = {

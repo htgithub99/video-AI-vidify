@@ -1074,7 +1074,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           }
           const isAspectRatioMismatch = base64Result && !_.isEqual(visualConfig.generateType, GenerateType.Video) && !isImageAspectRatioCompatible(base64Result, visualConfig.aspectRatio);
           if (isAspectRatioMismatch) {
-            appLog(`[GeminiChat] Ảnh đã tạo có tỉ lệ hơi khác (${visualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`);
+            appLog(`[GeminiChat] ${BACKEND_MESSAGES.ASPECT_RATIO_DIFFERENCE_LOG.replace("{0}", visualConfig.aspectRatio || "16:9")}`);
           }
           if (!base64Result) {
             throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
@@ -1503,7 +1503,7 @@ export async function generateBatchImagesWithGeminiChat(
               const isBatchAspectRatioMismatch = base64Result && !_.isEqual(itemVisualConfig.generateType, GenerateType.Video) && !isImageAspectRatioCompatible(base64Result, itemVisualConfig.aspectRatio);
               if (isBatchAspectRatioMismatch) {
                 appLog(
-                  `[GeminiChat Batch] Ảnh đã tạo cho scene ${item.sceneId} có tỉ lệ hơi khác (${itemVisualConfig.aspectRatio || "16:9"}), vẫn chấp nhận sử dụng.`,
+                  `[GeminiChat Batch] Scene ${item.sceneId}: ${BACKEND_MESSAGES.ASPECT_RATIO_DIFFERENCE_LOG.replace("{0}", itemVisualConfig.aspectRatio || "16:9")}`,
                 );
               }
               if (!base64Result) {
@@ -2415,10 +2415,8 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
           });
           if (response.ok()) {
             const buffer = await response.body();
-            if (
-              _.gt(buffer.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH) &&
-              isDownloadedVideoBuffer(buffer)
-            ) {
+            const isValidVideoBuffer = _.gt(buffer.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH) && isDownloadedVideoBuffer(buffer);
+            if (isValidVideoBuffer) {
               await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.VIDEO_SUCCESS);
               return buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
             }

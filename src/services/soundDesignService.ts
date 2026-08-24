@@ -1,20 +1,19 @@
 import _ from "lodash";
 import { AudioCue, AudioCueSheet, AudioCueStatus, AudioCueType, StoryboardScene } from "../types";
 import { SOUND_DESIGN_CONFIG } from "../constants/config";
+import { resolveGenreEditorialBlueprint } from "./genreEditorialBlueprintService";
 
 export const resolveAutomaticMusicProfile = (genre: string = ""): string => {
-  const normalized = _.deburr(_.toLower(genre));
-  if (/satir|cham biem|comedy|hai huoc|career|darkside/.test(normalized)) return "satirical_editorial";
-  if (/action|sport|gaming|kinh di|horror|mystery/.test(normalized)) return "tension_pulse";
-  if (/children|kid|thieu nhi|family|travel|food/.test(normalized)) return "light_warm";
-  if (/meditat|sleep|healing|tam ly|reflect|tragedy/.test(normalized)) return "reflective_ambient";
+  const resolved = resolveGenreEditorialBlueprint(genre).musicProfile;
+  if (!_.isEmpty(resolved)) return resolved;
   return "documentary_editorial";
 };
 
 const visibleActionText = (scene: StoryboardScene): string => _.toString(scene.visibleAction);
 
-export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet => {
+export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = ""): AudioCueSheet => {
   const cues: AudioCue[] = [];
+  const editorialBlueprint = resolveGenreEditorialBlueprint(genre);
   const totalDuration = _.sumBy(scenes, scene => scene.duration);
   let sceneStartSeconds = 0;
   let lastTransitionSfxIndex = -4;
@@ -22,8 +21,8 @@ export const createAudioCueSheet = (scenes: StoryboardScene[]): AudioCueSheet =>
     id: SOUND_DESIGN_CONFIG.MAIN_MUSIC_CUE_ID,
     sceneId: _.get(_.first(scenes), "id", SOUND_DESIGN_CONFIG.TIMELINE_SCENE_ID),
     type: AudioCueType.Music,
-    description: SOUND_DESIGN_CONFIG.MUSIC_DESCRIPTION,
-    emotionalIntent: SOUND_DESIGN_CONFIG.MUSIC_INTENT,
+    description: `${SOUND_DESIGN_CONFIG.MUSIC_DESCRIPTION}; ${editorialBlueprint.audioDirection}`,
+    emotionalIntent: `${SOUND_DESIGN_CONFIG.MUSIC_INTENT}; ${editorialBlueprint.voiceDirection}`,
     startOffsetSeconds: 0,
     durationSeconds: totalDuration,
     status: AudioCueStatus.Planned,

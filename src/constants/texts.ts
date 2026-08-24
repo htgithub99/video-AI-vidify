@@ -556,6 +556,8 @@ export const SIDEBAR_TEXTS = {
     AI_CREATOR: "Nhà Sáng Tạo AI",
     ACTIVE_PROJECT: "Dự án đang mở",
     NO_PROJECT_ACTIVE: "Chưa mở dự án",
+    EXPAND: "Mở rộng",
+    COLLAPSE: "Thu gọn",
   },
   en: {
     DASHBOARD: "Dashboard",
@@ -566,6 +568,8 @@ export const SIDEBAR_TEXTS = {
     AI_CREATOR: "AI Creator",
     ACTIVE_PROJECT: "Active Project",
     NO_PROJECT_ACTIVE: "No project active",
+    EXPAND: "Expand",
+    COLLAPSE: "Collapse",
   },
 } as const;
 
