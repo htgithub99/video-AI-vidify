@@ -1967,6 +1967,8 @@ export function useAutoVideoPipeline(
           lightingEffect: _.get(sc, "lightingEffect"),
           transition: _.get(sc, "transition"),
           shotPurpose: _.get(sc, "shotPurpose"),
+          visibleAction: _.get(sc, "visibleAction"),
+          reaction: _.get(sc, "reaction"),
         })),
         quality: config.ffmpegQuality,
         globalAudioUrl: globalAudioUrl || undefined,

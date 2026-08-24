@@ -329,17 +329,17 @@ def get_media_duration(ffmpeg_cmd, media_path):
 
 def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
     profiles = {
-        "satirical_editorial": (110.0, 164.81, 220.0, 0.38),
-        "tension_pulse": (55.0, 82.41, 110.0, 0.55),
-        "light_warm": (130.81, 196.0, 261.63, 0.24),
-        "reflective_ambient": (73.42, 110.0, 146.83, 0.12),
-        "documentary_editorial": (82.41, 123.47, 164.81, 0.18),
-        "curious_explainer": (98.0, 146.83, 220.0, 0.26),
-        "forensic_restraint": (55.0, 73.42, 110.0, 0.10),
-        "clean_review": (110.0, 164.81, 246.94, 0.22),
-        "countdown_momentum": (123.47, 185.0, 246.94, 0.42),
-        "human_story_arc": (73.42, 123.47, 196.0, 0.14),
-        "world_discovery": (65.41, 98.0, 196.0, 0.20),
+        "satirical_editorial": (110.0, 164.81, 220.0, "pink", 950),
+        "tension_pulse": (55.0, 82.41, 110.0, "brown", 520),
+        "light_warm": (130.81, 196.0, 261.63, "pink", 1300),
+        "reflective_ambient": (73.42, 110.0, 146.83, "brown", 720),
+        "documentary_editorial": (82.41, 123.47, 164.81, "pink", 820),
+        "curious_explainer": (98.0, 146.83, 220.0, "pink", 1150),
+        "forensic_restraint": (55.0, 73.42, 110.0, "brown", 430),
+        "clean_review": (110.0, 164.81, 246.94, "pink", 1250),
+        "countdown_momentum": (123.47, 185.0, 246.94, "pink", 1200),
+        "human_story_arc": (73.42, 123.47, 196.0, "brown", 760),
+        "world_discovery": (65.41, 98.0, 196.0, "brown", 680),
     }
     frequencies = profiles.get(profile, profiles["documentary_editorial"])
     output_path = os.path.join(temp_dir, "automatic_music_bed.wav")
@@ -350,11 +350,16 @@ def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
             "-f", "lavfi", "-i",
             f"sine=frequency={frequency}:sample_rate=48000:duration={duration}",
         ])
+    command.extend([
+        "-f", "lavfi", "-i",
+        f"anoisesrc=color={frequencies[3]}:amplitude=0.018:sample_rate=48000:duration={duration}",
+    ])
     filter_graph = (
-        f"[0:a][1:a][2:a]amix=inputs=3:weights='0.55 0.3 0.15':normalize=0,"
-        f"lowpass=f=1100,tremolo=f={frequencies[3]}:d=0.22,"
-        f"aecho=0.8:0.22:180|360:0.16|0.08,"
-        f"loudnorm=I=-24:TP=-6:LRA=7,"
+        f"[0:a]volume=0.018[a0];[1:a]volume=0.012[a1];[2:a]volume=0.007[a2];"
+        f"[3:a]lowpass=f={frequencies[4]},highpass=f=45,volume=0.32[texture];"
+        f"[a0][a1][a2][texture]amix=inputs=4:normalize=0,"
+        f"acompressor=threshold=0.08:ratio=2:attack=80:release=500,"
+        f"loudnorm=I=-31:TP=-9:LRA=4,"
         f"aformat=channel_layouts=stereo[music]"
     )
     command.extend([
@@ -368,42 +373,77 @@ def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
         return None
 
 def create_automatic_accent_track(ffmpeg_cmd, temp_dir, scenes, profile):
-    accent_times = [0.12]
+    accent_events = [(0.12, "impact")]
     timeline_seconds = 0.0
     last_accent_seconds = -20.0
     for scene in scenes:
         purpose = str(scene.get("shotPurpose", "")).lower()
         transition = str(scene.get("transition", "")).lower()
+        visible_action = str(scene.get("visibleAction", "")).lower()
         is_emphasis = purpose in ("reveal", "punchline", "chapter_turn", "turning_point")
         is_chapter_boundary = transition == "fade_black"
         if is_emphasis and timeline_seconds - last_accent_seconds >= 8.0:
-            accent_times.append(max(0.0, timeline_seconds + 0.08))
+            accent_events.append((max(0.0, timeline_seconds + 0.08), "impact" if purpose in ("reveal", "turning_point") else "soft"))
             last_accent_seconds = timeline_seconds
         elif is_chapter_boundary and timeline_seconds - last_accent_seconds >= 15.0:
-            accent_times.append(max(0.0, timeline_seconds + float(scene.get("duration", 0))))
+            accent_events.append((max(0.0, timeline_seconds + float(scene.get("duration", 0))), "whoosh"))
+            last_accent_seconds = timeline_seconds
+        action_type = None
+        if re.search(r"\bdoor\b|cửa", visible_action):
+            action_type = "door"
+        elif re.search(r"\bfootsteps?\b|\bwalk(?:s|ing|ed)?\b|bước chân|đi bộ", visible_action):
+            action_type = "footstep"
+        elif re.search(r"\bphone\b|điện thoại|tin nhắn", visible_action):
+            action_type = "phone"
+        elif re.search(r"\bcar\b|\bvehicle\b|xe máy|ô tô", visible_action):
+            action_type = "vehicle"
+        if action_type and timeline_seconds - last_accent_seconds >= 2.5:
+            accent_events.append((max(0.0, timeline_seconds + 0.15), action_type))
             last_accent_seconds = timeline_seconds
         timeline_seconds += float(scene.get("duration", 0))
-    accent_times = accent_times[:6]
-    if not accent_times:
+    accent_events = accent_events[:10]
+    if not accent_events:
         return None
     bright_profiles = ("satirical_editorial", "light_warm", "clean_review", "countdown_momentum", "curious_explainer")
     base_frequency = 520 if profile in bright_profiles else 95
     output_path = os.path.join(temp_dir, "automatic_accent_track.wav")
     command = [ffmpeg_cmd, "-y"]
-    for index, _ in enumerate(accent_times):
-        frequency = base_frequency * (1.0 + (index % 2) * 0.5)
-        command.extend([
-            "-f", "lavfi", "-i",
-            f"sine=frequency={frequency}:sample_rate=48000:duration=0.42",
-        ])
+    for _, event_type in accent_events:
+        if event_type == "whoosh":
+            source = "anoisesrc=color=white:amplitude=0.16:sample_rate=48000:duration=0.55"
+        elif event_type == "door":
+            source = "anoisesrc=color=brown:amplitude=0.20:sample_rate=48000:duration=0.28"
+        elif event_type == "footstep":
+            source = "anoisesrc=color=brown:amplitude=0.18:sample_rate=48000:duration=0.48"
+        elif event_type == "phone":
+            source = "sine=frequency=880:sample_rate=48000:duration=0.16"
+        elif event_type == "vehicle":
+            source = "anoisesrc=color=brown:amplitude=0.16:sample_rate=48000:duration=0.70"
+        elif event_type == "soft":
+            source = "anoisesrc=color=pink:amplitude=0.10:sample_rate=48000:duration=0.34"
+        else:
+            source = f"sine=frequency={base_frequency}:sample_rate=48000:duration=0.38"
+        command.extend(["-f", "lavfi", "-i", source])
     filters = []
     labels = []
-    for index, accent_time in enumerate(accent_times):
+    for index, (accent_time, event_type) in enumerate(accent_events):
         delay_ms = round(accent_time * 1000)
         label = f"accent{index}"
-        filters.append(
-            f"[{index}:a]afade=t=out:st=0.04:d=0.38,volume=-8dB,adelay={delay_ms}:all=1[{label}]"
-        )
+        if event_type == "whoosh":
+            treatment = "highpass=f=180,lowpass=f=5500,afade=t=in:st=0:d=0.22,afade=t=out:st=0.28:d=0.27,volume=-15dB"
+        elif event_type == "door":
+            treatment = "highpass=f=70,lowpass=f=950,afade=t=out:st=0.03:d=0.24,volume=-16dB"
+        elif event_type == "footstep":
+            treatment = "highpass=f=55,lowpass=f=520,tremolo=f=4:d=0.45,afade=t=out:st=0.32:d=0.15,volume=-18dB"
+        elif event_type == "phone":
+            treatment = "highpass=f=650,lowpass=f=1800,afade=t=out:st=0.08:d=0.08,volume=-20dB"
+        elif event_type == "vehicle":
+            treatment = "highpass=f=45,lowpass=f=380,afade=t=in:st=0:d=0.18,afade=t=out:st=0.42:d=0.25,volume=-19dB"
+        elif event_type == "soft":
+            treatment = "highpass=f=120,lowpass=f=2200,afade=t=out:st=0.03:d=0.30,volume=-18dB"
+        else:
+            treatment = "lowpass=f=180,afade=t=out:st=0.02:d=0.35,volume=-16dB"
+        filters.append(f"[{index}:a]{treatment},adelay={delay_ms}:all=1[{label}]")
         labels.append(f"[{label}]")
     filters.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0,apad[accents]")
     command.extend([
@@ -1626,7 +1666,9 @@ def main():
                         "assetPath": automatic_music_path,
                         "startSeconds": 0,
                         "durationSeconds": expected_output_duration,
-                        "volumeDb": -10,
+                        # The generated bed is already normalized to -31 LUFS,
+                        # approximately 15 LU below narration; do not attenuate it twice.
+                        "volumeDb": 0,
                         "loop": False,
                         "fadeInSeconds": automatic_fade_seconds,
                         "fadeOutSeconds": automatic_fade_seconds,
