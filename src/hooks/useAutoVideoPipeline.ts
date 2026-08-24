@@ -98,7 +98,7 @@ import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { compileImagePrompt } from "../services/imagePromptCompilerService";
 import { getVisualShotPlanIssues } from "../services/visualPlanningService";
 import { resolveStylePreset } from "../constants/stylePresets";
-import { getSceneVisualRegenerationReasons, SCENE_VISUAL_QUALITY_CONFIG, shouldRegenerateSceneImage, validateSceneImage } from "../services/sceneVisualQualityService";
+import { createTechnicalQaRegenerationPrompt, getSceneVisualRegenerationReasons, SCENE_VISUAL_QUALITY_CONFIG, shouldRegenerateSceneImage, validateSceneImage } from "../services/sceneVisualQualityService";
 import { isHookTopicallyGrounded } from "../services/hookResilienceService";
 import { validateChapterLanguage } from "../services/chapterLanguageValidationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
@@ -1134,7 +1134,7 @@ export function useAutoVideoPipeline(
         await syncProject(voiceUpdatedProj);
 
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
-        const optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, {
+        const optimizePayload = {
           storyboard: realScenes,
           visualConfig: voiceUpdatedProj.visualConfig,
           visualBible: voiceUpdatedProj.visualBible,
@@ -1143,7 +1143,14 @@ export function useAutoVideoPipeline(
           genre: config.genre,
           promptPipelineVersion: IMAGE_PROMPT_PIPELINE_VERSION,
           bypassCache: true,
-        }, requestSignal);
+        };
+        let optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, optimizePayload, requestSignal);
+        if (!optimizeRes.success) {
+          appendLog(config.language === ProjectLanguage.VI
+            ? "[Biên tập hình ảnh] AI chưa trả đủ kế hoạch; đang yêu cầu viết lại toàn bộ đúng một lần."
+            : "[Visual editorial] AI did not return a complete plan; requesting one full rewrite.");
+          optimizeRes = await safeSystemFetch(API_ROUTES.PIPELINE_OPTIMIZE_PROMPTS, optimizePayload, requestSignal);
+        }
         if (optimizeRes.success && optimizeRes.data?.storyboard) {
           realScenes = optimizeRes.data.storyboard;
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
@@ -1153,7 +1160,6 @@ export function useAutoVideoPipeline(
             appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
           }
         } else {
-          if (config.forceRegenerateScenes) throw new Error(optimizeRes.error || optimizeRes.data?.error || REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
           appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
         }
       } else {
@@ -1169,7 +1175,14 @@ export function useAutoVideoPipeline(
         targetStyle: currentStylePreset,
         visualBible: voiceUpdatedProj.visualBible,
       });
+      const requestedArchivalCount = _.size(_.filter(realScenes as StoryboardScene[], { assetStrategy: "archival" }));
       realScenes = ensureMediaSourcePlan(realScenes as StoryboardScene[], config.genre);
+      const verifiedArchivalPlanCount = _.size(_.filter(realScenes as StoryboardScene[], { assetStrategy: "archival" }));
+      if (verifiedArchivalPlanCount < requestedArchivalCount) {
+        appendLog(config.language === ProjectLanguage.VI
+          ? `[Kế hoạch tư liệu] Loại ${requestedArchivalCount - verifiedArchivalPlanCount} cảnh thiếu storyEvidence hoặc truy vấn nguồn chuyên biệt; dùng AI tái dựng để tránh ảnh thật sai.`
+          : `[Archive plan] Removed ${requestedArchivalCount - verifiedArchivalPlanCount} scenes without storyEvidence or a dedicated source query; using AI reconstruction to prevent unrelated authentic media.`);
+      }
       realScenes = pruneUnsupportedSceneCharacterIds(realScenes as StoryboardScene[], voiceUpdatedProj.visualConfig.characters || []);
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
@@ -1276,7 +1289,7 @@ export function useAutoVideoPipeline(
         }
         return inheritApprovedSceneAsset(sceneWithDependency, previousScenes[scene.id]);
       });
-      const targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
+      let targetScenesToGen = _.filter(realScenes as VideoProject["storyboard"], (sc) => {
         if (config.forceRegenerateScenes) return true;
         if (config.resumeMode && !shouldRegenerateSceneAssets && hasSceneAsset(sc)) return false;
         return true;
@@ -1351,6 +1364,12 @@ export function useAutoVideoPipeline(
       }
 
       realScenes = removeRedundantSceneAudioBase64(realScenes, hasGlobalNarration);
+      // removeRedundantSceneAudioBase64 returns cloned scene objects. Rebind the
+      // generation list to those canonical storyboard objects so archival assets,
+      // batch results and completion checks all observe the same scene state.
+      targetScenesToGen = _.map(targetScenesToGen, targetScene => (
+        _.find(realScenes as StoryboardScene[], { id: targetScene.id }) || targetScene
+      ));
       voiceUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"] };
 
       if (config.resumeMode && !shouldRegenerateSceneAssets) {
@@ -1418,6 +1437,7 @@ export function useAutoVideoPipeline(
             archivalScene.archivalSourceUrl = _.toString(archivalData.sourceUrl);
             archivalScene.archivalLicense = _.toString(archivalData.license);
             appendAssetRevision(archivalScene, dataUrl, SceneAssetStatus.Generated);
+            appendLog(`Đã tải ảnh tư liệu thật cho ${archivalScene.id} từ ${_.toString(archivalData.provider || "nguồn lưu trữ")}.`);
             await persistImageCheckpoint();
           } else {
             archivalScene.assetStrategy = "ai_generated";
@@ -1659,18 +1679,48 @@ export function useAutoVideoPipeline(
         } else {
           await runSceneGeneration(remainingTargetScenes, false);
         }
+
+        // Archival sourcing is preferred, never a completion dependency. Any scene
+        // still missing after search/batch is returned once to the normal AI-image
+        // generator instead of being left outside the batch and stopping the video.
+        const unresolvedSourceScenes = _.filter(targetScenesToGen, scene => !hasSceneAsset(scene));
+        if (!_.isEmpty(unresolvedSourceScenes) && !cancellationRef.current) {
+          _.forEach(unresolvedSourceScenes, scene => {
+            scene.assetStrategy = "ai_generated";
+            scene.archivalRationale = _.trim(_.join([
+              scene.archivalRationale,
+              "Authentic source unavailable; AI reconstruction used so production can continue",
+            ], "; "));
+            scene.assetStatus = SceneAssetStatus.Generating;
+            scene.assetError = undefined;
+          });
+          appendLog(config.language === ProjectLanguage.VI
+            ? `[Tư liệu] ${unresolvedSourceScenes.length} cảnh chưa có nguồn phù hợp; chuyển sang tái dựng AI để video tiếp tục.`
+            : `[Archive] ${unresolvedSourceScenes.length} scenes have no suitable source; using AI reconstruction so production continues.`);
+          await runSceneGeneration(unresolvedSourceScenes, true);
+        }
       }
       const qaEligibleScenes = _.filter(realScenes as StoryboardScene[], scene => _.every([
         hasSceneAsset(scene),
         scene.assetType !== GenerateType.Video,
-        !_.isEqual(scene.assetStrategy, "archival"),
       ], Boolean));
       for (const scene of qaEligibleScenes) {
+        const sceneIndex = _.findIndex(realScenes, item => _.isEqual(item.id, scene.id));
+        const adjacentAssetUrls = _.compact(_.map(
+          _.slice(realScenes as StoryboardScene[], _.max([0, sceneIndex - 2]) || 0, sceneIndex),
+          item => item.assetUrl,
+        ));
         let qaCompleted = false;
         for (let regenerationAttempt = 0; regenerationAttempt <= SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS; regenerationAttempt++) {
           throwIfCancelled();
           scene.assetStatus = SceneAssetStatus.Validating;
-          const qaResult = await validateSceneImage(voiceUpdatedProj.id, scene);
+          const qaResult = await validateSceneImage(
+            voiceUpdatedProj.id,
+            scene,
+            undefined,
+            [],
+            { adjacentAssetUrls },
+          );
           if (!qaResult.success || !qaResult.quality) {
             scene.qaStatus = QaStatus.Unavailable;
             scene.acceptance = AssetAcceptance.AcceptedWithWarning;
@@ -1699,7 +1749,8 @@ export function useAutoVideoPipeline(
             break;
           }
 
-          if (regenerationAttempt >= SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS) {
+          if (regenerationAttempt >= SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS
+            && !_.isEqual(scene.assetStrategy, "archival")) {
             scene.qaStatus = QaStatus.Failed;
             scene.acceptance = AssetAcceptance.AcceptedWithWarning;
             scene.assetStatus = SceneAssetStatus.Approved;
@@ -1723,14 +1774,49 @@ export function useAutoVideoPipeline(
             ? `[QA ảnh] ${scene.id}: phát hiện ${_.join(regenerationReasons, ", ")}; tạo lại lần ${regenerationAttempt + 1}/2.`
             : `[Image QA] ${scene.id}: detected ${_.join(regenerationReasons, ", ")}; regeneration ${regenerationAttempt + 1}/2.`);
 
+          if (_.isEqual(scene.assetStrategy, "archival")) {
+            if (regenerationAttempt < SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS) {
+              const replacementResult = await safeSystemFetch(API_ROUTES.PIPELINE_SEARCH_ARCHIVAL_IMAGE, {
+                query: scene.archivalSearchQuery,
+                chromeHeadless: config.chromeHeadless,
+                excludeSourceUrls: _.compact([scene.archivalSourceUrl]),
+              }, requestSignal);
+              const replacement = replacementResult.data;
+              if (replacementResult.success && replacement?.success && replacement?.base64) {
+                const replacementMime = _.toString(replacement.mimeType || "image/jpeg");
+                const replacementUrl = `data:${replacementMime};base64,${replacement.base64}`;
+                scene.assetUrl = replacementUrl;
+                scene.assetUrls = [replacementUrl];
+                scene.archivalSourceUrl = _.toString(replacement.sourceUrl);
+                scene.archivalLicense = _.toString(replacement.license);
+                scene.assetStatus = SceneAssetStatus.Generated;
+                appendAssetRevision(scene, replacementUrl, SceneAssetStatus.Generated);
+                await persistImageCheckpoint();
+                continue;
+              }
+            }
+            scene.assetStrategy = "ai_generated";
+            scene.archivalSearchQuery = "";
+            scene.archivalRationale = _.trim(_.join([
+              scene.archivalRationale,
+              "Authentic candidates failed semantic QA; explicit AI reconstruction required",
+            ], "; "));
+            scene.archivalSourceUrl = undefined;
+            scene.archivalLicense = undefined;
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[QA tư liệu] ${scene.id}: nguồn thật không chứng minh đúng câu thoại; chuyển sang ảnh AI tái dựng.`
+              : `[Archive QA] ${scene.id}: authentic sources did not prove the narration; switching to AI reconstruction.`);
+          }
+
           const requestContext = createSceneRequestContext(scene);
+          const qaRetryPrompt = createTechnicalQaRegenerationPrompt(requestContext.prompt, regenerationReasons);
           const retryResult = await generateProjectImageOnce({
             sceneId: scene.id,
-            prompt: requestContext.prompt,
+            prompt: qaRetryPrompt,
             referenceImages: requestContext.referenceImages,
             generateType: GenerateType.Image,
           }, () => ({
-            prompt: requestContext.prompt,
+            prompt: qaRetryPrompt,
             style: currentStylePreset,
             resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
             bypassCache: true,
@@ -1829,7 +1915,9 @@ export function useAutoVideoPipeline(
       }
 
       let thumbnailsList: ThumbnailItem[] = unifiedBatchThumbnails || [];
-      let isThumbsCached = unifiedBatchThumbnails !== null;
+      let isThumbsCached = unifiedBatchThumbnails !== null
+        && !_.isEmpty(unifiedBatchThumbnails)
+        && _.every(unifiedBatchThumbnails, thumbnail => !_.isEmpty(thumbnail.imageUrl));
       let existingThumbs: ThumbnailItem[] = [];
       if (config.resumeMode && !shouldRegenerateThumbnails && !_.isEmpty(newProj.thumbnails)) {
         existingThumbs = newProj.thumbnails!;

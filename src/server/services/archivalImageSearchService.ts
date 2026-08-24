@@ -20,7 +20,25 @@ const SUPPORTED_MEDIA_PATTERN = /\.(?:jpe?g|png|webp)(?:\?|$)/i;
 const MINIMUM_IMAGE_BYTES = 20_000;
 const DOWNLOAD_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36";
 const GENERIC_SEARCH_TERMS = /\b(?:historic(?:al)?|archive|archival|photograph|photo|image|exterior|interior|real|authentic|documentary|view)\b/gi;
-const SEARCH_STOP_WORDS = new Set(["chien", "thang", "lich", "hinh", "anh", "the", "and", "with", "from", "photo", "image", "history", "historic", "view", "real"]);
+const SEARCH_STOP_WORDS = new Set([
+  "chien", "thang", "lich", "hinh", "anh", "the", "and", "with", "from", "photo", "image", "history", "historic", "view", "real",
+  "tran", "quan", "manh", "thoi", "thanh", "pho", "xay", "dung", "quyet", "dinh", "chien", "luoc", "nha", "vua", "nguoi", "viet", "nam",
+]);
+const MISLEADING_CONTEXT_PATTERN = /(?:\b(?:street|road|avenue|address|pharmacy|shop|hotel|restaurant)\b|\b(?:duong|pho|hieu thuoc|cua hang|khach san|nha hang)\b)/i;
+const VERIFIED_STOCK_LICENSES: Array<{ host: RegExp; license: string }> = [
+  { host: /(?:^|\.)pexels\.com$/i, license: "Pexels License" },
+  { host: /(?:^|\.)unsplash\.com$/i, license: "Unsplash License" },
+  { host: /(?:^|\.)pixabay\.com$/i, license: "Pixabay Content License" },
+];
+
+const resolveVerifiedWebLicense = (sourceUrl: string): string => {
+  try {
+    const host = new URL(sourceUrl).hostname;
+    return _.find(VERIFIED_STOCK_LICENSES, item => item.host.test(host))?.license || "";
+  } catch {
+    return "";
+  }
+};
 
 const normalizeSearchText = (value: string): string => _.toLower(value)
   .normalize("NFD")
@@ -47,10 +65,11 @@ export const isArchivalSearchCandidateRelevant = (candidate: SearchCandidate, qu
   const queryTokens = relevanceTokens(query);
   const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""} ${candidate.sourceUrl}`));
   const overlaps = _.filter(queryTokens, token => evidenceTokens.has(token));
-  if (_.isEmpty(queryTokens) || _.isEmpty(overlaps)) return false;
-  // A single long, distinctive name can identify a subject (for example "Bach-Dang").
-  // Otherwise require two independent terms so generic words cannot admit unrelated media.
-  return _.some(overlaps, token => token.length >= 6) || _.uniq(overlaps).length >= 2;
+  if (_.isEmpty(queryTokens) || MISLEADING_CONTEXT_PATTERN.test(normalizeSearchText(`${candidate.title || ""} ${candidate.sourceUrl}`))) return false;
+  const uniqueOverlapCount = _.uniq(overlaps).length;
+  const requiredOverlapCount = queryTokens.length >= 6 ? 3 : 2;
+  return uniqueOverlapCount >= requiredOverlapCount
+    && _.divide(uniqueOverlapCount, _.max([queryTokens.length, 1])!) >= 0.3;
 };
 
 const downloadCandidate = async (context: BrowserContext, candidate: SearchCandidate) => {
@@ -82,19 +101,21 @@ const extractGoogleCandidates = async (page: Page): Promise<SearchCandidate[]> =
   })), "mediaUrl");
 };
 
-const searchGoogleImages = async (context: BrowserContext, page: Page, query: string): Promise<ArchivalImageResult | null> => {
+const searchGoogleImages = async (context: BrowserContext, page: Page, query: string, excludedSources: Set<string>): Promise<ArchivalImageResult | null> => {
   await page.goto(`${GOOGLE_IMAGE_SEARCH}${encodeURIComponent(query)}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(1800);
   const candidates = await extractGoogleCandidates(page);
-  for (const candidate of _.take(_.filter(candidates, item => isArchivalSearchCandidateRelevant(item, query)), 12)) {
+  for (const candidate of _.take(_.filter(candidates, item => isArchivalSearchCandidateRelevant(item, query) && !excludedSources.has(item.sourceUrl)), 12)) {
+    const license = resolveVerifiedWebLicense(candidate.sourceUrl);
+    if (_.isEmpty(license)) continue;
     const downloaded = await downloadCandidate(context, candidate);
     if (!downloaded) continue;
-    return { success: true, ...downloaded, sourceUrl: candidate.sourceUrl, license: "License not verified; review the original source page before publication", provider: "google_images" };
+    return { success: true, ...downloaded, sourceUrl: candidate.sourceUrl, license, provider: "google_images" };
   }
   return null;
 };
 
-const searchBingImages = async (context: BrowserContext, page: Page, query: string): Promise<ArchivalImageResult | null> => {
+const searchBingImages = async (context: BrowserContext, page: Page, query: string, excludedSources: Set<string>): Promise<ArchivalImageResult | null> => {
   await page.goto(`${BING_IMAGE_SEARCH}${encodeURIComponent(query)}`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForTimeout(1200);
   const candidates = _.uniqBy(_.compact(await page.locator("a.iusc").evaluateAll(anchors => anchors.map(anchor => {
@@ -103,15 +124,17 @@ const searchBingImages = async (context: BrowserContext, page: Page, query: stri
       return metadata.murl && metadata.purl ? { mediaUrl: metadata.murl, sourceUrl: metadata.purl, title: metadata.t || metadata.desc || "" } : null;
     } catch { return null; }
   }))), "mediaUrl");
-  for (const candidate of _.take(_.filter(candidates, item => isArchivalSearchCandidateRelevant(item, query)), 12)) {
+  for (const candidate of _.take(_.filter(candidates, item => isArchivalSearchCandidateRelevant(item, query) && !excludedSources.has(item.sourceUrl)), 12)) {
+    const license = resolveVerifiedWebLicense(candidate.sourceUrl);
+    if (_.isEmpty(license)) continue;
     const downloaded = await downloadCandidate(context, candidate);
     if (!downloaded) continue;
-    return { success: true, ...downloaded, sourceUrl: candidate.sourceUrl, license: "License not verified; review the original source page before publication", provider: "bing_images" };
+    return { success: true, ...downloaded, sourceUrl: candidate.sourceUrl, license, provider: "bing_images" };
   }
   return null;
 };
 
-const searchWikimediaCommons = async (context: BrowserContext, page: Page, query: string): Promise<ArchivalImageResult | null> => {
+const searchWikimediaCommons = async (context: BrowserContext, page: Page, query: string, excludedSources: Set<string>): Promise<ArchivalImageResult | null> => {
   const reducedQuery = _.trim(query.replace(GENERIC_SEARCH_TERMS, " ").replace(/\s+/g, " ")) || query;
   await page.goto(`${COMMONS_HOST}/w/index.php?search=${encodeURIComponent(reducedQuery)}&title=Special:MediaSearch&type=image`, { waitUntil: "domcontentloaded", timeout: 30000 });
   for (const searchQuery of createCommonsQueryVariants(reducedQuery)) {
@@ -131,7 +154,7 @@ const searchWikimediaCommons = async (context: BrowserContext, page: Page, query
       const mimeType = _.toLower(_.toString(info?.mime));
       const sourceUrl = _.toString(info?.descriptionurl);
       const candidate = { mediaUrl, sourceUrl, title: _.toString(item.title) };
-      if (!isArchivalSearchCandidateRelevant(candidate, query) || !SUPPORTED_MEDIA_PATTERN.test(mediaUrl) || !mimeType.startsWith("image/") || mimeType.includes("svg")) continue;
+      if (excludedSources.has(sourceUrl) || !isArchivalSearchCandidateRelevant(candidate, query) || !SUPPORTED_MEDIA_PATTERN.test(mediaUrl) || !mimeType.startsWith("image/") || mimeType.includes("svg")) continue;
       const downloaded = await downloadCandidate(context, candidate);
       if (!downloaded) continue;
       return { success: true, ...downloaded, sourceUrl, license: _.trim(_.toString(info?.extmetadata?.LicenseShortName?.value || info?.extmetadata?.UsageTerms?.value || "Wikimedia Commons source page")), provider: "wikimedia_commons" };
@@ -140,19 +163,25 @@ const searchWikimediaCommons = async (context: BrowserContext, page: Page, query
   return null;
 };
 
-export const searchArchivalImageWithChrome = async (query: string, headless: boolean = true, sharedContext?: BrowserContext): Promise<ArchivalImageResult> => {
+export const searchArchivalImageWithChrome = async (
+  query: string,
+  headless: boolean = true,
+  sharedContext?: BrowserContext,
+  excludeSourceUrls: string[] = [],
+): Promise<ArchivalImageResult> => {
   const cleanQuery = _.trim(query);
   if (_.isEmpty(cleanQuery)) return { success: false, warning: "archival_search_query_missing" };
+  const excludedSources = new Set(_.map(excludeSourceUrls, _.toString));
   const browser = sharedContext ? null : await chromium.launch({ headless, channel: "chrome" }).catch(() => chromium.launch({ headless }));
   let page: Page | null = null;
   try {
     const context = sharedContext || await browser!.newContext({ locale: "en-US", userAgent: DOWNLOAD_USER_AGENT });
     page = await context.newPage();
-    const googleResult = await searchGoogleImages(context, page, cleanQuery).catch(() => null);
+    const googleResult = await searchGoogleImages(context, page, cleanQuery, excludedSources).catch(() => null);
     if (googleResult) return googleResult;
-    const bingResult = await searchBingImages(context, page, cleanQuery).catch(() => null);
+    const bingResult = await searchBingImages(context, page, cleanQuery, excludedSources).catch(() => null);
     if (bingResult) return bingResult;
-    const commonsResult = await searchWikimediaCommons(context, page, cleanQuery).catch(() => null);
+    const commonsResult = await searchWikimediaCommons(context, page, cleanQuery, excludedSources).catch(() => null);
     return commonsResult || { success: false, warning: "no_suitable_archival_image_found" };
   } finally {
     await page?.close().catch(() => undefined);

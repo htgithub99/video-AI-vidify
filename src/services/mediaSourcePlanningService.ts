@@ -3,8 +3,9 @@ import { VideoGenre } from "../constants/enums";
 import { StoryboardScene } from "../types";
 
 const FACTUAL_ARCHIVAL_RATIOS: Record<string, number> = {
-  History: 0.4,
-  Documentary: 0.4,
+  History: 0.65,
+  Documentary: 0.6,
+  Architecture: 0.7,
   Science: 0.3,
   News: 0.4,
   Review: 0.3,
@@ -15,36 +16,48 @@ const FACTUAL_ARCHIVAL_RATIOS: Record<string, number> = {
   [VideoGenre.CHARACTER_PSYCHOLOGY]: 0.15,
 };
 
+const AUTHENTIC_EVIDENCE_PATTERN = /(?:\b(?:năm|year)\s+\d{3,4}\b|\b\d{3,4}\b|Nhà Trần|Đại Việt|nhà Lý|Trần Hưng Đạo|Trần Nhân Tông|Bạch Đằng|Thăng Long|Diên Hồng|Vạn Kiếp|Đông Bộ Đầu|Hồ Quý Ly|Trần Thủ Độ|Nguyên Mông|Mongol|historic(?:al)? (?:site|map|document|artifact|building|person)|bản đồ|sắc phong|chiếu|ấn triều|di tích|đền|lăng|thành cổ|hiện vật|tài liệu|công trình)/i;
+
+const getAuthenticEvidenceScore = (scene: StoryboardScene): number => {
+  const text = _.join(_.compact([scene.storyEvidence, scene.archivalSearchQuery]), " ");
+  return _.size(text.match(new RegExp(AUTHENTIC_EVIDENCE_PATTERN.source, "gi")) || []);
+};
+
 export const getMinimumArchivalRatio = (genre?: string): number => _.get(FACTUAL_ARCHIVAL_RATIOS, genre || "", 0);
 
-const hasUsableStrategy = (scene: StoryboardScene): boolean => (
-  _.includes(["archival", "ai_generated"], scene.assetStrategy)
-  && (!_.isEqual(scene.assetStrategy, "archival") || !_.isEmpty(_.trim(scene.archivalSearchQuery)))
+const REQUIRED_EDITORIAL_FIELDS: Array<keyof StoryboardScene> = [
+  "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "composition",
+];
+
+const hasRequiredEditorialData = (scene: StoryboardScene): boolean => _.every(
+  REQUIRED_EDITORIAL_FIELDS,
+  field => !_.isEmpty(_.trim(_.toString(scene[field]))),
 );
+
+const hasUsableStrategy = (scene: StoryboardScene): boolean => {
+  if (!_.includes(["archival", "ai_generated"], scene.assetStrategy)) return false;
+  if (!_.isEqual(scene.assetStrategy, "archival")) return true;
+  const query = _.trim(scene.archivalSearchQuery);
+  const narration = _.trim(scene.script || scene.subtitle);
+  return hasRequiredEditorialData(scene)
+    && !_.isEmpty(query)
+    && !_.isEqual(_.deburr(_.toLower(query)), _.deburr(_.toLower(narration)))
+    && getAuthenticEvidenceScore(scene) > 0;
+};
 
 export const ensureMediaSourcePlan = (
   scenes: StoryboardScene[],
   genre?: string,
 ): StoryboardScene[] => {
-  const planned = _.map(scenes, scene => hasUsableStrategy(scene)
-    ? scene
-    : { ...scene, assetStrategy: "ai_generated" as const, archivalSearchQuery: "", archivalRationale: "AI visual planning did not request authentic source media for this scene" });
   const minimumRatio = getMinimumArchivalRatio(genre);
-  if (minimumRatio <= 0 || _.isEmpty(planned)) return planned;
-  const minimumCount = _.max([1, _.ceil(_.multiply(_.size(planned), minimumRatio))]) || 1;
-  const existingArchivalCount = _.filter(planned, { assetStrategy: "archival" }).length;
-  if (existingArchivalCount >= minimumCount) return planned;
-
-  const candidates = _.filter(planned, scene => !_.isEqual(scene.assetStrategy, "archival"));
-  const needed = _.subtract(minimumCount, existingArchivalCount);
-  const stride = _.divide(_.size(candidates), _.max([needed, 1]) || 1);
-  const selectedIds = new Set(_.map(_.times(needed, index => candidates[_.min([_.floor(index * stride), _.subtract(_.size(candidates), 1)])!]), "id"));
-  return _.map(planned, scene => selectedIds.has(scene.id)
-    ? {
+  return _.map(scenes, scene => hasUsableStrategy(scene)
+    ? scene
+    : {
       ...scene,
-      assetStrategy: "archival" as const,
-      archivalSearchQuery: _.trim(scene.archivalSearchQuery || scene.script || scene.subtitle),
-      archivalRationale: scene.archivalRationale || "Authentic visual evidence is required to ground this factual genre",
-    }
-    : scene);
+      assetStrategy: "ai_generated" as const,
+      archivalSearchQuery: "",
+      archivalRationale: minimumRatio > 0
+        ? "Authentic evidence was not fully specified by AI; use an explicit reconstruction instead of unrelated source media"
+        : "AI visual planning did not request authentic source media for this scene",
+    });
 };

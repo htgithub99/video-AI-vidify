@@ -12,7 +12,7 @@ export const SCENE_VISUAL_QUALITY_CONFIG = {
   SCORE_FIELDS: ["anatomy", "subjectCount", "narrativeAlignment", "environmentRelevance", "characterConsistency", "composition", "styleConsistency", "editability"],
 } as const;
 
-const TECHNICAL_DEFECT_PATTERN = /(?:anatom|limb|arm|hand|finger|leg|foot|head|face|body|merged|duplicate|extra[_\s-]*(?:person|people|character|subject|arm|hand|finger|limb|leg|head)|missing[_\s-]*(?:person|character|subject|arm|hand|finger|limb|leg|head)|subject[_\s-]*count|wrong[_\s-]*(?:subject|character|action)|unwanted[_\s-]*text|gibberish|multi[_\s-]*(?:panel|frame)|collage|crop)/i;
+const TECHNICAL_DEFECT_PATTERN = /(?:anatom|limb|arm|hand|finger|leg|foot|head|face|body|merged|duplicate|anachron|wrong[_\s-]*(?:flag|uniform|era|period)|extra[_\s-]*(?:person|people|character|subject|arm|hand|finger|limb|leg|head)|missing[_\s-]*(?:person|character|subject|arm|hand|finger|limb|leg|head)|subject[_\s-]*count|wrong[_\s-]*(?:subject|character|action)|unwanted[_\s-]*text|gibberish|multi[_\s-]*(?:panel|frame)|collage|crop)/i;
 
 export interface SceneVisualQuality {
   anatomy: number;
@@ -44,6 +44,7 @@ export interface SceneVisualValidationContext {
   expectedHeadline?: string;
   layoutId?: string;
   typographyId?: string;
+  adjacentAssetUrls?: string[];
 }
 
 const normalizeQuality = (source: Partial<SceneVisualQuality>): SceneVisualQuality => ({
@@ -89,9 +90,16 @@ export const shouldRegenerateSceneImage = (
   textAllowed: boolean = false,
 ): boolean => !_.isEmpty(getSceneVisualRegenerationReasons(quality, textAllowed));
 
+export const createTechnicalQaRegenerationPrompt = (prompt: string, reasons: string[]): string => {
+  const correction = `Fresh regeneration of the same exact scene; preserve all story, character, style, camera and composition requirements while correcting only these detected technical defects: ${_.join(reasons, ", ")}. Produce one coherent single-frame image with natural complete anatomy and exactly the requested primary subjects.`;
+  const aspectMatch = prompt.match(/\s+--ar\s+[^\s]+\s*$/i);
+  if (!aspectMatch || aspectMatch.index === undefined) return `${_.trim(prompt)} ${correction}`;
+  return `${_.trim(prompt.slice(0, aspectMatch.index))} ${correction}${aspectMatch[0]}`;
+};
+
 export const validateSceneImage = async (
   projectId: string,
-  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "generationPrompt" | "assetUrl" | "expectedSubjectCount" | "allowBackgroundPeople">,
+  scene: Pick<StoryboardScene, "id" | "script" | "prompt" | "generationPrompt" | "assetUrl" | "expectedSubjectCount" | "allowBackgroundPeople" | "visualIntent" | "visibleAction" | "storyEvidence" | "archivalSourceUrl" | "archivalLicense">,
   referenceAssetUrl?: string,
   referenceAssetUrls: string[] = [],
   context: SceneVisualValidationContext = {},
@@ -107,10 +115,16 @@ export const validateSceneImage = async (
     referenceAssetUrls,
     expectedSubjectCount: scene.expectedSubjectCount,
     allowBackgroundPeople: Boolean(scene.allowBackgroundPeople),
+    visualIntent: scene.visualIntent,
+    visibleAction: scene.visibleAction,
+    storyEvidence: scene.storyEvidence,
+    archivalSourceUrl: scene.archivalSourceUrl,
+    archivalLicense: scene.archivalLicense,
     qaPurpose: context.purpose,
     expectedHeadline: context.expectedHeadline,
     layoutId: context.layoutId,
     typographyId: context.typographyId,
+    adjacentAssetUrls: _.take(_.compact(context.adjacentAssetUrls), 2),
   });
 
   if (!response.success || !response.data?.success || _.isEmpty(response.data?.quality)) {

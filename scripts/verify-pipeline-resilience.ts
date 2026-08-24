@@ -130,6 +130,15 @@ const gentleMotionScenes = applyProfessionalEditingPolicy([
 ] as any, { visualStyle: "cinematic live action" } as any);
 assert(gentleMotionScenes[1].cameraMotion === "Pan Right", "gentle pan should remain available");
 assert(gentleMotionScenes[2].cameraMotion === "static", "shake and handheld motion must be removed");
+const repetitiveMotionScenes = applyProfessionalEditingPolicy(Array.from({ length: 8 }, (_, index) => ({
+  id: `repeat_${index}`,
+  chapterId: "repeat_chapter",
+  duration: 4,
+  cameraMotion: "Zoom In",
+  transition: "cut",
+})) as any);
+assert(new Set(repetitiveMotionScenes.map(scene => scene.cameraMotion)).size > 2, "repeated safe motion was not diversified");
+assert(repetitiveMotionScenes.some(scene => scene.transition === "cross_dissolve"), "long documentary sequence remained all hard cuts");
 const cueSheet = createAudioCueSheet([
   { id: "s1", duration: 5, script: "A character waits", prompt: "one character portrait" },
 ] as any);

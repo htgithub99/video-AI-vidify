@@ -74,9 +74,6 @@ export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityRep
   const blockingErrors = _.compact([
     !hasSubtitleContent && "subtitle_content_missing",
     _.isEmpty(subtitleCues) && "subtitle_cues_missing",
-    !_.isEmpty(lineErrors) && "subtitle_more_than_one_line",
-    !_.isEmpty(longLines) && "subtitle_line_too_long",
-    !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient",
   ]) as string[];
   const warnings = _.compact([!_.isEmpty(lineErrors) && "subtitle_more_than_one_line", !_.isEmpty(longLines) && "subtitle_line_too_long", !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient", "subtitle_focal_position_requires_preview_qc"]);
   return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };

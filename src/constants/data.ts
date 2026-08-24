@@ -299,15 +299,21 @@ export const AI_MODEL_CAPABILITY = {
 
 export const AI_MODEL_REGISTRY = [
   {
-    id: "gemini-3-flash",
+    id: "gemini-3.7-flash",
     freeEligible: true,
     priority: 1,
-    capabilities: [AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
+    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
+  },
+  {
+    id: "gemini-3.6-flash",
+    freeEligible: true,
+    priority: 2,
+    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
   },
   {
     id: "gemini-3.5-flash-lite",
     freeEligible: true,
-    priority: 2,
+    priority: 3,
     capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
   },
 ] as const;

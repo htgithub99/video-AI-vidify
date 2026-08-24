@@ -31,6 +31,14 @@ export const getVisualShotPlanIssues = (
   if (!_.isEmpty(action) && !PHYSICAL_ACTION_PATTERN.test(action)) {
     issues.push(`${baseScene.id}:visibleAction:no_observable_physical_verb`);
   }
+  if (_.isEqual(source.assetStrategy, "archival")) {
+    const query = _.trim(_.toString(source.archivalSearchQuery));
+    const normalizedQuery = normalizePlanningText(query);
+    if (_.isEmpty(query)) issues.push(`${baseScene.id}:archivalSearchQuery:missing`);
+    else if (DETECTOR_VIETNAMESE_REGEX.test(query)) issues.push(`${baseScene.id}:archivalSearchQuery:must_be_english`);
+    else if (_.isEqual(normalizedQuery, normalizedScript)) issues.push(`${baseScene.id}:archivalSearchQuery:copied_from_script`);
+    if (_.isEmpty(_.trim(_.toString(source.archivalRationale)))) issues.push(`${baseScene.id}:archivalRationale:missing`);
+  }
   return _.uniq(issues);
 };
 

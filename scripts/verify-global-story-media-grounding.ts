@@ -8,12 +8,34 @@ import { isArchivalSearchCandidateRelevant } from "../src/server/services/archiv
 
 const historicalScenes = Array.from({ length: 10 }, (_, index) => ({
   id: `sc_${index + 1}`,
-  script: index === 0 ? "Trần Thủ Độ triệu tập các quan" : `Sự kiện lịch sử thứ ${index + 1}`,
+  script: [
+    "Trần Thủ Độ triệu tập các quan",
+    "Năm 1225 diễn ra chuyển giao triều đại",
+    "Hoàng thành Thăng Long trở thành trung tâm quyền lực",
+    "Bản đồ trận Bạch Đằng năm 1288",
+    "Ấn triều đình được lưu giữ như hiện vật",
+  ][index] || `Sự kiện lịch sử thứ ${index + 1}`,
   characterIds: ["tran_thu_do"],
+  visualIntent: "Show exact material evidence for the narrated historical claim",
+  visibleAction: "A conservator points to the dated artifact in a museum display",
+  reaction: "Visitors lean closer to inspect the evidence",
+  storyEvidence: index < 7 ? "Surviving Tran dynasty artifact, inscription, map or documented historic site" : "Explicit historical reconstruction",
+  visualHook: "The dated evidence is isolated as the clear focal point",
+  composition: "Evidence-led foreground with contextual museum or site background",
+  assetStrategy: index < 7 ? "archival" : "ai_generated",
+  archivalSearchQuery: index < 7 ? `Tran dynasty Vietnam museum artifact historical evidence item ${index + 1}` : "",
+  archivalRationale: index < 7 ? "A licensed authentic artifact directly grounds this factual scene" : "Reconstruction is editorially appropriate",
 })) as any[];
 const planned = ensureMediaSourcePlan(historicalScenes, "History");
-assert.ok(planned.filter(scene => scene.assetStrategy === "archival").length >= 4);
+assert.ok(planned.filter(scene => scene.assetStrategy === "archival").length >= 6);
 assert.ok(planned.filter(scene => scene.assetStrategy === "archival").every(scene => scene.archivalSearchQuery));
+const unsafeRawNarrationPlan = ensureMediaSourcePlan([{
+  ...historicalScenes[0],
+  id: "unsafe_raw_query",
+  assetStrategy: "archival",
+  archivalSearchQuery: historicalScenes[0].script,
+} as any], "History");
+assert.equal(unsafeRawNarrationPlan[0].assetStrategy, "ai_generated");
 
 const characters = [{ id: "tran_thu_do", name: "Trần Thủ Độ", images: [], description: "statesman" }] as any[];
 const pruned = pruneUnsupportedSceneCharacterIds(historicalScenes as any, characters);
@@ -32,6 +54,8 @@ const pipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
 assert.match(pipeline, /targetDurationSeconds: parseTargetDurationSeconds\(config\.duration\)/);
 assert.match(pipeline, /failedSceneIds = new Set\(generationSummary\.failedSceneIds\)/);
 assert.match(pipeline, /failedSceneIds\.has\(scene\.id\) && !hasSceneAsset\(scene\)/);
+assert.match(pipeline, /unresolvedSourceScenes/);
+assert.match(pipeline, /Authentic source unavailable; AI reconstruction used/);
 assert.equal(isArchivalSearchCandidateRelevant({
   mediaUrl: "https://example.com/cat.jpg",
   sourceUrl: "https://www.artofit.org/image-gallery/gorgeous-cat-breeds/",
@@ -42,4 +66,15 @@ assert.equal(isArchivalSearchCandidateRelevant({
   sourceUrl: "https://example.com/di-tich-bach-dang",
   title: "Bãi cọc Bạch Đằng",
 }, "chiến thắng Bạch Đằng bãi cọc gỗ lịch sử"), true);
+assert.equal(isArchivalSearchCandidateRelevant({
+  mediaUrl: "https://example.com/tent.jpg",
+  sourceUrl: "https://commons.wikimedia.org/wiki/File:Xay_dung_leu.jpg",
+  title: "Xây dựng lều",
+}, "Để xây dựng một triều đại, quân Nguyên Mông tràn sang biên giới"), false);
+assert.equal(isArchivalSearchCandidateRelevant({
+  mediaUrl: "https://example.com/pharmacy.jpg",
+  sourceUrl: "https://commons.wikimedia.org/wiki/File:Hieu_thuoc_duong_Tran_Hung_Dao.jpg",
+  title: "Hiệu thuốc trên đường Trần Hưng Đạo",
+}, "Trần Quốc Tuấn triển khai mai phục trên sông Bạch Đằng"), false);
+assert.match(pipeline, /Authentic candidates failed semantic QA; explicit AI reconstruction required/);
 console.log("Global story/media grounding assertions passed.");

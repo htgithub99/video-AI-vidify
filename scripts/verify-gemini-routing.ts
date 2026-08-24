@@ -8,7 +8,7 @@ const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
 
-assert(AVAILABLE_MODELS[0] === "gemini-3-flash" && AVAILABLE_MODELS.includes("gemini-3.5-flash-lite"), "Gemini visual fallback order is invalid");
+assert(AVAILABLE_MODELS[0] === "gemini-3.7-flash" && AVAILABLE_MODELS.includes("gemini-3.5-flash-lite"), "Gemini visual fallback order is invalid");
 assert(new Set(AVAILABLE_MODELS).size === AVAILABLE_MODELS.length, "Gemini models were duplicated");
 assert(!AVAILABLE_MODELS.includes("gemini-2.5-flash" as never), "retired model remained enabled");
 assert(!AVAILABLE_MODELS.includes("gemini-3.1-pro-preview" as never), "zero-quota preview remained enabled");
@@ -19,9 +19,9 @@ assert(classifyGeminiError({ status: 429, message: "retry in 3s" }).retryLimit =
 assert(getGeminiUserMessage({ status: 429, message: "free_tier_requests, limit: 0" }, true).includes("hạn mức"), "localized quota message failed");
 
 const textRoute = routeAiTask({ capability: AiTaskCapability.FactualReview, estimatedInputTokens: 100, maxOutputTokens: 100 });
-assert(textRoute.models.every(model => model.includes("lite")), "text routing included a visual-only model");
+assert(textRoute.models[0] === "gemini-3.7-flash" && textRoute.models.includes("gemini-3.5-flash-lite"), "text routing excluded stable production models");
 const visualRoute = routeAiTask({ capability: AiTaskCapability.StyleExtraction, estimatedInputTokens: 100, mediaInputCount: 1, maxOutputTokens: 100 });
-assert(visualRoute.models[0] === "gemini-3-flash" && visualRoute.models.length === 2, "visual routing excluded the preferred model or fallback");
+assert(visualRoute.models[0] === "gemini-3.7-flash" && visualRoute.models.length === 3, "visual routing excluded the preferred model or fallback");
 
 const estimate = estimateGeminiContents([
   { inlineData: { mimeType: "image/png", data: "A".repeat(2_500_000) } },

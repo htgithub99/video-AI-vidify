@@ -66,6 +66,13 @@ const GENTLE_MOTION_RHYTHM = [
   EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT,
 ];
 
+const REPEATED_MOTION_ALTERNATIVES = [
+  EDITING_POLICY_CONSTANTS.MOTION_PAN_RIGHT,
+  EDITING_POLICY_CONSTANTS.MOTION_STATIC,
+  EDITING_POLICY_CONSTANTS.MOTION_PAN_LEFT,
+  EDITING_POLICY_CONSTANTS.MOTION_ZOOM_OUT,
+];
+
 const SHOT_LADDER = ["Wide shot", "Medium shot", "Close-up", "Medium shot"];
 const CAMERA_ANGLE_LADDER = ["eye-level angle", "three-quarter angle", "side angle", "slightly low angle"];
 const COMPOSITION_LADDER = [
@@ -106,6 +113,11 @@ const normalizeTransition = (
   if (!GENTLE_TRANSITIONS.has(requested) || _.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK)) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
   }
+  if (_.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CUT)
+    && _.gte(_.defaultTo(scene.duration, 0), 3.5)
+    && index % 7 === 3) {
+    return EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE;
+  }
   const shouldSkipCrossDissolve = _.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE) && index % EDITING_POLICY_CONSTANTS.DISSOLVE_INTERVAL_MOD !== EDITING_POLICY_CONSTANTS.DISSOLVE_TARGET_INDEX;
   if (shouldSkipCrossDissolve) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
@@ -118,6 +130,7 @@ const resolveCinematicCameraMotion = (
   index: number,
   totalScenes: number,
   flatStyle: boolean = false,
+  previousMotion: string = EDITING_POLICY_CONSTANTS.EMPTY_STRING,
 ): string => {
   if (index === 0 || index === totalScenes - 1) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
   if (_.lt(_.defaultTo(scene.duration, 0), EDITING_POLICY_CONSTANTS.SHORT_SCENE_SECONDS)) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
@@ -125,7 +138,10 @@ const resolveCinematicCameraMotion = (
   const explicitMotion = _.trim(scene.cameraMotion || EDITING_POLICY_CONSTANTS.EMPTY_STRING);
   const normalizedExplicit = _.replace(_.toLower(explicitMotion), EDITING_POLICY_CONSTANTS.NORMALIZE_REGEX, "_");
   if (UNCOMFORTABLE_MOTION_PATTERN.test(explicitMotion)) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
-  if (SAFE_GENTLE_MOTIONS.has(normalizedExplicit)) return explicitMotion;
+  if (SAFE_GENTLE_MOTIONS.has(normalizedExplicit)) {
+    if (!_.isEqual(_.toLower(explicitMotion), _.toLower(previousMotion))) return explicitMotion;
+    return REPEATED_MOTION_ALTERNATIVES[index % REPEATED_MOTION_ALTERNATIVES.length];
+  }
 
   // Flat/cartoon frames need less synthetic movement to keep line art stable.
   if (flatStyle && index % 6 !== 3) return EDITING_POLICY_CONSTANTS.MOTION_STATIC;
@@ -157,6 +173,7 @@ export const applyProfessionalEditingPolicy = (
   let lastShotSize: string | undefined = undefined;
   let lastCameraAngle: string | undefined = undefined;
   let lastComposition: string | undefined = undefined;
+  let lastCameraMotion: string = EDITING_POLICY_CONSTANTS.EMPTY_STRING;
   let lastIntenseEffectIndex = -EDITING_POLICY_CONSTANTS.INTENSE_EFFECT_COOLDOWN_SCENES;
 
   return _.map(scenes, (scene, index) => {
@@ -174,7 +191,7 @@ export const applyProfessionalEditingPolicy = (
       ? EDITING_POLICY_CONSTANTS.LIGHTING_NATURAL
       : (scene.lightingEffect || EDITING_POLICY_CONSTANTS.LIGHTING_NATURAL);
 
-    const cameraMotion = resolveCinematicCameraMotion(scene, index, total, flatStyle);
+    const cameraMotion = resolveCinematicCameraMotion(scene, index, total, flatStyle, lastCameraMotion);
     const shotSize = resolveCinematicShotSize(scene.shotSize, lastShotSize, index);
     const requestedAngle = _.trim(scene.cameraAngle || EDITING_POLICY_CONSTANTS.EMPTY_STRING);
     const requestedComposition = _.trim(scene.composition || EDITING_POLICY_CONSTANTS.EMPTY_STRING);
@@ -187,6 +204,7 @@ export const applyProfessionalEditingPolicy = (
     lastShotSize = shotSize;
     lastCameraAngle = cameraAngle;
     lastComposition = composition;
+    lastCameraMotion = cameraMotion;
 
     return {
       ...scene,

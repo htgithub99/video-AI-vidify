@@ -1542,15 +1542,23 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
 });
 
 router.post(ROUTER_PATHS.SEARCH_ARCHIVAL_IMAGE, async (req: Request, res: Response) => {
+  const query = _.trim(_.toString(req.body?.query));
+  const headless = req.body?.chromeHeadless !== false;
+  const excludeSourceUrls = _.take(_.filter(_.castArray(req.body?.excludeSourceUrls), _.isString), 10);
   try {
-    const query = _.trim(_.toString(req.body?.query));
     if (_.isEmpty(query)) return res.status(400).json({ success: false, warning: "archival_search_query_missing" });
     const browserSession = await getOrLaunchGlobalBrowser(req.body?.chromeHeadless);
-    const result = await searchArchivalImageWithChrome(query, req.body?.chromeHeadless !== false, browserSession.context);
+    const result = await searchArchivalImageWithChrome(query, headless, browserSession.context, excludeSourceUrls);
     return res.status(result.success ? 200 : 404).json(result);
-  } catch (error) {
-    appWarn("Archival image search failed; scene will use AI generation.", error);
-    return res.status(503).json({ success: false, warning: "archival_search_unavailable" });
+  } catch (sharedBrowserError) {
+    appWarn("Shared Chrome archival search failed; retrying in an isolated browser session.", sharedBrowserError);
+    try {
+      const result = await searchArchivalImageWithChrome(query, headless, undefined, excludeSourceUrls);
+      return res.status(result.success ? 200 : 404).json(result);
+    } catch (isolatedBrowserError) {
+      appWarn("Archival image search failed; scene will use AI generation.", isolatedBrowserError);
+      return res.status(503).json({ success: false, warning: "archival_search_unavailable" });
+    }
   }
 });
 
@@ -1561,6 +1569,11 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
   const sceneId = _.toString(_.get(req.body, "sceneId", REFACTOR_CONSTANTS.UNKNOWN_SCENE_ID));
   const sceneScript = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY));
   const imagePrompt = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY));
+  const visualIntent = _.toString(_.get(req.body, "visualIntent"));
+  const visibleAction = _.toString(_.get(req.body, "visibleAction"));
+  const storyEvidence = _.toString(_.get(req.body, "storyEvidence"));
+  const archivalSourceUrl = _.toString(_.get(req.body, "archivalSourceUrl"));
+  const archivalLicense = _.toString(_.get(req.body, "archivalLicense"));
   const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
   const allowBackgroundPeople = Boolean(_.get(req.body, "allowBackgroundPeople"));
   const referenceAssetUrl = _.toString(_.get(req.body, "referenceAssetUrl"));
@@ -1569,6 +1582,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
   const expectedHeadline = _.toString(_.get(req.body, "expectedHeadline"));
   const layoutId = _.toString(_.get(req.body, "layoutId"));
   const typographyId = _.toString(_.get(req.body, "typographyId"));
+  const adjacentAssetUrls = _.take(_.filter(_.castArray(_.get(req.body, "adjacentAssetUrls", [])), _.isString), 2);
 
   if (_.isEmpty(assetUrl)) {
     return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_REQUIRED });
@@ -1578,8 +1592,16 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
     const encodedAssets = await readVisualQaAssets(assetUrl);
     if (_.isEmpty(encodedAssets)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
 
+    const qaNarrativeEvidence = _.join(_.compact([
+      sceneScript,
+      visualIntent && `VISUAL INTENT: ${visualIntent}`,
+      visibleAction && `VISIBLE ACTION: ${visibleAction}`,
+      storyEvidence && `STORY EVIDENCE: ${storyEvidence}`,
+      archivalSourceUrl && `AUTHENTIC SOURCE PAGE: ${archivalSourceUrl}`,
+      archivalLicense && `DECLARED LICENSE: ${archivalLicense}`,
+    ]), "\n");
     const parts: any[] = [
-      { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId, allowBackgroundPeople) },
+      { text: getSceneImageQualityPrompt(sceneId, qaNarrativeEvidence, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId, allowBackgroundPeople) },
     ];
     _.forEach(encodedAssets, encodedImage => parts.push({ inlineData: encodedImage }));
     const qualityReferences = _.take(_.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
@@ -1588,6 +1610,13 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
       if (encodedReference) {
         parts.push({ text: SCENE_QA_REFERENCE_DIRECTIVE });
         parts.push({ inlineData: encodedReference });
+      }
+    }
+    for (const adjacentAssetUrl of adjacentAssetUrls) {
+      const encodedAdjacent = readEncodedProjectImage(adjacentAssetUrl);
+      if (encodedAdjacent) {
+        parts.push({ text: "The next image is an adjacent scene supplied only to detect accidental near-duplicate composition. Do not use it as a character or style reference. If the candidate repeats substantially the same subject placement, action, background, camera distance and composition while the narration has changed, add near_duplicate_adjacent_scene to blockingErrors and set usableForVideo=false." });
+        parts.push({ inlineData: encodedAdjacent });
       }
     }
     const response = await generateContentWithRetry({
