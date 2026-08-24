@@ -479,6 +479,7 @@ export const getSceneImageQualityPrompt = (
   expectedHeadline: string = "",
   layoutId: string = "",
   typographyId: string = "",
+  allowBackgroundPeople: boolean = false,
 ): string => `You are a strict senior art director and AI-image quality controller.
 Evaluate the attached ${purpose === "thumbnail" ? "finished YouTube thumbnail" : "image"} for use in a professional edited video.
 
@@ -486,9 +487,12 @@ SCENE ID: ${sceneId}
 NARRATION: ${sceneScript}
 IMAGE PROMPT: ${imagePrompt}
 EXPECTED PRIMARY SUBJECT COUNT: ${_.defaultTo(expectedSubjectCount, "infer from prompt")}
+BACKGROUND PEOPLE: ${allowBackgroundPeople ? "Allowed when naturally secondary; do not count them as duplicated primary subjects." : "Not allowed unless unavoidably present in authentic archival imagery."}
 ${purpose === "thumbnail" ? `EXPECTED HEADLINE: ${expectedHeadline || "none"}\nAPPROVED LAYOUT: ${layoutId}\nAPPROVED TYPOGRAPHY: ${typographyId}` : ""}
 
-Use professional editorial judgment rather than rigid score thresholds. Judge narrative alignment primarily against NARRATION, not merely against IMAGE PROMPT. Put an item in blockingErrors and set usableForVideo=false only when the visible defect makes the image technically unusable or materially tells the wrong story: severe anatomy corruption, missing heads, merged bodies, a clearly wrong main action/subject or environment, destructive crop, prominent gibberish text, unreadable or badly clipped expected headline, text covering a face, or major identity/style drift. Treat minor aesthetic weakness, imperfect composition, small background artifacts, and taste-level differences as warnings. For a thumbnail, evaluate the completed typography, phone-size readability, approved layout structure and headline placement. Evaluate and report only; never propose or perform a replacement, rewrite, regeneration, or corrective prompt.
+Inspect every visible person carefully at full-image level: count heads and bodies; inspect shoulders, arms, elbows, wrists, hands, fingers, hips, legs and feet; detect extra, missing, fused, detached, duplicated or anatomically impossible parts. Compare the number of primary people with EXPECTED PRIMARY SUBJECT COUNT and distinguish legitimate background crowds from duplicated main characters. Detect a cloned face/body, two versions of the same protagonist, accidental extra people, merged characters, malformed facial features, unwanted text and unintended split-screen/collage output.
+
+Use professional editorial judgment rather than rigid score thresholds. Judge narrative alignment primarily against NARRATION, not merely against IMAGE PROMPT. Put a machine-readable item in blockingErrors and set usableForVideo=false when the visible defect makes the image technically unusable or materially tells the wrong story: extra/missing/fused limbs or fingers, malformed hands or faces, missing heads, merged bodies, duplicated protagonist, wrong primary subject count, a clearly wrong main action/subject or environment, destructive crop, prominent gibberish text, unreadable or badly clipped expected headline, text covering a face, or major identity/style drift. Treat minor aesthetic weakness, imperfect composition, small background artifacts, and taste-level differences as warnings. For a thumbnail, evaluate the completed typography, phone-size readability, approved layout structure and headline placement. Evaluate and report only; never propose or perform a replacement, rewrite, regeneration, or corrective prompt.
 
 Return JSON only:
 {

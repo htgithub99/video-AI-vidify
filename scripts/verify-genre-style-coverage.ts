@@ -20,6 +20,11 @@ for (const preset of Object.values(CURATED_STYLE_PRESETS)) {
   assert.match(preset.characterRule, /only|preserve|must|remain|architecture is the subject|product shape/i, `${preset.id} lacks an identity boundary`);
 }
 
+const vietnameseNames = Object.values(CURATED_STYLE_PRESETS).map(preset => preset.nameVi);
+assert.equal(new Set(vietnameseNames).size, vietnameseNames.length, "Style display names must be unique");
+assert.ok(vietnameseNames.every(name => name.length <= 28), "Style display names must remain card-friendly");
+assert.ok(!vietnameseNames.some(name => /Tài Liệu Tư Liệu|Gái Xinh|Mắt Híp|Lịch Sử Hội Họa|Biên Tập/.test(name)), "Legacy confusing style labels remain visible");
+
 assert.deepEqual(GENRE_STYLE_RECOMMENDATIONS["True Crime"][0], "true_crime_evidence");
 assert.deepEqual(GENRE_STYLE_RECOMMENDATIONS.History[0], "archival_documentary");
 console.log("Genre style coverage assertions passed.");

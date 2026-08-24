@@ -103,7 +103,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
               type="button"
               onClick={() => onSelectStyle(preset.id)}
               className={cn(
-                "relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-colors min-h-[58px]",
+                "relative flex items-center gap-2.5 p-2.5 rounded-2xl border-2 text-left cursor-pointer select-none transition-colors min-h-[66px]",
                 isSelected
                   ? isPurple
                     ? "bg-purple-950 border-purple-600 shadow-sm"
@@ -126,15 +126,15 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
                 {preset.icon}
               </div>
 
-              <div className="min-w-0 flex-1 flex flex-col justify-center overflow-hidden">
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <span className={cn(
-                  "text-xs block truncate leading-tight",
+                  "text-xs block leading-tight line-clamp-2 break-words",
                   isSelected
                     ? isPurple
                       ? "text-purple-300 font-black tracking-tight"
                       : "text-blue-300 font-black tracking-tight"
                     : "text-slate-100 font-bold"
-                )}>
+                )} title={isVi ? preset.nameVi : preset.name}>
                   {isVi ? preset.nameVi : preset.name}
                 </span>
                 <span className={cn(

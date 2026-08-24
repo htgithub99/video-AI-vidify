@@ -98,6 +98,7 @@ import { clearSceneVisualAsset } from "../services/projectRegenerationService";
 import { compileImagePrompt } from "../services/imagePromptCompilerService";
 import { getVisualShotPlanIssues } from "../services/visualPlanningService";
 import { resolveStylePreset } from "../constants/stylePresets";
+import { getSceneVisualRegenerationReasons, SCENE_VISUAL_QUALITY_CONFIG, shouldRegenerateSceneImage, validateSceneImage } from "../services/sceneVisualQualityService";
 import { isHookTopicallyGrounded } from "../services/hookResilienceService";
 import { validateChapterLanguage } from "../services/chapterLanguageValidationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
@@ -1659,13 +1660,111 @@ export function useAutoVideoPipeline(
           await runSceneGeneration(remainingTargetScenes, false);
         }
       }
+      const qaEligibleScenes = _.filter(realScenes as StoryboardScene[], scene => _.every([
+        hasSceneAsset(scene),
+        scene.assetType !== GenerateType.Video,
+        !_.isEqual(scene.assetStrategy, "archival"),
+      ], Boolean));
+      for (const scene of qaEligibleScenes) {
+        let qaCompleted = false;
+        for (let regenerationAttempt = 0; regenerationAttempt <= SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS; regenerationAttempt++) {
+          throwIfCancelled();
+          scene.assetStatus = SceneAssetStatus.Validating;
+          const qaResult = await validateSceneImage(voiceUpdatedProj.id, scene);
+          if (!qaResult.success || !qaResult.quality) {
+            scene.qaStatus = QaStatus.Unavailable;
+            scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+            scene.assetError = qaResult.error || "visual_qa_unavailable";
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[QA ảnh] ${scene.id}: chưa thể kiểm tra; tiếp tục với ảnh hiện có.`
+              : `[Image QA] ${scene.id}: review unavailable; continuing with the current image.`);
+            break;
+          }
+
+          const regenerationReasons = getSceneVisualRegenerationReasons(qaResult.quality, Boolean(scene.textAllowed));
+          if (!shouldRegenerateSceneImage(qaResult.quality, Boolean(scene.textAllowed))) {
+            scene.qaStatus = QaStatus.Passed;
+            scene.acceptance = AssetAcceptance.Approved;
+            scene.assetStatus = SceneAssetStatus.Approved;
+            scene.assetError = undefined;
+            const approvedRevision = _.findLast(scene.assetRevisions);
+            if (approvedRevision) {
+              approvedRevision.status = SceneAssetStatus.Approved;
+              approvedRevision.approvedAt = new Date().toISOString();
+            }
+            qaCompleted = true;
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[QA ảnh] ${scene.id}: đạt kiểm tra hình thể và số lượng nhân vật.`
+              : `[Image QA] ${scene.id}: anatomy and subject count passed.`);
+            break;
+          }
+
+          if (regenerationAttempt >= SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS) {
+            scene.qaStatus = QaStatus.Failed;
+            scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+            scene.assetStatus = SceneAssetStatus.Approved;
+            scene.assetError = `visual_qa_retry_limit: ${_.join(regenerationReasons, ",")}`;
+            const finalRevision = _.findLast(scene.assetRevisions);
+            if (finalRevision) {
+              finalRevision.status = SceneAssetStatus.Approved;
+              finalRevision.approvedAt = new Date().toISOString();
+            }
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[QA ảnh] ${scene.id}: vẫn còn cảnh báo sau 2 lần tạo lại; tiếp tục để video hoàn thành.`
+              : `[Image QA] ${scene.id}: warnings remain after 2 regenerations; continuing so the video completes.`);
+            qaCompleted = true;
+            break;
+          }
+
+          const rejectedRevision = _.findLast(scene.assetRevisions);
+          if (rejectedRevision) rejectedRevision.status = SceneAssetStatus.Rejected;
+          scene.assetStatus = SceneAssetStatus.Retrying;
+          appendLog(config.language === ProjectLanguage.VI
+            ? `[QA ảnh] ${scene.id}: phát hiện ${_.join(regenerationReasons, ", ")}; tạo lại lần ${regenerationAttempt + 1}/2.`
+            : `[Image QA] ${scene.id}: detected ${_.join(regenerationReasons, ", ")}; regeneration ${regenerationAttempt + 1}/2.`);
+
+          const requestContext = createSceneRequestContext(scene);
+          const retryResult = await generateProjectImageOnce({
+            sceneId: scene.id,
+            prompt: requestContext.prompt,
+            referenceImages: requestContext.referenceImages,
+            generateType: GenerateType.Image,
+          }, () => ({
+            prompt: requestContext.prompt,
+            style: currentStylePreset,
+            resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+            bypassCache: true,
+            engine: voiceUpdatedProj.visualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
+            sandboxConfig: sandboxConfigPayload,
+            visualConfig: { ...visualConfigPayload, referenceImages: requestContext.referenceImages, generateType: GenerateType.Image },
+          }), requestSignal);
+          const retryAssetUrl = createProjectImageUrl(retryResult);
+          if (retryResult.success && !_.isEmpty(retryAssetUrl)) {
+            scene.assetUrl = retryAssetUrl;
+            scene.assetUrls = [retryAssetUrl];
+            scene.assetType = GenerateType.Image;
+            scene.assetStatus = SceneAssetStatus.Generated;
+            const retryRevision = appendAssetRevision(scene, retryAssetUrl, SceneAssetStatus.Generated);
+            retryRevision.operation = "retry";
+            await persistImageCheckpoint();
+          } else {
+            scene.assetStatus = SceneAssetStatus.Generated;
+            scene.assetError = retryResult.warning || "visual_qa_regeneration_failed";
+          }
+        }
+        if (!qaCompleted && scene.qaStatus !== QaStatus.Unavailable) {
+          scene.qaStatus = QaStatus.Failed;
+          scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+        }
+      }
+
       const technicallyValidScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene));
       const validationSceneIds = new Set(_.map(technicallyValidScenes, "id"));
       _.forEach(technicallyValidScenes, scene => {
         scene.assetStatus = SceneAssetStatus.Approved;
-        scene.qaStatus = QaStatus.Unavailable;
-        scene.acceptance = AssetAcceptance.AcceptedWithWarning;
-        scene.assetError = "visual_qa_unavailable";
+        if (!scene.qaStatus) scene.qaStatus = QaStatus.Unavailable;
+        if (!scene.acceptance) scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+        if (!scene.assetError && scene.qaStatus === QaStatus.Unavailable) scene.assetError = "visual_qa_unavailable";
         const revision = _.findLast(scene.assetRevisions);
         if (revision) {
           revision.status = SceneAssetStatus.Approved;

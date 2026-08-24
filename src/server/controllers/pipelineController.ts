@@ -1562,6 +1562,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
   const sceneScript = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY));
   const imagePrompt = _.toString(_.get(req.body, REFACTOR_CONSTANTS.AVG_PROMPT_KEY));
   const expectedSubjectCount = _.toInteger(_.get(req.body, "expectedSubjectCount", 0)) || undefined;
+  const allowBackgroundPeople = Boolean(_.get(req.body, "allowBackgroundPeople"));
   const referenceAssetUrl = _.toString(_.get(req.body, "referenceAssetUrl"));
   const referenceAssetUrls = _.take(_.filter(_.castArray(_.get(req.body, "referenceAssetUrls", [])), _.isString), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
   const qaPurpose = _.isEqual(_.get(req.body, "qaPurpose"), "thumbnail") ? "thumbnail" : "scene";
@@ -1578,7 +1579,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
     if (_.isEmpty(encodedAssets)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ error: REFACTOR_CONSTANTS.ERR_VISUAL_QA_ASSET_INVALID });
 
     const parts: any[] = [
-      { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId) },
+      { text: getSceneImageQualityPrompt(sceneId, sceneScript, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId, allowBackgroundPeople) },
     ];
     _.forEach(encodedAssets, encodedImage => parts.push({ inlineData: encodedImage }));
     const qualityReferences = _.take(_.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
