@@ -2,6 +2,8 @@ import { writeVerificationLog } from "./verificationLogger.ts";
 import { resolveUsableHooks } from "../src/services/hookResilienceService.ts";
 import { acquirePipelineRunLease, releasePipelineRunLease } from "../src/services/pipelineRunLockService.ts";
 import { applyProfessionalEditingPolicy } from "../src/services/editingPolicyService.ts";
+import { createAudienceMarketDirective } from "../src/services/audienceMarketService.ts";
+import { ensureRenderReadySceneAssets } from "../src/services/renderCompletionFallbackService.ts";
 import { createAudioCueSheet } from "../src/services/soundDesignService.ts";
 import { removeAdjacentRepeatedNarrationSentences, removeAdjacentRepeatedStoryboardScenes } from "../src/services/scriptContinuityService.ts";
 import { rankEditorialVideoSceneIds } from "../src/services/projectImageGenerationService.ts";
@@ -139,6 +141,13 @@ const repetitiveMotionScenes = applyProfessionalEditingPolicy(Array.from({ lengt
 })) as any);
 assert(new Set(repetitiveMotionScenes.map(scene => scene.cameraMotion)).size > 2, "repeated safe motion was not diversified");
 assert(repetitiveMotionScenes.some(scene => scene.transition === "cross_dissolve"), "long documentary sequence remained all hard cuts");
+assert(createAudienceMarketDirective("vi", "Khán giả trẻ").includes("Vietnamese audience across Vietnam"), "Vietnam market contract missing");
+assert(createAudienceMarketDirective("en", "Global viewers").includes("international English-speaking audience"), "international market contract missing");
+const renderFallback = ensureRenderReadySceneAssets([
+  { id: "ready", assetUrl: "data:image/png;base64,ready" },
+  { id: "missing" },
+] as any);
+assert(renderFallback.repairedSceneIds.includes("missing") && Boolean(renderFallback.scenes[1].assetUrl), "missing scene did not receive completion fallback");
 const cueSheet = createAudioCueSheet([
   { id: "s1", duration: 5, script: "A character waits", prompt: "one character portrait" },
 ] as any);

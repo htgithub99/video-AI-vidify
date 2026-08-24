@@ -24,6 +24,8 @@ import { createSourceGroundedThumbnailIdeas, getThumbnailPlanningIssues, normali
 import { clearProjectImageOutputs, clearProjectVideoOutputs } from "../../services/projectRegenerationService.js";
 import { searchArchivalImageWithChrome } from "../services/archivalImageSearchService.js";
 import { createGenreEditorialDirective } from "../../services/genreEditorialBlueprintService.js";
+import { createAudienceMarketDirective } from "../../services/audienceMarketService.js";
+import { createStoryboardRetentionDirective, createViewerRetentionDirective } from "../../services/viewerRetentionBlueprintService.js";
 import { THUMBNAIL_PROMPT_CONFIG } from "../../constants/thumbnail.js";
 
 import {
@@ -1126,7 +1128,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     const targetChapterCount = resolveScriptPlanChapterCount(targetWordCountMin);
 
     const contentControlDirective = `[User content controls]\n- Input type: ${inputType}. Treat a script/draft as source material to preserve; treat an idea as material to develop.\n- Rewrite level: ${_.clamp(_.toNumber(config.rewriteLevel), 0, 100)}%.\n- Creativity: ${_.clamp(_.toNumber(config.creativityLevel), 0, 10)}/10. Creativity may change expression and storytelling, never verified facts.\n- Similarity reduction: ${_.clamp(_.toNumber(config.similarityReduction), 0, 10)}/10. Vary wording and rhythm without changing factual meaning.`;
-    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${contentControlDirective}`;
+    const retentionDirective = createViewerRetentionDirective(parseTargetDurationSeconds(rawDurationText), config.genre);
+    const combinedScriptPrompt = `${getCombinedScriptPrompt(originalInput, durationText, targetWordCount, config.genre, config.writingStyle, isVi, activeHookText, genreGuideline, styleGuideline, audienceGuideline, targetChapterCount, config.hookConfig)}\n\n${createGenreEditorialDirective(config.genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}\n\n${retentionDirective}\n\n${contentControlDirective}`;
 
     let groundedResearchResponse: any = null;
     if (config.factCheck) {
@@ -1312,7 +1315,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let editorialQa: Record<string, unknown> = {};
     try {
       const editorialResponse = await generateContentWithRetry({
-        contents: getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount),
+        contents: `${getFinalScriptEditorialPrompt(finalCleanScript, config.genre, isVi, targetWordCount)}\n\n${retentionDirective}`,
         config: {
           responseMimeType: CONTENT_TYPES.JSON,
           responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
@@ -1700,7 +1703,7 @@ router.post("/storyboard", async (req: Request, res: Response) => {
       GENRE_VISUAL_GUIDELINES[genre as VideoGenre] ||
       `CRITICAL VISUAL DIRECTIVE - ${genre.toUpperCase()} GENRE:
 - Maintain context consistency and ensure the image details align with a ${genre} theme.`;
-    genreVisualGuideline = `${genreVisualGuideline}\n${createGenreEditorialDirective(genre)}`;
+    genreVisualGuideline = `${genreVisualGuideline}\n${createGenreEditorialDirective(genre)}\n${createAudienceMarketDirective(config?.language, config?.audience)}\n${createStoryboardRetentionDirective(chosenDuration, genre)}`;
 
     const storyboardLogger = new StepLogger();
     const storyboardLogs = storyboardLogger.getLogs();
@@ -2032,7 +2035,7 @@ router.post("/seo", async (req: Request, res: Response) => {
     logSeoStep(PIPELINE_LOGS.SEO_STEP1);
 
     const genre = config.genre || req.body?.genre || req.body?.project?.config?.genre;
-    const combinedSeoPrompt = getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre);
+    const combinedSeoPrompt = `${getSeoOptimizationPrompt(rewrittenScript, isVi, numTitles, numDescriptions, numHashtags, numTags, genre)}\n\n${createAudienceMarketDirective(config.language, config.audience)}`;
 
     const combinedResponse = await generateContentWithRetry({
       contents: combinedSeoPrompt,
@@ -2143,6 +2146,7 @@ router.post("/thumbnails", async (req: Request, res: Response) => {
       config.genre || "",
       config.writingStyle || "",
       createGenreEditorialDirective(config.genre || ""),
+      `${createAudienceMarketDirective(config.language, config.audience)}\n${createViewerRetentionDirective(config.duration || req.body?.duration || 180, config.genre || "")}`,
     );
 
     const thumbParts: any[] = [];
@@ -2555,7 +2559,8 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
       FINAL_MULTIMODAL_QA_CONFIG.FRAME_COUNT,
     );
     if (_.isEmpty(frameFiles)) throw new Error(PIPELINE_SERVER_ERRORS.FINAL_QA_FRAMES_MISSING);
-    const parts:any[]=[{text:getFinalVideoQualityPrompt(_.toString(req.body?.script),_.toString(req.body?.viewerPromise))}];
+    const finalQaPrompt = `${getFinalVideoQualityPrompt(_.toString(req.body?.script), _.toString(req.body?.viewerPromise))}\n\n${createViewerRetentionDirective(req.body?.duration || req.body?.durationSeconds || 180, _.toString(req.body?.genre))}\n[FINAL QA APPLICATION]: Judge whether the opening starts fulfilling the packaging promise, whether chronological scenes add genuinely new value, whether motivated visual/audio turns support comprehension, and whether the ending pays off the opening. Report failures as warnings unless they make the rendered video technically unusable.`;
+    const parts:any[]=[{text:finalQaPrompt}];
     _.forEach(frameFiles,file=>parts.push({inlineData:{mimeType:FINAL_MULTIMODAL_QA_CONFIG.FRAME_MIME_TYPE,data:fs.readFileSync(path.join(tempDir,file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding)}}));
     parts.push({inlineData:{mimeType:FINAL_MULTIMODAL_QA_CONFIG.AUDIO_MIME_TYPE,data:fs.readFileSync(audioPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding)}});
     const response=await generateContentWithRetry({contents:[{role:"user",parts}],config:{responseMimeType:CONTENT_TYPES.JSON,responseJsonSchema:FINAL_VIDEO_QA_RESPONSE_SCHEMA,maxOutputTokens:FINAL_MULTIMODAL_QA_CONFIG.MAX_OUTPUT_TOKENS},task:{capability:AiTaskCapability.VisualQa}});

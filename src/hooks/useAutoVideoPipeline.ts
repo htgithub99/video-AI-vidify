@@ -77,6 +77,7 @@ import { createPipelineBenchmark, resolveRolloutConfig } from "../services/rollo
 import { applyOptionalMusicAsset, createAudioCueSheet, resolveAutomaticMusicProfile } from "../services/soundDesignService";
 import { createRenderAudioTracks } from "../services/audioMixService";
 import { createShadowComparison } from "../services/shadowComparisonService";
+import { ensureRenderReadySceneAssets } from "../services/renderCompletionFallbackService";
 import { evaluateImagePrompts } from "../services/imagePromptQualityService";
 import { createScriptGroundedStoryboard, ensureScriptGroundedSceneDetails, ensureStoryboardScriptCoverage } from "../services/storyboardFallbackService";
 import { applyProfessionalEditingPolicy } from "../services/editingPolicyService";
@@ -726,18 +727,31 @@ export function useAutoVideoPipeline(
 
         const scriptRes = await safeSystemFetch(API_ROUTES.PIPELINE_SCRIPT, scriptPayload, requestSignal);
         throwIfCancelled();
+        const scriptData: any = scriptRes.success && scriptRes.data && !scriptRes.data.error
+          ? scriptRes.data
+          : {
+            rewrittenScript: config.scriptContent,
+            chapters: [],
+            factCheckNotes: "",
+            hookVersions: [],
+            scriptQa: undefined,
+            aiMetrics: [],
+            contentSafety: undefined,
+          };
         if (!scriptRes.success || !scriptRes.data || scriptRes.data.error) {
-          throw new Error(scriptRes.error || scriptRes.data?.error || AUTO_GENERATOR_CONSTANTS.ERR_SCRIPT_REWRITE);
+          appendLog(config.language === ProjectLanguage.VI
+            ? "AI viết kịch bản chưa khả dụng; tiếp tục bằng nội dung người dùng để bảo đảm video vẫn được tạo."
+            : "AI script writing is unavailable; continuing with the user's content so the video still completes.");
         }
-        if (_.isEqual(scriptRes.data.scriptQa?.passed, false)) {
+        if (_.isEqual(scriptData.scriptQa?.passed, false)) {
           appendLog(REFACTOR_CONSTANTS.WARN_SCRIPT_QA_CONTINUED);
         }
 
-        realScript = scriptRes.data.rewrittenScript || config.scriptContent;
-        chapters = (scriptRes.data.chapters || []) as Chapter[];
-        factCheckNotes = scriptRes.data.factCheckNotes || "";
+        realScript = scriptData.rewrittenScript || config.scriptContent;
+        chapters = (scriptData.chapters || []) as Chapter[];
+        factCheckNotes = scriptData.factCheckNotes || "";
         const hookVersions = _.map(
-          _.take(_.defaultTo(scriptRes.data.hookVersions, []) as HookVersion[], newProj.hookConfig.count),
+          _.take(_.defaultTo(scriptData.hookVersions, []) as HookVersion[], newProj.hookConfig.count),
           (hook, index) => ({
             id: _.toString(_.defaultTo(hook.id, _.join(["hook", _.add(index, 1)], "_"))),
             content: _.toString(hook.content),
@@ -758,13 +772,13 @@ export function useAutoVideoPipeline(
           hookConfig: { ...newProj.hookConfig, versions: hookVersions },
           scriptRewritten: realScript,
           factCheckNotes,
-          creativeBrief: scriptRes.data.creativeBrief as CreativeBrief,
-          narrativePlan: scriptRes.data.narrativePlan,
-          chapterPlans: scriptRes.data.chapterPlans,
-          factPack: scriptRes.data.factPack as FactPack,
-          scriptQa: scriptRes.data.scriptQa as ScriptQualityReport | undefined,
-          aiMetrics: _.concat(_.defaultTo(newProj.aiMetrics, []), _.defaultTo(scriptRes.data.aiMetrics, [])),
-          contentSafety: scriptRes.data.contentSafety as ContentSafetyReport,
+          creativeBrief: scriptData.creativeBrief as CreativeBrief,
+          narrativePlan: scriptData.narrativePlan,
+          chapterPlans: scriptData.chapterPlans,
+          factPack: scriptData.factPack as FactPack,
+          scriptQa: scriptData.scriptQa as ScriptQualityReport | undefined,
+          aiMetrics: _.concat(_.defaultTo(newProj.aiMetrics, []), _.defaultTo(scriptData.aiMetrics, [])),
+          contentSafety: scriptData.contentSafety as ContentSafetyReport,
           chapters,
         };
         await syncProject(scriptUpdatedProj);
@@ -1875,6 +1889,14 @@ export function useAutoVideoPipeline(
         persistCheckpoint: persistImageCheckpoint,
         onLog: appendLog,
       });
+      const completionFallback = ensureRenderReadySceneAssets(realScenes as StoryboardScene[]);
+      if (!_.isEmpty(completionFallback.repairedSceneIds)) {
+        realScenes = completionFallback.scenes;
+        appendLog(config.language === ProjectLanguage.VI
+          ? `[Hoàn thành bắt buộc] Đã phục hồi ${completionFallback.repairedSceneIds.length} cảnh thiếu hình bằng tài sản cục bộ an toàn để tiếp tục render.`
+          : `[Completion guarantee] Recovered ${completionFallback.repairedSceneIds.length} scenes with safe local visual assets so rendering can continue.`);
+        await persistImageCheckpoint();
+      }
       const sceneAssetSummary = getSceneAssetSummary(realScenes as StoryboardScene[]);
       if (!sceneAssetSummary.complete) {
         await syncProject({
