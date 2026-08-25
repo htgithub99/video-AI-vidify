@@ -11,6 +11,7 @@ interface StylePresetSelectorProps {
   label?: string;
   accentColor?: "blue" | "purple";
   genre?: string;
+  allowedPresetIds?: readonly string[];
 }
 
 export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
@@ -20,13 +21,19 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   label = "Phong cách hình ảnh",
   accentColor = "blue",
   genre,
+  allowedPresetIds,
 }) => {
   const isVi = _.isEqual(language, "vi");
   const isPurple = _.isEqual(accentColor, "purple");
   const [activeCategory, setActiveCategory] = useState<StyleCategory>("all");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const presetsList = useMemo(() => _.values(CURATED_STYLE_PRESETS), []);
+  const presetsList = useMemo(() => {
+    const allPresets = _.values(CURATED_STYLE_PRESETS);
+    if (_.isEmpty(allowedPresetIds)) return allPresets;
+    const allowed = new Set(allowedPresetIds);
+    return _.filter(allPresets, preset => allowed.has(preset.id));
+  }, [allowedPresetIds]);
   const recommendedIds = useMemo(() => new Set(getRecommendedStylePresetIds(genre)), [genre]);
 
   const currentPreset = useMemo(() => {
@@ -71,7 +78,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-        {_.map(STYLE_CATEGORIES, (cat) => {
+        {_.map(_.filter(STYLE_CATEGORIES, cat => _.isEqual(cat.id, "all") || _.some(presetsList, { category: cat.id })), (cat) => {
           const isActive = _.isEqual(activeCategory, cat.id);
           return (
             <button

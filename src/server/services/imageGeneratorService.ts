@@ -270,6 +270,7 @@ export interface ImageGeneratorOptions {
     geminiChatSpeed?: GeminiChatSpeed;
     videoDuration?: string;
     referenceImages?: string[];
+    preserveVideoAudio?: boolean;
   };
   sandboxConfig?: {
     projectId?: string;
@@ -2473,12 +2474,15 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   await waitForGeminiFinished(page, visualConfig, initialResponseCount);
 
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  const finalizeVideo = (value: string): Promise<string> => visualConfig?.preserveVideoAudio
+    ? Promise.resolve(value)
+    : removeVideoAudioTrack(value);
   const latestResponse = page.locator(GeminiChatSelector.Response).last();
 
   const buttonDownloadedBase64 = await tryDownloadViaButton(page, latestResponse, isVideoGeneration);
   if (buttonDownloadedBase64) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
-    return isVideoGeneration ? removeVideoAudioTrack(buttonDownloadedBase64) : buttonDownloadedBase64;
+    return isVideoGeneration ? finalizeVideo(buttonDownloadedBase64) : buttonDownloadedBase64;
   }
 
   const mediaSelector = isVideoGeneration ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO : GEMINI_CHAT_MEDIA_SELECTORS.image;
@@ -2489,7 +2493,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   const base64 = await getBase64FromBlobUrl(page, mediaLoc);
   if (base64) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
-    return isVideoGeneration ? removeVideoAudioTrack(base64) : base64;
+    return isVideoGeneration ? finalizeVideo(base64) : base64;
   }
 
   const secondaryBase64 = isVideoGeneration ? null : await latestResponse
@@ -2536,7 +2540,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   const fallbackBtnDownload = await tryDownloadViaButton(page, page.locator("body"), isVideoGeneration);
   if (fallbackBtnDownload) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
-    return isVideoGeneration ? removeVideoAudioTrack(fallbackBtnDownload) : fallbackBtnDownload;
+    return isVideoGeneration ? finalizeVideo(fallbackBtnDownload) : fallbackBtnDownload;
   }
 
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);

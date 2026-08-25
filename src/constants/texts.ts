@@ -214,6 +214,7 @@ export const COMMON_STRINGS = {
   RELATIVE_URL_PARSE_BASE: "http://local.invalid",
   STUDIO_CHILD_SUFFIX: " - Biên tập",
   AUTO_CHILD_SUFFIX: " - Tự động",
+  CINEMATIC_CHILD_SUFFIX: " - Phim AI",
 } as const;
 
 export const ERROR_MESSAGES = {
@@ -334,6 +335,12 @@ const SATIRICAL_LIFE_VISUAL_GUIDELINE = `CRITICAL VISUAL DIRECTIVE - SATIRICAL L
 - Keep generated assets free of readable text, logos and watermarks. Reserve exact typography for the editing compositor.`;
 
 export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
+  [VideoGenre.CINEMATIC_EPISODE]: `CRITICAL VISUAL DIRECTIVE - CINEMATIC AI EPISODE:
+- Build continuous dramatic sequences, not a narration montage. Establish geography with a master shot, then use motivated coverage, reactions, inserts and payoff shots.
+- Lock recurring character identity, scale, wardrobe, damage, location layout, lighting logic, prop ownership, eyelines and screen direction across the sequence.
+- Every shot needs an observable start state, one playable action and a clean end state that can hand motion or attention to the next shot.
+- Visible dialogue requires one identified speaker, exact short dialogue and natural lip-sync intent; narration and off-screen lines must not create random mouth movement.
+- Use original cinematic world design. Do not copy protected franchise characters, costumes, logos, vehicles or signature production design.`,
   [VideoGenre.SATIRICAL_LIFE_AUTO]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
   [VideoGenre.TRANSFORMATION_TIMELINE]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
   [VideoGenre.CAREER_SOCIAL_DARKSIDE]: SATIRICAL_LIFE_VISUAL_GUIDELINE,
@@ -551,6 +558,7 @@ export const SIDEBAR_TEXTS = {
     DASHBOARD: "Tổng quan",
     CONTENT: "Nội dung",
     AUTO_CREATOR: "Tạo Video Tự Động",
+    CINEMATIC_FILM: "Làm Phim AI",
     AI_STUDIO: "Trình Biên Tập Video",
     SETTINGS: "Cài đặt",
     AI_CREATOR: "Nhà Sáng Tạo AI",
@@ -563,6 +571,7 @@ export const SIDEBAR_TEXTS = {
     DASHBOARD: "Dashboard",
     CONTENT: "Content",
     AUTO_CREATOR: "Auto Video Creator",
+    CINEMATIC_FILM: "AI Film Studio",
     AI_STUDIO: "AI Studio",
     SETTINGS: "Settings",
     AI_CREATOR: "AI Creator",
@@ -1422,4 +1431,3 @@ export const ADVANCED_SETTING_GROUPS = {
     newDesc: "Generate fresh script, voice, and visual assets from scratch",
   },
 } as const;
-

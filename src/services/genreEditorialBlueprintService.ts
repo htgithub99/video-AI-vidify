@@ -15,6 +15,12 @@ export interface GenreEditorialBlueprint {
 }
 
 const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
+  cinematic_episode: {
+    id: "cinematic_episode", narrativeEngine: "Write an original screen story in playable sequences: a concrete objective, opposing force, escalating choices, irreversible turn, climax and earned aftermath. Let character action and dialogue carry meaning instead of explanatory narration.",
+    visualGrammar: "Direct sequence-level geography, master/coverage/reaction/insert shots, stable eyelines and screen direction, motivated blocking, action handoffs and exact location, wardrobe and prop continuity.", pacing: "Alternate tension, release and discovery at sequence level; enter late, leave after the consequence, and preserve performance holds instead of cutting on every sentence.",
+    sourcePolicy: "Use original fictional world assets or supplied canon. Never imitate protected characters, franchises, logos, costumes or a living creator's signature world design.", voiceDirection: "Prefer short playable dialogue, subtext and character-specific rhythm. Use narration only when the chosen story form genuinely requires it.", audioDirection: "Build scene-specific room tone, footsteps, cloth, machinery, weapons, vehicles and selective silence; music follows the dramatic arc and never replaces production sound.",
+    motionPolicy: "One coherent action and at most one motivated camera move per shot; preserve start/end pose, axis, eyeline, identity, geometry and prop ownership across coverage.", thumbnailPromise: "One original protagonist, one immediate threat or objective and one unmistakable world detail without copying an existing franchise.", musicProfile: "cinematic_episode",
+  },
   satirical_story: {
     id: "satirical_story", narrativeEngine: "Follow one concrete contradiction through escalating choices, observable consequences and a changed-meaning callback; humor must reveal the mechanism and punch up.",
     visualGrammar: "Stage lived interactions, transactions, rules, reactions and ironic evidence; avoid generic sad portraits and detachable visual jokes.", pacing: "Alternate compact setups, medium consequence beats and short landings; give serious human-cost moments room to breathe.",
@@ -72,6 +78,7 @@ const BLUEPRINTS: Record<string, GenreEditorialBlueprint> = {
 };
 
 const GENRE_BLUEPRINT_IDS: Record<string, string> = {
+  [VideoGenre.CINEMATIC_EPISODE]: "cinematic_episode",
   [VideoGenre.SATIRICAL_LIFE_AUTO]: "satirical_story", [VideoGenre.TRANSFORMATION_TIMELINE]: "satirical_story",
   [VideoGenre.CAREER_SOCIAL_DARKSIDE]: "satirical_story", [VideoGenre.DOWNFALL_CONSEQUENCE]: "satirical_story", [VideoGenre.DARK_COMEDY_TRAGEDY]: "satirical_story",
   [VideoGenre.HISTORY]: "evidence_documentary", Documentary: "evidence_documentary", News: "evidence_documentary", Architecture: "evidence_documentary",

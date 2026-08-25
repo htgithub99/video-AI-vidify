@@ -248,6 +248,7 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
 export const DEFAULT_STYLE_PRESET_ID = STYLE_PRESET_CONFIG.DEFAULT_ID;
 
 export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
+  [VideoGenre.CINEMATIC_EPISODE]: ["cinematic_photoreal", "fantasy_concept_art", "tien_hiep_3d"],
   [VideoGenre.SATIRICAL_LIFE_AUTO]: ["hoat_hinh_2d_vn", "meme_hai_huoc_2d", "ve_tay_don_gian"],
   [VideoGenre.TRANSFORMATION_TIMELINE]: ["cinematic_photoreal", "editorial_explainer", "hoat_hinh_2d_vn"],
   [VideoGenre.CAREER_SOCIAL_DARKSIDE]: ["hoat_hinh_2d_vn", "cinematic_photoreal", "true_crime_evidence"],
@@ -265,6 +266,15 @@ export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
   "Top List": ["product_review_studio", "editorial_explainer", "cinematic_photoreal"],
   "True Crime": ["true_crime_evidence", "archival_documentary", "cinematic_photoreal"],
 };
+
+// Deliberately narrow: these presets describe a production-rendering medium
+// suitable for continuous moving shots. Editorial, archival, infographic,
+// meme, stickman and product styles belong to the automatic-video workspace.
+export const CINEMATIC_FILM_STYLE_PRESET_IDS = [
+  "cinematic_photoreal",
+  "fantasy_concept_art",
+  "tien_hiep_3d",
+] as const;
 
 export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(
   _.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]),

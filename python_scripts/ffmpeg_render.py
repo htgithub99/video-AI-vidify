@@ -327,6 +327,23 @@ def get_media_duration(ffmpeg_cmd, media_path):
     except (OSError, ValueError, subprocess.SubprocessError):
         return FFMPEG_CONSTANTS.ZERO_SECONDS
 
+def media_has_audio_stream(ffmpeg_cmd, media_path):
+    try:
+        result = subprocess.run(
+            [
+                get_ffprobe_command(ffmpeg_cmd), "-v", "error",
+                "-select_streams", "a:0", "-show_entries", "stream=codec_type",
+                "-of", "csv=p=0", media_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=FFMPEG_CONSTANTS.PROBE_TIMEOUT_SECONDS,
+            check=False,
+        )
+        return result.returncode == 0 and "audio" in result.stdout.lower()
+    except (OSError, subprocess.SubprocessError):
+        return False
+
 def create_automatic_music_bed(ffmpeg_cmd, temp_dir, duration_seconds, profile):
     profiles = {
         "satirical_editorial": (110.0, 164.81, 220.0, "pink", 950),
@@ -1295,6 +1312,7 @@ def main():
         scene_transitions = []
         scene_media_owned = []
         scene_audio_owned = []
+        preserve_video_audio = bool(config.get("preserveVideoAudio"))
         
         for i, scene in enumerate(scenes):
             idx = str(i).zfill(FFMPEG_CONSTANTS.INDEX_PADDING)
@@ -1314,6 +1332,9 @@ def main():
             source_media_path = scene.get(FFMPEG_CONSTANTS.KEY_MEDIA_PATH)
             source_audio_path = scene.get(FFMPEG_CONSTANTS.KEY_AUDIO_PATH)
             duration = scene.get(FFMPEG_CONSTANTS.KEY_DURATION, FFMPEG_CONSTANTS.DEFAULT_SCENE_DURATION)
+            scene_trim_start = max(0.0, float(scene.get("sourceTrimStartSeconds", 0) or 0))
+            scene_trim_end = max(0.0, float(scene.get("sourceTrimEndSeconds", 0) or 0))
+            scene_source_crop = str(scene.get("sourceCrop") or "").strip()
             transition = scene.get(FFMPEG_CONSTANTS.KEY_TRANSITION, FFMPEG_CONSTANTS.EMPTY_STRING)
             if scene.get(FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT) in FFMPEG_CONSTANTS.DISRUPTIVE_LIGHTING_EFFECTS:
                 scene[FFMPEG_CONSTANTS.KEY_LIGHTING_EFFECT] = FFMPEG_CONSTANTS.DEFAULT_LIGHTING_EFFECT
@@ -1335,6 +1356,11 @@ def main():
             else:
                 scene_id = scene.get("id") or idx
                 raise Exception(f"Scene {scene_id} has no real visual asset")
+
+            if preserve_video_audio and is_video:
+                native_video_duration = get_media_duration(ffmpegCmd, mediaPath)
+                if native_video_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
+                    duration = max(FFMPEG_CONSTANTS.MIN_USABLE_VIDEO_SECONDS, native_video_duration - scene_trim_start - scene_trim_end)
 
             if not is_video:
                 scene_id = scene.get("id") or idx
@@ -1465,6 +1491,10 @@ def main():
             audioPath = scene_audio_paths[i]
             duration = scene_durations[i]
             is_video = scene_is_video[i]
+            scene_trim_start = max(0.0, float(scenes[i].get("sourceTrimStartSeconds", video_trim_start) or 0))
+            scene_trim_end = max(0.0, float(scenes[i].get("sourceTrimEndSeconds", video_trim_end) or 0))
+            scene_source_crop = str(scenes[i].get("sourceCrop") or "").strip()
+            use_embedded_audio = preserve_video_audio and is_video and media_has_audio_stream(ffmpegCmd, mediaPath)
             
             fade_dur = min(0.5, duration / 3.0)
             fade_dur = max(fade_dur, 0.15)
@@ -1479,7 +1509,15 @@ def main():
             else:
                 cmd = [ffmpegCmd, "-y", "-loop", "1", "-i", mediaPath]
             
-            if audioPath:
+            if use_embedded_audio:
+                # Match production-sound loudness per generated take before
+                # concatenation so quiet ambience and clipped action clips do
+                # not jump tens of decibels at edit points.
+                af_effect = ",".join([
+                    FFMPEG_CONSTANTS.AFADE.format(fade_dur, max(0, duration-fade_dur)),
+                    "loudnorm=I=-20:TP=-2:LRA=11",
+                ])
+            elif audioPath:
                 cmd.extend(["-i", audioPath])
                 af_effect = FFMPEG_CONSTANTS.AFADE.format(fade_dur, max(0, duration-fade_dur))
             else:
@@ -1495,17 +1533,22 @@ def main():
             
             video_filter = vf_effect
             if is_video:
-                video_filter = ",".join([
+                video_filter_parts = [
                     get_video_trim_filter(
                         ffmpegCmd,
                         mediaPath,
-                        video_trim_start,
-                        video_trim_end,
+                        scene_trim_start,
+                        scene_trim_end,
                         actual_duration,
-                    ),
+                    )
+                ]
+                if scene_source_crop:
+                    video_filter_parts.append(f"crop={scene_source_crop}")
+                video_filter_parts.extend([
                     FFMPEG_CONSTANTS.VIDEO_SCALE_FILTER.format(width, height, fps),
                     vf_effect,
                 ])
+                video_filter = ",".join(video_filter_parts)
             else:
                 video_filter = get_native_image_filter(
                     chosen_styles[i],
@@ -1532,7 +1575,7 @@ def main():
                         "bitrate": bitrate,
                         "videoFilter": video_filter,
                         "audioFilter": af_effect,
-                        "hasAudio": bool(audioPath),
+                        "hasAudio": bool(audioPath) or use_embedded_audio,
                         "safeProfile": safe_profile,
                     },
                 )
@@ -1544,9 +1587,10 @@ def main():
                         emit_progress(max(1, round(completed_scene_count * 90 / len(scenes))))
                     return FFMPEG_CONSTANTS.CONCAT_PREFIX.format(idx)
 
+            audio_input_index = "0:a:0" if use_embedded_audio else "1:a:0"
             cmd.extend([
                 "-map", "0:v:0",
-                "-map", "1:a:0",
+                "-map", audio_input_index,
                 "-c:v", FFMPEG_CONSTANTS.LIBX264, "-b:v", bitrate,
                 "-preset", FFMPEG_CONSTANTS.SLOW,
                 "-profile:v", FFMPEG_CONSTANTS.HIGH, "-level", "4.1",
@@ -1643,8 +1687,27 @@ def main():
         subtitle_mode = config.get(FFMPEG_CONSTANTS.KEY_SUBTITLE_MODE, FFMPEG_CONSTANTS.SUBTITLE_MODE_BURN_IN)
         subtitle_path = create_subtitle_file(tempDir, scenes, scene_durations)
         audio_tracks = config.get(FFMPEG_CONSTANTS.KEY_AUDIO_TRACKS, [])
-        scene_audio_present = any(scene_audio_paths)
+        embedded_audio_present = preserve_video_audio and any(
+            scene_is_video[index] and media_has_audio_stream(ffmpegCmd, scene_media_paths[index])
+            for index in range(len(scene_media_paths))
+        )
+        scene_audio_present = any(scene_audio_paths) or embedded_audio_present
         expected_output_duration = sum(scene_durations)
+        auto_music_profile = config.get("autoMusicProfile")
+        has_music_track = any(track.get("type") == "music" for track in audio_tracks)
+        if auto_music_profile and not has_music_track:
+            automatic_music_path = create_automatic_music_bed(
+                ffmpegCmd, tempDir, expected_output_duration, auto_music_profile,
+            )
+            if automatic_music_path:
+                automatic_fade_seconds = min(2.0, expected_output_duration / 4.0)
+                audio_tracks.append({
+                    "id": "automatic_music_bed", "type": "music",
+                    "assetPath": automatic_music_path, "startSeconds": 0,
+                    "durationSeconds": expected_output_duration, "volumeDb": 0,
+                    "loop": False, "fadeInSeconds": automatic_fade_seconds,
+                    "fadeOutSeconds": automatic_fade_seconds,
+                })
         if globalAudioPath and os.path.exists(globalAudioPath):
             global_audio_duration = get_media_duration(ffmpegCmd, globalAudioPath)
             if global_audio_duration > FFMPEG_CONSTANTS.ZERO_SECONDS:
@@ -1751,12 +1814,26 @@ def main():
                 normalizeAudioCmd = [
                     ffmpegCmd, "-y", "-i", tempFinalPath,
                 ]
-                subtitle_input_index = add_subtitle_input(normalizeAudioCmd, subtitle_path, 1)
-                normalizeAudioCmd.extend([
-                    "-map", "0:v:0", "-map", "0:a:0",
-                    "-af", "loudnorm=I=-16:TP=-1:LRA=7",
-                    "-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000",
-                ])
+                for track in audio_tracks:
+                    if track.get("loop"):
+                        normalizeAudioCmd.extend(["-stream_loop", "-1"])
+                    normalizeAudioCmd.extend(["-i", track.get("assetPath")])
+                subtitle_input_index = add_subtitle_input(normalizeAudioCmd, subtitle_path, 1 + len(audio_tracks))
+                if audio_tracks:
+                    film_mix_filters = []
+                    film_mix_inputs = ["[0:a]"]
+                    for track_index, track in enumerate(audio_tracks):
+                        input_index = track_index + 1
+                        delay_ms = max(0, round(float(track.get("startSeconds", 0)) * 1000))
+                        volume_db = float(track.get("volumeDb", -18))
+                        label = f"filmmix{track_index}"
+                        film_mix_filters.append(f"[{input_index}:a]volume={volume_db}dB,adelay={delay_ms}|{delay_ms}[{label}]")
+                        film_mix_inputs.append(f"[{label}]")
+                    film_mix_filters.append(f"{''.join(film_mix_inputs)}amix=inputs={len(film_mix_inputs)}:duration=first:dropout_transition=2,loudnorm=I=-16:TP=-1:LRA=7[film_audio]")
+                    normalizeAudioCmd.extend(["-filter_complex", ";".join(film_mix_filters), "-map", "0:v:0", "-map", "[film_audio]"])
+                else:
+                    normalizeAudioCmd.extend(["-map", "0:v:0", "-map", "0:a:0", "-af", "loudnorm=I=-16:TP=-1:LRA=7"])
+                normalizeAudioCmd.extend(["-c:a", FFMPEG_CONSTANTS.AAC, "-ar", "48000"])
                 if subtitle_input_index is not None:
                     add_subtitle_output(normalizeAudioCmd, subtitle_path, subtitle_mode, subtitle_input_index)
                 else:
@@ -1777,7 +1854,7 @@ def main():
             width,
             height,
             expected_output_duration,
-            scene_audio_present or bool(globalAudioPath and os.path.exists(globalAudioPath)),
+            preserve_video_audio or scene_audio_present or bool(globalAudioPath and os.path.exists(globalAudioPath)),
         )
         emit_progress(99)
         print(json.dumps({FFMPEG_CONSTANTS.OUTPUT_SUCCESS: True, "url": finalOutputUrl}))

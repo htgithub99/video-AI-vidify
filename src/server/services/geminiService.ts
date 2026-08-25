@@ -86,6 +86,30 @@ export const generateContentWithRetry = async (
     },
   });
 
+  const generateWithTimeout = async (): Promise<any> => {
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        clientAi.models.generateContent({
+          model: activeModelForRequest,
+          contents: params.contents,
+          config: geminiConfigForRequest,
+        }),
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(Object.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: "ETIMEDOUT" })),
+            GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS,
+          );
+        }),
+      ]);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
+  };
+
+  let activeModelForRequest = "";
+  let geminiConfigForRequest: any = {};
+
   let lastError: any = null;
   const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
   const contentEstimate = estimateGeminiContents(params.contents);
@@ -114,6 +138,8 @@ export const generateContentWithRetry = async (
   for (let i = 0; _.lt(i, route.models.length); i++) {
     const modelIndex = (startIndex + i) % route.models.length;
     const model = route.models[modelIndex];
+    activeModelForRequest = model;
+    geminiConfigForRequest = geminiConfig;
 
     appLog(SecurityConstants.DIVIDER_LINE);
     logStep("GEMINI_CALLING_MODEL", i + 1, route.models.length, model, modelIndex);
@@ -122,11 +148,7 @@ export const generateContentWithRetry = async (
     while (_.lte(attempt, retries)) {
       try {
         const callStartedAt = Date.now();
-        const response = await clientAi.models.generateContent({
-          model: model,
-          contents: params.contents,
-          config: geminiConfig,
-        });
+        const response = await generateWithTimeout();
 
         logStep("GEMINI_SUCCESS", model, attempt + 1);
         recordModelSuccess(model);

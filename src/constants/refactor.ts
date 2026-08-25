@@ -461,6 +461,8 @@ export const ROUTER_PATHS = {
   ALIGN_VOICE: "/align-voice",
   VALIDATE_AUDIO: "/validate-audio",
   VALIDATE_FINAL_VIDEO: "/validate-final-video",
+  ANALYZE_CINEMATIC_CLIPS: "/analyze-cinematic-clips",
+  EXTRACT_THUMBNAIL_FRAME: "/extract-thumbnail-frame",
   REFERENCE_ASSETS: "/reference-assets/:projectId/:group",
   REFERENCE_AUDIO: "/reference-audio/:projectId",
   SELECT_VIDEO_SCENES: "/select-video-scenes",

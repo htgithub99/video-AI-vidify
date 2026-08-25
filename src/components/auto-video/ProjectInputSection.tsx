@@ -21,6 +21,7 @@ interface ProjectInputSectionProps {
   setSplitStrategy: (val: string) => void;
   splitLabelMap: Record<string, string>;
   T: any;
+  lockedGenreLabel?: string;
 }
 
 export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
@@ -38,6 +39,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
   setSplitStrategy,
   splitLabelMap,
   T,
+  lockedGenreLabel,
 }) => {
   const wordCount = _.size(_.words(scriptContent));
   const charCount = _.size(scriptContent);
@@ -104,12 +106,14 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
           { label: T.lblLanguage, icon: <Globe className="w-3.5 h-3.5 text-sky-400 mr-2 shrink-0" />, value: language, onChange: (v: string) => setLanguage(v as ProjectLanguage), options: _.map(PROJECT_LANGUAGE_OPTIONS, (l) => ({ value: l.value, label: _.isEqual(l.value, "vi") ? T.langVi : T.langEn })) },
           { label: T.lblDuration, icon: <Clock className="w-3.5 h-3.5 text-amber-400 mr-2 shrink-0" />, value: duration, onChange: setDuration, options: _.map(DURATION_OPTIONS, (d) => ({ value: d.val, label: d.label })) },
           { label: T.lblSplitStrategy, icon: <Sliders className="w-3.5 h-3.5 text-emerald-400 mr-2 shrink-0" />, value: splitStrategy, onChange: setSplitStrategy, options: _.map(SPLIT_STRATEGY_OPTIONS, (s) => ({ value: s.value, label: _.get(splitLabelMap, s.value, s.value) })) },
-        ].map(({ label, icon, value, onChange, options, optionGroups }) => (
+        ].map(({ label, icon, value, onChange, options, optionGroups }, fieldIndex) => (
           <div key={label} className="space-y-1.5">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block truncate">{label}</span>
             <div className="relative flex items-center bg-slate-955/80 border border-slate-800/80 rounded-xl px-3 py-2.5 focus-within:border-rose-500/60 focus-within:ring-1 focus-within:ring-rose-500/20 transition-all hover:border-slate-700/80">
               {icon}
-              <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+              {fieldIndex === 0 && lockedGenreLabel ? (
+                <span className="flex-1 text-amber-300 text-xs font-semibold truncate">{lockedGenreLabel}</span>
+              ) : <select value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                 {optionGroups
                   ? _.map(optionGroups, (group) => (
                     <optgroup key={group.label} label={group.label} className="bg-slate-955 text-slate-400">
@@ -117,8 +121,8 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({
                     </optgroup>
                   ))
                   : _.map(options, (o) => <option key={o.value} value={o.value} className="bg-slate-955 text-slate-300">{o.label}</option>)}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />
+              </select>}
+              {!(fieldIndex === 0 && lockedGenreLabel) && <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 pointer-events-none" />}
             </div>
           </div>
         ))}

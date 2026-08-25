@@ -23,7 +23,7 @@ export const SEO_FALLBACK_CONFIG = {
   TITLE_MAX_LENGTH: 100,
   DESCRIPTION_MAX_LENGTH: 500,
   TAG_MIN_LENGTH: 4,
-  UNKNOWN_SCORE: 0,
+  UNKNOWN_SCORE: -1,
   WARNING: "seo_source_fallback_used",
 } as const;
 
@@ -457,6 +457,8 @@ export const JSON_UTILS_CONFIG = {
 } as const;
 
 export const GEMINI_REQUEST_POLICY = {
+  REQUEST_TIMEOUT_MS: 60_000,
+  REQUEST_TIMEOUT_ERROR: "gemini_request_timeout",
   DEFAULT_RETRIES: 1,
   BASE_DELAY_MS: 1_200,
   MODEL_SWITCH_DELAY_MS: 500,
@@ -477,6 +479,7 @@ export const GEMINI_REQUEST_POLICY = {
 } as const;
 
 export const FREE_AI_PROVIDER_CONFIG = {
+  MAX_MODELS_PER_PROVIDER: 1,
   CEREBRAS: {
     id: "cerebras",
     url: "https://api.cerebras.ai/v1/chat/completions",

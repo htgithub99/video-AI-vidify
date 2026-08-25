@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import _ from "lodash";
 import { toast } from "sonner";
 import {
@@ -104,6 +104,8 @@ import { isHookTopicallyGrounded } from "../services/hookResilienceService";
 import { validateChapterLanguage } from "../services/chapterLanguageValidationService";
 import { createSourceGroundedSeo } from "../services/seoFallbackService";
 import { acquirePipelineRunLease, refreshPipelineRunLease, releasePipelineRunLease } from "../services/pipelineRunLockService";
+import { createCinematicVideoPrompt } from "../services/cinematicEpisodeService";
+import { applyCinematicContinuityHandoffs, applyCinematicProductionPolicy, bundleCinematicScenesForGeneration, getCinematicStoryboardContractIssues, isCinematicEpisodeGenre } from "../services/cinematicProductionPolicyService";
 import { Lang } from "../lib/lang";
 import { AUTO_GENERATOR_PANEL_TEXTS } from "../constants/texts";
 import {
@@ -170,6 +172,8 @@ export interface PipelineConfig {
   forceRegenerateVoice?: boolean;
   forceRegenerateScenes?: boolean;
   musicAssetUrl?: string;
+  filmFormat?: "single" | "series";
+  episodeCount?: number;
 }
 
 export interface PipelineState {
@@ -288,7 +292,7 @@ export function useAutoVideoPipeline(
     }
   }, [projects, activeCreatedProject]);
 
-  const syncSelectedProject = (selectedProjectId: string | null | undefined) => {
+  const syncSelectedProject = useCallback((selectedProjectId: string | null | undefined) => {
     if (processingRef.current) return;
     if (!selectedProjectId) return;
     const selectionChanged = !_.isEqual(boundSelectedProjectIdRef.current, selectedProjectId);
@@ -304,7 +308,7 @@ export function useAutoVideoPipeline(
       const projectLogs = !_.isEmpty(foundProj.generationLogs) ? foundProj.generationLogs : cachedLogs;
       setLogs(projectLogs || []);
     }
-  };
+  }, [activeCreatedProject, projects]);
 
   const startPipeline = async (config: PipelineConfig) => {
     if (processingRef.current) return;
@@ -312,6 +316,19 @@ export function useAutoVideoPipeline(
       toast.warning(T.alertEmptyScript);
       return;
     }
+    const presentationTarget = resolveTargetProject(
+      projects,
+      config.selectedProjectId,
+      activeCreatedProject,
+      config.projectName,
+      config.scriptContent,
+    ).existingTargetProject;
+    const startsDifferentContent = Boolean(presentationTarget) && _.some([
+      !_.isEqual(presentationTarget?.input?.type, config.inputType),
+      !_.isEqual(_.trim(presentationTarget?.input?.content), _.trim(config.scriptContent)),
+    ], Boolean);
+    const resetDerivedPresentation = !config.resumeMode || startsDifferentContent;
+
     processingRef.current = true;
     cancellationRef.current = false;
     setIsCancelling(false);
@@ -340,6 +357,10 @@ export function useAutoVideoPipeline(
     setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.START);
     setCurrentStepIndex(1);
     setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+    // Never display SEO, thumbnails, preview or QA from a previous story while
+    // a genuinely new story is being initialized. User production settings
+    // remain in the form state and are intentionally not reset here.
+    if (resetDerivedPresentation) setActiveCreatedProject(null);
 
     let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
     setLogs(_.clone(currentLogs));
@@ -361,7 +382,7 @@ export function useAutoVideoPipeline(
     };
 
     const pipelineStartedAt = Date.now();
-    let currentProject: VideoProject | null = activeCreatedProject;
+    let currentProject: VideoProject | null = resetDerivedPresentation ? null : activeCreatedProject;
     appendLog(T.logPipelineStart);
     appendLog(T.logConfigSummary(
       config.genre,
@@ -410,7 +431,8 @@ export function useAutoVideoPipeline(
       ) || sceneStyleProfileOutdated || thumbnailStyleProfileOutdated;
       const requiresPromptPlanningMigration = _.some(
         existingTargetProj?.storyboard,
-        scene => !_.isEmpty(getVisualShotPlanIssues(scene, scene)),
+        scene => !_.isEmpty(getVisualShotPlanIssues(scene, scene))
+          || (isCinematicEpisodeGenre(config.genre) && !_.inRange(_.size(scene.cinematicBeats), 2, 4)),
       );
       let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets
         || requiresVisualReferenceMigration
@@ -420,7 +442,18 @@ export function useAutoVideoPipeline(
         newProjectId = existingTargetProj.id;
         newProj = {
           ...existingTargetProj,
-          thumbnails: config.forceRegenerateScenes ? [] : existingTargetProj.thumbnails,
+          scriptRewritten: invalidationState.regenerateScript ? undefined : existingTargetProj.scriptRewritten,
+          chapters: invalidationState.regenerateScript ? [] : existingTargetProj.chapters,
+          factCheckNotes: invalidationState.regenerateScript ? undefined : existingTargetProj.factCheckNotes,
+          storyboard: invalidationState.regenerateStoryboard ? [] : existingTargetProj.storyboard,
+          thumbnails: invalidationState.regenerateThumbnails || config.forceRegenerateScenes ? [] : existingTargetProj.thumbnails,
+          seo: invalidationState.regenerateSeo ? undefined : existingTargetProj.seo,
+          renderedVideoUrl: invalidationState.regenerateSceneAssets || invalidationState.regenerateVoice
+            ? undefined
+            : existingTargetProj.renderedVideoUrl,
+          manualReviewItems: invalidationState.regenerateSceneAssets || invalidationState.regenerateScript
+            ? []
+            : existingTargetProj.manualReviewItems,
           status: REFACTOR_CONSTANTS.STATUS_GENERATING,
           activeRunId: pipelineRunLease.runId,
           input: { type: config.inputType, content: config.scriptContent },
@@ -437,6 +470,9 @@ export function useAutoVideoPipeline(
             writingStyle: config.writingStyle,
             splitStrategy: config.splitStrategy,
             musicAssetUrl: config.musicAssetUrl,
+            filmFormat: config.filmFormat,
+            episodeCount: config.episodeCount,
+            seriesBibleRequired: _.isEqual(config.filmFormat, "series"),
           },
           hookConfig: {
             ...existingTargetProj.hookConfig,
@@ -537,6 +573,9 @@ export function useAutoVideoPipeline(
             audience: config.audience,
             writingStyle: config.writingStyle,
             splitStrategy: config.splitStrategy,
+            filmFormat: config.filmFormat,
+            episodeCount: config.episodeCount,
+            seriesBibleRequired: _.isEqual(config.filmFormat, "series"),
           },
           hookConfig: {
             type: config.hookStrategy,
@@ -1001,7 +1040,11 @@ export function useAutoVideoPipeline(
 
       let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-      let isVoiceCached = false;
+      const nativeFilmAudio = isCinematicEpisodeGenre(config.genre);
+      // Film dialogue and production sound are authored inside each generated
+      // clip. Mark the global narration stage as satisfied so no unused TTS is
+      // generated, aligned, cached or later mixed over the actors.
+      let isVoiceCached = nativeFilmAudio;
       const voicePayload = {
         text: realScript,
         voiceURI: config.voiceURI,
@@ -1191,6 +1234,17 @@ export function useAutoVideoPipeline(
       });
       const requestedArchivalCount = _.size(_.filter(realScenes as StoryboardScene[], { assetStrategy: "archival" }));
       realScenes = ensureMediaSourcePlan(realScenes as StoryboardScene[], config.genre);
+      if (isCinematicEpisodeGenre(config.genre)) {
+        // A film episode is generated as moving coverage, never as documentary
+        // stills. This prevents an archival/image branch from leaking into the
+        // dedicated video-only pipeline.
+        realScenes = _.map(realScenes as StoryboardScene[], scene => ({
+          ...scene,
+          assetStrategy: "ai_generated" as const,
+          archivalSearchQuery: "",
+          archivalRationale: "",
+        }));
+      }
       const verifiedArchivalPlanCount = _.size(_.filter(realScenes as StoryboardScene[], { assetStrategy: "archival" }));
       if (verifiedArchivalPlanCount < requestedArchivalCount) {
         appendLog(config.language === ProjectLanguage.VI
@@ -1199,6 +1253,15 @@ export function useAutoVideoPipeline(
       }
       realScenes = pruneUnsupportedSceneCharacterIds(realScenes as StoryboardScene[], voiceUpdatedProj.visualConfig.characters || []);
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
+      if (isCinematicEpisodeGenre(config.genre)) {
+        const sourceShotCount = realScenes.length;
+        realScenes = bundleCinematicScenesForGeneration(realScenes as StoryboardScene[]);
+        realScenes = applyCinematicContinuityHandoffs(realScenes as StoryboardScene[]);
+        const plannedCameraSetupCount = _.sumBy(realScenes as StoryboardScene[], scene => _.size(scene.cinematicBeats));
+        appendLog(config.language === ProjectLanguage.VI
+          ? `[Phim AI] AI đã thiết kế ${plannedCameraSetupCount} góc máy có timeline trong ${realScenes.length} clip 10 giây từ ${sourceShotCount} nhịp truyện; mỗi clip phải có tối thiểu 2 shot và một kết quả nhìn thấy được.`
+          : `[AI Film] AI authored ${plannedCameraSetupCount} timed camera setups across ${realScenes.length} ten-second clips from ${sourceShotCount} story beats; every clip requires at least two shots and a visible consequence.`);
+      }
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
         ...scene,
         prompt: compileImagePrompt(scene, {
@@ -1218,18 +1281,30 @@ export function useAutoVideoPipeline(
       voiceUpdatedProj = { ...voiceUpdatedProj, storyboard: realScenes as VideoProject["storyboard"], imagePromptQa };
       await syncProject(voiceUpdatedProj);
 
-      const resolvedVisualConfig = resolveVisualConfig({
+      const productionVisualConfig = applyCinematicProductionPolicy({
         ...voiceUpdatedProj.visualConfig,
         generationMode: config.generationMode,
         imageGeneratorEngine: config.imageGeneratorEngine,
         generateType: config.generateType,
         maxVideoScenes: config.maxVideoScenes,
         videoDuration: config.videoDuration,
-      });
+      }, config.genre, realScenes.length);
+      const resolvedVisualConfig = resolveVisualConfig(productionVisualConfig);
       if (resolvedVisualConfig.blocked) {
         throw new Error(REFACTOR_CONSTANTS.ERR_VISUAL_CONFIG_BLOCKED);
       }
       const executionVisualConfig = resolvedVisualConfig.config;
+      if (isCinematicEpisodeGenre(config.genre)) {
+        const cinematicContractIssues = getCinematicStoryboardContractIssues(realScenes as StoryboardScene[]);
+        if (!_.isEmpty(cinematicContractIssues)) {
+          appendLog(config.language === ProjectLanguage.VI
+            ? `[Phim AI] Kế hoạch cảnh còn thiếu ${cinematicContractIssues.length} trường điện ảnh; tiếp tục tạo video nhưng ghi nhận QA thay vì âm thầm coi là đạt.`
+            : `[AI Film] Shot plan is missing ${cinematicContractIssues.length} cinematic fields; continuing video generation with an explicit QA warning.`);
+        }
+        appendLog(config.language === ProjectLanguage.VI
+          ? `[Phim AI] Chế độ video toàn cảnh: ${realScenes.length}/${realScenes.length} cảnh được gửi tới model video đã chọn.`
+          : `[AI Film] Video-only production: ${realScenes.length}/${realScenes.length} shots use the selected video model.`);
+      }
       voiceUpdatedProj = {
         ...voiceUpdatedProj,
         visualConfig: executionVisualConfig,
@@ -1256,6 +1331,7 @@ export function useAutoVideoPipeline(
         thumbnailReferenceImages: [],
         thumbnailSceneReferenceImages: [],
         contentLanguage: config.language,
+        preserveVideoAudio: isCinematicEpisodeGenre(config.genre),
       };
 
       const sandboxConfigPayload = { projectId: voiceUpdatedProj.id };
@@ -1411,7 +1487,7 @@ export function useAutoVideoPipeline(
         !_.isEmpty(voiceUpdatedProj.visualConfig?.styleReferenceImages)
       );
 
-      const createSceneRequestContext = (scene: StoryboardScene) => {
+      const createSceneRequestContext = (scene: StoryboardScene, sceneGenerateType: GenerateType) => {
         const context = createSceneGenerationContext(
           scene,
           voiceUpdatedProj.visualConfig,
@@ -1426,7 +1502,9 @@ export function useAutoVideoPipeline(
         return {
           ...context,
           prompt: adaptImagePromptForEngine(
-            compiledPrompt,
+            isCinematicEpisodeGenre(config.genre)
+              ? createCinematicVideoPrompt(scene, compiledPrompt, sceneGenerateType)
+              : compiledPrompt,
             executionVisualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
             config.aspectRatio,
           ),
@@ -1464,9 +1542,9 @@ export function useAutoVideoPipeline(
             throwIfCancelled();
             if (hasSceneAsset(sc)) return;
 
-            const requestContext = createSceneRequestContext(sc);
-            sc.generationPrompt = requestContext.prompt;
             const sceneGenerateType = resolveSceneGenerateType(sc.id, executionVisualConfig.generateType, videoSceneIds);
+            const requestContext = createSceneRequestContext(sc, sceneGenerateType);
+            sc.generationPrompt = requestContext.prompt;
 
             if (isFallback) {
               appendLog(T.logFallbackProgress(i + 1, scenesToProcess.length));
@@ -1562,7 +1640,8 @@ export function useAutoVideoPipeline(
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
           appendLog(T.logBatchImageStreamStart);
           const sceneBatchItems = _.map(remainingTargetScenes, (scene) => {
-            const requestContext = createSceneRequestContext(scene);
+            const sceneGenerateType = resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds);
+            const requestContext = createSceneRequestContext(scene, sceneGenerateType);
             scene.generationPrompt = requestContext.prompt;
             return {
               sceneId: scene.id,
@@ -1570,7 +1649,7 @@ export function useAutoVideoPipeline(
               prompt: requestContext.prompt,
               referenceImages: requestContext.referenceImages,
               continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
-              generateType: resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds),
+              generateType: sceneGenerateType,
             };
           });
           const batchItems = _.concat(sceneBatchItems, unifiedThumbnailItems);
@@ -1605,7 +1684,10 @@ export function useAutoVideoPipeline(
 
           const runThreeTabFallback = async (missingScenes: StoryboardScene[]): Promise<void> => {
             const fallbackItems = _.map(missingScenes, scene => {
-              const requestContext = createSceneRequestContext(scene);
+              const fallbackGenerateType = isCinematicEpisodeGenre(config.genre)
+                ? GenerateType.Video
+                : GenerateType.Image;
+              const requestContext = createSceneRequestContext(scene, fallbackGenerateType);
               scene.generationPrompt = requestContext.prompt;
               return {
                 sceneId: scene.id,
@@ -1613,7 +1695,7 @@ export function useAutoVideoPipeline(
                 prompt: requestContext.prompt,
                 referenceImages: requestContext.referenceImages,
                 continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
-                generateType: GenerateType.Image,
+                generateType: fallbackGenerateType,
               };
             });
             let fallbackCompleted = 0;
@@ -1621,7 +1703,7 @@ export function useAutoVideoPipeline(
               items: fallbackItems,
               visualConfig: {
                 ...visualConfigPayload,
-                generateType: GenerateType.Image,
+                generateType: isCinematicEpisodeGenre(config.genre) ? GenerateType.Video : GenerateType.Image,
                 batchTabCount: PROJECT_IMAGE_FALLBACK_CONFIG.TAB_CONCURRENCY,
               },
               style: currentStylePreset,
@@ -1822,7 +1904,7 @@ export function useAutoVideoPipeline(
               : `[Archive QA] ${scene.id}: authentic sources did not prove the narration; switching to AI reconstruction.`);
           }
 
-          const requestContext = createSceneRequestContext(scene);
+          const requestContext = createSceneRequestContext(scene, GenerateType.Image);
           const qaRetryPrompt = createTechnicalQaRegenerationPrompt(requestContext.prompt, regenerationReasons);
           const retryResult = await generateProjectImageOnce({
             sceneId: scene.id,
@@ -1889,15 +1971,24 @@ export function useAutoVideoPipeline(
         persistCheckpoint: persistImageCheckpoint,
         onLog: appendLog,
       });
-      const completionFallback = ensureRenderReadySceneAssets(realScenes as StoryboardScene[]);
+      const completionFallback = ensureRenderReadySceneAssets(realScenes as StoryboardScene[], {
+        cinematicVideoOnly: isCinematicEpisodeGenre(config.genre),
+      });
       if (!_.isEmpty(completionFallback.repairedSceneIds)) {
         realScenes = completionFallback.scenes;
         appendLog(config.language === ProjectLanguage.VI
-          ? `[Hoàn thành bắt buộc] Đã phục hồi ${completionFallback.repairedSceneIds.length} cảnh thiếu hình bằng tài sản cục bộ an toàn để tiếp tục render.`
+          ? (isCinematicEpisodeGenre(config.genre)
+            ? `[Dựng phim] Đã loại ${completionFallback.repairedSceneIds.length} shot không có take thật; timeline ngắn hơn nhưng không lặp clip giả.`
+            : `[Hoàn thành bắt buộc] Đã phục hồi ${completionFallback.repairedSceneIds.length} cảnh thiếu hình bằng tài sản cục bộ an toàn để tiếp tục render.`)
           : `[Completion guarantee] Recovered ${completionFallback.repairedSceneIds.length} scenes with safe local visual assets so rendering can continue.`);
         await persistImageCheckpoint();
       }
       const sceneAssetSummary = getSceneAssetSummary(realScenes as StoryboardScene[]);
+      if (isCinematicEpisodeGenre(config.genre) && _.isEmpty(realScenes)) {
+        throw new Error(config.language === ProjectLanguage.VI
+          ? "Chưa có take video thật nào có thể dựng. Hãy kiểm tra phiên Gemini rồi tiếp tục dự án."
+          : "No genuine video take is available for editing. Check the Gemini session and resume the project.");
+      }
       if (!sceneAssetSummary.complete) {
         await syncProject({
           ...voiceUpdatedProj,
@@ -2038,6 +2129,27 @@ export function useAutoVideoPipeline(
               if (thumbnailGenerationSummary.cancelled) {
                 throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_CANCELLED);
               }
+              const missingBatchThumbs = _.filter(targetThumbsToGen, thumb => _.isEmpty(thumb.imageUrl));
+              for (const thumb of missingBatchThumbs) {
+                const retryItem = _.find(batchThumbItems, item => _.isEqual(item.sceneId, thumb.id));
+                if (!retryItem || cancellationRef.current) continue;
+                const retryResult = await generateProjectImageOnce(retryItem, item => ({
+                  prompt: item.prompt,
+                  style: currentThumbnailStyle || currentStylePreset,
+                  resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+                  bypassCache: true,
+                  engine: ImageGeneratorEngine.Imagen,
+                  sandboxConfig: sandboxConfigPayload,
+                  visualConfig: {
+                    ...visualConfigPayload,
+                    generateType: GenerateType.Image,
+                    imageGeneratorEngine: ImageGeneratorEngine.Imagen,
+                    style: currentThumbnailStyle || currentStylePreset,
+                    referenceImages: thumbnailReferenceImages,
+                  },
+                }), requestSignal);
+                applyThumbResult(retryResult);
+              }
             } else {
               for (let i = 0; i < targetThumbsToGen.length; i++) {
                 const thumb = targetThumbsToGen[i];
@@ -2079,20 +2191,44 @@ export function useAutoVideoPipeline(
             }
           }
           thumbnailsList = parsedThumbs;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
         } else {
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
+        }
+      }
+      if (isCinematicEpisodeGenre(config.genre)) {
+        const missingFilmThumbnails = _.filter(thumbnailsList, thumbnail => _.isEmpty(thumbnail.imageUrl));
+        const sourceVideoScenes = _.filter(realScenes as StoryboardScene[], scene => _.isEqual(scene.assetType, GenerateType.Video) && !_.isEmpty(scene.assetUrl));
+        for (let index = 0; index < missingFilmThumbnails.length; index++) {
+          const thumbnail = missingFilmThumbnails[index];
+          const sourceScene = sourceVideoScenes[index % _.max([1, sourceVideoScenes.length])!];
+          if (!sourceScene) break;
+          const extracted = await safeSystemFetch(API_ROUTES.PIPELINE_EXTRACT_THUMBNAIL_FRAME, {
+            projectId: newProj.id,
+            thumbnailId: thumbnail.id,
+            assetUrl: sourceScene.assetUrl,
+          }, requestSignal);
+          if (extracted.success && !_.isEmpty(extracted.data?.imageUrl)) {
+            thumbnail.imageUrl = extracted.data.imageUrl;
+            thumbnail.approved = true;
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[Ảnh bìa] Gemini chưa trả ảnh cho ${thumbnail.id}; đã dùng keyframe sạch từ cảnh phim để không để trống thumbnail.`
+              : `[Thumbnail] Gemini did not return ${thumbnail.id}; using a clean film keyframe so the thumbnail is never blank.`);
+          }
         }
       }
       const completedThumbnailCount = _.size(_.filter(
         thumbnailsList,
         (thumbnail) => !_.isEmpty(thumbnail.imageUrl),
       ));
-      if (_.lt(completedThumbnailCount, config.thumbnailCount)) appendLog(_.replace(
-        REFACTOR_CONSTANTS.THUMBNAIL_GENERATION_INCOMPLETE,
-        SecurityConstants.PLACEHOLDER_0,
-        _.toString(_.subtract(config.thumbnailCount, completedThumbnailCount)),
-      ));
+      if (_.lt(completedThumbnailCount, config.thumbnailCount)) {
+        appendLog(_.replace(
+          REFACTOR_CONSTANTS.THUMBNAIL_GENERATION_INCOMPLETE,
+          SecurityConstants.PLACEHOLDER_0,
+          _.toString(_.subtract(config.thumbnailCount, completedThumbnailCount)),
+        ));
+      } else {
+        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
+      }
       for (const thumbnail of thumbnailsList) {
         if (!isUsableGeneratedAssetUrl(thumbnail.imageUrl)) {
           thumbnail.approved = false;
@@ -2113,23 +2249,41 @@ export function useAutoVideoPipeline(
       await syncProject(slicedUpdatedProj);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.ALIGN_DONE);
 
-      const voiceQualityResult = await assessVoiceAdvisory({
+      const voiceQualityResult = nativeFilmAudio ? null : await assessVoiceAdvisory({
         audioBase64: globalAudioBase64,
         audioUrl: globalAudioUrl,
         provider: _.toString(voiceUpdatedProj.voiceConfig.provider || config.voiceProvider),
         scenes: realScenes as StoryboardScene[],
         targetDurationSeconds: parseTargetDurationSeconds(config.duration),
       });
-      globalAudioBase64 = voiceQualityResult.audioBase64;
-      globalAudioUrl = voiceQualityResult.audioUrl;
-      realScenes = voiceQualityResult.scenes;
+      if (voiceQualityResult) {
+        globalAudioBase64 = voiceQualityResult.audioBase64;
+        globalAudioUrl = voiceQualityResult.audioUrl;
+        realScenes = voiceQualityResult.scenes;
+      } else {
+        globalAudioBase64 = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+        globalAudioUrl = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
+        appendLog(config.language === ProjectLanguage.VI
+          ? "[Phim AI] Giữ thoại, ambience và âm thanh hiện trường trong từng clip; không phủ giọng đọc TTS toàn cục."
+          : "[AI Film] Preserving dialogue, ambience and production sound from each clip; global TTS narration is disabled.");
+      }
 
       slicedUpdatedProj = {
         ...slicedUpdatedProj,
         audioCueSheet: applyOptionalMusicAsset(createAudioCueSheet(realScenes, config.genre), config.musicAssetUrl),
       };
 
-      realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
+      if (nativeFilmAudio) {
+        realScenes = _.map(realScenes as StoryboardScene[], scene => ({
+          ...scene,
+          subtitle: _.isEqual(scene.dialogueMode, "on_screen_dialogue")
+            ? _.trim(scene.spokenDialogue)
+            : REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+          subtitleCues: [],
+        }));
+      } else {
+        realScenes = createSubtitleCues(realScenes as StoryboardScene[]);
+      }
       const subtitleQa = evaluateSubtitles(realScenes as StoryboardScene[]);
       const editorQa = evaluateEdit(realScenes as StoryboardScene[]);
       slicedUpdatedProj = {
@@ -2141,15 +2295,39 @@ export function useAutoVideoPipeline(
           ...slicedUpdatedProj.voiceConfig,
           audioBase64: globalAudioBase64,
           audioUrl: globalAudioUrl,
-          provider: voiceQualityResult.provider,
+          provider: voiceQualityResult?.provider || "native_video_audio",
           voiceArc: genreVoiceArc,
-          audioQa: voiceQualityResult.quality,
+          audioQa: voiceQualityResult?.quality,
         },
       };
       await syncProject(slicedUpdatedProj);
 
       setCurrentStepIndex(4);
       appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
+
+      if (nativeFilmAudio) {
+        const clipAnalysis = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CINEMATIC_CLIPS, {
+          projectId: newProj.id,
+          scenes: _.map(realScenes as StoryboardScene[], scene => _.pick(scene, ["id", "assetUrl", "assetType", "shotRole", "dialogueMode"])),
+        }, requestSignal);
+        if (clipAnalysis.success && _.isArray(clipAnalysis.data?.decisions)) {
+          const decisionsByScene = _.keyBy(clipAnalysis.data.decisions, "sceneId");
+          realScenes = _.map(realScenes as StoryboardScene[], scene => {
+            const decision = decisionsByScene[scene.id];
+            return decision ? {
+              ...scene,
+              sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
+              sourceTrimEndSeconds: _.toNumber(decision.trimEndSeconds),
+              sourceCrop: _.toString(decision.sourceCrop || ""),
+              clipQaWarnings: _.castArray(decision.warnings || []),
+            } : scene;
+          });
+          const adjustedCount = _.size(_.filter(realScenes, scene => _.gt(_.defaultTo(scene.sourceTrimStartSeconds, 0), 0) || _.gt(_.defaultTo(scene.sourceTrimEndSeconds, 0), 0)));
+          appendLog(config.language === ProjectLanguage.VI
+            ? `[Dựng phim] Đã phân tích song song ${realScenes.length} clip và tự đặt điểm in/out an toàn cho ${adjustedCount} clip.`
+            : `[Film edit] Analyzed ${realScenes.length} clips in parallel and set safe in/out points for ${adjustedCount} clips.`);
+        }
+      }
 
       const expectedRenderDuration = calculateSceneDuration(realScenes as StoryboardScene[]);
       appendLog(T.logRenderPlan(
@@ -2167,8 +2345,8 @@ export function useAutoVideoPipeline(
           audioBase64: _.isEmpty(globalAudioBase64) && _.isEmpty(globalAudioUrl)
             ? _.get(sc, "audioBase64")
             : undefined,
-          text: _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
-          subtitle: sc.subtitle || sc.script,
+          text: nativeFilmAudio ? undefined : _.get(sc, REFACTOR_CONSTANTS.AVG_SCRIPT_KEY),
+          subtitle: nativeFilmAudio ? (_.trim(sc.spokenDialogue) || undefined) : (sc.subtitle || sc.script),
           subtitleCues: sc.subtitleCues,
           assetType: _.get(sc, REFACTOR_CONSTANTS.AVG_ASSET_TYPE_KEY, GenerateType.Image),
           cameraMotion: _.get(sc, "cameraMotion"),
@@ -2178,6 +2356,9 @@ export function useAutoVideoPipeline(
           shotPurpose: _.get(sc, "shotPurpose"),
           visibleAction: _.get(sc, "visibleAction"),
           reaction: _.get(sc, "reaction"),
+          sourceTrimStartSeconds: sc.sourceTrimStartSeconds,
+          sourceTrimEndSeconds: sc.sourceTrimEndSeconds,
+          sourceCrop: sc.sourceCrop,
         })),
         quality: config.ffmpegQuality,
         globalAudioUrl: globalAudioUrl || undefined,
@@ -2188,6 +2369,7 @@ export function useAutoVideoPipeline(
         subtitleMode: FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
         audioTracks: createRenderAudioTracks(slicedUpdatedProj.audioCueSheet),
         autoMusicProfile: _.isEmpty(config.musicAssetUrl) ? resolveAutomaticMusicProfile(config.genre) : undefined,
+        preserveVideoAudio: nativeFilmAudio,
       };
 
       throwIfCancelled();
@@ -2234,7 +2416,23 @@ export function useAutoVideoPipeline(
           if (_.eq(statusData.status, REFACTOR_CONSTANTS.STATUS_COMPLETED)) {
             renderPending = false;
             activeRenderJobIdRef.current = null;
-            const finalMultimodalQa = createAdvisoryFinalVideoReport();
+            let finalMultimodalQa = createAdvisoryFinalVideoReport();
+            if (nativeFilmAudio && statusData.url) {
+              const finalQaResponse = await safeSystemFetch(API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO, {
+                videoUrl: statusData.url,
+                script: realScript,
+                viewerPromise: _.get(newProj.narrativePlan, "viewerPromise"),
+                duration: config.duration,
+                genre: config.genre,
+                bypassCache: true,
+              }, requestSignal);
+              if (finalQaResponse.success && finalQaResponse.data?.quality) {
+                finalMultimodalQa = {
+                  ...finalQaResponse.data.quality,
+                  reviewAvailable: true,
+                };
+              }
+            }
             const renderCandidateBase: VideoProject = {
               ...slicedUpdatedProj,
               seo: _.defaultTo(seoData as VideoProject["seo"], undefined),
@@ -2330,13 +2528,13 @@ export function useAutoVideoPipeline(
     activeCreatedProject,
   };
 
-  const pipelineActions: PipelineActions = {
+  const pipelineActions: PipelineActions = useMemo(() => ({
     startPipeline,
     cancelPipeline,
     setActiveCreatedProject,
     setLogs,
     setRenderedVideoUrl,
-  };
+  }), [startPipeline, cancelPipeline]);
 
   return { pipelineState, pipelineActions, syncSelectedProject };
 }

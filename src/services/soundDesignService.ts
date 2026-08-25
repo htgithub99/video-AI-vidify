@@ -51,6 +51,19 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
       });
     }
 
+    _.forEach(_.take(_.compact(scene.soundDesignCues || []), 3), (description, cueIndex) => {
+      cues.push({
+        id: `cue_${scene.id}_directed_${cueIndex + 1}`,
+        sceneId: scene.id,
+        type: AudioCueType.SoundEffect,
+        description,
+        emotionalIntent: "Synchronize a story-visible production sound with the planned action; keep narration fully intelligible",
+        startOffsetSeconds: sceneStartSeconds,
+        durationSeconds: Math.min(SOUND_DESIGN_CONFIG.MAX_SOUND_EFFECT_DURATION_SECONDS, scene.duration),
+        status: AudioCueStatus.Planned,
+      });
+    });
+
     const emphaticPurpose = _.includes(["reveal", "punchline", "chapter_turn"], _.toLower(_.toString(scene.shotPurpose)));
     const transitionSfxHasBreathingRoom = _.gte(index - lastTransitionSfxIndex, 4);
     if (index > 0 && scene.transition && !_.isEqual(scene.transition, SOUND_DESIGN_CONFIG.CUT_TRANSITION) && (emphaticPurpose || transitionSfxHasBreathingRoom)) {
@@ -68,7 +81,7 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
       lastTransitionSfxIndex = index;
     }
 
-    if (scene.reaction && SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_PATTERN.test(scene.reaction)) {
+    if (_.isEmpty(scene.soundDesignCues) && scene.reaction && SOUND_DESIGN_CONFIG.DRAMATIC_REACTION_PATTERN.test(scene.reaction)) {
       cues.push({
         id: `cue_${scene.id}_sfx_reaction`,
         sceneId: scene.id,
@@ -81,7 +94,9 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
       });
     }
 
-    const visibleActionCue = _.find(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => item.pattern.test(visibleActionText(scene)));
+    const visibleActionCue = _.isEmpty(scene.soundDesignCues)
+      ? _.find(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => item.pattern.test(visibleActionText(scene)))
+      : undefined;
     if (visibleActionCue) {
       cues.push({
         id: `cue_${scene.id}_sfx_${cues.length}`,

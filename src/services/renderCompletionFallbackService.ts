@@ -11,11 +11,31 @@ export interface RenderCompletionFallbackResult {
   usedNeutralFallback: boolean;
 }
 
-export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[]): RenderCompletionFallbackResult => {
+export interface RenderCompletionFallbackOptions {
+  cinematicVideoOnly?: boolean;
+}
+
+export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[], options: RenderCompletionFallbackOptions = {}): RenderCompletionFallbackResult => {
   const scenes = _.cloneDeep(sourceScenes);
   const usableAssets = _.compact(_.map(scenes, "assetUrl"));
   const usedNeutralFallback = _.isEmpty(usableAssets);
   const repairedSceneIds: string[] = [];
+
+  if (options.cinematicVideoOnly) {
+    const usableFilmScenes = _.filter(scenes, scene => (
+      !_.isEmpty(scene.assetUrl)
+      && _.isEqual(scene.assetType, GenerateType.Video)
+      && !_.startsWith(scene.assetError, "completion_fallback_")
+    ));
+    const removedSceneIds = _.map(_.differenceBy(scenes, usableFilmScenes, "id"), "id");
+    // A professional film edit may be shorter than planned, but must never pad
+    // its runtime by cloning an unrelated take into missing dramatic beats.
+    return {
+      scenes: usableFilmScenes,
+      repairedSceneIds: removedSceneIds,
+      usedNeutralFallback: _.isEmpty(usableFilmScenes),
+    };
+  }
 
   _.forEach(scenes, (scene, index) => {
     if (!_.isEmpty(scene.assetUrl)) return;
@@ -26,7 +46,10 @@ export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[]): R
     const fallbackAsset = nearestScene?.assetUrl || EMERGENCY_NEUTRAL_IMAGE;
     scene.assetUrl = fallbackAsset;
     scene.assetUrls = [fallbackAsset];
-    scene.assetType = GenerateType.Image;
+    // Borrow the complete media identity. A missing video scene that borrows a
+    // neighbouring MP4 must stay a video; declaring it as an image makes ffmpeg
+    // decode the payload through the wrong path and aborts the final render.
+    scene.assetType = nearestScene?.assetType || GenerateType.Image;
     scene.assetStatus = SceneAssetStatus.Generated;
     scene.qaStatus = QaStatus.Unavailable;
     scene.acceptance = AssetAcceptance.AcceptedWithWarning;

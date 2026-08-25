@@ -41,6 +41,7 @@ export const pipelineNodes = [
 ] as const;
 
 export const genreLabels = {
+  [VideoGenre.CINEMATIC_EPISODE]: "Phim truyện điện ảnh AI",
   [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY]: "Tóm tắt phim & truyện",
   [VideoGenre.NARRATIVE_EXPLAINER]: "Giải thích nguồn gốc & sự kiện",
   [VideoGenre.CHARACTER_PSYCHOLOGY]: "Phân tích tâm lý nhân vật",

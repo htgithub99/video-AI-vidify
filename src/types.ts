@@ -18,6 +18,7 @@ export enum ProjectKind {
   Container = "container",
   Studio = "studio",
   Auto = "auto",
+  Cinematic = "cinematic",
 }
 
 export enum ProjectLanguage {
@@ -168,6 +169,9 @@ export interface ProjectConfig {
   format?: string;
   splitStrategy?: string;
   musicAssetUrl?: string;
+  filmFormat?: "single" | "series";
+  episodeCount?: number;
+  seriesBibleRequired?: boolean;
 }
 
 export interface HookVersion {
@@ -407,6 +411,7 @@ export interface VisualConfig {
   videoDuration?: string;
   qualityMode?: QualityMode;
   batchTabCount?: number;
+  preserveVideoAudio?: boolean;
 }
 
 export interface CharacterConfig {
@@ -533,6 +538,55 @@ export interface StoryboardScene {
   archivalRationale?: string;
   archivalSourceUrl?: string;
   archivalLicense?: string;
+  sequenceId?: string;
+  shotId?: string;
+  shotRole?: "master" | "coverage" | "reaction" | "insert" | "transition" | "payoff";
+  dialogueMode?: "narration" | "on_screen_dialogue" | "off_screen_dialogue" | "silent_action";
+  spokenDialogue?: string;
+  speakerCharacterId?: string;
+  lipSyncRequired?: boolean;
+  characterBlocking?: string;
+  eyelineDirection?: string;
+  screenDirection?: string;
+  actionStartState?: string;
+  actionEndState?: string;
+  locationState?: string;
+  wardrobeState?: string;
+  propState?: string;
+  soundDesignCues?: string[];
+  /** Consecutive camera beats intentionally generated inside one cinematic clip. */
+  cinematicBeats?: Array<{
+    sourceSceneId: string;
+    shotId: string;
+    shotRole: "master" | "coverage" | "reaction" | "insert" | "transition" | "payoff";
+    shotSize: string;
+    cameraAngle: string;
+    visibleAction: string;
+    reaction: string;
+    transition: "hard_cut" | "match_cut" | "motivated_reframe";
+    dialogueMode: "narration" | "on_screen_dialogue" | "off_screen_dialogue" | "silent_action";
+    spokenDialogue: string;
+    speakerCharacterId: string;
+    lipSyncRequired: boolean;
+    startSecond?: number;
+    endSecond?: number;
+  }>;
+  /** Exact edit handoff that the first frames must inherit from the prior clip. */
+  cinematicContinuityHandoff?: {
+    previousClipId: string;
+    previousEndState: string;
+    requiredOpeningState: string;
+    locationLock: string;
+    wardrobeLock: string;
+    propLock: string;
+    screenDirectionLock: string;
+    eyelineLock: string;
+    lightingLock: string;
+  };
+  sourceTrimStartSeconds?: number;
+  sourceTrimEndSeconds?: number;
+  sourceCrop?: string;
+  clipQaWarnings?: string[];
 }
 
 export interface SubtitleCue {

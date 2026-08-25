@@ -89,6 +89,8 @@ export interface FFmpegRenderOptions {
     lightingEffect?: string;
     transition?: string;
     shotPurpose?: string;
+    sourceTrimStartSeconds?: number;
+    sourceTrimEndSeconds?: number;
   }>;
   quality?: VideoQuality;
   globalAudioUrl?: string;
@@ -99,6 +101,7 @@ export interface FFmpegRenderOptions {
   audioTracks?: RenderAudioTrack[];
   autoMusicProfile?: string;
   safeProfile?: boolean;
+  preserveVideoAudio?: boolean;
 }
 
 const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
@@ -152,7 +155,8 @@ export const renderFFmpegVideo = async (
     globalAudioBase64Val,
     ..._.flatMap(scenesVal, scene => [scene.audioUrl, scene.audioBase64]),
   ]);
-  if (!hasProductionAudioSource(_.map(audioSources, _.toString))) {
+  const hasEmbeddedFilmAudio = Boolean(options.preserveVideoAudio && _.some(scenesVal, scene => _.isEqual(scene.assetType, GenerateType.Video)));
+  if (!hasEmbeddedFilmAudio && !hasProductionAudioSource(_.map(audioSources, _.toString))) {
     throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
   }
 
@@ -260,10 +264,11 @@ export const renderFFmpegVideo = async (
     [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile
       ? SecurityConstants.DEFAULT_AMOUNT
       : _.min([maxSceneWorkers, _.size(renderScenes)]),
-    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
-    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
+    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
+    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
     [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
     [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
+    preserveVideoAudio: Boolean(options.preserveVideoAudio),
     autoMusicProfile: _.toString(options.autoMusicProfile),
     [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
     [FFMPEG_RENDER_KEYS.SCENE_CACHE_DIR]: path.join(outputDir, FFMPEG_RENDER_CONSTANTS.SCENE_CACHE_DIR_NAME),

@@ -45,10 +45,10 @@ const isPersistableAssetUrl = (value: unknown): boolean => {
 };
 
 const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOptions => ({
-  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile"]),
+  ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio"]),
   globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
   scenes: _.map(payload.scenes, scene => ({
-    ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose"]),
+    ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose", "sourceTrimStartSeconds", "sourceTrimEndSeconds"]),
     imageUrl: isPersistableAssetUrl(scene.imageUrl) ? scene.imageUrl : undefined,
     audioUrl: isPersistableAssetUrl(scene.audioUrl) ? scene.audioUrl : undefined,
   })),

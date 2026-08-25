@@ -13,12 +13,21 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
   if (!activeCreatedProject?.seo || (_.isEmpty(activeCreatedProject.seo.titles) && _.isEmpty(activeCreatedProject.seo.descriptions))) {
     return null;
   }
+  const scoreAvailable = (score: unknown): boolean => _.isFinite(score) && _.gte(_.toNumber(score), 0);
+  const usesUnscoredFallback = _.some(activeCreatedProject.seo.titles, title => !scoreAvailable(title.seoScore))
+    || _.includes(_.castArray(activeCreatedProject.seo.rotationLogs), "seo_source_fallback_used")
+    || _.every(activeCreatedProject.seo.titles, title => _.every([title.searchScore, title.ctrScore, title.compScore, title.seoScore], score => _.isEqual(score, 0)));
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl text-left">
       <h3 className="text-xs font-bold text-slate-100 font-mono uppercase flex items-center gap-2" title={AUTO_GENERATOR_CONSTANTS.UI_SEO_TITLE_TOOLTIP}>
         <Target className="w-4 h-4 text-rose-500" /> {AUTO_GENERATOR_CONSTANTS.UI_SEO_TITLE_SHORT}
       </h3>
+      {usesUnscoredFallback && (
+        <div className="rounded-xl border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-[10px] leading-relaxed text-amber-300">
+          AI SEO chưa trả dữ liệu chấm điểm. Hệ thống đang hiển thị gợi ý bám nội dung; các chỉ số chưa được đo, không phải 0%.
+        </div>
+      )}
       <div className="space-y-4">
         <div className="space-y-2">
           <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block" title={AUTO_GENERATOR_CONSTANTS.UI_SEO_TITLE_SUGGESTION_TOOLTIP}>
@@ -49,10 +58,10 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
                     <div key={label}>
                       <div className="flex justify-between mb-0.5 text-slate-400">
                         <span>{label}</span>
-                        <span className="text-rose-450 font-bold">{score}%</span>
+                        <span className="text-rose-450 font-bold">{!usesUnscoredFallback && scoreAvailable(score) ? `${score}%` : "Chưa đo"}</span>
                       </div>
                       <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                        <div className="bg-rose-500 h-full" style={{ width: `${score}%` }} />
+                        <div className="bg-rose-500 h-full" style={{ width: `${!usesUnscoredFallback && scoreAvailable(score) ? score : 0}%` }} />
                       </div>
                     </div>
                   ))}

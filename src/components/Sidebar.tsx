@@ -4,7 +4,7 @@ import { Lang } from "../lib/lang.js";
 import { SIDEBAR_TEXTS } from "../constants/texts";
 import { PlanType } from "../constants/security";
 import { AppTab } from "../constants/enums";
-import { Video, LayoutDashboard, FolderKanban, Sliders, Settings, ChevronLeft, ChevronRight, Zap, LucideIcon } from "lucide-react";
+import { Video, LayoutDashboard, FolderKanban, Sliders, Settings, ChevronLeft, ChevronRight, Zap, Clapperboard, LucideIcon } from "lucide-react";
 import { Button } from "./ui/Button";
 import { useLicense } from "../contexts/LicenseContext";
 import _ from "lodash";
@@ -108,6 +108,12 @@ export default function Sidebar({
       id: AppTab.AUTO_GENERATOR,
       label: texts.AUTO_CREATOR,
       icon: Zap,
+      requiresProject: true,
+    },
+    {
+      id: AppTab.CINEMATIC_FILM,
+      label: texts.CINEMATIC_FILM,
+      icon: Clapperboard,
       requiresProject: true,
     },
     {

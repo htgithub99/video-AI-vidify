@@ -82,7 +82,7 @@ export const generateWithFreeProviders = async (request: FreeProviderRequest, ke
   let lastError: any;let fallbackIndex = 0;
   for (const provider of providers) {
     const providerCircuitKey = `${provider.id}:provider`;if (isCircuitOpen(providerCircuitKey)) continue;
-    for (const model of provider.models) {
+    for (const model of _.take(provider.models, FREE_AI_PROVIDER_CONFIG.MAX_MODELS_PER_PROVIDER)) {
       const circuitKey = `${provider.id}:${model}`;if (isCircuitOpen(circuitKey)) continue;
       try {
         log(FREE_AI_PROVIDER_LOGS.CALLING(provider.id, model));const response = await requestModel(provider, model, normalizedRequest, fallbackIndex);recordModelSuccess(circuitKey);recordModelSuccess(providerCircuitKey);log(FREE_AI_PROVIDER_LOGS.SUCCESS(provider.id, model));response.rotationLogs = rotationLogs;return { response, rotationLogs };

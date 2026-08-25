@@ -36,6 +36,8 @@ export const API_ROUTES = {
   PIPELINE_MERGE_AUDIO: "/api/pipeline/merge-audio",
   PIPELINE_VALIDATE_AUDIO: "/api/pipeline/validate-audio",
   PIPELINE_VALIDATE_FINAL_VIDEO: "/api/pipeline/validate-final-video",
+  PIPELINE_ANALYZE_CINEMATIC_CLIPS: "/api/pipeline/analyze-cinematic-clips",
+  PIPELINE_EXTRACT_THUMBNAIL_FRAME: "/api/pipeline/extract-thumbnail-frame",
   PIPELINE_RUN_ULTRA: "/api/pipeline/run-ultra",
   PIPELINE_TEMPLATES: "/api/pipeline/templates",
   PIPELINE_SELECT_FILE: "/api/pipeline/select-file",

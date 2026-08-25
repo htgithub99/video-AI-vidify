@@ -19,6 +19,7 @@ interface GenerationSettingsSectionProps {
   getImageEngineOptions: (mode: ImageGenerationMode, type: GenerateType) => { value: string; label: string }[];
   T: any;
   mediaMixTexts: any;
+  forceVideoOnly?: boolean;
 }
 
 export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({
@@ -35,6 +36,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   getImageEngineOptions,
   T,
   mediaMixTexts,
+  forceVideoOnly = false,
 }) => {
   const mixedTitle = mediaMixTexts?.mixed || "Ảnh + video";
   const maxVideosLabel = mediaMixTexts?.maxVideos || "Video tối đa";
@@ -47,8 +49,8 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20">
             {PIPELINE_STEPS.STEP_3}
           </span>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={T.sec3TitleTooltip}>
-            <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {T.sec3Title}
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={forceVideoOnly ? "Model video và định dạng khung hình cho toàn bộ phim" : T.sec3TitleTooltip}>
+            <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {forceVideoOnly ? "Cấu hình sản xuất phim" : T.sec3Title}
           </h3>
         </div>
 
@@ -59,7 +61,8 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
       </div>
 
       <div className="space-y-3.5">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className={`grid grid-cols-2 ${forceVideoOnly ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-3`}>
+          {!forceVideoOnly && (
           <div className="space-y-1">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
@@ -83,9 +86,10 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
             </div>
           </div>
+          )}
 
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblEngine}</span>
+            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{forceVideoOnly ? "Model tạo video" : T.lblEngine}</span>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
               <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
@@ -112,12 +116,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </div>
           </div>
 
-          <div className="space-y-1">
+          {!forceVideoOnly && <div className="space-y-1">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || "Nội dung cần tạo"}</span>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
               <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select
-                value={generateType}
+                value={forceVideoOnly ? GenerateType.Video : generateType}
+                disabled={forceVideoOnly}
                 onChange={(e) => {
                   const newType = e.target.value as GenerateType;
                   setGenerateType(newType);
@@ -127,7 +132,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                     if (fallback) setImageGeneratorEngine(fallback as ImageGeneratorEngine);
                   }
                 }}
-                className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5"
               >
                 <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || "Chỉ tạo hình ảnh"}</option>
                 <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || "Chỉ tạo video"}</option>
@@ -136,9 +141,10 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
             </div>
           </div>
+          }
         </div>
 
-        {_.isEqual(generateType, GenerateType.Mixed) && (
+        {!forceVideoOnly && _.isEqual(generateType, GenerateType.Mixed) && (
           <div className="bg-purple-950/20 border border-purple-800/40 rounded-xl p-3 space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-purple-300 font-bold flex items-center gap-1.5">

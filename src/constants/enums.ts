@@ -131,6 +131,7 @@ export enum SplitStrategy {
 }
 
 export enum VideoGenre {
+  CINEMATIC_EPISODE = "Cinematic AI Episode",
   STORY_DRIVEN_VIDEO_ESSAY = "Story-driven Video Essay",
   NARRATIVE_EXPLAINER = "Narrative Explainer",
   CHARACTER_PSYCHOLOGY = "Character Psychology Analysis",
@@ -240,6 +241,7 @@ export enum AppTab {
   STUDIO = "studio",
   PROJECTS = "projects",
   AUTO_GENERATOR = "auto-generator",
+  CINEMATIC_FILM = "cinematic-film",
   SETTINGS = "settings",
   DASHBOARD = "dashboard",
 }

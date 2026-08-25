@@ -8,6 +8,9 @@ const { Search, Copy, Target } = LucideIcons as any;
 
 export default function PipelineStep3(props: PipelineWizardState) {
   const { t, project, loadingStates, setInfoMsg } = props;
+  const hasMeasuredScore = (score: unknown): boolean => _.isFinite(score) && _.gte(_.toNumber(score), 0);
+  const showScore = (score: unknown): string => hasMeasuredScore(score) ? `${score}%` : "Chưa đo";
+  const scoreWidth = (score: unknown): string => `${hasMeasuredScore(score) ? score : 0}%`;
   return (
     <div className="space-y-6 relative overflow-visible h-full flex flex-col">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1 shrink-0">
@@ -69,40 +72,40 @@ export default function PipelineStep3(props: PipelineWizardState) {
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.Search || PIPELINE_STEP3_TEXTS.SEARCH_TITLE}</span>
-                          <span className="text-rose-600 dark:text-rose-300 font-bold">{title.searchScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-300 font-bold">{showScore(title.searchScore)}</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-500 dark:bg-rose-300 h-full" style={{ width: `${title.searchScore}%` }}></div>
+                          <div className="bg-rose-500 dark:bg-rose-300 h-full" style={{ width: scoreWidth(title.searchScore) }}></div>
                         </div>
                       </div>
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.CTR || PIPELINE_STEP3_TEXTS.CTR_TITLE}</span>
-                          <span className="text-rose-600 dark:text-rose-400 font-bold">{title.ctrScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-400 font-bold">{showScore(title.ctrScore)}</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-600 dark:bg-rose-400 h-full" style={{ width: `${title.ctrScore}%` }}></div>
+                          <div className="bg-rose-600 dark:bg-rose-400 h-full" style={{ width: scoreWidth(title.ctrScore) }}></div>
                         </div>
                       </div>
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.Compet || PIPELINE_STEP3_TEXTS.COMPETITION_TITLE}</span>
-                          <span className="text-rose-600 dark:text-rose-500 font-bold">{title.compScore}%</span>
+                          <span className="text-rose-600 dark:text-rose-500 font-bold">{showScore(title.compScore)}</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-600 dark:bg-rose-500 h-full" style={{ width: `${title.compScore}%` }}></div>
+                          <div className="bg-rose-600 dark:bg-rose-500 h-full" style={{ width: scoreWidth(title.compScore) }}></div>
                         </div>
                       </div>
 
                       <div>
                         <div className="flex justify-between mb-1 text-[10px] text-slate-400">
                           <span>{t.SEO_Score || PIPELINE_STEP3_TEXTS.SEO_SCORE_TITLE}</span>
-                          <span className="text-rose-700 dark:text-rose-600 font-bold">{title.seoScore}%</span>
+                          <span className="text-rose-700 dark:text-rose-600 font-bold">{showScore(title.seoScore)}</span>
                         </div>
                         <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
-                          <div className="bg-rose-700 dark:bg-rose-600 h-full" style={{ width: `${title.seoScore}%` }}></div>
+                          <div className="bg-rose-700 dark:bg-rose-600 h-full" style={{ width: scoreWidth(title.seoScore) }}></div>
                         </div>
                       </div>
                     </div>
