@@ -7,6 +7,7 @@ import { VoiceSelectionDialog, type Voice as CatalogVoice } from "../VoiceSelect
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Lang } from "../../lib/lang";
 import { PIPELINE_STEPS } from "../../constants/enums";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface VoiceSelectionSectionProps {
@@ -34,6 +35,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
   truncateWords,
   T,
 }) => {
+  const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, currentLang, AUTO_VIDEO_UI_TEXTS.vi);
   const displayVoiceName = voiceName || voiceURI;
 
   return (
@@ -50,7 +52,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
 
         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <Volume2 className="w-3 h-3 text-amber-400" />
-          <span className="font-semibold text-slate-300">{voiceProvider || "AI Voice"}</span>
+          <span className="font-semibold text-slate-300">{voiceProvider || uiTexts.aiVoiceDefault}</span>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import _ from "lodash";
 import { ChevronDown, Layers } from "lucide-react";
 import { BackgroundMode } from "../../types";
 import { BACKGROUND_MODE_CONFIG } from "../../constants/config";
+import { BACKGROUND_OPTION_GROUPS } from "../../constants/texts";
 
 interface BackgroundModeSelectProps {
   value: BackgroundMode;
@@ -10,41 +11,6 @@ interface BackgroundModeSelectProps {
   language: "vi" | "en";
   label: string;
 }
-
-const BACKGROUND_OPTION_GROUPS = {
-  vi: [
-    {
-      label: "Mặc định",
-      options: [
-        { value: "auto", label: "Tự động", desc: "AI học cách dựng nền từ ảnh mẫu và điều chỉnh theo từng cảnh" },
-        { value: "minimal", label: "Nền tối giản", desc: "Nền gọn, chỉ giữ chi tiết cần thiết để kể chuyện" },
-      ],
-    },
-    {
-      label: "Nâng cao",
-      options: [
-        { value: "contextual", label: "Bối cảnh đầy đủ", desc: "Dựng đầy đủ địa điểm, kiến trúc và đạo cụ theo kịch bản" },
-        { value: "transparent", label: "Không nền (Tách chủ thể)", desc: "Tách chủ thể để ghép nền ở bước hậu kỳ" },
-      ],
-    },
-  ],
-  en: [
-    {
-      label: "Default",
-      options: [
-        { value: "auto", label: "Automatic", desc: "AI learns reference environment and adapts per scene" },
-        { value: "minimal", label: "Minimal", desc: "Clean background with only story-critical details" },
-      ],
-    },
-    {
-      label: "Advanced",
-      options: [
-        { value: "contextual", label: "Full Setting", desc: "Build full location, architecture and props" },
-        { value: "transparent", label: "Transparent", desc: "Isolate subject for later compositing" },
-      ],
-    },
-  ],
-};
 
 export const BackgroundModeSelect: React.FC<BackgroundModeSelectProps> = ({
   value,

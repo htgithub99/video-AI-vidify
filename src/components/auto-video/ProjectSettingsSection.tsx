@@ -9,6 +9,7 @@ import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage, PIPELINE_STEPS } from "../../constants/enums";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { StylePresetSelector } from "./StylePresetSelector";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface ProjectSettingsSectionProps {
@@ -55,6 +56,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   allowedStylePresetIds,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, language, AUTO_VIDEO_UI_TEXTS.vi);
 
   const handleMusicInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && !_.isEmpty(event.target.files)) {
@@ -76,7 +78,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
 
         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <Layout className="w-3 h-3 text-purple-400" />
-          <span className="font-semibold text-slate-300">{thumbnailCount} {_.get(T, "lblThumbnails", "ảnh bìa")}</span>
+          <span className="font-semibold text-slate-300">{thumbnailCount} {_.get(T, "lblThumbnails", uiTexts.thumbnailsUnit)}</span>
         </div>
       </div>
 
@@ -121,7 +123,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           selectedStyle={thumbnailStylePreset}
           onSelectStyle={setThumbnailStylePreset}
           language={language}
-          label="Phong cách ảnh bìa"
+          label={uiTexts.thumbnailStylePresetLabel}
           accentColor="purple"
           genre={genre}
           allowedPresetIds={allowedStylePresetIds}
@@ -158,7 +160,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
           <label className="flex items-center justify-center gap-2 p-2.5 cursor-pointer rounded-xl border border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/60 hover:bg-purple-100/70 transition-colors shadow-xs">
             <Music className="w-3.5 h-3.5 text-purple-600 shrink-0" />
             <span className="text-xs font-bold text-purple-700">
-              {T.musicUploadLabel || "Tải lên file nhạc nền (MP3, WAV...)"}
+              {T.musicUploadLabel || uiTexts.musicUploadPlaceholder}
             </span>
             <input
               type={REFACTOR_CONSTANTS.INPUT_TYPE_FILE}

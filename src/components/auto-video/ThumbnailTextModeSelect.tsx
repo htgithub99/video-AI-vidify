@@ -3,6 +3,7 @@ import _ from "lodash";
 import { ChevronDown, Type } from "lucide-react";
 import { THUMBNAIL_TEXT_MODE_CONFIG } from "../../constants/config";
 import { ThumbnailTextMode } from "../../types";
+import { THUMBNAIL_TEXT_GROUPS } from "../../constants/texts";
 
 interface ThumbnailTextModeSelectProps {
   value: ThumbnailTextMode;
@@ -10,27 +11,6 @@ interface ThumbnailTextModeSelectProps {
   language: "vi" | "en";
   label: string;
 }
-
-const THUMBNAIL_TEXT_GROUPS = {
-  vi: [
-    {
-      label: "Chế độ chữ ảnh bìa",
-      options: [
-        { value: "headline", label: "Có tiêu đề", desc: "AI chọn bố cục và tự động tạo tiêu đề nổi bật trực tiếp trên ảnh bìa" },
-        { value: "no_text", label: "Không tiêu đề", desc: "Ảnh bìa sạch hoàn toàn, không chèn chữ/tiêu đề" },
-      ],
-    },
-  ],
-  en: [
-    {
-      label: "Thumbnail Text Mode",
-      options: [
-        { value: "headline", label: "With Headline", desc: "AI designs layout with prominent title text directly in thumbnail" },
-        { value: "no_text", label: "No Text", desc: "Clean thumbnail visual without typography" },
-      ],
-    },
-  ],
-};
 
 export const ThumbnailTextModeSelect: React.FC<ThumbnailTextModeSelectProps> = ({
   value,

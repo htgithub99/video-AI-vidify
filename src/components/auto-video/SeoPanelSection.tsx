@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { VideoProject } from "../../types";
 
 interface SeoPanelSectionProps {
@@ -17,6 +18,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
     return null;
   }
 
+  const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const scoreAvailable = (score: unknown): boolean => _.isFinite(score) && _.gte(_.toNumber(score), 0);
   const usesUnscoredFallback = _.some(seo.titles, (title) => !scoreAvailable(title.seoScore))
     || _.includes(_.castArray(_.get(seo, "rotationLogs")), "seo_source_fallback_used")
@@ -47,7 +49,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
       </h3>
       {usesUnscoredFallback && (
         <div className="rounded-xl border border-amber-800/50 bg-amber-950/20 px-3 py-2 text-[10px] leading-relaxed text-amber-300">
-          AI SEO chưa trả dữ liệu chấm điểm. Hệ thống đang hiển thị gợi ý bám nội dung; các chỉ số chưa được đo, không phải 0%.
+          {uiTexts.seoUnscoredWarning}
         </div>
       )}
       <div className="space-y-4">
@@ -80,7 +82,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
                     <div key={label}>
                       <div className="flex justify-between mb-0.5 text-slate-400">
                         <span>{label}</span>
-                        <span className="text-rose-450 font-bold">{!usesUnscoredFallback && scoreAvailable(score) ? `${score}%` : "Chưa đo"}</span>
+                        <span className="text-rose-450 font-bold">{!usesUnscoredFallback && scoreAvailable(score) ? `${score}%` : uiTexts.notMeasured}</span>
                       </div>
                       <div className="w-full bg-slate-900 h-1 rounded-full overflow-hidden">
                         <div className="bg-rose-500 h-full" style={{ width: `${!usesUnscoredFallback && scoreAvailable(score) ? score : 0}%` }} />

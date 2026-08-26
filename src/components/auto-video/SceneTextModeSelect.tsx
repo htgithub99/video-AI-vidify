@@ -3,6 +3,7 @@ import _ from "lodash";
 import { ChevronDown, Type } from "lucide-react";
 import { TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config";
 import { TextInImageMode } from "../../types";
+import { SCENE_TEXT_GROUPS } from "../../constants/texts";
 
 interface SceneTextModeSelectProps {
   value: TextInImageMode;
@@ -10,27 +11,6 @@ interface SceneTextModeSelectProps {
   language: "vi" | "en";
   label: string;
 }
-
-const SCENE_TEXT_GROUPS = {
-  vi: [
-    {
-      label: "Chữ trong cảnh",
-      options: [
-        { value: "no_text", label: "Không chữ", desc: "Tạo hình ảnh sạch hoàn toàn, không chứa chữ hay ký tự" },
-        { value: "minimal", label: "Có chữ", desc: "Hiển thị chữ/biển hiệu tự nhiên theo đúng ngôn ngữ đã chọn" },
-      ],
-    },
-  ],
-  en: [
-    {
-      label: "Scene Text Mode",
-      options: [
-        { value: "no_text", label: "No Text", desc: "Create a clean image without text or typography" },
-        { value: "minimal", label: "With Text", desc: "Display text elements naturally in the selected language" },
-      ],
-    },
-  ],
-};
 
 export const SceneTextModeSelect: React.FC<SceneTextModeSelectProps> = ({
   value,

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import _ from "lodash";
 import { Palette, Check, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { CURATED_STYLE_PRESETS, STYLE_CATEGORIES, StyleCategory, getRecommendedStylePresetIds, resolveStylePreset } from "../../constants/stylePresets";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { cn } from "../../lib/utils";
 
 interface StylePresetSelectorProps {
@@ -18,13 +19,16 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   selectedStyle,
   onSelectStyle,
   language = "vi",
-  label = "Phong cách hình ảnh",
+  label,
   accentColor = "blue",
   genre,
   allowedPresetIds,
 }) => {
   const isVi = _.isEqual(language, "vi");
   const isPurple = _.isEqual(accentColor, "purple");
+  const uiTexts = _.get(AUTO_VIDEO_UI_TEXTS, language, AUTO_VIDEO_UI_TEXTS.vi);
+  const displayLabel = label || uiTexts.stylePresetDefaultLabel;
+
   const [activeCategory, setActiveCategory] = useState<StyleCategory>("all");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
@@ -54,7 +58,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
         <div className="flex items-center gap-2">
           <Palette className={cn("w-4 h-4", isPurple ? "text-purple-400" : "text-blue-400")} />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono">
-            {label}
+            {displayLabel}
           </span>
         </div>
 
@@ -73,7 +77,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
             type="button"
             onClick={() => setIsDetailOpen(!isDetailOpen)}
             className="p-1 rounded-lg border border-slate-800 bg-slate-955 text-slate-700 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors"
-            title={isVi ? "Xem chi tiết quy tắc prompt" : "Toggle style prompt rules"}
+            title={uiTexts.toggleRulesTooltip}
           >
             {isDetailOpen ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
@@ -171,7 +175,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
               )}
               {recommendedIds.has(preset.id) && (
                 <span className="absolute right-2 top-1 text-[8px] uppercase tracking-wide text-amber-400 font-bold">
-                  {isVi ? "Gợi ý" : "Recommended"}
+                  {uiTexts.recommendedBadge}
                 </span>
               )}
             </button>
@@ -191,13 +195,13 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
             isPurple ? "text-purple-400" : "text-blue-400"
           )}>
             <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>Quy tắc phong cách: {isVi ? currentPreset.nameVi : currentPreset.name}</span>
+            <span>{uiTexts.styleRulesPrefix}{isVi ? currentPreset.nameVi : currentPreset.name}</span>
           </div>
           <p className="text-[10.5px] text-slate-100 leading-relaxed font-sans">
-            <strong className={cn("font-semibold", isPurple ? "text-purple-400" : "text-blue-400")}>Đặc trưng cốt lõi:</strong> {currentPreset.positivePrompt}
+            <strong className={cn("font-semibold", isPurple ? "text-purple-400" : "text-blue-400")}>{uiTexts.coreFeatureLabel}</strong> {currentPreset.positivePrompt}
           </p>
           <p className="text-[10.5px] text-rose-700 leading-relaxed font-sans">
-            <strong className="font-semibold text-rose-700">Từ khóa bị chặn (Negative):</strong> {currentPreset.negativePrompt}
+            <strong className="font-semibold text-rose-700">{uiTexts.negativePromptLabel}</strong> {currentPreset.negativePrompt}
           </p>
         </div>
       )}

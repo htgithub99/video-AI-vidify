@@ -4,6 +4,7 @@ import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react"
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
 import { MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface GenerationSettingsSectionProps {
@@ -43,15 +44,17 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   chromeHeadless = false,
   setChromeHeadless,
 }) => {
-  const mixedTitle = _.get(mediaMixTexts, "mixed", "Ảnh + video");
-  const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", "Video tối đa");
-  const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", "Số cảnh video tối đa do AI lựa chọn");
-  const selectingLabel = _.get(mediaMixTexts, "selecting", "AI chọn cảnh");
+  const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
+  const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
+  const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", uiTexts.maxVideos);
+  const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", uiTexts.maxVideosTooltip);
+  const selectingLabel = _.get(mediaMixTexts, "selecting", uiTexts.selectingScenes);
+
   const engineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
   const selectedEngineLabel = _.get(
-    _.find(engineOptions, option => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions),
+    _.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions),
     "label",
-    "AI Engine",
+    uiTexts.aiEngineDefault,
   );
 
   return (
@@ -61,8 +64,8 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20">
             {PIPELINE_STEPS.STEP_3}
           </span>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={forceVideoOnly ? "Model video và định dạng khung hình cho toàn bộ phim" : T.sec3TitleTooltip}>
-            <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {forceVideoOnly ? "Cấu hình sản xuất phim" : T.sec3Title}
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={forceVideoOnly ? uiTexts.cinematicSetupTooltip : T.sec3TitleTooltip}>
+            <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {forceVideoOnly ? uiTexts.cinematicSetupTitle : T.sec3Title}
           </h3>
         </div>
 
@@ -101,7 +104,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
           )}
 
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{forceVideoOnly ? "Model tạo video" : T.lblEngine}</span>
+            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{forceVideoOnly ? uiTexts.videoModelLabel : T.lblEngine}</span>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
               <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
@@ -118,9 +121,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblChromeHeadless}</span>
               <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors" title={T.lblChromeHeadlessTooltip}>
                 <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-                <select value={chromeHeadless ? "headless" : "windowed"} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, "headless"))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                  <option value="windowed" className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
-                  <option value="headless" className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
+                <select value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                  <option value={uiTexts.windowedModeValue} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
+                  <option value={uiTexts.headlessModeValue} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
@@ -144,7 +147,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
           {!forceVideoOnly && (
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || "Nội dung cần tạo"}</span>
+              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || uiTexts.contentToGenerate}</span>
               <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
                 <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                 <select
@@ -161,9 +164,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   }}
                   className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5"
                 >
-                  <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || "Chỉ tạo hình ảnh"}</option>
-                  <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || "Chỉ tạo video"}</option>
-                  <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || "Kết hợp ảnh và video"}</option>
+                  <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || uiTexts.imageOnly}</option>
+                  <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || uiTexts.videoOnly}</option>
+                  <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || uiTexts.mixedMedia}</option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>

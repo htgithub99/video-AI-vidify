@@ -1433,3 +1433,198 @@ export const ADVANCED_SETTING_GROUPS = {
     newDesc: "Generate fresh script, voice, and visual assets from scratch",
   },
 } as const;
+
+export const AUTO_VIDEO_UI_TEXTS = {
+  vi: {
+    defaultPreset: "-- Mặc định --",
+    presetConfigDefault: "Mẫu cấu hình",
+    aiVoiceDefault: "AI Voice",
+    aiEngineDefault: "AI Engine",
+    wordsUnit: "từ",
+    charsUnit: "ký tự",
+    thumbnailsUnit: "ảnh bìa",
+    photosUnit: "ảnh",
+    mediaMixed: "Ảnh + video",
+    maxVideos: "Video tối đa",
+    maxVideosTooltip: "Số cảnh video tối đa do AI lựa chọn",
+    selectingScenes: "AI chọn cảnh",
+    cinematicSetupTooltip: "Model video và định dạng khung hình cho toàn bộ phim",
+    cinematicSetupTitle: "Cấu hình sản xuất phim",
+    videoModelLabel: "Model tạo video",
+    contentToGenerate: "Nội dung cần tạo",
+    imageOnly: "Chỉ tạo hình ảnh",
+    videoOnly: "Chỉ tạo video",
+    mixedMedia: "Kết hợp ảnh và video",
+    thumbnailStylePresetLabel: "Phong cách ảnh bìa",
+    musicUploadPlaceholder: "Tải lên file nhạc nền (MP3, WAV...)",
+    seoUnscoredWarning: "AI SEO chưa trả dữ liệu chấm điểm. Hệ thống đang hiển thị gợi ý bám nội dung; các chỉ số chưa được đo, không phải 0%.",
+    notMeasured: "Chưa đo",
+    closeEsc: "Đóng (ESC)",
+    stylePresetDefaultLabel: "Phong cách hình ảnh",
+    recommendedBadge: "Gợi ý",
+    styleRulesPrefix: "Quy tắc phong cách: ",
+    coreFeatureLabel: "Đặc trưng cốt lõi: ",
+    negativePromptLabel: "Từ khóa bị chặn (Negative): ",
+    toggleRulesTooltip: "Xem chi tiết quy tắc prompt",
+    headlessModeValue: "headless",
+    windowedModeValue: "windowed",
+  },
+  en: {
+    defaultPreset: "-- Default --",
+    presetConfigDefault: "Preset Config",
+    aiVoiceDefault: "AI Voice",
+    aiEngineDefault: "AI Engine",
+    wordsUnit: "words",
+    charsUnit: "chars",
+    thumbnailsUnit: "thumbnails",
+    photosUnit: "photos",
+    mediaMixed: "Image + Video",
+    maxVideos: "Max Videos",
+    maxVideosTooltip: "Maximum video scenes selected by AI",
+    selectingScenes: "AI Selecting",
+    cinematicSetupTooltip: "Video model and aspect ratio for entire film",
+    cinematicSetupTitle: "Film Production Config",
+    videoModelLabel: "Video Generation Model",
+    contentToGenerate: "Content to Generate",
+    imageOnly: "Image only",
+    videoOnly: "Video only",
+    mixedMedia: "Mixed image & video",
+    thumbnailStylePresetLabel: "Thumbnail Style Preset",
+    musicUploadPlaceholder: "Upload background music file (MP3, WAV...)",
+    seoUnscoredWarning: "AI SEO scoring data is not available yet. Showing content-based suggestions; metrics are unmeasured, not 0%.",
+    notMeasured: "Unmeasured",
+    closeEsc: "Close (ESC)",
+    stylePresetDefaultLabel: "Visual Style",
+    recommendedBadge: "Recommended",
+    styleRulesPrefix: "Style Rules: ",
+    coreFeatureLabel: "Core Features: ",
+    negativePromptLabel: "Blocked Keywords (Negative): ",
+    toggleRulesTooltip: "Toggle style prompt rules",
+    headlessModeValue: "headless",
+    windowedModeValue: "windowed",
+  },
+} as const;
+
+export const BACKGROUND_OPTION_GROUPS = {
+  vi: [
+    {
+      label: "Mặc định",
+      options: [
+        { value: "auto", label: "Tự động", desc: "AI học cách dựng nền từ ảnh mẫu và điều chỉnh theo từng cảnh" },
+        { value: "minimal", label: "Nền tối giản", desc: "Nền gọn, chỉ giữ chi tiết cần thiết để kể chuyện" },
+      ],
+    },
+    {
+      label: "Nâng cao",
+      options: [
+        { value: "contextual", label: "Bối cảnh đầy đủ", desc: "Dựng đầy đủ địa điểm, kiến trúc và đạo cụ theo kịch bản" },
+        { value: "transparent", label: "Không nền (Tách chủ thể)", desc: "Tách chủ thể để ghép nền ở bước hậu kỳ" },
+      ],
+    },
+  ],
+  en: [
+    {
+      label: "Default",
+      options: [
+        { value: "auto", label: "Automatic", desc: "AI learns reference environment and adapts per scene" },
+        { value: "minimal", label: "Minimal", desc: "Clean background with only story-critical details" },
+      ],
+    },
+    {
+      label: "Advanced",
+      options: [
+        { value: "contextual", label: "Full Setting", desc: "Build full location, architecture and props" },
+        { value: "transparent", label: "Transparent", desc: "Isolate subject for later compositing" },
+      ],
+    },
+  ],
+} as const;
+
+export const SCENE_TEXT_GROUPS = {
+  vi: [
+    {
+      label: "Chữ trong cảnh",
+      options: [
+        { value: "no_text", label: "Không chữ", desc: "Tạo hình ảnh sạch hoàn toàn, không chứa chữ hay ký tự" },
+        { value: "minimal", label: "Có chữ", desc: "Hiển thị chữ/biển hiệu tự nhiên theo đúng ngôn ngữ đã chọn" },
+      ],
+    },
+  ],
+  en: [
+    {
+      label: "Scene Text Mode",
+      options: [
+        { value: "no_text", label: "No Text", desc: "Create a clean image without text or typography" },
+        { value: "minimal", label: "With Text", desc: "Display text elements naturally in the selected language" },
+      ],
+    },
+  ],
+} as const;
+
+export const THUMBNAIL_TEXT_GROUPS = {
+  vi: [
+    {
+      label: "Chế độ chữ ảnh bìa",
+      options: [
+        { value: "headline", label: "Có tiêu đề", desc: "AI chọn bố cục và tự động tạo tiêu đề nổi bật trực tiếp trên ảnh bìa" },
+        { value: "no_text", label: "Không tiêu đề", desc: "Ảnh bìa sạch hoàn toàn, không chèn chữ/tiêu đề" },
+      ],
+    },
+  ],
+  en: [
+    {
+      label: "Thumbnail Text Mode",
+      options: [
+        { value: "headline", label: "With Headline", desc: "AI designs layout with prominent title text directly in thumbnail" },
+        { value: "no_text", label: "No Text", desc: "Clean thumbnail visual without typography" },
+      ],
+    },
+  ],
+} as const;
+
+export const IMAGE_FOCUS_OPTION_GROUPS = {
+  vi: [
+    {
+      label: "Tự động",
+      options: [
+        { value: "default", label: "Tự động", desc: "AI chọn trọng tâm bố cục phù hợp nhất với từng cảnh" },
+      ],
+    },
+    {
+      label: "Trọng tâm chủ thể",
+      options: [
+        { value: "portrait", label: "Chủ thể nổi bật", desc: "Ưu tiên làm nổi bật một nhân vật/chủ thể chính trong khung hình" },
+        { value: "action", label: "Hành động", desc: "Ưu tiên hành động và cử chỉ rõ ràng, sinh động của nhân vật" },
+      ],
+    },
+    {
+      label: "Không gian & Nghệ thuật",
+      options: [
+        { value: "landscape", label: "Toàn cảnh", desc: "Ưu tiên không gian bối cảnh rộng, toàn cảnh điện ảnh" },
+        { value: "conceptual", label: "Nghệ thuật", desc: "Ưu tiên cách thể hiện nghệ thuật, biểu tượng và chiều sâu cảm xúc" },
+      ],
+    },
+  ],
+  en: [
+    {
+      label: "Automatic",
+      options: [
+        { value: "default", label: "Auto", desc: "AI chooses focus adaptively per scene" },
+      ],
+    },
+    {
+      label: "Subject Focus",
+      options: [
+        { value: "portrait", label: "Subject Focus", desc: "Prioritize one main subject prominently" },
+        { value: "action", label: "Action", desc: "Prioritize clear and dynamic action" },
+      ],
+    },
+    {
+      label: "Setting & Artistic",
+      options: [
+        { value: "landscape", label: "Wide Scene", desc: "Prioritize wide cinematic environment" },
+        { value: "conceptual", label: "Artistic", desc: "Prioritize artistic and symbolic expression" },
+      ],
+    },
+  ],
+} as const;

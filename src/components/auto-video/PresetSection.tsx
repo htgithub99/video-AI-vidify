@@ -3,6 +3,7 @@ import _ from "lodash";
 import { Bookmark, ChevronDown, Save, Sparkles, Trash } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface PresetItem {
@@ -34,10 +35,11 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
   T,
   truncateWords,
 }) => {
+  const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const selectedPreset = _.find(presets, { id: selectedPresetId });
   const activePresetLabel = selectedPreset?.name
     ? truncateWords(selectedPreset.name, 3)
-    : T.presetDefaultOption || "-- Mặc định --";
+    : T.presetDefaultOption || uiTexts.defaultPreset;
 
   return (
     <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
@@ -50,7 +52,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
             className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5"
             title={T.presetLabel}
           >
-            {_.trimEnd(T.presetLabel || "Mẫu cấu hình", ":")}
+            {_.trimEnd(T.presetLabel || uiTexts.presetConfigDefault, ":")}
           </h3>
         </div>
 
@@ -69,7 +71,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
               className="w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-6 appearance-none font-medium"
             >
               <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-900 text-slate-300">
-                {T.presetDefaultOption}
+                {T.presetDefaultOption || uiTexts.defaultPreset}
               </option>
               {_.map(presets, (p) => (
                 <option key={p.id} value={p.id} className="bg-slate-900 text-slate-200" title={p.name}>

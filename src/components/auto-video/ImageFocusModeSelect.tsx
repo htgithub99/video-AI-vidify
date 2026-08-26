@@ -3,6 +3,7 @@ import _ from "lodash";
 import { ChevronDown, Focus } from "lucide-react";
 import { ImageFocusMode } from "../../types";
 import { IMAGE_FOCUS_MODE_CONFIG } from "../../constants/config";
+import { IMAGE_FOCUS_OPTION_GROUPS } from "../../constants/texts";
 
 interface ImageFocusModeSelectProps {
   value: ImageFocusMode;
@@ -10,53 +11,6 @@ interface ImageFocusModeSelectProps {
   language: "vi" | "en";
   label: string;
 }
-
-const IMAGE_FOCUS_OPTION_GROUPS = {
-  vi: [
-    {
-      label: "Tự động",
-      options: [
-        { value: "default", label: "Tự động", desc: "AI chọn trọng tâm bố cục phù hợp nhất với từng cảnh" },
-      ],
-    },
-    {
-      label: "Trọng tâm chủ thể",
-      options: [
-        { value: "portrait", label: "Chủ thể nổi bật", desc: "Ưu tiên làm nổi bật một nhân vật/chủ thể chính trong khung hình" },
-        { value: "action", label: "Hành động", desc: "Ưu tiên hành động và cử chỉ rõ ràng, sinh động của nhân vật" },
-      ],
-    },
-    {
-      label: "Không gian & Nghệ thuật",
-      options: [
-        { value: "landscape", label: "Toàn cảnh", desc: "Ưu tiên không gian bối cảnh rộng, toàn cảnh điện ảnh" },
-        { value: "conceptual", label: "Nghệ thuật", desc: "Ưu tiên cách thể hiện nghệ thuật, biểu tượng và chiều sâu cảm xúc" },
-      ],
-    },
-  ],
-  en: [
-    {
-      label: "Automatic",
-      options: [
-        { value: "default", label: "Auto", desc: "AI chooses focus adaptively per scene" },
-      ],
-    },
-    {
-      label: "Subject Focus",
-      options: [
-        { value: "portrait", label: "Subject Focus", desc: "Prioritize one main subject prominently" },
-        { value: "action", label: "Action", desc: "Prioritize clear and dynamic action" },
-      ],
-    },
-    {
-      label: "Setting & Artistic",
-      options: [
-        { value: "landscape", label: "Wide Scene", desc: "Prioritize wide cinematic environment" },
-        { value: "conceptual", label: "Artistic", desc: "Prioritize artistic and symbolic expression" },
-      ],
-    },
-  ],
-};
 
 export const ImageFocusModeSelect: React.FC<ImageFocusModeSelectProps> = ({
   value,

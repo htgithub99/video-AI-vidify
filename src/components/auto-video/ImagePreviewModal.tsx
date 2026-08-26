@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import _ from "lodash";
 import { X } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
+import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 
 interface ImagePreviewModalProps {
   imageUrl: string | null;
@@ -10,6 +11,8 @@ interface ImagePreviewModalProps {
 }
 
 export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, onClose }) => {
+  const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (_.isEqual(e.key, "Escape")) {
@@ -47,7 +50,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, 
           type="button"
           onClick={onClose}
           className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center border border-white/30 shadow-xl transition-colors cursor-pointer"
-          title="Đóng (ESC)"
+          title={uiTexts.closeEsc}
         >
           <X className="w-5 h-5 stroke-[2.5]" />
         </button>
