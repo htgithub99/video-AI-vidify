@@ -1001,12 +1001,12 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Đang gửi ${count || "các"} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} tới Gemini; tài nguyên sẽ được tải ngay khi từng phân cảnh hoàn tất.`,
     logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
       `✅ Đã tải ${mediaType === "video" ? "video" : "hình ảnh"} của ${sceneId} về dự án (${completed}/${total} phân cảnh).`,
-    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Lỗi tạo ảnh phân cảnh ${sceneId} (${warn})`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Luồng tạo ảnh hàng loạt gặp sự cố (${msg}). Chuyển sang cơ chế dự phòng bằng 3 tab...`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"} đồng thời bị gián đoạn (${msg}). Đang chuyển các phân cảnh còn thiếu sang 3 tab dự phòng.`,
     fallbackThreeTabsReason: "tạo đồng thời bằng 3 tab",
-    logFallbackSceneError: (id: string) => `⚠️ Lỗi tạo ảnh phân cảnh dự phòng ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
-      `⚠️ [Bước 3.2] Tạo ảnh hàng loạt chưa thành công cho ${failed}/${total} phân cảnh (${reason}). Chuyển sang tạo dự phòng bằng 3 tab.`,
+    logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ Tab dự phòng chưa tạo được ${mediaType === "video" ? "clip video" : "hình ảnh"} cho ${id}.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
+      `⚠️ Còn thiếu ${failed}/${total} phân cảnh ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh hoặc video" : "hình ảnh"} sau lượt tạo đầu (${reason}). Đang xử lý phần còn thiếu bằng 3 tab dự phòng.`,
     logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Đã nhận ${current}/${total} ${mediaType === "video" ? "clip video" : "ảnh"} từ lượt tạo dự phòng.`,
     logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
       `${failed > 0 ? "⚠️" : "✅"} Lượt tạo ${mediaType === "video" ? "video" : mediaType === "mixed" ? "ảnh và video" : "hình ảnh"}: nhận được ${success}/${total} tài nguyên, ${failed} yêu cầu chưa thành công.`,
@@ -1046,7 +1046,9 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logStoryboardResultDetail: (scenes: number) => `✓ Đã chia xong nội dung thành ${scenes} phân cảnh.`,
     logVoiceRequestDetail: (_provider: string, _voice: string, _characters: number) => `🎙️ Đang tổng hợp giọng đọc AI cho kịch bản...`,
     logVoiceResultDetail: (_source: string) => `✓ Giọng đọc thuyết minh đã thu âm xong.`,
-    logReferenceSummary: (_style: number, _scene: number, _character: number) => `🖼️ Đang phân tích các ảnh mẫu để học hỏi phong cách...`,
+    logReferenceSummary: (style: number, scene: number, character: number) => style + scene + character > 0
+      ? `🖼️ Đã tiếp nhận ${style} ảnh phong cách, ${scene} ảnh bối cảnh và ${character} ảnh nhân vật để giữ tính nhất quán.`
+      : `🖼️ Không sử dụng ảnh tham chiếu; tính nhất quán sẽ dựa trên Visual Bible và prompt.`,
     logMediaPlan: (generate: number, reused: number, type: string) => `🎨 Kế hoạch tài nguyên: tạo ${generate} phân cảnh bằng ${type === "video" ? "video" : type === "mixed" ? "ảnh và video" : "hình ảnh"}; sử dụng lại ${reused} phân cảnh đã có.`,
     logSeoResultDetail: (_titles: number, thumbnails: number) => `✓ Đã tạo xong tiêu đề, mô tả và ${thumbnails} ảnh bìa thu hút.`,
     logAlignmentPlan: (_scenes: number) => `⏱️ Đang đồng bộ hóa giọng đọc và kịch bản hình ảnh...`,
@@ -1054,7 +1056,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) =>
       `🎞️ Đang chuyển dữ liệu để xuất video (Độ dài dự kiến: ${Math.round(seconds)} giây)...`,
     logRenderJob: (_jobId: string) => `🧩 Đang tiến hành lắp ráp và kết xuất video ở chế độ chạy nền...`,
-    logPipelineElapsed: (seconds: number) => `⏱️ Tuyệt vời! Hoàn tất mọi công đoạn trong ${Math.round(seconds)} giây.`,
+    logPipelineElapsed: (seconds: number) => `⏱️ Quy trình đã hoàn tất trong ${Math.round(seconds)} giây.`,
     logPipelineFailedElapsed: (seconds: number) => `⏱️ Quy trình đã dừng sau ${Math.round(seconds)} giây.`,
     logPipelineCancelledElapsed: (seconds: number) => `⏱️ Đã hủy quy trình sau ${Math.round(seconds)} giây.`,
     logInitProj: "📌 [1/4] Đang khởi tạo không gian làm việc...",
@@ -1209,12 +1211,12 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logBatchImageStreamStart: (mediaType: string = "image", count: number = 0) => `🚀 Sending ${count || "the"} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} scenes to Gemini; each asset will be downloaded as soon as it finishes.`,
     logBatchImageSceneSuccess: (sceneId: string, completed: number, total: number, mediaType: string = "image") =>
       `✅ Downloaded the ${mediaType === "video" ? "video" : "image"} for ${sceneId} (${completed}/${total} scenes).`,
-    logBatchImageSceneError: (sceneId: string, warn: string) => `⚠️ Error generating image for scene ${sceneId}: ${warn}`,
-    logBatchStreamErrorFallback: (msg: string) => `❌ Batch image stream error: ${msg}. Falling back to three concurrent tabs...`,
+    logBatchImageSceneError: (sceneId: string, warn: string, mediaType: string = "image") => `⚠️ Could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${sceneId}: ${warn}`,
+    logBatchStreamErrorFallback: (msg: string, mediaType: string = "image") => `⚠️ Concurrent ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image and video" : "image"} generation was interrupted (${msg}). Sending only the missing scenes to the three-tab fallback.`,
     fallbackThreeTabsReason: "three concurrent tabs",
-    logFallbackSceneError: (id: string) => `⚠️ Error generating fallback image for scene ${id}`,
-    logBatchFailuresSummary: (failed: number, total: number, reason: string) =>
-      `⚠️ [Step 3.2] Batch generation incomplete for ${failed}/${total} scenes (${reason}). Switching to three-tab fallback.`,
+    logFallbackSceneError: (id: string, mediaType: string = "image") => `⚠️ The fallback tab could not generate the ${mediaType === "video" ? "video clip" : "image"} for ${id}.`,
+    logBatchFailuresSummary: (failed: number, total: number, reason: string, mediaType: string = "image") =>
+      `⚠️ ${failed}/${total} ${mediaType === "video" ? "video" : mediaType === "mixed" ? "image or video" : "image"} scenes remain missing after the first pass (${reason}). Processing only those scenes with the three-tab fallback.`,
     logFallbackProgress: (current: number, total: number, mediaType: string = "image") => `🎨 Received ${current}/${total} fallback ${mediaType === "video" ? "video clips" : "images"}.`,
     logImageGenerationSummary: (success: number, failed: number, total: number, mediaType: string = "image") =>
       `${failed > 0 ? "⚠️" : "✅"} ${mediaType === "video" ? "Video" : mediaType === "mixed" ? "Image and video" : "Image"} generation: received ${success}/${total} assets; ${failed} requests remain unsuccessful.`,
@@ -1262,7 +1264,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     logRenderPlan: (_scenes: number, seconds: number, _hasAudio: boolean) =>
       `🎞️ Sending data to render engine (Expected duration: ${Math.round(seconds)}s)...`,
     logRenderJob: (_jobId: string) => `🧩 Assembling and rendering video in the background...`,
-    logPipelineElapsed: (seconds: number) => `⏱️ Awesome! Everything completed in ${Math.round(seconds)} seconds.`,
+    logPipelineElapsed: (seconds: number) => `⏱️ Pipeline completed in ${Math.round(seconds)} seconds.`,
     logPipelineFailedElapsed: (seconds: number) => `⏱️ The pipeline stopped after ${Math.round(seconds)} seconds.`,
     logPipelineCancelledElapsed: (seconds: number) => `⏱️ The pipeline was cancelled after ${Math.round(seconds)} seconds.`,
     logInitProj: "📌 [1/4] Initializing workspace...",

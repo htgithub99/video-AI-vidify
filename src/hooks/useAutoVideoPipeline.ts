@@ -238,16 +238,9 @@ export function useAutoVideoPipeline(
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [stepProgress, setStepProgress] = useState<number>(0);
-  const [logs, setLogs] = useState<string[]>(() => {
-    try {
-      const cached = storageUtils.get(REFACTOR_CONSTANTS.KEY_AUTO_PIPELINE_CURRENT_LOGS);
-      if (cached) {
-        const parsed = jsonUtils.safeParse<string[]>(cached, []);
-        if (Array.isArray(parsed) && !_.isEmpty(parsed)) return parsed;
-      }
-    } catch {}
-    return [];
-  });
+  // Never hydrate a new tab from the last globally active run. Logs belong to
+  // a concrete project and are restored from that project's scoped key below.
+  const [logs, setLogs] = useState<string[]>([]);
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
 
@@ -1215,7 +1208,13 @@ export function useAutoVideoPipeline(
         };
         await syncProject(voiceUpdatedProj);
 
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE);
+        appendLog(config.language === ProjectLanguage.VI
+          ? isCinematicEpisodeGenre(config.genre)
+            ? "🎬 AI đang viết prompt video hoàn chỉnh, thoại, ba shot và continuity cho từng clip."
+            : "🖼️ AI đang biên tập prompt hình ảnh theo nội dung, phong cách và tính nhất quán của từng phân cảnh."
+          : isCinematicEpisodeGenre(config.genre)
+            ? "🎬 AI is writing each complete video prompt with dialogue, three shots, and continuity."
+            : "🖼️ AI is editing each scene prompt for story relevance, style, and continuity.");
         const optimizePayload = {
           storyboard: realScenes,
           visualConfig: voiceUpdatedProj.visualConfig,
@@ -1237,7 +1236,13 @@ export function useAutoVideoPipeline(
           realScenes = optimizeRes.data.storyboard;
           const styleIdentityChanged = !_.isEqual(currentStylePreset, existingTargetProj?.visualConfig?.style);
           shouldRegenerateSceneAssets = shouldRegenerateSceneAssets || requiresVisualReferenceMigration || didAnalyzeCharacters || styleIdentityChanged;
-          appendLog(AUTO_GENERATOR_CONSTANTS.LOG_PROMPT_OPTIMIZE_SUCCESS);
+          appendLog(config.language === ProjectLanguage.VI
+            ? isCinematicEpisodeGenre(config.genre)
+              ? `✅ AI đã hoàn thành ${realScenes.length} prompt video ba shot.`
+              : `✅ AI đã hoàn thành prompt hình ảnh cho ${realScenes.length} phân cảnh.`
+            : isCinematicEpisodeGenre(config.genre)
+              ? `✅ AI completed ${realScenes.length} three-shot video prompts.`
+              : `✅ AI completed image prompts for ${realScenes.length} scenes.`);
           if (!optimizeRes.data?.promptQa?.passed || !_.isEmpty(optimizeRes.data?.planningWarnings)) {
             appendLog(REFACTOR_CONSTANTS.WARN_IMAGE_PROMPT_QA_CONTINUED);
           }
@@ -1341,7 +1346,9 @@ export function useAutoVideoPipeline(
       const modeName = _.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)
         ? AUTO_GENERATOR_CONSTANTS.MODE_NAME_GEMINI_ROOM
         : AUTO_GENERATOR_CONSTANTS.MODE_NAME_FLOW_VEO3;
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_GEN.replace(SecurityConstants.PLACEHOLDER_0, modeName));
+      appendLog(config.language === ProjectLanguage.VI
+        ? `🎨 Đang chuẩn bị tạo ${executionVisualConfig.generateType === GenerateType.Video ? "clip video" : executionVisualConfig.generateType === GenerateType.Mixed ? "hình ảnh và clip video" : "hình ảnh"} phân cảnh qua ${modeName}; tỷ lệ ${config.aspectRatio}.`
+        : `🎨 Preparing to generate scene ${executionVisualConfig.generateType === GenerateType.Video ? "video clips" : executionVisualConfig.generateType === GenerateType.Mixed ? "images and video clips" : "images"} through ${modeName} at ${config.aspectRatio}.`);
 
       const visualConfigPayload = {
         ...executionVisualConfig,
@@ -1491,7 +1498,7 @@ export function useAutoVideoPipeline(
       if (config.resumeMode && !shouldRegenerateSceneAssets) {
         (realScenes as VideoProject["storyboard"])!.forEach((sc, idx) => {
           if (hasSceneAsset(sc)) {
-            appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length));
+            appendLog(T.logResumeSceneSkip(idx + 1, realScenes.length, sc.assetType === GenerateType.Video ? "video" : "image"));
           }
         });
       }
@@ -1579,11 +1586,11 @@ export function useAutoVideoPipeline(
             sc.generationPrompt = requestContext.prompt;
 
             if (isFallback) {
-              appendLog(T.logFallbackProgress(i + 1, scenesToProcess.length));
+              appendLog(T.logFallbackProgress(i + 1, scenesToProcess.length, sceneGenerateType));
             } else {
-              appendLog(AUTO_GENERATOR_CONSTANTS.LOG_IMAGE_SCENE_GEN
-                .replace(SecurityConstants.PLACEHOLDER_0, String(i + 1))
-                .replace(SecurityConstants.PLACEHOLDER_1, String(scenesToProcess.length)));
+              appendLog(config.language === ProjectLanguage.VI
+                ? `🎨 Đang tạo ${sceneGenerateType === GenerateType.Video ? "clip video" : "hình ảnh"} cho ${sc.id} (${i + 1}/${scenesToProcess.length}).`
+                : `🎨 Generating the ${sceneGenerateType === GenerateType.Video ? "video clip" : "image"} for ${sc.id} (${i + 1}/${scenesToProcess.length}).`);
             }
 
             try {
@@ -1670,7 +1677,7 @@ export function useAutoVideoPipeline(
         };
 
         if (_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
-          appendLog(T.logBatchImageStreamStart);
+          appendLog(T.logBatchImageStreamStart(executionVisualConfig.generateType, _.size(remainingTargetScenes)));
           const sceneBatchItems = _.map(remainingTargetScenes, (scene) => {
             const sceneGenerateType = resolveSceneGenerateType(scene.id, executionVisualConfig.generateType, videoSceneIds);
             const requestContext = createSceneRequestContext(scene, sceneGenerateType);
@@ -1709,7 +1716,7 @@ export function useAutoVideoPipeline(
               scene!.assetError = undefined;
               completedCount = _.add(completedCount, SecurityConstants.DEFAULT_AMOUNT);
               const totalScenes = _.size(remainingTargetScenes);
-              appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes));
+              appendLog(T.logBatchImageSceneSuccess(result.sceneId, completedCount, totalScenes, scene!.assetType === GenerateType.Video ? "video" : "image"));
               void persistImageCheckpoint();
             }
           };
@@ -1744,7 +1751,8 @@ export function useAutoVideoPipeline(
               onBatchResult: result => {
                 if (result.success) {
                   fallbackCompleted = _.add(fallbackCompleted, 1);
-                  appendLog(T.logFallbackProgress(fallbackCompleted, fallbackItems.length));
+                  const completedItem = _.find(fallbackItems, { sceneId: result.sceneId });
+                  appendLog(T.logFallbackProgress(fallbackCompleted, fallbackItems.length, completedItem?.generateType || "image"));
                   applyResult(result);
                   return;
                 }
@@ -1783,12 +1791,12 @@ export function useAutoVideoPipeline(
             if (generationSummary.cancelled) {
               throw new Error(REFACTOR_CONSTANTS.PROJECT_IMAGE_GENERATION_CANCELLED);
             }
-            appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems)));
+            appendLog(T.logImageGenerationSummary(completedCount, batchFailureCount, _.size(batchItems), executionVisualConfig.generateType));
 
             const failedSceneIds = new Set(generationSummary.failedSceneIds);
             const missingScenes = _.filter(remainingTargetScenes, scene => failedSceneIds.has(scene.id) && !hasSceneAsset(scene));
             if (!_.isEmpty(missingScenes) && !cancellationRef.current) {
-              appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(remainingTargetScenes), T.fallbackThreeTabsReason));
+              appendLog(T.logBatchFailuresSummary(_.size(missingScenes), _.size(remainingTargetScenes), T.fallbackThreeTabsReason, executionVisualConfig.generateType));
               await runThreeTabFallback(missingScenes);
             }
           } catch (generationError) {
@@ -1796,7 +1804,7 @@ export function useAutoVideoPipeline(
             const failureReason = generationError instanceof Error
               ? generationError.message
               : REFACTOR_CONSTANTS.PROJECT_IMAGE_BATCH_ERROR;
-            appendLog(T.logBatchStreamErrorFallback(failureReason));
+            appendLog(T.logBatchStreamErrorFallback(failureReason, executionVisualConfig.generateType));
             const missingScenes = _.filter(remainingTargetScenes, (scene) => !hasSceneAsset(scene));
             if (!_.isEmpty(missingScenes)) {
               await runThreeTabFallback(missingScenes);
@@ -2123,7 +2131,10 @@ export function useAutoVideoPipeline(
           _.toString(_.size(sceneAssetSummary.missingSceneIds)),
         ));
       }
-      appendLog(AUTO_GENERATOR_CONSTANTS.API_IMAGE_SUCCESS);
+      const completedMedia = getSceneAssetSummary(realScenes as StoryboardScene[]);
+      appendLog(config.language === ProjectLanguage.VI
+        ? `${completedMedia.complete ? "✅" : "⚠️"} Đã nhận ${completedMedia.completed}/${completedMedia.total} tài nguyên phân cảnh cần thiết.`
+        : `${completedMedia.complete ? "✅" : "⚠️"} Received ${completedMedia.completed}/${completedMedia.total} required scene assets.`);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.IMAGE_DONE);
 
       const imageUpdatedProj = {
@@ -2491,7 +2502,13 @@ export function useAutoVideoPipeline(
       await syncProject(slicedUpdatedProj);
 
       setCurrentStepIndex(4);
-      appendLog(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_GEN);
+      appendLog(config.language === ProjectLanguage.VI
+        ? nativeFilmAudio
+          ? "🎞️ Đang kiểm tra điểm cắt, nối các clip, cân bằng âm thanh hiện trường và kết xuất phim."
+          : "🎞️ Đang căn thời lượng, ghép hình/video với lời thoại, phụ đề, nhạc và kết xuất bản cuối."
+        : nativeFilmAudio
+          ? "🎞️ Checking edit points, joining clips, balancing production audio, and rendering the film."
+          : "🎞️ Aligning timing, assembling visuals with narration, subtitles and music, then rendering the final video.");
 
       if (nativeFilmAudio) {
         const clipAnalysis = await safeSystemFetch(API_ROUTES.PIPELINE_ANALYZE_CINEMATIC_CLIPS, {
