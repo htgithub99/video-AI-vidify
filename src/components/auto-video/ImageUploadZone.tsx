@@ -1,3 +1,5 @@
+import React from "react";
+import _ from "lodash";
 import { Upload, X } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Button } from "../ui/Button";
@@ -31,16 +33,20 @@ export function ImageUploadZone({
   subtitleClass,
   hideSubtitle,
 }: ImageUploadZoneProps) {
-  const defaultUploadClass = `bg-slate-950/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
+  const defaultUploadClass = `bg-slate-955/20 !border-2 !border-dashed !border-slate-700/80 hover:!border-${hoverColor}-500/80 hover:bg-slate-900/30 rounded-xl transition-all duration-200 relative group cursor-pointer w-full aspect-square overflow-hidden`;
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    onUpload(event.dataTransfer.files);
+    if (!_.isEmpty(event.dataTransfer.files)) {
+      onUpload(event.dataTransfer.files);
+    }
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) onUpload(event.target.files);
+    if (event.target.files && !_.isEmpty(event.target.files)) {
+      onUpload(event.target.files);
+    }
     event.target.value = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
   };
 
@@ -85,7 +91,7 @@ export function ImageDeleteOverlay({ onDelete, tooltip }: ImageDeleteOverlayProp
         type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
         variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
         onClick={onDelete}
-        className="w-5 h-5 bg-rose-600/90 hover:bg-rose-500 hover:scale-110 rounded-full flex items-center justify-center text-white shadow-md transition-all duration-200 p-0 border border-white/20"
+        className="w-5 h-5 bg-rose-600/90 hover:bg-rose-500 hover:scale-110 rounded-full flex items-center justify-center text-white shadow-md transition-all duration-200 p-0 border border-white/20 cursor-pointer"
         title={tooltip}
       >
         <X className="w-3 h-3" />

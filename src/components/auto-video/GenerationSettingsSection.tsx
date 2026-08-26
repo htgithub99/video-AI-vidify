@@ -1,9 +1,10 @@
 import React from "react";
 import _ from "lodash";
-import { ChevronDown, Film, Layout, Sparkles, Wand2 } from "lucide-react";
+import { ChevronDown, Film, Globe, Layout, Sparkles, Wand2 } from "lucide-react";
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine } from "../../types";
 import { MEDIA_MIX_CONFIG, REFACTOR_CONSTANTS } from "../../constants";
 import { PIPELINE_STEPS } from "../../constants/enums";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface GenerationSettingsSectionProps {
   generationMode: ImageGenerationMode;
@@ -17,9 +18,11 @@ interface GenerationSettingsSectionProps {
   maxVideoScenes: number;
   setMaxVideoScenes: (val: number) => void;
   getImageEngineOptions: (mode: ImageGenerationMode, type: GenerateType) => { value: string; label: string }[];
-  T: any;
-  mediaMixTexts: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
+  mediaMixTexts: Record<string, string>;
   forceVideoOnly?: boolean;
+  chromeHeadless?: boolean;
+  setChromeHeadless?: (val: boolean) => void;
 }
 
 export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({
@@ -37,11 +40,20 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   T,
   mediaMixTexts,
   forceVideoOnly = false,
+  chromeHeadless = false,
+  setChromeHeadless,
 }) => {
-  const mixedTitle = mediaMixTexts?.mixed || "Ảnh + video";
-  const maxVideosLabel = mediaMixTexts?.maxVideos || "Video tối đa";
-  const maxVideosTooltip = mediaMixTexts?.maxVideosTooltip || "Số cảnh video tối đa do AI lựa chọn";
-  const selectingLabel = mediaMixTexts?.selecting || "AI chọn cảnh";
+  const mixedTitle = _.get(mediaMixTexts, "mixed", "Ảnh + video");
+  const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", "Video tối đa");
+  const maxVideosTooltip = _.get(mediaMixTexts, "maxVideosTooltip", "Số cảnh video tối đa do AI lựa chọn");
+  const selectingLabel = _.get(mediaMixTexts, "selecting", "AI chọn cảnh");
+  const engineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
+  const selectedEngineLabel = _.get(
+    _.find(engineOptions, option => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions),
+    "label",
+    "AI Engine",
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -56,36 +68,36 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <Sparkles className="w-3 h-3 text-blue-400" />
-          <span className="font-semibold text-slate-300">{aspectRatio} • {imageGeneratorEngine || "AI Engine"}</span>
+          <span className="font-semibold text-slate-300">{aspectRatio} • {selectedEngineLabel}</span>
         </div>
       </div>
 
       <div className="space-y-3.5">
-        <div className={`grid grid-cols-2 ${forceVideoOnly ? "sm:grid-cols-2" : "sm:grid-cols-4"} gap-3`}>
+        <div className={`grid grid-cols-2 ${forceVideoOnly ? "sm:grid-cols-3" : "sm:grid-cols-4"} gap-3`}>
           {!forceVideoOnly && (
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
-            <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
-              <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-              <select
-                value={generationMode}
-                onChange={(e) => {
-                  const mode = e.target.value as ImageGenerationMode;
-                  setGenerationMode(mode);
-                  setImageGeneratorEngine(
-                    _.isEqual(mode, ImageGenerationMode.GeminiChat)
-                      ? ImageGeneratorEngine.LabsSandbox
-                      : ImageGeneratorEngine.Veo3
-                  );
-                }}
-                className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-              >
-                <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{T.optionFlowMode}</option>
-                <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{T.optionAssistantMode}</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenMode}</span>
+              <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
+                <Wand2 className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                <select
+                  value={generationMode}
+                  onChange={(e) => {
+                    const mode = e.target.value as ImageGenerationMode;
+                    setGenerationMode(mode);
+                    setImageGeneratorEngine(
+                      _.isEqual(mode, ImageGenerationMode.GeminiChat)
+                        ? ImageGeneratorEngine.LabsSandbox
+                        : ImageGeneratorEngine.Veo3
+                    );
+                  }}
+                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
+                >
+                  <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{T.optionFlowMode}</option>
+                  <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{T.optionAssistantMode}</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
           )}
 
           <div className="space-y-1">
@@ -93,13 +105,27 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
               <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                {_.map(getImageEngineOptions(generationMode, generateType), (opt) => (
+                {_.map(engineOptions, (opt) => (
                   <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">{opt.label}</option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
             </div>
           </div>
+
+          {forceVideoOnly && setChromeHeadless && (
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblChromeHeadless}</span>
+              <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors" title={T.lblChromeHeadlessTooltip}>
+                <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                <select value={chromeHeadless ? "headless" : "windowed"} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, "headless"))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                  <option value="windowed" className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
+                  <option value="headless" className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1">
             <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblAspectRatio}</span>
@@ -116,32 +142,33 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </div>
           </div>
 
-          {!forceVideoOnly && <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || "Nội dung cần tạo"}</span>
-            <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
-              <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
-              <select
-                value={forceVideoOnly ? GenerateType.Video : generateType}
-                disabled={forceVideoOnly}
-                onChange={(e) => {
-                  const newType = e.target.value as GenerateType;
-                  setGenerateType(newType);
-                  const validOptions = getImageEngineOptions(generationMode, newType);
-                  if (!_.some(validOptions, (o) => _.isEqual(o.value, imageGeneratorEngine))) {
-                    const fallback = _.get(_.first(validOptions), "value");
-                    if (fallback) setImageGeneratorEngine(fallback as ImageGeneratorEngine);
-                  }
-                }}
-                className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5"
-              >
-                <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || "Chỉ tạo hình ảnh"}</option>
-                <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || "Chỉ tạo video"}</option>
-                <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || "Kết hợp ảnh và video"}</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+          {!forceVideoOnly && (
+            <div className="space-y-1">
+              <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{T.lblGenType || "Nội dung cần tạo"}</span>
+              <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors">
+                <Film className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
+                <select
+                  value={forceVideoOnly ? GenerateType.Video : generateType}
+                  disabled={forceVideoOnly}
+                  onChange={(e) => {
+                    const newType = e.target.value as GenerateType;
+                    setGenerateType(newType);
+                    const validOptions = getImageEngineOptions(generationMode, newType);
+                    if (!_.some(validOptions, (o) => _.isEqual(o.value, imageGeneratorEngine))) {
+                      const fallback = _.get(_.first(validOptions), "value");
+                      if (fallback) setImageGeneratorEngine(fallback as ImageGeneratorEngine);
+                    }
+                  }}
+                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5"
+                >
+                  <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || "Chỉ tạo hình ảnh"}</option>
+                  <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || "Chỉ tạo video"}</option>
+                  <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || "Kết hợp ảnh và video"}</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
+              </div>
             </div>
-          </div>
-          }
+          )}
         </div>
 
         {!forceVideoOnly && _.isEqual(generateType, GenerateType.Mixed) && (

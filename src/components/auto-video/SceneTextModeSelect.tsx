@@ -1,8 +1,8 @@
 import React from "react";
+import _ from "lodash";
 import { ChevronDown, Type } from "lucide-react";
 import { TEXT_IN_IMAGE_MODE_CONFIG } from "../../constants/config";
 import { TextInImageMode } from "../../types";
-import _ from "lodash";
 
 interface SceneTextModeSelectProps {
   value: TextInImageMode;
@@ -38,8 +38,8 @@ export const SceneTextModeSelect: React.FC<SceneTextModeSelectProps> = ({
   language,
   label,
 }) => {
-  const groups = SCENE_TEXT_GROUPS[language] || SCENE_TEXT_GROUPS.vi;
-  const descriptions = TEXT_IN_IMAGE_MODE_CONFIG.DESCRIPTIONS[language] || TEXT_IN_IMAGE_MODE_CONFIG.DESCRIPTIONS.vi;
+  const groups = _.get(SCENE_TEXT_GROUPS, language, SCENE_TEXT_GROUPS.vi);
+  const descriptions = _.get(TEXT_IN_IMAGE_MODE_CONFIG.DESCRIPTIONS, language, TEXT_IN_IMAGE_MODE_CONFIG.DESCRIPTIONS.vi);
   const currentDesc = _.get(descriptions, value, "");
 
   return (

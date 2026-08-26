@@ -5,13 +5,14 @@ import { Tooltip } from "../ui/Tooltip";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { ReferenceImageCard } from "./ReferenceImageCard";
 import { ImagePreviewModal } from "./ImagePreviewModal";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 export interface ImageReferenceSectionProps {
   referenceImages: string[];
   setReferenceImages: React.Dispatch<React.SetStateAction<string[]>>;
   handleReferenceFilesUpload: (files: FileList) => void;
   onDeleteImage?: (index: number) => void;
-  T: Record<string, any>;
+  T: ReturnType<typeof getAutoVideoTexts>;
 }
 
 export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
@@ -45,14 +46,15 @@ export const ImageReferenceSection: React.FC<ImageReferenceSectionProps> = ({
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+    if (e.target.files && !_.isEmpty(e.target.files)) {
       handleReferenceFilesUpload(e.target.files);
     }
   };
 
-  const photoCountLabel = T.photoCount
-    ? T.photoCount(_.size(referenceImages))
-    : _.join([_.size(referenceImages), REFACTOR_CONSTANTS.VD_BLANK, T.photos || REFACTOR_CONSTANTS.VD_EMPTY_STRING], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
+  const photoCountFn = _.get(T, "photoCount");
+  const photoCountLabel = typeof photoCountFn === "function"
+    ? photoCountFn(_.size(referenceImages))
+    : `${_.size(referenceImages)} ${_.get(T, "photos", "ảnh")}`;
 
   return (
     <div className="space-y-2.5">

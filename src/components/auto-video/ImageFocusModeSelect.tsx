@@ -1,8 +1,8 @@
 import React from "react";
+import _ from "lodash";
 import { ChevronDown, Focus } from "lucide-react";
 import { ImageFocusMode } from "../../types";
 import { IMAGE_FOCUS_MODE_CONFIG } from "../../constants/config";
-import _ from "lodash";
 
 interface ImageFocusModeSelectProps {
   value: ImageFocusMode;
@@ -64,8 +64,8 @@ export const ImageFocusModeSelect: React.FC<ImageFocusModeSelectProps> = ({
   language,
   label,
 }) => {
-  const groups = IMAGE_FOCUS_OPTION_GROUPS[language] || IMAGE_FOCUS_OPTION_GROUPS.vi;
-  const descriptions = IMAGE_FOCUS_MODE_CONFIG.DESCRIPTIONS[language] || IMAGE_FOCUS_MODE_CONFIG.DESCRIPTIONS.vi;
+  const groups = _.get(IMAGE_FOCUS_OPTION_GROUPS, language, IMAGE_FOCUS_OPTION_GROUPS.vi);
+  const descriptions = _.get(IMAGE_FOCUS_MODE_CONFIG.DESCRIPTIONS, language, IMAGE_FOCUS_MODE_CONFIG.DESCRIPTIONS.vi);
   const currentDesc = _.get(descriptions, value as keyof typeof descriptions, "");
 
   return (

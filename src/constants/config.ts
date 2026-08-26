@@ -1451,3 +1451,26 @@ export const GEMINI_MEDIA_ERRORS = {
   IMAGE_MEDIA_TYPE: "ảnh",
   HTTP_ERROR_TEMPLATE: "HTTP {status}",
 } as const;
+
+export const CINEMATIC_CONFIG = {
+  SERIES_MODE: {
+    SINGLE: 'single' as const,
+    SERIES: 'series' as const,
+  },
+  DEFAULT_SERIES_MODE: 'single' as const,
+  DEFAULT_EPISODE_COUNT: 6,
+  SINGLE_EPISODE_COUNT: 1,
+  MIN_EPISODE_COUNT: 2,
+  MAX_EPISODE_COUNT: 24,
+  DEFAULT_DURATION: '1 minute',
+  DURATIONS: [
+    '1 minute',
+    '2 minutes',
+    '3 minutes',
+    '3-5 minutes',
+    '5-10 minutes',
+    '10-15 minutes',
+  ],
+  PERSISTENCE_SCOPE: 'auto_video_generator',
+  ACCENT_COLOR_BLUE: 'blue',
+} as const;

@@ -7,6 +7,7 @@ import { VoiceSelectionDialog, type Voice as CatalogVoice } from "../VoiceSelect
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { Lang } from "../../lib/lang";
 import { PIPELINE_STEPS } from "../../constants/enums";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface VoiceSelectionSectionProps {
   voiceName: string;
@@ -18,7 +19,7 @@ interface VoiceSelectionSectionProps {
   currentLang: Lang;
   handleVoiceSelect: (v: CatalogVoice) => void;
   truncateWords: (str: string, maxWords: number) => string;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
 }
 
 export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
@@ -33,6 +34,8 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
   truncateWords,
   T,
 }) => {
+  const displayVoiceName = voiceName || voiceURI;
+
   return (
     <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between">
@@ -64,9 +67,9 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({
               <Mic className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2.5">
-              <Tooltip content={voiceName || voiceURI} position="top">
+              <Tooltip content={displayVoiceName} position="top">
                 <span className="font-bold text-slate-100 text-xs group-hover:text-amber-400 transition-colors">
-                  {truncateWords(voiceName || voiceURI, 5)}
+                  {truncateWords(displayVoiceName, 5)}
                 </span>
               </Tooltip>
               {!_.isEmpty(voiceProvider) && (

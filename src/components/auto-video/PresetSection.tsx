@@ -3,16 +3,23 @@ import _ from "lodash";
 import { Bookmark, ChevronDown, Save, Sparkles, Trash } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+
+interface PresetItem {
+  id: string;
+  name: string;
+  config?: Record<string, unknown>;
+}
 
 interface PresetSectionProps {
-  presets: any[];
+  presets: PresetItem[];
   selectedPresetId: string;
   handleApplyPreset: (id: string) => void;
   presetNameInputState: string;
   setPresetNameInputState: (val: string) => void;
   handleSavePreset: () => void;
   handleDeletePreset: (id: string) => void;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
   truncateWords: (str: string, maxWords: number) => string;
 }
 
@@ -73,14 +80,14 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
             <ChevronDown className="pointer-events-none absolute right-3 text-slate-400 w-4 h-4" />
           </div>
 
-          {selectedPresetId && (
+          {!_.isEmpty(selectedPresetId) && (
             <Button
               type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-              variant={REFACTOR_CONSTANTS.VARIANT_GHOST as any}
-              size={REFACTOR_CONSTANTS.SIZE_SM as any}
+              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
+              size={REFACTOR_CONSTANTS.SIZE_SM}
               onClick={() => handleDeletePreset(selectedPresetId)}
               title={T.deletePresetTooltip}
-              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-2.5 h-auto shrink-0 shadow-none transition-all"
+              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-2.5 h-auto shrink-0 shadow-none transition-all cursor-pointer"
             >
               <Trash className="w-4 h-4" />
             </Button>
@@ -97,11 +104,11 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
           />
           <Button
             type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-            variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY as any}
-            size={REFACTOR_CONSTANTS.SIZE_SM as any}
+            variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
+            size={REFACTOR_CONSTANTS.SIZE_SM}
             onClick={handleSavePreset}
             title={T.savePresetTooltip}
-            className="bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 font-bold text-xs rounded-2xl px-3.5 py-2.5 h-auto shrink-0 shadow-none transition-all flex items-center gap-1.5"
+            className="bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 font-bold text-xs rounded-2xl px-3.5 py-2.5 h-auto shrink-0 shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <Save className="w-3.5 h-3.5 text-purple-400" />
             <span>{T.savePresetBtn}</span>

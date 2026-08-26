@@ -4,11 +4,12 @@ import { Activity, ArrowDown } from "lucide-react";
 import { ProgressLogTimeline } from "../ProgressLogTimeline";
 import { cn } from "../../lib/utils";
 import { AppTheme } from "../../constants/enums";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface LogPanelSectionProps {
   logs: string[];
   theme: AppTheme;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
   language?: string;
 }
 
@@ -44,7 +45,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
             <button
               type="button"
               onClick={scrollToLatest}
-              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm"
+              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer"
               title={T.logScrollLatestTooltip}
             >
               <ArrowDown className="w-3 h-3" />
@@ -64,12 +65,14 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
         {_.isEmpty(logs) ? (
           <div className={cn(
             "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
-            _.isEqual(theme, "light") ? "text-slate-500" : "text-slate-400",
+            _.isEqual(theme, AppTheme.LIGHT) ? "text-slate-500" : "text-slate-400",
           )}>
             <Activity className="w-8 h-8 mb-1 opacity-50" />
             <span>{T.logEmpty}</span>
           </div>
-        ) : <ProgressLogTimeline logs={logs} theme={theme} language={language} />}
+        ) : (
+          <ProgressLogTimeline logs={logs} theme={theme} language={language} />
+        )}
       </div>
     </div>
   );

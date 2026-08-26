@@ -5,15 +5,10 @@ import { useAutoVideoState } from "../hooks/useAutoVideoState";
 import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
 import {
   VideoProject,
-  ProjectLanguage,
   ProjectInputType,
-  AspectRatio,
   ImageGenerationMode,
   ImageGeneratorEngine,
   GenerateType,
-  BackgroundMode,
-  ThumbnailTextMode,
-  ImageFocusMode,
 } from "../types";
 import { type Voice as CatalogVoice } from "./VoiceSelectionDialog";
 import { AppTheme, AppLanguage, VideoGenre } from "../constants/enums";
@@ -23,14 +18,26 @@ import {
   CONTENT_TYPES,
   CONTENT_TYPE_HEADER,
   REFACTOR_CONSTANTS,
-  API_HEADERS,
-  STORAGE_KEYS,
 } from "../constants";
-import { MEDIA_MIX_TEXTS, PRESET_CONSTANTS } from "../constants/texts";
-import { REGENERATION_TARGET, REGENERATION_TEXTS, PROJECT_ASSET_GROUP, AUTO_GENERATOR_CONSTANTS } from "../constants/config";
-import { clearAllProjectVisualOutputs, clearProjectVideoOutputs } from "../services/projectRegenerationService";
+import { MEDIA_MIX_TEXTS } from "../constants/texts";
+import {
+  REGENERATION_TARGET,
+  REGENERATION_TEXTS,
+  CINEMATIC_CONFIG,
+} from "../constants/config";
+import {
+  deleteProjectRegenerationAssets,
+  applyProjectRegenerationReset,
+} from "../services/projectRegenerationService";
 import { Lang } from "../lib/lang";
-import { getAutoVideoTexts, getImageEngineOptions, getSplitLabels, truncateWords } from "./auto-video/autoVideoGeneratorUtils";
+import {
+  getAutoVideoTexts,
+  getImageEngineOptions,
+  getSplitLabels,
+  truncateWords,
+  buildPresetPayload,
+  applyPresetConfigToState,
+} from "./auto-video/autoVideoGeneratorUtils";
 import { jsonUtils } from "../lib/json";
 import { storageUtils } from "../lib/storage";
 import { logger } from "../utils/logger";
@@ -47,9 +54,9 @@ import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
 import { toast } from "sonner";
-import { normalizeBackgroundMode, SCENE_TEXT_MODE } from "../services/visualConfigModeService";
 import CinematicFilmSetupSection from "./cinematic/CinematicFilmSetupSection";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
+import { genreLabels } from "../constants/data";
 
 interface AutoVideoGeneratorProps {
   currentLang: Lang;
@@ -102,14 +109,12 @@ export default function AutoVideoGenerator({
   } = actions;
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
-  // During initialization the hook may still hold the previously selected
-  // completed project for a render. Never expose its SEO/thumbnail/video as if
-  // it belonged to the new run. The new project becomes visible as soon as its
-  // generating checkpoint is active.
+
   const presentationProject = isProcessing
     && !_.isEqual(activeCreatedProject?.status, REFACTOR_CONSTANTS.STATUS_GENERATING)
     ? null
     : activeCreatedProject;
+
   const {
     startPipeline,
     cancelPipeline,
@@ -117,8 +122,9 @@ export default function AutoVideoGenerator({
     setRenderedVideoUrl,
     setLogs,
   } = pipelineActions;
-  const [filmSeriesMode, setFilmSeriesMode] = useState<"single" | "series">("single");
-  const [filmEpisodeCount, setFilmEpisodeCount] = useState(6);
+
+  const [filmSeriesMode, setFilmSeriesMode] = useState<"single" | "series">(CINEMATIC_CONFIG.DEFAULT_SERIES_MODE);
+  const [filmEpisodeCount, setFilmEpisodeCount] = useState<number>(CINEMATIC_CONFIG.DEFAULT_EPISODE_COUNT);
 
   useEffect(() => {
     syncSelectedProject(selectedProjectId);
@@ -126,36 +132,63 @@ export default function AutoVideoGenerator({
 
   useEffect(() => {
     if (!cinematicMode) {
-      if (_.isEqual(genre, VideoGenre.CINEMATIC_EPISODE)) setGenre(VideoGenre.STORY_DRIVEN_VIDEO_ESSAY);
+      if (_.isEqual(genre, VideoGenre.CINEMATIC_EPISODE)) {
+        setGenre(VideoGenre.STORY_DRIVEN_VIDEO_ESSAY);
+      }
       return;
     }
-    if (!_.isEqual(genre, VideoGenre.CINEMATIC_EPISODE)) setGenre(VideoGenre.CINEMATIC_EPISODE);
-    if (!_.isEqual(inputType, ProjectInputType.Idea)) setInputType(ProjectInputType.Idea);
-    if (!_.isEqual(generateType, GenerateType.Video)) setGenerateType(GenerateType.Video);
+
+    if (!_.isEqual(genre, VideoGenre.CINEMATIC_EPISODE)) {
+      setGenre(VideoGenre.CINEMATIC_EPISODE);
+    }
+    if (!_.isEqual(inputType, ProjectInputType.Idea)) {
+      setInputType(ProjectInputType.Idea);
+    }
+    if (!_.isEqual(generateType, GenerateType.Video)) {
+      setGenerateType(GenerateType.Video);
+    }
     if (!_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
       setGenerationMode(ImageGenerationMode.GeminiChat);
     }
-    // Film generation can trigger interactive Google verification. Never hide
-    // those Gemini rooms: a headless CAPTCHA creates an unrecoverable pipeline
-    // stall because the user has no window in which to complete it.
-    if (chromeHeadless) setChromeHeadless(false);
-    const cinematicDurations = ["1 minute", "2 minutes", "3 minutes", "3-5 minutes", "5-10 minutes", "10-15 minutes"];
-    if (!_.includes(cinematicDurations, duration)) setDuration("1 minute");
+    if (!_.includes(CINEMATIC_CONFIG.DURATIONS, duration)) {
+      setDuration(CINEMATIC_CONFIG.DEFAULT_DURATION);
+    }
     if (!_.includes(CINEMATIC_FILM_STYLE_PRESET_IDS, stylePreset as typeof CINEMATIC_FILM_STYLE_PRESET_IDS[number])) {
       setStylePreset(CINEMATIC_FILM_STYLE_PRESET_IDS[0]);
     }
     if (!_.includes(CINEMATIC_FILM_STYLE_PRESET_IDS, thumbnailStylePreset as typeof CINEMATIC_FILM_STYLE_PRESET_IDS[number])) {
       setThumbnailStylePreset(CINEMATIC_FILM_STYLE_PRESET_IDS[0]);
     }
+
     const videoEngines = getImageEngineOptions(generationMode, GenerateType.Video);
-    if (!_.some(videoEngines, option => _.isEqual(option.value, imageGeneratorEngine))) {
+    if (!_.some(videoEngines, (option) => _.isEqual(option.value, imageGeneratorEngine))) {
       setImageGeneratorEngine(_.get(_.first(videoEngines), "value", ImageGeneratorEngine.Veo3));
     }
-  }, [cinematicMode, chromeHeadless, duration, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, setChromeHeadless, setDuration, setGenre, setInputType, setGenerateType, setGenerationMode, setImageGeneratorEngine, setStylePreset, setThumbnailStylePreset]);
+  }, [
+    cinematicMode,
+    duration,
+    genre,
+    generationMode,
+    generateType,
+    imageGeneratorEngine,
+    inputType,
+    stylePreset,
+    thumbnailStylePreset,
+    setDuration,
+    setGenre,
+    setInputType,
+    setGenerateType,
+    setGenerationMode,
+    setImageGeneratorEngine,
+    setStylePreset,
+    setThumbnailStylePreset,
+  ]);
 
   useEffect(() => {
-    if (_.includes([GenerateType.Video, GenerateType.Mixed], generateType)
-      && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
+    if (
+      _.includes([GenerateType.Video, GenerateType.Mixed], generateType) &&
+      !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)
+    ) {
       setGenerationMode(ImageGenerationMode.GeminiChat);
     }
   }, [generateType, generationMode, setGenerationMode]);
@@ -193,34 +226,8 @@ export default function AutoVideoGenerator({
   const handleSavePreset = async () => {
     const trimmedName = _.trim(presetNameInputState);
     if (_.isEmpty(trimmedName)) return;
-    const newPresetData = {
-      id: `${PRESET_CONSTANTS.ID_PREFIX}${Date.now()}`,
-      name: trimmedName,
-      config: {
-        [REFACTOR_CONSTANTS.AVG_INPUT_TYPE_KEY]: inputType,
-        [REFACTOR_CONSTANTS.AVG_GENRE_KEY]: genre,
-        [REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY]: language,
-        [REFACTOR_CONSTANTS.AVG_DURATION_KEY]: duration,
-        [REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY]: splitStrategy,
-        [REFACTOR_CONSTANTS.AVG_VOICE_PROVIDER_KEY]: voiceProvider,
-        [REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY]: voiceURI,
-        [REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY]: voiceName,
-        [REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY]: generationMode,
-        [REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY]: generateType,
-        [REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY]: maxVideoScenes,
-        [REFACTOR_CONSTANTS.AVG_IMAGE_GENERATOR_ENGINE_KEY]: imageGeneratorEngine,
-        [REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY]: aspectRatio,
-        [REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY]: stylePreset,
-        [REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY]: styleBackgroundMode,
-        [REFACTOR_CONSTANTS.STYLE_TEXT_IN_IMAGE_MODE_KEY]: styleTextInImageMode,
-        [REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY]: imageFocusMode,
-        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY]: thumbnailCount,
-        [REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY]: thumbnailStylePreset,
-        [REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY]: thumbnailBackgroundMode,
-        [REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY]: thumbnailTextInImageMode,
-        [REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY]: thumbnailImageFocusMode,
-      },
-    };
+
+    const newPresetData = buildPresetPayload(state, trimmedName);
     try {
       const res = await fetch(API_ROUTES.PRESETS, {
         method: HTTP_METHODS.POST,
@@ -241,30 +248,8 @@ export default function AutoVideoGenerator({
   const handleApplyPreset = (presetId: string) => {
     const preset = _.find(presets, { id: presetId });
     if (!preset) return;
-    const c = _.get(preset, "config", {});
-    const applyIfExists = (key: string, setter: (v: unknown) => void) => {
-      const val = _.get(c, key);
-      if (!_.isUndefined(val)) setter(val);
-    };
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENRE_KEY, (v) => setGenre(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_LANGUAGE_KEY, (v) => setLanguage(v as ProjectLanguage));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_DURATION_KEY, (v) => setDuration(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_SPLIT_STRATEGY_KEY, (v) => setSplitStrategy(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_URI_KEY, (v) => setVoiceURI(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_VOICE_NAME_KEY, (v) => setVoiceName(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_ASPECT_RATIO_KEY, (v) => setAspectRatio(v as AspectRatio));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATION_MODE_KEY, (v) => setGenerationMode(v as ImageGenerationMode));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_GENERATE_TYPE_KEY, (v) => setGenerateType(v as GenerateType));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_STYLE_PRESET_KEY, (v) => setStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.STYLE_BACKGROUND_MODE_KEY, (v) => setStyleBackgroundMode(normalizeBackgroundMode(v as BackgroundMode)));
-    setStyleTextInImageMode(SCENE_TEXT_MODE);
-    applyIfExists(REFACTOR_CONSTANTS.IMAGE_FOCUS_MODE_KEY, (v) => setImageFocusMode(v as ImageFocusMode));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_MAX_VIDEO_SCENES_KEY, (v) => setMaxVideoScenes(v as number));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_COUNT_KEY, (v) => setThumbnailCount(v as number));
-    applyIfExists(REFACTOR_CONSTANTS.AVG_THUMBNAIL_STYLE_PRESET_KEY, (v) => setThumbnailStylePreset(v as string));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_BACKGROUND_MODE_KEY, (v) => setThumbnailBackgroundMode(normalizeBackgroundMode(v as BackgroundMode)));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_TEXT_IN_IMAGE_MODE_KEY, (v) => setThumbnailTextInImageMode(v as ThumbnailTextMode));
-    applyIfExists(REFACTOR_CONSTANTS.THUMBNAIL_IMAGE_FOCUS_MODE_KEY, (v) => setThumbnailImageFocusMode(v as ImageFocusMode));
+    const config = _.get(preset, "config", {});
+    applyPresetConfigToState(config, actions);
     setSelectedPresetId(presetId);
     addLog(T.logAppliedPreset(preset.name));
   };
@@ -310,14 +295,12 @@ export default function AutoVideoGenerator({
       forceRegenerateScenes: overrides.forceRegenerateScenes,
       musicAssetUrl,
       filmFormat: cinematicMode ? filmSeriesMode : undefined,
-      episodeCount: cinematicMode ? (filmSeriesMode === "series" ? filmEpisodeCount : 1) : undefined,
+      episodeCount: cinematicMode
+        ? (_.isEqual(filmSeriesMode, CINEMATIC_CONFIG.SERIES_MODE.SERIES) ? filmEpisodeCount : CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT)
+        : undefined,
     })
   );
 
-  // The automatic pipeline runs in the browser. A tab reload destroys the
-  // in-memory async chain, but its latest project checkpoint intentionally
-  // remains `Generating`. Resume that orphaned run once after hydration so a
-  // reload cannot leave an otherwise recoverable video permanently stuck.
   const recoveredPipelineProjectIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!isConfigLoaded || isProcessing || !activeCreatedProject) return;
@@ -340,50 +323,6 @@ export default function AutoVideoGenerator({
   const [regeneratingTarget, setRegeneratingTarget] = useState<string | null>(null);
   const regenerationTexts = useMemo(() => _.get(REGENERATION_TEXTS, currentLang, REGENERATION_TEXTS.vi), [currentLang]);
 
-  const deleteProjectRegenerationAssets = async (projectId: string, target: string): Promise<boolean> => {
-    const groups = _.isEqual(target, REGENERATION_TARGET.VOICE)
-      ? [PROJECT_ASSET_GROUP.VOICES, PROJECT_ASSET_GROUP.VIDEOS]
-      : _.isEqual(target, REGENERATION_TARGET.IMAGES)
-        ? [PROJECT_ASSET_GROUP.VISUALS]
-        : [PROJECT_ASSET_GROUP.VIDEOS];
-
-    for (const group of groups) {
-      const response = await fetch(`${API_ROUTES.PIPELINE_PROJECT_ASSETS}/${projectId}/${group}`, {
-        method: HTTP_METHODS.DELETE,
-        headers: { [API_HEADERS.LICENSE_KEY]: storageUtils.get(STORAGE_KEYS.LICENSE_KEY) || REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-      });
-      if (!response.ok) return false;
-    }
-    return true;
-  };
-
-  const applyProjectRegenerationReset = (project: VideoProject, target: string): { updatedProject: VideoProject; changed: boolean } => {
-    let updatedProject = _.cloneDeep(project);
-    let changed = false;
-    const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
-    const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
-    const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
-
-    if (isVoice && !_.isEmpty(updatedProject.voiceConfig)) {
-      _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.VOICE_CONFIG_AUDIO_BASE64_PATH, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      _.set(updatedProject.voiceConfig, AUTO_GENERATOR_CONSTANTS.AVG_AUDIO_URL_KEY, REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-      updatedProject.renderedVideoUrl = undefined;
-      updatedProject.storyboard = _.map(_.defaultTo(updatedProject.storyboard, []), sc => ({
-        ...sc,
-        audioUrl: undefined,
-        audioBase64: undefined,
-      }));
-      changed = true;
-    } else if (isImages) {
-      updatedProject = clearAllProjectVisualOutputs(updatedProject);
-      changed = true;
-    } else if (isVideos) {
-      updatedProject = clearProjectVideoOutputs(updatedProject);
-      changed = true;
-    }
-    return { updatedProject, changed };
-  };
-
   const handleRegenerate = async (target: string) => {
     const project = activeCreatedProject;
     if (!project || isProcessing) return;
@@ -404,19 +343,16 @@ export default function AutoVideoGenerator({
         await onUpdateProject(updatedProject, true);
       }
 
-      const isVoice = _.isEqual(target, REGENERATION_TARGET.VOICE);
-      const isImages = _.isEqual(target, REGENERATION_TARGET.IMAGES);
-      const isVideos = _.isEqual(target, REGENERATION_TARGET.RENDER);
-
-      if (isVoice) {
+      if (_.isEqual(target, REGENERATION_TARGET.VOICE)) {
         await handleStartAutoGenerate({ forceRegenerateVoice: true, resumeMode: true });
-      } else if (isImages) {
+      } else if (_.isEqual(target, REGENERATION_TARGET.IMAGES)) {
         await handleStartAutoGenerate({ forceRegenerateScenes: true, resumeMode: true });
-      } else if (isVideos) {
+      } else if (_.isEqual(target, REGENERATION_TARGET.RENDER)) {
         await handleStartAutoGenerate({ resumeMode: true });
       }
-    } catch (err: any) {
-      toast.error(err.message || regenerationTexts.failed);
+    } catch (err: unknown) {
+      const errorMessage = _.get(err, "message", regenerationTexts.failed);
+      toast.error(errorMessage);
     } finally {
       setRegeneratingTarget(null);
     }
@@ -429,64 +365,76 @@ export default function AutoVideoGenerator({
     setIsVoiceDialogOpen(false);
   };
 
+  const lockedGenreLabel = useMemo(() => (
+    cinematicMode ? genreLabels[VideoGenre.CINEMATIC_EPISODE] : undefined
+  ), [cinematicMode]);
+
   return (
     <div className="h-full flex flex-col overflow-y-auto bg-slate-955 font-sans text-slate-100">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 min-h-0">
         <div className="lg:col-span-7 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto p-5 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-800 scrollbar-none">
-          {!cinematicMode && <PresetSection
-            presets={presets}
-            selectedPresetId={selectedPresetId}
-            presetNameInputState={presetNameInputState}
-            setPresetNameInputState={setPresetNameInputState}
-            handleSavePreset={handleSavePreset}
-            handleApplyPreset={handleApplyPreset}
-            handleDeletePreset={handleDeletePreset}
-            T={T}
-            truncateWords={truncateWords}
-          />}
+          {!cinematicMode && (
+            <PresetSection
+              presets={presets}
+              selectedPresetId={selectedPresetId}
+              presetNameInputState={presetNameInputState}
+              setPresetNameInputState={setPresetNameInputState}
+              handleSavePreset={handleSavePreset}
+              handleApplyPreset={handleApplyPreset}
+              handleDeletePreset={handleDeletePreset}
+              T={T}
+              truncateWords={truncateWords}
+            />
+          )}
 
           <div className="space-y-4">
-            {cinematicMode ? <CinematicFilmSetupSection
-              idea={scriptContent}
-              setIdea={setScriptContent}
-              language={language}
-              setLanguage={setLanguage}
-              duration={duration}
-              setDuration={setDuration}
-              seriesMode={filmSeriesMode}
-              setSeriesMode={setFilmSeriesMode}
-              episodeCount={filmEpisodeCount}
-              setEpisodeCount={setFilmEpisodeCount}
-            /> : <ProjectInputSection
-              inputType={inputType}
-              setInputType={setInputType}
-              scriptContent={scriptContent}
-              setScriptContent={setScriptContent}
-              genre={genre}
-              setGenre={setGenre}
-              language={language}
-              setLanguage={setLanguage}
-              duration={duration}
-              setDuration={setDuration}
-              splitStrategy={splitStrategy}
-              setSplitStrategy={setSplitStrategy}
-              splitLabelMap={splitLabelMap}
-              T={T}
-              lockedGenreLabel={cinematicMode ? "Phim truyện điện ảnh AI" : undefined}
-            />}
+            {cinematicMode ? (
+              <CinematicFilmSetupSection
+                idea={scriptContent}
+                setIdea={setScriptContent}
+                language={language}
+                setLanguage={setLanguage}
+                duration={duration}
+                setDuration={setDuration}
+                seriesMode={filmSeriesMode}
+                setSeriesMode={setFilmSeriesMode}
+                episodeCount={filmEpisodeCount}
+                setEpisodeCount={setFilmEpisodeCount}
+              />
+            ) : (
+              <ProjectInputSection
+                inputType={inputType}
+                setInputType={setInputType}
+                scriptContent={scriptContent}
+                setScriptContent={setScriptContent}
+                genre={genre}
+                setGenre={setGenre}
+                language={language}
+                setLanguage={setLanguage}
+                duration={duration}
+                setDuration={setDuration}
+                splitStrategy={splitStrategy}
+                setSplitStrategy={setSplitStrategy}
+                splitLabelMap={splitLabelMap}
+                T={T}
+                lockedGenreLabel={lockedGenreLabel}
+              />
+            )}
 
-            {!cinematicMode && <VoiceSelectionSection
-              voiceName={voiceName}
-              voiceURI={voiceURI}
-              voiceProvider={voiceProvider}
-              isVoiceDialogOpen={isVoiceDialogOpen}
-              setIsVoiceDialogOpen={setIsVoiceDialogOpen}
-              voiceDialogPersistenceScope="auto_video_generator"
-              currentLang={currentLang}
-              handleVoiceSelect={handleVoiceSelectAndClose}
-              truncateWords={truncateWords}
-              T={T}
-            />}
+            {!cinematicMode && (
+              <VoiceSelectionSection
+                voiceName={voiceName}
+                voiceURI={voiceURI}
+                voiceProvider={voiceProvider}
+                isVoiceDialogOpen={isVoiceDialogOpen}
+                setIsVoiceDialogOpen={setIsVoiceDialogOpen}
+                voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE}
+                currentLang={currentLang}
+                handleVoiceSelect={handleVoiceSelectAndClose}
+                truncateWords={truncateWords}
+                T={T}
+              />
+            )}
 
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
               <GenerationSettingsSection
@@ -504,31 +452,35 @@ export default function AutoVideoGenerator({
                 getImageEngineOptions={getImageEngineOptions}
                 mediaMixTexts={mediaMixTexts}
                 forceVideoOnly={cinematicMode}
-              />
-
-              {!cinematicMode && <AdvancedImageSettingsSection
-                showAdvancedImageSettings={showAdvancedImageSettings}
-                setShowAdvancedImageSettings={setShowAdvancedImageSettings}
                 chromeHeadless={chromeHeadless}
                 setChromeHeadless={setChromeHeadless}
-                resumeMode={resumeMode}
-                setResumeMode={setResumeMode}
-                backgroundMode={styleBackgroundMode}
-                setBackgroundMode={setStyleBackgroundMode}
-                textMode={styleTextInImageMode}
-                setTextMode={setStyleTextInImageMode}
-                imageFocusMode={imageFocusMode}
-                setImageFocusMode={setImageFocusMode}
-                language={currentLang as AppLanguage}
-                T={T}
-              />}
+              />
+
+              {!cinematicMode && (
+                <AdvancedImageSettingsSection
+                  showAdvancedImageSettings={showAdvancedImageSettings}
+                  setShowAdvancedImageSettings={setShowAdvancedImageSettings}
+                  chromeHeadless={chromeHeadless}
+                  setChromeHeadless={setChromeHeadless}
+                  resumeMode={resumeMode}
+                  setResumeMode={setResumeMode}
+                  backgroundMode={styleBackgroundMode}
+                  setBackgroundMode={setStyleBackgroundMode}
+                  textMode={styleTextInImageMode}
+                  setTextMode={setStyleTextInImageMode}
+                  imageFocusMode={imageFocusMode}
+                  setImageFocusMode={setImageFocusMode}
+                  language={currentLang as AppLanguage}
+                  T={T}
+                />
+              )}
 
               <div className="pt-2 border-t border-slate-800/80">
                 <StylePresetSelector
                   selectedStyle={stylePreset}
                   onSelectStyle={setStylePreset}
                   language={currentLang}
-                  accentColor="blue"
+                  accentColor={CINEMATIC_CONFIG.ACCENT_COLOR_BLUE}
                   genre={genre}
                   allowedPresetIds={cinematicMode ? CINEMATIC_FILM_STYLE_PRESET_IDS : undefined}
                 />

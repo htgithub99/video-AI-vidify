@@ -11,6 +11,7 @@ import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage } from "../../constants/enums";
 import { SceneTextModeSelect } from "./SceneTextModeSelect";
 import { ADVANCED_SETTING_GROUPS } from "../../constants/texts";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface AdvancedImageSettingsSectionProps {
   showAdvancedImageSettings: boolean;
@@ -26,7 +27,7 @@ interface AdvancedImageSettingsSectionProps {
   imageFocusMode: ImageFocusMode;
   setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
 }
 
 const buildOptionGroups = (lang: AppLanguage) => {

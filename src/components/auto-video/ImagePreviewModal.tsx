@@ -34,7 +34,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, 
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden border border-white/20 shadow-2xl bg-slate-950 flex items-center justify-center"
+        className="relative max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden border border-white/20 shadow-2xl bg-slate-955 flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <img

@@ -9,6 +9,7 @@ import { ImageFocusModeSelect } from "./ImageFocusModeSelect";
 import { AppLanguage, PIPELINE_STEPS } from "../../constants/enums";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { StylePresetSelector } from "./StylePresetSelector";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface ProjectSettingsSectionProps {
   projectName: string;
@@ -24,7 +25,7 @@ interface ProjectSettingsSectionProps {
   imageFocusMode: ImageFocusMode;
   setImageFocusMode: (value: ImageFocusMode) => void;
   language: AppLanguage;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
   musicAssetUrl: string;
   onMusicUpload: (files: FileList) => void;
   onRemoveMusic?: () => void;
@@ -56,7 +57,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const handleMusicInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
+    if (event.target.files && !_.isEmpty(event.target.files)) {
       onMusicUpload(event.target.files);
     }
   };
@@ -75,7 +76,7 @@ export const ProjectSettingsSection: React.FC<ProjectSettingsSectionProps> = ({
 
         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <Layout className="w-3 h-3 text-purple-400" />
-          <span className="font-semibold text-slate-300">{thumbnailCount} {T.lblThumbnails || "ảnh bìa"}</span>
+          <span className="font-semibold text-slate-300">{thumbnailCount} {_.get(T, "lblThumbnails", "ảnh bìa")}</span>
         </div>
       </div>
 

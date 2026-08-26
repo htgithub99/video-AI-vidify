@@ -103,8 +103,8 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
   onThumbnailLoadError,
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const thumbnails = _.get(activeCreatedProject, "thumbnails", []) as ThumbnailItem[];
-  const completedThumbnailCount = _.size(_.filter(thumbnails, thumbnail => !_.isEmpty(thumbnail.imageUrl)));
+  const thumbnails = (_.get(activeCreatedProject, "thumbnails", []) as ThumbnailItem[]) || [];
+  const completedThumbnailCount = _.size(_.filter(thumbnails, (thumbnail) => !_.isEmpty(thumbnail.imageUrl)));
 
   if (_.isEmpty(thumbnails)) {
     return null;

@@ -1,8 +1,8 @@
 import React from "react";
+import _ from "lodash";
 import { ChevronDown, Layers } from "lucide-react";
 import { BackgroundMode } from "../../types";
 import { BACKGROUND_MODE_CONFIG } from "../../constants/config";
-import _ from "lodash";
 
 interface BackgroundModeSelectProps {
   value: BackgroundMode;
@@ -52,8 +52,8 @@ export const BackgroundModeSelect: React.FC<BackgroundModeSelectProps> = ({
   language,
   label,
 }) => {
-  const groups = BACKGROUND_OPTION_GROUPS[language] || BACKGROUND_OPTION_GROUPS.vi;
-  const descriptions = BACKGROUND_MODE_CONFIG.DESCRIPTIONS[language] || BACKGROUND_MODE_CONFIG.DESCRIPTIONS.vi;
+  const groups = _.get(BACKGROUND_OPTION_GROUPS, language, BACKGROUND_OPTION_GROUPS.vi);
+  const descriptions = _.get(BACKGROUND_MODE_CONFIG.DESCRIPTIONS, language, BACKGROUND_MODE_CONFIG.DESCRIPTIONS.vi);
   const currentDesc = _.get(descriptions, value, "");
 
   return (

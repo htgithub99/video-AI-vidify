@@ -3,6 +3,7 @@ import _ from "lodash";
 import { Zap, X, Activity } from "lucide-react";
 import { Button } from "../ui/Button";
 import { REFACTOR_CONSTANTS } from "../../constants";
+import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
 interface ActionPanelSectionProps {
   scriptContent: string;
@@ -12,7 +13,7 @@ interface ActionPanelSectionProps {
   stepProgress: number;
   handleStartAutoGenerate: () => Promise<void>;
   cancelPipeline: () => void;
-  T: any;
+  T: ReturnType<typeof getAutoVideoTexts>;
 }
 
 export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
@@ -68,7 +69,7 @@ export const ActionPanelSection: React.FC<ActionPanelSectionProps> = ({
       </div>
 
       {(isProcessing || _.gt(stepProgress, 0)) && (
-        <div className="space-y-2 pt-1 text-left relative z-10 bg-slate-950/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner">
+        <div className="space-y-2 pt-1 text-left relative z-10 bg-slate-955/80 border border-slate-800/90 p-3.5 rounded-2xl shadow-inner">
           <div className="flex justify-between items-center text-xs font-mono font-bold">
             <span className="text-amber-400 flex items-center gap-1.5 font-bold">
               <Activity className="w-3.5 h-3.5 animate-spin text-amber-400" />

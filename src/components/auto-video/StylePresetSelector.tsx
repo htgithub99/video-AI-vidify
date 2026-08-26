@@ -32,8 +32,9 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
     const allPresets = _.values(CURATED_STYLE_PRESETS);
     if (_.isEmpty(allowedPresetIds)) return allPresets;
     const allowed = new Set(allowedPresetIds);
-    return _.filter(allPresets, preset => allowed.has(preset.id));
+    return _.filter(allPresets, (preset) => allowed.has(preset.id));
   }, [allowedPresetIds]);
+
   const recommendedIds = useMemo(() => new Set(getRecommendedStylePresetIds(genre)), [genre]);
 
   const currentPreset = useMemo(() => {
@@ -41,8 +42,10 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
   }, [selectedStyle]);
 
   const filteredPresets = useMemo(() => {
-    const categoryPresets = _.isEqual(activeCategory, "all") ? presetsList : _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));
-    return _.orderBy(categoryPresets, preset => recommendedIds.has(preset.id), "desc");
+    const categoryPresets = _.isEqual(activeCategory, "all")
+      ? presetsList
+      : _.filter(presetsList, (p) => _.isEqual(p.category, activeCategory));
+    return _.orderBy(categoryPresets, (preset) => recommendedIds.has(preset.id), "desc");
   }, [presetsList, activeCategory, recommendedIds]);
 
   return (
@@ -69,7 +72,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
           <button
             type="button"
             onClick={() => setIsDetailOpen(!isDetailOpen)}
-            className="p-1 rounded-lg border border-slate-800 bg-slate-950 text-slate-700 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors"
+            className="p-1 rounded-lg border border-slate-800 bg-slate-955 text-slate-700 hover:text-slate-100 hover:bg-slate-850 cursor-pointer transition-colors"
             title={isVi ? "Xem chi tiết quy tắc prompt" : "Toggle style prompt rules"}
           >
             {isDetailOpen ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -78,7 +81,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
       </div>
 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-        {_.map(_.filter(STYLE_CATEGORIES, cat => _.isEqual(cat.id, "all") || _.some(presetsList, { category: cat.id })), (cat) => {
+        {_.map(_.filter(STYLE_CATEGORIES, (cat) => _.isEqual(cat.id, "all") || _.some(presetsList, { category: cat.id })), (cat) => {
           const isActive = _.isEqual(activeCategory, cat.id);
           return (
             <button
@@ -91,7 +94,7 @@ export const StylePresetSelector: React.FC<StylePresetSelectorProps> = ({
                   ? isPurple
                     ? "bg-purple-600 border-purple-600 text-white shadow-xs"
                     : "bg-blue-600 border-blue-600 text-white shadow-xs"
-                  : "bg-slate-950 text-slate-700 border-slate-800 hover:bg-slate-850 hover:text-slate-100"
+                  : "bg-slate-955 text-slate-700 border-slate-800 hover:bg-slate-850 hover:text-slate-100"
               )}
             >
               {isVi ? cat.nameVi : cat.nameEn}

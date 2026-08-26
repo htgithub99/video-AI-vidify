@@ -1,8 +1,8 @@
 import React from "react";
+import _ from "lodash";
 import { ChevronDown, Type } from "lucide-react";
 import { THUMBNAIL_TEXT_MODE_CONFIG } from "../../constants/config";
 import { ThumbnailTextMode } from "../../types";
-import _ from "lodash";
 
 interface ThumbnailTextModeSelectProps {
   value: ThumbnailTextMode;
@@ -38,8 +38,8 @@ export const ThumbnailTextModeSelect: React.FC<ThumbnailTextModeSelectProps> = (
   language,
   label,
 }) => {
-  const groups = THUMBNAIL_TEXT_GROUPS[language] || THUMBNAIL_TEXT_GROUPS.vi;
-  const descriptions = THUMBNAIL_TEXT_MODE_CONFIG.DESCRIPTIONS[language] || THUMBNAIL_TEXT_MODE_CONFIG.DESCRIPTIONS.vi;
+  const groups = _.get(THUMBNAIL_TEXT_GROUPS, language, THUMBNAIL_TEXT_GROUPS.vi);
+  const descriptions = _.get(THUMBNAIL_TEXT_MODE_CONFIG.DESCRIPTIONS, language, THUMBNAIL_TEXT_MODE_CONFIG.DESCRIPTIONS.vi);
   const currentDesc = _.get(descriptions, value, "");
 
   return (

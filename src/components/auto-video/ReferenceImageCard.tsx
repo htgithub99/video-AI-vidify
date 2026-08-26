@@ -48,7 +48,7 @@ export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           onClick={() => onPreview(imageSrc)}
           title={previewTooltip}
-          className="w-7 h-7 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110"
+          className="w-7 h-7 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-200 flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
@@ -56,7 +56,7 @@ export const ReferenceImageCard: React.FC<ReferenceImageCardProps> = ({
           type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
           onClick={() => onDelete(index)}
           title={deleteTooltip}
-          className="w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110"
+          className="w-7 h-7 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center border border-white/20 shadow-md transition-transform hover:scale-110 cursor-pointer"
         >
           <X className="w-3.5 h-3.5" />
         </button>
