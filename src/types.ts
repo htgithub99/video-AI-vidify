@@ -116,6 +116,9 @@ export enum AssetAcceptance {
   Rejected = "rejected",
 }
 
+/** Final editorial disposition for a generated film take. */
+export type CinematicTakeDecision = "use" | "trim" | "cover" | "regenerate_once" | "omit";
+
 export enum AudioCueType {
   Music = "music",
   SoundEffect = "sfx",
@@ -587,6 +590,9 @@ export interface StoryboardScene {
   sourceTrimEndSeconds?: number;
   sourceCrop?: string;
   clipQaWarnings?: string[];
+  cinematicTakeDecision?: CinematicTakeDecision;
+  cinematicTakeDecisionReason?: string;
+  cinematicRegenerationCount?: number;
 }
 
 export interface SubtitleCue {
@@ -663,6 +669,8 @@ export interface FinalQualityReport {
   blockingErrors: string[];
   warnings: string[];
   publishable: boolean;
+  /** Separates a valid file from an editorially clean release candidate. */
+  releaseStatus: "technical_complete" | "completed_with_warnings" | "editorially_publishable";
 }
 
 export interface FinalMultimodalQualityReport {

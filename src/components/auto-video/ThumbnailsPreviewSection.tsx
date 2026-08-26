@@ -104,6 +104,7 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
 }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const thumbnails = _.get(activeCreatedProject, "thumbnails", []) as ThumbnailItem[];
+  const completedThumbnailCount = _.size(_.filter(thumbnails, thumbnail => !_.isEmpty(thumbnail.imageUrl)));
 
   if (_.isEmpty(thumbnails)) {
     return null;
@@ -122,7 +123,7 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
         </div>
 
         <span className="text-[10px] font-mono font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
-          {_.size(thumbnails)} {AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_SAMPLE_UNIT}
+          {completedThumbnailCount}/{_.size(thumbnails)} {AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_SAMPLE_UNIT}
         </span>
       </div>
 

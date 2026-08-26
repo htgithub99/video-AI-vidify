@@ -119,7 +119,7 @@ export const normalizeVisualShotPlan = (
       "sequenceId", "shotId", "shotRole", "dialogueMode", "spokenDialogue",
       "speakerCharacterId", "lipSyncRequired", "characterBlocking", "eyelineDirection",
       "screenDirection", "actionStartState", "actionEndState", "locationState",
-      "wardrobeState", "propState", "soundDesignCues", "cinematicBeats",
+      "wardrobeState", "propState", "soundDesignCues", "cinematicBeats", "generationPrompt",
     ]),
     shotPurpose,
     characterIds,

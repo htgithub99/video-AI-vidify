@@ -18,6 +18,7 @@ export enum ConfigIssueCode {
   ImageModeVideoEngineReplaced = "image_mode_video_engine_replaced",
   NoTextConstraintApplied = "no_text_constraint_applied",
   VideoModeImageEngineUnsupported = "video_mode_image_engine_unsupported",
+  VideoModeRoutedThroughGemini = "video_mode_routed_through_gemini",
 }
 
 export interface ConfigIssue {
@@ -48,6 +49,20 @@ const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
 export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
+  const requestsGeneratedVideo = _.includes(
+    [GenerateType.Video, GenerateType.Mixed],
+    config.generateType as GenerateType,
+  );
+  if (requestsGeneratedVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+    // All generated-video workflows use the Gemini UI. The selected engine is
+    // deliberately preserved because it represents the user's model choice
+    // inside Gemini (Veo Fast/Quality/etc.), not a competing transport.
+    config.generationMode = ImageGenerationMode.GeminiChat;
+    issues.push({
+      code: ConfigIssueCode.VideoModeRoutedThroughGemini,
+      severity: ConfigIssueSeverity.Warning,
+    });
+  }
   const usesGeminiModelPicker = _.isEqual(config.generationMode, ImageGenerationMode.GeminiChat);
 
   if (_.every([config.characterConsistency, !hasCharacterIdentity(config)], Boolean)) {

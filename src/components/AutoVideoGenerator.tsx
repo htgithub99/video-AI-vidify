@@ -102,6 +102,14 @@ export default function AutoVideoGenerator({
   } = actions;
 
   const { isProcessing, isCancelling, currentStepIndex, stepProgress, logs, renderedVideoUrl, activeCreatedProject } = pipelineState;
+  // During initialization the hook may still hold the previously selected
+  // completed project for a render. Never expose its SEO/thumbnail/video as if
+  // it belonged to the new run. The new project becomes visible as soon as its
+  // generating checkpoint is active.
+  const presentationProject = isProcessing
+    && !_.isEqual(activeCreatedProject?.status, REFACTOR_CONSTANTS.STATUS_GENERATING)
+    ? null
+    : activeCreatedProject;
   const {
     startPipeline,
     cancelPipeline,
@@ -124,6 +132,15 @@ export default function AutoVideoGenerator({
     if (!_.isEqual(genre, VideoGenre.CINEMATIC_EPISODE)) setGenre(VideoGenre.CINEMATIC_EPISODE);
     if (!_.isEqual(inputType, ProjectInputType.Idea)) setInputType(ProjectInputType.Idea);
     if (!_.isEqual(generateType, GenerateType.Video)) setGenerateType(GenerateType.Video);
+    if (!_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
+      setGenerationMode(ImageGenerationMode.GeminiChat);
+    }
+    // Film generation can trigger interactive Google verification. Never hide
+    // those Gemini rooms: a headless CAPTCHA creates an unrecoverable pipeline
+    // stall because the user has no window in which to complete it.
+    if (chromeHeadless) setChromeHeadless(false);
+    const cinematicDurations = ["1 minute", "2 minutes", "3 minutes", "3-5 minutes", "5-10 minutes", "10-15 minutes"];
+    if (!_.includes(cinematicDurations, duration)) setDuration("1 minute");
     if (!_.includes(CINEMATIC_FILM_STYLE_PRESET_IDS, stylePreset as typeof CINEMATIC_FILM_STYLE_PRESET_IDS[number])) {
       setStylePreset(CINEMATIC_FILM_STYLE_PRESET_IDS[0]);
     }
@@ -134,7 +151,14 @@ export default function AutoVideoGenerator({
     if (!_.some(videoEngines, option => _.isEqual(option.value, imageGeneratorEngine))) {
       setImageGeneratorEngine(_.get(_.first(videoEngines), "value", ImageGeneratorEngine.Veo3));
     }
-  }, [cinematicMode, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, setGenre, setInputType, setGenerateType, setImageGeneratorEngine, setStylePreset, setThumbnailStylePreset]);
+  }, [cinematicMode, chromeHeadless, duration, genre, generationMode, generateType, imageGeneratorEngine, inputType, stylePreset, thumbnailStylePreset, setChromeHeadless, setDuration, setGenre, setInputType, setGenerateType, setGenerationMode, setImageGeneratorEngine, setStylePreset, setThumbnailStylePreset]);
+
+  useEffect(() => {
+    if (_.includes([GenerateType.Video, GenerateType.Mixed], generateType)
+      && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
+      setGenerationMode(ImageGenerationMode.GeminiChat);
+    }
+  }, [generateType, generationMode, setGenerationMode]);
 
   useEffect(() => {
     if (!selectedProjectId || !isConfigLoaded || isProcessing) return;
@@ -542,7 +566,7 @@ export default function AutoVideoGenerator({
             isCancelling={isCancelling}
             currentStepIndex={currentStepIndex}
             stepProgress={stepProgress}
-            handleStartAutoGenerate={handleStartAutoGenerate}
+            handleStartAutoGenerate={() => handleStartAutoGenerate({ resumeMode: false })}
             cancelPipeline={cancelPipeline}
             T={T}
           />
@@ -557,7 +581,7 @@ export default function AutoVideoGenerator({
           <PreviewPanelSection
             renderedVideoUrl={renderedVideoUrl}
             projectName={projectName}
-            activeCreatedProject={activeCreatedProject}
+            activeCreatedProject={presentationProject}
             isProcessing={isProcessing}
             regeneratingTarget={regeneratingTarget}
             handleRegenerate={handleRegenerate}
@@ -567,11 +591,11 @@ export default function AutoVideoGenerator({
           />
 
           <ThumbnailsPreviewSection
-            activeCreatedProject={activeCreatedProject}
+            activeCreatedProject={presentationProject}
           />
 
           <SeoPanelSection
-            activeCreatedProject={activeCreatedProject}
+            activeCreatedProject={presentationProject}
           />
         </div>
       </div>

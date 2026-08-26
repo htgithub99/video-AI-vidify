@@ -336,7 +336,19 @@ export function useAutoVideoPipeline(
     const availableMusicAssetUrl = config.musicAssetUrl || activeCreatedProject?.config.musicAssetUrl;
     config.musicAssetUrl = availableMusicAssetUrl;
 
-    const pipelineTargetKey = _.toString(config.selectedProjectId || activeCreatedProject?.id || _.kebabCase(_.join([config.projectName, config.scriptContent], REFACTOR_CONSTANTS.VD_EMPTY_STRING)));
+    // A fresh story must never inherit the run lock of the project currently
+    // selected in the sidebar. Otherwise an abandoned tab for the old project
+    // can block every new production even though the new project does not yet
+    // exist. Reuse an existing project id only for a genuine resume/regenerate
+    // operation with unchanged content.
+    const canReuseExistingRunTarget = Boolean(config.resumeMode && !startsDifferentContent);
+    const newRunTargetKey = _.kebabCase(_.join(
+      [config.projectName, config.scriptContent],
+      REFACTOR_CONSTANTS.VD_EMPTY_STRING,
+    ));
+    const pipelineTargetKey = _.toString(canReuseExistingRunTarget
+      ? (config.selectedProjectId || activeCreatedProject?.id || newRunTargetKey)
+      : newRunTargetKey);
     const pipelineRunLease = acquirePipelineRunLease(pipelineTargetKey);
     if (!pipelineRunLease.acquired) {
       processingRef.current = false;
@@ -432,7 +444,7 @@ export function useAutoVideoPipeline(
       const requiresPromptPlanningMigration = _.some(
         existingTargetProj?.storyboard,
         scene => !_.isEmpty(getVisualShotPlanIssues(scene, scene))
-          || (isCinematicEpisodeGenre(config.genre) && !_.inRange(_.size(scene.cinematicBeats), 2, 4)),
+          || (isCinematicEpisodeGenre(config.genre) && !_.isEqual(_.size(scene.cinematicBeats), 3)),
       );
       let shouldRegenerateSceneAssets = invalidationState.regenerateSceneAssets
         || requiresVisualReferenceMigration
@@ -526,17 +538,18 @@ export function useAutoVideoPipeline(
         appendLog(T.logResumeProject(newProj.name));
       } else {
         const selectedProj = _.defaultTo(selectedAutoProj, activeCreatedProject);
+        const createIndependentFilmRun = isCinematicEpisodeGenre(config.genre);
         const isChildProject = selectedProj && selectedProj.parentId;
 
-        newProjectId = selectedProj
+        newProjectId = selectedProj && !createIndependentFilmRun
           ? selectedProj.id
           : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, generateRandomString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
 
-        const defaultName = selectedProj
+        const defaultName = selectedProj && !createIndependentFilmRun
           ? selectedProj.name
           : (_.trim(config.projectName) || _.join([PRESET_CONSTANTS.PROJECT_NAME_PREFIX, Date.now()], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
-        if (selectedProj?.id) {
+        if (selectedProj?.id && !createIndependentFilmRun) {
           const deleteAssetGroups = [
             PROJECT_ASSET_GROUP.VOICES,
             PROJECT_ASSET_GROUP.VISUALS,
@@ -949,6 +962,12 @@ export function useAutoVideoPipeline(
         const storyboardPayload = {
           rewrittenScript: realScript,
           chapters,
+          // Film has no global TTS track, so there is no measured voiceDuration.
+          // Pass the user's exact episode target or the storyboard service will
+          // incorrectly infer length from screenplay word count and over-order clips.
+          voiceDuration: isCinematicEpisodeGenre(config.genre)
+            ? parseTargetDurationSeconds(config.duration)
+            : undefined,
           config: {
             ...newProj.config,
             ...newProj.voiceConfig,
@@ -1002,14 +1021,20 @@ export function useAutoVideoPipeline(
           appendLog(REFACTOR_CONSTANTS.WARN_STORYBOARD_QA_RESULT);
         }
         if (_.isEmpty(realScenes)) throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
-        realScenes = ensureStoryboardScriptCoverage(realScenes, {
-          rewrittenScript: realScript,
-          chapters,
-          splitStrategy: config.splitStrategy as SplitStrategy,
-          aspectRatio: config.aspectRatio,
-          targetStyle: storyboardStyle,
-          visualBible,
-        });
+        // Film storyboard already has an exact paid clip budget and each clip
+        // owns three AI-authored internal setups. Expanding uncovered script
+        // fragments here is correct for Auto Video stills, but would silently
+        // multiply Veo requests and break the one-minute six-clip contract.
+        if (!isCinematicEpisodeGenre(config.genre)) {
+          realScenes = ensureStoryboardScriptCoverage(realScenes, {
+            rewrittenScript: realScript,
+            chapters,
+            splitStrategy: config.splitStrategy as SplitStrategy,
+            aspectRatio: config.aspectRatio,
+            targetStyle: storyboardStyle,
+            visualBible,
+          });
+        }
         const storyboardQa = storyboardAvailable
           ? storyboardRes.data.storyboardQa as StoryboardQualityReport | undefined
           : undefined;
@@ -1255,12 +1280,13 @@ export function useAutoVideoPipeline(
       realScenes = applyProfessionalEditingPolicy(realScenes as StoryboardScene[], voiceUpdatedProj.visualBible);
       if (isCinematicEpisodeGenre(config.genre)) {
         const sourceShotCount = realScenes.length;
-        realScenes = bundleCinematicScenesForGeneration(realScenes as StoryboardScene[]);
+        const targetClipCount = _.max([1, Math.ceil(parseTargetDurationSeconds(config.duration) / 10)]) || 1;
+        realScenes = bundleCinematicScenesForGeneration(realScenes as StoryboardScene[], targetClipCount);
         realScenes = applyCinematicContinuityHandoffs(realScenes as StoryboardScene[]);
         const plannedCameraSetupCount = _.sumBy(realScenes as StoryboardScene[], scene => _.size(scene.cinematicBeats));
         appendLog(config.language === ProjectLanguage.VI
-          ? `[Phim AI] AI đã thiết kế ${plannedCameraSetupCount} góc máy có timeline trong ${realScenes.length} clip 10 giây từ ${sourceShotCount} nhịp truyện; mỗi clip phải có tối thiểu 2 shot và một kết quả nhìn thấy được.`
-          : `[AI Film] AI authored ${plannedCameraSetupCount} timed camera setups across ${realScenes.length} ten-second clips from ${sourceShotCount} story beats; every clip requires at least two shots and a visible consequence.`);
+          ? `[Phim AI] AI đã thiết kế ${plannedCameraSetupCount} góc máy có timeline trong ${realScenes.length} clip 10 giây từ ${sourceShotCount} nhịp truyện; mỗi clip bắt buộc đúng 3 shot liên tục và một kết quả nhìn thấy được.`
+          : `[AI Film] AI authored ${plannedCameraSetupCount} timed camera setups across ${realScenes.length} ten-second clips from ${sourceShotCount} story beats; every clip requires exactly three continuous shots and a visible consequence.`);
       }
       realScenes = _.map(realScenes as StoryboardScene[], scene => ({
         ...scene,
@@ -1297,9 +1323,9 @@ export function useAutoVideoPipeline(
       if (isCinematicEpisodeGenre(config.genre)) {
         const cinematicContractIssues = getCinematicStoryboardContractIssues(realScenes as StoryboardScene[]);
         if (!_.isEmpty(cinematicContractIssues)) {
-          appendLog(config.language === ProjectLanguage.VI
-            ? `[Phim AI] Kế hoạch cảnh còn thiếu ${cinematicContractIssues.length} trường điện ảnh; tiếp tục tạo video nhưng ghi nhận QA thay vì âm thầm coi là đạt.`
-            : `[AI Film] Shot plan is missing ${cinematicContractIssues.length} cinematic fields; continuing video generation with an explicit QA warning.`);
+          throw new Error(config.language === ProjectLanguage.VI
+            ? `Dừng trước khi phát sinh chi phí: kế hoạch phim chưa đạt hợp đồng 3 shot/clip (${cinematicContractIssues.slice(0, 6).join(", ")}).`
+            : `Stopped before incurring generation cost: the film plan does not satisfy the three-shot clip contract (${cinematicContractIssues.slice(0, 6).join(", ")}).`);
         }
         appendLog(config.language === ProjectLanguage.VI
           ? `[Phim AI] Chế độ video toàn cảnh: ${realScenes.length}/${realScenes.length} cảnh được gửi tới model video đã chọn.`
@@ -1428,7 +1454,7 @@ export function useAutoVideoPipeline(
             ? thumbnailPlan.data.thumbnails
             : [];
           const thumbnailReferenceImages: string[] = [];
-          unifiedThumbnailItems = _.map(
+          unifiedThumbnailItems = isCinematicEpisodeGenre(config.genre) ? [] : _.map(
             _.filter(unifiedBatchThumbnails, thumb => _.isEmpty(thumb.imageUrl)),
             thumb => {
               const thumbnailStyle = _.toString(_.defaultTo(thumb.style, _.defaultTo(currentThumbnailStyle, currentStylePreset)));
@@ -1499,10 +1525,16 @@ export function useAutoVideoPipeline(
           visualBible: voiceUpdatedProj.visualBible,
           characters: voiceUpdatedProj.visualConfig?.characters,
         });
+        const aiAuthoredVideoPrompt = isCinematicEpisodeGenre(config.genre)
+          && _.isEqual(sceneGenerateType, GenerateType.Video)
+          ? _.trim(scene.generationPrompt)
+          : "";
         return {
           ...context,
           prompt: adaptImagePromptForEngine(
-            isCinematicEpisodeGenre(config.genre)
+            !_.isEmpty(aiAuthoredVideoPrompt)
+              ? aiAuthoredVideoPrompt
+              : isCinematicEpisodeGenre(config.genre)
               ? createCinematicVideoPrompt(scene, compiledPrompt, sceneGenerateType)
               : compiledPrompt,
             executionVisualConfig.imageGeneratorEngine || ImageGeneratorEngine.Imagen,
@@ -1781,6 +1813,15 @@ export function useAutoVideoPipeline(
         // generator instead of being left outside the batch and stopping the video.
         const unresolvedSourceScenes = _.filter(targetScenesToGen, scene => !hasSceneAsset(scene));
         if (!_.isEmpty(unresolvedSourceScenes) && !cancellationRef.current) {
+          if (isCinematicEpisodeGenre(config.genre)) {
+            const missingIds = _.join(_.map(unresolvedSourceScenes, "id"), ", ");
+            appendLog(config.language === ProjectLanguage.VI
+              ? `[Phim AI] Dừng quy trình: không tạo được clip video ${missingIds}. Không chuyển sang ảnh và không dựng phim thiếu cảnh.`
+              : `[AI Film] Pipeline stopped: video clips ${missingIds} could not be generated. No image substitution or incomplete edit will be produced.`);
+            throw new Error(config.language === ProjectLanguage.VI
+              ? `Không tạo được đầy đủ clip video bắt buộc: ${missingIds}`
+              : `Required video clips could not be generated: ${missingIds}`);
+          }
           _.forEach(unresolvedSourceScenes, scene => {
             scene.assetStrategy = "ai_generated";
             scene.archivalRationale = _.trim(_.join([
@@ -1939,6 +1980,80 @@ export function useAutoVideoPipeline(
           scene.acceptance = AssetAcceptance.AcceptedWithWarning;
         }
       }
+      if (isCinematicEpisodeGenre(config.genre)) {
+        const filmVideoScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene) && _.isEqual(scene.assetType, GenerateType.Video));
+        for (const scene of filmVideoScenes) {
+          throwIfCancelled();
+          let videoQa = await validateSceneImage(voiceUpdatedProj.id, scene, undefined, [], { purpose: "video" });
+          const needsVideoRetry = videoQa.success && videoQa.quality && _.some([
+            !videoQa.quality.usableForVideo,
+            !_.isEmpty(videoQa.quality.blockingErrors),
+            _.lt(videoQa.quality.narrativeAlignment || 0, 70),
+            _.lt(videoQa.quality.characterConsistency || 0, 70),
+            _.lt(videoQa.quality.editability || 0, 70),
+          ], Boolean);
+          if (needsVideoRetry) {
+            const reasons = _.uniq(_.compact([
+              ...getSceneVisualRegenerationReasons(videoQa.quality!, false),
+              ...videoQa.quality!.blockingErrors,
+              "preserve_identity_continuity_and_complete_all_timed_camera_beats",
+              "finish_with_the_promised_visible_consequence",
+            ]));
+            const retryPrompt = createTechnicalQaRegenerationPrompt(scene.generationPrompt || scene.prompt, reasons);
+            const retryResult = await generateProjectImageOnce({
+              sceneId: scene.id,
+              prompt: retryPrompt,
+              generateType: GenerateType.Video,
+              referenceImages: [],
+              continuityKey: createSceneContinuityKey(scene, voiceUpdatedProj.visualConfig.characters),
+            }, item => ({
+              prompt: item.prompt,
+              style: currentStylePreset,
+              resolution: voiceUpdatedProj.visualConfig?.quality || REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+              bypassCache: true,
+              engine: executionVisualConfig.imageGeneratorEngine,
+              sandboxConfig: sandboxConfigPayload,
+              visualConfig: { ...visualConfigPayload, generateType: GenerateType.Video },
+            }), requestSignal);
+            const retryUrl = createProjectImageUrl(retryResult);
+            if (retryResult.success && !_.isEmpty(retryUrl)) {
+              scene.assetUrl = retryUrl;
+              scene.assetUrls = [retryUrl];
+              scene.generationPrompt = retryPrompt;
+              appendAssetRevision(scene, retryUrl, SceneAssetStatus.Generated);
+              scene.cinematicTakeDecision = "regenerate_once";
+              scene.cinematicTakeDecisionReason = _.join(reasons, ",");
+              scene.cinematicRegenerationCount = 1;
+              videoQa = await validateSceneImage(voiceUpdatedProj.id, scene, undefined, [], { purpose: "video" });
+            }
+          }
+          if (!videoQa.success || !videoQa.quality) {
+            scene.qaStatus = QaStatus.Unavailable;
+            scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+            scene.assetError = videoQa.error || "video_semantic_qa_unavailable";
+          } else if (videoQa.approved) {
+            scene.qaStatus = QaStatus.Passed;
+            scene.acceptance = AssetAcceptance.Approved;
+            scene.assetStatus = SceneAssetStatus.Approved;
+            scene.assetError = undefined;
+            scene.cinematicTakeDecision = scene.cinematicRegenerationCount ? "regenerate_once" : "use";
+            scene.cinematicTakeDecisionReason = scene.cinematicRegenerationCount
+              ? "directed_retry_passed_semantic_qa"
+              : "semantic_and_continuity_qa_passed";
+          } else {
+            scene.qaStatus = QaStatus.Failed;
+            scene.acceptance = AssetAcceptance.AcceptedWithWarning;
+            scene.assetStatus = SceneAssetStatus.Approved;
+            scene.assetError = `video_qa_warning: ${_.join(videoQa.quality.blockingErrors, ",")}`;
+            scene.cinematicTakeDecision = "cover";
+            scene.cinematicTakeDecisionReason = _.join(
+              _.uniq([...videoQa.quality.blockingErrors, ...getSceneVisualRegenerationReasons(videoQa.quality, false)]),
+              ",",
+            ) || "semantic_quality_below_release_target";
+          }
+        }
+        await persistImageCheckpoint();
+      }
 
       const technicallyValidScenes = _.filter(realScenes as StoryboardScene[], scene => hasSceneAsset(scene));
       const validationSceneIds = new Set(_.map(technicallyValidScenes, "id"));
@@ -1971,15 +2086,22 @@ export function useAutoVideoPipeline(
         persistCheckpoint: persistImageCheckpoint,
         onLog: appendLog,
       });
+      const missingFilmTakes = isCinematicEpisodeGenre(config.genre)
+        ? _.filter(realScenes as StoryboardScene[], scene => !hasSceneAsset(scene) || scene.assetType !== GenerateType.Video)
+        : [];
+      if (!_.isEmpty(missingFilmTakes)) {
+        const missingIds = _.join(_.map(missingFilmTakes, "id"), ", ");
+        throw new Error(config.language === ProjectLanguage.VI
+          ? `Dừng dựng phim vì thiếu take video hợp lệ: ${missingIds}`
+          : `Film render stopped because valid video takes are missing: ${missingIds}`);
+      }
       const completionFallback = ensureRenderReadySceneAssets(realScenes as StoryboardScene[], {
-        cinematicVideoOnly: isCinematicEpisodeGenre(config.genre),
+        cinematicVideoOnly: false,
       });
       if (!_.isEmpty(completionFallback.repairedSceneIds)) {
         realScenes = completionFallback.scenes;
         appendLog(config.language === ProjectLanguage.VI
-          ? (isCinematicEpisodeGenre(config.genre)
-            ? `[Dựng phim] Đã loại ${completionFallback.repairedSceneIds.length} shot không có take thật; timeline ngắn hơn nhưng không lặp clip giả.`
-            : `[Hoàn thành bắt buộc] Đã phục hồi ${completionFallback.repairedSceneIds.length} cảnh thiếu hình bằng tài sản cục bộ an toàn để tiếp tục render.`)
+          ? `[Hoàn thành bắt buộc] Đã phục hồi ${completionFallback.repairedSceneIds.length} cảnh thiếu hình bằng tài sản cục bộ an toàn để tiếp tục render.`
           : `[Completion guarantee] Recovered ${completionFallback.repairedSceneIds.length} scenes with safe local visual assets so rendering can continue.`);
         await persistImageCheckpoint();
       }
@@ -2195,8 +2317,17 @@ export function useAutoVideoPipeline(
           appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_FAILED);
         }
       }
+
       if (isCinematicEpisodeGenre(config.genre)) {
-        const missingFilmThumbnails = _.filter(thumbnailsList, thumbnail => _.isEmpty(thumbnail.imageUrl));
+        appendLog(config.language === ProjectLanguage.VI
+          ? "[Ảnh bìa] Toàn bộ take phim bắt buộc đã sẵn sàng; tự động tạo ảnh bìa của đúng câu chuyện hiện tại."
+          : "[Thumbnail] All required film takes are ready; automatically creating the thumbnail for the current story.");
+      }
+      if (isCinematicEpisodeGenre(config.genre)) {
+        const mayUseTextFreeFilmFrame = _.isEqual(config.thumbnailTextInImageMode, ThumbnailTextMode.NoText);
+        const missingFilmThumbnails = mayUseTextFreeFilmFrame
+          ? _.filter(thumbnailsList, thumbnail => _.isEmpty(thumbnail.imageUrl))
+          : [];
         const sourceVideoScenes = _.filter(realScenes as StoryboardScene[], scene => _.isEqual(scene.assetType, GenerateType.Video) && !_.isEmpty(scene.assetUrl));
         for (let index = 0; index < missingFilmThumbnails.length; index++) {
           const thumbnail = missingFilmThumbnails[index];
@@ -2216,26 +2347,83 @@ export function useAutoVideoPipeline(
           }
         }
       }
-      const completedThumbnailCount = _.size(_.filter(
-        thumbnailsList,
-        (thumbnail) => !_.isEmpty(thumbnail.imageUrl),
-      ));
-      if (_.lt(completedThumbnailCount, config.thumbnailCount)) {
-        appendLog(_.replace(
-          REFACTOR_CONSTANTS.THUMBNAIL_GENERATION_INCOMPLETE,
-          SecurityConstants.PLACEHOLDER_0,
-          _.toString(_.subtract(config.thumbnailCount, completedThumbnailCount)),
-        ));
-      } else {
-        appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
-      }
       for (const thumbnail of thumbnailsList) {
         if (!isUsableGeneratedAssetUrl(thumbnail.imageUrl)) {
           thumbnail.approved = false;
           continue;
         }
         Object.assign(thumbnail, acceptGeneratedThumbnail(thumbnail));
+        let thumbnailQa = await validateSceneImage(newProj.id, {
+          id: thumbnail.id,
+          script: realScript,
+          prompt: thumbnail.prompt,
+          generationPrompt: thumbnail.generationPrompt,
+          assetUrl: thumbnail.imageUrl,
+          expectedSubjectCount: undefined,
+          allowBackgroundPeople: true,
+          visualIntent: thumbnail.subjectFocus,
+          visibleAction: thumbnail.layoutRationale,
+          storyEvidence: thumbnail.textText,
+        }, undefined, [], {
+          purpose: "thumbnail",
+          expectedHeadline: thumbnail.hasText ? thumbnail.textText : "",
+          layoutId: thumbnail.layoutId || thumbnail.layout,
+          typographyId: thumbnail.typographyId || thumbnail.typography,
+        });
+        if (thumbnailQa.success && !thumbnailQa.approved && thumbnail.generationPrompt) {
+          const reasons = _.uniq(_.compact([
+            ...getSceneVisualRegenerationReasons(thumbnailQa.quality!, true),
+            thumbnail.hasText ? "render_the_exact_required_headline_once_with_correct_spelling" : "",
+            "thumbnail_must_match_the_story_and_selected_layout",
+          ]));
+          const retryPrompt = createTechnicalQaRegenerationPrompt(thumbnail.generationPrompt, reasons);
+          const retryResult = await generateProjectImageOnce({
+            sceneId: thumbnail.id,
+            prompt: retryPrompt,
+            generateType: GenerateType.Image,
+            referenceImages: [],
+            continuityKey: createThumbnailContinuityKey(),
+          }, item => ({
+            prompt: item.prompt,
+            style: currentThumbnailStyle || currentStylePreset,
+            resolution: REFACTOR_CONSTANTS.AVG_VISUAL_QUALITY_STANDARD,
+            bypassCache: true,
+            engine: ImageGeneratorEngine.Imagen,
+            sandboxConfig: sandboxConfigPayload,
+            visualConfig: { ...visualConfigPayload, generateType: GenerateType.Image, imageGeneratorEngine: ImageGeneratorEngine.Imagen },
+          }), requestSignal);
+          const retryUrl = createProjectImageUrl(retryResult);
+          if (retryResult.success && !_.isEmpty(retryUrl)) {
+            thumbnail.imageUrl = retryUrl;
+            thumbnail.generationPrompt = retryPrompt;
+            thumbnailQa = await validateSceneImage(newProj.id, {
+              id: thumbnail.id,
+              script: realScript,
+              prompt: thumbnail.prompt,
+              generationPrompt: retryPrompt,
+              assetUrl: retryUrl,
+              expectedSubjectCount: undefined,
+              allowBackgroundPeople: true,
+              visualIntent: thumbnail.subjectFocus,
+              visibleAction: thumbnail.layoutRationale,
+              storyEvidence: thumbnail.textText,
+            }, undefined, [], { purpose: "thumbnail", expectedHeadline: thumbnail.hasText ? thumbnail.textText : "", layoutId: thumbnail.layoutId || thumbnail.layout, typographyId: thumbnail.typographyId || thumbnail.typography });
+          }
+        }
+        if (thumbnailQa.success) {
+          thumbnail.qa = thumbnailQa.quality as any;
+          thumbnail.qaStatus = thumbnailQa.approved ? QaStatus.Passed : QaStatus.Failed;
+          thumbnail.approved = thumbnailQa.approved;
+          thumbnail.acceptance = thumbnailQa.approved ? AssetAcceptance.Approved : AssetAcceptance.Rejected;
+        }
       }
+      const completedThumbnailCount = _.size(_.filter(thumbnailsList, thumbnail => thumbnail.approved && !_.isEmpty(thumbnail.imageUrl)));
+      if (_.lt(completedThumbnailCount, config.thumbnailCount)) appendLog(_.replace(
+        REFACTOR_CONSTANTS.THUMBNAIL_GENERATION_INCOMPLETE,
+        SecurityConstants.PLACEHOLDER_0,
+        _.toString(_.subtract(config.thumbnailCount, completedThumbnailCount)),
+      ));
+      else appendLog(AUTO_GENERATOR_CONSTANTS.LOG_THUMBNAILS_SUCCESS);
       setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.SEO_THUMB_DONE);
       appendLog(T.logSeoResultDetail(
         _.size(_.get(seoData, "titles", [])),
@@ -2276,7 +2464,7 @@ export function useAutoVideoPipeline(
       if (nativeFilmAudio) {
         realScenes = _.map(realScenes as StoryboardScene[], scene => ({
           ...scene,
-          subtitle: _.isEqual(scene.dialogueMode, "on_screen_dialogue")
+          subtitle: _.includes(["on_screen_dialogue", "off_screen_dialogue"], scene.dialogueMode)
             ? _.trim(scene.spokenDialogue)
             : REFACTOR_CONSTANTS.VD_EMPTY_STRING,
           subtitleCues: [],
@@ -2314,12 +2502,23 @@ export function useAutoVideoPipeline(
           const decisionsByScene = _.keyBy(clipAnalysis.data.decisions, "sceneId");
           realScenes = _.map(realScenes as StoryboardScene[], scene => {
             const decision = decisionsByScene[scene.id];
+            const technicalDecision = _.toString(decision?.takeDecision);
+            const takeDecision: StoryboardScene["cinematicTakeDecision"] = _.isEqual(technicalDecision, "omit")
+              ? "omit"
+              : _.isEqual(technicalDecision, "trim")
+                ? "trim"
+                : scene.cinematicTakeDecision || "use";
             return decision ? {
               ...scene,
               sourceTrimStartSeconds: _.toNumber(decision.trimStartSeconds),
               sourceTrimEndSeconds: _.toNumber(decision.trimEndSeconds),
               sourceCrop: _.toString(decision.sourceCrop || ""),
               clipQaWarnings: _.castArray(decision.warnings || []),
+              cinematicTakeDecision: takeDecision,
+              cinematicTakeDecisionReason: _.join(_.compact([
+                scene.cinematicTakeDecisionReason,
+                decision.reason,
+              ]), ";"),
             } : scene;
           });
           const adjustedCount = _.size(_.filter(realScenes, scene => _.gt(_.defaultTo(scene.sourceTrimStartSeconds, 0), 0) || _.gt(_.defaultTo(scene.sourceTrimEndSeconds, 0), 0)));
@@ -2329,16 +2528,23 @@ export function useAutoVideoPipeline(
         }
       }
 
-      const expectedRenderDuration = calculateSceneDuration(realScenes as StoryboardScene[]);
+      const renderableScenes = nativeFilmAudio
+        ? _.reject(realScenes as StoryboardScene[], scene => _.isEqual(scene.cinematicTakeDecision, "omit"))
+        : realScenes as StoryboardScene[];
+      const omittedCount = _.subtract(realScenes.length, renderableScenes.length);
+      if (omittedCount > 0) appendLog(config.language === ProjectLanguage.VI
+        ? `[Dựng phim] Bỏ ${omittedCount} take hỏng kỹ thuật khỏi bản dựng; giữ nguyên các take hợp lệ để hoàn thành phim.`
+        : `[Film edit] Omitted ${omittedCount} technically broken takes and retained all valid takes for completion.`);
+      const expectedRenderDuration = calculateSceneDuration(renderableScenes);
       appendLog(T.logRenderPlan(
-        _.size(realScenes),
+        _.size(renderableScenes),
         expectedRenderDuration,
         !_.isEmpty(globalAudioBase64) || !_.isEmpty(globalAudioUrl),
       ));
 
       const renderPayload = {
         projectId: newProj.id,
-        scenes: _.map(realScenes as VideoProject["storyboard"], (sc) => ({
+        scenes: _.map(renderableScenes, (sc) => ({
           id: _.get(sc, REFACTOR_CONSTANTS.AVG_ID_KEY),
           duration: _.get(sc, "duration") || AUTO_GENERATOR_CONSTANTS.DEFAULT_SCENE_DURATION,
           imageUrl: _.get(sc, "assetUrl"),
@@ -2359,6 +2565,7 @@ export function useAutoVideoPipeline(
           sourceTrimStartSeconds: sc.sourceTrimStartSeconds,
           sourceTrimEndSeconds: sc.sourceTrimEndSeconds,
           sourceCrop: sc.sourceCrop,
+          cinematicTakeDecision: sc.cinematicTakeDecision,
         })),
         quality: config.ffmpegQuality,
         globalAudioUrl: globalAudioUrl || undefined,
@@ -2451,6 +2658,17 @@ export function useAutoVideoPipeline(
             await syncProject(renderCompletedProj);
             setRenderedVideoUrl(statusData.url);
             appendLog(_.replace(AUTO_GENERATOR_CONSTANTS.LOG_RENDER_SUCCESS, SecurityConstants.PLACEHOLDER_0, statusData.url));
+            appendLog(config.language === ProjectLanguage.VI
+              ? finalQc.releaseStatus === "editorially_publishable"
+                ? "[Phát hành] Bản phim hoàn tất và đạt chuẩn biên tập tự động."
+                : finalQc.releaseStatus === "completed_with_warnings"
+                  ? `[Phát hành] Bản phim đã hoàn tất kỹ thuật, còn ${finalQc.warnings.length} cảnh báo cần xem trước khi đăng.`
+                  : `[Phát hành] Đã tạo được tệp phim nhưng còn ${finalQc.blockingErrors.length} lỗi chặn chuẩn phát hành.`
+              : finalQc.releaseStatus === "editorially_publishable"
+                ? "[Release] Film completed and passed automated editorial review."
+                : finalQc.releaseStatus === "completed_with_warnings"
+                  ? `[Release] Film is technically complete with ${finalQc.warnings.length} warnings to review before publishing.`
+                  : `[Release] Film file was created with ${finalQc.blockingErrors.length} release-blocking issues.`);
             appendLog(T.logPipelineElapsed((Date.now() - pipelineStartedAt) / 1000));
             continue;
           }

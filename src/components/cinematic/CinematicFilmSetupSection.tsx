@@ -60,7 +60,9 @@ export default function CinematicFilmSetupSection({
         <label className="space-y-1.5">
           <span className="text-[10px] uppercase font-bold text-slate-400">Thời lượng mỗi tập</span>
           <select value={duration} onChange={event => setDuration(event.target.value)} className="w-full bg-slate-955 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none">
-            <option value="1-3 minutes">1–3 phút</option>
+            <option value="1 minute">1 phút</option>
+            <option value="2 minutes">2 phút</option>
+            <option value="3 minutes">3 phút</option>
             <option value="3-5 minutes">3–5 phút</option>
             <option value="5-10 minutes">5–10 phút</option>
             <option value="10-15 minutes">10–15 phút</option>

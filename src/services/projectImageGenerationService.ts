@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, VIDEO_GENERATION_MOTION_DIRECTIVE } from "../constants";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG, VIDEO_GENERATION_MOTION_DIRECTIVE, VIDEO_GENERATION_MULTISHOT_DIRECTIVE } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -72,8 +72,18 @@ export const isUsableGeneratedAssetUrl = (value?: string): boolean => !_.isEmpty
 export const prepareProjectMediaPrompt = (item: ProjectImageItem): string => {
   const prompt = _.trim(item.prompt);
   if (!_.isEqual(item.generateType, GenerateType.Video)) return prompt;
-  if (/Video motion direction:/i.test(prompt)) return prompt;
-  return _.join([_.trimEnd(prompt, ". "), VIDEO_GENERATION_MOTION_DIRECTIVE], ". ");
+  // Aspect ratio is selected in the Gemini UI. Keeping an image-model flag in
+  // the prose adds noise and can be rendered literally by a video model.
+  const cleanPrompt = _.trim(prompt.replace(/\s+--ar\s+[^\s]+/gi, " "));
+  const isThreeShotFilmClip = /exactly\s+3\s+chronological\s+camera\s+setups/i.test(cleanPrompt)
+    || /three\s+timed\s+chronological\s+shots/i.test(cleanPrompt);
+  if (isThreeShotFilmClip) {
+    const withoutSingleShotContract = _.trim(cleanPrompt.replace(/Video motion direction:[\s\S]*$/i, ""));
+    if (/Video editorial direction:/i.test(withoutSingleShotContract)) return withoutSingleShotContract;
+    return _.join([_.trimEnd(withoutSingleShotContract, ". "), VIDEO_GENERATION_MULTISHOT_DIRECTIVE], ". ");
+  }
+  if (/Video motion direction:/i.test(cleanPrompt)) return cleanPrompt;
+  return _.join([_.trimEnd(cleanPrompt, ". "), VIDEO_GENERATION_MOTION_DIRECTIVE], ". ");
 };
 
 const hasImageResult = (result?: ProjectImageResult): boolean =>
@@ -302,6 +312,9 @@ export const generateProjectImages = async ({
         undefined,
         undefined,
         cancelRef,
+        _.isEqual(_.get(visualConfig, "generateType"), GenerateType.Video)
+          ? SYSTEM_FETCH_CONFIG.VIDEO_STREAM_INACTIVITY_TIMEOUT_MS
+          : SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS,
       );
       const missingResultCount = _.size(uniqueItems) - resultsBySceneId.size;
       if (_.gt(missingResultCount, SecurityConstants.ZERO)) {

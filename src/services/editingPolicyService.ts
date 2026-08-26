@@ -20,8 +20,6 @@ export const EDITING_POLICY_CONSTANTS = {
   FLAT_STYLE_PATTERN: /stickman|flat(?: solid)? colors?|minimalist|no gradients?|no shading/i,
   SHOT_WIDE_PATTERN: /wide|establishing/i,
   SHOT_CLOSE_PATTERN: /close|extreme/i,
-  DISSOLVE_INTERVAL_MOD: 4,
-  DISSOLVE_TARGET_INDEX: 2,
   SHORT_SCENE_SECONDS: 2.75,
   INTENSE_EFFECT_COOLDOWN_SCENES: 6,
 } as const;
@@ -38,6 +36,33 @@ const GENTLE_TRANSITIONS = new Set<string>([
   EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE,
   EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK,
 ]);
+
+const normalizeContinuityValue = (value: unknown): string => _.toLower(_.trim(_.toString(value || "")));
+
+const isSameContinuousSequence = (scene: StoryboardScene, nextScene: StoryboardScene): boolean => {
+  const sequenceId = normalizeContinuityValue(scene.sequenceId);
+  const nextSequenceId = normalizeContinuityValue(nextScene.sequenceId);
+  if (sequenceId && nextSequenceId) return _.isEqual(sequenceId, nextSequenceId);
+
+  const locationId = normalizeContinuityValue(scene.locationId);
+  const nextLocationId = normalizeContinuityValue(nextScene.locationId);
+  const locationState = normalizeContinuityValue(scene.locationState);
+  const nextLocationState = normalizeContinuityValue(nextScene.locationState);
+  return Boolean(
+    (locationId && nextLocationId && _.isEqual(locationId, nextLocationId))
+    || (locationState && nextLocationState && _.isEqual(locationState, nextLocationState)),
+  );
+};
+
+const hasObservableActionHandoff = (scene: StoryboardScene, nextScene: StoryboardScene): boolean => {
+  const endState = normalizeContinuityValue(scene.actionEndState);
+  const startState = normalizeContinuityValue(nextScene.actionStartState);
+  const continuityFrom = normalizeContinuityValue(nextScene.continuityFrom);
+  return Boolean(
+    (endState && startState && (_.isEqual(endState, startState) || _.includes(startState, endState) || _.includes(endState, startState)))
+    || (endState && continuityFrom && (_.includes(continuityFrom, endState) || _.includes(endState, continuityFrom))),
+  );
+};
 
 const DISRUPTIVE_EFFECTS = new Set<string>(["glitch", "vhs", "pixelate", "chromatic_aberration"]);
 const DISRUPTIVE_LIGHTING = new Set<string>(["strobe", "flicker", "exposure_pulse"]);
@@ -99,10 +124,13 @@ const isFlatVisualStyle = (visualBible?: VisualBible): boolean =>
 const normalizeTransition = (
   scene: StoryboardScene,
   nextScene: StoryboardScene | undefined,
-  index: number,
+  _index: number,
 ): string => {
   if (!nextScene) return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
-  if (scene.chapterId && nextScene.chapterId && !_.isEqual(scene.chapterId, nextScene.chapterId)) {
+  const sameSequence = isSameContinuousSequence(scene, nextScene);
+  const actionHandoff = hasObservableActionHandoff(scene, nextScene);
+  const chapterChanged = Boolean(scene.chapterId && nextScene.chapterId && !_.isEqual(scene.chapterId, nextScene.chapterId));
+  if (chapterChanged && !sameSequence) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK;
   }
   const requested = _.replace(
@@ -110,17 +138,19 @@ const normalizeTransition = (
     EDITING_POLICY_CONSTANTS.NORMALIZE_REGEX,
     "_",
   );
-  if (!GENTLE_TRANSITIONS.has(requested) || _.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK)) {
+  if (!GENTLE_TRANSITIONS.has(requested)) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
   }
-  if (_.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CUT)
-    && _.gte(_.defaultTo(scene.duration, 0), 3.5)
-    && index % 7 === 3) {
+  // Continuous action, dialogue, eyelines and prop handoffs need an invisible cut.
+  if (sameSequence || actionHandoff) {
+    return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
+  }
+  // A dissolve is meaningful only for a genuine reflective/time/location bridge.
+  if (_.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE)) {
     return EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE;
   }
-  const shouldSkipCrossDissolve = _.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_CROSS_DISSOLVE) && index % EDITING_POLICY_CONSTANTS.DISSOLVE_INTERVAL_MOD !== EDITING_POLICY_CONSTANTS.DISSOLVE_TARGET_INDEX;
-  if (shouldSkipCrossDissolve) {
-    return EDITING_POLICY_CONSTANTS.TRANSITION_CUT;
+  if (_.isEqual(requested, EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK)) {
+    return EDITING_POLICY_CONSTANTS.TRANSITION_FADE_BLACK;
   }
   return requested;
 };

@@ -1512,17 +1512,26 @@ def main():
             if use_embedded_audio:
                 # Match production-sound loudness per generated take before
                 # concatenation so quiet ambience and clipped action clips do
-                # not jump tens of decibels at edit points.
-                af_effect = ",".join([
-                    FFMPEG_CONSTANTS.AFADE.format(fade_dur, max(0, duration-fade_dur)),
-                    "loudnorm=I=-20:TP=-2:LRA=11",
-                ])
+                # not jump tens of decibels at edit points. Do not fade every
+                # generated take: repeated fades expose the 10-second clip
+                # boundaries and destroy continuous dialogue/room tone.
+                embedded_audio_filters = ["loudnorm=I=-20:TP=-2:LRA=11"]
+                if i == 0:
+                    embedded_audio_filters.insert(0, f"afade=t=in:st=0:d={fade_dur}")
+                if i == len(scenes) - 1:
+                    embedded_audio_filters.insert(0, f"afade=t=out:st={max(0, duration-fade_dur)}:d={fade_dur}")
+                af_effect = ",".join(embedded_audio_filters)
             elif audioPath:
                 cmd.extend(["-i", audioPath])
-                af_effect = FFMPEG_CONSTANTS.AFADE.format(fade_dur, max(0, duration-fade_dur))
+                audio_filters = []
+                if i == 0:
+                    audio_filters.append(f"afade=t=in:st=0:d={fade_dur}")
+                if i == len(scenes) - 1:
+                    audio_filters.append(f"afade=t=out:st={max(0, duration-fade_dur)}:d={fade_dur}")
+                af_effect = ",".join(audio_filters) if audio_filters else "anull"
             else:
                 cmd.extend(["-f", "lavfi", "-i", FFMPEG_CONSTANTS.ANULLSRC])
-                af_effect = FFMPEG_CONSTANTS.AFADE.format(fade_dur, max(0, duration-fade_dur))
+                af_effect = "anull"
             
             if i == 0:
                 vf_effect = FFMPEG_CONSTANTS.FADE_IN_BLACK.format(fade_dur)

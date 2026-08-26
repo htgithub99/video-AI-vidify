@@ -122,6 +122,14 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
     )
   );
 
+  const technicallyComplete = _.isEmpty(blockingErrors);
+  const publishable = technicallyComplete && _.isEmpty(warnings);
+  const releaseStatus: FinalQualityReport["releaseStatus"] = !technicallyComplete
+    ? "technical_complete"
+    : publishable
+      ? "editorially_publishable"
+      : "completed_with_warnings";
+
   return {
     visualBlockingErrors: unapprovedScenes + unapprovedThumbnails,
     audioBlockingErrors,
@@ -133,6 +141,7 @@ export const evaluateFinalQuality = (project: VideoProject): FinalQualityReport 
     promiseAlignmentScore: project.finalMultimodalQa?.promiseAlignmentScore || project.scriptQa?.hookPayoffScore || 0,
     blockingErrors,
     warnings,
-    publishable: _.isEmpty(blockingErrors),
+    publishable,
+    releaseStatus,
   };
 };

@@ -40,7 +40,7 @@ export interface SceneVisualQualityResult {
 }
 
 export interface SceneVisualValidationContext {
-  purpose?: "scene" | "thumbnail";
+  purpose?: "scene" | "thumbnail" | "video";
   expectedHeadline?: string;
   layoutId?: string;
   typographyId?: string;
