@@ -4,6 +4,7 @@ import { usePipelineWizard } from "./pipeline/usePipelineWizard";
 import PipelineStep0 from "./pipeline/PipelineStep0";
 import PipelineStep1 from "./pipeline/PipelineStep1";
 import PipelineStep2 from "./pipeline/PipelineStep2";
+import PipelineStep3 from "./pipeline/PipelineStep3";
 import PipelineStep4 from "./pipeline/PipelineStep4";
 import PipelineStep5 from "./pipeline/PipelineStep5";
 import { PipelineWizardProps, WizardStep, GenerateType, PromptInputMethod, ImageGeneratorEngine, ImageGenerationMode, GeminiChatSpeed, AspectRatio, BatchDelayOption } from "../types";
@@ -851,6 +852,11 @@ export default function PipelineWizard(props: PipelineWizardProps) {
             {visitedSteps[WizardStep.AssetManager] && (
               <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.AssetManager ? "" : "hidden"}`)}>
                 <PipelineStep2 {...wizard} />
+              </div>
+            )}
+            {visitedSteps[WizardStep.SEOBoost] && (
+              <div className={cn(`flex-1 overflow-y-auto px-5 py-5 custom-scrollbar ${currentStep === WizardStep.SEOBoost ? "" : "hidden"}`)}>
+                <PipelineStep3 {...wizard} />
               </div>
             )}
             {visitedSteps[WizardStep.Export] && (

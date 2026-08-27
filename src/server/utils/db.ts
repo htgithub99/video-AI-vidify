@@ -138,6 +138,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         currentStep: row.currentStep,
         creditsUsed: row.creditsUsed,
         parentId: detail.parentId,
+        projectKind: detail.projectKind,
         config,
         storyboard: _.defaultTo(detail.storyboard, []),
       };

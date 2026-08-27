@@ -147,8 +147,8 @@ export default function AutoVideoGenerator({
     if (!_.isEqual(generateType, GenerateType.Video)) {
       setGenerateType(GenerateType.Video);
     }
-    if (!_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
-      setGenerationMode(ImageGenerationMode.GeminiChat);
+    if (!_.isEqual(generationMode, ImageGenerationMode.LabsFlow)) {
+      setGenerationMode(ImageGenerationMode.LabsFlow);
     }
     if (!_.includes(CINEMATIC_CONFIG.DURATIONS, duration)) {
       setDuration(CINEMATIC_CONFIG.DEFAULT_DURATION);
@@ -186,12 +186,13 @@ export default function AutoVideoGenerator({
 
   useEffect(() => {
     if (
+      !cinematicMode &&
       _.includes([GenerateType.Video, GenerateType.Mixed], generateType) &&
       !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)
     ) {
       setGenerationMode(ImageGenerationMode.GeminiChat);
     }
-  }, [generateType, generationMode, setGenerationMode]);
+  }, [cinematicMode, generateType, generationMode, setGenerationMode]);
 
   useEffect(() => {
     if (!selectedProjectId || !isConfigLoaded || isProcessing) return;

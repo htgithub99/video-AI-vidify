@@ -11,8 +11,8 @@ import TabContentLoading from "./components/TabContentLoading.tsx";
 import { VideoProject, ProjectInputType, ProjectKind, ProjectLanguage, HookPosition, AudioType, Gender, AgeGroup, AssetsMode, ImageGenerationMode, ImageGeneratorEngine, GenerateType, PromptInputMethod, AspectRatio } from "./types.js";
 import { Lang } from "./lib/lang.js";
 import { appError, setLogLanguage } from "./lib/logger.js";
-import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS } from "./constants";
-import { AppTab } from "./constants/enums";
+import { API_ROUTES, STORAGE_KEYS, LOADING_CONFIG, TAB_CONTENT_LOADING_CONFIG, HTTP_METHODS, CONTENT_TYPES, ERROR_MESSAGES, CONTENT_TYPE_HEADER, THEME_VALUES, COMMON_STRINGS, DEFAULT_PROJECT_CONFIGS, REFACTOR_CONSTANTS, PROJECT_LIST_CONSTANTS, CINEMATIC_CONFIG, STYLE_PRESET_CONFIG } from "./constants";
+import { AppTab, VideoGenre } from "./constants/enums";
 import _ from "lodash";
 import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
 import { jsonUtils } from "./lib/json";
@@ -25,6 +25,23 @@ const AutoVideoGenerator = lazy(() => import("./components/AutoVideoGenerator.ts
 const CinematicFilmStudio = lazy(() => import("./components/CinematicFilmStudio.tsx"));
 
 const isProjectWorkspaceTab = (tab: string): boolean => _.includes(PROJECT_WORKSPACE_TABS, tab as AppTab);
+
+const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefined => {
+  if (!project) return undefined;
+  if (project.projectKind) return project.projectKind;
+  if (_.endsWith(project.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) return ProjectKind.Studio;
+  if (_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) return ProjectKind.Auto;
+  if (_.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) return ProjectKind.Cinematic;
+  return project.parentId ? undefined : ProjectKind.Container;
+};
+
+const findWorkspaceChild = (
+  projects: VideoProject[],
+  parentId: string,
+  kind: ProjectKind,
+): VideoProject | undefined => _.find(projects, project => (
+  _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind)
+));
 
 const convertToSlug = (text: string): string => {
   return _.trim(
@@ -42,21 +59,21 @@ const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): b
   _.every([
     _.isEqual(tab, AppTab.AUTO_GENERATOR),
     _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Auto),
+      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto),
       _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
     ]),
   ], Boolean),
   _.every([
     _.isEqual(tab, AppTab.CINEMATIC_FILM),
     _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Cinematic),
+      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic),
       _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX),
     ]),
   ], Boolean),
   _.every([
     _.isEqual(tab, AppTab.STUDIO),
     _.some([
-      _.isEqual(project?.projectKind, ProjectKind.Studio),
+      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio),
       _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
     ]),
   ], Boolean),
@@ -239,7 +256,7 @@ export default function App() {
       const activeProj = _.find(projects, { id: selectedProjectId });
       if (activeProj) {
         if (!activeProj.parentId) {
-          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+          const studioChild = findWorkspaceChild(projects, activeProj.id, ProjectKind.Studio);
           if (studioChild) {
             setSelectedProjectId(studioChild.id);
           } else {
@@ -253,6 +270,7 @@ export default function App() {
               ...activeProj,
               id: childId,
               parentId: activeProj.id,
+              projectKind: ProjectKind.Studio,
               name: `${activeProj.name}${COMMON_STRINGS.STUDIO_CHILD_SUFFIX}`,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -272,10 +290,12 @@ export default function App() {
               creatingChildRef.current[activeProj.id] = false;
             });
           }
-        } else if (_.endsWith(activeProj.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
-          const studioChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX));
+        } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), ProjectKind.Studio)) {
+          const studioChild = findWorkspaceChild(projects, activeProj.parentId, ProjectKind.Studio);
           if (studioChild) {
             setSelectedProjectId(studioChild.id);
+          } else {
+            setSelectedProjectId(activeProj.parentId);
           }
         }
       }
@@ -332,7 +352,8 @@ export default function App() {
         const isFilmWorkspace = _.isEqual(activeTab, AppTab.CINEMATIC_FILM);
         const targetSuffix = isFilmWorkspace ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
         if (!activeProj.parentId) {
-          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.id) && _.endsWith(p.name, targetSuffix));
+          const targetKind = isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto;
+          const autoChild = findWorkspaceChild(projects, activeProj.id, targetKind);
           if (autoChild) {
             setSelectedProjectId(autoChild.id);
           } else {
@@ -354,14 +375,15 @@ export default function App() {
                 : activeProj.input,
               config: isFilmWorkspace ? {
                 ...activeProj.config,
-                genre: "Cinematic AI Episode",
-                filmFormat: "single",
-                episodeCount: 1,
+                genre: VideoGenre.CINEMATIC_EPISODE,
+                filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
+                episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
                 seriesBibleRequired: false,
               } : activeProj.config,
               visualConfig: isFilmWorkspace ? {
                 ...activeProj.visualConfig,
-                style: "cinematic_photoreal",
+                style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
+                generationMode: ImageGenerationMode.LabsFlow,
                 generateType: GenerateType.Video,
                 imageGeneratorEngine: ImageGeneratorEngine.Veo3,
               } : activeProj.visualConfig,
@@ -383,10 +405,12 @@ export default function App() {
               creatingChildRef.current[childKey] = false;
             });
           }
-        } else if (!_.endsWith(activeProj.name, targetSuffix)) {
-          const autoChild = _.find(projects, (p) => _.isEqual(p.parentId, activeProj.parentId) && _.endsWith(p.name, targetSuffix));
+        } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto)) {
+          const autoChild = findWorkspaceChild(projects, activeProj.parentId, isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto);
           if (autoChild) {
             setSelectedProjectId(autoChild.id);
+          } else {
+            setSelectedProjectId(activeProj.parentId);
           }
         }
       }
@@ -410,9 +434,9 @@ export default function App() {
           setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
         }
         setSelectedProjectId(id);
-        if (project.parentId && _.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) {
+        if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic)) {
           setActiveTab(AppTab.CINEMATIC_FILM);
-        } else if (project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+        } else if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto)) {
           setActiveTab(AppTab.AUTO_GENERATOR);
         } else {
           setActiveTab(AppTab.STUDIO);
@@ -422,19 +446,19 @@ export default function App() {
       }
     } else {
       setSelectedProjectId(id);
-      if (project && project.parentId && _.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) {
+      if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic)) {
         setActiveTab(AppTab.CINEMATIC_FILM);
-      } else if (project && project.parentId && _.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) {
+      } else if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto)) {
         setActiveTab(AppTab.AUTO_GENERATOR);
       } else {
         setActiveTab(AppTab.STUDIO);
       }
     }
   }, []);
+
   const handleCreateProject = async (name: string, desc: string) => {
     const projectSlug = convertToSlug(name || COMMON_STRINGS.PROJECT_DEFAULT_NAME);
     const randomStr = () => generateRandomString();
-    
     const parentId = `${COMMON_STRINGS.PROJECT_PREFIX}${projectSlug}_parent_${randomStr()}`;
     const parentProject: VideoProject = {
       id: parentId,
@@ -533,6 +557,7 @@ export default function App() {
       visualConfig: {
         ...parentProject.visualConfig,
         style: "cinematic_photoreal",
+        generationMode: ImageGenerationMode.LabsFlow,
         generateType: GenerateType.Video,
         imageGeneratorEngine: ImageGeneratorEngine.Veo3,
       },

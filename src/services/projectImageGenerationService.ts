@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG, VIDEO_GENERATION_MOTION_DIRECTIVE, VIDEO_GENERATION_MULTISHOT_DIRECTIVE } from "../constants";
+import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants, SYSTEM_FETCH_CONFIG, VIDEO_GENERATION_MOTION_DIRECTIVE } from "../constants";
 import { safeSystemFetch, safeSystemFetchStream } from "../lib/shared-utils";
 import { GenerateType, SceneAssetStatus, StoryboardScene } from "../types";
 
@@ -75,12 +75,15 @@ export const prepareProjectMediaPrompt = (item: ProjectImageItem): string => {
   // Aspect ratio is selected in the Gemini UI. Keeping an image-model flag in
   // the prose adds noise and can be rendered literally by a video model.
   const cleanPrompt = _.trim(prompt.replace(/\s+--ar\s+[^\s]+/gi, " "));
-  const isThreeShotFilmClip = /exactly\s+3\s+chronological\s+camera\s+setups/i.test(cleanPrompt)
-    || /three\s+timed\s+chronological\s+shots/i.test(cleanPrompt);
-  if (isThreeShotFilmClip) {
+  const isAiAuthoredMultiShotFilmClip = /exactly\s+[3-5]\s+chronological\s+(?:camera\s+setups|shots)/i.test(cleanPrompt)
+    || /(?:3\s+to\s+5|three\s+to\s+five)\s+(?:timed\s+)?chronological\s+shots/i.test(cleanPrompt)
+    || (/shot\s*1/i.test(cleanPrompt) && /shot\s*2/i.test(cleanPrompt) && /shot\s*3/i.test(cleanPrompt));
+  if (isAiAuthoredMultiShotFilmClip) {
     const withoutSingleShotContract = _.trim(cleanPrompt.replace(/Video motion direction:[\s\S]*$/i, ""));
-    if (/Video editorial direction:/i.test(withoutSingleShotContract)) return withoutSingleShotContract;
-    return _.join([_.trimEnd(withoutSingleShotContract, ". "), VIDEO_GENERATION_MULTISHOT_DIRECTIVE], ". ");
+    // The AI-authored film prompt already contains its complete shot plan,
+    // timing, continuity, dialogue and sound. Do not append creative prose in
+    // application code or override the AI's editorial decisions.
+    return withoutSingleShotContract;
   }
   if (/Video motion direction:/i.test(cleanPrompt)) return cleanPrompt;
   return _.join([_.trimEnd(cleanPrompt, ". "), VIDEO_GENERATION_MOTION_DIRECTIVE], ". ");

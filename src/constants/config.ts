@@ -918,7 +918,7 @@ export const AUTO_GENERATOR_CONSTANTS = {
   TRANSITION_DEFAULT: "default",
   DEFAULT_SCENE_PROMPT: "Cinematic 8k photorealistic vietnamese urban youth, {0}, vertical 9:16 orientation",
   MODE_NAME_GEMINI_ROOM: "Vẽ ảnh Nghệ thuật",
-  MODE_NAME_FLOW_VEO3: "Vẽ ảnh Sáng tạo",
+  MODE_NAME_FLOW_VEO3: "Google Flow (Veo 3)",
   LANG_CODE_VI: "vi",
   LANG_CODE_EN: "en",
   JSON_MIME: "application/json",

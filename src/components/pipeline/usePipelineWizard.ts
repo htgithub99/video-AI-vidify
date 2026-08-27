@@ -180,9 +180,14 @@ export function usePipelineWizard(props: any) {
     }
   }, [normalizedInitialProject]);
 
-  const [currentStep, setCurrentStep] = useState<WizardStep>(() => {
-    return (initialProject as any).currentStep !== undefined ? (initialProject as any).currentStep : WizardStep.SourceInput;
-  });
+  const resolvePersistedWizardStep = (value: unknown): WizardStep => {
+    const step = _.toNumber(value);
+    return _.includes(PipelineConstants.FLOW_STEPS, step) ? step as WizardStep : WizardStep.SourceInput;
+  };
+
+  const [currentStep, setCurrentStep] = useState<WizardStep>(() => (
+    resolvePersistedWizardStep((initialProject as any).currentStep)
+  ));
 
   const [leftSidebarOpen, setLeftSidebarOpen] = useState<boolean>(false);
 
@@ -999,7 +1004,7 @@ export function usePipelineWizard(props: any) {
 
     if (isNewProject || isServerUpdate) {
       if ((initialProject as any).currentStep !== undefined) {
-        setCurrentStep((initialProject as any).currentStep);
+        setCurrentStep(resolvePersistedWizardStep((initialProject as any).currentStep));
       } else {
         setCurrentStep(WizardStep.SourceInput);
       }

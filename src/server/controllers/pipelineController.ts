@@ -492,7 +492,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             wardrobeState: planningString, propState: planningString,
             soundDesignCues: { type: "array", maxItems: 3, items: planningString },
             cinematicBeats: {
-              type: "array", minItems: 3, maxItems: 3,
+              type: "array", minItems: 3, maxItems: 5,
               items: {
                 type: "object", additionalProperties: false,
                 required: ["sourceSceneId", "shotId", "shotRole", "shotSize", "cameraAngle", "visibleAction", "reaction", "transition", "dialogueMode", "spokenDialogue", "speakerCharacterId", "lipSyncRequired", "startSecond", "endSecond"],
@@ -565,26 +565,47 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             const finalVideoPromptWords = _.size(_.words(finalVideoPrompt));
             if (_.isEmpty(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:missing`);
             if (_.lt(finalVideoPromptWords, 180) || _.gt(finalVideoPromptWords, 500)) issues.push(`${sceneId}:generationPrompt:must_be_180_to_500_words`);
-            if (!/(?:0\s*[-–]\s*3\s*seconds?|seconds?\s*0\s*[-–]\s*3)/i.test(finalVideoPrompt)
-              || !/(?:3\s*[-–]\s*7\s*seconds?|seconds?\s*3\s*[-–]\s*7)/i.test(finalVideoPrompt)
-              || !/(?:7\s*[-–]\s*10\s*seconds?|seconds?\s*7\s*[-–]\s*10)/i.test(finalVideoPrompt)) {
-              issues.push(`${sceneId}:generationPrompt:missing_three_timed_shots`);
+            if (!/shot\s*1/i.test(finalVideoPrompt) || !/shot\s*2/i.test(finalVideoPrompt) || !/shot\s*3/i.test(finalVideoPrompt)) {
+              issues.push(`${sceneId}:generationPrompt:missing_minimum_three_timed_shots`);
             }
-            if (/one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take/i.test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:conflicts_with_three_shot_contract`);
+            if (/one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take/i.test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:conflicts_with_multishot_contract`);
             if (/--ar\s|Video motion direction:/i.test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:contains_application_syntax`);
             const beats = _.get(item, "cinematicBeats");
-            if (!_.isArray(beats) || !_.isEqual(beats.length, 3)) {
-              issues.push(`${sceneId}:cinematicBeats:requires_exactly_3`);
+            if (!_.isArray(beats) || beats.length < 3 || beats.length > 5) {
+              issues.push(`${sceneId}:cinematicBeats:requires_between_3_and_5`);
             } else {
               _.forEach(beats, (beat, beatIndex) => {
                 if (!_.isEqual(_.toString(beat.sourceSceneId), sceneId)) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:source_scene_mismatch`);
                 if (!_.lt(_.toNumber(beat.startSecond), _.toNumber(beat.endSecond))) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:timing_invalid`);
                 if (beatIndex > 0 && !_.isEqual(_.toNumber(beat.startSecond), _.toNumber(beats[beatIndex - 1].endSecond))) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:timing_gap`);
+                const beatDialogueMode = _.toString(beat.dialogueMode);
+                const beatDialogue = _.trim(_.toString(beat.spokenDialogue));
+                const beatSpeaker = _.trim(_.toString(beat.speakerCharacterId));
+                const beatDuration = _.subtract(_.toNumber(beat.endSecond), _.toNumber(beat.startSecond));
+                if (_.includes(["on_screen_dialogue", "off_screen_dialogue"], beatDialogueMode)) {
+                  if (_.isEmpty(beatDialogue)) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:spoken_dialogue_required`);
+                  if (_.isEmpty(beatSpeaker)) issues.push(`${sceneId}:cinematicBeats:${beatIndex}:speaker_required`);
+                  if (_.gt(_.size(_.words(beatDialogue)), Math.max(2, Math.floor(beatDuration * 3.2)))) {
+                    issues.push(`${sceneId}:cinematicBeats:${beatIndex}:dialogue_too_long_for_shot`);
+                  }
+                }
+                if (_.isEqual(beatDialogueMode, "on_screen_dialogue") && !_.isEqual(beat.lipSyncRequired, true)) {
+                  issues.push(`${sceneId}:cinematicBeats:${beatIndex}:lip_sync_required`);
+                }
+                if (!_.isEqual(beatDialogueMode, "on_screen_dialogue") && _.isEqual(beat.lipSyncRequired, true)) {
+                  issues.push(`${sceneId}:cinematicBeats:${beatIndex}:lip_sync_must_be_false`);
+                }
+                if (_.isEqual(beatDialogueMode, "silent_action") && !_.isEmpty(beatDialogue)) {
+                  issues.push(`${sceneId}:cinematicBeats:${beatIndex}:silent_shot_has_dialogue`);
+                }
+                if (!_.isEmpty(beatDialogue) && !_.includes(finalVideoPrompt, beatDialogue)) {
+                  issues.push(`${sceneId}:cinematicBeats:${beatIndex}:generation_prompt_missing_exact_dialogue`);
+                }
               });
               const beatActions = _.map(beats, beat => _.lowerCase(_.trim(_.toString(beat.visibleAction))));
               if (_.uniq(beatActions).length !== beatActions.length) issues.push(`${sceneId}:cinematicBeats:repeated_action`);
               const beatShotIds = _.map(beats, beat => _.lowerCase(_.trim(_.toString(beat.shotId))));
-              if (_.uniq(beatShotIds).length !== 3 || _.some(beatShotIds, _.isEmpty)) issues.push(`${sceneId}:cinematicBeats:shot_ids_must_be_unique`);
+              if (_.uniq(beatShotIds).length !== beats.length || _.some(beatShotIds, _.isEmpty)) issues.push(`${sceneId}:cinematicBeats:shot_ids_must_be_unique`);
               if (_.some(beats, beat => _.lt(_.subtract(_.toNumber(beat.endSecond), _.toNumber(beat.startSecond)), 1.5))) issues.push(`${sceneId}:cinematicBeats:shot_too_short_for_playable_action`);
               if (!_.includes(["payoff", "reaction", "reveal"], _.toString(_.last(beats)?.shotRole))) issues.push(`${sceneId}:cinematicBeats:final_shot_must_show_consequence`);
               if (!_.isEqual(_.toNumber(beats[0].startSecond), 0) || !_.isEqual(_.toNumber(_.last(beats)?.endSecond), 10)) issues.push(`${sceneId}:cinematicBeats:must_cover_0_to_10_seconds`);

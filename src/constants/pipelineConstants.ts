@@ -63,7 +63,7 @@ export const PipelineConstants = {
     FAVORITE_STYLES: "pipeline_favorite_styles",
     FAVORITE_VOICES: "pipeline_favorite_voices",
   },
-  FLOW_STEPS: [0, 1, 2, 4],
+  FLOW_STEPS: [0, 1, 2, 3, 4],
   UI_TEXTS: {
     STEP_PREFIX: "STEP",
     STEP_FALLBACK: "Bước"

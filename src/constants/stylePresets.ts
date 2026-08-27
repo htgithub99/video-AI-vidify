@@ -36,6 +36,7 @@ export const STYLE_PRESET_CONFIG = {
   CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản",
   CUSTOM_BG_MODE: "contextual" as BackgroundMode,
   MIN_CUSTOM_PROMPT_LENGTH: 30,
+  CINEMATIC_PHOTOREAL_ID: "cinematic_photoreal",
   KEYWORD_LENGTH_KEY: "keywordLength",
   WORD_BOUNDARY_PREFIX: "\\b",
   WORD_BOUNDARY_SUFFIX: "\\b",

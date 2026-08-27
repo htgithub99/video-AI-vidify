@@ -588,27 +588,55 @@ migrateJsonToSqlite().catch((error) => {
   appError(getBackendMsg("SQLITE_MIGRATE_CRITICAL"), error);
 });
 
-const repairOrphanedAutoProjects = async (projects: VideoProject[]): Promise<boolean> => {
+const inferLegacyChildKind = (project: VideoProject): ProjectKind | undefined => {
+  if (_.endsWith(project.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)) return ProjectKind.Studio;
+  if (_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) return ProjectKind.Auto;
+  if (_.endsWith(project.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)) return ProjectKind.Cinematic;
+  return undefined;
+};
+
+const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<boolean> => {
   let repaired = false;
 
   const rootProjectsByName = _.keyBy(
-    _.filter(projects, (project) => _.isEmpty(project.parentId) && !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)),
+    _.filter(projects, (project) => _.isEmpty(project.parentId) && !inferLegacyChildKind(project)),
     (project) => _.trim(project.name),
   );
   for (const project of projects) {
-    if (!_.isEmpty(project.parentId) || !_.endsWith(project.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)) continue;
+    const inferredKind = inferLegacyChildKind(project);
+    if (!project.parentId && !inferredKind) {
+      if (_.isEqual(project.projectKind, ProjectKind.Container)) continue;
+      const detail = await getProjectDetail(project.id);
+      if (!detail) continue;
+      await saveProjectDetailToDb({
+        ...detail,
+        projectKind: ProjectKind.Container,
+      });
+      repaired = true;
+      continue;
+    }
+    if (!inferredKind) continue;
 
-    const parentName = _.trim(project.name.slice(0, -COMMON_STRINGS.AUTO_CHILD_SUFFIX.length));
-    const parentProject = rootProjectsByName[parentName];
-    if (!parentProject || _.isEqual(parentProject.id, project.id)) continue;
+    const suffix = inferredKind === ProjectKind.Studio
+      ? COMMON_STRINGS.STUDIO_CHILD_SUFFIX
+      : inferredKind === ProjectKind.Cinematic
+        ? COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX
+        : COMMON_STRINGS.AUTO_CHILD_SUFFIX;
+    const parentName = _.trim(project.name.slice(0, -suffix.length));
+    const inferredParent = rootProjectsByName[parentName];
+    const targetParentId = project.parentId || inferredParent?.id;
+    if (!targetParentId) continue;
+    if (_.isEqual(project.projectKind, inferredKind) && _.isEqual(project.parentId, targetParentId)) continue;
+
+    if (_.isEqual(targetParentId, project.id)) continue;
 
     const detail = await getProjectDetail(project.id);
     if (!detail) continue;
 
     await saveProjectDetailToDb({
       ...detail,
-      parentId: parentProject.id,
-      projectKind: ProjectKind.Auto,
+      parentId: targetParentId,
+      projectKind: inferredKind,
     });
     repaired = true;
   }
@@ -619,7 +647,7 @@ const repairOrphanedAutoProjects = async (projects: VideoProject[]): Promise<boo
 export const getAllProjects = async (_request: Request, response: Response) => {
   try {
     const list = await getProjectsListFromDb();
-    const repaired = await repairOrphanedAutoProjects(list);
+    const repaired = await repairLegacyWorkspaceProjects(list);
     response.json(repaired ? await getProjectsListFromDb() : list);
   } catch (error: any) {
     response.status(500).json({ error: _.defaultTo(error.message, getBackendMsg("SQLITE_LIST_ERR")) });

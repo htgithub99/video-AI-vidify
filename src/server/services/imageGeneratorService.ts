@@ -78,6 +78,138 @@ interface BrowserSession {
 
 type GeminiVisualConfig = Partial<VisualConfig>;
 
+const FLOW_PROMPT_SELECTORS = [
+  '[contenteditable="true"][role="textbox"]',
+  'textarea[placeholder*="prompt" i]',
+  'textarea[placeholder*="mô tả" i]',
+  'textarea',
+  '[contenteditable="true"]',
+];
+
+const normalizeFlowProjectId = (projectId?: string): string => {
+  const normalized = _.replace(_.defaultTo(projectId, ""), /^projects\//, "").trim();
+  // Application project ids are local persistence keys, not Google Flow ids.
+  return /^proj_/i.test(normalized) ? "" : normalized;
+};
+
+const dismissFlowOnboarding = async (page: Page): Promise<void> => {
+  for (let pass = 0; pass < 5; pass++) {
+    const dialog = page.locator('[role="dialog"]:visible').last();
+    if (!(await dialog.isVisible().catch(() => false))) return;
+
+    await dialog.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+      const scrollables = Array.from(element.querySelectorAll('*')).filter((node) => {
+        const htmlNode = node as HTMLElement;
+        return htmlNode.scrollHeight > htmlNode.clientHeight;
+      }) as HTMLElement[];
+      scrollables.forEach((node) => { node.scrollTop = node.scrollHeight; });
+    }).catch(() => {});
+    await page.waitForTimeout(400);
+
+    const continueButton = dialog.locator('button').filter({
+      hasText: /Tiếp tục|Continue|Bắt đầu|Get started|Đã hiểu|Got it|Next|Tiếp theo|Đồng ý|Agree/i,
+    }).last();
+    const closeButton = dialog.locator('button[aria-label*="close" i], button[aria-label*="đóng" i]').last();
+    if (await continueButton.isEnabled().catch(() => false)) {
+      await continueButton.click();
+    } else if (await closeButton.isVisible().catch(() => false)) {
+      await closeButton.click();
+    } else {
+      return;
+    }
+    await page.waitForTimeout(700);
+  }
+};
+
+const locateFlowPromptInput = async (page: Page, timeoutMs = 60000): Promise<Locator | null> => {
+  const deadline = Date.now() + timeoutMs;
+  do {
+    await dismissFlowOnboarding(page);
+    for (const selector of FLOW_PROMPT_SELECTORS) {
+      const locator = page.locator(`${selector}:visible`).last();
+      if (await locator.isVisible().catch(() => false)) return locator;
+    }
+    await page.waitForTimeout(750);
+  } while (Date.now() < deadline);
+  return null;
+};
+
+const createFlowProject = async (page: Page): Promise<string> => {
+  await page.goto(EXTERNAL_URLS.GOOGLE_LABS_FLOW_HOME, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await dismissFlowOnboarding(page);
+  let newProjectBtn = page.getByRole("button", { name: /Dự án mới|New project/i }).first();
+  if (!(await newProjectBtn.isVisible().catch(() => false))) {
+    const launchFlow = page.getByText(/Create with Google Flow|Tạo bằng Google Flow/i, { exact: true }).first();
+    if (await launchFlow.isVisible().catch(() => false)) {
+      await Promise.all([
+        page.waitForLoadState("domcontentloaded", { timeout: 60000 }).catch(() => {}),
+        launchFlow.click(),
+      ]);
+      await page.waitForTimeout(1500);
+      await dismissFlowOnboarding(page);
+      newProjectBtn = page.getByRole("button", { name: /Dự án mới|New project/i }).first();
+    }
+  }
+  if (!(await newProjectBtn.isVisible().catch(() => false))) {
+    await captureGeminiDomState(page, "flow-home-new-project-missing");
+    await page.screenshot({
+      path: path.join(getDataDirectory(), "flow-home-new-project-missing.png"),
+      fullPage: true,
+    }).catch(() => {});
+  }
+  await newProjectBtn.waitFor({ state: "visible", timeout: 30000 });
+  await newProjectBtn.click();
+  await page.waitForURL(/\/project\/[a-zA-Z0-9-]+/, { timeout: 30000 });
+  await page.waitForLoadState("domcontentloaded", { timeout: 30000 }).catch(() => {});
+  const match = page.url().match(/\/project\/([a-zA-Z0-9-]+)/);
+  if (!match?.[1]) throw createAppError(ImageGenMessages.LABS_CREATE_ERR);
+  return match[1];
+};
+
+const configureFlowAgentSettings = async (page: Page, visualConfig?: ImageGeneratorOptions["visualConfig"]): Promise<boolean> => {
+  const settingsButton = page.getByRole("button", { name: /tune\s*(Cài đặt|Settings)/i }).first();
+  if (!(await settingsButton.isVisible().catch(() => false))) return false;
+  await settingsButton.click();
+  await page.waitForTimeout(350);
+
+  const neverConfirm = page.getByRole("radio", { name: /Không bao giờ|Never/i }).first();
+  if (await neverConfirm.isVisible().catch(() => false)) await neverConfirm.click();
+
+  const isVideo = visualConfig?.generateType === GenerateType.Video;
+  const targetRatio = _.defaultTo(visualConfig?.aspectRatio, AspectRatio.SixteenNine);
+  const ratioTabs = page.getByRole("tab", { name: new RegExp(`(?:crop_[^ ]+\\s*)?${_.escapeRegExp(targetRatio)}$`, "i") });
+  const ratioCount = await ratioTabs.count();
+  if (ratioCount > 0) await ratioTabs.nth(isVideo ? ratioCount - 1 : 0).click();
+
+  const countLabel = _.defaultTo(visualConfig?.generateCount, 1) === 1 ? "x1" : `x${visualConfig?.generateCount}`;
+  const countTabs = page.getByRole("tab", { name: new RegExp(`^${countLabel}$`, "i") });
+  const count = await countTabs.count();
+  if (count > 0) await countTabs.nth(isVideo ? count - 1 : 0).click();
+
+  if (isVideo) {
+    const engine = _.defaultTo(visualConfig?.imageGeneratorEngine, ImageGeneratorEngine.Veo3);
+    const targetEngine = engine === ImageGeneratorEngine.Veo3Lite ? /Veo 3\.1 - Lite/i
+      : engine === ImageGeneratorEngine.Veo3Fast ? /Veo 3\.1 - Fast/i
+      : engine === ImageGeneratorEngine.Veo3Quality ? /Veo 3\.1 - Quality/i
+      : /Omni Flash/i;
+    const modelButton = page.locator("button").filter({ hasText: /Omni Flash|Veo 3\.1 - (Lite|Fast|Quality)/i }).last();
+    if (await modelButton.isVisible().catch(() => false)) {
+      const currentModel = _.defaultTo(await modelButton.textContent(), "");
+      if (!targetEngine.test(currentModel)) {
+        await modelButton.click();
+        const modelItem = page.getByRole("menuitem", { name: targetEngine }).first();
+        if (await modelItem.isVisible().catch(() => false)) await modelItem.click();
+      }
+    }
+  }
+
+  const saveButton = page.getByRole("button", { name: /^(Lưu|Save)$/i }).last();
+  if (await saveButton.isVisible().catch(() => false)) await saveButton.click();
+  await page.waitForTimeout(500);
+  return true;
+};
+
 const captureGeminiDomState = (page: Page, state: string): Promise<void> =>
   captureDomDiagnostics(page, state, {
     fileName: GEMINI_DOM_DIAGNOSTICS_CONFIG.FILE_NAME,
@@ -469,11 +601,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
   const finalPrompt = _.defaultTo(prompt, "");
 
-  const projectId = sandboxConfig.projectId;
-  let cleanProjectId = projectId;
-  if (cleanProjectId.startsWith("projects/")) {
-    cleanProjectId = cleanProjectId.replace("projects/", "");
-  }
+  const cleanProjectId = normalizeFlowProjectId(sandboxConfig.projectId);
 
   const release = await imageGenMutex.acquire();
 
@@ -522,7 +650,6 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           }
         }
 
-        const SELECTOR_INPUT = '[contenteditable="true"]';
         const submitBtnLocator = activePage
           .locator("button")
           .filter({
@@ -544,27 +671,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         if (!isAlreadyOnFlowPage) {
           if (!currentProjectId) {
             appLog(ImageGenMessages.LABS_NO_PROJECT);
-            await activePage.goto(EXTERNAL_URLS.GOOGLE_LABS_FLOW_HOME, {
-              waitUntil: "commit",
-              timeout: 60000,
-            });
-
-            const newProjectBtn = activePage
-              .locator("button")
-              .filter({ hasText: /Dự án mới|New project/i })
-              .first();
-            await newProjectBtn.waitFor({ state: "visible", timeout: 15000 });
-            await newProjectBtn.click();
-
-            await activePage.waitForURL(/\/project\/[a-zA-Z0-9-]+/, { timeout: 30000 });
-            const newUrl = activePage.url();
-            const match = newUrl.match(/\/project\/([a-zA-Z0-9-]+)/);
-            if (match && match[1]) {
-              currentProjectId = match[1];
-              appLog(`${ImageGenMessages.LABS_CREATED_PROJECT}${currentProjectId}`);
-            } else {
-              throw createAppError(ImageGenMessages.LABS_CREATE_ERR);
-            }
+            currentProjectId = await createFlowProject(activePage);
+            appLog(`${ImageGenMessages.LABS_CREATED_PROJECT}${currentProjectId}`);
           } else {
             const targetUrl = `${EXTERNAL_URLS.GOOGLE_LABS_FLOW}/${currentProjectId}`;
             appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}${currentProjectId} (Attempt ${attempts})...`);
@@ -575,11 +683,23 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           }
         }
 
-        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
+        await dismissFlowOnboarding(activePage);
 
-        const inputEl = await activePage.waitForSelector(SELECTOR_INPUT, {
-          timeout: 30000,
-        });
+        appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
+        let inputEl = await locateFlowPromptInput(activePage);
+        if (!inputEl) {
+          // A stale/deleted Flow project can still render a shell page. Recover by
+          // creating a fresh Flow project once, instead of retrying the same URL.
+          await captureGeminiDomState(activePage, "flow-prompt-input-missing");
+          await activePage.screenshot({
+            path: path.join(getDataDirectory(), "flow-prompt-input-missing.png"),
+            fullPage: true,
+          }).catch(() => {});
+          currentProjectId = await createFlowProject(activePage);
+          appLog(`${ImageGenMessages.LABS_CREATED_PROJECT}${currentProjectId}`);
+          await dismissFlowOnboarding(activePage);
+          inputEl = await locateFlowPromptInput(activePage);
+        }
         if (!inputEl) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
 
         try {
@@ -592,6 +712,11 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
           if (currentConfigState !== lastPlaywrightConfigState || attempts > 1) {
             appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_NEW);
+            const configuredAgentUi = await configureFlowAgentSettings(activePage, visualConfig);
+            if (configuredAgentUi) {
+              lastPlaywrightConfigState = currentConfigState;
+              appLog(BACKEND_MESSAGES.PLAYWRIGHT_CONFIG_SUCCESS);
+            }
             const configBtnLoc = activePage
               .locator('button[aria-haspopup="menu"]')
               .filter({
@@ -599,7 +724,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               })
               .first();
 
-            if (await configBtnLoc.isVisible()) {
+            if (!configuredAgentUi && await configBtnLoc.isVisible()) {
               await configBtnLoc.click();
               await activePage.waitForTimeout(1000);
 
@@ -704,7 +829,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
           appLog(inputMethod === PromptInputMethod.Type ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
 
-          const inputLoc = activePage.locator(SELECTOR_INPUT);
+          const inputLoc = inputEl;
 
           await smoothMouseMove(activePage, inputLoc);
           await inputLoc.click();
@@ -718,7 +843,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           if (inputMethod === PromptInputMethod.Type) {
             await humanType(activePage, targetPrompt);
           } else {
-            await activePage.keyboard.insertText(targetPrompt);
+            // Flow uses a Slate editor. insertText/fill can alter the DOM without
+            // updating Slate state, leaving the submit button disabled. Native
+            // sequential key events keep DOM and application state in sync.
+            await inputLoc.pressSequentially(targetPrompt, { delay: 1, timeout: 120000 });
           }
           await randomDelay(400, 800);
 
@@ -742,6 +870,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             })
             .filter(Boolean);
         }, browserGetImgIdSafeStr);
+        const oldVideoSources = await activePage.evaluate(() => Array.from(document.querySelectorAll("video"))
+          .map((video) => video.currentSrc || video.src)
+          .filter(Boolean));
 
         let isBtnDisabled = true;
         for (let i = 0; i < 6; i++) {
@@ -765,7 +896,66 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         await submitBtnLocator.click();
 
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
-        const base64Data = await activePage.waitForFunction(
+        let finalBase64: string;
+        if (visualConfig?.generateType === GenerateType.Video) {
+          const mediaHandle = await activePage.waitForFunction(
+            ([oldIdsList, oldVideoSourcesList, getImgIdStr]) => {
+              const getImgIdSafe = new Function("return " + getImgIdStr)();
+              const candidates = Array.from(document.querySelectorAll("img"))
+                .map((img) => ({ img, id: getImgIdSafe(img.src) }))
+                .filter(({ id }) => id && !oldIdsList.includes(id));
+              const generatedVideo = Array.from(document.querySelectorAll("video"))
+                .map((video) => ({ video, src: video.currentSrc || video.src }))
+                .find(({ video, src }) => src && !oldVideoSourcesList.includes(src) && video.readyState >= 1);
+              if (generatedVideo) return { mediaId: null, videoSrc: generatedVideo.src };
+              return candidates.length
+                ? { mediaId: candidates[candidates.length - 1].id, videoSrc: null }
+                : null;
+            },
+            [oldIds, oldVideoSources, browserGetImgIdSafeStr] as const,
+            { timeout: 300000 },
+          );
+          const generatedMedia = await mediaHandle.jsonValue() as { mediaId?: string | null; videoSrc?: string | null } | null;
+          if (!generatedMedia) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
+
+          if (generatedMedia.mediaId) {
+            const resultThumb = activePage.locator(`img[src*="name=${generatedMedia.mediaId}"]`).last();
+            const resultButton = resultThumb.locator("xpath=ancestor::button[1]");
+            if (await resultButton.isVisible().catch(() => false)) await resultButton.click();
+          }
+
+          const videoData = await activePage.waitForFunction(
+            async ({ targetMediaId, directVideoSrc, previousVideoSources }) => {
+              const videos = Array.from(document.querySelectorAll("video"));
+              const video = videos.find((item) => Boolean(targetMediaId) && (item.currentSrc || item.src).includes(targetMediaId))
+                || videos.find((item) => (item.currentSrc || item.src) === directVideoSrc)
+                || videos.find((item) => !previousVideoSources.includes(item.currentSrc || item.src));
+              if (!video || !video.duration || video.duration <= 0) return null;
+              try {
+                const response = await fetch(video.currentSrc || video.src, { credentials: "include" });
+                if (!response.ok) return null;
+                const blob = await response.blob();
+                if (!blob.type.startsWith("video/") || blob.size < 10000) return null;
+                return await new Promise<string>((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(String(reader.result));
+                  reader.onerror = () => reject(reader.error);
+                  reader.readAsDataURL(blob);
+                });
+              } catch (e) {
+                return null;
+              }
+            },
+            {
+              targetMediaId: generatedMedia.mediaId || null,
+              directVideoSrc: generatedMedia.videoSrc || null,
+              previousVideoSources: oldVideoSources,
+            },
+            { timeout: 360000 },
+          );
+          finalBase64 = await videoData.jsonValue();
+        } else {
+          const base64Data = await activePage.waitForFunction(
           ([oldIdsList, getImgIdStr, jpegMimeType]) => {
             const getImgIdSafe = new Function("return " + getImgIdStr)();
 
@@ -804,8 +994,8 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           [oldIds, browserGetImgIdSafeStr, CONTENT_TYPES.JPEG] as const,
           { timeout: 150000 },
         );
-
-        const finalBase64 = await base64Data.jsonValue();
+          finalBase64 = await base64Data.jsonValue();
+        }
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_BASE64_SUCCESS);
 
         responseText = jsonUtils.safeStringify({ directBase64: finalBase64 });

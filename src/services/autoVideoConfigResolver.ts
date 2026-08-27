@@ -46,14 +46,14 @@ const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
   _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
 ], Boolean);
 
-export const resolveVisualConfig = (source: VisualConfig): ResolvedVisualConfig => {
+export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolean = false): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
   const requestsGeneratedVideo = _.includes(
     [GenerateType.Video, GenerateType.Mixed],
     config.generateType as GenerateType,
   );
-  if (requestsGeneratedVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
+  if (requestsGeneratedVideo && !allowFlowVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
     // All generated-video workflows use the Gemini UI. The selected engine is
     // deliberately preserved because it represents the user's model choice
     // inside Gemini (Veo Fast/Quality/etc.), not a competing transport.
