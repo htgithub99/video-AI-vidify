@@ -116,7 +116,6 @@ export enum AssetAcceptance {
   Rejected = "rejected",
 }
 
-/** Final editorial disposition for a generated film take. */
 export type CinematicTakeDecision = "use" | "trim" | "cover" | "regenerate_once" | "omit";
 
 export enum AudioCueType {
@@ -415,6 +414,7 @@ export interface VisualConfig {
   qualityMode?: QualityMode;
   batchTabCount?: number;
   preserveVideoAudio?: boolean;
+  flowProjectId?: string;
 }
 
 export interface CharacterConfig {
@@ -557,7 +557,6 @@ export interface StoryboardScene {
   wardrobeState?: string;
   propState?: string;
   soundDesignCues?: string[];
-  /** Consecutive camera beats intentionally generated inside one cinematic clip. */
   cinematicBeats?: Array<{
     sourceSceneId: string;
     shotId: string;
@@ -574,7 +573,6 @@ export interface StoryboardScene {
     startSecond?: number;
     endSecond?: number;
   }>;
-  /** Exact edit handoff that the first frames must inherit from the prior clip. */
   cinematicContinuityHandoff?: {
     previousClipId: string;
     previousEndState: string;
@@ -669,7 +667,6 @@ export interface FinalQualityReport {
   blockingErrors: string[];
   warnings: string[];
   publishable: boolean;
-  /** Separates a valid file from an editorially clean release candidate. */
   releaseStatus: "technical_complete" | "completed_with_warnings" | "editorially_publishable";
 }
 

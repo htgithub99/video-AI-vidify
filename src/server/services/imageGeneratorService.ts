@@ -88,7 +88,6 @@ const FLOW_PROMPT_SELECTORS = [
 
 const normalizeFlowProjectId = (projectId?: string): string => {
   const normalized = _.replace(_.defaultTo(projectId, ""), /^projects\//, "").trim();
-  // Application project ids are local persistence keys, not Google Flow ids.
   return /^proj_/i.test(normalized) ? "" : normalized;
 };
 
@@ -133,6 +132,45 @@ const locateFlowPromptInput = async (page: Page, timeoutMs = 60000): Promise<Loc
     await page.waitForTimeout(750);
   } while (Date.now() < deadline);
   return null;
+};
+
+const approveFlowVideoCreditPrompt = async (
+  page: Page,
+  submitButton: Locator,
+  timeoutMs: number = 15000,
+): Promise<boolean> => {
+  const approveWithoutAskingPattern = /^(?:Phê duyệt,\s*không hỏi lại|Approve,?\s*(?:do not|don't) ask again|Approve,?\s*don't show again)$/i;
+  const approveOncePattern = /^(?:Phê duyệt|Approve)$/i;
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const approveWithoutAsking = page.getByText(approveWithoutAskingPattern, { exact: true }).last();
+    if (await approveWithoutAsking.isVisible().catch(() => false)) {
+      await approveWithoutAsking.click({ force: true });
+      appLog("[Google Flow] Đã phê duyệt chi phí tạo video và tắt hỏi lại.");
+      await page.waitForTimeout(500);
+      return true;
+    }
+
+    const approveOnce = page.getByText(approveOncePattern, { exact: true }).last();
+    if (await approveOnce.isVisible().catch(() => false)) {
+      await approveOnce.click({ force: true });
+      appLog("[Google Flow] Đã phê duyệt chi phí tạo video.");
+      await page.waitForTimeout(500);
+      return true;
+    }
+
+    if (Date.now() - startedAt > 1000) {
+      const generationStarted = await submitButton.evaluate((button) => (
+        button.hasAttribute("disabled") || button.getAttribute("aria-disabled") === "true"
+      )).catch(() => false);
+      if (generationStarted) return false;
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  return false;
 };
 
 const createFlowProject = async (page: Page): Promise<string> => {
@@ -405,6 +443,8 @@ export interface ImageGeneratorOptions {
     preserveVideoAudio?: boolean;
   };
   sandboxConfig?: {
+    localProjectId?: string;
+    flowProjectId?: string;
     projectId?: string;
   };
 }
@@ -601,7 +641,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
   const finalPrompt = _.defaultTo(prompt, "");
 
-  const cleanProjectId = normalizeFlowProjectId(sandboxConfig.projectId);
+  const cleanProjectId = normalizeFlowProjectId(sandboxConfig.flowProjectId || sandboxConfig.projectId);
 
   const release = await imageGenMutex.acquire();
 
@@ -688,8 +728,6 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         appLog(`${BACKEND_MESSAGES.PLAYWRIGHT_INPUT_LOG}"${_.defaultTo(finalPrompt, prompt)}"`);
         let inputEl = await locateFlowPromptInput(activePage);
         if (!inputEl) {
-          // A stale/deleted Flow project can still render a shell page. Recover by
-          // creating a fresh Flow project once, instead of retrying the same URL.
           await captureGeminiDomState(activePage, "flow-prompt-input-missing");
           await activePage.screenshot({
             path: path.join(getDataDirectory(), "flow-prompt-input-missing.png"),
@@ -826,8 +864,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
 
         const targetPrompt = finalPrompt || prompt;
         if (targetPrompt && targetPrompt.length > 0) {
-          const inputMethod = visualConfig?.promptInputMethod || PromptInputMethod.Paste;
-          appLog(inputMethod === PromptInputMethod.Type ? BACKEND_MESSAGES.PLAYWRIGHT_TYPE_LOG : BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
+          appLog(BACKEND_MESSAGES.PLAYWRIGHT_PASTE_LOG);
 
           const inputLoc = inputEl;
 
@@ -840,13 +877,16 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           await activePage.keyboard.press("Backspace");
           await randomDelay(200, 400);
 
-          if (inputMethod === PromptInputMethod.Type) {
-            await humanType(activePage, targetPrompt);
-          } else {
-            // Flow uses a Slate editor. insertText/fill can alter the DOM without
-            // updating Slate state, leaving the submit button disabled. Native
-            // sequential key events keep DOM and application state in sync.
-            await inputLoc.pressSequentially(targetPrompt, { delay: 1, timeout: 120000 });
+          await browserInstance.context.grantPermissions(
+            ["clipboard-read", "clipboard-write"],
+            { origin: new URL(activePage.url()).origin },
+          );
+          await activePage.evaluate(async (text) => navigator.clipboard.writeText(text), targetPrompt);
+          await inputLoc.press("Control+V", { timeout: 15000 });
+
+          const pastedText = _.trim(_.defaultTo(await inputLoc.textContent(), ""));
+          if (_.size(pastedText) < _.min([120, _.size(targetPrompt)])) {
+            throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_INPUT_NOT_FOUND);
           }
           await randomDelay(400, 800);
 
@@ -895,6 +935,10 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         await randomDelay(400, 800);
         await submitBtnLocator.click();
 
+        if (visualConfig?.generateType === GenerateType.Video) {
+          await approveFlowVideoCreditPrompt(activePage, submitBtnLocator);
+        }
+
         appLog(BACKEND_MESSAGES.PLAYWRIGHT_WAITING_GEN);
         let finalBase64: string;
         if (visualConfig?.generateType === GenerateType.Video) {
@@ -902,6 +946,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             ([oldIdsList, oldVideoSourcesList, getImgIdStr]) => {
               const getImgIdSafe = new Function("return " + getImgIdStr)();
               const candidates = Array.from(document.querySelectorAll("img"))
+                .filter((img) => img.src && img.src.includes("getMediaUrlRedirect"))
                 .map((img) => ({ img, id: getImgIdSafe(img.src) }))
                 .filter(({ id }) => id && !oldIdsList.includes(id));
               const generatedVideo = Array.from(document.querySelectorAll("video"))
@@ -924,27 +969,14 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             if (await resultButton.isVisible().catch(() => false)) await resultButton.click();
           }
 
-          const videoData = await activePage.waitForFunction(
-            async ({ targetMediaId, directVideoSrc, previousVideoSources }) => {
+          const videoSourceHandle = await activePage.waitForFunction(
+            ({ targetMediaId, directVideoSrc, previousVideoSources }) => {
               const videos = Array.from(document.querySelectorAll("video"));
               const video = videos.find((item) => Boolean(targetMediaId) && (item.currentSrc || item.src).includes(targetMediaId))
                 || videos.find((item) => (item.currentSrc || item.src) === directVideoSrc)
                 || videos.find((item) => !previousVideoSources.includes(item.currentSrc || item.src));
               if (!video || !video.duration || video.duration <= 0) return null;
-              try {
-                const response = await fetch(video.currentSrc || video.src, { credentials: "include" });
-                if (!response.ok) return null;
-                const blob = await response.blob();
-                if (!blob.type.startsWith("video/") || blob.size < 10000) return null;
-                return await new Promise<string>((resolve, reject) => {
-                  const reader = new FileReader();
-                  reader.onload = () => resolve(String(reader.result));
-                  reader.onerror = () => reject(reader.error);
-                  reader.readAsDataURL(blob);
-                });
-              } catch (e) {
-                return null;
-              }
+              return video.currentSrc || video.src || null;
             },
             {
               targetMediaId: generatedMedia.mediaId || null,
@@ -953,7 +985,18 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
             },
             { timeout: 360000 },
           );
-          finalBase64 = await videoData.jsonValue();
+          const videoSource = await videoSourceHandle.jsonValue();
+          if (!videoSource || !browserInstance) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
+
+          const videoResponse = await browserInstance.context.request.get(videoSource, { timeout: 120000 });
+          if (!videoResponse.ok()) throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
+          const videoBuffer = await videoResponse.body();
+          const responseMimeType = _.defaultTo(videoResponse.headers()["content-type"], "");
+          const videoMimeType = _.startsWith(responseMimeType, "video/") ? responseMimeType : "video/mp4";
+          if (videoBuffer.length < 10000) {
+            throw createAppError(BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR);
+          }
+          finalBase64 = `data:${videoMimeType};base64,${videoBuffer.toString("base64")}`;
         } else {
           const base64Data = await activePage.waitForFunction(
           ([oldIdsList, getImgIdStr, jpegMimeType]) => {
@@ -1051,6 +1094,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
     base64: null,
     fallbackUrl: SecurityConstants.EMPTY_STRING,
     warning: BACKEND_MESSAGES.PLAYWRIGHT_DECODE_ERR,
+    newProjectId: currentProjectId !== cleanProjectId ? currentProjectId : undefined,
   };
 }
 
@@ -2591,11 +2635,6 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
         return base64Data;
       }
     } else if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.VIDEO_TAG)) {
-      // Gemini serves completed videos from an authenticated cross-origin
-      // contribution.usercontent.google.com URL. Fetching that URL inside the
-      // page is subject to CORS and can return null even though the <video>
-      // element plays correctly. Playwright's request context shares the
-      // browser context cookies and is therefore the reliable primary path.
       if (/^https?:\/\//i.test(src)) {
         try {
           const response = await page.context().request.get(src, {

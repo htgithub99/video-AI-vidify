@@ -38,6 +38,7 @@ import {
   ImagePromptQualityReport,
   AssetAcceptance,
   QaStatus,
+  ProjectKind,
 } from "../types";
 import { VideoQuality } from "../constants/enums";
 import {
@@ -174,6 +175,7 @@ export interface PipelineConfig {
   musicAssetUrl?: string;
   filmFormat?: "single" | "series";
   episodeCount?: number;
+  cinematicMode?: boolean;
 }
 
 export interface PipelineState {
@@ -238,8 +240,6 @@ export function useAutoVideoPipeline(
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [stepProgress, setStepProgress] = useState<number>(0);
-  // Never hydrate a new tab from the last globally active run. Logs belong to
-  // a concrete project and are restored from that project's scoped key below.
   const [logs, setLogs] = useState<string[]>([]);
   const [renderedVideoUrl, setRenderedVideoUrl] = useState<string>(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
   const [activeCreatedProject, setActiveCreatedProject] = useState<VideoProject | null>(null);
@@ -329,11 +329,6 @@ export function useAutoVideoPipeline(
     const availableMusicAssetUrl = config.musicAssetUrl || activeCreatedProject?.config.musicAssetUrl;
     config.musicAssetUrl = availableMusicAssetUrl;
 
-    // A fresh story must never inherit the run lock of the project currently
-    // selected in the sidebar. Otherwise an abandoned tab for the old project
-    // can block every new production even though the new project does not yet
-    // exist. Reuse an existing project id only for a genuine resume/regenerate
-    // operation with unchanged content.
     const canReuseExistingRunTarget = Boolean(config.resumeMode && !startsDifferentContent);
     const newRunTargetKey = _.kebabCase(_.join(
       [config.projectName, config.scriptContent],
@@ -362,9 +357,6 @@ export function useAutoVideoPipeline(
     setStepProgress(AUTO_VIDEO_PIPELINE_PROGRESS.START);
     setCurrentStepIndex(1);
     setRenderedVideoUrl(REFACTOR_CONSTANTS.VD_EMPTY_STRING);
-    // Never display SEO, thumbnails, preview or QA from a previous story while
-    // a genuinely new story is being initialized. User production settings
-    // remain in the form state and are intentionally not reset here.
     if (resetDerivedPresentation) setActiveCreatedProject(null);
 
     let currentLogs: string[] = config.resumeMode ? _.clone(logs) : [];
@@ -533,10 +525,6 @@ export function useAutoVideoPipeline(
         const selectedProj = _.defaultTo(selectedAutoProj, activeCreatedProject);
         const isChildProject = selectedProj && selectedProj.parentId;
 
-        // Every workspace menu owns one persistent child project. Film runs must
-        // update the selected Cinematic child instead of creating an untyped
-        // proj_auto_* sibling; otherwise the UI switches back to the empty menu
-        // child after completion and its progress log appears to disappear.
         newProjectId = selectedProj
           ? selectedProj.id
           : _.join([REFACTOR_CONSTANTS.AVG_PROJECT_ID_PREFIX, generateRandomString()], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
@@ -954,16 +942,31 @@ export function useAutoVideoPipeline(
 
       if (!isStoryboardCached) {
         const storyboardStyle = currentStylePreset;
+        const isCinematicPipeline = _.some([
+          config.cinematicMode,
+          _.endsWith(_.toString(config.projectName), " - Phim AI"),
+          _.endsWith(_.toString(newProj.name), " - Phim AI"),
+          isCinematicEpisodeGenre(config.genre),
+          _.isEqual(newProj.projectKind, ProjectKind.Cinematic),
+          isCinematicEpisodeGenre(newProj.config.genre),
+          _.includes(["single", "series"], _.toString(config.filmFormat)),
+          _.includes(["single", "series"], _.toString(newProj.config.filmFormat)),
+        ], Boolean);
+        const cinematicDurationSeconds = _.max([
+          parseTargetDurationSeconds(config.duration),
+          parseTargetDurationSeconds(newProj.config.duration),
+        ]) || 10;
+        appendLog(`[Film Debug] cinematic=${isCinematicPipeline}; ui=${Boolean(config.cinematicMode)}; format=${_.toString(config.filmFormat)}; genre=${_.toString(config.genre)}; project=${_.toString(newProj.name)}; clips=${Math.max(1, Math.ceil(cinematicDurationSeconds / 10))}`);
         appendLog(AUTO_GENERATOR_CONSTANTS.LOG_STORYBOARD_SPLIT);
         appendLog(T.logStoryboardRequestDetail(config.splitStrategy, !_.isEmpty(config.referenceImages)));
         const storyboardPayload = {
           rewrittenScript: realScript,
           chapters,
-          // Film has no global TTS track, so there is no measured voiceDuration.
-          // Pass the user's exact episode target or the storyboard service will
-          // incorrectly infer length from screenplay word count and over-order clips.
-          voiceDuration: isCinematicEpisodeGenre(config.genre)
-            ? parseTargetDurationSeconds(config.duration)
+          voiceDuration: isCinematicPipeline
+            ? cinematicDurationSeconds
+            : undefined,
+          cinematicClipCount: isCinematicPipeline
+            ? Math.max(1, Math.ceil(cinematicDurationSeconds / 10))
             : undefined,
           config: {
             ...newProj.config,
@@ -1018,10 +1021,6 @@ export function useAutoVideoPipeline(
           appendLog(REFACTOR_CONSTANTS.WARN_STORYBOARD_QA_RESULT);
         }
         if (_.isEmpty(realScenes)) throw new Error(AUTO_GENERATOR_CONSTANTS.ERR_NO_SCENES_CREATED);
-        // Film storyboard already has an exact paid clip budget and each clip
-        // owns three AI-authored internal setups. Expanding uncovered script
-        // fragments here is correct for Auto Video stills, but would silently
-        // multiply Veo requests and break the one-minute six-clip contract.
         if (!isCinematicEpisodeGenre(config.genre)) {
           realScenes = ensureStoryboardScriptCoverage(realScenes, {
             rewrittenScript: realScript,
@@ -1063,9 +1062,6 @@ export function useAutoVideoPipeline(
       let globalAudioBase64: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       let globalAudioUrl: string = REFACTOR_CONSTANTS.VD_EMPTY_STRING;
       const nativeFilmAudio = isCinematicEpisodeGenre(config.genre);
-      // Film dialogue and production sound are authored inside each generated
-      // clip. Mark the global narration stage as satisfied so no unused TTS is
-      // generated, aligned, cached or later mixed over the actors.
       let isVoiceCached = nativeFilmAudio;
       const voicePayload = {
         text: realScript,
@@ -1271,9 +1267,6 @@ export function useAutoVideoPipeline(
       const requestedArchivalCount = _.size(_.filter(realScenes as StoryboardScene[], { assetStrategy: "archival" }));
       realScenes = ensureMediaSourcePlan(realScenes as StoryboardScene[], config.genre);
       if (isCinematicEpisodeGenre(config.genre)) {
-        // A film episode is generated as moving coverage, never as documentary
-        // stills. This prevents an archival/image branch from leaking into the
-        // dedicated video-only pipeline.
         realScenes = _.map(realScenes as StoryboardScene[], scene => ({
           ...scene,
           assetStrategy: "ai_generated" as const,
@@ -1378,7 +1371,10 @@ export function useAutoVideoPipeline(
         preserveVideoAudio: isCinematicEpisodeGenre(config.genre),
       };
 
-      const sandboxConfigPayload = { projectId: voiceUpdatedProj.id };
+      const sandboxConfigPayload = {
+        localProjectId: voiceUpdatedProj.id,
+        flowProjectId: voiceUpdatedProj.visualConfig?.flowProjectId,
+      };
       const cachedSeoData = config.resumeMode && !invalidationState.regenerateSeo && newProj.seo
         ? newProj.seo
         : null;
@@ -1498,9 +1494,6 @@ export function useAutoVideoPipeline(
       }
 
       realScenes = removeRedundantSceneAudioBase64(realScenes, hasGlobalNarration);
-      // removeRedundantSceneAudioBase64 returns cloned scene objects. Rebind the
-      // generation list to those canonical storyboard objects so archival assets,
-      // batch results and completion checks all observe the same scene state.
       targetScenesToGen = _.map(targetScenesToGen, targetScene => (
         _.find(realScenes as StoryboardScene[], { id: targetScene.id }) || targetScene
       ));
@@ -1824,9 +1817,6 @@ export function useAutoVideoPipeline(
           await runSceneGeneration(remainingTargetScenes, false);
         }
 
-        // Archival sourcing is preferred, never a completion dependency. Any scene
-        // still missing after search/batch is returned once to the normal AI-image
-        // generator instead of being left outside the batch and stopping the video.
         const unresolvedSourceScenes = _.filter(targetScenesToGen, scene => !hasSceneAsset(scene));
         if (!_.isEmpty(unresolvedSourceScenes) && !cancellationRef.current) {
           if (isCinematicEpisodeGenre(config.genre)) {

@@ -1,8 +1,6 @@
 import _ from "lodash";
 import { AssetAcceptance, GenerateType, QaStatus, SceneAssetStatus, StoryboardScene } from "../types";
 
-// Used only after every remote image path has failed. A local renderable asset is
-// preferable to aborting the entire paid/long-running production at the final step.
 const EMERGENCY_NEUTRAL_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL1WQAAAABJRU5ErkJggg==";
 
 export interface RenderCompletionFallbackResult {
@@ -28,8 +26,6 @@ export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[], op
       && !_.startsWith(scene.assetError, "completion_fallback_")
     ));
     const removedSceneIds = _.map(_.differenceBy(scenes, usableFilmScenes, "id"), "id");
-    // A professional film edit may be shorter than planned, but must never pad
-    // its runtime by cloning an unrelated take into missing dramatic beats.
     return {
       scenes: usableFilmScenes,
       repairedSceneIds: removedSceneIds,
@@ -46,9 +42,6 @@ export const ensureRenderReadySceneAssets = (sourceScenes: StoryboardScene[], op
     const fallbackAsset = nearestScene?.assetUrl || EMERGENCY_NEUTRAL_IMAGE;
     scene.assetUrl = fallbackAsset;
     scene.assetUrls = [fallbackAsset];
-    // Borrow the complete media identity. A missing video scene that borrows a
-    // neighbouring MP4 must stay a video; declaring it as an image makes ffmpeg
-    // decode the payload through the wrong path and aborts the final render.
     scene.assetType = nearestScene?.assetType || GenerateType.Image;
     scene.assetStatus = SceneAssetStatus.Generated;
     scene.qaStatus = QaStatus.Unavailable;

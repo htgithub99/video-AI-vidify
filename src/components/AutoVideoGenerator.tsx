@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import _ from "lodash";
+import { toast } from "sonner";
 import { usePresets } from "../hooks/usePresets";
 import { useAutoVideoState } from "../hooks/useAutoVideoState";
 import { useAutoVideoPipeline } from "../hooks/useAutoVideoPipeline";
@@ -53,7 +54,6 @@ import { ProjectSettingsSection } from "./auto-video/ProjectSettingsSection";
 import { SeoPanelSection } from "./auto-video/SeoPanelSection";
 import { ThumbnailsPreviewSection } from "./auto-video/ThumbnailsPreviewSection";
 import { VoiceSelectionSection } from "./auto-video/VoiceSelectionSection";
-import { toast } from "sonner";
 import CinematicFilmSetupSection from "./cinematic/CinematicFilmSetupSection";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../constants/stylePresets";
 import { genreLabels } from "../constants/data";
@@ -186,9 +186,9 @@ export default function AutoVideoGenerator({
 
   useEffect(() => {
     if (
-      !cinematicMode &&
-      _.includes([GenerateType.Video, GenerateType.Mixed], generateType) &&
-      !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)
+      !cinematicMode
+      && _.includes([GenerateType.Video, GenerateType.Mixed], generateType)
+      && !_.isEqual(generationMode, ImageGenerationMode.GeminiChat)
     ) {
       setGenerationMode(ImageGenerationMode.GeminiChat);
     }
@@ -295,6 +295,7 @@ export default function AutoVideoGenerator({
       forceRegenerateVoice: overrides.forceRegenerateVoice,
       forceRegenerateScenes: overrides.forceRegenerateScenes,
       musicAssetUrl,
+      cinematicMode,
       filmFormat: cinematicMode ? filmSeriesMode : undefined,
       episodeCount: cinematicMode
         ? (_.isEqual(filmSeriesMode, CINEMATIC_CONFIG.SERIES_MODE.SERIES) ? filmEpisodeCount : CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT)
@@ -555,3 +556,4 @@ export default function AutoVideoGenerator({
     </div>
   );
 }
+

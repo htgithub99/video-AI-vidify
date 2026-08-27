@@ -49,8 +49,6 @@ const createNarrationSegments = (script: string, splitStrategy: SplitStrategy): 
     ? STORYBOARD_FALLBACK_CONFIG.SHORT_SCENE_MAX_WORDS
     : STORYBOARD_FALLBACK_CONFIG.LONG_SCENE_MAX_WORDS;
   const completeSentences = smartSplitSentences(script);
-  // Documentary and mixed pacing must preserve complete semantic sentences. Only
-  // explicitly dense short-form modes may split a long sentence into clauses.
   const sentenceFragments = _.includes(DENSE_SPLIT_STRATEGIES, splitStrategy)
     ? _.flatMap(completeSentences, sentence => splitSentenceSafely(sentence, maxWords))
     : completeSentences;

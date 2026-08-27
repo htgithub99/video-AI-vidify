@@ -411,9 +411,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     const charactersJson = !_.isEmpty(promptCharacters)
       ? jsonUtils.safeStringify(promptCharacters)
       : undefined;
-    // Film shots carry substantially more continuity, blocking, dialogue and
-    // sound fields than still-image scenes. Smaller batches prevent JSON output
-    // truncation and preserve the complete shot contract.
     const isCinematicPlanning = isCinematicEpisodeGenre(_.toString(req.body?.genre || req.body?.config?.genre));
     const chunkSize = isCinematicPlanning
       ? CINEMATIC_PRODUCTION_POLICY.PLANNING_CHUNK_SIZE
@@ -568,6 +565,21 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
             if (!/shot\s*1/i.test(finalVideoPrompt) || !/shot\s*2/i.test(finalVideoPrompt) || !/shot\s*3/i.test(finalVideoPrompt)) {
               issues.push(`${sceneId}:generationPrompt:missing_minimum_three_timed_shots`);
             }
+            if (!_.startsWith(finalVideoPrompt, "Cinematic live-action photorealism, natural human skin texture, physically plausible environment")) {
+              issues.push(`${sceneId}:generationPrompt:missing_required_technical_foundation`);
+            }
+            if (!/Create one continuous 10-second cinematic sequence with exactly [3-5] chronological shots and exactly [2-4] motivated cuts\./i.test(finalVideoPrompt)) {
+              issues.push(`${sceneId}:generationPrompt:missing_sequence_contract`);
+            }
+            if (!/Continue directly from Shot 1\./i.test(finalVideoPrompt) || !/Continue directly from Shot 2\./i.test(finalVideoPrompt)) {
+              issues.push(`${sceneId}:generationPrompt:missing_observable_shot_handoff`);
+            }
+            if (!/Maintain identical character identity, face, hairstyle, wardrobe/i.test(finalVideoPrompt)) {
+              issues.push(`${sceneId}:generationPrompt:missing_continuity_lock`);
+            }
+            if (!/Completely text-free\. No captions, subtitles, signs, labels, letters, numbers, logos or watermarks\./i.test(finalVideoPrompt)) {
+              issues.push(`${sceneId}:generationPrompt:missing_text_free_policy`);
+            }
             if (/one continuous (?:coherent )?(?:editorial )?shot|no internal cut|single[- ]take/i.test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:conflicts_with_multishot_contract`);
             if (/--ar\s|Video motion direction:/i.test(finalVideoPrompt)) issues.push(`${sceneId}:generationPrompt:contains_application_syntax`);
             const beats = _.get(item, "cinematicBeats");
@@ -693,8 +705,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         planningIssues = collectPlanningIssues(parsedItems);
       }
       if (!_.isEmpty(planningIssues)) {
-        // One semantic correction attempt is the hard cap. Continue with the most
-        // complete AI-authored scene result available; never make a third AI call.
         const firstById = _.keyBy(firstParsedItems, item => _.toString(item.id));
         const secondById = _.keyBy(parsedItems, item => _.toString(item.id));
         parsedItems = _.compact(_.map(sceneIds, sceneId => {
@@ -723,8 +733,6 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
       });
       if (chunkIndex < _.subtract(chunks.length, 1)) await delayAsync(PIPELINE_CONFIG.DELAY_LONG_CHUNKS_MS);
     }
-    // Every semantic planning field above has passed the AI response contract. Do not
-    // synthesize or replace scene meaning in code after the single correction attempt.
     plannedScenes = _.map(plannedScenes, scene => optimizedMap.get(scene.id) || scene);
     const promptQa = validateCompiledImagePrompts(plannedScenes, {
       backgroundMode: resolvedVisualConfig.styleBackgroundMode,
@@ -1767,7 +1775,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
 });
 
 router.post("/storyboard", async (req: Request, res: Response) => {
-  const { chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, bypassCache, voiceDuration } = req.body;
+  const { chapters, config = {}, visualStyle, referenceStyle, referenceCharacter, referenceCharacters, referenceImages, bypassCache, voiceDuration, cinematicClipCount: requestedCinematicClipCount } = req.body;
   const rewrittenScript = removeAdjacentRepeatedNarrationSentences(_.toString(req.body.rewrittenScript));
 
   let syncedChapters = chapters;
@@ -1822,9 +1830,18 @@ router.post("/storyboard", async (req: Request, res: Response) => {
     }
 
     const genre = config?.genre || VideoGenre.STORYTELLING;
-    const isCinematicStoryboard = isCinematicEpisodeGenre(genre);
+    const normalizedRequestedClipCount = _.toInteger(requestedCinematicClipCount);
+    const isCinematicStoryboard = _.gt(normalizedRequestedClipCount, 0)
+      || isCinematicEpisodeGenre(genre)
+      || _.includes(["single", "series"], _.toString(config?.filmFormat));
+    if (isCinematicStoryboard) {
+      const configuredDurationSeconds = parseTargetDurationSeconds(config?.duration);
+      if (_.gt(configuredDurationSeconds, 0)) chosenDuration = configuredDurationSeconds;
+    }
     const cinematicClipCount = isCinematicStoryboard
-      ? _.max([1, Math.ceil(_.toNumber(chosenDuration) / 10)])
+      ? (_.gt(normalizedRequestedClipCount, 0)
+        ? normalizedRequestedClipCount
+        : _.max([1, Math.ceil(_.toNumber(chosenDuration) / 10)]))
       : undefined;
     let genreVisualGuideline =
       GENRE_VISUAL_GUIDELINES[genre as VideoGenre] ||
@@ -2064,14 +2081,42 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     logStoryboardStep(getPipelineLog("STORY_DONE_ALL", isVi));
     if (_.isEmpty(allScenes)) {
-      allScenes = createScriptGroundedStoryboard({
-        rewrittenScript,
-        chapters: syncedChapters,
-        splitStrategy,
-        aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
-        targetStyle: activeStyle || visualStyle,
-        visualBible,
-      });
+      if (cinematicClipCount) {
+        const screenplaySentences = smartSplitSentences(rewrittenScript);
+        const clipBuckets = _.times(cinematicClipCount, () => [] as string[]);
+        let sentenceCursor = 0;
+        _.forEach(screenplaySentences, (sentence) => {
+          const targetBucket = _.min([
+            cinematicClipCount - 1,
+            Math.floor((sentenceCursor * cinematicClipCount) / _.max([1, screenplaySentences.length])!),
+          ])!;
+          clipBuckets[targetBucket].push(sentence);
+          sentenceCursor = _.add(sentenceCursor, 1);
+        });
+        const screenplayWords = _.filter(rewrittenScript.split(/\s+/), Boolean);
+        allScenes = _.map(clipBuckets, (bucket, index) => {
+          const startWord = Math.floor((index * screenplayWords.length) / cinematicClipCount);
+          const endWord = Math.floor(((index + 1) * screenplayWords.length) / cinematicClipCount);
+          const sourceText = _.gte(screenplaySentences.length, cinematicClipCount)
+            ? _.trim(bucket.join(" "))
+            : screenplayWords.slice(startWord, endWord).join(" ");
+          return {
+            id: `sc_${index + 1}`,
+            chapterId: _.toString(_.get(syncedChapters, [Math.floor((index * _.size(syncedChapters)) / cinematicClipCount), "id"], "chapter_1")),
+            script: sourceText,
+            subtitle: sourceText,
+          };
+        });
+      } else {
+        allScenes = createScriptGroundedStoryboard({
+          rewrittenScript,
+          chapters: syncedChapters,
+          splitStrategy,
+          aspectRatio: config?.aspectRatio || AspectRatio.SixteenNine,
+          targetStyle: activeStyle || visualStyle,
+          visualBible,
+        });
+      }
       storyboardLogs.push(STORYBOARD_FALLBACK_CONFIG.FALLBACK_WARNING);
     } else {
       allScenes = ensureScriptGroundedSceneDetails(allScenes, {
@@ -2088,10 +2133,6 @@ router.post("/storyboard", async (req: Request, res: Response) => {
 
     if (data?.scenes?.length) {
       const diversifiedScenes = diversifyDuplicatePrompts(data.scenes);
-      // Auto Video may split uncovered narration into additional still-image
-      // scenes. Film mode has an exact paid clip budget and each AI-authored
-      // clip already owns three internal setups, so expanding it here silently
-      // multiplies Veo requests and destroys the 10-second screenplay units.
       data.scenes = isCinematicStoryboard
         ? diversifiedScenes
         : ensureStoryboardScriptCoverage(diversifiedScenes, {
@@ -2531,12 +2572,44 @@ router.post("/generate-image", requireSingleVisualLicense, async (req: Request, 
   try {
     const { prompt, style, visualConfig, sandboxConfig } = req.body;
 
+    const localProjectId = path.basename(_.toString(sandboxConfig?.localProjectId));
+    let localProject: any = null;
+    let persistedFlowProjectId = _.toString(sandboxConfig?.flowProjectId);
+    if (!_.isEmpty(localProjectId)) {
+      localProject = await getProjectDetailFromDb(localProjectId);
+      persistedFlowProjectId = _.toString(localProject?.visualConfig?.flowProjectId || persistedFlowProjectId);
+    }
+
+    const resolvedSandboxConfig = {
+      ...sandboxConfig,
+      localProjectId,
+      flowProjectId: persistedFlowProjectId || undefined,
+      projectId: undefined,
+    };
+
+    if (!_.isEmpty(persistedFlowProjectId)) {
+      logger.info(`[Google Flow] Reusing shared room ${persistedFlowProjectId} for local project ${localProjectId}.`);
+    }
+
     const result = await generateImageWithPlaywright({
       prompt,
       style,
       visualConfig,
-      sandboxConfig,
+      sandboxConfig: resolvedSandboxConfig,
     });
+
+    const resolvedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
+    if (localProject && !_.isEmpty(resolvedFlowProjectId) && !_.isEqual(localProject?.visualConfig?.flowProjectId, resolvedFlowProjectId)) {
+      const replacedExistingRoom = !_.isEmpty(localProject?.visualConfig?.flowProjectId);
+      localProject.visualConfig = {
+        ...localProject.visualConfig,
+        flowProjectId: resolvedFlowProjectId,
+      };
+      await saveProjectDetailToDb(localProject);
+      logger.info(replacedExistingRoom
+        ? `[Google Flow] Replaced unavailable shared room with ${resolvedFlowProjectId} for local project ${localProjectId}.`
+        : `[Google Flow] Created shared room ${resolvedFlowProjectId} for local project ${localProjectId}.`);
+    }
 
     if (result && result.success) {
       const feature = _.isEqual(visualConfig?.generateType, GenerateType.Video)

@@ -55,8 +55,6 @@ const cleanTextValue = (val: unknown): string => {
 };
 
 export const normalizeThumbnailHeadline = (value: unknown): string => {
-  // Preserve AI-authored meaning. Invalid editorial text is sent back to AI for a
-  // complete rewrite; code must never crop a phrase into a grammatical fragment.
   return cleanTextValue(value).replace(/\s+/g, " ").trim().normalize("NFC");
 };
 

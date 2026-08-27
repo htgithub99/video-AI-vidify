@@ -32,9 +32,6 @@ export const clearSceneVoiceData = (scenes: StoryboardScene[]): StoryboardScene[
   scene => _.omit(scene, VOICE_ALIGNMENT_CONFIG.SCENE_VOICE_RESET_FIELDS),
 ) as StoryboardScene[];
 
-// A complete narration track is the render source of truth. Keeping every
-// aligned clip as base64 as well multiplies checkpoint payloads and can stall
-// browser-to-server project saves after image generation.
 export const removeRedundantSceneAudioBase64 = (
   scenes: StoryboardScene[],
   hasGlobalNarration: boolean,

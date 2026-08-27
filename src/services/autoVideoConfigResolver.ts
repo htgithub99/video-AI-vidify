@@ -54,9 +54,6 @@ export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolea
     config.generateType as GenerateType,
   );
   if (requestsGeneratedVideo && !allowFlowVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
-    // All generated-video workflows use the Gemini UI. The selected engine is
-    // deliberately preserved because it represents the user's model choice
-    // inside Gemini (Veo Fast/Quality/etc.), not a competing transport.
     config.generationMode = ImageGenerationMode.GeminiChat;
     issues.push({
       code: ConfigIssueCode.VideoModeRoutedThroughGemini,
