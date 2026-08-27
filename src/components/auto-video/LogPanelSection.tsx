@@ -6,12 +6,7 @@ import { cn } from "../../lib/utils";
 import { AppTheme } from "../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface LogPanelSectionProps {
-  logs: string[];
-  theme: AppTheme;
-  T: ReturnType<typeof getAutoVideoTexts>;
-  language?: string;
-}
+interface LogPanelSectionProps { logs: string[]; theme: AppTheme; T: ReturnType<typeof getAutoVideoTexts>; language?: string; }
 
 export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T, language }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -26,9 +21,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
   };
 
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
+    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
   }, [logs.length]);
 
   return (
@@ -42,31 +35,18 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
         </span>
         <div className="flex items-center gap-2">
           {!_.isEmpty(logs) && (
-            <button
-              type="button"
-              onClick={scrollToLatest}
-              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer"
-              title={T.logScrollLatestTooltip}
-            >
+            <button type="button" onClick={scrollToLatest} className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/60 transition-all shadow-sm cursor-pointer" title={T.logScrollLatestTooltip}>
               <ArrowDown className="w-3 h-3" />
               <span>{T.logScrollLatestBtn}</span>
             </button>
           )}
-          <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">
-            {T.logEventsCount(logs.length)}
-          </span>
+          <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">{T.logEventsCount(logs.length)}</span>
         </div>
       </div>
 
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
-      >
+      <div ref={scrollContainerRef} className="flex-1 rounded-2xl p-4 overflow-y-auto space-y-3 leading-relaxed flex flex-col min-h-[180px] max-h-[420px] bg-slate-955/30 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
         {_.isEmpty(logs) ? (
-          <div className={cn(
-            "flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2",
-            _.isEqual(theme, AppTheme.LIGHT) ? "text-slate-500" : "text-slate-400",
-          )}>
+          <div className={cn("flex-1 flex flex-col items-center justify-center italic text-center text-xs p-6 w-full h-full my-auto gap-2", _.isEqual(theme, AppTheme.LIGHT) ? "text-slate-500" : "text-slate-400")}>
             <Activity className="w-8 h-8 mb-1 opacity-50" />
             <span>{T.logEmpty}</span>
           </div>

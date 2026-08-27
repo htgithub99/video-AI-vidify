@@ -4,8 +4,7 @@ import { chromium } from "playwright-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
 import { EXTERNAL_URLS } from "../../constants";
 import { appLog, appError } from "../../lib/logger.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 chromium.use(stealthPlugin());
 

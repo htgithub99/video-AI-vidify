@@ -2,28 +2,17 @@ import _ from "lodash";
 import { REFACTOR_CONSTANTS } from "../constants";
 import { jsonUtils } from "../lib/json";
 
-interface PipelineRunLock {
-  runId: string;
-  targetKey: string;
-  ownerId: string;
-  expiresAt: number;
-}
+interface PipelineRunLock { runId: string; targetKey: string; ownerId: string; expiresAt: number; }
 
-export interface PipelineRunLease {
-  acquired: boolean;
-  runId: string;
-  targetKey: string;
-}
+export interface PipelineRunLease { acquired: boolean; runId: string; targetKey: string; }
 
 const createRunId = (): string => crypto.randomUUID();
 const activeLeaseRunIds = new Set<string>();
 const getStorageKey = (targetKey: string): string => `${REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_PREFIX}${targetKey}`;
 
-const readLock = (targetKey: string): PipelineRunLock | null =>
-  jsonUtils.getItem<PipelineRunLock | null>(getStorageKey(targetKey), null);
+const readLock = (targetKey: string): PipelineRunLock | null => jsonUtils.getItem<PipelineRunLock | null>(getStorageKey(targetKey), null);
 
-const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock =>
-  Boolean(lock && _.gt(lock.expiresAt, Date.now()));
+const isActiveLock = (lock: PipelineRunLock | null): lock is PipelineRunLock => Boolean(lock && _.gt(lock.expiresAt, Date.now()));
 
 const getOwnerId = (): string => {
   const existingOwnerId = sessionStorage.getItem(REFACTOR_CONSTANTS.PIPELINE_RUN_OWNER_KEY);
@@ -38,8 +27,7 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
   const existingLock = readLock(normalizedTargetKey);
   const ownerId = getOwnerId();
   if (isActiveLock(existingLock) && !_.isEmpty(existingLock.ownerId)) {
-    const ownedActiveLease = _.isEqual(existingLock.ownerId, ownerId)
-      && activeLeaseRunIds.has(existingLock.runId);
+    const ownedActiveLease = _.isEqual(existingLock.ownerId, ownerId) && activeLeaseRunIds.has(existingLock.runId);
     if (ownedActiveLease || !_.isEqual(existingLock.ownerId, ownerId)) {
       return { acquired: false, runId: existingLock.runId, targetKey: normalizedTargetKey };
     }
@@ -58,10 +46,10 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
 
 export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
   if (!lease || !lease.acquired || _.isEmpty(lease.runId)) return false;
-  
+
   const currentLock = readLock(lease.targetKey);
   const ownerId = getOwnerId();
-  
+
   const isLockRenewable = _.isEqual(currentLock?.runId, lease.runId) || (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)));
   if (isLockRenewable) {
     const refreshedLock: PipelineRunLock = {

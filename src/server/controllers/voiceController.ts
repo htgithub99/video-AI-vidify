@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { EXTERNAL_URLS, getBackendMsg, COMMON_STRINGS, HTTP_HEADERS, HTTP_METHODS, HTTP_STATUS_CODES, REFACTOR_CONSTANTS } from "../../constants";
 import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { appWarn, createAppError } from "../../lib/logger.js";
-import _ from 'lodash';
+import _ from "lodash";
 import { resolveApiKeys } from "../services/apiKeyResolver.js";
 
 export const getVoices = async (request: Request, response: Response) => {
@@ -10,7 +10,7 @@ export const getVoices = async (request: Request, response: Response) => {
   try {
     const queryParams = new URLSearchParams(request.query as any).toString();
     const targetUrl = `${EXTERNAL_URLS.AI33_VOICES}?${queryParams}`;
-    
+
     const keys = await resolveApiKeys();
     const apiKey = _.get(keys, SecurityConstants.REQ_BODY_AI33_KEY, SecurityConstants.EMPTY_STRING);
 

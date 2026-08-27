@@ -2,11 +2,21 @@ import _ from "lodash";
 import { GEMINI_DAILY_QUOTA_PATTERNS, GEMINI_NON_RETRYABLE_MODEL_PATTERNS, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX, GEMINI_RETRYABLE_ERROR_KEYWORDS, GEMINI_RETRYABLE_STATUSES, GEMINI_USER_MESSAGES, GEMINI_ZERO_QUOTA_PATTERNS } from "../../constants/index.js";
 import { GEMINI_REQUEST_POLICY } from "../../constants/config.js";
 
-export enum GeminiErrorCategory { UnsupportedModel = "unsupported_model", ZeroQuota = "zero_quota", DailyQuota = "daily_quota", RateLimit = "rate_limit", Transient = "transient", Fatal = "fatal" }
+export enum GeminiErrorCategory {
+  UnsupportedModel = "unsupported_model",
+  ZeroQuota = "zero_quota",
+  DailyQuota = "daily_quota",
+  RateLimit = "rate_limit",
+  Transient = "transient",
+  Fatal = "fatal",
+}
 export interface GeminiErrorDecision { category: GeminiErrorCategory; retryable: boolean; retryLimit: number; waitMs: number; cooldownMs: number; }
 
 const includesPattern = (value: string, patterns: readonly string[]): boolean => _.some(patterns, (pattern) => _.includes(value, _.toLower(pattern)));
-const resolveRetryWaitMs = (value: string): number => { const match = value.match(GEMINI_RETRY_REGEX); return match ? _.ceil((_.toNumber(match[1]) + GEMINI_REQUEST_POLICY.RETRY_BUFFER_SECONDS) * 1000) : GEMINI_REQUEST_POLICY.DEFAULT_QUOTA_WAIT_MS; };
+const resolveRetryWaitMs = (value: string): number => {
+  const match = value.match(GEMINI_RETRY_REGEX);
+  return match ? _.ceil((_.toNumber(match[1]) + GEMINI_REQUEST_POLICY.RETRY_BUFFER_SECONDS) * 1000) : GEMINI_REQUEST_POLICY.DEFAULT_QUOTA_WAIT_MS;
+};
 
 export const classifyGeminiError = (error: any): GeminiErrorDecision => {
   const value = _.toLower(_.join([_.toString(error?.message), _.toString(error), _.toString(error?.status), _.toString(error?.code)], " "));

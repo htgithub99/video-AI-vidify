@@ -22,4 +22,3 @@ import settingsRoutes from "./settingsRoutes.js";
 router.use("/settings", settingsRoutes);
 
 export default router;
-

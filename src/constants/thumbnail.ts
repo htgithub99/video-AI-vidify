@@ -95,14 +95,7 @@ export const THUMBNAIL_LAYOUT_CATALOG = [
   },
 ] as const;
 
-export const LEGACY_THUMBNAIL_LAYOUT_MAP = {
-  layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage,
-  subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight,
-  subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight,
-  interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline,
-  emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight,
-  before_after_split: ThumbnailLayoutId.EditorialMontage,
-} as const;
+export const LEGACY_THUMBNAIL_LAYOUT_MAP = { layered_ensemble_headline: ThumbnailLayoutId.EditorialMontage, subject_left_text_right: ThumbnailLayoutId.SoloLeftArrowRight, subject_right_text_left: ThumbnailLayoutId.SoloActionLeftCaptionRight, interaction_evidence_headline: ThumbnailLayoutId.InteractionArrowHeadline, emotion_object_contrast: ThumbnailLayoutId.SoloLeftArrowRight, before_after_split: ThumbnailLayoutId.EditorialMontage, } as const;
 
 export const THUMBNAIL_TYPOGRAPHY_CATALOG = [
   {
@@ -298,7 +291,7 @@ export const THUMBNAIL_PROMPT_CONFIG = {
   PROTAGONIST_LOCK_TEMPLATE: "Protagonist visual lock: {dna}.",
   REFERENCE_LOCK_DIRECTIVE: "Strict visual match: accurately follow the exact art style, character design, medium, and aesthetic of the uploaded reference image.",
   LAYOUT_DIRECTIVE_TEMPLATE: "Thumbnail layout: {layout}.",
-  HEADLINE_DIRECTIVE_TEMPLATE: "Render exactly one visible text string, copied character-for-character with complete Vietnamese diacritics: \"{headline}\". Use large bold uppercase heavy condensed typography with high visual contrast. Do not render any other words, letters, numbers, percentages, measurements, template labels, layout annotations, or supporting copy.",
+  HEADLINE_DIRECTIVE_TEMPLATE: 'Render exactly one visible text string, copied character-for-character with complete Vietnamese diacritics: "{headline}". Use large bold uppercase heavy condensed typography with high visual contrast. Do not render any other words, letters, numbers, percentages, measurements, template labels, layout annotations, or supporting copy.',
   TEXT_FREE_DIRECTIVE: "Completely text-free thumbnail image, no readable words or letters.",
   ACCENT_WORDS_TEMPLATE: "Key visual accent words: {words}.",
   SUBJECT_FOCUS_PREFIX: "Focus subject: ",

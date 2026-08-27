@@ -2,7 +2,7 @@ import { AI_MOTION_EFFECT_IDS, ErrorMessage, supportedTypes, RENDER_LOGIC_CONSTA
 import { StoryboardScene } from "../types.js";
 import { appWarn } from "./logger.js";
 import { parseTimeToSeconds, formatCleanDuration } from "./timeUtils.js";
-import _ from 'lodash';
+import _ from "lodash";
 import { hasProductionAudioSource } from "../services/productionAudioService.js";
 
 const easeCubicInOut = (t: number): number => {
@@ -12,8 +12,7 @@ const easeCubicInOut = (t: number): number => {
 
 const easeSineInOut = (t: number): number => -(Math.cos(Math.PI * t) - 1.0) / 2.0;
 
-const easeExpoOut = (t: number): number =>
-  t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t);
+const easeExpoOut = (t: number): number => (t >= 1.0 ? 1.0 : 1.0 - Math.pow(2.0, -10.0 * t));
 
 type MotionResult = { scale: number; dx: number; dy: number };
 
@@ -52,27 +51,15 @@ const MOTION_STYLES: Record<string, (progress: number) => MotionResult> = {
   [RENDER_LOGIC_CONSTANTS.CINEMATIC_ARC]: (p) => {
     const t = easeCubicInOut(p);
     const arcPhase = Math.sin(t * Math.PI);
-    return {
-      scale: 1.0 + 0.15 * t,
-      dx: 60 * t,
-      dy: -30 * arcPhase,
-    };
+    return { scale: 1.0 + 0.15 * t, dx: 60 * t, dy: -30 * arcPhase, };
   },
   [RENDER_LOGIC_CONSTANTS.PUSH_IN]: (p) => {
     const t = easeExpoOut(p);
-    return {
-      scale: 1.0 + 0.08 * t,
-      dx: 12 * t,
-      dy: -8 * t,
-    };
+    return { scale: 1.0 + 0.08 * t, dx: 12 * t, dy: -8 * t, };
   },
   [RENDER_LOGIC_CONSTANTS.SLOW_REVEAL]: (p) => {
     const t = easeCubicInOut(p);
-    return {
-      scale: 1.08 - 0.06 * t,
-      dx: -18 * t,
-      dy: 20 * t,
-    };
+    return { scale: 1.08 - 0.06 * t, dx: -18 * t, dy: 20 * t, };
   },
   [RENDER_LOGIC_CONSTANTS.MOTION_STATIC]: () => ({ scale: 1.0, dx: 0, dy: 0 }),
   [AI_MOTION_EFFECT_IDS[6]]: (p) => {
@@ -140,51 +127,27 @@ export const getSceneTimeRanges = (storyboard: StoryboardScene[]) => {
     const startSec = parseTimeToSeconds(sc.startTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
     const endSec = parseTimeToSeconds(sc.endTime || RENDER_LOGIC_CONSTANTS.EMPTY_STRING);
 
-    const start =
-      sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0) ? startSec : elapsed;
+    const start = sc.startTime && !_.isNil(startSec) && _.gte(startSec, 0) ? startSec : elapsed;
     const duration = sc.duration || 5;
-    const end =
-      sc.endTime && !_.isNil(endSec) && _.gt(endSec, start)
-        ? endSec
-        : start + duration;
+    const end = sc.endTime && !_.isNil(endSec) && _.gt(endSec, start) ? endSec : start + duration;
 
     const actualDuration = end - start;
     elapsed = end;
-    return {
-      id: sc.id,
-      start,
-      end,
-      duration: actualDuration,
-      cameraMotion: sc.cameraMotion,
-      transition: sc.transition,
-      subtitle: sc.subtitle || sc.script,
-      assetName: sc.assetName,
-    };
+    return { id: sc.id, start, end, duration: actualDuration, cameraMotion: sc.cameraMotion, transition: sc.transition, subtitle: sc.subtitle || sc.script, assetName: sc.assetName, };
   });
 };
 
 const TRANSITION_DURATION = 0.4;
 
-export const drawSceneFrameToContext = (
-  ctx: CanvasRenderingContext2D,
-  sc: any,
-  imgElement: HTMLImageElement | undefined,
-  elapsedTimeInScene: number,
-  totalSceneDuration: number,
-  nextImgElement?: HTMLImageElement | undefined,
-  transitionProgress?: number,
-) => {
+export const drawSceneFrameToContext = (ctx: CanvasRenderingContext2D, sc: any, imgElement: HTMLImageElement | undefined, elapsedTimeInScene: number, totalSceneDuration: number, nextImgElement?: HTMLImageElement | undefined, transitionProgress?: number) => {
   const w = 1280;
   const h = 720;
 
   ctx.clearRect(0, 0, w, h);
 
-  const progress =
-    _.min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
+  const progress = _.min([elapsedTimeInScene / (totalSceneDuration || 1), 1.0]) || 0;
 
-  const comfortableMotion = _.lt(totalSceneDuration, 2.5)
-    ? RENDER_LOGIC_CONSTANTS.MOTION_STATIC
-    : _.defaultTo(sc.cameraMotion, RENDER_LOGIC_CONSTANTS.MOTION_STATIC);
+  const comfortableMotion = _.lt(totalSceneDuration, 2.5) ? RENDER_LOGIC_CONSTANTS.MOTION_STATIC : _.defaultTo(sc.cameraMotion, RENDER_LOGIC_CONSTANTS.MOTION_STATIC);
   const motion = getMotionForScene(comfortableMotion, progress);
   const { scale, dx, dy } = motion;
 
@@ -228,11 +191,7 @@ export const drawSceneFrameToContext = (
 
     ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_ROSE;
     ctx.font = RENDER_LOGIC_CONSTANTS.FONT_SUBHEADER;
-    ctx.fillText(
-      RENDER_LOGIC_CONSTANTS.PROMPT_LABEL.replace("{0}", sc.id).replace("{1}", formatCleanDuration(sc.duration || 5)),
-      80,
-      160,
-    );
+    ctx.fillText(RENDER_LOGIC_CONSTANTS.PROMPT_LABEL.replace("{0}", sc.id).replace("{1}", formatCleanDuration(sc.duration || 5)), 80, 160);
 
     ctx.fillStyle = RENDER_LOGIC_CONSTANTS.COLOR_SLATE;
     ctx.font = RENDER_LOGIC_CONSTANTS.FONT_BODY;
@@ -301,7 +260,7 @@ export const drawSceneFrameToContext = (
 
   const lineHeight = 30;
   const totalTextHeight = subLines.length * lineHeight;
-  let sY = subBoxY + (subBoxHeight / 2) - (totalTextHeight / 2) + (lineHeight / 2);
+  let sY = subBoxY + subBoxHeight / 2 - totalTextHeight / 2 + lineHeight / 2;
 
   ctx.lineWidth = 4;
   ctx.strokeStyle = "#000000";
@@ -315,13 +274,7 @@ export const drawSceneFrameToContext = (
   ctx.restore();
 };
 
-export const compileVideoToBlob = async (
-  scenes: StoryboardScene[],
-  getSceneImageUrl: (sc: StoryboardScene) => string,
-  voiceConfig: any,
-  ttsAudioUrl: string,
-  onProgress: (percent: number) => void,
-): Promise<Blob> => {
+export const compileVideoToBlob = async (scenes: StoryboardScene[], getSceneImageUrl: (sc: StoryboardScene) => string, voiceConfig: any, ttsAudioUrl: string, onProgress: (percent: number) => void): Promise<Blob> => {
   if (_.eq(scenes.length, 0)) {
     throw new Error(ErrorMessage.NO_SCENES_TO_RENDER);
   }
@@ -338,16 +291,12 @@ export const compileVideoToBlob = async (
         img.onload = () => {
           loadedImages[sc.id] = img;
           loadedCount++;
-          onProgress(
-            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
-          );
+          onProgress(_.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))));
           resolve();
         };
         img.onerror = () => {
           loadedCount++;
-          onProgress(
-            _.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))),
-          );
+          onProgress(_.add(5, _.round(_.multiply(_.divide(loadedCount, scenes.length), 15))));
           resolve();
         };
         img.src = getSceneImageUrl(sc);
@@ -363,9 +312,7 @@ export const compileVideoToBlob = async (
 
   let mixedStream = new MediaStream();
   const canvasStream = canvas.captureStream(30);
-  _.forEach(canvasStream.getVideoTracks(), (track) =>
-    mixedStream.addTrack(track),
-  );
+  _.forEach(canvasStream.getVideoTracks(), (track) => mixedStream.addTrack(track));
 
   let audioCtx: AudioContext | null = null;
   let destNode: any = null;
@@ -378,9 +325,7 @@ export const compileVideoToBlob = async (
 
   if (hasAudioRecording) {
     try {
-      audioCtx = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )();
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       destNode = audioCtx.createMediaStreamDestination();
 
       audioEl = new Audio();
@@ -388,9 +333,7 @@ export const compileVideoToBlob = async (
       const sourceNode = audioCtx.createMediaElementSource(audioEl);
       sourceNode.connect(destNode);
 
-      _.forEach(destNode.stream.getAudioTracks(), (track: MediaStreamTrack) =>
-        mixedStream.addTrack(track),
-      );
+      _.forEach(destNode.stream.getAudioTracks(), (track: MediaStreamTrack) => mixedStream.addTrack(track));
     } catch (ae) {
       appWarn("AUDIO_CONTEXT_INIT_FAILED", ae);
     }
@@ -415,9 +358,7 @@ export const compileVideoToBlob = async (
   };
 
   const ranges = getSceneTimeRanges(scenes);
-  const totalDuration = _.gt(ranges.length, 0)
-    ? ranges[ranges.length - 1].end
-    : 30;
+  const totalDuration = _.gt(ranges.length, 0) ? ranges[ranges.length - 1].end : 30;
 
   return new Promise<Blob>((resolve, reject) => {
     recorder.onstop = () => {
@@ -434,9 +375,7 @@ export const compileVideoToBlob = async (
     recorder.start();
 
     const MAX_EXPORT_TIME = 5;
-    const speedFactor = _.gt(totalDuration, MAX_EXPORT_TIME)
-      ? totalDuration / MAX_EXPORT_TIME
-      : 1;
+    const speedFactor = _.gt(totalDuration, MAX_EXPORT_TIME) ? totalDuration / MAX_EXPORT_TIME : 1;
 
     if (audioEl && !hasSceneVoices && hasGlobalAudio) {
       audioEl.src = voiceUrl || RENDER_LOGIC_CONSTANTS.EMPTY_STRING;
@@ -460,11 +399,8 @@ export const compileVideoToBlob = async (
         return;
       }
 
-      const matchingRange =
-        _.find(ranges, (r) => elapsed >= r.start && elapsed < r.end) ||
-        ranges[ranges.length - 1];
-      const activeScene =
-        _.find(scenes, (sc) => _.eq(sc.id, matchingRange.id)) || scenes[0];
+      const matchingRange = _.find(ranges, (r) => elapsed >= r.start && elapsed < r.end) || ranges[ranges.length - 1];
+      const activeScene = _.find(scenes, (sc) => _.eq(sc.id, matchingRange.id)) || scenes[0];
 
       if (hasSceneVoices && audioEl && !_.eq(activeScene.id, lastSceneId)) {
         lastSceneId = activeScene.id;
@@ -493,21 +429,11 @@ export const compileVideoToBlob = async (
           transitionProgress = 1.0 - timeRemaining / TRANSITION_DURATION;
           const nextRange = ranges[matchingIdx + 1];
           const nextScene = _.find(scenes, (sc) => _.eq(sc.id, nextRange.id));
-          if (nextScene) {
-            nextImgEl = loadedImages[nextScene.id];
-          }
+          if (nextScene) nextImgEl = loadedImages[nextScene.id];
         }
       }
 
-      drawSceneFrameToContext(
-        ctx,
-        activeScene,
-        imgEl,
-        timeInScene,
-        sceneDuration,
-        nextImgEl,
-        transitionProgress,
-      );
+      drawSceneFrameToContext(ctx, activeScene, imgEl, timeInScene, sceneDuration, nextImgEl, transitionProgress);
 
       const prog = _.add(20, _.round(_.multiply(_.divide(elapsed, totalDuration), 80)));
       onProgress(_.min([prog, 99]) || prog);

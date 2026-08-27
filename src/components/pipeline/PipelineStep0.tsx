@@ -1,102 +1,30 @@
 import React from "react";
 import _ from "lodash";
-import {
-  Settings2,
-  Layers,
-  ChevronDown,
-  Check,
-  Clock,
-  Layout,
-  Sparkles,
-  FileText,
-  Copy,
-  ShieldCheck,
-  ArrowRight,
-  Sliders,
-  Info,
-} from "lucide-react";
+import { Settings2, Layers, ChevronDown, Check, Clock, Layout, Sparkles, FileText, Copy, ShieldCheck, ArrowRight, Sliders, Info } from "lucide-react";
 import { cn } from "../../lib/utils";
-import {
-  genreLabels,
-  audLabels,
-  styleLabels,
-  GENRE_OPTION_GROUPS,
-  AUDIENCE_OPTIONS,
-  WRITING_STYLE_OPTIONS,
-  HOOK_STRATEGY_OPTIONS,
-  HOOK_POSITION_OPTIONS,
-  DURATION_OPTIONS,
-  PROJECT_LANGUAGE_OPTIONS,
-  SPLIT_STRATEGY_OPTIONS,
-  SplitStrategy,
-} from "../../constants";
+import { genreLabels, audLabels, styleLabels, GENRE_OPTION_GROUPS, AUDIENCE_OPTIONS, WRITING_STYLE_OPTIONS, HOOK_STRATEGY_OPTIONS, HOOK_POSITION_OPTIONS, DURATION_OPTIONS, PROJECT_LANGUAGE_OPTIONS, SPLIT_STRATEGY_OPTIONS, SplitStrategy } from "../../constants";
 import { Button } from "../ui/Button";
 import { Tooltip } from "../ui/Tooltip";
 import { PipelineWizardState } from "./usePipelineWizard";
 import { WizardStep, ProjectInputType, ProjectLanguage } from "../../types";
 import { AUTO_GENERATE_TEXTS } from "../../constants/texts";
 
-const STEP0_TEXTS = {
-  TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.",
-  TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.",
-  TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.",
-  CHAPTER_PLACEHOLDER: "Nhập tên chương...",
-} as const;
+const STEP0_TEXTS = { TOOLTIP_INPUT_METHOD: "Chọn phương thức cung cấp đầu vào: Nhập kịch bản có sẵn hoặc mô tả ý tưởng để AI tự viết kịch bản.", TOOLTIP_CONFIG_DETAIL: "Tuỳ chỉnh cấu hình chi tiết để định hướng cho AI khi viết kịch bản và sinh hình ảnh.", TOOLTIP_AUTO_GENERATE: "Bắt đầu phân tích văn bản đầu vào và tự động tạo ra một kịch bản Video hoàn chỉnh bằng AI.", CHAPTER_PLACEHOLDER: "Nhập tên chương...", } as const;
 
-interface SettingSliderProps {
-  label: string;
-  value: number;
-  displayValue: string;
-  min: number;
-  max: number;
-  colorClass: string;
-  accentClass: string;
-  onChange: (val: number) => void;
-}
+interface SettingSliderProps { label: string; value: number; displayValue: string; min: number; max: number; colorClass: string; accentClass: string; onChange: (val: number) => void; }
 
-const SettingSlider: React.FC<SettingSliderProps> = ({
-  label,
-  value,
-  displayValue,
-  min,
-  max,
-  colorClass,
-  accentClass,
-  onChange,
-}) => (
+const SettingSlider: React.FC<SettingSliderProps> = ({ label, value, displayValue, min, max, colorClass, accentClass, onChange }) => (
   <div className="bg-slate-950/45 border border-slate-900/60 p-3.5 rounded-xl space-y-2.5 shadow-inner hover:border-slate-800 transition-all">
     <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase tracking-wider">
       <span className="text-slate-450">{label}</span>
       <span className={cn("px-2 py-0.5 rounded-full border", colorClass)}>{displayValue}</span>
     </div>
-    <input
-      type="range"
-      min={min}
-      max={max}
-      value={value}
-      onChange={(e) => onChange(_.toNumber(e.target.value))}
-      className={cn("w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer focus:outline-none", accentClass)}
-    />
+    <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(_.toNumber(e.target.value))} className={cn("w-full h-1 bg-slate-900 hover:bg-slate-850 rounded-lg appearance-none cursor-pointer focus:outline-none", accentClass)} />
   </div>
 );
 
 export default function PipelineStep0(props: PipelineWizardState) {
-  const {
-    t,
-    project,
-    setProject,
-    setCurrentStep,
-    loadingStates,
-    setInfoMsg,
-    handleProcessInputAndConfig,
-    hookStrategy,
-    setHookStrategy,
-    hookDuration,
-    setHookDuration,
-    hookPosition,
-    setHookPosition,
-    handleAutoGenerateVideo,
-  } = props;
+  const { t, project, setProject, setCurrentStep, loadingStates, setInfoMsg, handleProcessInputAndConfig, hookStrategy, setHookStrategy, hookDuration, setHookDuration, hookPosition, setHookPosition, handleAutoGenerateVideo } = props;
 
   const currentInputType = project.input?.type || ProjectInputType.Script;
   const isInputEmpty = _.isEmpty(_.trim(project.input?.content));
@@ -141,20 +69,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn(
-                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
-                  _.isEqual(currentInputType, ProjectInputType.Script)
-                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
-                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850"
-                )}
-              >
+                className={cn("p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full", _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30" : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850")}>
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                    _.isEqual(currentInputType, ProjectInputType.Script)
-                      ? "bg-rose-500/20 text-rose-500"
-                      : "bg-slate-800 text-slate-400"
-                  )}>
+                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors", _.isEqual(currentInputType, ProjectInputType.Script) ? "bg-rose-500/20 text-rose-500" : "bg-slate-800 text-slate-400")}>
                     <FileText className="w-4 h-4" />
                   </div>
                   <div>
@@ -162,9 +79,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     <span className="text-[10px] font-medium opacity-80 block">{t.originalScriptDesc}</span>
                   </div>
                 </div>
-                {_.isEqual(currentInputType, ProjectInputType.Script) && (
-                  <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />
-                )}
+                {_.isEqual(currentInputType, ProjectInputType.Script) && <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />}
               </Button>
 
               <Button
@@ -179,20 +94,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn(
-                  "p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full",
-                  _.isEqual(currentInputType, ProjectInputType.Idea)
-                    ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30"
-                    : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850"
-                )}
-              >
+                className={cn("p-3.5 rounded-2xl border-2 text-left cursor-pointer transition-all duration-300 flex items-center justify-between min-h-[58px] w-full", _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-rose-500/15 border-rose-500/80 text-rose-500 font-black shadow-sm ring-1 ring-rose-500/30" : "bg-slate-900/90 border-slate-800/90 text-slate-400 hover:border-slate-700 hover:text-slate-200 font-bold hover:bg-slate-850")}>
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                    _.isEqual(currentInputType, ProjectInputType.Idea)
-                      ? "bg-amber-500/20 text-amber-500"
-                      : "bg-slate-800 text-slate-400"
-                  )}>
+                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors", _.isEqual(currentInputType, ProjectInputType.Idea) ? "bg-amber-500/20 text-amber-500" : "bg-slate-800 text-slate-400")}>
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
@@ -200,9 +104,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     <span className="text-[10px] font-medium opacity-80 block">{t.storyIdeaDesc}</span>
                   </div>
                 </div>
-                {_.isEqual(currentInputType, ProjectInputType.Idea) && (
-                  <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />
-                )}
+                {_.isEqual(currentInputType, ProjectInputType.Idea) && <Check className="w-4 h-4 text-rose-500 stroke-[3] shrink-0" />}
               </Button>
             </div>
           </div>
@@ -252,8 +154,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, genre: e.target.value },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                   {_.map(GENRE_OPTION_GROUPS, (group) => (
                     <optgroup key={group.label} label={group.label} className="bg-slate-950 text-slate-400">
                       {_.map(group.options, (genre) => (
@@ -280,8 +181,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, language: e.target.value as ProjectLanguage },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                   {_.map(PROJECT_LANGUAGE_OPTIONS, (opt) => (
                     <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                       {_.get(t, opt.labelKey, opt.value)}
@@ -304,8 +204,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, duration: e.target.value },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                   {_.map(DURATION_OPTIONS, (item) => (
                     <option key={item.val} value={item.val} className="bg-slate-950 text-slate-300">
                       {item.label}
@@ -329,15 +228,9 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, splitStrategy: e.target.value },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 font-sans w-full"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6 font-sans w-full">
                   {_.map(SPLIT_STRATEGY_OPTIONS, (opt) => (
-                    <option
-                      key={opt.value}
-                      value={opt.value}
-                      title={_.get(t, opt.titleKey, opt.value)}
-                      className={cn("bg-slate-950", opt.className)}
-                    >
+                    <option key={opt.value} value={opt.value} title={_.get(t, opt.titleKey, opt.value)} className={cn("bg-slate-950", opt.className)}>
                       {_.get(t, opt.labelKey, opt.value)}
                     </option>
                   ))}
@@ -358,8 +251,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, audience: e.target.value },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                   {_.map(AUDIENCE_OPTIONS, (aud) => (
                     <option key={aud} value={aud} className="bg-slate-950 text-slate-300">
                       {audLabels[aud as keyof typeof audLabels] || aud}
@@ -382,8 +274,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       config: { ...prev.config, writingStyle: e.target.value },
                     }))
                   }
-                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                >
+                  className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                   {_.map(WRITING_STYLE_OPTIONS, (style) => (
                     <option key={style} value={style} className="bg-slate-950 text-slate-300">
                       {styleLabels[style as keyof typeof styleLabels] || style}
@@ -460,17 +351,8 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     },
                   }))
                 }
-                className={cn(
-                  "w-11 h-6 flex items-center justify-start rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 shrink-0",
-                  project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850"
-                )}
-              >
-                <div
-                  className={cn(
-                    "bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 shrink-0",
-                    project.config.factCheck ? "translate-x-5" : "translate-x-0"
-                  )}
-                />
+                className={cn("w-11 h-6 flex items-center justify-start rounded-full p-0.5 transition-colors cursor-pointer outline-none focus:ring-1 focus:ring-rose-500/20 shadow-none hover:bg-slate-900 shrink-0", project.config.factCheck ? "bg-rose-600 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-850")}>
+                <div className={cn("bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 shrink-0", project.config.factCheck ? "translate-x-5" : "translate-x-0")} />
               </Button>
             </div>
 
@@ -484,11 +366,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookType}</span>
                 <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm">
                   <Sparkles className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                  <select
-                    value={hookStrategy}
-                    onChange={(e) => setHookStrategy(e.target.value)}
-                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                  >
+                  <select value={hookStrategy} onChange={(e) => setHookStrategy(e.target.value)} className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                     {_.map(HOOK_STRATEGY_OPTIONS, (opt) => (
                       <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                         {opt.label}
@@ -499,26 +377,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                 </div>
               </div>
 
-              <SettingSlider
-                label={t.hookDuration}
-                value={hookDuration}
-                displayValue={`${hookDuration}s`}
-                min={3}
-                max={30}
-                colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10"
-                accentClass="accent-rose-600"
-                onChange={setHookDuration}
-              />
+              <SettingSlider label={t.hookDuration} value={hookDuration} displayValue={`${hookDuration}s`} min={3} max={30} colorClass="text-rose-450 bg-rose-500/10 border-rose-500/10" accentClass="accent-rose-600" onChange={setHookDuration} />
 
               <div className="space-y-1.5">
                 <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block">{t.hookPositions}</span>
                 <div className="relative flex items-center bg-slate-955 border border-slate-800 rounded-xl focus-within:border-rose-500/80 px-3 py-2.5 transition-all shadow-sm">
                   <Layout className="w-4 h-4 text-slate-450 mr-2.5 shrink-0" />
-                  <select
-                    value={hookPosition}
-                    onChange={(e) => setHookPosition(e.target.value as any)}
-                    className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6"
-                  >
+                  <select value={hookPosition} onChange={(e) => setHookPosition(e.target.value as any)} className="flex-1 bg-slate-900 border-none text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-6">
                     {_.map(HOOK_POSITION_OPTIONS, (opt) => (
                       <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-300">
                         {opt.label}
@@ -535,31 +400,14 @@ export default function PipelineStep0(props: PipelineWizardState) {
 
       <div className="pt-4 border-t border-slate-800 flex items-center justify-end relative z-20 gap-3">
         <Tooltip content={STEP0_TEXTS.TOOLTIP_AUTO_GENERATE} position="top" align="end">
-          <Button
-            type="button"
-            variant="secondary"
-            size="lg"
-            onClick={() => handleAutoGenerateVideo()}
-            disabled={isInputEmpty || isAutoGenerating || isProcessingInput}
-            isLoading={isAutoGenerating}
-            className="px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300"
-          >
+          <Button type="button" variant="secondary" size="lg" onClick={() => handleAutoGenerateVideo()} disabled={isInputEmpty || isAutoGenerating || isProcessingInput} isLoading={isAutoGenerating} className="px-6 py-3.5 bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300">
             <Sparkles className="w-4 h-4 text-emerald-400" />
             <span>{AUTO_GENERATE_TEXTS.BTN_AUTO}</span>
           </Button>
         </Tooltip>
 
         <Tooltip content={STEP0_TEXTS.TOOLTIP_AUTO_GENERATE} position="top" align="end">
-          <Button
-            type="button"
-            variant="primary"
-            size="lg"
-            onClick={() => handleProcessInputAndConfig(true)}
-            disabled={isInputEmpty || isAutoGenerating || isProcessingInput}
-            isLoading={isProcessingInput && !isAutoGenerating}
-            title={t.Ph_n_t_ch_t_ng_v_bi_n_so_}
-            className="px-6 py-3.5"
-          >
+          <Button type="button" variant="primary" size="lg" onClick={() => handleProcessInputAndConfig(true)} disabled={isInputEmpty || isAutoGenerating || isProcessingInput} isLoading={isProcessingInput && !isAutoGenerating} title={t.Ph_n_t_ch_t_ng_v_bi_n_so_} className="px-6 py-3.5">
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>{t.Generate_Script}</span>
           </Button>
@@ -590,8 +438,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       }
                     }}
                     className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-slate-900 transition-colors shadow-none"
-                    title={t.Copy}
-                  >
+                    title={t.Copy}>
                     <Copy className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -603,7 +450,10 @@ export default function PipelineStep0(props: PipelineWizardState) {
                     {t.Chars}: <strong className="text-slate-300">{charCount}</strong>
                   </span>
                   <span>
-                    {t.Est_Time}: <strong className="text-rose-400">~{estimatedMinutes} {t.min}</strong>
+                    {t.Est_Time}:{" "}
+                    <strong className="text-rose-400">
+                      ~{estimatedMinutes} {t.min}
+                    </strong>
                   </span>
                 </div>
               </div>
@@ -656,17 +506,13 @@ export default function PipelineStep0(props: PipelineWizardState) {
                       <div className="h-3 bg-slate-900 rounded w-3/4" />
                     </div>
                   ) : (
-                    <p className="text-slate-400 text-xs leading-relaxed italic max-h-[140px] overflow-y-auto">
-                      {project.factCheckNotes || t.Analyzing_historical_data}
-                    </p>
+                    <p className="text-slate-400 text-xs leading-relaxed italic max-h-[140px] overflow-y-auto">{project.factCheckNotes || t.Analyzing_historical_data}</p>
                   )}
                 </div>
               )}
 
               <div className="bg-slate-955 border border-slate-800 p-4 rounded-xl space-y-3 flex-1 flex flex-col min-h-[260px]">
-                <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold shrink-0">
-                  {t.Chapters_Script_Outline}
-                </span>
+                <span className="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-bold shrink-0">{t.Chapters_Script_Outline}</span>
                 <div className="space-y-2.5 flex-1 overflow-y-auto pr-1 max-h-[350px] lg:max-h-[500px]">
                   {isProcessingInput ? (
                     <div className="space-y-3 py-1">
@@ -691,9 +537,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
                             const val = e.target.value;
                             setProject((prev) => ({
                               ...prev,
-                              chapters: _.map(prev.chapters || [], (item) =>
-                                _.isEqual(item.id, ch.id) ? { ...item, title: val } : item
-                              ),
+                              chapters: _.map(prev.chapters || [], (item) => (_.isEqual(item.id, ch.id) ? { ...item, title: val } : item)),
                             }));
                           }}
                           className="w-full bg-transparent hover:bg-slate-850 focus:bg-slate-800 border border-transparent focus:border-rose-500/40 rounded-lg px-2 py-1.5 text-slate-100 font-bold text-xs focus:outline-none transition-all placeholder-slate-500/50 -ml-2"
@@ -711,12 +555,7 @@ export default function PipelineStep0(props: PipelineWizardState) {
       )}
 
       <div className="pt-4 border-t border-slate-800 flex items-center justify-end mt-6">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => setCurrentStep(WizardStep.Storyboard)}
-          className="flex items-center gap-1.5 px-5 py-3 shadow"
-        >
+        <Button variant="primary" size="lg" onClick={() => setCurrentStep(WizardStep.Storyboard)} className="flex items-center gap-1.5 px-5 py-3 shadow">
           {t.Continue}
           <ArrowRight className="w-4 h-4" />
         </Button>

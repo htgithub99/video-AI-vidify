@@ -11,13 +11,16 @@ const PHRASE_OVERLAP_THRESHOLD = 0.65;
 const MINIMUM_REPEATED_PHRASE_TOKENS = 6;
 const MAXIMUM_NOVEL_TOKENS_IN_RESTATEMENT = 4;
 
-const normalizeNarrationTokens = (value: string): string[] => Array.from(new Set(
-  _.words(
-    _.deburr(_.toLower(value))
-      .replace(/%/g, " phan tram ")
-      .replace(/\bpercent\b/g, " phan tram "),
-  ),
-));
+const normalizeNarrationTokens = (value: string): string[] =>
+  Array.from(
+    new Set(
+      _.words(
+        _.deburr(_.toLower(value))
+          .replace(/%/g, " phan tram ")
+          .replace(/\bpercent\b/g, " phan tram "),
+      ),
+    ),
+  );
 
 export const getNarrationSentenceSimilarity = (first: string, second: string): number => {
   const firstTokens = normalizeNarrationTokens(first);
@@ -31,9 +34,7 @@ const getNarrationCoverage = (candidate: string, precedingText: string): number 
   const candidateTokens = normalizeNarrationTokens(candidate);
   if (_.lt(candidateTokens.length, MINIMUM_TOKEN_COUNT)) return 0;
   const precedingTokens = normalizeNarrationTokens(precedingText);
-  return _.isEmpty(candidateTokens)
-    ? 0
-    : _.divide(_.size(_.intersection(candidateTokens, precedingTokens)), candidateTokens.length);
+  return _.isEmpty(candidateTokens) ? 0 : _.divide(_.size(_.intersection(candidateTokens, precedingTokens)), candidateTokens.length);
 };
 
 const getLongestSharedTokenRun = (first: string[], second: string[]): number => {
@@ -59,18 +60,13 @@ const substantiallyRestatesRecentNarration = (candidate: string, precedingText: 
   const sharedRun = getLongestSharedTokenRun(candidateTokens, precedingTokens);
   const overlapRatio = _.divide(sharedRun, candidateTokens.length);
   const novelTokenCount = _.size(_.difference(candidateTokens, precedingTokens));
-  return _.gte(sharedRun, MINIMUM_REPEATED_PHRASE_TOKENS)
-    && _.gte(overlapRatio, PHRASE_OVERLAP_THRESHOLD)
-    && _.lte(novelTokenCount, MAXIMUM_NOVEL_TOKENS_IN_RESTATEMENT);
+  return _.gte(sharedRun, MINIMUM_REPEATED_PHRASE_TOKENS) && _.gte(overlapRatio, PHRASE_OVERLAP_THRESHOLD) && _.lte(novelTokenCount, MAXIMUM_NOVEL_TOKENS_IN_RESTATEMENT);
 };
 
 export const removeRepeatedNarrationOpening = (segment: string, precedingText: string): string => {
   const precedingSentences = _.takeRight(smartSplitSentences(precedingText), COMPARISON_SENTENCE_COUNT);
   const segmentSentences = smartSplitSentences(segment);
-  while (!_.isEmpty(segmentSentences) && _.some(
-    precedingSentences,
-    sentence => _.gte(getNarrationSentenceSimilarity(segmentSentences[0], sentence), SIMILARITY_THRESHOLD),
-  )) {
+  while (!_.isEmpty(segmentSentences) && _.some(precedingSentences, (sentence) => _.gte(getNarrationSentenceSimilarity(segmentSentences[0], sentence), SIMILARITY_THRESHOLD))) {
     segmentSentences.shift();
   }
   return _.trim(_.join(segmentSentences, " "));
@@ -78,36 +74,33 @@ export const removeRepeatedNarrationOpening = (segment: string, precedingText: s
 
 export const removeAdjacentRepeatedNarrationSentences = (text: string): string => {
   const sentences = smartSplitSentences(text);
-  const acceptedSentences = _.reduce(sentences, (accepted: string[], sentence) => {
-    const recentNarration = _.join(_.takeRight(accepted, RECENT_NARRATION_WINDOW), " ");
-    const repeatsPreviousSentence = !_.isEmpty(accepted) && _.gte(
-      getNarrationSentenceSimilarity(sentence, _.last(accepted) || ""),
-      SIMILARITY_THRESHOLD,
-    );
-    const restatesRecentNarration = !_.isEmpty(recentNarration) && _.gte(
-      getNarrationCoverage(sentence, recentNarration),
-      CUMULATIVE_COVERAGE_THRESHOLD,
-    ) || substantiallyRestatesRecentNarration(sentence, recentNarration);
-    if (!repeatsPreviousSentence && !restatesRecentNarration) accepted.push(sentence);
-    return accepted;
-  }, [] as string[]);
+  const acceptedSentences = _.reduce(
+    sentences,
+    (accepted: string[], sentence) => {
+      const recentNarration = _.join(_.takeRight(accepted, RECENT_NARRATION_WINDOW), " ");
+      const repeatsPreviousSentence = !_.isEmpty(accepted) && _.gte(getNarrationSentenceSimilarity(sentence, _.last(accepted) || ""), SIMILARITY_THRESHOLD);
+      const restatesRecentNarration = (!_.isEmpty(recentNarration) && _.gte(getNarrationCoverage(sentence, recentNarration), CUMULATIVE_COVERAGE_THRESHOLD)) || substantiallyRestatesRecentNarration(sentence, recentNarration);
+      if (!repeatsPreviousSentence && !restatesRecentNarration) accepted.push(sentence);
+      return accepted;
+    },
+    [] as string[],
+  );
   return _.join(acceptedSentences, " ");
 };
 
-export const removeAdjacentRepeatedStoryboardScenes = (scenes: StoryboardScene[]): StoryboardScene[] => _.reduce(
-  scenes,
-  (accepted: StoryboardScene[], scene) => {
-    const currentText = _.trim(scene.script || scene.subtitle || "");
-    const previousText = _.trim(_.last(accepted)?.script || _.last(accepted)?.subtitle || "");
-    const recentText = _.join(_.map(
-      _.takeRight(accepted, RECENT_NARRATION_WINDOW),
-      item => _.trim(item.script || item.subtitle || ""),
-    ), " ");
-    const isRepeated = _.gte(getNarrationSentenceSimilarity(currentText, previousText), SIMILARITY_THRESHOLD)
-      || _.gte(getNarrationCoverage(currentText, recentText), CUMULATIVE_COVERAGE_THRESHOLD)
-      || substantiallyRestatesRecentNarration(currentText, recentText);
-    if (!isRepeated) accepted.push(scene);
-    return accepted;
-  },
-  [] as StoryboardScene[],
-);
+export const removeAdjacentRepeatedStoryboardScenes = (scenes: StoryboardScene[]): StoryboardScene[] =>
+  _.reduce(
+    scenes,
+    (accepted: StoryboardScene[], scene) => {
+      const currentText = _.trim(scene.script || scene.subtitle || "");
+      const previousText = _.trim(_.last(accepted)?.script || _.last(accepted)?.subtitle || "");
+      const recentText = _.join(
+        _.map(_.takeRight(accepted, RECENT_NARRATION_WINDOW), (item) => _.trim(item.script || item.subtitle || "")),
+        " ",
+      );
+      const isRepeated = _.gte(getNarrationSentenceSimilarity(currentText, previousText), SIMILARITY_THRESHOLD) || _.gte(getNarrationCoverage(currentText, recentText), CUMULATIVE_COVERAGE_THRESHOLD) || substantiallyRestatesRecentNarration(currentText, recentText);
+      if (!isRepeated) accepted.push(scene);
+      return accepted;
+    },
+    [] as StoryboardScene[],
+  );

@@ -7,9 +7,7 @@ export const setLogLanguage = (lang: LogLang) => {
   currentLang = lang;
 };
 
-export const getLogLanguage = (): LogLang => {
-  return currentLang;
-};
+export const getLogLanguage = (): LogLang => currentLang;;
 
 export const formatLogMessage = (template: string, ...args: any[]): string => {
   let result = template;
@@ -56,30 +54,22 @@ export const getBilingualMessage = (key: LogKey | string, ...args: any[]): strin
 
 export const logger = {
   log: (key: LogKey | string, ...args: any[]) => {
-    if (typeof window === "undefined") {
-      systemLogger.log(getBilingualMessage(key, ...args));
-    } else {
+    if (typeof window === "undefined") systemLogger.log(getBilingualMessage(key, ...args)); else {
       systemLogger.log(getMessage(key, undefined, ...args));
     }
   },
   info: (key: LogKey | string, ...args: any[]) => {
-    if (typeof window === "undefined") {
-      systemLogger.info(getBilingualMessage(key, ...args));
-    } else {
+    if (typeof window === "undefined") systemLogger.info(getBilingualMessage(key, ...args)); else {
       systemLogger.info(getMessage(key, undefined, ...args));
     }
   },
   warn: (key: LogKey | string, ...args: any[]) => {
-    if (typeof window === "undefined") {
-      systemLogger.warn(getBilingualMessage(key, ...args));
-    } else {
+    if (typeof window === "undefined") systemLogger.warn(getBilingualMessage(key, ...args)); else {
       systemLogger.warn(getMessage(key, undefined, ...args));
     }
   },
   error: (key: LogKey | string, ...args: any[]) => {
-    if (typeof window === "undefined") {
-      systemLogger.error(getBilingualMessage(key, ...args));
-    } else {
+    if (typeof window === "undefined") systemLogger.error(getBilingualMessage(key, ...args)); else {
       systemLogger.error(getMessage(key, undefined, ...args));
     }
   },

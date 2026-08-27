@@ -1,13 +1,9 @@
 import { jsonUtils } from "../../lib/json.js";
 import { appLog } from "../../lib/logger.js";
-import _ from 'lodash';
+import _ from "lodash";
 import { createHash } from "node:crypto";
 
-
-interface CacheEntry {
-  timestamp: number;
-  data: any;
-}
+interface CacheEntry { timestamp: number; data: any; }
 
 const geminiCache: Record<string, CacheEntry> = {};
 const CACHE_TTL = 30 * 60 * 1000;

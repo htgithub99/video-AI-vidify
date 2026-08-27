@@ -16,29 +16,16 @@ const getGenreLabel = (genre: string, lang: Lang) => {
   return labels[genre] || genre;
 };
 
-interface ProjectListProps {
-  currentLang: Lang;
-  projects: VideoProject[];
-  isLoading?: boolean;
-  onSelectProject: (p: VideoProject) => void;
-  onCreateProject: (name: string, desc: string) => Promise<void> | void;
-  onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void;
-  onDeleteProject: (id: string) => Promise<void> | void;
-}
+interface ProjectListProps { currentLang: Lang; projects: VideoProject[]; isLoading?: boolean; onSelectProject: (p: VideoProject) => void; onCreateProject: (name: string, desc: string) => Promise<void> | void; onUpdateProject?: (id: string, name: string, desc: string) => Promise<void> | void; onDeleteProject: (id: string) => Promise<void> | void; }
 
-export default function ProjectList({
-  currentLang,
-  projects,
-  isLoading = false,
-  onSelectProject,
-  onCreateProject,
-  onUpdateProject,
-  onDeleteProject,
-}: ProjectListProps) {
+export default function ProjectList({ currentLang, projects, isLoading = false, onSelectProject, onCreateProject, onUpdateProject, onDeleteProject }: ProjectListProps) {
   const t = translations[currentLang];
   const localT = PROJECT_LIST_TEXTS[currentLang];
   const { licenseInfo, refetchLicense } = useLicense();
-  const limitVideo = _.defaultTo(licenseInfo?.limits?.video, 0); const limitImage = _.defaultTo(licenseInfo?.limits?.image, 0); const limitVoice = _.defaultTo(licenseInfo?.limits?.voice, 0); const isUnlimited = _.defaultTo(licenseInfo?.limits?.unlimited, false);
+  const limitVideo = _.defaultTo(licenseInfo?.limits?.video, 0);
+  const limitImage = _.defaultTo(licenseInfo?.limits?.image, 0);
+  const limitVoice = _.defaultTo(licenseInfo?.limits?.voice, 0);
+  const isUnlimited = _.defaultTo(licenseInfo?.limits?.unlimited, false);
 
   const [showModal, setShowModal] = useState(false);
   const [expandedParentIds, setExpandedParentIds] = useState<Record<string, boolean>>({});
@@ -55,9 +42,7 @@ export default function ProjectList({
   const [currentPage, setCurrentPage] = useState(1);
 
   React.useEffect(() => {
-    if (refetchLicense) {
-      refetchLicense();
-    }
+    if (refetchLicense) refetchLicense();
     setCurrentPage(PROJECT_LIST_CONSTANTS.PAGE_ONE);
   }, [searchQuery, filterLang, filterGenre]);
 
@@ -85,9 +70,7 @@ export default function ProjectList({
     try {
       await delayAsync(PROJECT_LIST_CONSTANTS.SLEEP_DURATION_MS);
 
-      if (editingId && onUpdateProject) {
-        await onUpdateProject(editingId, name, desc);
-      } else {
+      if (editingId && onUpdateProject) await onUpdateProject(editingId, name, desc); else {
         await onCreateProject(name, desc);
       }
     } catch (err) {
@@ -129,16 +112,14 @@ export default function ProjectList({
   const filteredProjects = _.orderBy(
     _.filter(projects, (proj) => {
       if (proj.parentId) return false;
-      const matchesSearch = _.some([proj.name, proj.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING], (text) =>
-        _.includes(_.toLower(text), searchLower)
-      );
+      const matchesSearch = _.some([proj.name, proj.description || REFACTOR_CONSTANTS.VD_EMPTY_STRING], (text) => _.includes(_.toLower(text), searchLower));
       const matchesLang = _.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(_.toLower(proj.config.language), filterLang);
       const matchesGenre = _.isEqual(filterGenre, PROJECT_LIST_CONSTANTS.FILTER_ALL) || _.isEqual(proj.config.genre, filterGenre);
 
       return _.every([matchesSearch, matchesLang, matchesGenre], Boolean);
     }),
     [(p) => new Date(p.updatedAt || 0).getTime()],
-    [SortOrder.DESC]
+    [SortOrder.DESC],
   );
 
   const totalPages = _.max([PROJECT_LIST_CONSTANTS.PAGE_ONE, _.ceil(filteredProjects.length / PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE)]) as number;
@@ -149,7 +130,7 @@ export default function ProjectList({
   }
 
   const paginatedProjects = _.slice(filteredProjects, (validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE);
-  const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, 'config.genre'), Boolean)))];
+  const availableGenres = [PROJECT_LIST_CONSTANTS.FILTER_ALL, ...Array.from(new Set(_.filter(_.map(projects, "config.genre"), Boolean)))];
 
   return (
     <div className="space-y-6">
@@ -159,9 +140,7 @@ export default function ProjectList({
             <Film className="w-5 h-5 text-rose-500" />
             {t.projects}
           </h2>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed font-medium">
-            {_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}
-          </p>
+          <p className="text-xs text-slate-400 mt-1 leading-relaxed font-medium">{_.isEqual(currentLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? localT.desc : t.Synthesize_stories_design || localT.desc}</p>
         </div>
         <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} onClick={handleOpenCreateTarget} className="flex items-center gap-2 self-start md:self-auto px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 text-white font-bold rounded-xl shadow-md shadow-rose-500/10">
           <Plus className="w-4 h-4" />
@@ -171,41 +150,34 @@ export default function ProjectList({
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-slate-900 border border-slate-800/80 p-4 rounded-xl">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>{localT.allLangs}</button>
-          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>{localT.viBtn}</button>
-          <button
-            onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)}
-            className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN)
-              ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
-              : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"
-              }`)}
-          >
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.FILTER_ALL)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.FILTER_ALL) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
+            {localT.allLangs}
+          </button>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_VI)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_VI) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
+            {localT.viBtn}
+          </button>
+          <button onClick={() => setFilterLang(PROJECT_LIST_CONSTANTS.LANG_EN)} className={cn(`px-3 py-1.5 text-[10px] uppercase font-bold rounded-lg transition-all ${_.isEqual(filterLang, PROJECT_LIST_CONSTANTS.LANG_EN) ? "bg-rose-500/10 text-rose-400 border border-rose-500/30" : "bg-slate-955 text-slate-400 border border-slate-700/60 hover:bg-slate-850"}`)}>
             {localT.enBtn}
           </button>
 
           {availableGenres.length > 2 && (
-            <select
-              value={filterGenre}
-              onChange={(e) => setFilterGenre(e.target.value)}
-              className="bg-slate-950 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 hover:bg-slate-850 transition-all uppercase"
-            >
+            <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className="bg-slate-950 border border-slate-700/60 text-slate-400 rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none focus:border-rose-500/50 hover:bg-slate-850 transition-all uppercase">
               <option value={PROJECT_LIST_CONSTANTS.FILTER_ALL}>{localT.allGenres}</option>
-              {_.map(_.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)), (g) => (
-                <option key={g} value={g}>{_.toUpper(getGenreLabel(g, currentLang))}</option>
-              ))}
+              {_.map(
+                _.filter(availableGenres, (g) => !_.isEqual(g, PROJECT_LIST_CONSTANTS.FILTER_ALL)),
+                (g) => (
+                  <option key={g} value={g}>
+                    {_.toUpper(getGenreLabel(g, currentLang))}
+                  </option>
+                ),
+              )}
             </select>
           )}
         </div>
 
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-            placeholder={localT.searchPlaceholder}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-100 dark:bg-slate-955 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans"
-          />
+          <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} placeholder={localT.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-100 dark:bg-slate-955 border border-slate-300 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-200 pl-9 pr-4 py-2 rounded-xl focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 hover:bg-slate-200 dark:hover:bg-slate-850 transition-all font-sans" />
         </div>
       </div>
 
@@ -264,9 +236,7 @@ export default function ProjectList({
           <div className="p-4 bg-slate-950 rounded-full border border-slate-800">
             <Video className="w-8 h-8 text-slate-600" />
           </div>
-          <p className="text-slate-400 text-xs font-semibold max-w-sm leading-relaxed">
-            {projects.length === 0 ? t.noProjects : localT.noProjectsMatch}
-          </p>
+          <p className="text-slate-400 text-xs font-semibold max-w-sm leading-relaxed">{projects.length === 0 ? t.noProjects : localT.noProjectsMatch}</p>
           <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={handleOpenCreateTarget} className="flex items-center gap-2 text-rose-500 hover:text-rose-400 font-bold text-xs">
             <Plus className="w-4.5 h-4.5" />
             {t.createNew}
@@ -316,47 +286,32 @@ export default function ProjectList({
 
                   return (
                     <React.Fragment key={project.id}>
-                      <tr
-                        onClick={() => onSelectProject(project)}
-                        className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200"
-                      >
+                      <tr onClick={() => onSelectProject(project)} className="group hover:bg-slate-850 cursor-pointer transition-colors duration-200">
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-4">
                             <div className="w-6 shrink-0 flex items-center justify-center">
                               {hasChildren && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedParentIds((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
-                                }}
-                                className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-slate-100 shrink-0"
-                              >
-                                {expandedParentIds[project.id] ? (
-                                  <ChevronDown className="w-4 h-4 text-rose-500" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                                )}
-                              </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedParentIds((prev) => ({ ...prev, [project.id]: !prev[project.id] }));
+                                  }}
+                                  className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-400 hover:text-slate-100 shrink-0">
+                                  {expandedParentIds[project.id] ? <ChevronDown className="w-4 h-4 text-rose-500" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                </button>
                               )}
                             </div>
                             <div className="w-24 h-14 bg-slate-950 border border-slate-800 rounded flex flex-col items-center justify-center shrink-0 relative overflow-hidden group-hover:border-rose-500/40 transition-colors">
                               <Video className="w-6 h-6 text-slate-700 group-hover:text-rose-500/50 transition-colors" />
                               {project.config.genre && (
-                                <div
-                                  className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis"
-                                  title={getGenreLabel(project.config.genre, currentLang)}
-                                >
+                                <div className="absolute bottom-1 left-1 right-1 px-1.5 py-0.5 rounded bg-black/80 backdrop-blur-xs text-[8px] font-bold font-mono text-white uppercase tracking-tighter shadow-sm truncate whitespace-nowrap overflow-hidden text-ellipsis" title={getGenreLabel(project.config.genre, currentLang)}>
                                   {getGenreLabel(project.config.genre, currentLang)}
                                 </div>
                               )}
                             </div>
                             <div className="space-y-1">
-                              <h3 className="font-bold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors uppercase line-clamp-1">
-                                {project.name}
-                              </h3>
-                              <p className="text-slate-400 text-[10px] font-medium line-clamp-2 leading-relaxed max-w-md">
-                                {project.description || t.No_description_1}
-                              </p>
+                              <h3 className="font-bold text-slate-100 text-xs tracking-tight group-hover:text-rose-400 transition-colors uppercase line-clamp-1">{project.name}</h3>
+                              <p className="text-slate-400 text-[10px] font-medium line-clamp-2 leading-relaxed max-w-md">{project.description || t.No_description_1}</p>
                             </div>
                           </div>
                         </td>
@@ -408,33 +363,17 @@ export default function ProjectList({
 
                         <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-                              size={REFACTOR_CONSTANTS.SIZE_XS}
-                              isLoading={openingProjectId === project.id}
-                              onClick={() => handleOpenProject(project)}
-                              className="text-[10px] uppercase font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 bg-rose-600 text-white shadow-sm hover:bg-rose-700 border border-transparent transition-all"
-                            >
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === project.id} onClick={() => handleOpenProject(project)} className="text-[10px] uppercase font-bold py-1.5 px-3 rounded-lg flex items-center gap-1 bg-rose-600 text-white shadow-sm hover:bg-rose-700 border border-transparent transition-all">
                               <PlayCircle className="w-3.5 h-3.5" />
                               <span>{t.Open}</span>
                               <ChevronRight className="w-3 h-3" />
                             </Button>
 
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                              onClick={() => handleOpenEditTarget(project)}
-                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none"
-                              title={t.editProject}
-                            >
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => handleOpenEditTarget(project)} className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-slate-850 rounded-lg shadow-none" title={t.editProject}>
                               <Edit3 className="w-3.5 h-3.5" />
                             </Button>
 
-                            <Button
-                              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                              onClick={() => setProjectToDelete(project)}
-                              className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none"
-                              title={t.delete}
-                            >
+                            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(project)} className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-red-500 hover:bg-slate-850 rounded-lg shadow-none" title={t.delete}>
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
@@ -450,38 +389,19 @@ export default function ProjectList({
                               </h4>
                               <div className="grid gap-2">
                                 {children.map((child) => (
-                                  <div
-                                    key={child.id}
-                                    onClick={() => onSelectProject(child)}
-                                    className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm"
-                                  >
+                                  <div key={child.id} onClick={() => onSelectProject(child)} className="flex items-center justify-between p-3 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 rounded-xl cursor-pointer transition-all duration-200 group/child shadow-sm">
                                     <div className="flex items-center gap-3">
                                       <PlayCircle className="w-4 h-4 text-rose-500/70 group-hover/child:text-rose-500 transition-colors" />
                                       <div className="flex flex-col gap-0.5">
-                                        <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">
-                                          {child.name}
-                                        </span>
-                                        <span className="text-[9px] text-slate-500 font-medium font-mono">
-                                          Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                                        </span>
+                                        <span className="text-xs font-bold text-slate-200 group-hover/child:text-rose-400 transition-colors">{child.name}</span>
+                                        <span className="text-[9px] text-slate-500 font-medium font-mono">Cập nhật: {new Date(child.updatedAt).toLocaleString(t.en_US, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                      <Button
-                                        variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY}
-                                        size={REFACTOR_CONSTANTS.SIZE_XS}
-                                        isLoading={openingProjectId === child.id}
-                                        onClick={() => handleOpenProject(child)}
-                                        className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all"
-                                      >
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_PRIMARY} size={REFACTOR_CONSTANTS.SIZE_XS} isLoading={openingProjectId === child.id} onClick={() => handleOpenProject(child)} className="text-[9px] uppercase font-bold py-1 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 shadow-sm transition-all">
                                         {t.Open}
                                       </Button>
-                                      <Button
-                                        variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                                        onClick={() => setProjectToDelete(child)}
-                                        className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors"
-                                        title={t.delete}
-                                      >
+                                      <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(child)} className="p-1.5 text-slate-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-colors" title={t.delete}>
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </Button>
                                     </div>
@@ -501,36 +421,16 @@ export default function ProjectList({
           {totalPages > 1 && (
             <div className="flex items-center justify-between p-4 border-t border-slate-800 bg-slate-900/50">
               <div className="text-[10px] text-slate-500 font-medium font-mono">
-                {localT.showing} {((validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE) + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
+                {localT.showing} {(validCurrentPage - PROJECT_LIST_CONSTANTS.PAGE_ONE) * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE + PROJECT_LIST_CONSTANTS.PAGE_ONE} {PROJECT_LIST_CONSTANTS.DASH_DELIMITER} {_.min([validCurrentPage * PROJECT_LIST_CONSTANTS.ITEMS_PER_PAGE, filteredProjects.length])} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {filteredProjects.length}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                  onClick={() => setCurrentPage(prev => _.max([prev - 1, 1]) as number)}
-                  disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)}
-                  className={cn(
-                    "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all",
-                    _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)
-                      ? "text-slate-600 cursor-not-allowed bg-slate-900"
-                      : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white"
-                  )}
-                >
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.max([prev - 1, 1]) as number)} disabled={_.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE)} className={cn("px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all", _.isEqual(validCurrentPage, PROJECT_LIST_CONSTANTS.PAGE_ONE) ? "text-slate-600 cursor-not-allowed bg-slate-900" : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white")}>
                   {t.Previous}
                 </Button>
                 <div className="text-[10px] text-slate-400 font-bold font-mono px-2">
                   {validCurrentPage} {PROJECT_LIST_CONSTANTS.PAGINATION_DELIMITER} {totalPages}
                 </div>
-                <Button
-                  variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-                  onClick={() => setCurrentPage(prev => _.min([prev + 1, totalPages]) as number)}
-                  disabled={_.isEqual(validCurrentPage, totalPages)}
-                  className={cn(
-                    "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all",
-                    _.isEqual(validCurrentPage, totalPages)
-                      ? "text-slate-600 cursor-not-allowed bg-slate-900"
-                      : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white"
-                  )}
-                >
+                <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setCurrentPage((prev) => _.min([prev + 1, totalPages]) as number)} disabled={_.isEqual(validCurrentPage, totalPages)} className={cn("px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all", _.isEqual(validCurrentPage, totalPages) ? "text-slate-600 cursor-not-allowed bg-slate-900" : "text-slate-400 bg-slate-800/50 hover:bg-slate-800 hover:text-white")}>
                   {t.Next}
                 </Button>
               </div>
@@ -547,8 +447,7 @@ export default function ProjectList({
             <Trash2 className="w-5 h-5 text-rose-500" />
             <span className="font-bold text-slate-100">{t.Confirm_Deletion}</span>
           </div>
-        }
-      >
+        }>
         <div className="p-6">
           <p className="text-slate-300 text-xs mb-4">
             {t.Are_you_sure_you_want_to_}
@@ -559,12 +458,7 @@ export default function ProjectList({
             <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} onClick={() => setProjectToDelete(null)} className="px-4 py-2 text-xs font-bold rounded-xl">
               {t.cancel}
             </Button>
-            <Button
-              variant={REFACTOR_CONSTANTS.VARIANT_DANGER}
-              isLoading={isLoadingAction}
-              onClick={handleDeleteConfirm}
-              className="px-5 py-2 text-xs font-bold rounded-xl"
-            >
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isLoadingAction} onClick={handleDeleteConfirm} className="px-5 py-2 text-xs font-bold rounded-xl">
               {t.delete}
             </Button>
           </div>
@@ -579,8 +473,7 @@ export default function ProjectList({
             <Video className="w-5 h-5 text-rose-500" />
             <span className="font-bold text-slate-100">{editingId ? t.Edit_Project : t.newProject}</span>
           </div>
-        }
-      >
+        }>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="space-y-1.5">
             <label className="text-[9px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{t.projectName} *</label>

@@ -1,22 +1,24 @@
 import { appLog, appError, createAppError } from "./logger";
 import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES, API_HEADERS, REFACTOR_CONSTANTS, SYSTEM_FETCH_CONFIG, SecurityConstants } from "../constants";
 import { BatchDelayOption } from "../types";
-import _ from 'lodash';
-import { storageUtils } from './storage';
+import _ from "lodash";
+import { storageUtils } from "./storage";
 import { jsonUtils } from "./json";
 
-export const getStoredApiKey = (keyName: string): string => {
-  return storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;
-};
+export const getStoredApiKey = (keyName: string): string => storageUtils.get(keyName) || REFACTOR_CONSTANTS.VD_EMPTY_STRING;;
 
-export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> => _.assign({
-  [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
-  [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY),
-  [API_HEADERS.CEREBRAS_API_KEY]: getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY),
-  [API_HEADERS.GROQ_API_KEY]: getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY),
-  [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
-  [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY,
-}, customHeaders);
+export const createAuthenticatedHeaders = (customHeaders: Record<string, string> = {}): Record<string, string> =>
+  _.assign(
+    {
+      [REFACTOR_CONSTANTS.HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.MIME_JSON,
+      [API_HEADERS.GEMINI_API_KEY]: getStoredApiKey(STORAGE_KEYS.GEMINI_API_KEY),
+      [API_HEADERS.CEREBRAS_API_KEY]: getStoredApiKey(STORAGE_KEYS.CEREBRAS_API_KEY),
+      [API_HEADERS.GROQ_API_KEY]: getStoredApiKey(STORAGE_KEYS.GROQ_API_KEY),
+      [API_HEADERS.AI33_API_KEY]: getStoredApiKey(STORAGE_KEYS.AI33_API_KEY),
+      [API_HEADERS.LICENSE_KEY]: getStoredApiKey(STORAGE_KEYS.LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY,
+    },
+    customHeaders,
+  );
 
 export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal) => {
   try {
@@ -48,15 +50,7 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
   }
 };
 
-export const safeSystemFetchStream = async (
-  url: string,
-  payload: any,
-  onLine: (data: any) => void,
-  onComplete?: () => void,
-  onError?: (err: any) => void,
-  cancelRef?: { current: boolean },
-  inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS,
-) => {
+export const safeSystemFetchStream = async (url: string, payload: any, onLine: (data: any) => void, onComplete?: () => void, onError?: (err: any) => void, cancelRef?: { current: boolean }, inactivityTimeoutMs: number = SYSTEM_FETCH_CONFIG.STREAM_INACTIVITY_TIMEOUT_MS) => {
   const controller = new AbortController();
   let inactivityTimer: ReturnType<typeof setTimeout> | undefined;
   const resetInactivityTimer = () => {
@@ -71,16 +65,9 @@ export const safeSystemFetchStream = async (
       signal: controller.signal,
     });
 
-    if (!response.ok) {
-      throw new Error(_.join(
-        [ERROR_MESSAGES.API_ERROR_PREFIX, response.status],
-        REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      ));
-    }
+    if (!response.ok) throw new Error(_.join([ERROR_MESSAGES.API_ERROR_PREFIX, response.status], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
 
-    if (!response.body) {
-      throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
-    }
+    if (!response.body) throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -111,18 +98,13 @@ export const safeSystemFetchStream = async (
         if (_.isEmpty(_.trim(line))) continue;
         try {
           const result = jsonUtils.safeParse<any>(line, null);
-          if (result) {
-            onLine(result);
-          }
-        } catch (e) {
-        }
+          if (result) onLine(result);
+        } catch (e) {}
       }
     }
     if (onComplete) onComplete();
   } catch (error: any) {
-    const normalizedError = controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT
-      ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT)
-      : error;
+    const normalizedError = controller.signal.aborted && controller.signal.reason === SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT ? new Error(ERROR_MESSAGES.STREAM_INACTIVITY_TIMEOUT) : error;
     appError(ERROR_MESSAGES.STREAM_FLOW_ERROR, url, normalizedError);
     if (onError) onError(normalizedError);
     throw normalizedError;
@@ -165,9 +147,4 @@ export const readFilesAsDataURL = (files: FileList, callback: (result: string) =
   });
 };
 
-export const generateRandomString = (): string => {
-  return Math.random()
-    .toString(REFACTOR_CONSTANTS.RADIX_36)
-    .substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);
-};
-
+export const generateRandomString = (): string => Math.random().toString(REFACTOR_CONSTANTS.RADIX_36).substring(REFACTOR_CONSTANTS.RANDOM_STRING_START, REFACTOR_CONSTANTS.RANDOM_STRING_END);;

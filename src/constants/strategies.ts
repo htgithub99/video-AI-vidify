@@ -1,9 +1,6 @@
 import { SceneDensity } from "./enums.js";
 
-export interface SplitStrategyConfig {
-  density: SceneDensity;
-  instruction: string;
-}
+export interface SplitStrategyConfig { density: SceneDensity; instruction: string; }
 
 export const SPLIT_STRATEGY_CONFIGS: Record<string, SplitStrategyConfig> = {
   ultradense: {

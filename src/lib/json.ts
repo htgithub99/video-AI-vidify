@@ -1,7 +1,7 @@
-import { appError } from './logger';
-import _ from 'lodash';
-import { JSON_UTILS_CONFIG } from '../constants/config';
-import { storageUtils } from './storage';
+import { appError } from "./logger";
+import _ from "lodash";
+import { JSON_UTILS_CONFIG } from "../constants/config";
+import { storageUtils } from "./storage";
 
 export const jsonUtils = {
   safeParse: <T = unknown>(str: string | null | undefined, fallback: T): T => {
@@ -13,13 +13,8 @@ export const jsonUtils = {
       return fallback;
     }
   },
-  
-  safeStringify: (
-    obj: unknown,
-    replacer?: (number | string)[] | null | ((this: unknown, key: string, value: unknown) => unknown),
-    space?: string | number,
-    fallback: string = JSON_UTILS_CONFIG.EMPTY_FALLBACK,
-  ): string => {
+
+  safeStringify: (obj: unknown, replacer?: (number | string)[] | null | ((this: unknown, key: string, value: unknown) => unknown), space?: string | number, fallback: string = JSON_UTILS_CONFIG.EMPTY_FALLBACK): string => {
     try {
       return JSON.stringify(obj, replacer as never, space);
     } catch (error) {

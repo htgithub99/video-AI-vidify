@@ -1,8 +1,7 @@
 import { appWarn, createAppError } from "./logger.js";
 import { AUDIO_CLEAN_PREFIX_REGEX, AUDIO_CLEAN_MARKDOWN_REGEX, AUDIO_CLEAN_EMOJI_REGEX, WHITESPACE_REGEX } from "../constants/index.js";
 import { MimeType } from "../constants/enums.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 export const bufferToWav = (buffer: AudioBuffer): Blob => {
   const numOfChan = buffer.numberOfChannels;

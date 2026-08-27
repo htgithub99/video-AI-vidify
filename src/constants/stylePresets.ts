@@ -5,55 +5,20 @@ export type StyleCategory = "all" | "cartoon_2d" | "3d_cinematic" | "documentary
 
 export type BackgroundMode = "minimal" | "contextual" | "white";
 
-export interface CuratedStylePreset {
-  id: string;
-  name: string;
-  nameVi: string;
-  category: StyleCategory;
-  icon: string;
-  tagline: string;
-  description: string;
-  positivePrompt: string;
-  negativePrompt: string;
-  defaultBackgroundMode: BackgroundMode;
-  characterRule: string;
-  keywords: string[];
-}
+export interface CuratedStylePreset { id: string; name: string; nameVi: string; category: StyleCategory; icon: string; tagline: string; description: string; positivePrompt: string; negativePrompt: string; defaultBackgroundMode: BackgroundMode; characterRule: string; keywords: string[]; }
 
-export interface StyleCategoryItem {
-  id: StyleCategory;
-  nameVi: string;
-  nameEn: string;
-}
+export interface StyleCategoryItem { id: StyleCategory; nameVi: string; nameEn: string; }
 
-export const STYLE_PRESET_CONFIG = {
-  DEFAULT_ID: "stickman",
-  CUSTOM_ID: "custom",
-  CUSTOM_NAME: "Tùy chỉnh",
-  CUSTOM_NAME_VI: "Tùy chỉnh",
-  CUSTOM_CATEGORY: "all" as StyleCategory,
-  CUSTOM_ICON: "🎨",
-  CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản",
-  CUSTOM_BG_MODE: "contextual" as BackgroundMode,
-  MIN_CUSTOM_PROMPT_LENGTH: 30,
-  CINEMATIC_PHOTOREAL_ID: "cinematic_photoreal",
-  KEYWORD_LENGTH_KEY: "keywordLength",
-  WORD_BOUNDARY_PREFIX: "\\b",
-  WORD_BOUNDARY_SUFFIX: "\\b",
-  REGEX_FLAG_I: "i",
-  EMPTY_STRING: "",
-} as const;
+export const STYLE_PRESET_CONFIG = { DEFAULT_ID: "stickman", CUSTOM_ID: "custom", CUSTOM_NAME: "Tùy chỉnh", CUSTOM_NAME_VI: "Tùy chỉnh", CUSTOM_CATEGORY: "all" as StyleCategory, CUSTOM_ICON: "🎨", CUSTOM_TAGLINE: "Tùy chỉnh • Độc bản", CUSTOM_BG_MODE: "contextual" as BackgroundMode, MIN_CUSTOM_PROMPT_LENGTH: 30, CINEMATIC_PHOTOREAL_ID: "cinematic_photoreal", KEYWORD_LENGTH_KEY: "keywordLength", WORD_BOUNDARY_PREFIX: "\\b", WORD_BOUNDARY_SUFFIX: "\\b", REGEX_FLAG_I: "i", EMPTY_STRING: "", } as const;
 
 export const STYLE_IDENTITY_BOUNDARY = "Style applies only to rendering, linework, shape language, palette, materials, and lighting. Character name, gender, age, face, hair, body, wardrobe, role, and setting must come only from the story character card and current scene.";
 
-export const STYLE_CATEGORIES: StyleCategoryItem[] = [
-  { id: "all", nameVi: "Tất cả", nameEn: "All" },
+export const STYLE_CATEGORIES: StyleCategoryItem[] = [ { id: "all", nameVi: "Tất cả", nameEn: "All" },
   { id: "cartoon_2d", nameVi: "2D & Minh họa", nameEn: "2D & Illustration" },
   { id: "3d_cinematic", nameVi: "3D & Phim ảnh", nameEn: "3D & Cinematic" },
   { id: "documentary_editorial", nameVi: "Ảnh thật & Tư liệu", nameEn: "Real & Documentary" },
   { id: "infographic_concept", nameVi: "Đồ họa & Giải thích", nameEn: "Graphics & Explainers" },
-  { id: "artistic_retro", nameVi: "Hội họa & Kỳ ảo", nameEn: "Painterly & Fantasy" },
-];
+  { id: "artistic_retro", nameVi: "Hội họa & Kỳ ảo", nameEn: "Painterly & Fantasy" }, ];
 
 export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
   stickman: {
@@ -141,7 +106,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["vẽ tay", "vẽ tay đơn giản", "ve tay", "đời sống", "châm biếm", "indie", "anh da đen"],
   },
   cinematic_photoreal: {
-    id: "cinematic_photoreal", name: "Cinematic Photoreal", nameVi: "Điện Ảnh Chân Thực", category: "3d_cinematic", icon: "🎬", tagline: "Phim truyện • Chân thực",
+    id: "cinematic_photoreal",
+    name: "Cinematic Photoreal",
+    nameVi: "Điện Ảnh Chân Thực",
+    category: "3d_cinematic",
+    icon: "🎬",
+    tagline: "Phim truyện • Chân thực",
     description: "Khung hình live-action chân thực cho kể chuyện, tiểu sử, tâm lý và tình huống đời sống; không áp diễn viên mẫu lên nhân vật.",
     positivePrompt: "cinematic live-action photorealism, natural human skin texture, physically plausible environments, motivated practical lighting, restrained filmic contrast, subtle atmospheric depth, realistic fabric and material response, grounded production design, polished narrative-film composition",
     negativePrompt: "3D CGI, plastic skin, beauty-filter face, chibi, anime, fantasy costume without story basis, excessive teal-orange grade, artificial glow, stock-photo smile, text, logo, watermark, frame, collage",
@@ -150,7 +120,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["điện ảnh chân thực", "cinematic photoreal", "live action", "phim truyện", "realistic cinematic"],
   },
   archival_documentary: {
-    id: "archival_documentary", name: "Historical Archive", nameVi: "Tư Liệu Lịch Sử", category: "documentary_editorial", icon: "🗃️", tagline: "Ảnh thật • Chứng cứ",
+    id: "archival_documentary",
+    name: "Historical Archive",
+    nameVi: "Tư Liệu Lịch Sử",
+    category: "documentary_editorial",
+    icon: "🗃️",
+    tagline: "Ảnh thật • Chứng cứ",
     description: "Ngôn ngữ tài liệu dựa trên ảnh thật, bản đồ, hồ sơ và tái dựng có phân biệt rõ nguồn chứng cứ.",
     positivePrompt: "evidence-led documentary visual language, authentic archival photography treatment, accurate maps plans documents and material evidence, restrained neutral color grade, editorial sequencing, factual geographic and period specificity, clean museum-quality presentation, clearly differentiated reconstruction imagery",
     negativePrompt: "fabricated newspaper, fake quotation, invented document text, fantasy symbolism presented as fact, glossy commercial advertising, sensational gore, neon cyberpunk, inaccurate uniform, text artifacts, logo, watermark, decorative frame",
@@ -159,7 +134,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["tài liệu", "tư liệu", "archival documentary", "lịch sử", "hồ sơ", "documentary", "history"],
   },
   architecture_documentary: {
-    id: "architecture_documentary", name: "Real Architecture", nameVi: "Kiến Trúc Chân Thực", category: "documentary_editorial", icon: "🏛️", tagline: "Công trình • Vật liệu",
+    id: "architecture_documentary",
+    name: "Real Architecture",
+    nameVi: "Kiến Trúc Chân Thực",
+    category: "documentary_editorial",
+    icon: "🏛️",
+    tagline: "Công trình • Vật liệu",
     description: "Ảnh kiến trúc chân thực kết hợp bản vẽ, mặt bằng, vật liệu và bối cảnh địa lý để giải thích công trình chính xác.",
     positivePrompt: "professional architectural documentary photography, accurate building geometry and scale, rectilinear perspective control, natural daylight, truthful material texture, exterior and interior spatial continuity, site context, plan section and construction-detail editorial language, calm premium design-publication composition",
     negativePrompt: "impossible geometry, invented facade, warped verticals, fantasy building additions, miniature toy look, overprocessed HDR, empty luxury-advertising gloss, fake blueprint labels, text, logo, watermark, white picture frame",
@@ -168,7 +148,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["kiến trúc", "architecture", "công trình", "nội thất", "architectural documentary", "bản vẽ"],
   },
   science_infographic: {
-    id: "science_infographic", name: "Science Graphics", nameVi: "Đồ Họa Khoa Học", category: "infographic_concept", icon: "🔬", tagline: "Chính xác • Dễ hiểu",
+    id: "science_infographic",
+    name: "Science Graphics",
+    nameVi: "Đồ Họa Khoa Học",
+    category: "infographic_concept",
+    icon: "🔬",
+    tagline: "Chính xác • Dễ hiểu",
     description: "Minh họa khoa học vector sắc nét, phân tầng rõ ràng và ưu tiên độ chính xác của cơ chế, tỷ lệ và cấu trúc.",
     positivePrompt: "premium science-explainer infographic illustration, precise vector geometry, clean modular shapes, crisp flat color separation, dark navy and vivid accent palette, accurate scale relationships, layered process visualization, elegant educational composition, highly readable visual hierarchy without labels",
     negativePrompt: "fake equations, pseudo-science symbols, inaccurate anatomy, impossible molecule, decorative data, excessive holograms, clutter, photoreal stock laboratory, gradients everywhere, text, numbers, logo, watermark",
@@ -177,7 +162,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["khoa học", "science infographic", "infographic", "giải thích khoa học", "vector science", "education"],
   },
   editorial_explainer: {
-    id: "editorial_explainer", name: "Visual Explainer", nameVi: "Đồ Họa Giải Thích", category: "infographic_concept", icon: "🧩", tagline: "Trực quan • Mạch lạc",
+    id: "editorial_explainer",
+    name: "Visual Explainer",
+    nameVi: "Đồ Họa Giải Thích",
+    category: "infographic_concept",
+    icon: "🧩",
+    tagline: "Trực quan • Mạch lạc",
     description: "Đồ họa biên tập kết hợp người, vật thể, bản đồ và sơ đồ nguyên nhân–kết quả cho video giải thích và tin tức.",
     positivePrompt: "modern editorial explainer illustration, clean geometric cut-paper shapes, restrained red blue cream and charcoal palette, sharp visual hierarchy, human-scale cause-and-effect staging, maps objects and contextual environments integrated into one coherent frame, premium newsroom graphics finish",
     negativePrompt: "copied news branding, channel logo, mascot, generic corporate stock art, fake chart labels, floating random icons, glossy 3D, cinematic fantasy, crowded collage, text, watermark",
@@ -186,7 +176,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["giải thích", "editorial explainer", "video essay", "news graphic", "báo chí", "nguồn gốc sự kiện"],
   },
   true_crime_evidence: {
-    id: "true_crime_evidence", name: "Investigation Files", nameVi: "Hồ Sơ Điều Tra", category: "documentary_editorial", icon: "🔎", tagline: "Chứng cứ • Tiết chế",
+    id: "true_crime_evidence",
+    name: "Investigation Files",
+    nameVi: "Hồ Sơ Điều Tra",
+    category: "documentary_editorial",
+    icon: "🔎",
+    tagline: "Chứng cứ • Tiết chế",
     description: "Tài liệu điều tra tiết chế, tập trung vào địa điểm, timeline và chứng cứ thay vì hình ảnh bạo lực hoặc biểu tượng sáo rỗng.",
     positivePrompt: "restrained true-crime documentary visual language, low-key practical lighting, desaturated neutral palette, precise location and timeline evidence, forensic object inserts, investigative editorial composition, subtle film grain, respectful victim-centered framing, realistic night exteriors and interview-room atmosphere",
     negativePrompt: "gore, corpse, blood spectacle, victim glamorization, horror monster, detective pinboard cliché without story evidence, fake police text, neon red overload, melodramatic silhouette, logo, watermark, collage frame",
@@ -195,7 +190,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["true crime", "trinh thám", "thám án", "hồ sơ vụ án", "crime documentary", "điều tra"],
   },
   psychology_editorial: {
-    id: "psychology_editorial", name: "Psychology Illustration", nameVi: "Minh Họa Tâm Lý", category: "infographic_concept", icon: "🧠", tagline: "Hành vi • Cảm xúc",
+    id: "psychology_editorial",
+    name: "Psychology Illustration",
+    nameVi: "Minh Họa Tâm Lý",
+    category: "infographic_concept",
+    icon: "🧠",
+    tagline: "Hành vi • Cảm xúc",
     description: "Minh họa tâm lý mang tính biên tập, dùng hành vi thật và ẩn dụ tiết chế để giải thích trạng thái tinh thần.",
     positivePrompt: "thoughtful psychology editorial illustration, tactile paper-cut and soft painted texture, restrained muted palette with one emotional accent color, human behavior grounded in observable gestures, spatial metaphor used sparingly, calm negative space, sophisticated magazine composition",
     negativePrompt: "literal brain floating in space, split-face cliché, random maze mirror, mental illness stigma, horror distortion, psychedelic overload, diagnosis text, fake medical chart, logo, watermark",
@@ -204,7 +204,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["tâm lý", "psychology", "triết học", "philosophy", "ý niệm", "mental health editorial"],
   },
   historical_painterly: {
-    id: "historical_painterly", name: "Historical Reconstruction", nameVi: "Tái Dựng Lịch Sử", category: "artistic_retro", icon: "📜", tagline: "Đúng thời kỳ • Sử thi",
+    id: "historical_painterly",
+    name: "Historical Reconstruction",
+    nameVi: "Tái Dựng Lịch Sử",
+    category: "artistic_retro",
+    icon: "📜",
+    tagline: "Đúng thời kỳ • Sử thi",
     description: "Tái dựng lịch sử bằng minh họa hội họa điện ảnh có kiểm soát, ưu tiên trang phục, kiến trúc và công nghệ đúng thời kỳ.",
     positivePrompt: "historically grounded painterly reconstruction, cinematic digital gouache and oil-brush texture, period-accurate clothing architecture tools vehicles and terrain, restrained earth pigments, atmospheric depth, museum illustration quality, readable military and civilian staging without heroic distortion",
     negativePrompt: "anachronism, modern object, fantasy armor, wrong flag, invented insignia, glossy game concept art, divine glow, propaganda pose, inaccurate ethnicity, text, logo, watermark, ornate picture frame",
@@ -213,7 +218,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["lịch sử hội họa", "historical painterly", "tái dựng lịch sử", "sử thi", "history illustration"],
   },
   fantasy_concept_art: {
-    id: "fantasy_concept_art", name: "Cinematic Fantasy", nameVi: "Kỳ Ảo Điện Ảnh", category: "3d_cinematic", icon: "🐉", tagline: "Thế giới • Thần thoại",
+    id: "fantasy_concept_art",
+    name: "Cinematic Fantasy",
+    nameVi: "Kỳ Ảo Điện Ảnh",
+    category: "3d_cinematic",
+    icon: "🐉",
+    tagline: "Thế giới • Thần thoại",
     description: "Concept art điện ảnh cho lore, thần thoại và thế giới giả tưởng, giữ đúng quy tắc thế giới và thiết kế nhân vật của câu chuyện.",
     positivePrompt: "premium cinematic fantasy concept-art rendering, coherent world-building design language, large-scale environmental storytelling, painterly realism, controlled atmospheric perspective, material-specific costume and architecture, dramatic but readable light, consistent production-design bible quality",
     negativePrompt: "generic game splash art, random magic effects, unrelated dragon, default medieval armor, chibi, neon clutter, character redesign, inconsistent faction costume, floating text, logo, watermark, decorative frame",
@@ -222,7 +232,12 @@ export const CURATED_STYLE_PRESETS: Record<string, CuratedStylePreset> = {
     keywords: ["concept art", "kỳ ảo", "fantasy", "lore", "world building", "thần thoại", "giải mã bí ẩn"],
   },
   product_review_studio: {
-    id: "product_review_studio", name: "Product Review Studio", nameVi: "Review Sản Phẩm", category: "documentary_editorial", icon: "📦", tagline: "Sản phẩm • So sánh",
+    id: "product_review_studio",
+    name: "Product Review Studio",
+    nameVi: "Review Sản Phẩm",
+    category: "documentary_editorial",
+    icon: "📦",
+    tagline: "Sản phẩm • So sánh",
     description: "Ảnh review sạch, trung thực về hình dáng, vật liệu và thao tác sử dụng, phù hợp sản phẩm, công nghệ và top list.",
     positivePrompt: "premium product-review studio photography, accurate product geometry and material finish, soft controlled key and rim light, neutral contextual surface, honest scale, practical hand interaction, comparison-ready composition, crisp commercial detail without misleading enhancement",
     negativePrompt: "invented product feature, warped logo, fake UI, impossible reflection, luxury exaggeration, floating product, oversaturated glow, duplicated item, text, price tag, watermark, border frame",
@@ -271,16 +286,9 @@ export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
 // Deliberately narrow: these presets describe a production-rendering medium
 // suitable for continuous moving shots. Editorial, archival, infographic,
 // meme, stickman and product styles belong to the automatic-video workspace.
-export const CINEMATIC_FILM_STYLE_PRESET_IDS = [
-  "cinematic_photoreal",
-  "fantasy_concept_art",
-  "tien_hiep_3d",
-] as const;
+export const CINEMATIC_FILM_STYLE_PRESET_IDS = ["cinematic_photoreal", "fantasy_concept_art", "tien_hiep_3d"] as const;
 
-export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(
-  _.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]),
-  presetId => Boolean(CURATED_STYLE_PRESETS[presetId]),
-);
+export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(_.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]), (presetId) => Boolean(CURATED_STYLE_PRESETS[presetId]));
 
 const LEGACY_STYLE_ID_ALIASES: Record<string, string> = {
   tho_bay_mau: "hoat_hinh_2d_vn",
@@ -292,19 +300,9 @@ const findByPresetId = (normalized: string): CuratedStylePreset | undefined => {
   return CURATED_STYLE_PRESETS[resolvedId];
 };
 
-const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => {
-  return _.find(CURATED_STYLE_PRESETS, (preset) =>
-    _.isEqual(_.trim(preset.positivePrompt), trimmed) ||
-    _.isEqual(_.toLower(_.trim(preset.positivePrompt)), normalized),
-  );
-};
+const findByExactPrompt = (trimmed: string, normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.trim(preset.positivePrompt), trimmed) || _.isEqual(_.toLower(_.trim(preset.positivePrompt)), normalized));;
 
-const findByPresetName = (normalized: string): CuratedStylePreset | undefined => {
-  return _.find(CURATED_STYLE_PRESETS, (preset) =>
-    _.isEqual(_.toLower(preset.name), normalized) ||
-    _.isEqual(_.toLower(preset.nameVi), normalized),
-  );
-};
+const findByPresetName = (normalized: string): CuratedStylePreset | undefined => _.find(CURATED_STYLE_PRESETS, (preset) => _.isEqual(_.toLower(preset.name), normalized) || _.isEqual(_.toLower(preset.nameVi), normalized));;
 
 const findByKeywords = (normalized: string): CuratedStylePreset | undefined => {
   const allPresets = _.values(CURATED_STYLE_PRESETS);
@@ -313,10 +311,7 @@ const findByKeywords = (normalized: string): CuratedStylePreset | undefined => {
   _.forEach(allPresets, (preset) => {
     _.forEach(preset.keywords, (keyword) => {
       const escaped = _.escapeRegExp(_.toLower(keyword));
-      const regex = new RegExp(
-        `${STYLE_PRESET_CONFIG.WORD_BOUNDARY_PREFIX}${escaped}${STYLE_PRESET_CONFIG.WORD_BOUNDARY_SUFFIX}`,
-        STYLE_PRESET_CONFIG.REGEX_FLAG_I,
-      );
+      const regex = new RegExp(`${STYLE_PRESET_CONFIG.WORD_BOUNDARY_PREFIX}${escaped}${STYLE_PRESET_CONFIG.WORD_BOUNDARY_SUFFIX}`, STYLE_PRESET_CONFIG.REGEX_FLAG_I);
       if (regex.test(normalized)) {
         candidates.push({ preset, keywordLength: _.size(keyword) });
       }

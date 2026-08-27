@@ -20,15 +20,8 @@ if (tokenFromUrl) {
 }
 
 const originalFetch = window.fetch;
-const usageJsonRoutes = [
-  API_ROUTES.PIPELINE_VOICE,
-  API_ROUTES.PIPELINE_GENERATE_IMAGE,
-];
-const usageTrackedRoutes = [
-  ...usageJsonRoutes,
-  API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES,
-  API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS,
-];
+const usageJsonRoutes = [API_ROUTES.PIPELINE_VOICE, API_ROUTES.PIPELINE_GENERATE_IMAGE];
+const usageTrackedRoutes = [...usageJsonRoutes, API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES, API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS];
 
 const dispatchUsageUpdated = () => {
   window.dispatchEvent(new CustomEvent(SecurityConstants.USAGE_UPDATED_EVENT));
@@ -37,7 +30,10 @@ const dispatchUsageUpdated = () => {
 const handleLicenseFailureResponse = async (response: Response): Promise<void> => {
   if (!_.includes([SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) return;
 
-  const data = await response.clone().json().catch(() => null);
+  const data = await response
+    .clone()
+    .json()
+    .catch(() => null);
   if (isLicenseFailureCode(_.get(data, SecurityConstants.CODE_KEY))) {
     invalidateBrowserLicenseSession();
   }
@@ -52,7 +48,8 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
   const responseCopy = response.clone();
 
   if (_.includes(usageJsonRoutes, pathname)) {
-    void responseCopy.json()
+    void responseCopy
+      .json()
       .then((data) => {
         if (_.get(data, SecurityConstants.SUCCESS_KEY)) dispatchUsageUpdated();
       })
@@ -61,7 +58,8 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
   }
 
   if (_.isEqual(pathname, API_ROUTES.PIPELINE_GENERATE_BATCH_IMAGES)) {
-    void responseCopy.text()
+    void responseCopy
+      .text()
       .then((body) => {
         if (_.includes(body, REFACTOR_CONSTANTS.USAGE_BATCH_SUCCESS_FRAGMENT)) dispatchUsageUpdated();
       })
@@ -70,12 +68,10 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
   }
 
   if (_.includes(pathname, API_ROUTES.PIPELINE_FFMPEG_RENDER_STATUS)) {
-    void responseCopy.json()
+    void responseCopy
+      .json()
       .then((data) => {
-        if (_.isEqual(
-          _.get(data, SecurityConstants.STATUS_KEY),
-          REFACTOR_CONSTANTS.STATUS_COMPLETED,
-        )) dispatchUsageUpdated();
+        if (_.isEqual(_.get(data, SecurityConstants.STATUS_KEY), REFACTOR_CONSTANTS.STATUS_COMPLETED)) dispatchUsageUpdated();
       })
       .catch(_.noop);
   }
@@ -86,16 +82,12 @@ import { storageUtils } from "./lib/storage";
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const licenseKey = storageUtils.get(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY;
   const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
-  
+
   const requestInit = init || {};
   const headers = { ...(requestInit.headers || {}) } as Record<string, string>;
 
-  if (licenseKey) {
-    _.set(headers, SecurityConstants.HEADER_LICENSE_KEY, licenseKey);
-  }
-  if (internalToken) {
-    _.set(headers, SecurityConstants.HEADER_INTERNAL_TOKEN, internalToken);
-  }
+  if (licenseKey) _.set(headers, SecurityConstants.HEADER_LICENSE_KEY, licenseKey);
+  if (internalToken) _.set(headers, SecurityConstants.HEADER_INTERNAL_TOKEN, internalToken);
 
   requestInit.headers = headers;
   const response = await originalFetch(input, requestInit);

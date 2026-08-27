@@ -3,9 +3,7 @@ import { USER_LOG_CONFIG, USER_LOG_MESSAGES } from "../constants/userLog";
 
 export type UserLogLanguage = keyof typeof USER_LOG_MESSAGES;
 
-const normalizeLanguage = (language?: string): UserLogLanguage => (
-  _.startsWith(_.toLower(language), "en") ? "en" : "vi"
-);
+const normalizeLanguage = (language?: string): UserLogLanguage => (_.startsWith(_.toLower(language), "en") ? "en" : "vi");
 
 const shortenMessage = (message: string): string => {
   if (message.length <= USER_LOG_CONFIG.MAX_MESSAGE_LENGTH) return message;
@@ -14,21 +12,22 @@ const shortenMessage = (message: string): string => {
   return `${lastSpaceIndex > 0 ? shortened.slice(0, lastSpaceIndex) : shortened}…`;
 };
 
-const sanitizeTechnicalText = (message: string): string => _.trim(
-  message
-    .replace(USER_LOG_CONFIG.TECHNICAL_PREFIX_PATTERN, "")
-    .replace(USER_LOG_CONFIG.URL_PATTERN, "")
-    .replace(USER_LOG_CONFIG.API_ROUTE_PATTERN, "")
-    .replace(USER_LOG_CONFIG.WINDOWS_PATH_PATTERN, "")
-    .replace(USER_LOG_CONFIG.UNIX_PATH_PATTERN, "")
-    .replace(USER_LOG_CONFIG.SOURCE_LOCATION_PATTERN, "")
-    .replace(USER_LOG_CONFIG.STACK_TRACE_PATTERN, "")
-    .replace(USER_LOG_CONFIG.HTTP_STATUS_PATTERN, "")
-    .replace(USER_LOG_CONFIG.ERROR_CODE_PATTERN, "")
-    .replace(USER_LOG_CONFIG.SELECTOR_PATTERN, "")
-    .replace(USER_LOG_CONFIG.CODE_KEYWORD_PATTERN, "")
-    .replace(USER_LOG_CONFIG.MULTIPLE_SPACES_PATTERN, " "),
-);
+const sanitizeTechnicalText = (message: string): string =>
+  _.trim(
+    message
+      .replace(USER_LOG_CONFIG.TECHNICAL_PREFIX_PATTERN, "")
+      .replace(USER_LOG_CONFIG.URL_PATTERN, "")
+      .replace(USER_LOG_CONFIG.API_ROUTE_PATTERN, "")
+      .replace(USER_LOG_CONFIG.WINDOWS_PATH_PATTERN, "")
+      .replace(USER_LOG_CONFIG.UNIX_PATH_PATTERN, "")
+      .replace(USER_LOG_CONFIG.SOURCE_LOCATION_PATTERN, "")
+      .replace(USER_LOG_CONFIG.STACK_TRACE_PATTERN, "")
+      .replace(USER_LOG_CONFIG.HTTP_STATUS_PATTERN, "")
+      .replace(USER_LOG_CONFIG.ERROR_CODE_PATTERN, "")
+      .replace(USER_LOG_CONFIG.SELECTOR_PATTERN, "")
+      .replace(USER_LOG_CONFIG.CODE_KEYWORD_PATTERN, "")
+      .replace(USER_LOG_CONFIG.MULTIPLE_SPACES_PATTERN, " "),
+  );
 
 export const formatUserFacingLog = (value: unknown, language?: string): string => {
   const rawMessage = _.trim(_.toString(value));

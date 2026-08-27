@@ -1,8 +1,5 @@
 import _ from "lodash";
-import {
-  TAB_CONTENT_LOADING_CLASSES,
-  TAB_CONTENT_LOADING_CONFIG,
-} from "../constants";
+import { TAB_CONTENT_LOADING_CLASSES, TAB_CONTENT_LOADING_CONFIG } from "../constants";
 
 export default function TabContentLoading() {
   const classes = TAB_CONTENT_LOADING_CLASSES;

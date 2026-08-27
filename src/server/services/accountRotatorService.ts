@@ -8,12 +8,7 @@ import { requestContext } from "../utils/requestContext.js";
 import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { jsonUtils } from "../../lib/json.js";
 
-export interface GoogleAccount {
-  email: string;
-  password?: string;
-  recoveryEmail?: string;
-  status?: string;
-}
+export interface GoogleAccount { email: string; password?: string; recoveryEmail?: string; status?: string; }
 
 function getAccountsFilePath(): string {
   return path.join(getDataDirectory(), REFACTOR_CONSTANTS.ACCOUNTS_FILE);
@@ -58,15 +53,15 @@ async function getGasAccounts(): Promise<GoogleAccount[]> {
     const response = await fetch(SecurityConstants.GAS_API_URL, {
       method: SecurityConstants.HTTP_POST,
       headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: jsonUtils.safeStringify({ 
-        action: GasActions.GET_ACCOUNTS, 
-        license_key: licenseKey, 
-        plan_id: planType, 
-        plan_type: planType 
-      })
+      body: jsonUtils.safeStringify({
+        action: GasActions.GET_ACCOUNTS,
+        license_key: licenseKey,
+        plan_id: planType,
+        plan_type: planType,
+      }),
     });
     const data: any = await response.json();
-    
+
     if (_.has(data, SecurityConstants.ERROR_KEY)) {
       logger.error(`${SecurityMessages.GAS_FETCH_ERROR}: ${_.get(data, SecurityConstants.ERROR_KEY)}`);
       return [];
@@ -77,7 +72,7 @@ async function getGasAccounts(): Promise<GoogleAccount[]> {
       email: _.get(acc, SecurityConstants.PROP_EMAIL, ""),
       password: _.get(acc, SecurityConstants.PASSWORD_PROP, ""),
       recoveryEmail: _.get(acc, SecurityConstants.RECOVERY_EMAIL_PROP, ""),
-      status: _.get(acc, SecurityConstants.PROP_STATUS, "")
+      status: _.get(acc, SecurityConstants.PROP_STATUS, ""),
     }));
   } catch (error) {
     logger.error(REFACTOR_CONSTANTS.LOG_GAS_FETCH_ERR, error);
@@ -93,9 +88,7 @@ export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount 
     let selected = _.first(activeLocal)!;
     if (lastEmail) {
       const idx = _.findIndex(activeLocal, { email: lastEmail });
-      if (idx !== -1 && idx + 1 < activeLocal.length) {
-        selected = activeLocal[idx + 1];
-      }
+      if (idx !== -1 && idx + 1 < activeLocal.length) selected = activeLocal[idx + 1];
     }
     logger.info(REFACTOR_CONSTANTS.LOG_ROTATE_LOCAL.replace("{0}", selected.email));
     return selected;
@@ -113,9 +106,7 @@ export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount 
   let selected = _.first(activeGas)!;
   if (lastEmail) {
     const idx = _.findIndex(activeGas, { email: lastEmail });
-    if (idx !== -1 && idx + 1 < activeGas.length) {
-      selected = activeGas[idx + 1];
-    }
+    if (idx !== -1 && idx + 1 < activeGas.length) selected = activeGas[idx + 1];
   }
   logger.info(REFACTOR_CONSTANTS.LOG_ROTATE_GAS.replace("{0}", selected.email));
   return selected;
@@ -123,7 +114,7 @@ export async function getNextAccount(lastEmail?: string): Promise<GoogleAccount 
 
 export async function markAccountError(email: string): Promise<void> {
   logger.warn(REFACTOR_CONSTANTS.LOG_MARK_ERR.replace("{0}", email));
-  
+
   const localAccounts = getLocalAccounts();
   const localIdx = _.findIndex(localAccounts, { email });
   if (localIdx !== -1) {
@@ -139,11 +130,11 @@ export async function markAccountError(email: string): Promise<void> {
       await fetch(SecurityConstants.GAS_API_URL, {
         method: SecurityConstants.HTTP_POST,
         headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: jsonUtils.safeStringify({ 
-          action: GasActions.UPDATE_ACCOUNT_STATUS, 
-          email: email, 
-          status: AccountStatus.ERROR 
-        })
+        body: jsonUtils.safeStringify({
+          action: GasActions.UPDATE_ACCOUNT_STATUS,
+          email: email,
+          status: AccountStatus.ERROR,
+        }),
       });
       logger.info(REFACTOR_CONSTANTS.LOG_REPORT_GAS_ERR.replace("{0}", email));
     }

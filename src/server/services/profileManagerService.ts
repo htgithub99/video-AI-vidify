@@ -9,11 +9,7 @@ import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 
 chromium.use(stealthPlugin());
 
-export interface GoogleProfile {
-  id: string;
-  name: string;
-  isLinked: boolean;
-}
+export interface GoogleProfile { id: string; name: string; isLinked: boolean; }
 
 const PROFILES_DIR_NAME = "google_profiles";
 const DEFAULT_PROFILE_COUNT = 3;
@@ -53,17 +49,11 @@ export async function launchLoginBrowser(profileId: string): Promise<void> {
 
   const context = await chromium.launchPersistentContext(profilePath, {
     headless: false,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-blink-features=AutomationControlled",
-    ],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-blink-features=AutomationControlled"],
   });
 
   let page = _.first(context.pages());
-  if (!page) {
-    page = await context.newPage();
-  }
+  if (!page) page = await context.newPage();
   await page.goto(EXTERNAL_URLS.GOOGLE_ACCOUNTS);
 
   return new Promise<void>((resolve) => {

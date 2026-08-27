@@ -7,21 +7,11 @@ import { CharacterConfig, StoryboardScene, VisualBible } from "../types.js";
 import { appendImagePromptAspectRatio, deduplicatePromptSentences, sanitizeImagePrompt } from "./imagePromptQualityService.js";
 import { createSoftStyleDirective } from "./styleReferenceService.js";
 
-export interface ImagePromptCompilerOptions {
-  aspectRatio?: string;
-  targetStyle?: string;
-  characters?: CharacterConfig[];
-  visualBible?: VisualBible;
-  referenceLocked?: boolean;
-}
+export interface ImagePromptCompilerOptions { aspectRatio?: string; targetStyle?: string; characters?: CharacterConfig[]; visualBible?: VisualBible; referenceLocked?: boolean; }
 
-const compactWords = (value: string, maximumWords: number): string =>
-  _.join(_.take(_.words(value, IMAGE_PROMPT_COMPILER_CONFIG.NON_WHITESPACE_REGEX), maximumWords), IMAGE_PROMPT_COMPILER_CONFIG.SPACE_SEPARATOR);
+const compactWords = (value: string, maximumWords: number): string => _.join(_.take(_.words(value, IMAGE_PROMPT_COMPILER_CONFIG.NON_WHITESPACE_REGEX), maximumWords), IMAGE_PROMPT_COMPILER_CONFIG.SPACE_SEPARATOR);
 
-const hasVietnameseNarration = (value: unknown): boolean => _.gte(
-  _.size(_.toString(value).match(new RegExp(DETECTOR_VIETNAMESE_REGEX.source, "gi")) || []),
-  3,
-);
+const hasVietnameseNarration = (value: unknown): boolean => _.gte(_.size(_.toString(value).match(new RegExp(DETECTOR_VIETNAMESE_REGEX.source, "gi")) || []), 3);
 
 const compactSceneField = (value: unknown): string => {
   const str = _.trim(_.toString(value));
@@ -39,28 +29,9 @@ const compactScriptSource = (value: unknown): string => {
 };
 
 const getCharacterIdentityProfile = (character: CharacterConfig, targetStyle?: string): string => {
-  const details = _.compact([
-    character.genderPresentation,
-    character.ageRange,
-    character.ethnicitySkinTone,
-    character.bodyBuild,
-    character.faceShape,
-    character.eyes,
-    character.nose,
-    character.hair,
-    character.silhouette,
-    character.colorPalette,
-    character.accessories,
-  ]);
+  const details = _.compact([character.genderPresentation, character.ageRange, character.ethnicitySkinTone, character.bodyBuild, character.faceShape, character.eyes, character.nose, character.hair, character.silhouette, character.colorPalette, character.accessories]);
   const identity = _.join(_.uniq(details), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR);
-  const styleSafeIdentity = IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(targetStyle))
-    ? _.trim(
-        identity
-          .replace(IMAGE_PROMPT_COMPILER_CONFIG.CHIBI_CHARACTER_TERMS_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING)
-          .replace(IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_TARGET)
-          .replace(IMAGE_PROMPT_COMPILER_CONFIG.TRIM_COMMA_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING),
-      )
-    : identity;
+  const styleSafeIdentity = IMAGE_PROMPT_COMPILER_CONFIG.THREE_D_STYLE_PATTERN.test(_.toString(targetStyle)) ? _.trim(identity.replace(IMAGE_PROMPT_COMPILER_CONFIG.CHIBI_CHARACTER_TERMS_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING).replace(IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CLEAN_COMMA_REPLACE_TARGET).replace(IMAGE_PROMPT_COMPILER_CONFIG.TRIM_COMMA_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING)) : identity;
   return compactWords(styleSafeIdentity, _.multiply(IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_IDENTITY_MAX_WORDS, 2));
 };
 
@@ -75,14 +46,8 @@ const resolveSceneCharacters = (scene: StoryboardScene, characters?: CharacterCo
   // An explicit empty array is authoritative: an earlier prompt may still contain
   // a stale name, but the historical/continuity planner has removed that person.
   const validIds = new Set(_.map(characters, "id"));
-  const characterIds = _.isArray(scene.characterIds)
-    ? _.filter(_.uniq(scene.characterIds), id => validIds.has(id))
-    : resolveSceneCharacterIds(scene, characters);
-  return !_.isEmpty(characterIds)
-    ? _.filter(characters, (character) => _.includes(characterIds, character.id))
-    : !_.isArray(scene.characterIds) && _.isEqual(_.size(characters), IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_SUBJECT_COUNT) && !_.isEmpty(scene.visibleAction || scene.visualIntent || scene.script)
-      ? characters
-      : [];
+  const characterIds = _.isArray(scene.characterIds) ? _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id)) : resolveSceneCharacterIds(scene, characters);
+  return !_.isEmpty(characterIds) ? _.filter(characters, (character) => _.includes(characterIds, character.id)) : !_.isArray(scene.characterIds) && _.isEqual(_.size(characters), IMAGE_PROMPT_COMPILER_CONFIG.SINGLE_SUBJECT_COUNT) && !_.isEmpty(scene.visibleAction || scene.visualIntent || scene.script) ? characters : [];
 };
 
 const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptCompilerOptions): string => {
@@ -105,73 +70,33 @@ const resolveCharacterDirective = (scene: StoryboardScene, options: ImagePromptC
   return IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
 };
 
-const resolveSceneWardrobeDirective = (scene: StoryboardScene, characters?: CharacterConfig[]): string =>
-  _.join(_.compact(_.map(resolveSceneCharacters(scene, characters), (character) => getSceneWardrobe(character, scene))), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR);
+const resolveSceneWardrobeDirective = (scene: StoryboardScene, characters?: CharacterConfig[]): string => _.join(_.compact(_.map(resolveSceneCharacters(scene, characters), (character) => getSceneWardrobe(character, scene))), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR);
 
 const getSceneNarrativeFallback = (scene: StoryboardScene): string => compactScriptSource(scene.script || scene.subtitle);
 
 const resolveSceneEnvironment = (scene: StoryboardScene, visualBible?: VisualBible): string => {
   const location = _.find(visualBible?.locations, (item) => _.isEqual(item.id, scene.locationId));
   const props = _.filter(visualBible?.props, (item) => _.includes(scene.propIds, item.id));
-  const locationText = location
-    ? _.join(
-        _.compact([location.name, _.join(location.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), location.geography]),
-        IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
-      )
-    : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
-  const propText = _.join(
-    _.compact(
-      _.map(props, (prop) =>
-        _.join(
-          _.compact([prop.name, _.join(prop.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR)]),
-          IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
-        ),
-      ),
-    ),
-    IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR,
-  );
-  return compactWords(
-    _.join(_.compact([locationText, propText]), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR),
-    IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_MAX_WORDS,
-  );
+  const locationText = location ? _.join(_.compact([location.name, _.join(location.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), location.geography]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR) : IMAGE_PROMPT_COMPILER_CONFIG.EMPTY_STRING;
+  const propText = _.join(_.compact(_.map(props, (prop) => _.join(_.compact([prop.name, _.join(prop.visualAnchors, IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR)]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR))), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR);
+  return compactWords(_.join(_.compact([locationText, propText]), IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.LOCATION_MAX_WORDS);
 };
 
 export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptCompilerOptions = {}): string => {
   const textOverlay = _.trim(_.toString(scene.textOverlay));
-  const textPolicyDirective = _.isEqual(scene.textAllowed, false)
-    ? IMAGE_PROMPT_COMPILER_CONFIG.STRICT_NO_TEXT_DIRECTIVE
-    : (!_.isEmpty(textOverlay)
-      ? _.replace(IMAGE_PROMPT_COMPILER_CONFIG.TEXT_OVERLAY_DIRECTIVE_TEMPLATE, "{text}", textOverlay)
-      : IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE);
+  const textPolicyDirective = _.isEqual(scene.textAllowed, false) ? IMAGE_PROMPT_COMPILER_CONFIG.STRICT_NO_TEXT_DIRECTIVE : !_.isEmpty(textOverlay) ? _.replace(IMAGE_PROMPT_COMPILER_CONFIG.TEXT_OVERLAY_DIRECTIVE_TEMPLATE, "{text}", textOverlay) : IMAGE_PROMPT_COMPILER_CONFIG.NO_TEXT_DIRECTIVE;
   const aiAuthoredPrompt = _.trim(_.toString(scene.prompt));
   const technicalPromptText = _.isEmpty(textOverlay) ? aiAuthoredPrompt : _.replace(aiAuthoredPrompt, textOverlay, "");
-  const hasStructuredStoryDirection = _.some([
-    scene.visibleAction,
-    scene.storyEvidence,
-    scene.visualIntent,
-    scene.reaction,
-    scene.visualHook,
-  ], value => !_.isEmpty(_.trim(_.toString(value))));
+  const hasStructuredStoryDirection = _.some([scene.visibleAction, scene.storyEvidence, scene.visualIntent, scene.reaction, scene.visualHook], (value) => !_.isEmpty(_.trim(_.toString(value))));
   if (!hasStructuredStoryDirection && !_.isEmpty(aiAuthoredPrompt) && !hasVietnameseNarration(technicalPromptText)) {
     const cleanedAiPrompt = deduplicatePromptSentences(sanitizeImagePrompt(aiAuthoredPrompt));
-    const alreadyHasNoTextPolicy = _.isEqual(scene.textAllowed, false)
-      && /(?:completely text-free|strictly no text|no readable text)/i.test(cleanedAiPrompt);
-    const policyLockedPrompt = alreadyHasNoTextPolicy
-      ? cleanedAiPrompt
-      : _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
-    const fullBleedPrompt = _.join(
-      [_.trimEnd(policyLockedPrompt, ". "), IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE],
-      IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR,
-    );
-    return appendImagePromptAspectRatio(
-      deduplicatePromptSentences(fullBleedPrompt),
-      options.aspectRatio,
-    );
+    const alreadyHasNoTextPolicy = _.isEqual(scene.textAllowed, false) && /(?:completely text-free|strictly no text|no readable text)/i.test(cleanedAiPrompt);
+    const policyLockedPrompt = alreadyHasNoTextPolicy ? cleanedAiPrompt : _.join([cleanedAiPrompt, textPolicyDirective], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+    const fullBleedPrompt = _.join([_.trimEnd(policyLockedPrompt, ". "), IMAGE_PROMPT_COMPILER_CONFIG.FULL_BLEED_DIRECTIVE], IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
+    return appendImagePromptAspectRatio(deduplicatePromptSentences(fullBleedPrompt), options.aspectRatio);
   }
   const preset = resolveStylePreset(options.targetStyle);
-  const styleAnchor = options.visualBible?.styleProfile
-    ? createSoftStyleDirective(options.visualBible.styleProfile)
-    : preset.positivePrompt;
+  const styleAnchor = options.visualBible?.styleProfile ? createSoftStyleDirective(options.visualBible.styleProfile) : preset.positivePrompt;
   const characterDirective = resolveCharacterDirective(scene, options);
   const wardrobeDirective = resolveSceneWardrobeDirective(scene, options.characters);
   const environment = resolveSceneEnvironment(scene, options.visualBible);
@@ -183,17 +108,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   const composition = compactSceneField(scene.composition);
   const lighting = compactSceneField(scene.lighting);
   const narrativeFallback = getSceneNarrativeFallback(scene);
-  const sceneVariation = compactWords(
-    _.join(
-      _.compact(
-        !_.isEmpty(visibleAction)
-          ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment]
-          : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback],
-      ),
-      IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR,
-    ),
-    IMAGE_PROMPT_COMPILER_CONFIG.SCENE_VARIATION_MAX_WORDS,
-  );
+  const sceneVariation = compactWords(_.join(_.compact(!_.isEmpty(visibleAction) ? [visibleAction, visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment] : [visualIntent, reaction, storyEvidence, visualHook, wardrobeDirective, environment, narrativeFallback]), IMAGE_PROMPT_COMPILER_CONFIG.LIST_SEPARATOR), IMAGE_PROMPT_COMPILER_CONFIG.SCENE_VARIATION_MAX_WORDS);
 
   const promptParts = [
     styleAnchor,
@@ -208,9 +123,7 @@ export const compileImagePrompt = (scene: StoryboardScene, options: ImagePromptC
   ];
 
   const rawPrompt = _.join(_.compact(promptParts), IMAGE_PROMPT_COMPILER_CONFIG.CLAUSE_SEPARATOR);
-  const cleanedPrompt = deduplicatePromptSentences(sanitizeImagePrompt(rawPrompt))
-    .replace(IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_TARGET)
-    .replace(IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_TARGET);
+  const cleanedPrompt = deduplicatePromptSentences(sanitizeImagePrompt(rawPrompt)).replace(IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.CONSISTENCY_REPLACE_TARGET).replace(IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_PATTERN, IMAGE_PROMPT_COMPILER_CONFIG.ANATOMY_REPLACE_TARGET);
   return appendImagePromptAspectRatio(cleanedPrompt, options.aspectRatio);
 };
 

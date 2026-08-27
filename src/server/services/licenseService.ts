@@ -10,18 +10,29 @@ import { appError } from "../../lib/logger.js";
 const { machineIdSync } = nodeMachineId;
 
 const readHardwareIdentifier = (): string => {
-  try { return machineIdSync(true); } catch (error) { appError(SecurityMessages.ERROR_READING_DEVICE_ID, error); return SecurityConstants.EMPTY_STRING; }
+  try {
+    return machineIdSync(true);
+  } catch (error) {
+    appError(SecurityMessages.ERROR_READING_DEVICE_ID, error);
+    return SecurityConstants.EMPTY_STRING;
+  }
 };
 
 const readPersistedDeviceId = (): string => {
   const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
   if (!fs.existsSync(deviceIdFile)) return SecurityConstants.EMPTY_STRING;
-  try { return _.get(jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {}), SecurityConstants.DEVICE_ID_KEY, SecurityConstants.EMPTY_STRING); } catch { return SecurityConstants.EMPTY_STRING; }
+  try {
+    return _.get(jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {}), SecurityConstants.DEVICE_ID_KEY, SecurityConstants.EMPTY_STRING);
+  } catch {
+    return SecurityConstants.EMPTY_STRING;
+  }
 };
 
 const generateAndPersistDeviceId = (): string => {
   const rawId = crypto.randomUUID();
-  try { fs.writeFileSync(path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME), jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding); } catch {}
+  try {
+    fs.writeFileSync(path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME), jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
+  } catch {}
   return rawId;
 };
 
@@ -32,19 +43,28 @@ const resolveRawDeviceId = (): string => {
   return !_.isEmpty(persistedId) ? persistedId : generateAndPersistDeviceId();
 };
 
-const getHardwareId = (): string => crypto.createHash(SecurityConstants.ALGORITHM_SHA256)
-  .update(_.join([process.platform, process.arch, resolveRawDeviceId()], SecurityConstants.HYPHEN))
-  .digest(SecurityConstants.ENCODING_HEX as crypto.BinaryToTextEncoding)
-  .substring(SecurityConstants.ZERO, SecurityConstants.SUBSTRING_LEN_32);
+const getHardwareId = (): string =>
+  crypto
+    .createHash(SecurityConstants.ALGORITHM_SHA256)
+    .update(_.join([process.platform, process.arch, resolveRawDeviceId()], SecurityConstants.HYPHEN))
+    .digest(SecurityConstants.ENCODING_HEX as crypto.BinaryToTextEncoding)
+    .substring(SecurityConstants.ZERO, SecurityConstants.SUBSTRING_LEN_32);
 
 export interface LicenseInfo {
-  status: LicenseStatus; plan_id: string; plan_type: string; quota_type: string; expires_at: string | null;
-  usage: { video: number; image: number; voice: number; };
-  limits: { video: number; image: number; voice: number; unlimited: boolean; };
+  status: LicenseStatus;
+  plan_id: string;
+  plan_type: string;
+  quota_type: string;
+  expires_at: string | null;
+  usage: { video: number; image: number; voice: number };
+  limits: { video: number; image: number; voice: number; unlimited: boolean };
 }
 
 export class LicenseValidationError extends Error {
-  constructor(message: string) { super(message); this.name = "LicenseValidationError"; }
+  constructor(message: string) {
+    super(message);
+    this.name = "LicenseValidationError";
+  }
 }
 
 interface CachedLicenseEntry { info: LicenseInfo; timestamp: number; }
@@ -52,15 +72,16 @@ const licenseCache = new Map<string, CachedLicenseEntry>();
 const inFlightValidations = new Map<string, Promise<LicenseInfo | null>>();
 
 const createDefaultLicenseInfo = (): LicenseInfo => ({
-  status: LicenseStatus.ACTIVE, plan_id: PlanType.PRO_LIFETIME, plan_type: PlanType.PRO_LIFETIME, quota_type: SecurityConstants.QUOTA_TYPE_TOTAL, expires_at: null,
+  status: LicenseStatus.ACTIVE,
+  plan_id: PlanType.PRO_LIFETIME,
+  plan_type: PlanType.PRO_LIFETIME,
+  quota_type: SecurityConstants.QUOTA_TYPE_TOTAL,
+  expires_at: null,
   usage: { video: SecurityConstants.ZERO, image: SecurityConstants.ZERO, voice: SecurityConstants.ZERO },
   limits: { video: SecurityConstants.ZERO, image: SecurityConstants.ZERO, voice: SecurityConstants.ZERO, unlimited: true },
 });
 
-const isRecognizedServerLicenseKey = (key: string): boolean => _.includes(
-  _.compact([SecurityConstants.DEFAULT_LICENSE_KEY, process.env.VIDIFY_LICENSE_KEY, process.env.VITE_LICENSE_KEY, process.env.LICENSE_KEY]),
-  key,
-);
+const isRecognizedServerLicenseKey = (key: string): boolean => _.includes(_.compact([SecurityConstants.DEFAULT_LICENSE_KEY, process.env.VIDIFY_LICENSE_KEY, process.env.VITE_LICENSE_KEY, process.env.LICENSE_KEY]), key);
 
 const parseLicenseInfoFromGasResponse = (data: Record<string, unknown>): LicenseInfo => ({
   status: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.STATUS_KEY)))) as LicenseStatus,
@@ -155,5 +176,3 @@ export class LicenseService {
     }
   }
 }
-
-

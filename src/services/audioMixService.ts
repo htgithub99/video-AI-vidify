@@ -6,8 +6,8 @@ export const createRenderAudioTracks = (cueSheet?: AudioCueSheet): RenderAudioTr
   if (!cueSheet) return [];
   const musicVolumeDb = cueSheet.mixTargets.musicUnderVoiceDb;
   return _.map(
-    _.filter(cueSheet.cues, cue => cue.status === AudioCueStatus.Approved && !_.isEmpty(cue.assetUrl)),
-    cue => ({
+    _.filter(cueSheet.cues, (cue) => cue.status === AudioCueStatus.Approved && !_.isEmpty(cue.assetUrl)),
+    (cue) => ({
       id: cue.id,
       type: cue.type,
       assetUrl: cue.assetUrl!,

@@ -8,31 +8,15 @@ import { tryParseJSON } from "../utils/helpers.js";
 import { assertResponseContract, ResponseContractName } from "./responseContractService.js";
 import { assertResponseSchema } from "./responseSchemaValidationService.js";
 
-interface AiResponse {
-  text?: string;
-  aiMetadata?: unknown;
-  rotationLogs?: string[];
-}
+interface AiResponse { text?: string; aiMetadata?: unknown; rotationLogs?: string[]; }
 
-interface ScriptPlanRequest {
-  contents: string;
-  config: Record<string, unknown>;
-  task: Record<string, unknown>;
-}
+interface ScriptPlanRequest { contents: string; config: Record<string, unknown>; task: Record<string, unknown>; }
 
-interface ValidScriptPlanResult {
-  value: Record<string, unknown>;
-  aiMetadata: unknown[];
-  rotationLogs: string[];
-}
+interface ValidScriptPlanResult { value: Record<string, unknown>; aiMetadata: unknown[]; rotationLogs: string[]; }
 
 type GenerateContent = (request: ScriptPlanRequest) => Promise<AiResponse>;
 
-export const resolveScriptPlanChapterCount = (targetWordCount: number): number => _.clamp(
-  _.ceil(targetWordCount / SCRIPT_PLAN_CONFIG.TARGET_WORDS_PER_CHAPTER),
-  SCRIPT_PLAN_CONFIG.MIN_CHAPTERS,
-  SCRIPT_PLAN_CONFIG.MAX_CHAPTERS,
-);
+export const resolveScriptPlanChapterCount = (targetWordCount: number): number => _.clamp(_.ceil(targetWordCount / SCRIPT_PLAN_CONFIG.TARGET_WORDS_PER_CHAPTER), SCRIPT_PLAN_CONFIG.MIN_CHAPTERS, SCRIPT_PLAN_CONFIG.MAX_CHAPTERS);
 
 const parseScriptPlan = (responseText: string): Record<string, unknown> => {
   const value = tryParseJSON(responseText);
@@ -43,34 +27,30 @@ const parseScriptPlan = (responseText: string): Record<string, unknown> => {
 
 const assertCompleteScriptPlan = (value: Record<string, unknown>, chapterCount: number): void => {
   const chapters = _.castArray(_.get(value, "chapters"));
-  const hasUsableChapterContent = _.every(chapters, chapter => _.every(
-    SCRIPT_PLAN_CONFIG.REQUIRED_CHAPTER_CONTENT_FIELDS,
-    field => !_.isEmpty(_.trim(_.toString(_.get(chapter, field)))),
-  ));
+  const hasUsableChapterContent = _.every(chapters, (chapter) => _.every(SCRIPT_PLAN_CONFIG.REQUIRED_CHAPTER_CONTENT_FIELDS, (field) => !_.isEmpty(_.trim(_.toString(_.get(chapter, field))))));
   if (_.size(chapters) !== chapterCount || !hasUsableChapterContent) {
     throw new Error(SCRIPT_PLAN_CONFIG.INVALID_CHAPTERS_ERROR);
   }
 };
 
-const createRetryContents = (contents: string, chapterCount: number): string => _.join([
-  contents,
-  _.replace(
-    SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE,
-    SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN,
-    _.toString(chapterCount),
-  ),
-], "\n\n");
+const createRetryContents = (contents: string, chapterCount: number): string => _.join([contents, _.replace(SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE, SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN, _.toString(chapterCount))], "\n\n");
 
 const createSourceScopes = (sourceText: string, chapterCount: number): string[] => {
   const sentences = smartSplitSentences(sourceText);
   if (_.gte(_.size(sentences), chapterCount)) {
     const chunkSize = _.ceil(_.divide(_.size(sentences), chapterCount));
-    return _.take(_.map(_.chunk(sentences, chunkSize), chunk => _.join(chunk, " ")), chapterCount);
+    return _.take(
+      _.map(_.chunk(sentences, chunkSize), (chunk) => _.join(chunk, " ")),
+      chapterCount,
+    );
   }
   const words = _.filter(_.split(_.trim(sourceText), /\s+/), Boolean);
   if (_.gte(_.size(words), chapterCount)) {
     const chunkSize = _.ceil(_.divide(_.size(words), chapterCount));
-    return _.take(_.map(_.chunk(words, chunkSize), chunk => _.join(chunk, " ")), chapterCount);
+    return _.take(
+      _.map(_.chunk(words, chunkSize), (chunk) => _.join(chunk, " ")),
+      chapterCount,
+    );
   }
   return _.times(chapterCount, () => _.trim(sourceText));
 };
@@ -107,10 +87,7 @@ const createSourceNarrativePlan = (normalizedSource: string, scopes: string[]) =
   endingPayoff: _.last(scopes) || normalizedSource,
 });
 
-export const createSourceGroundedScriptPlan = (
-  sourceText: string,
-  chapterCount: number,
-): Record<string, unknown> => {
+export const createSourceGroundedScriptPlan = (sourceText: string, chapterCount: number): Record<string, unknown> => {
   const normalizedSource = _.trim(sourceText);
   if (_.isEmpty(normalizedSource)) throw new Error(SCRIPT_PLAN_CONFIG.INVALID_RESPONSE_ERROR);
   const scopes = createSourceScopes(normalizedSource, chapterCount);
@@ -141,12 +118,7 @@ export const createSourceGroundedScriptPlan = (
   };
 };
 
-export const requestValidScriptPlan = async (
-  request: ScriptPlanRequest,
-  chapterCount: number,
-  generateContent: GenerateContent,
-  sourceText?: string,
-): Promise<ValidScriptPlanResult> => {
+export const requestValidScriptPlan = async (request: ScriptPlanRequest, chapterCount: number, generateContent: GenerateContent, sourceText?: string): Promise<ValidScriptPlanResult> => {
   const aiMetadata: unknown[] = [];
   const rotationLogs: string[] = [];
   let lastError: unknown;
@@ -163,36 +135,20 @@ export const requestValidScriptPlan = async (
       return { value, aiMetadata, rotationLogs };
     } catch (error) {
       lastError = error;
-      appWarn(
-        PIPELINE_SERVER_LOGS.INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED,
-        _.add(attemptIndex, SecurityConstants.DEFAULT_AMOUNT),
-        SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS,
-      );
+      appWarn(PIPELINE_SERVER_LOGS.INVALID_SCRIPT_PLAN_RESPONSE_DISCARDED, _.add(attemptIndex, SecurityConstants.DEFAULT_AMOUNT), SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS);
     }
   }
   if (!_.isEmpty(_.trim(sourceText))) {
     rotationLogs.push(SCRIPT_PLAN_CONFIG.SOURCE_FALLBACK_WARNING);
-    return {
-      value: createSourceGroundedScriptPlan(sourceText!, chapterCount),
-      aiMetadata,
-      rotationLogs,
-    };
+    return { value: createSourceGroundedScriptPlan(sourceText!, chapterCount), aiMetadata, rotationLogs, };
   }
-  const error = lastError instanceof Error
-    ? lastError
-    : new Error(SCRIPT_PLAN_CONFIG.INVALID_RESPONSE_ERROR);
+  const error = lastError instanceof Error ? lastError : new Error(SCRIPT_PLAN_CONFIG.INVALID_RESPONSE_ERROR);
   Object.assign(error, { rotationLogs, retryable: true, scriptPlanInvalid: true });
   throw error;
 };
 
-export const normalizeScriptPlan = (
-  parsedScriptPlan: Record<string, unknown>,
-  originalInput: string,
-): Record<string, unknown> => {
-  const parsedChapters = _.filter(
-    _.castArray(_.get(parsedScriptPlan, "chapters")),
-    chapter => !_.isEmpty(_.trim(_.toString(_.get(chapter, "title")))),
-  );
+export const normalizeScriptPlan = (parsedScriptPlan: Record<string, unknown>, originalInput: string): Record<string, unknown> => {
+  const parsedChapters = _.filter(_.castArray(_.get(parsedScriptPlan, "chapters")), (chapter) => !_.isEmpty(_.trim(_.toString(_.get(chapter, "title")))));
   if (_.lt(_.size(parsedChapters), RESPONSE_CONTRACT_CONFIG.MIN_SCRIPT_PLAN_CHAPTERS)) {
     throw new Error(RESPONSE_CONTRACT_CONFIG.INSUFFICIENT_CHAPTERS_ERROR);
   }

@@ -35,49 +35,24 @@ const getWorkspaceProjectKind = (project?: VideoProject): ProjectKind | undefine
   return project.parentId ? undefined : ProjectKind.Container;
 };
 
-const findWorkspaceChild = (
-  projects: VideoProject[],
-  parentId: string,
-  kind: ProjectKind,
-): VideoProject | undefined => _.find(projects, project => (
-  _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind)
-));
+const findWorkspaceChild = (projects: VideoProject[], parentId: string, kind: ProjectKind): VideoProject | undefined => _.find(projects, (project) => _.isEqual(project.parentId, parentId) && _.isEqual(getWorkspaceProjectKind(project), kind));
 
 const convertToSlug = (text: string): string => {
-  return _.trim(
-    _.toLower(text)
-      .normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM)
-      .replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
-      .replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)
-  ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
+  return _.trim(_.toLower(text).normalize(REFACTOR_CONSTANTS.VD_NORMALIZE_FORM).replace(REFACTOR_CONSTANTS.VD_NORMALIZE_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_CHAR_REGEX, REFACTOR_CONSTANTS.VD_LETTER_D).replace(REFACTOR_CONSTANTS.VD_SLUG_CLEAN_REGEX, REFACTOR_CONSTANTS.VD_EMPTY_STRING).replace(REFACTOR_CONSTANTS.VD_SLUG_SPACE_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN).replace(REFACTOR_CONSTANTS.VD_SLUG_HYPHEN_REGEX, REFACTOR_CONSTANTS.VD_HYPHEN)).substring(
+    REFACTOR_CONSTANTS.ZERO,
+    REFACTOR_CONSTANTS.VD_SLUG_LIMIT,
+  );
 };
 
-const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean => _.some([
-  _.every([
-    _.isEqual(tab, AppTab.AUTO_GENERATOR),
-    _.some([
-      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto),
-      _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-  _.every([
-    _.isEqual(tab, AppTab.CINEMATIC_FILM),
-    _.some([
-      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic),
-      _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-  _.every([
-    _.isEqual(tab, AppTab.STUDIO),
-    _.some([
-      _.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio),
-      _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX),
-    ]),
-  ], Boolean),
-], Boolean);
+const isProjectReadyForTab = (project: VideoProject | undefined, tab: string): boolean =>
+  _.some(
+    [
+      _.every([_.isEqual(tab, AppTab.AUTO_GENERATOR), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Auto), _.endsWith(project?.name, COMMON_STRINGS.AUTO_CHILD_SUFFIX)])], Boolean),
+      _.every([_.isEqual(tab, AppTab.CINEMATIC_FILM), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic), _.endsWith(project?.name, COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX)])], Boolean),
+      _.every([_.isEqual(tab, AppTab.STUDIO), _.some([_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Studio), _.endsWith(project?.name, COMMON_STRINGS.STUDIO_CHILD_SUFFIX)])], Boolean),
+    ],
+    Boolean,
+  );
 
 const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
   const response = await fetch(API_ROUTES.PROJECTS, {
@@ -146,7 +121,6 @@ export default function App() {
         }
       });
     };
-
   }, []);
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(() => {
@@ -162,9 +136,7 @@ export default function App() {
     }
   }, [selectedProjectId]);
 
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;
-  });
+  const [theme, setTheme] = useState<"dark" | "light">(() => (storageUtils.get(STORAGE_KEYS.APP_THEME) as "dark" | "light") || THEME_VALUES.LIGHT;);
 
   useEffect(() => {
     storageUtils.set(STORAGE_KEYS.APP_THEME, theme);
@@ -205,9 +177,7 @@ export default function App() {
               if (detailRes.ok) {
                 const detailText = await detailRes.text();
                 const detailData = jsonUtils.safeParse(detailText, null);
-                if (detailData) {
-                  return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
-                }
+                if (detailData) return _.map(list, (p: any) => (_.isEqual(p.id, cachedId) ? detailData : p));
               }
             } catch (e) {
               appError(ERROR_MESSAGES.FETCHING_PROJECTS, e);
@@ -257,9 +227,7 @@ export default function App() {
       if (activeProj) {
         if (!activeProj.parentId) {
           const studioChild = findWorkspaceChild(projects, activeProj.id, ProjectKind.Studio);
-          if (studioChild) {
-            setSelectedProjectId(studioChild.id);
-          } else {
+          if (studioChild) setSelectedProjectId(studioChild.id); else {
             if (creatingChildRef.current[activeProj.id]) return;
             creatingChildRef.current[activeProj.id] = true;
 
@@ -275,26 +243,26 @@ export default function App() {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            
+
             fetch(API_ROUTES.PROJECTS, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
               body: jsonUtils.safeStringify(childProject),
-            }).then(response => {
-              if (response.ok) {
-                setProjects((prev) => [...prev, childProject]);
-                setSelectedProjectId(childId);
-              }
-            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
-            .finally(() => {
-              creatingChildRef.current[activeProj.id] = false;
-            });
+            })
+              .then((response) => {
+                if (response.ok) {
+                  setProjects((prev) => [...prev, childProject]);
+                  setSelectedProjectId(childId);
+                }
+              })
+              .catch((err) => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+              .finally(() => {
+                creatingChildRef.current[activeProj.id] = false;
+              });
           }
         } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), ProjectKind.Studio)) {
           const studioChild = findWorkspaceChild(projects, activeProj.parentId, ProjectKind.Studio);
-          if (studioChild) {
-            setSelectedProjectId(studioChild.id);
-          } else {
+          if (studioChild) setSelectedProjectId(studioChild.id); else {
             setSelectedProjectId(activeProj.parentId);
           }
         }
@@ -303,19 +271,14 @@ export default function App() {
   }, [activeTab, selectedProjectId, projects]);
 
   useEffect(() => {
-    if (!isSwitchingWorkspaceTab) {
-      return;
-    }
+    if (!isSwitchingWorkspaceTab) return;
     const activeWorkspaceProject = _.find(projects, { id: selectedProjectId });
     if (!isProjectReadyForTab(activeWorkspaceProject, activeTab)) {
       return;
     }
     const startedAt = workspaceTabLoadingStartedAtRef.current || Date.now();
     const elapsedMs = _.subtract(Date.now(), startedAt);
-    const remainingMs = _.max([
-      _.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs),
-      REFACTOR_CONSTANTS.ZERO_FLOAT,
-    ]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
+    const remainingMs = _.max([_.subtract(TAB_CONTENT_LOADING_CONFIG.MIN_DISPLAY_MS, elapsedMs), REFACTOR_CONSTANTS.ZERO_FLOAT]) || REFACTOR_CONSTANTS.ZERO_FLOAT;
     let frameId: number | undefined;
     const timeoutId = setTimeout(() => {
       frameId = requestAnimationFrame(() => {
@@ -332,16 +295,11 @@ export default function App() {
   }, [activeTab, isSwitchingWorkspaceTab, projects, selectedProjectId]);
 
   useEffect(() => {
-    if (!isSwitchingWorkspaceTab) {
-      return;
-    }
-    const timeoutId = setTimeout(
-      () => {
-        workspaceTabLoadingStartedAtRef.current = null;
-        setIsSwitchingWorkspaceTab(false);
-      },
-      TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS,
-    );
+    if (!isSwitchingWorkspaceTab) return;
+    const timeoutId = setTimeout(() => {
+      workspaceTabLoadingStartedAtRef.current = null;
+      setIsSwitchingWorkspaceTab(false);
+    }, TAB_CONTENT_LOADING_CONFIG.MAX_WAIT_MS);
     return () => clearTimeout(timeoutId);
   }, [isSwitchingWorkspaceTab]);
 
@@ -354,9 +312,7 @@ export default function App() {
         if (!activeProj.parentId) {
           const targetKind = isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto;
           const autoChild = findWorkspaceChild(projects, activeProj.id, targetKind);
-          if (autoChild) {
-            setSelectedProjectId(autoChild.id);
-          } else {
+          if (autoChild) setSelectedProjectId(autoChild.id); else {
             const childKey = _.join([activeProj.id, targetSuffix], REFACTOR_CONSTANTS.VD_EMPTY_STRING);
             if (creatingChildRef.current[childKey]) return;
             creatingChildRef.current[childKey] = true;
@@ -370,46 +326,48 @@ export default function App() {
               parentId: activeProj.id,
               projectKind: isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto,
               name: `${activeProj.name}${targetSuffix}`,
-              input: isFilmWorkspace
-                ? { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING }
-                : activeProj.input,
-              config: isFilmWorkspace ? {
-                ...activeProj.config,
-                genre: VideoGenre.CINEMATIC_EPISODE,
-                filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
-                episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
-                seriesBibleRequired: false,
-              } : activeProj.config,
-              visualConfig: isFilmWorkspace ? {
-                ...activeProj.visualConfig,
-                style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
-                generationMode: ImageGenerationMode.LabsFlow,
-                generateType: GenerateType.Video,
-                imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-              } : activeProj.visualConfig,
+              input: isFilmWorkspace ? { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING } : activeProj.input,
+              config: isFilmWorkspace
+                ? {
+                    ...activeProj.config,
+                    genre: VideoGenre.CINEMATIC_EPISODE,
+                    filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
+                    episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
+                    seriesBibleRequired: false,
+                  }
+                : activeProj.config,
+              visualConfig: isFilmWorkspace
+                ? {
+                    ...activeProj.visualConfig,
+                    style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
+                    generationMode: ImageGenerationMode.LabsFlow,
+                    generateType: GenerateType.Video,
+                    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+                  }
+                : activeProj.visualConfig,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            
+
             fetch(API_ROUTES.PROJECTS, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
               body: jsonUtils.safeStringify(childProject),
-            }).then(response => {
-              if (response.ok) {
-                setProjects((prev) => [...prev, childProject]);
-                setSelectedProjectId(childId);
-              }
-            }).catch(err => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
-            .finally(() => {
-              creatingChildRef.current[childKey] = false;
-            });
+            })
+              .then((response) => {
+                if (response.ok) {
+                  setProjects((prev) => [...prev, childProject]);
+                  setSelectedProjectId(childId);
+                }
+              })
+              .catch((err) => appError(ERROR_MESSAGES.CREATING_PROJECT, err))
+              .finally(() => {
+                creatingChildRef.current[childKey] = false;
+              });
           }
         } else if (!_.isEqual(getWorkspaceProjectKind(activeProj), isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto)) {
           const autoChild = findWorkspaceChild(projects, activeProj.parentId, isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto);
-          if (autoChild) {
-            setSelectedProjectId(autoChild.id);
-          } else {
+          if (autoChild) setSelectedProjectId(autoChild.id); else {
             setSelectedProjectId(activeProj.parentId);
           }
         }
@@ -430,9 +388,7 @@ export default function App() {
         if (!res.ok) throw new Error(ErrorMessage.PROJECT_LOAD_ERROR);
         const detailText = await res.text();
         const detailData = jsonUtils.safeParse(detailText, null);
-        if (detailData) {
-          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
-        }
+        if (detailData) setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? detailData : p)));
         setSelectedProjectId(id);
         if (_.isEqual(getWorkspaceProjectKind(project), ProjectKind.Cinematic)) {
           setActiveTab(AppTab.CINEMATIC_FILM);
@@ -567,11 +523,7 @@ export default function App() {
 
     try {
       const parentData = await createProjectRecord(parentProject);
-      const [studioData, autoData, filmData] = await Promise.all([
-        createProjectRecord(studioChildProject),
-        createProjectRecord(autoChildProject),
-        createProjectRecord(filmChildProject),
-      ]);
+      const [studioData, autoData, filmData] = await Promise.all([createProjectRecord(studioChildProject), createProjectRecord(autoChildProject), createProjectRecord(filmChildProject)]);
 
       setProjects((prev) => [...prev, parentData, studioData, autoData, filmData]);
       setSelectedProjectId(parentData.id);
@@ -584,15 +536,11 @@ export default function App() {
   const handleUpdateProject = useCallback((updated: VideoProject, immediate = false) => {
     setProjects((prev) => {
       const exists = _.some(prev, { id: updated.id });
-      if (exists) {
-        return _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p));
-      }
+      if (exists) return _.map(prev, (p) => (_.isEqual(p.id, updated.id) ? updated : p));
       return [...prev, updated];
     });
 
-    if (pendingSavesRef.current[updated.id]) {
-      clearTimeout(pendingSavesRef.current[updated.id]);
-    }
+    if (pendingSavesRef.current[updated.id]) clearTimeout(pendingSavesRef.current[updated.id]);
 
     const doSave = async () => {
       try {
@@ -604,10 +552,8 @@ export default function App() {
         if (!response.ok) {
           throw new Error(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}${response.status}: ${response.statusText}`);
         }
-        const savedProject = await response.json() as VideoProject;
-        setProjects((prev) => _.map(prev, (project) => (
-          _.isEqual(project.id, savedProject.id) ? savedProject : project
-        )));
+        const savedProject = (await response.json()) as VideoProject;
+        setProjects((prev) => _.map(prev, (project) => (_.isEqual(project.id, savedProject.id) ? savedProject : project)));
         delete pendingSavesRef.current[updated.id];
         return savedProject;
       } catch (e) {
@@ -641,37 +587,28 @@ export default function App() {
 
   const activeProject = _.find(projects, { id: selectedProjectId });
 
-  const handleActiveTabChange = useCallback((tab: string) => {
-    if (_.some([
-      isSwitchingWorkspaceTab,
-      _.isEqual(tab, activeTab),
-      _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean),
-    ], Boolean)) {
-      return;
-    }
+  const handleActiveTabChange = useCallback(
+    (tab: string) => {
+      if (_.some([isSwitchingWorkspaceTab, _.isEqual(tab, activeTab), _.every([_.isEqual(tab, AppTab.STUDIO), _.isEmpty(selectedProjectId)], Boolean)], Boolean)) {
+        return;
+      }
 
-    const shouldShowLoading = _.every(
-      [activeTab, tab],
-      isProjectWorkspaceTab,
-    );
-    workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
-    setIsSwitchingWorkspaceTab(shouldShowLoading);
+      const shouldShowLoading = _.every([activeTab, tab], isProjectWorkspaceTab);
+      workspaceTabLoadingStartedAtRef.current = shouldShowLoading ? Date.now() : null;
+      setIsSwitchingWorkspaceTab(shouldShowLoading);
 
-    if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
-      setSelectedProjectId(null);
-    }
-    setActiveTab(tab);
-  }, [activeTab, isSwitchingWorkspaceTab, selectedProjectId]);
+      if (_.includes([AppTab.PROJECTS, AppTab.DASHBOARD], tab as AppTab)) {
+        setSelectedProjectId(null);
+      }
+      setActiveTab(tab);
+    },
+    [activeTab, isSwitchingWorkspaceTab, selectedProjectId],
+  );
 
   const handleUpdateProjectDetails = async (id: string, name: string, description: string) => {
     const projToUpdate = _.find(projects, { id });
     if (!projToUpdate) return;
-    const updated = {
-      ...projToUpdate,
-      name,
-      description,
-      updatedAt: new Date().toISOString(),
-    };
+    const updated = { ...projToUpdate, name, description, updatedAt: new Date().toISOString(), };
     setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
     try {
       const res = await fetch(`${API_ROUTES.PROJECTS}/${id}`, {
@@ -682,9 +619,7 @@ export default function App() {
       if (res.ok) {
         const text = await res.text();
         const savedProject = jsonUtils.safeParse(text, null);
-        if (savedProject) {
-          setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
-        }
+        if (savedProject) setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? savedProject : p)));
       } else {
         setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? projToUpdate : p)));
         appError(_.join([ERROR_MESSAGES.UPDATING_PROJECT, res.status], REFACTOR_CONSTANTS.VD_BLANK));
@@ -697,25 +632,12 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col font-sans antialiased text-slate-205 bg-slate-955 transition-colors duration-300 overflow-hidden">
-      <Header
-        currentLang={currentLang}
-        setLang={setLang}
-        theme={theme as any}
-        toggleTheme={toggleTheme}
-      />
-      
+      <Header currentLang={currentLang} setLang={setLang} theme={theme as any} toggleTheme={toggleTheme} />
+
       <Toaster position="top-right" theme={theme as any} richColors />
 
       <div className="flex-grow w-full flex min-h-0 overflow-hidden relative bg-slate-955">
-        <Sidebar
-          currentLang={currentLang}
-          activeTab={activeTab}
-          setActiveTab={handleActiveTabChange}
-          selectedProjectId={selectedProjectId}
-          activeProjectName={activeProject?.name || null}
-          theme={theme as any}
-          toggleTheme={toggleTheme}
-        />
+        <Sidebar currentLang={currentLang} activeTab={activeTab} setActiveTab={handleActiveTabChange} selectedProjectId={selectedProjectId} activeProjectName={activeProject?.name || null} theme={theme as any} toggleTheme={toggleTheme} />
 
         <main className="flex-1 min-h-0 overflow-hidden relative bg-slate-955">
           <Suspense fallback={<TabContentLoading />}>
@@ -727,8 +649,12 @@ export default function App() {
                 theme={theme as any}
                 currentLang={currentLang}
                 project={activeProject}
-                onSaveProject={async (project) => { await handleUpdateProject(project); }}
-                setProject={async (project) => { await handleUpdateProject(project); }}
+                onSaveProject={async (project) => {
+                  await handleUpdateProject(project);
+                }}
+                setProject={async (project) => {
+                  await handleUpdateProject(project);
+                }}
                 onBackToDashboard={() => handleSelectProject(null)}
                 costTracker={costTracker}
                 setCostTracker={setCostTracker}
@@ -736,45 +662,16 @@ export default function App() {
                 setCredits={() => {}}
               />
             ) : _.isEqual(activeTab, AppTab.AUTO_GENERATOR) ? (
-              <AutoVideoGenerator
-                currentLang={currentLang}
-                projects={projects}
-                selectedProjectId={selectedProjectId}
-                onSelectProject={handleSelectProject}
-                onCreateProject={handleCreateProject}
-                onUpdateProject={handleUpdateProject}
-                theme={theme as any}
-              />
+              <AutoVideoGenerator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
             ) : _.isEqual(activeTab, AppTab.CINEMATIC_FILM) ? (
-              <CinematicFilmStudio
-                currentLang={currentLang}
-                projects={projects}
-                selectedProjectId={selectedProjectId}
-                onSelectProject={handleSelectProject}
-                onCreateProject={handleCreateProject}
-                onUpdateProject={handleUpdateProject}
-                theme={theme as any}
-              />
+              <CinematicFilmStudio currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
             ) : _.isEqual(activeTab, AppTab.SETTINGS) ? (
               <SettingsView currentLang={currentLang} />
             ) : _.isEqual(activeTab, AppTab.DASHBOARD) ? (
-              <DashboardView
-                currentLang={currentLang}
-                projects={projects}
-                onSelectProject={handleSelectProject}
-                onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)}
-              />
+              <DashboardView currentLang={currentLang} projects={projects} onSelectProject={handleSelectProject} onNavigateToProjects={() => setActiveTab(AppTab.PROJECTS)} />
             ) : (
               <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto">
-                <ProjectList
-                  currentLang={currentLang}
-                  projects={projects}
-                  isLoading={isLoadingProjects}
-                  onSelectProject={(project) => handleSelectProject(project.id)}
-                  onCreateProject={handleCreateProject}
-                  onUpdateProject={handleUpdateProjectDetails}
-                  onDeleteProject={handleDeleteProject}
-                />
+                <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
               </div>
             )}
           </Suspense>

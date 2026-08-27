@@ -39,4 +39,3 @@ export const createStoryboardRetentionDirective = (durationSeconds: unknown, gen
 - Adjacent scenes must differ in information, focal action or editorial perspective. A camera-angle change alone cannot disguise repeated content.
 - Plan visual proof for the promise and payoff, not only atmosphere. Keep screen geography and recurring identity consistent while varying shot size, evidence type and composition when narratively justified.
 - Treat music, ambience, silence and sound effects as story punctuation: support a reveal, physical action, location or emotional turn; never use repetitive impacts or synthetic beeps as automatic stimulation.`;
-

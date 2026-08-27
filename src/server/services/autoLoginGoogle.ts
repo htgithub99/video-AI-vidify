@@ -9,20 +9,18 @@ import { GoogleAccount } from "./accountRotatorService.js";
 import { captureDomDiagnostics } from "./domDiagnosticsService.js";
 import { getErrorMessage } from "../utils/errorUtils.js";
 
-const captureLoginDomState = (page: Page, state: string): Promise<void> => captureDomDiagnostics(page, state, {
-  fileName: AutoLoginConstants.DIAGNOSTICS.FILE_NAME,
-  selector: AutoLoginConstants.DIAGNOSTICS.SELECTOR,
-  maxElements: AutoLoginConstants.DIAGNOSTICS.MAX_ELEMENTS,
-  maxClassNameLength: AutoLoginConstants.DIAGNOSTICS.MAX_CLASS_NAME_LENGTH,
-  maxTextLength: AutoLoginConstants.DIAGNOSTICS.MAX_TEXT_LENGTH,
-  maxHtmlLength: AutoLoginConstants.DIAGNOSTICS.MAX_HTML_LENGTH,
-  errorMessageTemplate: AutoLoginConstants.DIAGNOSTICS.ERROR_MESSAGE,
-});
+const captureLoginDomState = (page: Page, state: string): Promise<void> =>
+  captureDomDiagnostics(page, state, {
+    fileName: AutoLoginConstants.DIAGNOSTICS.FILE_NAME,
+    selector: AutoLoginConstants.DIAGNOSTICS.SELECTOR,
+    maxElements: AutoLoginConstants.DIAGNOSTICS.MAX_ELEMENTS,
+    maxClassNameLength: AutoLoginConstants.DIAGNOSTICS.MAX_CLASS_NAME_LENGTH,
+    maxTextLength: AutoLoginConstants.DIAGNOSTICS.MAX_TEXT_LENGTH,
+    maxHtmlLength: AutoLoginConstants.DIAGNOSTICS.MAX_HTML_LENGTH,
+    errorMessageTemplate: AutoLoginConstants.DIAGNOSTICS.ERROR_MESSAGE,
+  });
 
-interface LocatedElement {
-  locator: Locator;
-  selector: string;
-}
+interface LocatedElement { locator: Locator; selector: string; }
 
 const findVisibleLocator = async (page: Page, selectors: readonly string[]): Promise<LocatedElement | null> => {
   for (const selector of selectors) {
@@ -35,8 +33,7 @@ const findVisibleLocator = async (page: Page, selectors: readonly string[]): Pro
 const clickFirstEnabledLocator = async (page: Page, selectors: readonly string[]): Promise<boolean> => {
   for (const selector of selectors) {
     const locator = page.locator(selector).first();
-    const isActionable = await locator.isVisible().catch(() => false)
-      && await locator.isEnabled().catch(() => false);
+    const isActionable = (await locator.isVisible().catch(() => false)) && (await locator.isEnabled().catch(() => false));
     if (isActionable) {
       await locator.click();
       return true;
@@ -46,9 +43,15 @@ const clickFirstEnabledLocator = async (page: Page, selectors: readonly string[]
 };
 
 const hasVisibleLocator = async (page: Page, selectors: readonly string[]): Promise<boolean> => {
-  const visibility = await Promise.all(_.map(selectors, (selector) => (
-    page.locator(selector).first().isVisible().catch(() => false)
-  )));
+  const visibility = await Promise.all(
+    _.map(selectors, (selector) =>
+      page
+        .locator(selector)
+        .first()
+        .isVisible()
+        .catch(() => false),
+    ),
+  );
   return _.some(visibility);
 };
 
@@ -61,10 +64,12 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
 
   try {
     appLog(AutoLoginConstants.LOGS.NAVIGATING_SIGN_IN);
-    await page.goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, {
-      waitUntil: "load",
-      timeout: AutoLoginConstants.CONFIG.NAVIGATION_TIMEOUT_MS,
-    }).catch(() => undefined);
+    await page
+      .goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, {
+        waitUntil: "load",
+        timeout: AutoLoginConstants.CONFIG.NAVIGATION_TIMEOUT_MS,
+      })
+      .catch(() => undefined);
     await page.waitForLoadState("networkidle").catch(() => {});
     await delayAsync(AutoLoginConstants.CONFIG.PAGE_READY_DELAY_MS);
     await captureLoginDomState(page, "login_page_opened");
@@ -86,9 +91,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
       await emailInput.fill(email);
       await randomDelay(AutoLoginConstants.CONFIG.EMAIL_NEXT_DELAY_MIN_MS, AutoLoginConstants.CONFIG.EMAIL_NEXT_DELAY_MAX_MS);
       const clickedNext = await clickFirstEnabledLocator(page, AutoLoginConstants.SELECTORS.EMAIL_NEXT_SELECTORS);
-      if (!clickedNext) {
-        await emailInput.press("Enter");
-      }
+      if (!clickedNext) await emailInput.press("Enter");
       appLog(AutoLoginConstants.LOGS.CLICKED_EMAIL_NEXT);
       await captureLoginDomState(page, "email_next_clicked");
     } else {
@@ -98,9 +101,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
         await page.fill(AutoLoginConstants.SELECTORS.EMAIL_INPUT, email);
         const fallbackEmailInput = page.locator(AutoLoginConstants.SELECTORS.EMAIL_INPUT).first();
         const clickedNext = await clickFirstEnabledLocator(page, AutoLoginConstants.SELECTORS.EMAIL_NEXT_SELECTORS);
-        if (!clickedNext) {
-          await fallbackEmailInput.press("Enter");
-        }
+        if (!clickedNext) await fallbackEmailInput.press("Enter");
         appLog(AutoLoginConstants.LOGS.CLICKED_EMAIL_NEXT);
         await captureLoginDomState(page, "email_next_clicked_fallback");
       } catch (err) {
@@ -114,7 +115,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
         timeout: AutoLoginConstants.CONFIG.PASSWORD_SCREEN_TIMEOUT_MS,
       });
     } catch (err) {
-      if (!await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS)) {
+      if (!(await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS))) {
         await captureLoginDomState(page, "password_screen_missing");
         appLog(AutoLoginConstants.LOGS.PWD_SCREEN_NOT_READY);
         return false;
@@ -134,9 +135,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
       await pwdInput.fill(password);
       await randomDelay(AutoLoginConstants.CONFIG.PASSWORD_NEXT_DELAY_MIN_MS, AutoLoginConstants.CONFIG.PASSWORD_NEXT_DELAY_MAX_MS);
       const clickedNext = await clickFirstEnabledLocator(page, AutoLoginConstants.SELECTORS.PWD_NEXT_SELECTORS);
-      if (!clickedNext) {
-        await pwdInput.press("Enter");
-      }
+      if (!clickedNext) await pwdInput.press("Enter");
       appLog(AutoLoginConstants.LOGS.CLICKED_PWD_NEXT);
       await captureLoginDomState(page, "password_next_clicked");
       await delayAsync(AutoLoginConstants.CONFIG.POST_PASSWORD_DELAY_MS);
@@ -147,9 +146,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
         await page.fill(AutoLoginConstants.SELECTORS.PWD_INPUT, password);
         const fallbackPwdInput = page.locator(AutoLoginConstants.SELECTORS.PWD_INPUT).first();
         const clickedNext = await clickFirstEnabledLocator(page, AutoLoginConstants.SELECTORS.PWD_NEXT_SELECTORS);
-        if (!clickedNext) {
-          await fallbackPwdInput.press("Enter");
-        }
+        if (!clickedNext) await fallbackPwdInput.press("Enter");
         appLog(AutoLoginConstants.LOGS.CLICKED_PWD_NEXT);
         await captureLoginDomState(page, "password_next_clicked_fallback");
         await delayAsync(AutoLoginConstants.CONFIG.POST_FALLBACK_PASSWORD_DELAY_MS);
@@ -180,24 +177,15 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
     let loginOk = false;
     let manualWaitLogged = false;
     let checkedMyAccountAfterManual = false;
-    const maxVerificationPolls = isHeadless
-      ? AutoLoginConstants.CONFIG.HEADLESS_VERIFICATION_POLLS
-      : AutoLoginConstants.CONFIG.WINDOWED_VERIFICATION_POLLS;
+    const maxVerificationPolls = isHeadless ? AutoLoginConstants.CONFIG.HEADLESS_VERIFICATION_POLLS : AutoLoginConstants.CONFIG.WINDOWED_VERIFICATION_POLLS;
     for (let i = 0; i < maxVerificationPolls; i++) {
       const currentUrl = page.url();
-      if (_.some([
-        _.includes(currentUrl, REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT),
-        _.includes(currentUrl, EXTERNAL_URLS.GEMINI_CHAT_BASE),
-      ])) {
+      if (_.some([_.includes(currentUrl, REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT), _.includes(currentUrl, EXTERNAL_URLS.GEMINI_CHAT_BASE)])) {
         loginOk = true;
         break;
       }
 
-      const needsManual = _.some([
-        await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS),
-        _.includes(currentUrl, AutoLoginConstants.URLS.CHALLENGE_KEYWORD),
-        _.includes(currentUrl, AutoLoginConstants.URLS.REJECTED_SIGN_IN_KEYWORD),
-      ]);
+      const needsManual = _.some([await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS), _.includes(currentUrl, AutoLoginConstants.URLS.CHALLENGE_KEYWORD), _.includes(currentUrl, AutoLoginConstants.URLS.REJECTED_SIGN_IN_KEYWORD)]);
 
       if (needsManual && isHeadless) {
         await captureLoginDomState(page, "manual_verification_headless");
@@ -210,15 +198,16 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
         manualWaitLogged = true;
       }
 
-      const leftLoginFlow = !_.includes(currentUrl, EXTERNAL_URLS.GOOGLE_ACCOUNTS)
-        && !_.includes(currentUrl, AutoLoginConstants.URLS.ACCOUNT_ABOUT_PATH);
+      const leftLoginFlow = !_.includes(currentUrl, EXTERNAL_URLS.GOOGLE_ACCOUNTS) && !_.includes(currentUrl, AutoLoginConstants.URLS.ACCOUNT_ABOUT_PATH);
       if (manualWaitLogged && leftLoginFlow && !checkedMyAccountAfterManual) {
         checkedMyAccountAfterManual = true;
         try {
-          await page.goto(EXTERNAL_URLS.GOOGLE_MY_ACCOUNT, {
-            waitUntil: "domcontentloaded",
-            timeout: AutoLoginConstants.CONFIG.MANUAL_ACCOUNT_CHECK_TIMEOUT_MS,
-          }).catch(() => undefined);
+          await page
+            .goto(EXTERNAL_URLS.GOOGLE_MY_ACCOUNT, {
+              waitUntil: "domcontentloaded",
+              timeout: AutoLoginConstants.CONFIG.MANUAL_ACCOUNT_CHECK_TIMEOUT_MS,
+            })
+            .catch(() => undefined);
           if (_.includes(page.url(), REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT)) {
             appLog(AutoLoginConstants.LOGS.MANUAL_VERIFICATION_DONE);
             await captureLoginDomState(page, "manual_verification_completed");

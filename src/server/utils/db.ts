@@ -3,16 +3,7 @@ import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
 import { VideoProject } from "../../types.js";
-import { 
-  PROJECTS_FILE_NAME, 
-  ENCODING_UTF8, 
-  SQLITE_DB_NAME, 
-  PROJECTS_BACKUP_DIR_NAME, 
-  getBackendMsg, 
-  SQL_STATEMENTS, 
-  MIGRATION_DEFAULTS, 
-  REFACTOR_CONSTANTS 
-} from "../../constants/index.js";
+import { PROJECTS_FILE_NAME, ENCODING_UTF8, SQLITE_DB_NAME, PROJECTS_BACKUP_DIR_NAME, getBackendMsg, SQL_STATEMENTS, MIGRATION_DEFAULTS, REFACTOR_CONSTANTS } from "../../constants/index.js";
 import { appError, appLog } from "../../lib/logger.js";
 import _ from "lodash";
 import { getDataDirectory } from "./paths.js";
@@ -46,7 +37,7 @@ export async function initDb(): Promise<Database<sqlite3.Database, sqlite3.State
 export async function getRenderJobsFromDb<T>(): Promise<T[]> {
   const db = await initDb();
   const rows = await db.all(SQL_STATEMENTS.SELECT_RENDER_JOBS);
-  return _.compact(_.map(rows, row => jsonUtils.safeParse<T>(row.data, null)));
+  return _.compact(_.map(rows, (row) => jsonUtils.safeParse<T>(row.data, null)));
 }
 
 export async function getRenderJobFromDb<T>(id: string): Promise<T | null> {
@@ -82,20 +73,8 @@ export async function savePresetToDb(preset: { id: string; name: string; config:
   try {
     const db = await initDb();
     const now = new Date().toISOString();
-    await db.run(SQL_STATEMENTS.INSERT_PRESET, [
-      preset.id,
-      preset.name,
-      jsonUtils.safeStringify(preset.config),
-      now,
-      now,
-    ]);
-    return {
-      id: preset.id,
-      name: preset.name,
-      config: preset.config,
-      createdAt: now,
-      updatedAt: now,
-    };
+    await db.run(SQL_STATEMENTS.INSERT_PRESET, [preset.id, preset.name, jsonUtils.safeStringify(preset.config), now, now]);
+    return { id: preset.id, name: preset.name, config: preset.config, createdAt: now, updatedAt: now, };
   } catch (error) {
     appError(_.join([getBackendMsg("SQLITE_PRESET_WRITE_ERR"), preset.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
@@ -129,19 +108,7 @@ export async function getProjectsListFromDb(): Promise<any[]> {
         };
       }
 
-      return {
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        currentStep: row.currentStep,
-        creditsUsed: row.creditsUsed,
-        parentId: detail.parentId,
-        projectKind: detail.projectKind,
-        config,
-        storyboard: _.defaultTo(detail.storyboard, []),
-      };
+      return { id: row.id, name: row.name, description: row.description, createdAt: row.createdAt, updatedAt: row.updatedAt, currentStep: row.currentStep, creditsUsed: row.creditsUsed, parentId: detail.parentId, projectKind: detail.projectKind, config, storyboard: _.defaultTo(detail.storyboard, []), };
     });
   } catch (error) {
     appError(getBackendMsg("SQLITE_LIST_ERR"), error);
@@ -166,19 +133,7 @@ export async function saveProjectDetailToDb(project: VideoProject): Promise<void
   try {
     const db = await initDb();
 
-    await db.run(
-      SQL_STATEMENTS.INSERT_PROJECT,
-      [
-        project.id,
-        project.name,
-        _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-        _.defaultTo(project.createdAt, new Date().toISOString()),
-        _.defaultTo(project.updatedAt, new Date().toISOString()),
-        _.defaultTo(project.currentStep, 0),
-        _.defaultTo(project.creditsUsed, 0),
-        jsonUtils.safeStringify(project)
-      ],
-    );
+    await db.run(SQL_STATEMENTS.INSERT_PROJECT, [project.id, project.name, _.defaultTo(project.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING), _.defaultTo(project.createdAt, new Date().toISOString()), _.defaultTo(project.updatedAt, new Date().toISOString()), _.defaultTo(project.currentStep, 0), _.defaultTo(project.creditsUsed, 0), jsonUtils.safeStringify(project)]);
   } catch (error) {
     appError(_.join([getBackendMsg("SQLITE_WRITE_ERR"), project.id], REFACTOR_CONSTANTS.VD_BLANK), error);
     throw error;
@@ -246,58 +201,46 @@ export async function migrateJsonToSqlite(): Promise<void> {
           currentStep: _.defaultTo(projectMeta.currentStep, 0),
           creditsUsed: _.defaultTo(projectMeta.creditsUsed, 0),
           input: _.defaultTo(projectMeta.input, { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING }),
-          config: _.defaultTo(projectMeta.config, { 
-            genre: MIGRATION_DEFAULTS.GENRE, 
-            language: MIGRATION_DEFAULTS.LANGUAGE, 
-            duration: MIGRATION_DEFAULTS.DURATION 
+          config: _.defaultTo(projectMeta.config, {
+            genre: MIGRATION_DEFAULTS.GENRE,
+            language: MIGRATION_DEFAULTS.LANGUAGE,
+            duration: MIGRATION_DEFAULTS.DURATION,
           }),
-          hookConfig: _.defaultTo(projectMeta.hookConfig, { 
-            type: MIGRATION_DEFAULTS.HOOK_TYPE, 
-            duration: MIGRATION_DEFAULTS.HOOK_DURATION, 
-            count: MIGRATION_DEFAULTS.HOOK_COUNT, 
-            positions: MIGRATION_DEFAULTS.HOOK_POSITIONS, 
-            versions: [] 
+          hookConfig: _.defaultTo(projectMeta.hookConfig, {
+            type: MIGRATION_DEFAULTS.HOOK_TYPE,
+            duration: MIGRATION_DEFAULTS.HOOK_DURATION,
+            count: MIGRATION_DEFAULTS.HOOK_COUNT,
+            positions: MIGRATION_DEFAULTS.HOOK_POSITIONS,
+            versions: [],
           }),
-          voiceConfig: _.defaultTo(projectMeta.voiceConfig, { 
-            provider: MIGRATION_DEFAULTS.VOICE_PROVIDER, 
-            audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE, 
-            gender: MIGRATION_DEFAULTS.VOICE_GENDER, 
-            age: MIGRATION_DEFAULTS.VOICE_AGE, 
-            emotion: MIGRATION_DEFAULTS.VOICE_EMOTION, 
-            speed: MIGRATION_DEFAULTS.VOICE_SPEED, 
-            pitch: MIGRATION_DEFAULTS.VOICE_PITCH, 
-            volume: MIGRATION_DEFAULTS.VOICE_VOLUME, 
-            voiceURI: MIGRATION_DEFAULTS.VOICE_URI 
+          voiceConfig: _.defaultTo(projectMeta.voiceConfig, {
+            provider: MIGRATION_DEFAULTS.VOICE_PROVIDER,
+            audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE,
+            gender: MIGRATION_DEFAULTS.VOICE_GENDER,
+            age: MIGRATION_DEFAULTS.VOICE_AGE,
+            emotion: MIGRATION_DEFAULTS.VOICE_EMOTION,
+            speed: MIGRATION_DEFAULTS.VOICE_SPEED,
+            pitch: MIGRATION_DEFAULTS.VOICE_PITCH,
+            volume: MIGRATION_DEFAULTS.VOICE_VOLUME,
+            voiceURI: MIGRATION_DEFAULTS.VOICE_URI,
           }),
-          visualConfig: _.defaultTo(projectMeta.visualConfig, { 
-            source: MIGRATION_DEFAULTS.VISUAL_SOURCE, 
-            style: MIGRATION_DEFAULTS.VISUAL_STYLE, 
-            quality: MIGRATION_DEFAULTS.VISUAL_QUALITY, 
-            density: MIGRATION_DEFAULTS.VISUAL_DENSITY, 
-            characterConsistency: true, 
-            assetsMode: MIGRATION_DEFAULTS.VISUAL_ASSETS_MODE, 
-            imageGeneratorEngine: MIGRATION_DEFAULTS.VISUAL_SOURCE, 
-            generateType: "image", 
-            aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO, 
-            promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT, 
-            generateCount: 1 
+          visualConfig: _.defaultTo(projectMeta.visualConfig, {
+            source: MIGRATION_DEFAULTS.VISUAL_SOURCE,
+            style: MIGRATION_DEFAULTS.VISUAL_STYLE,
+            quality: MIGRATION_DEFAULTS.VISUAL_QUALITY,
+            density: MIGRATION_DEFAULTS.VISUAL_DENSITY,
+            characterConsistency: true,
+            assetsMode: MIGRATION_DEFAULTS.VISUAL_ASSETS_MODE,
+            imageGeneratorEngine: MIGRATION_DEFAULTS.VISUAL_SOURCE,
+            generateType: "image",
+            aspectRatio: MIGRATION_DEFAULTS.VISUAL_ASPECT_RATIO,
+            promptInputMethod: MIGRATION_DEFAULTS.VISUAL_PROMPT_INPUT,
+            generateCount: 1,
           }),
         } as any;
       }
 
-      await db.run(
-        SQL_STATEMENTS.INSERT_PROJECT,
-        [
-          projectDetail!.id,
-          projectDetail!.name,
-          _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING),
-          _.defaultTo(projectDetail!.createdAt, new Date().toISOString()),
-          _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()),
-          _.defaultTo(projectDetail!.currentStep, 0),
-          _.defaultTo(projectDetail!.creditsUsed, 0),
-          jsonUtils.safeStringify(projectDetail)
-        ],
-      );
+      await db.run(SQL_STATEMENTS.INSERT_PROJECT, [projectDetail!.id, projectDetail!.name, _.defaultTo(projectDetail!.description, REFACTOR_CONSTANTS.VD_EMPTY_STRING), _.defaultTo(projectDetail!.createdAt, new Date().toISOString()), _.defaultTo(projectDetail!.updatedAt, new Date().toISOString()), _.defaultTo(projectDetail!.currentStep, 0), _.defaultTo(projectDetail!.creditsUsed, 0), jsonUtils.safeStringify(projectDetail)]);
 
       if (_.isEqual(fs.existsSync(detailFile), true)) {
         try {

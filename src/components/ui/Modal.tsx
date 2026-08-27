@@ -8,9 +8,7 @@ import { Button } from "./Button";
 
 export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, children, maxWidth }) => {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
+    if (isOpen) document.body.style.overflow = "hidden"; else {
       document.body.style.overflow = "unset";
     }
     return () => {
@@ -30,12 +28,7 @@ export const Modal: React.FC<IBaseModalProps> = ({ isOpen, onClose, title, child
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 relative z-10 bg-transparent">
           {title && <h2 className="text-base font-semibold text-slate-100">{title}</h2>}
-          <Button 
-            variant="ghost" 
-            size="xs" 
-            onClick={onClose} 
-            className="p-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors shadow-none"
-          >
+          <Button variant="ghost" size="xs" onClick={onClose} className="p-2 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors shadow-none">
             <X className="w-5 h-5" />
           </Button>
         </div>

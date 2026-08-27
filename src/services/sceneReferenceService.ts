@@ -34,73 +34,31 @@ export const SCENE_REFERENCE_CONFIG = {
   CONTINUING_PRONOUN_PATTERN: /^(?:anh|co|ong|ba|han|nguoi nay|he|she|him|her|his|their)\b/i,
 } as const;
 
-export interface SceneGenerationContext {
-  characterIds: string[];
-  prompt: string;
-  referenceImages: string[];
-  referenceRoles: string[];
-}
+export interface SceneGenerationContext { characterIds: string[]; prompt: string; referenceImages: string[]; referenceRoles: string[]; }
 
-const normalizeTokens = (value: string): string[] => _.uniq(_.filter(
-  _.words(_.toLower(_.deburr(value))),
-  token => _.gte(_.size(token), SCENE_REFERENCE_CONFIG.MIN_TOKEN_LENGTH),
-));
+const normalizeTokens = (value: string): string[] => _.uniq(_.filter(_.words(_.toLower(_.deburr(value))), (token) => _.gte(_.size(token), SCENE_REFERENCE_CONFIG.MIN_TOKEN_LENGTH)));
 
 const normalizeSearchText = (value: string): string => _.join(_.words(_.toLower(_.deburr(value))), " ");
 
-const getCharacterIdentityText = (character: CharacterConfig): string => _.join(_.compact([
-  character.name,
-  character.prompt,
-  character.description,
-  character.hair,
-  character.signatureClothing,
-  character.accessories,
-]), " ");
+const getCharacterIdentityText = (character: CharacterConfig): string => _.join(_.compact([character.name, character.prompt, character.description, character.hair, character.signatureClothing, character.accessories]), " ");
 
-const getCharacterIdentityDetails = (character: CharacterConfig): string[] => _.uniqBy(
-  _.compact([
-    character.genderPresentation,
-    character.ageRange,
-    character.ethnicitySkinTone,
-    character.bodyBuild,
-    character.faceShape,
-    character.eyes,
-    character.nose,
-    character.hair,
-    character.signatureClothing,
-    character.accessories,
-    character.silhouette,
-  ]),
-  value => _.toLower(_.trim(value)),
-);
+const getCharacterIdentityDetails = (character: CharacterConfig): string[] => _.uniqBy(_.compact([character.genderPresentation, character.ageRange, character.ethnicitySkinTone, character.bodyBuild, character.faceShape, character.eyes, character.nose, character.hair, character.signatureClothing, character.accessories, character.silhouette]), (value) => _.toLower(_.trim(value)));
 
 export const createCharacterIdentityDescription = (character: CharacterConfig): string => {
   const details = getCharacterIdentityDetails(character);
   if (!_.isEmpty(details)) return _.join(details, "; ");
-  return _.trim(_.toString(character.prompt || character.description)
-    .replace(SCENE_REFERENCE_CONFIG.TRANSIENT_STYLE_PATTERN, "")
-    .replace(SCENE_REFERENCE_CONFIG.DUPLICATE_SEPARATOR_PATTERN, ", "));
+  return _.trim(
+    _.toString(character.prompt || character.description)
+      .replace(SCENE_REFERENCE_CONFIG.TRANSIENT_STYLE_PATTERN, "")
+      .replace(SCENE_REFERENCE_CONFIG.DUPLICATE_SEPARATOR_PATTERN, ", "),
+  );
 };
 
 export const createCharacterIdentityBlocks = (characters: CharacterConfig[]): string => {
   if (_.isEmpty(characters)) return "";
-  const intro = _.isEqual(_.size(characters), 1)
-    ? SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_INTRO
-    : _.replace(SCENE_REFERENCE_CONFIG.MULTI_CHARACTER_INTRO, "{0}", _.toString(_.size(characters)));
-  const blocks = _.map(characters, (character, index) => _.join([
-    _.replace(
-      _.replace(SCENE_REFERENCE_CONFIG.CHARACTER_LABEL, "{0}", _.toString(_.add(index, 1))),
-      "{1}",
-      _.toUpper(character.name),
-    ),
-    createCharacterIdentityDescription(character),
-  ], ": "));
-  return _.join([
-    intro,
-    SCENE_REFERENCE_CONFIG.CHARACTER_SECTION,
-    ...blocks,
-    _.gt(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.IDENTITY_LOCK : "",
-  ].filter(Boolean), SCENE_REFERENCE_CONFIG.CHARACTER_SEPARATOR);
+  const intro = _.isEqual(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_INTRO : _.replace(SCENE_REFERENCE_CONFIG.MULTI_CHARACTER_INTRO, "{0}", _.toString(_.size(characters)));
+  const blocks = _.map(characters, (character, index) => _.join([_.replace(_.replace(SCENE_REFERENCE_CONFIG.CHARACTER_LABEL, "{0}", _.toString(_.add(index, 1))), "{1}", _.toUpper(character.name)), createCharacterIdentityDescription(character)], ": "));
+  return _.join([intro, SCENE_REFERENCE_CONFIG.CHARACTER_SECTION, ...blocks, _.gt(_.size(characters), 1) ? SCENE_REFERENCE_CONFIG.IDENTITY_LOCK : ""].filter(Boolean), SCENE_REFERENCE_CONFIG.CHARACTER_SEPARATOR);
 };
 
 const isCharacterMentioned = (sceneText: string, character: CharacterConfig): boolean => {
@@ -109,96 +67,67 @@ const isCharacterMentioned = (sceneText: string, character: CharacterConfig): bo
   const sceneTokens = normalizeTokens(sceneText);
   const sceneNameTokens = _.uniq(_.words(normalizedSceneText));
   const nameTokens = _.uniq(_.words(normalizeSearchText(character.name)));
-  if (!_.isEmpty(nameTokens) && _.every(nameTokens, token => _.includes(sceneNameTokens, token))) return true;
+  if (!_.isEmpty(nameTokens) && _.every(nameTokens, (token) => _.includes(sceneNameTokens, token))) return true;
   const identityTokens = normalizeTokens(getCharacterIdentityText(character));
   const identityAnchors = _.compact([character.hair, character.signatureClothing, character.accessories]);
-  const anchorMatches = _.size(_.filter(identityAnchors, anchor => {
-    const anchorTokens = normalizeTokens(anchor);
-    return !_.isEmpty(anchorTokens)
-      && _.gte(_.divide(_.size(_.intersection(anchorTokens, sceneTokens)), _.size(anchorTokens)), SCENE_REFERENCE_CONFIG.MIN_ANCHOR_TOKEN_RATIO);
-  }));
+  const anchorMatches = _.size(
+    _.filter(identityAnchors, (anchor) => {
+      const anchorTokens = normalizeTokens(anchor);
+      return !_.isEmpty(anchorTokens) && _.gte(_.divide(_.size(_.intersection(anchorTokens, sceneTokens)), _.size(anchorTokens)), SCENE_REFERENCE_CONFIG.MIN_ANCHOR_TOKEN_RATIO);
+    }),
+  );
   if (_.gte(anchorMatches, _.min([SCENE_REFERENCE_CONFIG.MIN_IDENTITY_ANCHOR_MATCHES, _.size(identityAnchors)])!)) return true;
   if (!_.isEmpty(identityAnchors)) return false;
   const matches = _.size(_.intersection(identityTokens, sceneTokens));
   const matchRatio = _.divide(matches, _.max([_.size(identityTokens), 1])!);
-  return _.gte(matches, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_TOKEN_MATCHES)
-    && _.gte(matchRatio, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_MATCH_RATIO);
+  return _.gte(matches, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_TOKEN_MATCHES) && _.gte(matchRatio, SCENE_REFERENCE_CONFIG.MIN_IDENTITY_MATCH_RATIO);
 };
 
-export const resolveSceneCharacterIds = (
-  scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">,
-  characters: CharacterConfig[],
-): string[] => {
+export const resolveSceneCharacterIds = (scene: Pick<StoryboardScene, "characterIds" | "prompt" | "script" | "subtitle" | "visualIntent" | "visibleAction" | "reaction">, characters: CharacterConfig[]): string[] => {
   const validIds = new Set(_.map(characters, "id"));
-  const explicitIds = _.filter(_.uniq(scene.characterIds), id => validIds.has(id));
+  const explicitIds = _.filter(_.uniq(scene.characterIds), (id) => validIds.has(id));
   if (!_.isEmpty(explicitIds)) return explicitIds;
-  const sceneText = _.join(_.compact([
-    scene.prompt,
-    scene.script,
-    scene.subtitle,
-    scene.visualIntent,
-    scene.visibleAction,
-    scene.reaction,
-  ]), " ");
-  const matchedIds = _.map(_.filter(characters, character => isCharacterMentioned(sceneText, character)), "id");
-  if (_.isEmpty(matchedIds)
-    && _.isEqual(_.size(characters), 1)
-    && SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_SUBJECT_PATTERN.test(normalizeSearchText(sceneText))) {
+  const sceneText = _.join(_.compact([scene.prompt, scene.script, scene.subtitle, scene.visualIntent, scene.visibleAction, scene.reaction]), " ");
+  const matchedIds = _.map(
+    _.filter(characters, (character) => isCharacterMentioned(sceneText, character)),
+    "id",
+  );
+  if (_.isEmpty(matchedIds) && _.isEqual(_.size(characters), 1) && SCENE_REFERENCE_CONFIG.SINGLE_CHARACTER_SUBJECT_PATTERN.test(normalizeSearchText(sceneText))) {
     return [characters[0].id];
   }
   return matchedIds;
 };
 
-export const resolveStoryboardCharacterIds = (
-  scenes: StoryboardScene[],
-  characters: CharacterConfig[],
-): StoryboardScene[] => {
+export const resolveStoryboardCharacterIds = (scenes: StoryboardScene[], characters: CharacterConfig[]): StoryboardScene[] => {
   let previousCharacterIds: string[] = [];
-  return _.map(scenes, scene => {
+  return _.map(scenes, (scene) => {
     const resolvedCharacterIds = resolveSceneCharacterIds(scene, characters);
     const sceneText = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle]), " "));
-    const inheritedCharacterIds = _.every([
-      _.isEmpty(resolvedCharacterIds),
-      _.isEqual(_.size(previousCharacterIds), 1),
-      SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(sceneText),
-    ], Boolean)
-      ? previousCharacterIds
-      : resolvedCharacterIds;
+    const inheritedCharacterIds = _.every([_.isEmpty(resolvedCharacterIds), _.isEqual(_.size(previousCharacterIds), 1), SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(sceneText)], Boolean) ? previousCharacterIds : resolvedCharacterIds;
     if (!_.isEmpty(inheritedCharacterIds)) previousCharacterIds = inheritedCharacterIds;
     return { ...scene, characterIds: inheritedCharacterIds };
   });
 };
 
-export const pruneUnsupportedSceneCharacterIds = (
-  scenes: StoryboardScene[],
-  characters: CharacterConfig[],
-): StoryboardScene[] => {
+export const pruneUnsupportedSceneCharacterIds = (scenes: StoryboardScene[], characters: CharacterConfig[]): StoryboardScene[] => {
   let previousCharacterIds: string[] = [];
-  return _.map(scenes, scene => {
+  return _.map(scenes, (scene) => {
     const narration = normalizeSearchText(_.join(_.compact([scene.script, scene.subtitle]), " "));
-    const narrationMatchedIds = _.map(_.filter(characters, character => {
-      const stableName = normalizeSearchText(character.name);
-      return !_.isEmpty(stableName) && _.includes(` ${narration} `, ` ${stableName} `);
-    }), "id");
-    const characterIds = _.isEmpty(narrationMatchedIds)
-      && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration)
-      ? previousCharacterIds
-      : narrationMatchedIds;
+    const narrationMatchedIds = _.map(
+      _.filter(characters, (character) => {
+        const stableName = normalizeSearchText(character.name);
+        return !_.isEmpty(stableName) && _.includes(` ${narration} `, ` ${stableName} `);
+      }),
+      "id",
+    );
+    const characterIds = _.isEmpty(narrationMatchedIds) && SCENE_REFERENCE_CONFIG.CONTINUING_PRONOUN_PATTERN.test(narration) ? previousCharacterIds : narrationMatchedIds;
     if (!_.isEmpty(characterIds)) previousCharacterIds = characterIds;
     return { ...scene, characterIds };
   });
 };
 
-export const createSceneGenerationContext = (
-  scene: StoryboardScene,
-  visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">,
-): SceneGenerationContext => {
+export const createSceneGenerationContext = (scene: StoryboardScene, visualConfig: Pick<VisualConfig, "characters" | "sceneReferenceImages" | "styleReferenceImages" | "referenceImages">): SceneGenerationContext => {
   const characters = _.defaultTo(visualConfig.characters, []);
   const characterIds = resolveSceneCharacterIds(scene, characters);
-  return {
-    characterIds,
-    prompt: scene.prompt || scene.script,
-    referenceImages: [],
-    referenceRoles: [],
-  };
+  return { characterIds, prompt: scene.prompt || scene.script, referenceImages: [], referenceRoles: [], };
 };

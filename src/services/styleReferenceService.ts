@@ -1,27 +1,13 @@
 import _ from "lodash";
-import {
-  IMAGE_PROMPT_COMPILER_CONFIG,
-  MARKDOWN_REGEX,
-  STYLE_DIRECTIVE_CONFIG,
-  STYLE_LOCK_CONFIG,
-  resolveStylePreset,
-} from "../constants";
+import { IMAGE_PROMPT_COMPILER_CONFIG, MARKDOWN_REGEX, STYLE_DIRECTIVE_CONFIG, STYLE_LOCK_CONFIG, resolveStylePreset } from "../constants";
 import { VisualStyleProfile } from "../types";
 
-const normalizeField = (value: unknown): string => _.trim(
-  _.replace(_.toString(value), MARKDOWN_REGEX, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING),
-);
+const normalizeField = (value: unknown): string => _.trim(_.replace(_.toString(value), MARKDOWN_REGEX, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING));
 
 const resolveWorldRendering = (worldRendering: string, backgroundMode?: string): string => {
   const normalized = normalizeField(worldRendering);
   if (_.isEqual(backgroundMode, STYLE_DIRECTIVE_CONFIG.CONTEXTUAL_MODE)) {
-    const contextualResult = _.trim(
-      _.replace(
-        normalized,
-        STYLE_DIRECTIVE_CONFIG.SOLID_WHITE_BG_PATTERN,
-        STYLE_DIRECTIVE_CONFIG.CONTEXTUAL_ENVIRONMENT_TEXT,
-      ),
-    );
+    const contextualResult = _.trim(_.replace(normalized, STYLE_DIRECTIVE_CONFIG.SOLID_WHITE_BG_PATTERN, STYLE_DIRECTIVE_CONFIG.CONTEXTUAL_ENVIRONMENT_TEXT));
     return contextualResult || STYLE_DIRECTIVE_CONFIG.CONTEXTUAL_ENVIRONMENT_TEXT;
   }
   if (_.includes([STYLE_DIRECTIVE_CONFIG.MINIMAL_MODE, STYLE_DIRECTIVE_CONFIG.WHITE_MODE, STYLE_DIRECTIVE_CONFIG.SOLID_MODE], backgroundMode)) {
@@ -53,18 +39,9 @@ export const normalizeVisualStyleProfile = (value: unknown): VisualStyleProfile 
   overallMood: normalizeField(_.get(value, "overallMood")),
   adaptiveElements: normalizeField(_.get(value, "adaptiveElements")),
   negativeStylePrompt: normalizeField(_.get(value, "negativeStylePrompt")),
-  sampleSpecificContent: _.uniq(_.compact(_.map(
-    _.castArray(_.get(value, "sampleSpecificContent", [])),
-    normalizeField,
-  ))),
-  lockedStyleElements: _.uniq(_.compact(_.map(
-    _.castArray(_.get(value, "lockedStyleElements", [])),
-    normalizeField,
-  ))),
-  flexibleElements: _.uniq(_.compact(_.map(
-    _.castArray(_.get(value, "flexibleElements", [])),
-    normalizeField,
-  ))),
+  sampleSpecificContent: _.uniq(_.compact(_.map(_.castArray(_.get(value, "sampleSpecificContent", [])), normalizeField))),
+  lockedStyleElements: _.uniq(_.compact(_.map(_.castArray(_.get(value, "lockedStyleElements", [])), normalizeField))),
+  flexibleElements: _.uniq(_.compact(_.map(_.castArray(_.get(value, "flexibleElements", [])), normalizeField))),
 });
 
 export const createCharacterConstructionDirective = (profile?: VisualStyleProfile): string => {
@@ -74,12 +51,7 @@ export const createCharacterConstructionDirective = (profile?: VisualStyleProfil
   const colorDna = normalizeField(profile.colorDna);
   const renderingDna = normalizeField(profile.renderingDna);
 
-  return _.join(_.compact([
-    medium,
-    characterType,
-    colorDna,
-    renderingDna,
-  ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
+  return _.join(_.compact([medium, characterType, colorDna, renderingDna]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
 export const createMasterStylePrefix = (profile?: VisualStyleProfile): string => {
@@ -89,12 +61,7 @@ export const createMasterStylePrefix = (profile?: VisualStyleProfile): string =>
   const lineDna = normalizeField(profile.lineDna);
   const colorDna = normalizeField(profile.colorDna);
 
-  return _.join(_.compact([
-    medium,
-    characterType,
-    lineDna,
-    colorDna,
-  ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
+  return _.join(_.compact([medium, characterType, lineDna, colorDna]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
 export const createMasterStyleSuffix = (profile?: VisualStyleProfile, backgroundMode?: string): string => {
@@ -102,39 +69,20 @@ export const createMasterStyleSuffix = (profile?: VisualStyleProfile, background
   const renderingDna = normalizeField(profile.renderingDna);
   const worldRendering = resolveWorldRendering(normalizeField(profile.worldRendering), backgroundMode);
 
-  return _.join(_.compact([
-    renderingDna,
-    worldRendering,
-  ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
+  return _.join(_.compact([renderingDna, worldRendering]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
 export const createSoftStyleDirective = (profile: VisualStyleProfile, backgroundMode?: string): string => {
-  const normalizedWorldRendering = resolveWorldRendering(
-    normalizeField(profile.worldRendering),
-    backgroundMode,
-  );
-  return _.join(_.compact([
-    createCharacterConstructionDirective(profile),
-    normalizedWorldRendering,
-  ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR) || IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE;
+  const normalizedWorldRendering = resolveWorldRendering(normalizeField(profile.worldRendering), backgroundMode);
+  return _.join(_.compact([createCharacterConstructionDirective(profile), normalizedWorldRendering]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR) || IMAGE_PROMPT_COMPILER_CONFIG.LOCKED_REFERENCE_STYLE;
 };
 
-export const createThumbnailStyleDirective = (
-  sceneProfile?: VisualStyleProfile,
-  thumbnailProfile?: VisualStyleProfile,
-  backgroundMode?: string,
-): string => {
+export const createThumbnailStyleDirective = (sceneProfile?: VisualStyleProfile, thumbnailProfile?: VisualStyleProfile, backgroundMode?: string): string => {
   const characterSource = sceneProfile || thumbnailProfile;
   const presentationSource = thumbnailProfile || sceneProfile;
-  const normalizedWorldRendering = resolveWorldRendering(
-    normalizeField(presentationSource?.worldRendering),
-    backgroundMode,
-  );
+  const normalizedWorldRendering = resolveWorldRendering(normalizeField(presentationSource?.worldRendering), backgroundMode);
 
-  return _.join(_.compact([
-    createCharacterConstructionDirective(characterSource),
-    normalizedWorldRendering,
-  ]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
+  return _.join(_.compact([createCharacterConstructionDirective(characterSource), normalizedWorldRendering]), STYLE_DIRECTIVE_CONFIG.SENTENCE_SEPARATOR);
 };
 
 export const resolveNegativeStylePrompt = (profile?: VisualStyleProfile): string => {
@@ -155,13 +103,5 @@ export const resolveReferenceLockedStyle = (style: unknown, _hasReferences: bool
   return preset.positivePrompt;
 };
 
-export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string => (
-  referenceLocked
-    ? _.trim(
-      value
-        .replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING)
-        .replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ")
-        .replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1"),
-    )
-    : value
-);
+export const removeConflictingStyleTerms = (value: string, referenceLocked: boolean): string =>
+  referenceLocked ? _.trim(value.replace(IMAGE_PROMPT_COMPILER_CONFIG.CONFLICTING_STYLE_PATTERN, STYLE_DIRECTIVE_CONFIG.EMPTY_STRING).replace(IMAGE_PROMPT_COMPILER_CONFIG.COMMA_CLEANUP_REGEX, ", ").replace(IMAGE_PROMPT_COMPILER_CONFIG.PUNCTUATION_SPACE_REGEX, "$1")) : value;

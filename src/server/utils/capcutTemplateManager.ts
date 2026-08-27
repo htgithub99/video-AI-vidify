@@ -8,12 +8,7 @@ import { TEMPLATE_CONFIG } from "../../constants/index.js";
 import { BACKEND_MESSAGES_LOCALIZED } from "../../constants/messages.js";
 import { jsonUtils } from "../../lib/json.js";
 
-export interface CapcutTemplate {
-  id: string;
-  name: string;
-  createdAt: string;
-  filePath: string;
-}
+export interface CapcutTemplate { id: string; name: string; createdAt: string; filePath: string; }
 
 export function getTemplatesDirectory(): string {
   const dataDir = getDataDirectory();
@@ -57,9 +52,7 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const templatesDir = getTemplatesDirectory();
 
   const currentTemplates = listTemplates();
-  if (currentTemplates.length >= TEMPLATE_CONFIG.MAX_TEMPLATES) {
-    throw new Error(TEMPLATE_CONFIG.MAX_TEMPLATES_ERROR);
-  }
+  if (currentTemplates.length >= TEMPLATE_CONFIG.MAX_TEMPLATES) throw new Error(TEMPLATE_CONFIG.MAX_TEMPLATES_ERROR);
 
   if (!fs.existsSync(path.join(folderPath, TEMPLATE_CONFIG.DRAFT_CONTENT_FILE))) {
     throw new Error(TEMPLATE_CONFIG.INVALID_TEMPLATE_ERROR);
@@ -68,12 +61,7 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const uuidRegex = new RegExp(`(?:_([a-zA-Z0-9]{${TEMPLATE_CONFIG.ID_LENGTH}}))+$`);
   const cleanName = _.replace(name, uuidRegex, "");
 
-  const safeName = _.chain(cleanName)
-    .deburr()
-    .replace(TEMPLATE_CONFIG.REGEX_SAFE_NAME, "")
-    .trim()
-    .replace(TEMPLATE_CONFIG.REGEX_SPACE, "_")
-    .value();
+  const safeName = _.chain(cleanName).deburr().replace(TEMPLATE_CONFIG.REGEX_SAFE_NAME, "").trim().replace(TEMPLATE_CONFIG.REGEX_SPACE, "_").value();
 
   const fileName = `${safeName}_${randomUUID().substring(0, TEMPLATE_CONFIG.ID_LENGTH)}${TEMPLATE_CONFIG.JSON_EXT}`;
   const filePath = path.join(templatesDir, fileName);
@@ -81,12 +69,7 @@ export function saveTemplate(name: string, folderPath: string): CapcutTemplate {
   const content = { folderPath: folderPath };
   fs.writeFileSync(filePath, jsonUtils.safeStringify(content, null, TEMPLATE_CONFIG.JSON_SPACE), TEMPLATE_CONFIG.UTF8);
 
-  return {
-    id: _.replace(fileName, TEMPLATE_CONFIG.JSON_EXT, ""),
-    name: cleanName,
-    createdAt: new Date().toISOString(),
-    filePath: filePath,
-  };
+  return { id: _.replace(fileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanName, createdAt: new Date().toISOString(), filePath: filePath, };
 }
 
 export function deleteTemplate(id: string): boolean {
@@ -114,24 +97,14 @@ export function renameTemplate(id: string, newName: string): CapcutTemplate | nu
   const uuidRegex = new RegExp(`(?:_([a-zA-Z0-9]{${TEMPLATE_CONFIG.ID_LENGTH}}))+$`);
   const cleanNewName = _.replace(newName, uuidRegex, "");
 
-  const safeName = _.chain(cleanNewName)
-    .deburr()
-    .replace(TEMPLATE_CONFIG.REGEX_SAFE_NAME, "")
-    .trim()
-    .replace(TEMPLATE_CONFIG.REGEX_SPACE, "_")
-    .value();
+  const safeName = _.chain(cleanNewName).deburr().replace(TEMPLATE_CONFIG.REGEX_SAFE_NAME, "").trim().replace(TEMPLATE_CONFIG.REGEX_SPACE, "_").value();
 
   const newFileName = `${safeName}_${randomUUID().substring(0, TEMPLATE_CONFIG.ID_LENGTH)}${TEMPLATE_CONFIG.JSON_EXT}`;
   const newFilePath = path.join(templatesDir, newFileName);
 
   try {
     fs.renameSync(oldFilePath, newFilePath);
-    return {
-      id: _.replace(newFileName, TEMPLATE_CONFIG.JSON_EXT, ""),
-      name: cleanNewName,
-      createdAt: new Date().toISOString(),
-      filePath: newFilePath,
-    };
+    return { id: _.replace(newFileName, TEMPLATE_CONFIG.JSON_EXT, ""), name: cleanNewName, createdAt: new Date().toISOString(), filePath: newFilePath, };
   } catch (e) {
     logger.error(BACKEND_MESSAGES_LOCALIZED.vi.TEMPLATE_RENAME_FAILED, e);
     return null;

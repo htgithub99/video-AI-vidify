@@ -25,39 +25,28 @@ const getAuthenticEvidenceScore = (scene: StoryboardScene): number => {
 
 export const getMinimumArchivalRatio = (genre?: string): number => _.get(FACTUAL_ARCHIVAL_RATIOS, genre || "", 0);
 
-const REQUIRED_EDITORIAL_FIELDS: Array<keyof StoryboardScene> = [
-  "visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "composition",
-];
+const REQUIRED_EDITORIAL_FIELDS: Array<keyof StoryboardScene> = ["visualIntent", "visibleAction", "reaction", "storyEvidence", "visualHook", "composition"];
 
-const hasRequiredEditorialData = (scene: StoryboardScene): boolean => _.every(
-  REQUIRED_EDITORIAL_FIELDS,
-  field => !_.isEmpty(_.trim(_.toString(scene[field]))),
-);
+const hasRequiredEditorialData = (scene: StoryboardScene): boolean => _.every(REQUIRED_EDITORIAL_FIELDS, (field) => !_.isEmpty(_.trim(_.toString(scene[field]))));
 
 const hasUsableStrategy = (scene: StoryboardScene): boolean => {
   if (!_.includes(["archival", "ai_generated"], scene.assetStrategy)) return false;
   if (!_.isEqual(scene.assetStrategy, "archival")) return true;
   const query = _.trim(scene.archivalSearchQuery);
   const narration = _.trim(scene.script || scene.subtitle);
-  return hasRequiredEditorialData(scene)
-    && !_.isEmpty(query)
-    && !_.isEqual(_.deburr(_.toLower(query)), _.deburr(_.toLower(narration)))
-    && getAuthenticEvidenceScore(scene) > 0;
+  return hasRequiredEditorialData(scene) && !_.isEmpty(query) && !_.isEqual(_.deburr(_.toLower(query)), _.deburr(_.toLower(narration))) && getAuthenticEvidenceScore(scene) > 0;
 };
 
-export const ensureMediaSourcePlan = (
-  scenes: StoryboardScene[],
-  genre?: string,
-): StoryboardScene[] => {
+export const ensureMediaSourcePlan = (scenes: StoryboardScene[], genre?: string): StoryboardScene[] => {
   const minimumRatio = getMinimumArchivalRatio(genre);
-  return _.map(scenes, scene => hasUsableStrategy(scene)
-    ? scene
-    : {
-      ...scene,
-      assetStrategy: "ai_generated" as const,
-      archivalSearchQuery: "",
-      archivalRationale: minimumRatio > 0
-        ? "Authentic evidence was not fully specified by AI; use an explicit reconstruction instead of unrelated source media"
-        : "AI visual planning did not request authentic source media for this scene",
-    });
+  return _.map(scenes, (scene) =>
+    hasUsableStrategy(scene)
+      ? scene
+      : {
+          ...scene,
+          assetStrategy: "ai_generated" as const,
+          archivalSearchQuery: "",
+          archivalRationale: minimumRatio > 0 ? "Authentic evidence was not fully specified by AI; use an explicit reconstruction instead of unrelated source media" : "AI visual planning did not request authentic source media for this scene",
+        },
+  );
 };

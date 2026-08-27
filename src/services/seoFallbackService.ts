@@ -11,32 +11,22 @@ const createUnknownScoreMetadata = (text: string): SEOMetadata => ({
   seoScore: SEO_FALLBACK_CONFIG.UNKNOWN_SCORE,
 });
 
-const createTerms = (script: string): string[] => _.uniq(_.filter(
-  _.words(_.toLower(script)),
-  word => _.size(word) >= SEO_FALLBACK_CONFIG.TAG_MIN_LENGTH,
-));
+const createTerms = (script: string): string[] => _.uniq(_.filter(_.words(_.toLower(script)), (word) => _.size(word) >= SEO_FALLBACK_CONFIG.TAG_MIN_LENGTH));
 
-export const createSourceGroundedSeo = (
-  script: string,
-  config: Partial<Record<"numTitles" | "numDescriptions" | "numHashtags" | "numTags", number>> = {},
-): SEOPackage => {
+export const createSourceGroundedSeo = (script: string, config: Partial<Record<"numTitles" | "numDescriptions" | "numHashtags" | "numTags", number>> = {}): SEOPackage => {
   const normalizedScript = _.trim(script);
   const sentences = smartSplitSentences(normalizedScript);
   const sourceTitles = _.take(sentences, config.numTitles || SEO_FALLBACK_CONFIG.DEFAULT_TITLE_COUNT);
   const titleSources = _.isEmpty(sourceTitles) ? [normalizedScript] : sourceTitles;
-  const titles = _.map(titleSources, title => createUnknownScoreMetadata(_.truncate(title, {
-    length: SEO_FALLBACK_CONFIG.TITLE_MAX_LENGTH,
-  })));
-  const descriptionText = _.truncate(normalizedScript, { length: SEO_FALLBACK_CONFIG.DESCRIPTION_MAX_LENGTH });
-  const descriptions = _.times(
-    config.numDescriptions || SEO_FALLBACK_CONFIG.DEFAULT_DESCRIPTION_COUNT,
-    () => createUnknownScoreMetadata(descriptionText),
+  const titles = _.map(titleSources, (title) =>
+    createUnknownScoreMetadata(
+      _.truncate(title, {
+        length: SEO_FALLBACK_CONFIG.TITLE_MAX_LENGTH,
+      }),
+    ),
   );
+  const descriptionText = _.truncate(normalizedScript, { length: SEO_FALLBACK_CONFIG.DESCRIPTION_MAX_LENGTH });
+  const descriptions = _.times(config.numDescriptions || SEO_FALLBACK_CONFIG.DEFAULT_DESCRIPTION_COUNT, () => createUnknownScoreMetadata(descriptionText));
   const terms = createTerms(normalizedScript);
-  return {
-    titles,
-    descriptions,
-    hashtags: _.take(terms, config.numHashtags || SEO_FALLBACK_CONFIG.DEFAULT_HASHTAG_COUNT),
-    tags: _.take(terms, config.numTags || SEO_FALLBACK_CONFIG.DEFAULT_TAG_COUNT),
-  };
+  return { titles, descriptions, hashtags: _.take(terms, config.numHashtags || SEO_FALLBACK_CONFIG.DEFAULT_HASHTAG_COUNT), tags: _.take(terms, config.numTags || SEO_FALLBACK_CONFIG.DEFAULT_TAG_COUNT), };
 };

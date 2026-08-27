@@ -1,14 +1,7 @@
 import _ from "lodash";
 import { TECHNICAL_RESPONSE_RETRY_CONFIG } from "../constants/config";
 
-export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = {
-  MINIMUM_ANALYSIS_CHARACTERS: 30,
-  MINIMUM_ANALYSIS_WORDS: 5,
-  MINIMUM_VIETNAMESE_DIACRITIC_RATIO: 0.05,
-  MAXIMUM_JOINED_PUNCTUATION_COUNT: 1,
-  MAXIMUM_WORD_CHARACTERS: 32,
-  MAXIMUM_GENERATION_ATTEMPTS: TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS,
-} as const;
+export const CHAPTER_LANGUAGE_VALIDATION_CONFIG = { MINIMUM_ANALYSIS_CHARACTERS: 30, MINIMUM_ANALYSIS_WORDS: 5, MINIMUM_VIETNAMESE_DIACRITIC_RATIO: 0.05, MAXIMUM_JOINED_PUNCTUATION_COUNT: 1, MAXIMUM_WORD_CHARACTERS: 32, MAXIMUM_GENERATION_ATTEMPTS: TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS, } as const;
 
 const LETTER_REGEX = /\p{L}/gu;
 const WORD_REGEX = /\p{L}+/gu;
@@ -23,15 +16,9 @@ export enum ChapterLanguageIssue {
   JoinedWords = "joined_words",
 }
 
-export interface ChapterLanguageValidation {
-  valid: boolean;
-  issues: ChapterLanguageIssue[];
-}
+export interface ChapterLanguageValidation { valid: boolean; issues: ChapterLanguageIssue[]; }
 
-export const validateChapterLanguage = (
-  content: unknown,
-  isVietnamese: boolean,
-): ChapterLanguageValidation => {
+export const validateChapterLanguage = (content: unknown, isVietnamese: boolean): ChapterLanguageValidation => {
   const text = _.trim(_.toString(content));
   if (!isVietnamese || text.length < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MINIMUM_ANALYSIS_CHARACTERS) {
     return { valid: true, issues: [] };
@@ -46,19 +33,11 @@ export const validateChapterLanguage = (
   const diacriticCount = (text.match(VIETNAMESE_DIACRITIC_REGEX) || []).length;
   const diacriticRatio = _.divide(diacriticCount, _.max([letterCount, 1]) || 1);
   const joinedPunctuationCount = (text.match(JOINED_PUNCTUATION_REGEX) || []).length;
-  const hasJoinedWords = _.some(
-    words,
-    word => word.length > CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_WORD_CHARACTERS,
-  );
+  const hasJoinedWords = _.some(words, (word) => word.length > CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_WORD_CHARACTERS);
 
-  const isMissingDiacritics = diacriticRatio < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MINIMUM_VIETNAMESE_DIACRITIC_RATIO
-    || (diacriticCount === 0 && COMMON_UNACCENTED_VIETNAMESE_PATTERN.test(text));
+  const isMissingDiacritics = diacriticRatio < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MINIMUM_VIETNAMESE_DIACRITIC_RATIO || (diacriticCount === 0 && COMMON_UNACCENTED_VIETNAMESE_PATTERN.test(text));
 
-  const issues = _.compact([
-    isMissingDiacritics && ChapterLanguageIssue.MissingVietnameseDiacritics,
-    joinedPunctuationCount > CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_JOINED_PUNCTUATION_COUNT && ChapterLanguageIssue.JoinedPunctuation,
-    hasJoinedWords && ChapterLanguageIssue.JoinedWords,
-  ]) as ChapterLanguageIssue[];
+  const issues = _.compact([isMissingDiacritics && ChapterLanguageIssue.MissingVietnameseDiacritics, joinedPunctuationCount > CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_JOINED_PUNCTUATION_COUNT && ChapterLanguageIssue.JoinedPunctuation, hasJoinedWords && ChapterLanguageIssue.JoinedWords]) as ChapterLanguageIssue[];
 
   return { valid: _.isEmpty(issues), issues };
 };

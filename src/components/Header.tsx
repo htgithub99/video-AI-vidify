@@ -13,44 +13,16 @@ const LANG_BTN_BASE = "px-3 py-1.5 text-[10px] rounded-lg font-extrabold transit
 const LANG_BTN_ACTIVE = "bg-white dark:bg-slate-800 text-rose-600 shadow-md border border-slate-200 dark:border-slate-700";
 const LANG_BTN_INACTIVE = "text-slate-500 hover:text-slate-700 hover:bg-slate-300/60 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 border border-transparent";
 
-interface HeaderProps {
-  currentLang: AppLanguage | Lang;
-  setLang: (lang: Lang) => void;
-  theme: AppTheme | string;
-  toggleTheme: () => void;
-}
+interface HeaderProps { currentLang: AppLanguage | Lang; setLang: (lang: Lang) => void; theme: AppTheme | string; toggleTheme: () => void; }
 
-interface QuotaBadgeProps {
-  icon: ReactNode;
-  usage: number;
-  limit: number;
-  isUnlimited: boolean;
-  colorClass: string;
-  tooltip: string;
-  formatNumber?: boolean;
-}
+interface QuotaBadgeProps { icon: ReactNode; usage: number; limit: number; isUnlimited: boolean; colorClass: string; tooltip: string; formatNumber?: boolean; }
 
-const QuotaBadge: FC<QuotaBadgeProps> = ({
-  icon,
-  usage,
-  limit,
-  isUnlimited,
-  colorClass,
-  tooltip,
-  formatNumber = false,
-}) => {
+const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colorClass, tooltip, formatNumber = false }) => {
   const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
-  const formattedLimit = isUnlimited
-    ? UIConstants.INFINITY
-    : formatNumber
-      ? limit.toLocaleString()
-      : limit;
+  const formattedLimit = isUnlimited ? UIConstants.INFINITY : formatNumber ? limit.toLocaleString() : limit;
 
   return (
-    <div
-      className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800"
-      title={tooltip}
-    >
+    <div className="hidden sm:flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-lg px-2.5 py-1.5 shadow-sm transition-colors hover:bg-slate-800" title={tooltip}>
       {icon}
       <span className="text-[10px] font-bold text-slate-400">
         <span className={cn(colorClass, "font-black")}>{formattedUsage}</span> / {formattedLimit}
@@ -59,12 +31,7 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({
   );
 };
 
-export default function Header({
-  currentLang,
-  setLang,
-  theme,
-  toggleTheme,
-}: HeaderProps) {
+export default function Header({ currentLang, setLang, theme, toggleTheme }: HeaderProps) {
   const t = translations[currentLang as Lang];
   const isVietnamese = _.isEqual(currentLang, AppLanguage.VI);
   const langKey = isVietnamese ? UIConstants.LANG_VI : UIConstants.LANG_EN;
@@ -80,17 +47,11 @@ export default function Header({
   const usageImage = _.get(licenseInfo, SecurityConstants.USAGE_IMAGE, SecurityConstants.ZERO);
   const usageVoice = _.get(licenseInfo, SecurityConstants.USAGE_VOICE, SecurityConstants.ZERO);
 
-  const themeTooltip = _.isEqual(theme, AppTheme.DARK)
-    ? SecurityConstants.THEME_LIGHT_TOOLTIP
-    : SecurityConstants.THEME_DARK_TOOLTIP;
+  const themeTooltip = _.isEqual(theme, AppTheme.DARK) ? SecurityConstants.THEME_LIGHT_TOOLTIP : SecurityConstants.THEME_DARK_TOOLTIP;
 
-  const logoutTooltip = isVietnamese
-    ? SecurityConstants.LOGOUT_KEY_TOOLTIP_VI
-    : SecurityConstants.LOGOUT_KEY_TOOLTIP_EN;
+  const logoutTooltip = isVietnamese ? SecurityConstants.LOGOUT_KEY_TOOLTIP_VI : SecurityConstants.LOGOUT_KEY_TOOLTIP_EN;
 
-  const logoutLabel = isVietnamese
-    ? SecurityConstants.LOGOUT_KEY_LABEL_VI
-    : SecurityConstants.LOGOUT_KEY_LABEL_EN;
+  const logoutLabel = isVietnamese ? SecurityConstants.LOGOUT_KEY_LABEL_VI : SecurityConstants.LOGOUT_KEY_LABEL_EN;
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-slate-200 sticky top-0 z-50 shadow-sm flex-shrink-0">
@@ -102,9 +63,7 @@ export default function Header({
           <div>
             <h1 className="text-sm font-black tracking-wide text-slate-100 flex items-center gap-2 font-logo">
               {t.appTitle}
-              <span className="text-[9px] bg-rose-500/10 text-rose-400 font-extrabold px-1.5 py-0.5 rounded border border-rose-500/20 tracking-tighter">
-                {t.v2_4_PRO}
-              </span>
+              <span className="text-[9px] bg-rose-500/10 text-rose-400 font-extrabold px-1.5 py-0.5 rounded border border-rose-500/20 tracking-tighter">{t.v2_4_PRO}</span>
             </h1>
           </div>
         </div>
@@ -112,67 +71,27 @@ export default function Header({
         <div className="flex items-center justify-end gap-2.5">
           <div className="hidden md:flex items-center gap-1.5 mr-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
-            <span className="text-[9px] uppercase font-bold text-slate-400 font-mono tracking-wider">
-              {t.Live_Sync}
-            </span>
+            <span className="text-[9px] uppercase font-bold text-slate-400 font-mono tracking-wider">{t.Live_Sync}</span>
           </div>
 
-          <QuotaBadge
-            icon={<Video className="w-3.5 h-3.5 text-blue-400" />}
-            usage={usageVideo}
-            limit={limitVideo}
-            isUnlimited={isUnlimited}
-            colorClass="text-blue-400"
-            tooltip={quotaText.VIDEO_TOOLTIP}
-          />
+          <QuotaBadge icon={<Video className="w-3.5 h-3.5 text-blue-400" />} usage={usageVideo} limit={limitVideo} isUnlimited={isUnlimited} colorClass="text-blue-400" tooltip={quotaText.VIDEO_TOOLTIP} />
 
-          <QuotaBadge
-            icon={<ImageIcon className="w-3.5 h-3.5 text-emerald-400" />}
-            usage={usageImage}
-            limit={limitImage}
-            isUnlimited={isUnlimited}
-            colorClass="text-emerald-400"
-            tooltip={quotaText.IMAGE_TOOLTIP}
-          />
+          <QuotaBadge icon={<ImageIcon className="w-3.5 h-3.5 text-emerald-400" />} usage={usageImage} limit={limitImage} isUnlimited={isUnlimited} colorClass="text-emerald-400" tooltip={quotaText.IMAGE_TOOLTIP} />
 
-          <QuotaBadge
-            icon={<Mic className="w-3.5 h-3.5 text-amber-400" />}
-            usage={usageVoice}
-            limit={limitVoice}
-            isUnlimited={isUnlimited}
-            colorClass="text-amber-400"
-            tooltip={quotaText.VOICE_TOOLTIP}
-            formatNumber
-          />
+          <QuotaBadge icon={<Mic className="w-3.5 h-3.5 text-amber-400" />} usage={usageVoice} limit={limitVoice} isUnlimited={isUnlimited} colorClass="text-amber-400" tooltip={quotaText.VOICE_TOOLTIP} formatNumber />
 
-          <Button
-            variant="secondary"
-            size="xs"
-            onClick={toggleTheme}
-            className="p-2 bg-slate-800/40 border border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700 rounded-xl shadow-none"
-            title={themeTooltip}
-          >
+          <Button variant="secondary" size="xs" onClick={toggleTheme} className="p-2 bg-slate-800/40 border border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700 rounded-xl shadow-none" title={themeTooltip}>
             {_.isEqual(theme, AppTheme.DARK) ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
 
-          <Button
-            variant="secondary"
-            size="xs"
-            onClick={logoutLicense}
-            className="px-2.5 py-1.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl shadow-none flex items-center gap-1.5 font-bold text-xs"
-            title={logoutTooltip}
-          >
+          <Button variant="secondary" size="xs" onClick={logoutLicense} className="px-2.5 py-1.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-xl shadow-none flex items-center gap-1.5 font-bold text-xs" title={logoutTooltip}>
             <LogOut className="w-3.5 h-3.5 text-rose-400" />
             <span className="hidden lg:inline text-[10px]">{logoutLabel}</span>
           </Button>
 
           <div className="flex items-center bg-slate-200/60 dark:bg-slate-900/60 border border-slate-300/50 dark:border-slate-800/80 rounded-xl p-1 shrink-0 gap-1 shadow-inner relative">
             {_.map(Object.values(AppLanguage), (langCode) => (
-              <button
-                key={langCode}
-                onClick={() => setLang(langCode as Lang)}
-                className={cn(LANG_BTN_BASE, _.isEqual(currentLang, langCode) ? LANG_BTN_ACTIVE : LANG_BTN_INACTIVE)}
-              >
+              <button key={langCode} onClick={() => setLang(langCode as Lang)} className={cn(LANG_BTN_BASE, _.isEqual(currentLang, langCode) ? LANG_BTN_ACTIVE : LANG_BTN_INACTIVE)}>
                 {langCode.toUpperCase()}
               </button>
             ))}

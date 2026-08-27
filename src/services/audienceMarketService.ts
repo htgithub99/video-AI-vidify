@@ -1,15 +1,7 @@
 import _ from "lodash";
 import { ProjectLanguage } from "../types";
 
-export interface AudienceMarketProfile {
-  id: "vietnam" | "international_english";
-  locale: string;
-  narration: string;
-  retention: string;
-  culturalContext: string;
-  visualContext: string;
-  seoContext: string;
-}
+export interface AudienceMarketProfile { id: "vietnam" | "international_english"; locale: string; narration: string; retention: string; culturalContext: string; visualContext: string; seoContext: string; }
 
 const MARKET_PROFILES: Record<AudienceMarketProfile["id"], AudienceMarketProfile> = {
   vietnam: {
@@ -32,9 +24,7 @@ const MARKET_PROFILES: Record<AudienceMarketProfile["id"], AudienceMarketProfile
   },
 };
 
-export const resolveAudienceMarketProfile = (language?: string): AudienceMarketProfile => (
-  _.isEqual(language, ProjectLanguage.VI) ? MARKET_PROFILES.vietnam : MARKET_PROFILES.international_english
-);
+export const resolveAudienceMarketProfile = (language?: string): AudienceMarketProfile => (_.isEqual(language, ProjectLanguage.VI) ? MARKET_PROFILES.vietnam : MARKET_PROFILES.international_english);
 
 export const createAudienceMarketDirective = (language?: string, audience: string = "General"): string => {
   const profile = resolveAudienceMarketProfile(language);

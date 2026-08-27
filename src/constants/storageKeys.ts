@@ -1,19 +1,3 @@
-export const STORAGE_KEYS = {
-  FAVORITE_VOICES: "favorite_voices",
-  FAVORITE_STYLES: "favorite_styles",
-  API_SANDBOX_CONFIG: "api_sandbox_config",
-  SELECTED_PROJECT_ID: "selected_project_id",
-  ACTIVE_TAB: "active_tab",
-  APP_THEME: "app_theme",
-  GEMINI_API_KEY: "GEMINI_API_KEY",
-  CEREBRAS_API_KEY: "CEREBRAS_API_KEY",
-  GROQ_API_KEY: "GROQ_API_KEY",
-  AI33_API_KEY: "AI33_API_KEY",
-  CAPCUT_ULTRA_CONFIG: "capcut_ultra_config",
-  LOCAL_GOOGLE_ACCOUNTS: "LOCAL_GOOGLE_ACCOUNTS",
-  LICENSE_KEY: "vidify_license_key",
-  AUTO_GENERATOR_CONFIG: "auto_generator_config",
-  VOICE_DIALOG_FILTERS: "voice_dialog_filters",
-} as const;
+export const STORAGE_KEYS = { FAVORITE_VOICES: "favorite_voices", FAVORITE_STYLES: "favorite_styles", API_SANDBOX_CONFIG: "api_sandbox_config", SELECTED_PROJECT_ID: "selected_project_id", ACTIVE_TAB: "active_tab", APP_THEME: "app_theme", GEMINI_API_KEY: "GEMINI_API_KEY", CEREBRAS_API_KEY: "CEREBRAS_API_KEY", GROQ_API_KEY: "GROQ_API_KEY", AI33_API_KEY: "AI33_API_KEY", CAPCUT_ULTRA_CONFIG: "capcut_ultra_config", LOCAL_GOOGLE_ACCOUNTS: "LOCAL_GOOGLE_ACCOUNTS", LICENSE_KEY: "vidify_license_key", AUTO_GENERATOR_CONFIG: "auto_generator_config", VOICE_DIALOG_FILTERS: "voice_dialog_filters", } as const;
 
 export type StorageKeyType = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

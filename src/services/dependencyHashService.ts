@@ -9,9 +9,7 @@ const stableValue = (value: unknown): unknown => {
   }
   if (_.isArray(value)) return _.map(value, stableValue);
   if (_.isPlainObject(value)) {
-    return _.fromPairs(
-      _.map(_.sortBy(_.keys(value)), key => [key, stableValue(_.get(value, key))]),
-    );
+    return _.fromPairs(_.map(_.sortBy(_.keys(value)), (key) => [key, stableValue(_.get(value, key))]));
   }
   return value;
 };
@@ -23,46 +21,32 @@ export const createDependencyHash = (value: unknown): string => {
     hash ^= input.charCodeAt(index);
     hash = Math.imul(hash, DEPENDENCY_HASH_CONFIG.FNV_PRIME);
   }
-  const hexadecimalHash = (hash >>> 0)
-    .toString(DEPENDENCY_HASH_CONFIG.RADIX_HEXADECIMAL)
-    .padStart(
-      DEPENDENCY_HASH_CONFIG.HASH_PADDING_LENGTH,
-      DEPENDENCY_HASH_CONFIG.HASH_PADDING_CHARACTER,
-    );
+  const hexadecimalHash = (hash >>> 0).toString(DEPENDENCY_HASH_CONFIG.RADIX_HEXADECIMAL).padStart(DEPENDENCY_HASH_CONFIG.HASH_PADDING_LENGTH, DEPENDENCY_HASH_CONFIG.HASH_PADDING_CHARACTER);
   return `${DEPENDENCY_HASH_CONFIG.HASH_PREFIX}${hexadecimalHash}`;
 };
 
-export const createSceneDependencyHash = (
-  scene: Pick<StoryboardScene, "id" | "prompt" | "script">,
-  visualDependencies: unknown,
-): string => createDependencyHash({
-  sceneId: scene.id,
-  prompt: scene.prompt,
-  script: scene.script,
-  visualDependencies,
-});
+export const createSceneDependencyHash = (scene: Pick<StoryboardScene, "id" | "prompt" | "script">, visualDependencies: unknown): string =>
+  createDependencyHash({
+    sceneId: scene.id,
+    prompt: scene.prompt,
+    script: scene.script,
+    visualDependencies,
+  });
 
-export const inheritApprovedSceneAsset = (
-  scene: StoryboardScene,
-  previous?: StoryboardScene,
-): StoryboardScene => previous?.dependencyHash === scene.dependencyHash
-  && previous.assetStatus === SceneAssetStatus.Approved
-  ? {
-      ...scene,
-      assetUrl: previous.assetUrl,
-      assetUrls: previous.assetUrls,
-      assetType: previous.assetType,
-      assetStatus: previous.assetStatus,
-      assetRevisionId: previous.assetRevisionId,
-      assetRevisions: previous.assetRevisions,
-    }
-  : scene;
+export const inheritApprovedSceneAsset = (scene: StoryboardScene, previous?: StoryboardScene): StoryboardScene =>
+  previous?.dependencyHash === scene.dependencyHash && previous.assetStatus === SceneAssetStatus.Approved
+    ? {
+        ...scene,
+        assetUrl: previous.assetUrl,
+        assetUrls: previous.assetUrls,
+        assetType: previous.assetType,
+        assetStatus: previous.assetStatus,
+        assetRevisionId: previous.assetRevisionId,
+        assetRevisions: previous.assetRevisions,
+      }
+    : scene;
 
-export const appendAssetRevision = (
-  scene: StoryboardScene,
-  assetUrl: string,
-  status: SceneAssetStatus,
-): AssetRevision => {
+export const appendAssetRevision = (scene: StoryboardScene, assetUrl: string, status: SceneAssetStatus): AssetRevision => {
   const revisionIndex = _.size(scene.assetRevisions) + DEPENDENCY_HASH_CONFIG.REVISION_INDEX_OFFSET;
   const revision: AssetRevision = {
     id: `${scene.id}_${Date.now()}_${revisionIndex}`,
@@ -78,21 +62,13 @@ export const appendAssetRevision = (
   return revision;
 };
 
-export const rollbackSceneAssetRevision = (
-  scene: StoryboardScene,
-  revisionId: string,
-): StoryboardScene => {
+export const rollbackSceneAssetRevision = (scene: StoryboardScene, revisionId: string): StoryboardScene => {
   const target = _.find(scene.assetRevisions, {
     id: revisionId,
     status: SceneAssetStatus.Approved,
   });
   if (!target) throw new Error(DEPENDENCY_HASH_CONFIG.APPROVED_REVISION_REQUIRED);
-  const restored = {
-    ...scene,
-    assetUrl: target.assetUrl,
-    assetUrls: [target.assetUrl],
-    assetStatus: SceneAssetStatus.Approved,
-  };
+  const restored = { ...scene, assetUrl: target.assetUrl, assetUrls: [target.assetUrl], assetStatus: SceneAssetStatus.Approved, };
   const revision = appendAssetRevision(restored, target.assetUrl, SceneAssetStatus.Approved);
   revision.operation = DEPENDENCY_HASH_CONFIG.ROLLBACK_OPERATION;
   revision.parentRevisionId = scene.assetRevisionId;

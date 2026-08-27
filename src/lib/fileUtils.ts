@@ -1,6 +1,5 @@
 import { createAppError } from "./logger.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);

@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import _ from "lodash";
 
 const DEFAULT_TIME_STRING = "00:00";
 const SECONDS_IN_HOUR = 3600;

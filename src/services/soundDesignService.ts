@@ -14,7 +14,7 @@ const visibleActionText = (scene: StoryboardScene): string => _.toString(scene.v
 export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = ""): AudioCueSheet => {
   const cues: AudioCue[] = [];
   const editorialBlueprint = resolveGenreEditorialBlueprint(genre);
-  const totalDuration = _.sumBy(scenes, scene => scene.duration);
+  const totalDuration = _.sumBy(scenes, (scene) => scene.duration);
   let sceneStartSeconds = 0;
   let lastTransitionSfxIndex = -4;
   cues.push({
@@ -94,9 +94,7 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
       });
     }
 
-    const visibleActionCue = _.isEmpty(scene.soundDesignCues)
-      ? _.find(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, item => item.pattern.test(visibleActionText(scene)))
-      : undefined;
+    const visibleActionCue = _.isEmpty(scene.soundDesignCues) ? _.find(SOUND_DESIGN_CONFIG.VISIBLE_ACTIONS, (item) => item.pattern.test(visibleActionText(scene))) : undefined;
     if (visibleActionCue) {
       cues.push({
         id: `cue_${scene.id}_sfx_${cues.length}`,
@@ -126,10 +124,6 @@ export const applyOptionalMusicAsset = (cueSheet: AudioCueSheet, assetUrl?: stri
   if (_.isEmpty(assetUrl)) return cueSheet;
   return {
     ...cueSheet,
-    cues: _.map(cueSheet.cues, cue => (
-      _.isEqual(cue.type, AudioCueType.Music)
-        ? { ...cue, assetUrl, status: AudioCueStatus.Approved }
-        : cue
-    )),
+    cues: _.map(cueSheet.cues, (cue) => (_.isEqual(cue.type, AudioCueType.Music) ? { ...cue, assetUrl, status: AudioCueStatus.Approved } : cue)),
   };
 };

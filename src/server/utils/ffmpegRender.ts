@@ -38,9 +38,7 @@ const cleanupAbandonedRenderDirectories = (activeDirectory: string): void => {
   }
 };
 
-const getFirstValue = <T>(values: Array<T | undefined>): T | undefined => (
-  _.find(values, (value) => !_.isNil(value))
-);
+const getFirstValue = <T>(values: Array<T | undefined>): T | undefined => _.find(values, (value) => !_.isNil(value));
 
 const BASE64_DATA_PREFIX = /^data:[\w.+-]+\/[\w.+-]+;base64,/i;
 const RAW_BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
@@ -52,25 +50,16 @@ const isEncodedMediaSource = (value?: string): boolean => {
   return _.gte(source.length, 256) && _.isEqual(source.length % 4, 0) && RAW_BASE64_PATTERN.test(source);
 };
 
-export const resolveEncodedMediaSource = (...values: Array<string | undefined>): string | undefined => (
-  _.find(values, value => isEncodedMediaSource(value))
-);
+export const resolveEncodedMediaSource = (...values: Array<string | undefined>): string | undefined => _.find(values, (value) => isEncodedMediaSource(value));
 
-const parsePythonResult = (stdout: string): Record<string, unknown> | undefined => (
+const parsePythonResult = (stdout: string): Record<string, unknown> | undefined =>
   _.findLast(
-    _.map(
-      _.split(_.trim(stdout), FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR),
-      (line) => {
-        const parsed = _.attempt(JSON.parse, line);
-        return _.isError(parsed) ? undefined : parsed;
-      },
-    ),
-    (result) => _.every([
-      !_.isNil(result),
-      _.has(result, FFMPEG_RENDER_KEYS.SUCCESS),
-    ], Boolean),
-  )
-);
+    _.map(_.split(_.trim(stdout), FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR), (line) => {
+      const parsed = _.attempt(JSON.parse, line);
+      return _.isError(parsed) ? undefined : parsed;
+    }),
+    (result) => _.every([!_.isNil(result), _.has(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean),
+  );
 
 export interface FFmpegRenderOptions {
   scenes: Array<{
@@ -111,29 +100,17 @@ const resolveLocalAssetPath = (assetUrl?: string): string | undefined => {
   const assetsRoot = path.resolve(getDataDirectory(), ASSETS_DIR_NAME);
   const cleanAssetUrl = _.first(_.split(assetUrl, SecurityConstants.QUERY_MARK));
   const relativeAssetPath = _.trimStart(cleanAssetUrl, REFACTOR_CONSTANTS.VD_SLASH);
-  const assetsPathPrefix = _.join(
-    [ASSETS_DIR_NAME, SecurityConstants.EMPTY_STRING],
-    REFACTOR_CONSTANTS.VD_SLASH,
-  );
-  const normalizedAssetPath = _.startsWith(relativeAssetPath, assetsPathPrefix)
-    ? _.slice(relativeAssetPath, _.size(assetsPathPrefix)).join(SecurityConstants.EMPTY_STRING)
-    : relativeAssetPath;
+  const assetsPathPrefix = _.join([ASSETS_DIR_NAME, SecurityConstants.EMPTY_STRING], REFACTOR_CONSTANTS.VD_SLASH);
+  const normalizedAssetPath = _.startsWith(relativeAssetPath, assetsPathPrefix) ? _.slice(relativeAssetPath, _.size(assetsPathPrefix)).join(SecurityConstants.EMPTY_STRING) : relativeAssetPath;
   const candidatePath = path.resolve(assetsRoot, normalizedAssetPath);
   const containedPathPrefix = _.join([assetsRoot, path.sep], SecurityConstants.EMPTY_STRING);
-  if (!_.every([
-    _.startsWith(candidatePath, containedPathPrefix),
-    fs.existsSync(candidatePath),
-  ], Boolean)) {
+  if (!_.every([_.startsWith(candidatePath, containedPathPrefix), fs.existsSync(candidatePath)], Boolean)) {
     return undefined;
   }
   return candidatePath;
 };
 
-export const renderFFmpegVideo = async (
-  options: FFmpegRenderOptions,
-  onProgress?: (progress: number) => void,
-  signal?: AbortSignal,
-): Promise<string> => {
+export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<string> => {
   const qualityVal = _.get(options, FFMPEG_RENDER_KEYS.QUALITY, VideoQuality.HIGHEST);
   const aspectRatioVal = _.get(options, FFMPEG_RENDER_KEYS.ASPECT_RATIO);
   const globalAudioUrlVal = _.get(options, FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_URL);
@@ -143,19 +120,12 @@ export const renderFFmpegVideo = async (
   if (_.isEmpty(scenesVal)) {
     throw new Error(FFMPEG_RENDER_CONSTANTS.ERR_NO_SCENES);
   }
-  const blockedAudioCandidates = [
-    globalAudioUrlVal,
-    ..._.map(scenesVal, scene => scene.audioUrl),
-  ];
-  if (_.some(blockedAudioCandidates, source => isBlockedAudioSource(_.toString(source)))) {
+  const blockedAudioCandidates = [globalAudioUrlVal, ..._.map(scenesVal, (scene) => scene.audioUrl)];
+  if (_.some(blockedAudioCandidates, (source) => isBlockedAudioSource(_.toString(source)))) {
     throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_BLOCKED_ERROR);
   }
-  const audioSources = _.compact([
-    globalAudioUrlVal,
-    globalAudioBase64Val,
-    ..._.flatMap(scenesVal, scene => [scene.audioUrl, scene.audioBase64]),
-  ]);
-  const hasEmbeddedFilmAudio = Boolean(options.preserveVideoAudio && _.some(scenesVal, scene => _.isEqual(scene.assetType, GenerateType.Video)));
+  const audioSources = _.compact([globalAudioUrlVal, globalAudioBase64Val, ..._.flatMap(scenesVal, (scene) => [scene.audioUrl, scene.audioBase64])]);
+  const hasEmbeddedFilmAudio = Boolean(options.preserveVideoAudio && _.some(scenesVal, (scene) => _.isEqual(scene.assetType, GenerateType.Video)));
   if (!hasEmbeddedFilmAudio && !hasProductionAudioSource(_.map(audioSources, _.toString))) {
     throw new Error(PRODUCTION_AUDIO_CONFIG.SOURCE_REQUIRED_ERROR);
   }
@@ -182,37 +152,13 @@ export const renderFFmpegVideo = async (
   }
 
   const finalOutputName = `${FFMPEG_RENDER_CONSTANTS.OUTPUT_FILE_PREFIX}${uuidv4()}${FFMPEG_RENDER_CONSTANTS.MP4_EXTENSION}`;
-  const rawProjectId = _.trim(_.get(
-    options,
-    REFACTOR_CONSTANTS.FFMPEG_PROJECT_ID_PATH,
-    SecurityConstants.EMPTY_STRING,
-  ));
-  const safeProjectId = _.isEmpty(rawProjectId)
-    ? SecurityConstants.EMPTY_STRING
-    : _.replace(
-      path.basename(rawProjectId),
-      SAFE_PROJECT_ID_REGEX,
-      REFACTOR_CONSTANTS.VD_UNDERSCORE,
-    );
-  const outputDir = !_.isEmpty(safeProjectId)
-    ? path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId, VIDEOS_DIR_NAME)
-    : path.join(getDataDirectory(), ASSETS_DIR_NAME);
+  const rawProjectId = _.trim(_.get(options, REFACTOR_CONSTANTS.FFMPEG_PROJECT_ID_PATH, SecurityConstants.EMPTY_STRING));
+  const safeProjectId = _.isEmpty(rawProjectId) ? SecurityConstants.EMPTY_STRING : _.replace(path.basename(rawProjectId), SAFE_PROJECT_ID_REGEX, REFACTOR_CONSTANTS.VD_UNDERSCORE);
+  const outputDir = !_.isEmpty(safeProjectId) ? path.join(getDataDirectory(), ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId, VIDEOS_DIR_NAME) : path.join(getDataDirectory(), ASSETS_DIR_NAME);
   fs.mkdirSync(outputDir, { recursive: true });
   const finalOutputPath = path.join(outputDir, finalOutputName);
-  const finalOutputUrl = !_.isEmpty(safeProjectId)
-    ? _.join(
-      [
-        SecurityConstants.EMPTY_STRING,
-        ASSETS_DIR_NAME,
-        PROJECTS_DIR_NAME,
-        safeProjectId,
-        VIDEOS_DIR_NAME,
-        finalOutputName,
-      ],
-      REFACTOR_CONSTANTS.VD_SLASH,
-    )
-    : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
-  
+  const finalOutputUrl = !_.isEmpty(safeProjectId) ? _.join([SecurityConstants.EMPTY_STRING, ASSETS_DIR_NAME, PROJECTS_DIR_NAME, safeProjectId, VIDEOS_DIR_NAME, finalOutputName], REFACTOR_CONSTANTS.VD_SLASH) : `${FFMPEG_RENDER_CONSTANTS.ASSETS_URL_PREFIX}${finalOutputName}`;
+
   let globalAudioPath = _.defaultTo(resolveLocalAssetPath(globalAudioUrlVal), SecurityConstants.EMPTY_STRING);
   if (_.isEmpty(globalAudioPath) && _.isString(globalAudioBase64Val) && !_.isEmpty(globalAudioBase64Val)) {
     const globalAudioData = _.last(_.split(globalAudioBase64Val, "base64,")) || globalAudioBase64Val;
@@ -221,64 +167,26 @@ export const renderFFmpegVideo = async (
   }
   const hasGlobalNarration = !_.isEmpty(globalAudioPath);
   const renderScenes = _.map(scenesVal, (scene) => {
-    const mediaPath = getFirstValue([
-      resolveLocalAssetPath(scene.imageUrl),
-      resolveLocalAssetPath(scene.imageBase64),
-    ]);
-    const audioPath = hasGlobalNarration ? undefined : getFirstValue([
-      resolveLocalAssetPath(scene.audioUrl),
-      resolveLocalAssetPath(scene.audioBase64),
-    ]);
+    const mediaPath = getFirstValue([resolveLocalAssetPath(scene.imageUrl), resolveLocalAssetPath(scene.imageBase64)]);
+    const audioPath = hasGlobalNarration ? undefined : getFirstValue([resolveLocalAssetPath(scene.audioUrl), resolveLocalAssetPath(scene.audioBase64)]);
     const encodedMedia = resolveEncodedMediaSource(scene.imageBase64, scene.imageUrl);
     const encodedAudio = hasGlobalNarration ? undefined : resolveEncodedMediaSource(scene.audioBase64, scene.audioUrl);
     if (_.isEmpty(mediaPath) && _.isEmpty(encodedMedia)) {
       throw new Error(`Scene ${scene.id} has no valid visual asset`);
     }
-    return {
-      ...scene,
-      [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : encodedMedia,
-      [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : encodedAudio,
-      [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath,
-      [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
-    };
+    return { ...scene, [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : encodedMedia, [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : encodedAudio, [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath, [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath, };
   });
-  const audioTracks = _.compact(_.map(_.defaultTo(options.audioTracks, []), track => {
-    const assetPath = resolveLocalAssetPath(track.assetUrl);
-    return assetPath ? { ...track, assetPath } : undefined;
-  }));
-  const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH)
-    ? SecurityConstants.DEFAULT_AMOUNT
-    : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;
-
-  const config = {
-    [FFMPEG_RENDER_KEYS.TEMP_DIR]: tempDir,
-    [FFMPEG_RENDER_KEYS.FFMPEG_CMD]: fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD,
-    [FFMPEG_RENDER_KEYS.WIDTH]: finalWidth,
-    [FFMPEG_RENDER_KEYS.HEIGHT]: finalHeight,
-    [FFMPEG_RENDER_KEYS.FPS]: fps,
-    [FFMPEG_RENDER_KEYS.BITRATE]: bitrate,
-    [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_PATH]: finalOutputPath,
-    [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_URL]: finalOutputUrl,
-    [FFMPEG_RENDER_KEYS.SCENES]: renderScenes,
-    [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath,
-    [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile
-      ? SecurityConstants.DEFAULT_AMOUNT
-      : _.min([maxSceneWorkers, _.size(renderScenes)]),
-    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
-    [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS,
-    [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE,
-    [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks,
-    preserveVideoAudio: Boolean(options.preserveVideoAudio),
-    autoMusicProfile: _.toString(options.autoMusicProfile),
-    [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile),
-    [FFMPEG_RENDER_KEYS.SCENE_CACHE_DIR]: path.join(outputDir, FFMPEG_RENDER_CONSTANTS.SCENE_CACHE_DIR_NAME),
-  };
-  const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
-  fs.writeFileSync(
-    configPath,
-    jsonUtils.safeStringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT),
-    FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8,
+  const audioTracks = _.compact(
+    _.map(_.defaultTo(options.audioTracks, []), (track) => {
+      const assetPath = resolveLocalAssetPath(track.assetUrl);
+      return assetPath ? { ...track, assetPath } : undefined;
+    }),
   );
+  const maxSceneWorkers = _.gt(finalWidth, FFMPEG_RENDER_CONSTANTS.PARALLEL_RENDER_MAX_WIDTH) ? SecurityConstants.DEFAULT_AMOUNT : FFMPEG_RENDER_CONSTANTS.MAX_SCENE_WORKERS;
+
+  const config = { [FFMPEG_RENDER_KEYS.TEMP_DIR]: tempDir, [FFMPEG_RENDER_KEYS.FFMPEG_CMD]: fs.existsSync(ffmpegBinary) ? ffmpegBinary : FFMPEG_RENDER_CONSTANTS.FFMPEG_FALLBACK_CMD, [FFMPEG_RENDER_KEYS.WIDTH]: finalWidth, [FFMPEG_RENDER_KEYS.HEIGHT]: finalHeight, [FFMPEG_RENDER_KEYS.FPS]: fps, [FFMPEG_RENDER_KEYS.BITRATE]: bitrate, [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_PATH]: finalOutputPath, [FFMPEG_RENDER_KEYS.FINAL_OUTPUT_URL]: finalOutputUrl, [FFMPEG_RENDER_KEYS.SCENES]: renderScenes, [FFMPEG_RENDER_KEYS.GLOBAL_AUDIO_PATH]: globalAudioPath, [FFMPEG_RENDER_KEYS.MAX_SCENE_WORKERS]: options.safeProfile ? SecurityConstants.DEFAULT_AMOUNT : _.min([maxSceneWorkers, _.size(renderScenes)]), [FFMPEG_RENDER_KEYS.VIDEO_TRIM_START_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS, [FFMPEG_RENDER_KEYS.VIDEO_TRIM_END_SECONDS]: options.preserveVideoAudio ? 0 : MEDIA_MIX_CONFIG.DEFAULT_TRIM_SECONDS, [FFMPEG_RENDER_KEYS.SUBTITLE_MODE]: options.subtitleMode || FFMPEG_RENDER_CONSTANTS.DEFAULT_SUBTITLE_MODE, [FFMPEG_RENDER_KEYS.AUDIO_TRACKS]: audioTracks, preserveVideoAudio: Boolean(options.preserveVideoAudio), autoMusicProfile: _.toString(options.autoMusicProfile), [FFMPEG_RENDER_KEYS.SAFE_PROFILE]: Boolean(options.safeProfile), [FFMPEG_RENDER_KEYS.SCENE_CACHE_DIR]: path.join(outputDir, FFMPEG_RENDER_CONSTANTS.SCENE_CACHE_DIR_NAME), };
+  const configPath = path.join(tempDir, FFMPEG_RENDER_CONSTANTS.CONFIG_FILE_NAME);
+  fs.writeFileSync(configPath, jsonUtils.safeStringify(config, null, FFMPEG_RENDER_CONSTANTS.JSON_INDENT), FFMPEG_RENDER_CONSTANTS.ENCODING_UTF8);
 
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.SCRIPT_PATH);
@@ -309,7 +217,9 @@ export const renderFFmpegVideo = async (
         }
       });
     });
-    renderer.stderr?.on("data", (chunk: Buffer | string) => { stderr += _.toString(chunk); });
+    renderer.stderr?.on("data", (chunk: Buffer | string) => {
+      stderr += _.toString(chunk);
+    });
     await new Promise<void>((resolve, reject) => {
       renderer.once("error", reject);
       renderer.once("close", (code) => {
@@ -324,11 +234,7 @@ export const renderFFmpegVideo = async (
       cleanupDirectory(tempDir);
       return _.toString(_.get(result, FFMPEG_RENDER_KEYS.URL));
     }
-    throw new Error(
-      result
-        ? _.toString(_.get(result, FFMPEG_RENDER_KEYS.ERROR))
-        : FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON,
-    );
+    throw new Error(result ? _.toString(_.get(result, FFMPEG_RENDER_KEYS.ERROR)) : FFMPEG_RENDER_CONSTANTS.ERR_UNKNOWN_PYTHON);
   } catch (err: any) {
     logger.error(FFMPEG_RENDER_CONSTANTS.LOG_ERROR_RENDER, err);
     cleanupDirectory(tempDir);

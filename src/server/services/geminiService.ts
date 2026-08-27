@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants";
 import { SecurityMessages, SecurityConstants } from "../../constants/security.js";
 import { getMessage, appLog, appLogStep, createAppError } from "../../lib/logger.js";
-import _ from 'lodash';
+import _ from "lodash";
 import { delayAsync } from "../../lib/shared-utils.js";
 import { resolveApiKeys } from "./apiKeyResolver.js";
 import { AiTaskCapability, blockModel, createAiCallMetadata, recordModelFailure, recordModelSuccess, routeAiTask } from "./taskRouterService.js";
@@ -19,11 +19,7 @@ export const isGeminiProviderAvailable = async (): Promise<boolean> => {
   return !_.isEmpty(keys.geminiKey);
 };
 
-interface GeminiContentEstimate {
-  textCharacters: number;
-  estimatedTextTokens: number;
-  mediaInputCount: number;
-}
+interface GeminiContentEstimate { textCharacters: number; estimatedTextTokens: number; mediaInputCount: number; }
 
 export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate => {
   let textCharacters = 0;
@@ -46,11 +42,7 @@ export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate
     _.forEach(_.values(source), visit);
   };
   visit(contents);
-  return {
-    textCharacters,
-    estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS),
-    mediaInputCount,
-  };
+  return { textCharacters, estimatedTextTokens: _.ceil(textCharacters / GEMINI_REQUEST_POLICY.TOKEN_ESTIMATE_CHARACTERS), mediaInputCount, };
 };
 
 let currentModelIndex = 0;
@@ -65,7 +57,7 @@ export const generateContentWithRetry = async (
   delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS,
 ): Promise<any> => {
   const keys = await resolveApiKeys();
-  const activeApiKey = _.get(keys, 'geminiKey', '');
+  const activeApiKey = _.get(keys, "geminiKey", "");
 
   const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
   if (freeProviderResult.response) return freeProviderResult.response;
@@ -96,10 +88,7 @@ export const generateContentWithRetry = async (
           config: geminiConfigForRequest,
         }),
         new Promise((_, reject) => {
-          timeoutHandle = setTimeout(
-            () => reject(Object.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: "ETIMEDOUT" })),
-            GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS,
-          );
+          timeoutHandle = setTimeout(() => reject(Object.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: "ETIMEDOUT" })), GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS);
         }),
       ]);
     } finally {
@@ -124,8 +113,11 @@ export const generateContentWithRetry = async (
   const geminiConfig = _.omit(params.config || {}, ["temperature", "topP", "topK"]);
   const tryToollessFreeFallback = async (category: string): Promise<any> => {
     if (!_.includes(FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_CATEGORIES, category as never) || _.isEmpty(params.config?.tools) || !_.isString(params.contents)) return null;
-    appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
-    if (!fallback.response) return null;fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];return fallback.response;
+    appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);
+    const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, ["tools"]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    if (!fallback.response) return null;
+    fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];
+    return fallback.response;
   };
 
   const logStep = (key: string, ...args: any[]) => {
@@ -156,12 +148,9 @@ export const generateContentWithRetry = async (
         currentModelIndex = modelIndex;
 
         if (!_.eq(modelIndex, 0)) {
-          setTimeout(
-            () => {
-              currentModelIndex = 0;
-            },
-            GEMINI_REQUEST_POLICY.MODEL_INDEX_RESET_MS,
-          );
+          setTimeout(() => {
+            currentModelIndex = 0;
+          }, GEMINI_REQUEST_POLICY.MODEL_INDEX_RESET_MS);
         }
 
         (response as any).rotationLogs = rotationLogs;
@@ -176,15 +165,14 @@ export const generateContentWithRetry = async (
         logStep("GEMINI_ERROR", model, attempt, errorMessage);
 
         const decision = classifyGeminiError(error);
-        const toolFreeResponse = await tryToollessFreeFallback(decision.category);if (toolFreeResponse) return toolFreeResponse;
+        const toolFreeResponse = await tryToollessFreeFallback(decision.category);
+        if (toolFreeResponse) return toolFreeResponse;
         if (!decision.retryable) {
           blockModel(model, decision.cooldownMs);
           logStep("GEMINI_UNSUPPORTED_FALLBACK", model);
           break;
         }
-        const retryLimit = _.isEqual(route.models.length, 1)
-          ? _.min([retries, decision.retryLimit]) || 0
-          : 0;
+        const retryLimit = _.isEqual(route.models.length, 1) ? _.min([retries, decision.retryLimit]) || 0 : 0;
         const waitTime = _.ceil(_.max([delayMs, decision.waitMs])! * (GEMINI_REQUEST_POLICY.RETRY_JITTER_MIN + Math.random() * GEMINI_REQUEST_POLICY.RETRY_JITTER_RANGE));
         if (_.lte(attempt, retryLimit)) {
           logStep("GEMINI_RETRYABLE_ERROR", model, waitTime);

@@ -7,9 +7,18 @@ const characterArcSchema = {
   additionalProperties: false,
   required: ["initialState", "emotionalLack", "externalGoal", "internalNeed", "temptation", "firstCompromise", "escalatingChoices", "pointOfNoReturn", "falseVictory", "collapse", "finalCost", "realization"],
   properties: {
-    initialState: stringSchema, emotionalLack: stringSchema, externalGoal: stringSchema, internalNeed: stringSchema,
-    temptation: stringSchema, firstCompromise: stringSchema, escalatingChoices: stringArraySchema, pointOfNoReturn: stringSchema,
-    falseVictory: stringSchema, collapse: stringSchema, finalCost: stringSchema, realization: stringSchema,
+    initialState: stringSchema,
+    emotionalLack: stringSchema,
+    externalGoal: stringSchema,
+    internalNeed: stringSchema,
+    temptation: stringSchema,
+    firstCompromise: stringSchema,
+    escalatingChoices: stringArraySchema,
+    pointOfNoReturn: stringSchema,
+    falseVictory: stringSchema,
+    collapse: stringSchema,
+    finalCost: stringSchema,
+    realization: stringSchema,
   },
 } as const;
 const narrativePlanSchema = {
@@ -20,8 +29,30 @@ const narrativePlanSchema = {
     viewerPromise: stringSchema,
     centralQuestion: stringSchema,
     protagonist: characterArcSchema,
-    beats: { type: "array", minItems: 6, items: { type: "object", additionalProperties: false, required: ["id", "type", "event", "characterStateBefore", "characterStateAfter", "visibleAction", "retentionPurpose", "targetDurationSeconds"], properties: { id: stringSchema, type: narrativeBeatTypeSchema, event: stringSchema, characterStateBefore: stringSchema, characterStateAfter: stringSchema, visibleAction: stringSchema, retentionPurpose: stringSchema, targetDurationSeconds: { type: "number", minimum: 1 }, callbackId: stringSchema } } },
-    callbacks: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "setupBeatId", "payoffBeatId", "motif", "changedMeaning"], properties: { id: stringSchema, setupBeatId: stringSchema, payoffBeatId: stringSchema, motif: stringSchema, changedMeaning: stringSchema } } },
+    beats: {
+      type: "array",
+      minItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "type", "event", "characterStateBefore", "characterStateAfter", "visibleAction", "retentionPurpose", "targetDurationSeconds"],
+        properties: {
+          id: stringSchema,
+          type: narrativeBeatTypeSchema,
+          event: stringSchema,
+          characterStateBefore: stringSchema,
+          characterStateAfter: stringSchema,
+          visibleAction: stringSchema,
+          retentionPurpose: stringSchema,
+          targetDurationSeconds: { type: "number", minimum: 1 },
+          callbackId: stringSchema,
+        },
+      },
+    },
+    callbacks: {
+      type: "array",
+      items: { type: "object", additionalProperties: false, required: ["id", "setupBeatId", "payoffBeatId", "motif", "changedMeaning"], properties: { id: stringSchema, setupBeatId: stringSchema, payoffBeatId: stringSchema, motif: stringSchema, changedMeaning: stringSchema } },
+    },
     endingPayoff: stringSchema,
   },
 } as const;
@@ -29,7 +60,19 @@ const chapterPlanSchema = {
   type: "object",
   additionalProperties: false,
   required: ["id", "title", "description", "purpose", "requiredBeatIds", "characterStartState", "characterEndState", "callbackSetupIds", "callbackPayoffIds", "forbiddenRepetition", "handoffToNextChapter"],
-  properties: { id: stringSchema, title: stringSchema, description: stringSchema, purpose: stringSchema, requiredBeatIds: stringArraySchema, characterStartState: stringSchema, characterEndState: stringSchema, callbackSetupIds: stringArraySchema, callbackPayoffIds: stringArraySchema, forbiddenRepetition: stringArraySchema, handoffToNextChapter: stringSchema },
+  properties: {
+    id: stringSchema,
+    title: stringSchema,
+    description: stringSchema,
+    purpose: stringSchema,
+    requiredBeatIds: stringArraySchema,
+    characterStartState: stringSchema,
+    characterEndState: stringSchema,
+    callbackSetupIds: stringArraySchema,
+    callbackPayoffIds: stringArraySchema,
+    forbiddenRepetition: stringArraySchema,
+    handoffToNextChapter: stringSchema,
+  },
 } as const;
 
 export const CONTENT_SAFETY_RESPONSE_SCHEMA = {
@@ -37,30 +80,61 @@ export const CONTENT_SAFETY_RESPONSE_SCHEMA = {
   additionalProperties: false,
   required: ["sensitiveTopic", "trueCase", "minorsInvolved", "sexualExploitationRisk", "victimExploitationRisk", "privacyRisk", "likenessRisk", "copyrightRisk", "requiredDisclosures", "blockingErrors", "warnings"],
   properties: {
-    sensitiveTopic: { type: "boolean" }, trueCase: { type: "boolean" }, minorsInvolved: { type: "boolean" },
-    sexualExploitationRisk: { type: "boolean" }, victimExploitationRisk: { type: "boolean" }, privacyRisk: { type: "boolean" },
-    likenessRisk: { type: "boolean" }, copyrightRisk: { type: "boolean" }, requiredDisclosures: stringArraySchema,
-    blockingErrors: stringArraySchema, warnings: stringArraySchema,
+    sensitiveTopic: { type: "boolean" },
+    trueCase: { type: "boolean" },
+    minorsInvolved: { type: "boolean" },
+    sexualExploitationRisk: { type: "boolean" },
+    victimExploitationRisk: { type: "boolean" },
+    privacyRisk: { type: "boolean" },
+    likenessRisk: { type: "boolean" },
+    copyrightRisk: { type: "boolean" },
+    requiredDisclosures: stringArraySchema,
+    blockingErrors: stringArraySchema,
+    warnings: stringArraySchema,
   },
 } as const;
 
 export const HOOK_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false, required: ["audience", "triggers", "angles", "versions"],
+  type: "object",
+  additionalProperties: false,
+  required: ["audience", "triggers", "angles", "versions"],
   properties: {
-    audience: stringSchema, triggers: stringArraySchema,
+    audience: stringSchema,
+    triggers: stringArraySchema,
     angles: { type: "array", items: { type: "object", required: ["name", "rationale"], properties: { name: stringSchema, rationale: stringSchema } } },
-    versions: { type: "array", minItems: 1, items: { type: "object", required: ["id", "content", "type"], properties: {
-      id: stringSchema, content: stringSchema, type: stringSchema,
-      score: { type: "object", required: ["retention", "clarity", "emotion", "factualSafety", "unsupportedClaim", "reasons"], properties: {
-        retention: numberScoreSchema, clarity: numberScoreSchema, emotion: numberScoreSchema, factualSafety: numberScoreSchema,
-        unsupportedClaim: { type: "boolean" }, reasons: stringArraySchema,
-      } },
-    } } },
+    versions: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        required: ["id", "content", "type"],
+        properties: {
+          id: stringSchema,
+          content: stringSchema,
+          type: stringSchema,
+          score: {
+            type: "object",
+            required: ["retention", "clarity", "emotion", "factualSafety", "unsupportedClaim", "reasons"],
+            properties: {
+              retention: numberScoreSchema,
+              clarity: numberScoreSchema,
+              emotion: numberScoreSchema,
+              factualSafety: numberScoreSchema,
+              unsupportedClaim: { type: "boolean" },
+              reasons: stringArraySchema,
+            },
+          },
+        },
+      },
+    },
   },
 } as const;
 
 export const CHAPTER_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false, required: ["scriptSegment"], properties: { scriptSegment: stringSchema },
+  type: "object",
+  additionalProperties: false,
+  required: ["scriptSegment"],
+  properties: { scriptSegment: stringSchema },
 } as const;
 
 export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
@@ -81,34 +155,43 @@ export const FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA = {
 } as const;
 
 export const SCRIPT_PLAN_RESPONSE_SCHEMA = {
-  type: "object", required: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan", "factPack", "chapters"],
+  type: "object",
+  required: ["theme", "characterSpecs", "preferredTerms", "factCheckNotes", "creativeBrief", "narrativePlan", "factPack", "chapters"],
   properties: {
-    theme: stringSchema, characterSpecs: stringSchema, preferredTerms: stringArraySchema, factCheckNotes: stringSchema,
-    creativeBrief: { type: "object" }, narrativePlan: narrativePlanSchema, factPack: { type: "object" },
+    theme: stringSchema,
+    characterSpecs: stringSchema,
+    preferredTerms: stringArraySchema,
+    factCheckNotes: stringSchema,
+    creativeBrief: { type: "object" },
+    narrativePlan: narrativePlanSchema,
+    factPack: { type: "object" },
     chapters: { type: "array", minItems: 3, items: chapterPlanSchema },
   },
 } as const;
 
 const visualQaProperties = {
-  anatomy: numberScoreSchema, subjectCount: numberScoreSchema, promptAlignment: numberScoreSchema,
-  narrativeAlignment: numberScoreSchema, environmentRelevance: numberScoreSchema,
-  characterConsistency: numberScoreSchema, composition: numberScoreSchema, styleConsistency: numberScoreSchema,
-  editability: numberScoreSchema, usableForVideo: { type: "boolean" }, blockingErrors: stringArraySchema,
-  unwantedText: { type: "boolean" }, multiPanelLayout: { type: "boolean" }, duplicatedSubjects: { type: "boolean" },
+  anatomy: numberScoreSchema,
+  subjectCount: numberScoreSchema,
+  promptAlignment: numberScoreSchema,
+  narrativeAlignment: numberScoreSchema,
+  environmentRelevance: numberScoreSchema,
+  characterConsistency: numberScoreSchema,
+  composition: numberScoreSchema,
+  styleConsistency: numberScoreSchema,
+  editability: numberScoreSchema,
+  usableForVideo: { type: "boolean" },
+  blockingErrors: stringArraySchema,
+  unwantedText: { type: "boolean" },
+  multiPanelLayout: { type: "boolean" },
+  duplicatedSubjects: { type: "boolean" },
   warnings: stringArraySchema,
 } as const;
-export const VISUAL_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:Object.keys(visualQaProperties),properties:visualQaProperties } as const;
+export const VISUAL_QA_RESPONSE_SCHEMA = { type: "object", additionalProperties: false, required: Object.keys(visualQaProperties), properties: visualQaProperties } as const;
 
 export const VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false,
-  required: [
-    "medium", "characterType", "characterDna", "lineDna", "shapeLanguage",
-    "colorDna", "colorPhilosophy", "renderingDna", "lightingStyle", "texture",
-    "detailLevel", "visualComplexity", "periodCues", "worldRendering",
-    "compositionLanguage", "facialExpressionLanguage", "overallMood",
-    "adaptiveElements", "negativeStylePrompt", "sampleSpecificContent",
-    "lockedStyleElements", "flexibleElements",
-  ],
+  type: "object",
+  additionalProperties: false,
+  required: ["medium", "characterType", "characterDna", "lineDna", "shapeLanguage", "colorDna", "colorPhilosophy", "renderingDna", "lightingStyle", "texture", "detailLevel", "visualComplexity", "periodCues", "worldRendering", "compositionLanguage", "facialExpressionLanguage", "overallMood", "adaptiveElements", "negativeStylePrompt", "sampleSpecificContent", "lockedStyleElements", "flexibleElements"],
   properties: {
     medium: stringSchema,
     characterType: stringSchema,
@@ -136,15 +219,43 @@ export const VISUAL_STYLE_PROFILE_RESPONSE_SCHEMA = {
 } as const;
 
 export const VISUAL_BIBLE_RESPONSE_SCHEMA = {
-  type: "object", additionalProperties: false,
+  type: "object",
+  additionalProperties: false,
   required: ["colorPalette", "characterSpecs", "landscapeSpecs", "lightingMood", "visualStyle", "background", "lineStyle", "colorMode", "shading", "textPolicy", "locations", "props"],
   properties: {
-    colorPalette: stringSchema, characterSpecs: stringSchema, landscapeSpecs: stringSchema,
-    lightingMood: stringSchema, visualStyle: stringSchema, background: stringSchema,
-    lineStyle: stringSchema, colorMode: stringSchema, shading: stringSchema, textPolicy: stringSchema,
-    locations: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["id", "name", "visualAnchors", "geography", "timeProgression"], properties: { id: stringSchema, name: stringSchema, visualAnchors: stringArraySchema, geography: stringSchema, timeProgression: stringSchema } } },
+    colorPalette: stringSchema,
+    characterSpecs: stringSchema,
+    landscapeSpecs: stringSchema,
+    lightingMood: stringSchema,
+    visualStyle: stringSchema,
+    background: stringSchema,
+    lineStyle: stringSchema,
+    colorMode: stringSchema,
+    shading: stringSchema,
+    textPolicy: stringSchema,
+    locations: {
+      type: "array",
+      minItems: 1,
+      items: { type: "object", additionalProperties: false, required: ["id", "name", "visualAnchors", "geography", "timeProgression"], properties: { id: stringSchema, name: stringSchema, visualAnchors: stringArraySchema, geography: stringSchema, timeProgression: stringSchema } },
+    },
     props: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "name", "visualAnchors", "narrativeFunction"], properties: { id: stringSchema, name: stringSchema, visualAnchors: stringArraySchema, narrativeFunction: stringSchema } } },
   },
 } as const;
 
-export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = { type:"object",additionalProperties:false,required:["visualScore","cropScore","continuityScore","pacingScore","transitionVarietyScore","promiseAlignmentScore","audioMixScore","subtitleLegibilityScore","blockingErrors","warnings"],properties:{visualScore:numberScoreSchema,cropScore:numberScoreSchema,continuityScore:numberScoreSchema,pacingScore:numberScoreSchema,transitionVarietyScore:numberScoreSchema,promiseAlignmentScore:numberScoreSchema,audioMixScore:numberScoreSchema,subtitleLegibilityScore:numberScoreSchema,blockingErrors:stringArraySchema,warnings:stringArraySchema} } as const;
+export const FINAL_VIDEO_QA_RESPONSE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["visualScore", "cropScore", "continuityScore", "pacingScore", "transitionVarietyScore", "promiseAlignmentScore", "audioMixScore", "subtitleLegibilityScore", "blockingErrors", "warnings"],
+  properties: {
+    visualScore: numberScoreSchema,
+    cropScore: numberScoreSchema,
+    continuityScore: numberScoreSchema,
+    pacingScore: numberScoreSchema,
+    transitionVarietyScore: numberScoreSchema,
+    promiseAlignmentScore: numberScoreSchema,
+    audioMixScore: numberScoreSchema,
+    subtitleLegibilityScore: numberScoreSchema,
+    blockingErrors: stringArraySchema,
+    warnings: stringArraySchema,
+  },
+} as const;

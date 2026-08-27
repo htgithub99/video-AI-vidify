@@ -26,24 +26,7 @@ interface GenerationSettingsSectionProps {
   setChromeHeadless?: (val: boolean) => void;
 }
 
-export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({
-  generationMode,
-  setGenerationMode,
-  imageGeneratorEngine,
-  setImageGeneratorEngine,
-  aspectRatio,
-  setAspectRatio,
-  generateType,
-  setGenerateType,
-  maxVideoScenes,
-  setMaxVideoScenes,
-  getImageEngineOptions,
-  T,
-  mediaMixTexts,
-  forceVideoOnly = false,
-  chromeHeadless = false,
-  setChromeHeadless,
-}) => {
+export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps> = ({ generationMode, setGenerationMode, imageGeneratorEngine, setImageGeneratorEngine, aspectRatio, setAspectRatio, generateType, setGenerateType, maxVideoScenes, setMaxVideoScenes, getImageEngineOptions, T, mediaMixTexts, forceVideoOnly = false, chromeHeadless = false, setChromeHeadless }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const mixedTitle = _.get(mediaMixTexts, "mixed", uiTexts.mediaMixed);
   const maxVideosLabel = _.get(mediaMixTexts, "maxVideos", uiTexts.maxVideos);
@@ -51,19 +34,13 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
   const selectingLabel = _.get(mediaMixTexts, "selecting", uiTexts.selectingScenes);
 
   const engineOptions = getImageEngineOptions(generationMode, forceVideoOnly ? GenerateType.Video : generateType);
-  const selectedEngineLabel = _.get(
-    _.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions),
-    "label",
-    uiTexts.aiEngineDefault,
-  );
+  const selectedEngineLabel = _.get(_.find(engineOptions, (option) => _.isEqual(option.value, imageGeneratorEngine)) || _.first(engineOptions), "label", uiTexts.aiEngineDefault);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20">
-            {PIPELINE_STEPS.STEP_3}
-          </span>
+          <span className="w-6 h-6 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-blue-500/20">{PIPELINE_STEPS.STEP_3}</span>
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={forceVideoOnly ? uiTexts.cinematicSetupTooltip : T.sec3TitleTooltip}>
             <Wand2 className="w-3.5 h-3.5 text-blue-400" /> {forceVideoOnly ? uiTexts.cinematicSetupTitle : T.sec3Title}
           </h3>
@@ -71,7 +48,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
 
         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-955/80 border border-slate-800/80 px-2.5 py-1 rounded-full">
           <Sparkles className="w-3 h-3 text-blue-400" />
-          <span className="font-semibold text-slate-300">{aspectRatio} • {selectedEngineLabel}</span>
+          <span className="font-semibold text-slate-300">
+            {aspectRatio} • {selectedEngineLabel}
+          </span>
         </div>
       </div>
 
@@ -87,16 +66,15 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                   onChange={(e) => {
                     const mode = e.target.value as ImageGenerationMode;
                     setGenerationMode(mode);
-                    setImageGeneratorEngine(
-                      _.isEqual(mode, ImageGenerationMode.GeminiChat)
-                        ? ImageGeneratorEngine.LabsSandbox
-                        : ImageGeneratorEngine.Veo3
-                    );
+                    setImageGeneratorEngine(_.isEqual(mode, ImageGenerationMode.GeminiChat) ? ImageGeneratorEngine.LabsSandbox : ImageGeneratorEngine.Veo3);
                   }}
-                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5"
-                >
-                  <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">{T.optionFlowMode}</option>
-                  <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">{T.optionAssistantMode}</option>
+                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
+                  <option value={ImageGenerationMode.LabsFlow} className="bg-slate-955 text-slate-300">
+                    {T.optionFlowMode}
+                  </option>
+                  <option value={ImageGenerationMode.GeminiChat} className="bg-slate-955 text-slate-300">
+                    {T.optionAssistantMode}
+                  </option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
@@ -109,7 +87,9 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <Sparkles className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
               <select value={imageGeneratorEngine} onChange={(e) => setImageGeneratorEngine(e.target.value as ImageGeneratorEngine)} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
                 {_.map(engineOptions, (opt) => (
-                  <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">{opt.label}</option>
+                  <option key={opt.value + opt.label} value={opt.value} className="bg-slate-955 text-slate-300">
+                    {opt.label}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
@@ -122,8 +102,12 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
               <div className="relative flex items-center bg-slate-955/90 border border-slate-800/90 rounded-xl px-2.5 py-2.5 focus-within:border-blue-500/60 transition-colors" title={T.lblChromeHeadlessTooltip}>
                 <Globe className="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" />
                 <select value={chromeHeadless ? uiTexts.headlessModeValue : uiTexts.windowedModeValue} onChange={(event) => setChromeHeadless(_.isEqual(event.target.value, uiTexts.headlessModeValue))} className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer appearance-none pr-5">
-                  <option value={uiTexts.windowedModeValue} className="bg-slate-955 text-slate-300">{T.optionWindowed}</option>
-                  <option value={uiTexts.headlessModeValue} className="bg-slate-955 text-slate-300">{T.optionHeadless}</option>
+                  <option value={uiTexts.windowedModeValue} className="bg-slate-955 text-slate-300">
+                    {T.optionWindowed}
+                  </option>
+                  <option value={uiTexts.headlessModeValue} className="bg-slate-955 text-slate-300">
+                    {T.optionHeadless}
+                  </option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
@@ -162,11 +146,16 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
                       if (fallback) setImageGeneratorEngine(fallback as ImageGeneratorEngine);
                     }
                   }}
-                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5"
-                >
-                  <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">{T.optionImage || uiTexts.imageOnly}</option>
-                  <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">{T.optionVideo || uiTexts.videoOnly}</option>
-                  <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">{T.optionMixed || uiTexts.mixedMedia}</option>
+                  className="flex-1 bg-transparent text-slate-200 text-xs font-semibold outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-amber-300 appearance-none pr-5">
+                  <option value={GenerateType.Image} className="bg-slate-955 text-slate-300">
+                    {T.optionImage || uiTexts.imageOnly}
+                  </option>
+                  <option value={GenerateType.Video} className="bg-slate-955 text-slate-300">
+                    {T.optionVideo || uiTexts.videoOnly}
+                  </option>
+                  <option value={GenerateType.Mixed} className="bg-slate-955 text-slate-300">
+                    {T.optionMixed || uiTexts.mixedMedia}
+                  </option>
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-2 text-slate-500 w-3.5 h-3.5" />
               </div>
@@ -190,14 +179,7 @@ export const GenerationSettingsSection: React.FC<GenerationSettingsSectionProps>
             </p>
             <div className="flex items-center gap-3 pt-1">
               <span className="text-[10px] text-slate-400 whitespace-nowrap">{maxVideosLabel}</span>
-              <input
-                type="range"
-                min={MEDIA_MIX_CONFIG.MIN_VIDEOS}
-                max={MEDIA_MIX_CONFIG.MAX_VIDEOS}
-                value={maxVideoScenes}
-                onChange={(e) => setMaxVideoScenes(Number(e.target.value))}
-                className="flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-              />
+              <input type="range" min={MEDIA_MIX_CONFIG.MIN_VIDEOS} max={MEDIA_MIX_CONFIG.MAX_VIDEOS} value={maxVideoScenes} onChange={(e) => setMaxVideoScenes(Number(e.target.value))} className="flex-1 accent-purple-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer" />
               <span className="text-xs font-mono font-bold text-purple-300 w-6 text-right">{maxVideoScenes}</span>
             </div>
           </div>

@@ -9,16 +9,10 @@ const ROOT_PATH = "/";
 
 const getCookiePaths = (): string[] => {
   const segments = _.compact(_.split(window.location.pathname, ROOT_PATH));
-  return _.uniq([
-    ROOT_PATH,
-    ..._.map(segments, (_segment, index) => `${ROOT_PATH}${_.join(_.take(segments, index + 1), ROOT_PATH)}`),
-  ]);
+  return _.uniq([ROOT_PATH, ..._.map(segments, (_segment, index) => `${ROOT_PATH}${_.join(_.take(segments, index + 1), ROOT_PATH)}`)]);
 };
 
-const getCookieDomains = (): string[] => _.compact([
-  window.location.hostname,
-  `.${window.location.hostname}`,
-]);
+const getCookieDomains = (): string[] => _.compact([window.location.hostname, `.${window.location.hostname}`]);
 
 export const clearBrowserLicenseSession = (): void => {
   window.sessionStorage.removeItem(SecurityConstants.SESSION_TOKEN_KEY);
@@ -43,8 +37,4 @@ export const invalidateBrowserLicenseSession = (): void => {
   window.dispatchEvent(new CustomEvent(SecurityConstants.LICENSE_INVALIDATED_EVENT));
 };
 
-export const isLicenseFailureCode = (code: unknown): boolean => _.includes([
-  SecurityConstants.LICENSE_MISSING_CODE,
-  SecurityConstants.LICENSE_INVALID_CODE,
-  SecurityConstants.LICENSE_INACTIVE_CODE,
-], code);
+export const isLicenseFailureCode = (code: unknown): boolean => _.includes([SecurityConstants.LICENSE_MISSING_CODE, SecurityConstants.LICENSE_INVALID_CODE, SecurityConstants.LICENSE_INACTIVE_CODE], code);

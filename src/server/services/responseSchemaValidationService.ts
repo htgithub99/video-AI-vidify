@@ -1,16 +1,6 @@
 import _ from "lodash";
 
-interface ResponseSchema {
-  type?: string;
-  required?: readonly string[];
-  properties?: Record<string, ResponseSchema>;
-  items?: ResponseSchema;
-  minItems?: number;
-  minimum?: number;
-  maximum?: number;
-  enum?: readonly unknown[];
-  additionalProperties?: boolean;
-}
+interface ResponseSchema { type?: string; required?: readonly string[]; properties?: Record<string, ResponseSchema>; items?: ResponseSchema; minItems?: number; minimum?: number; maximum?: number; enum?: readonly unknown[]; additionalProperties?: boolean; }
 
 const isFiniteNumber = (value: unknown): value is number => _.isNumber(value) && Number.isFinite(value);
 
@@ -18,18 +8,12 @@ const matchesObjectSchema = (value: unknown, schema: ResponseSchema): boolean =>
   if (!_.isPlainObject(value)) return false;
   const source = value as Record<string, unknown>;
   const properties = schema.properties || {};
-  if (!_.every(schema.required || [], key => _.has(source, key))) return false;
-  if (schema.additionalProperties === false && !_.every(_.keys(source), key => _.has(properties, key))) return false;
-  return _.every(properties, (propertySchema, key) => (
-    !_.has(source, key) || matchesResponseSchema(_.get(source, key), propertySchema)
-  ));
+  if (!_.every(schema.required || [], (key) => _.has(source, key))) return false;
+  if (schema.additionalProperties === false && !_.every(_.keys(source), (key) => _.has(properties, key))) return false;
+  return _.every(properties, (propertySchema, key) => !_.has(source, key) || matchesResponseSchema(_.get(source, key), propertySchema));
 };
 
-const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean => (
-  _.isArray(value)
-  && _.size(value) >= _.defaultTo(schema.minItems, 0)
-  && (!schema.items || _.every(value, item => matchesResponseSchema(item, schema.items!)))
-);
+const matchesArraySchema = (value: unknown, schema: ResponseSchema): boolean => _.isArray(value) && _.size(value) >= _.defaultTo(schema.minItems, 0) && (!schema.items || _.every(value, (item) => matchesResponseSchema(item, schema.items!)));
 
 export const matchesResponseSchema = (value: unknown, schema: ResponseSchema): boolean => {
   if (schema.enum && !_.includes(schema.enum, value)) return false;
@@ -45,10 +29,6 @@ export const matchesResponseSchema = (value: unknown, schema: ResponseSchema): b
   return true;
 };
 
-export const assertResponseSchema = (
-  value: unknown,
-  schema: ResponseSchema,
-  errorMessage: string,
-): void => {
+export const assertResponseSchema = (value: unknown, schema: ResponseSchema, errorMessage: string): void => {
   if (!matchesResponseSchema(value, schema)) throw new Error(errorMessage);
 };

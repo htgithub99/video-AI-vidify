@@ -1,23 +1,12 @@
 import _ from "lodash";
-import {
-  ImageGenerationMode,
-  ImageGeneratorEngine,
-  GenerateType,
-  BackgroundMode,
-  AspectRatio,
-  ThumbnailTextMode,
-  ImageFocusMode,
-  ProjectLanguage,
-} from "../../types";
+import { ImageGenerationMode, ImageGeneratorEngine, GenerateType, BackgroundMode, AspectRatio, ThumbnailTextMode, ImageFocusMode, ProjectLanguage } from "../../types";
 import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_GENERATOR_PANEL_TEXTS, PRESET_CONSTANTS } from "../../constants/texts";
 import { Lang } from "../../lib/lang";
 import { AutoVideoFormActions, AutoVideoFormState } from "../../hooks/useAutoVideoState";
 import { normalizeBackgroundMode, SCENE_TEXT_MODE } from "../../services/visualConfigModeService";
 
-export const getAutoVideoTexts = (language: Lang) => (
-  AUTO_GENERATOR_PANEL_TEXTS[language as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi
-);
+export const getAutoVideoTexts = (language: Lang) => AUTO_GENERATOR_PANEL_TEXTS[language as "vi" | "en"] || AUTO_GENERATOR_PANEL_TEXTS.vi;
 
 export const getSplitLabels = (texts: ReturnType<typeof getAutoVideoTexts>) => ({
   word: texts.splitWord,
@@ -27,45 +16,32 @@ export const getSplitLabels = (texts: ReturnType<typeof getAutoVideoTexts>) => (
   paragraph: texts.splitParagraph,
 });
 
-export const getImageEngineOptions = (
-  generationMode: ImageGenerationMode,
-  generationType: GenerateType,
-): { value: ImageGeneratorEngine; label: string }[] => {
+export const getImageEngineOptions = (generationMode: ImageGenerationMode, generationType: GenerateType): { value: ImageGeneratorEngine; label: string }[] => {
   if (_.isEqual(generationMode, ImageGenerationMode.GeminiChat)) {
     if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
-      return [
-        { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
-        { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
-      ];
+      return [ { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
+        { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 }, ];
     }
-    return [
-      { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
+    return [ { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX },
       { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO3 },
-      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN },
-    ];
+      { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN }, ];
   }
 
   if (_.includes([GenerateType.Video, GenerateType.Mixed], generationType)) {
-    return [
-      { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
+    return [ { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_OMNI_FLASH },
       { value: ImageGeneratorEngine.Veo3Lite, label: REFACTOR_CONSTANTS.ENGINE_VEO3_LITE },
       { value: ImageGeneratorEngine.Veo3Fast, label: REFACTOR_CONSTANTS.ENGINE_VEO3_FAST },
-      { value: ImageGeneratorEngine.Veo3Quality, label: REFACTOR_CONSTANTS.ENGINE_VEO3_QUALITY },
-    ];
+      { value: ImageGeneratorEngine.Veo3Quality, label: REFACTOR_CONSTANTS.ENGINE_VEO3_QUALITY }, ];
   }
 
-  return [
-    { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN_3_BATCH },
+  return [ { value: ImageGeneratorEngine.Imagen, label: REFACTOR_CONSTANTS.ENGINE_IMAGEN_3_BATCH },
     { value: ImageGeneratorEngine.Veo3, label: REFACTOR_CONSTANTS.ENGINE_VEO_3_0_FLUID },
-    { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX_STILL },
-  ];
+    { value: ImageGeneratorEngine.LabsSandbox, label: REFACTOR_CONSTANTS.ENGINE_LABS_SANDBOX_STILL }, ];
 };
 
 export const truncateWords = (text: string, maxWords: number): string => {
   const words = _.words(text);
-  return _.gt(words.length, maxWords)
-    ? _.join(_.take(words, maxWords), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS
-    : text;
+  return _.gt(words.length, maxWords) ? _.join(_.take(words, maxWords), REFACTOR_CONSTANTS.VD_BLANK) + REFACTOR_CONSTANTS.AVG_ELLIPSIS : text;
 };
 
 export const buildPresetPayload = (state: AutoVideoFormState, presetName: string) => ({
@@ -97,10 +73,7 @@ export const buildPresetPayload = (state: AutoVideoFormState, presetName: string
   },
 });
 
-export const applyPresetConfigToState = (
-  presetConfig: Record<string, unknown>,
-  actions: AutoVideoFormActions,
-) => {
+export const applyPresetConfigToState = (presetConfig: Record<string, unknown>, actions: AutoVideoFormActions) => {
   const applyIfExists = (key: string, setter: (val: any) => void) => {
     const val = _.get(presetConfig, key);
     if (!_.isUndefined(val)) setter(val);

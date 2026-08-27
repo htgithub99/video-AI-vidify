@@ -1104,23 +1104,23 @@ export enum GeminiChatModelName {
 
 export enum GeminiChatSelector {
   Response = "model-response",
-  Input = "div.ql-editor[contenteditable=\"true\"]",
-  InputTextarea = "div.ql-editor[contenteditable=\"true\"], div[role=\"textbox\"][contenteditable=\"true\"]",
-  ModelPickerButton = "button[data-test-id=\"bard-mode-menu-button\"], button.input-area-switch",
-  ModelMenu = "[data-test-id=\"gem-mode-menu\"]",
-  ModelOption = "gem-menu-item[role=\"menuitem\"][data-test-id^=\"bard-mode-option-\"]",
+  Input = 'div.ql-editor[contenteditable="true"]',
+  InputTextarea = 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
+  ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button.input-area-switch',
+  ModelMenu = '[data-test-id="gem-mode-menu"]',
+  ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"]',
   ModelLabel = ".label",
-  PlusButton = "button[aria-label*=\"tải lên\" i], button[aria-label*=\"thêm tệp\" i], button[aria-label*=\"upload\" i], button[aria-label*=\"add files\" i], gem-icon-button:has(mat-icon[fonticon=\"plus\"]) button, gem-icon-button[data-test-id=\"action-menu-button\"] button, gem-icon-button[data-test-id=\"action-menu-button\"], button:has(mat-icon[fonticon=\"add\"])",
-  MenuOptions = ".cdk-overlay-pane button, mat-menu button, [role=\"menuitem\"]",
-  PlusMenuOptions = ".cdk-overlay-pane button, mat-action-list button, [role=\"menuitem\"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item",
-  ActiveGenerateType = "gem-button[data-test-id=\"deselect-drawer-item-gem-button\"], button, [role=\"button\"], [aria-label], [data-test-id], .input-area-switch",
-  SendButton = "button[aria-label*=\"Gửi\" i], button[aria-label*=\"Send\" i], gem-icon-button.send-button button, div.send-button-container button",
+  PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="thêm tệp" i], button[aria-label*="upload" i], button[aria-label*="add files" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button, gem-icon-button[data-test-id="action-menu-button"] button, gem-icon-button[data-test-id="action-menu-button"], button:has(mat-icon[fonticon="add"])',
+  MenuOptions = '.cdk-overlay-pane button, mat-menu button, [role="menuitem"]',
+  PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
+  ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
+  SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
   GenerationBusy = "gem-icon-button.send-button.stop",
-  ResponseGenerationBusy = ".model-response-label-announcer[aria-busy=\"true\"], [data-test-id=\"image-loading-overlay\"]:not(.done-generating)",
+  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating)',
 }
 
 export const GEMINI_CHAT_MEDIA_SELECTORS = {
-  image: "download-generated-image-button, [data-test-id=\"download-generated-image-button\"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^=\"blob:\"], model-response img[src*=\"googleusercontent\"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)",
+  image: 'download-generated-image-button, [data-test-id="download-generated-image-button"], generated-image single-image img.image.loaded[src], generated-image img[src], .attachment-container.generated-images img[src], model-response img[src^="blob:"], model-response img[src*="googleusercontent"], model-response img.image[src], model-response img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon)',
   video: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
   all: "img, video",
 } as const;

@@ -14,20 +14,7 @@ export enum JobStatus {
   CANCELLED = "cancelled",
 }
 
-export interface RenderJob {
-  id: string;
-  payload: FFmpegRenderOptions;
-  status: JobStatus;
-  progress: number;
-  url?: string;
-  error?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  startedAt?: Date;
-  completedAt?: Date;
-  heartbeatAt?: Date;
-  licenseKey?: string;
-}
+export interface RenderJob { id: string; payload: FFmpegRenderOptions; status: JobStatus; progress: number; url?: string; error?: string; createdAt: Date; updatedAt: Date; startedAt?: Date; completedAt?: Date; heartbeatAt?: Date; licenseKey?: string; }
 
 type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & {
   createdAt: string;
@@ -47,18 +34,15 @@ const isPersistableAssetUrl = (value: unknown): boolean => {
 const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOptions => ({
   ..._.pick(payload, ["projectId", "quality", "aspectRatio", "subtitleMode", "autoMusicProfile", "preserveVideoAudio"]),
   globalAudioUrl: isPersistableAssetUrl(payload.globalAudioUrl) ? payload.globalAudioUrl : undefined,
-  scenes: _.map(payload.scenes, scene => ({
+  scenes: _.map(payload.scenes, (scene) => ({
     ..._.pick(scene, ["id", "duration", "text", "subtitle", "subtitleCues", "assetType", "cameraMotion", "effects", "lightingEffect", "transition", "shotPurpose", "sourceTrimStartSeconds", "sourceTrimEndSeconds"]),
     imageUrl: isPersistableAssetUrl(scene.imageUrl) ? scene.imageUrl : undefined,
     audioUrl: isPersistableAssetUrl(scene.audioUrl) ? scene.audioUrl : undefined,
   })),
-  audioTracks: _.map(payload.audioTracks, track => _.pick(track, ["id", "type", "assetUrl", "startSeconds", "durationSeconds", "volumeDb", "fadeInSeconds", "fadeOutSeconds", "loop"])),
+  audioTracks: _.map(payload.audioTracks, (track) => _.pick(track, ["id", "type", "assetUrl", "startSeconds", "durationSeconds", "volumeDb", "fadeInSeconds", "fadeOutSeconds", "loop"])),
 });
 
-const hasRecoverablePersistedPayload = (job: RenderJob): boolean => _.every(
-  job.payload?.scenes,
-  scene => isPersistableAssetUrl(scene.imageUrl),
-);
+const hasRecoverablePersistedPayload = (job: RenderJob): boolean => _.every(job.payload?.scenes, (scene) => isPersistableAssetUrl(scene.imageUrl));
 
 const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
   ...job,
@@ -155,12 +139,7 @@ class RenderQueueService {
     this.queue.push(job);
     this.jobsMap.set(jobId, job);
     await this.persist(job);
-    logger.info(
-      REFACTOR_CONSTANTS.RENDER_LOG_ADDED.replace(SecurityConstants.PLACEHOLDER_0, jobId).replace(
-        SecurityConstants.PLACEHOLDER_1,
-        _.toString(_.size(this.queue)),
-      ),
-    );
+    logger.info(REFACTOR_CONSTANTS.RENDER_LOG_ADDED.replace(SecurityConstants.PLACEHOLDER_0, jobId).replace(SecurityConstants.PLACEHOLDER_1, _.toString(_.size(this.queue))));
     void this.processQueue();
     return job;
   }
@@ -195,11 +174,7 @@ class RenderQueueService {
 
   private async executeRenderWithRetries(job: RenderJob, abortSignal: AbortSignal, onProgressUpdate: (progress: number) => void): Promise<string> {
     let lastError: unknown;
-    for (
-      let attempt = SecurityConstants.ZERO;
-      attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS;
-      attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)
-    ) {
+    for (let attempt = SecurityConstants.ZERO; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)) {
       try {
         return await renderFFmpegVideo(
           {
@@ -274,10 +249,7 @@ class RenderQueueService {
         job.completedAt = new Date();
         job.updatedAt = job.completedAt;
         await this.persist(job);
-        logger.error(
-          REFACTOR_CONSTANTS.RENDER_LOG_FAILED.replace(SecurityConstants.PLACEHOLDER_0, job.id).replace(SecurityConstants.PLACEHOLDER_1, job.error),
-          error,
-        );
+        logger.error(REFACTOR_CONSTANTS.RENDER_LOG_FAILED.replace(SecurityConstants.PLACEHOLDER_0, job.id).replace(SecurityConstants.PLACEHOLDER_1, job.error), error);
       }
     } finally {
       if (timeoutId) clearTimeout(timeoutId);

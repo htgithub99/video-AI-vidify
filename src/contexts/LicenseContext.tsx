@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { API_ROUTES } from '../constants/apiRoutes';
-import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS, PlanType, getClientEnvironmentLicenseKey } from '../constants';
-import _ from 'lodash';
-import { clearBrowserLicenseSession } from '../lib/licenseSession';
-import { jsonUtils } from '../lib/json';
-import { storageUtils } from '../lib/storage';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { API_ROUTES } from "../constants/apiRoutes";
+import { SecurityConstants, LicenseStatus, SecurityMessages, REFACTOR_CONSTANTS, PlanType, getClientEnvironmentLicenseKey } from "../constants";
+import _ from "lodash";
+import { clearBrowserLicenseSession } from "../lib/licenseSession";
+import { jsonUtils } from "../lib/json";
+import { storageUtils } from "../lib/storage";
 
 export interface LicenseInfo {
   status: LicenseStatus;
@@ -23,14 +23,7 @@ export interface LicenseInfo {
   };
 }
 
-interface LicenseContextType {
-  licenseKey: string | null;
-  licenseInfo: LicenseInfo | null;
-  isLoading: boolean;
-  activateLicense: (key: string) => Promise<boolean | string>;
-  logoutLicense: () => void;
-  refetchLicense: () => void;
-}
+interface LicenseContextType { licenseKey: string | null; licenseInfo: LicenseInfo | null; isLoading: boolean; activateLicense: (key: string) => Promise<boolean | string>; logoutLicense: () => void; refetchLicense: () => void; }
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
@@ -52,10 +45,7 @@ const createDefaultProLicenseInfo = (): LicenseInfo => ({
 
 const isRecognizedEnvironmentKey = (key: string | null): boolean => {
   if (_.isEmpty(key)) return false;
-  return _.includes([
-    SecurityConstants.DEFAULT_LICENSE_KEY,
-    getClientEnvironmentLicenseKey(),
-  ], key);
+  return _.includes([SecurityConstants.DEFAULT_LICENSE_KEY, getClientEnvironmentLicenseKey()], key);
 };
 
 const resolveInitialLicenseKey = (): string | null => {
@@ -94,7 +84,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
       fetch(`${API_ROUTES.LICENSE}/default-key`)
         .then((res) => res.json())
         .then((data) => {
-          const fetchedKey = _.get(data, 'license_key');
+          const fetchedKey = _.get(data, "license_key");
           if (!_.isEmpty(fetchedKey)) {
             setLicenseKeyState(fetchedKey);
             storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, fetchedKey);
@@ -122,7 +112,11 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => window.removeEventListener(SecurityConstants.LICENSE_INVALIDATED_EVENT, clearInvalidLicenseState);
   }, [clearInvalidLicenseState]);
 
-  const { data: licenseInfo, isLoading: isQueryLoading, refetch } = useQuery<LicenseInfo | null>({
+  const {
+    data: licenseInfo,
+    isLoading: isQueryLoading,
+    refetch,
+  } = useQuery<LicenseInfo | null>({
     queryKey: [REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, licenseKey],
     queryFn: async () => {
       if (_.isEmpty(licenseKey)) return null;
@@ -164,9 +158,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
   });
 
   useEffect(() => {
-    if (licenseInfo) {
-      jsonUtils.setItem(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY, licenseInfo);
-    }
+    if (licenseInfo) jsonUtils.setItem(REFACTOR_CONSTANTS.LICENSE_CACHE_KEY, licenseInfo);
   }, [licenseInfo]);
 
   useEffect(() => {
@@ -186,30 +178,33 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, [licenseKey, refetch]);
 
-  const activateLicense = useCallback(async (key: string): Promise<boolean | string> => {
-    try {
-      const { response, data } = await requestLicenseValidationApi(key);
+  const activateLicense = useCallback(
+    async (key: string): Promise<boolean | string> => {
+      try {
+        const { response, data } = await requestLicenseValidationApi(key);
 
-      if (!_.get(data, SecurityConstants.SUCCESS_KEY)) {
-        if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) {
-          clearInvalidLicenseState();
+        if (!_.get(data, SecurityConstants.SUCCESS_KEY)) {
+          if (_.includes([SecurityConstants.HTTP_BAD_REQUEST, SecurityConstants.HTTP_UNAUTHORIZED, SecurityConstants.HTTP_FORBIDDEN], response.status)) {
+            clearInvalidLicenseState();
+          }
+          return _.get(data, SecurityConstants.ERROR_KEY) || false;
         }
-        return _.get(data, SecurityConstants.ERROR_KEY) || false;
-      }
 
-      const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
-      if (_.isEqual(status, LicenseStatus.ACTIVE)) {
-        storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
-        setLicenseKeyState(key);
-        queryClient.setQueryData([REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, key], _.get(data, SecurityConstants.DATA_KEY));
-        return true;
+        const status = _.get(data, SecurityConstants.DATA_STATUS_PATH);
+        if (_.isEqual(status, LicenseStatus.ACTIVE)) {
+          storageUtils.set(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY, key);
+          setLicenseKeyState(key);
+          queryClient.setQueryData([REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, key], _.get(data, SecurityConstants.DATA_KEY));
+          return true;
+        }
+        clearInvalidLicenseState();
+        return false;
+      } catch (error: any) {
+        return _.get(error, "message", false);
       }
-      clearInvalidLicenseState();
-      return false;
-    } catch (error: any) {
-      return _.get(error, 'message', false);
-    }
-  }, [clearInvalidLicenseState, queryClient]);
+    },
+    [clearInvalidLicenseState, queryClient],
+  );
 
   const logoutLicense = useCallback(() => {
     storageUtils.remove(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY);
@@ -221,14 +216,15 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
   const isLoading = !_.isEmpty(licenseKey) && isQueryLoading && !licenseInfo;
 
   return (
-    <LicenseContext.Provider value={{
-      licenseKey,
-      licenseInfo: licenseInfo || null,
-      isLoading,
-      activateLicense,
-      logoutLicense,
-      refetchLicense: refetch,
-    }}>
+    <LicenseContext.Provider
+      value={{
+        licenseKey,
+        licenseInfo: licenseInfo || null,
+        isLoading,
+        activateLicense,
+        logoutLicense,
+        refetchLicense: refetch,
+      }}>
       {children}
     </LicenseContext.Provider>
   );

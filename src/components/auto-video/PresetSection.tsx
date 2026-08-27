@@ -6,40 +6,14 @@ import { REFACTOR_CONSTANTS } from "../../constants";
 import { AUTO_VIDEO_UI_TEXTS } from "../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 
-interface PresetItem {
-  id: string;
-  name: string;
-  config?: Record<string, unknown>;
-}
+interface PresetItem { id: string; name: string; config?: Record<string, unknown>; }
 
-interface PresetSectionProps {
-  presets: PresetItem[];
-  selectedPresetId: string;
-  handleApplyPreset: (id: string) => void;
-  presetNameInputState: string;
-  setPresetNameInputState: (val: string) => void;
-  handleSavePreset: () => void;
-  handleDeletePreset: (id: string) => void;
-  T: ReturnType<typeof getAutoVideoTexts>;
-  truncateWords: (str: string, maxWords: number) => string;
-}
+interface PresetSectionProps { presets: PresetItem[]; selectedPresetId: string; handleApplyPreset: (id: string) => void; presetNameInputState: string; setPresetNameInputState: (val: string) => void; handleSavePreset: () => void; handleDeletePreset: (id: string) => void; T: ReturnType<typeof getAutoVideoTexts>; truncateWords: (str: string, maxWords: number) => string; }
 
-export const PresetSection: React.FC<PresetSectionProps> = ({
-  presets,
-  selectedPresetId,
-  handleApplyPreset,
-  presetNameInputState,
-  setPresetNameInputState,
-  handleSavePreset,
-  handleDeletePreset,
-  T,
-  truncateWords,
-}) => {
+export const PresetSection: React.FC<PresetSectionProps> = ({ presets, selectedPresetId, handleApplyPreset, presetNameInputState, setPresetNameInputState, handleSavePreset, handleDeletePreset, T, truncateWords }) => {
   const uiTexts = AUTO_VIDEO_UI_TEXTS.vi;
   const selectedPreset = _.find(presets, { id: selectedPresetId });
-  const activePresetLabel = selectedPreset?.name
-    ? truncateWords(selectedPreset.name, 3)
-    : T.presetDefaultOption || uiTexts.defaultPreset;
+  const activePresetLabel = selectedPreset?.name ? truncateWords(selectedPreset.name, 3) : T.presetDefaultOption || uiTexts.defaultPreset;
 
   return (
     <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md">
@@ -48,10 +22,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
           <span className="w-6 h-6 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-purple-500/20">
             <Bookmark className="w-3.5 h-3.5 text-purple-400" />
           </span>
-          <h3
-            className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5"
-            title={T.presetLabel}
-          >
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 font-mono flex items-center gap-1.5" title={T.presetLabel}>
             {_.trimEnd(T.presetLabel || uiTexts.presetConfigDefault, ":")}
           </h3>
         </div>
@@ -65,11 +36,7 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
         <div className="sm:col-span-6 flex items-center gap-2">
           <div className="relative flex-1 flex items-center bg-slate-955/90 border border-slate-800/90 hover:border-purple-500/50 focus-within:border-purple-500 rounded-2xl px-3 py-2.5 transition-all shadow-sm">
-            <select
-              value={selectedPresetId}
-              onChange={(e) => handleApplyPreset(e.target.value)}
-              className="w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-6 appearance-none font-medium"
-            >
+            <select value={selectedPresetId} onChange={(e) => handleApplyPreset(e.target.value)} className="w-full bg-transparent text-xs text-slate-200 focus:outline-none cursor-pointer pr-6 appearance-none font-medium">
               <option value={REFACTOR_CONSTANTS.VD_EMPTY_STRING} className="bg-slate-900 text-slate-300">
                 {T.presetDefaultOption || uiTexts.defaultPreset}
               </option>
@@ -83,35 +50,15 @@ export const PresetSection: React.FC<PresetSectionProps> = ({
           </div>
 
           {!_.isEmpty(selectedPresetId) && (
-            <Button
-              type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-              variant={REFACTOR_CONSTANTS.VARIANT_GHOST}
-              size={REFACTOR_CONSTANTS.SIZE_SM}
-              onClick={() => handleDeletePreset(selectedPresetId)}
-              title={T.deletePresetTooltip}
-              className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-2.5 h-auto shrink-0 shadow-none transition-all cursor-pointer"
-            >
+            <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_GHOST} size={REFACTOR_CONSTANTS.SIZE_SM} onClick={() => handleDeletePreset(selectedPresetId)} title={T.deletePresetTooltip} className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl p-2.5 h-auto shrink-0 shadow-none transition-all cursor-pointer">
               <Trash className="w-4 h-4" />
             </Button>
           )}
         </div>
 
         <div className="sm:col-span-6 flex items-center gap-2">
-          <input
-            type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT}
-            placeholder={T.presetNamePlaceholder}
-            value={presetNameInputState}
-            onChange={(e) => setPresetNameInputState(e.target.value)}
-            className="flex-1 bg-slate-955/90 border border-slate-800/90 hover:border-slate-700 focus:border-purple-500 rounded-2xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all shadow-sm"
-          />
-          <Button
-            type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON}
-            variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY}
-            size={REFACTOR_CONSTANTS.SIZE_SM}
-            onClick={handleSavePreset}
-            title={T.savePresetTooltip}
-            className="bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 font-bold text-xs rounded-2xl px-3.5 py-2.5 h-auto shrink-0 shadow-none transition-all flex items-center gap-1.5 cursor-pointer"
-          >
+          <input type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} placeholder={T.presetNamePlaceholder} value={presetNameInputState} onChange={(e) => setPresetNameInputState(e.target.value)} className="flex-1 bg-slate-955/90 border border-slate-800/90 hover:border-slate-700 focus:border-purple-500 rounded-2xl px-3 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none transition-all shadow-sm" />
+          <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_SECONDARY} size={REFACTOR_CONSTANTS.SIZE_SM} onClick={handleSavePreset} title={T.savePresetTooltip} className="bg-purple-600/15 hover:bg-purple-600/25 text-purple-300 hover:text-purple-200 border border-purple-500/30 hover:border-purple-500/50 font-bold text-xs rounded-2xl px-3.5 py-2.5 h-auto shrink-0 shadow-none transition-all flex items-center gap-1.5 cursor-pointer">
             <Save className="w-3.5 h-3.5 text-purple-400" />
             <span>{T.savePresetBtn}</span>
           </Button>

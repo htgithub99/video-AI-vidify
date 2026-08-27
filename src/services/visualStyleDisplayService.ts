@@ -1,8 +1,6 @@
 import _ from "lodash";
 
-const normalizeStyleText = (value: unknown): string => _.trim(
-  _.toString(value).replace(/\s+/g, " "),
-);
+const normalizeStyleText = (value: unknown): string => _.trim(_.toString(value).replace(/\s+/g, " "));
 
 export const deduplicateVisualStyleText = (value: unknown): string => {
   const normalized = normalizeStyleText(value);

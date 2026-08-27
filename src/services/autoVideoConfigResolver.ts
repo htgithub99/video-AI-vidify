@@ -1,11 +1,5 @@
 import _ from "lodash";
-import {
-  GenerateType,
-  ImageGenerationMode,
-  ImageGeneratorEngine,
-  TextInImageMode,
-  VisualConfig,
-} from "../types";
+import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, TextInImageMode, VisualConfig } from "../types";
 
 export enum ConfigIssueSeverity {
   Warning = "warning",
@@ -21,38 +15,20 @@ export enum ConfigIssueCode {
   VideoModeRoutedThroughGemini = "video_mode_routed_through_gemini",
 }
 
-export interface ConfigIssue {
-  code: ConfigIssueCode;
-  severity: ConfigIssueSeverity;
-}
+export interface ConfigIssue { code: ConfigIssueCode; severity: ConfigIssueSeverity; }
 
-export interface ResolvedVisualConfig {
-  config: VisualConfig;
-  issues: ConfigIssue[];
-  blocked: boolean;
-}
+export interface ResolvedVisualConfig { config: VisualConfig; issues: ConfigIssue[]; blocked: boolean; }
 
-const VIDEO_ENGINES = [
-  ImageGeneratorEngine.Veo3,
-  ImageGeneratorEngine.Veo3Lite,
-  ImageGeneratorEngine.Veo3Fast,
-  ImageGeneratorEngine.Veo3Quality,
-] as const;
+const VIDEO_ENGINES = [ImageGeneratorEngine.Veo3, ImageGeneratorEngine.Veo3Lite, ImageGeneratorEngine.Veo3Fast, ImageGeneratorEngine.Veo3Quality] as const;
 
 const IMAGE_ENGINES = [ImageGeneratorEngine.Imagen] as const;
 
-const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([
-  !_.isEmpty(config.characterPrompt),
-  _.some(config.characters, character => !_.isEmpty(character.prompt || character.description)),
-], Boolean);
+const hasCharacterIdentity = (config: VisualConfig): boolean => _.some([!_.isEmpty(config.characterPrompt), _.some(config.characters, (character) => !_.isEmpty(character.prompt || character.description))], Boolean);
 
 export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolean = false): ResolvedVisualConfig => {
   const config = _.cloneDeep(source);
   const issues: ConfigIssue[] = [];
-  const requestsGeneratedVideo = _.includes(
-    [GenerateType.Video, GenerateType.Mixed],
-    config.generateType as GenerateType,
-  );
+  const requestsGeneratedVideo = _.includes([GenerateType.Video, GenerateType.Mixed], config.generateType as GenerateType);
   if (requestsGeneratedVideo && !allowFlowVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
     config.generationMode = ImageGenerationMode.GeminiChat;
     issues.push({
@@ -80,7 +56,7 @@ export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolea
       });
     }
 
-    if (!usesGeminiModelPicker && _.includes(VIDEO_ENGINES, config.imageGeneratorEngine as typeof VIDEO_ENGINES[number])) {
+    if (!usesGeminiModelPicker && _.includes(VIDEO_ENGINES, config.imageGeneratorEngine as (typeof VIDEO_ENGINES)[number])) {
       config.imageGeneratorEngine = ImageGeneratorEngine.Imagen;
       issues.push({
         code: ConfigIssueCode.ImageModeVideoEngineReplaced,
@@ -89,10 +65,7 @@ export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolea
     }
   }
 
-  if (_.some([
-    _.isEqual(config.generateType, GenerateType.Video),
-    _.isEqual(config.generateType, GenerateType.Mixed),
-  ]) && !usesGeminiModelPicker && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as typeof IMAGE_ENGINES[number])) {
+  if (_.some([_.isEqual(config.generateType, GenerateType.Video), _.isEqual(config.generateType, GenerateType.Mixed)]) && !usesGeminiModelPicker && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as (typeof IMAGE_ENGINES)[number])) {
     config.generateType = GenerateType.Image;
     issues.push({
       code: ConfigIssueCode.VideoModeImageEngineUnsupported,

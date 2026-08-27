@@ -13,37 +13,18 @@ import _ from "lodash";
 import { jsonUtils } from "../lib/json";
 import { toast } from "sonner";
 
-interface SettingsViewProps {
-  currentLang: Lang;
-}
+interface SettingsViewProps { currentLang: Lang; }
 
-interface ApiKeyFieldProps {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (val: string) => void;
-}
+interface ApiKeyFieldProps { label: string; value: string; placeholder: string; onChange: (val: string) => void; }
 
 const ApiKeyField: FC<ApiKeyFieldProps> = ({ label, value, placeholder, onChange }) => (
   <div className="space-y-1.5">
-    <label className="text-[10px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">
-      {label}
-    </label>
-    <input
-      type={SecurityConstants.INPUT_TYPE_TEXT}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all"
-    />
+    <label className="text-[10px] font-extrabold text-slate-400 font-mono uppercase block tracking-wider">{label}</label>
+    <input type={SecurityConstants.INPUT_TYPE_TEXT} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-slate-955 border border-slate-850 hover:border-slate-700 focus:border-emerald-500/50 rounded-lg p-2.5 text-xs text-slate-300 font-mono focus:outline-none transition-all" />
   </div>
 );
 
-interface AccountItemProps {
-  email: string;
-  hiddenPwdText: string;
-  onRemove: () => void;
-}
+interface AccountItemProps { email: string; hiddenPwdText: string; onRemove: () => void; }
 
 const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) => (
   <div className="flex justify-between items-center bg-slate-800/50 border border-slate-700/50 p-2 rounded">
@@ -51,10 +32,7 @@ const AccountItem: FC<AccountItemProps> = ({ email, hiddenPwdText, onRemove }) =
       <span className="text-xs font-bold text-slate-200">{email}</span>
       <span className="text-[10px] text-slate-500 font-mono">{hiddenPwdText}</span>
     </div>
-    <button
-      onClick={onRemove}
-      className="text-slate-500 hover:text-rose-500 transition-colors p-1"
-    >
+    <button onClick={onRemove} className="text-slate-500 hover:text-rose-500 transition-colors p-1">
       <X className="w-3.5 h-3.5" />
     </button>
   </div>
@@ -74,12 +52,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   useEffect(() => {
     const migrateKeys = async () => {
-      const apiKeyStorageKeys = [
-        STORAGE_KEYS.GEMINI_API_KEY,
-        STORAGE_KEYS.CEREBRAS_API_KEY,
-        STORAGE_KEYS.GROQ_API_KEY,
-        STORAGE_KEYS.AI33_API_KEY,
-      ];
+      const apiKeyStorageKeys = [STORAGE_KEYS.GEMINI_API_KEY, STORAGE_KEYS.CEREBRAS_API_KEY, STORAGE_KEYS.GROQ_API_KEY, STORAGE_KEYS.AI33_API_KEY];
       for (const key of apiKeyStorageKeys) {
         const value = await storageUtils.getAsync(key);
         if (!_.isEmpty(value)) storageUtils.set(key, value as string);
@@ -139,12 +112,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
   const handleAddAccount = async () => {
     if (_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))) return;
-    const newAcc = {
-      id: Date.now(),
-      email: _.trim(newEmail),
-      password: _.trim(newPassword),
-      recoveryEmail: _.trim(newRecovery),
-    };
+    const newAcc = { id: Date.now(), email: _.trim(newEmail), password: _.trim(newPassword), recoveryEmail: _.trim(newRecovery), };
     const updated = [...accounts, newAcc];
     setAccounts(updated);
 
@@ -177,59 +145,33 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
     void jsonUtils.setAsyncItem(STORAGE_KEYS.LOCAL_GOOGLE_ACCOUNTS as string, updated);
   };
 
-  const licenseTitle = isVietnamese
-    ? SecurityConstants.LICENSE_MGMT_TITLE_VI
-    : SecurityConstants.LICENSE_MGMT_TITLE_EN;
+  const licenseTitle = isVietnamese ? SecurityConstants.LICENSE_MGMT_TITLE_VI : SecurityConstants.LICENSE_MGMT_TITLE_EN;
 
-  const licenseTooltip = isVietnamese
-    ? SecurityConstants.LICENSE_MGMT_TOOLTIP_VI
-    : SecurityConstants.LICENSE_MGMT_TOOLTIP_EN;
+  const licenseTooltip = isVietnamese ? SecurityConstants.LICENSE_MGMT_TOOLTIP_VI : SecurityConstants.LICENSE_MGMT_TOOLTIP_EN;
 
-  const planPrefix = isVietnamese
-    ? SecurityConstants.PLAN_LABEL_VI
-    : SecurityConstants.PLAN_LABEL_EN;
+  const planPrefix = isVietnamese ? SecurityConstants.PLAN_LABEL_VI : SecurityConstants.PLAN_LABEL_EN;
 
-  const activatedLabel = isVietnamese
-    ? SecurityConstants.ACTIVATED_LABEL_VI
-    : SecurityConstants.ACTIVATED_LABEL_EN;
+  const activatedLabel = isVietnamese ? SecurityConstants.ACTIVATED_LABEL_VI : SecurityConstants.ACTIVATED_LABEL_EN;
 
   const planType = _.get(licenseInfo, SecurityConstants.PROP_PLAN_TYPE);
   const planDisplayText = planType ? `${planPrefix}: ${planType}` : activatedLabel;
-  const keyPreview = licenseKey
-    ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}`
-    : SecurityConstants.NOT_AVAILABLE;
+  const keyPreview = licenseKey ? `${licenseKey.slice(SecurityConstants.ZERO, SecurityConstants.KEY_PREVIEW_LEN)}${SecurityConstants.ELLIPSIS}` : SecurityConstants.NOT_AVAILABLE;
 
-  const logoutTooltip = isVietnamese
-    ? SecurityMessages.LOGOUT_LABEL_TOOLTIP
-    : SecurityConstants.LOGOUT_TOOLTIP_EN;
+  const logoutTooltip = isVietnamese ? SecurityMessages.LOGOUT_LABEL_TOOLTIP : SecurityConstants.LOGOUT_TOOLTIP_EN;
 
-  const logoutLabel = isVietnamese
-    ? SecurityMessages.LOGOUT_LABEL_SHORT
-    : SecurityConstants.LOGOUT_LABEL_EN;
+  const logoutLabel = isVietnamese ? SecurityMessages.LOGOUT_LABEL_SHORT : SecurityConstants.LOGOUT_LABEL_EN;
 
-  const apiKeyTooltip = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_EN
-    : REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_VI;
+  const apiKeyTooltip = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_EN : REFACTOR_CONSTANTS.API_KEY_DESC_TOOLTIP_VI;
 
-  const apiKeyShort = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_EN
-    : REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_VI;
+  const apiKeyShort = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_EN : REFACTOR_CONSTANTS.API_KEY_DESC_SHORT_VI;
 
-  const recoveryPlaceholder = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_EN
-    : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_VI;
+  const recoveryPlaceholder = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_EN : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_SHORT_VI;
 
-  const recoveryTooltip = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_EN
-    : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_VI;
+  const recoveryTooltip = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_EN : REFACTOR_CONSTANTS.RECOVERY_PLACEHOLDER_TOOLTIP_VI;
 
-  const systemTooltip = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_EN
-    : REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_VI;
+  const systemTooltip = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_TOOLTIP_VI;
 
-  const systemShort = _.isEqual(currentLang, "en")
-    ? REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_EN
-    : REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_VI;
+  const systemShort = _.isEqual(currentLang, "en") ? REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_EN : REFACTOR_CONSTANTS.SYSTEM_DESC_SHORT_VI;
 
   return (
     <div className="flex-grow h-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl mx-auto space-y-6 text-left">
@@ -239,10 +181,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             <KeyRound className="w-8 h-8 text-rose-500" />
           </div>
           <div>
-            <h2
-              className="text-base font-black tracking-tight text-slate-100 uppercase font-mono cursor-help"
-              title={licenseTooltip}
-            >
+            <h2 className="text-base font-black tracking-tight text-slate-100 uppercase font-mono cursor-help" title={licenseTooltip}>
               {licenseTitle}
             </h2>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed font-mono">
@@ -250,12 +189,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
             </p>
           </div>
         </div>
-        <Button
-          variant={SecurityConstants.BTN_VARIANT_SECONDARY}
-          onClick={logoutLicense}
-          title={logoutTooltip}
-          className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0"
-        >
+        <Button variant={SecurityConstants.BTN_VARIANT_SECONDARY} onClick={logoutLicense} title={logoutTooltip} className="bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 font-bold text-xs px-4 py-2.5 flex items-center gap-2 rounded-xl shrink-0">
           <LogOut className="w-4 h-4" />
           <span>{logoutLabel}</span>
         </Button>
@@ -269,58 +203,24 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 <Key className="w-4 h-4 text-amber-500" />
               </div>
               <div>
-                <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">
-                  {t.apiKeysConfig}
-                </h3>
+                <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{t.apiKeysConfig}</h3>
                 <Tooltip content={apiKeyTooltip} position="bottom" align="start">
-                  <p className="text-[10px] text-slate-400 mt-0.5 cursor-help">
-                    {apiKeyShort}
-                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5 cursor-help">{apiKeyShort}</p>
                 </Tooltip>
               </div>
             </div>
           </div>
 
           <div className="space-y-4 flex-1">
-            <ApiKeyField
-              label="GEMINI_API_KEY"
-              value={geminiKey}
-              placeholder={texts.GEMINI_PLACEHOLDER}
-              onChange={setGeminiKey}
-            />
-            <ApiKeyField
-              label="CEREBRAS_API_KEY"
-              value={cerebrasKey}
-              placeholder={texts.CEREBRAS_PLACEHOLDER}
-              onChange={setCerebrasKey}
-            />
-            <ApiKeyField
-              label="GROQ_API_KEY"
-              value={groqKey}
-              placeholder={texts.GROQ_PLACEHOLDER}
-              onChange={setGroqKey}
-            />
-            <ApiKeyField
-              label="AI33_API_KEY"
-              value={ai33Key}
-              placeholder={texts.AI33_PLACEHOLDER}
-              onChange={setAi33Key}
-            />
+            <ApiKeyField label="GEMINI_API_KEY" value={geminiKey} placeholder={texts.GEMINI_PLACEHOLDER} onChange={setGeminiKey} />
+            <ApiKeyField label="CEREBRAS_API_KEY" value={cerebrasKey} placeholder={texts.CEREBRAS_PLACEHOLDER} onChange={setCerebrasKey} />
+            <ApiKeyField label="GROQ_API_KEY" value={groqKey} placeholder={texts.GROQ_PLACEHOLDER} onChange={setGroqKey} />
+            <ApiKeyField label="AI33_API_KEY" value={ai33Key} placeholder={texts.AI33_PLACEHOLDER} onChange={setAi33Key} />
           </div>
 
           <div className="pt-4 mt-4 border-t border-slate-800 flex justify-end">
-            <Button
-              variant={SecurityConstants.BTN_VARIANT_PRIMARY}
-              onClick={handleSaveKeys}
-              disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))}
-              title={texts.SAVE_BTN_TOOLTIP}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSavingKeys ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save className="w-3.5 h-3.5" />
-              )}
+            <Button variant={SecurityConstants.BTN_VARIANT_PRIMARY} onClick={handleSaveKeys} disabled={isSavingKeys || _.every([geminiKey, cerebrasKey, groqKey, ai33Key], (key) => _.isEmpty(_.trim(key)))} title={texts.SAVE_BTN_TOOLTIP} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 flex items-center gap-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+              {isSavingKeys ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               <span>{texts.SAVE_BTN}</span>
             </Button>
           </div>
@@ -333,9 +233,7 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
                 <Users className="w-4 h-4 text-blue-500" />
               </div>
               <div>
-                <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">
-                  {texts.ACCOUNTS_TITLE}
-                </h3>
+                <h3 className="text-xs font-black text-slate-200 uppercase font-mono tracking-wider">{texts.ACCOUNTS_TITLE}</h3>
                 <Tooltip content={systemTooltip} position="bottom" align="start">
                   <p className="text-[10px] text-slate-400 mt-0.5 cursor-help">
                     {systemShort} ({accounts.length})
@@ -347,55 +245,17 @@ export default function SettingsView({ currentLang }: SettingsViewProps) {
 
           <div className="space-y-3 flex-1 flex flex-col">
             <div className="grid grid-cols-2 gap-2">
-              <input
-                type={SecurityConstants.INPUT_TYPE_TEXT}
-                placeholder={texts.EMAIL_PLACEHOLDER}
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50"
-              />
-              <input
-                type={SecurityConstants.INPUT_TYPE_PASSWORD}
-                placeholder={texts.PWD_PLACEHOLDER}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50"
-              />
+              <input type={SecurityConstants.INPUT_TYPE_TEXT} placeholder={texts.EMAIL_PLACEHOLDER} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50" />
+              <input type={SecurityConstants.INPUT_TYPE_PASSWORD} placeholder={texts.PWD_PLACEHOLDER} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50" />
             </div>
             <div className="flex gap-2">
-              <input
-                type={SecurityConstants.INPUT_TYPE_TEXT}
-                placeholder={recoveryPlaceholder}
-                title={recoveryTooltip}
-                value={newRecovery}
-                onChange={(e) => setNewRecovery(e.target.value)}
-                className="bg-slate-955 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1"
-              />
-              <Button
-                variant={SecurityConstants.BTN_VARIANT_PRIMARY}
-                onClick={handleAddAccount}
-                disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))}
-                title={texts.ADD_BTN_TOOLTIP}
-                className="bg-blue-600 hover:bg-blue-500 text-xs px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <input type={SecurityConstants.INPUT_TYPE_TEXT} placeholder={recoveryPlaceholder} title={recoveryTooltip} value={newRecovery} onChange={(e) => setNewRecovery(e.target.value)} className="bg-slate-955 border border-slate-800 rounded p-2 text-xs text-slate-300 outline-none focus:border-blue-500/50 flex-1" />
+              <Button variant={SecurityConstants.BTN_VARIANT_PRIMARY} onClick={handleAddAccount} disabled={_.isEmpty(_.trim(newEmail)) || _.isEmpty(_.trim(newPassword))} title={texts.ADD_BTN_TOOLTIP} className="bg-blue-600 hover:bg-blue-500 text-xs px-3 rounded disabled:opacity-50 disabled:cursor-not-allowed">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar">
-              {_.isEmpty(accounts) ? (
-                <div className="text-center text-xs text-slate-500 py-4 italic">{texts.NO_ACCOUNTS}</div>
-              ) : (
-                _.map(accounts, (acc) => (
-                  <AccountItem
-                    key={acc.id}
-                    email={_.get(acc, SecurityConstants.PROP_EMAIL)}
-                    hiddenPwdText={texts.HIDDEN_PWD}
-                    onRemove={() => handleRemoveAccount(acc.id)}
-                  />
-                ))
-              )}
-            </div>
+            <div className="mt-4 flex-1 overflow-y-auto max-h-[150px] space-y-2 pr-1 custom-scrollbar">{_.isEmpty(accounts) ? <div className="text-center text-xs text-slate-500 py-4 italic">{texts.NO_ACCOUNTS}</div> : _.map(accounts, (acc) => <AccountItem key={acc.id} email={_.get(acc, SecurityConstants.PROP_EMAIL)} hiddenPwdText={texts.HIDDEN_PWD} onRemove={() => handleRemoveAccount(acc.id)} />)}</div>
           </div>
         </div>
       </div>

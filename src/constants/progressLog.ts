@@ -23,12 +23,10 @@ export const PROGRESS_LOG_CONFIG = {
     COPY_ERROR: "Sao chép nội dung lỗi",
     COPIED_ERROR: "Đã sao chép lỗi!",
   },
-  SEAMLESS_REPLACEMENTS: [
-    { pattern: /:\s*quá trình/gi, replacement: " do quá trình" },
+  SEAMLESS_REPLACEMENTS: [ { pattern: /:\s*quá trình/gi, replacement: " do quá trình" },
     { pattern: /:\s*thiếu/gi, replacement: " do thiếu" },
     { pattern: /:\s*không thể/gi, replacement: " do không thể" },
-    { pattern: /:\s*lỗi/gi, replacement: " vì lỗi" },
-  ],
+    { pattern: /:\s*lỗi/gi, replacement: " vì lỗi" }, ],
   MARKERS: {
     [ProgressLogTone.Error]: ["❌", "gặp sự cố", "thất bại", "failed completely"],
     [ProgressLogTone.Warning]: ["⚠", "cảnh báo", "warning"],

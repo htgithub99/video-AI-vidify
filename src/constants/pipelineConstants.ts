@@ -66,8 +66,8 @@ export const PipelineConstants = {
   FLOW_STEPS: [0, 1, 2, 3, 4],
   UI_TEXTS: {
     STEP_PREFIX: "STEP",
-    STEP_FALLBACK: "Bước"
-  }
+    STEP_FALLBACK: "Bước",
+  },
 };
 
 export enum PipelineEnum {

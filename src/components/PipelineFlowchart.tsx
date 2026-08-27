@@ -5,11 +5,7 @@ import { Lang, translations } from "../lib/lang.js";
 import { HelpCircle, Activity, Sparkles } from "lucide-react";
 import { Button } from "./ui/Button";
 
-interface PipelineFlowchartProps {
-  currentLang: Lang;
-  activeStepIndex: number;
-  onNavigateStep?: (stepIdx: number) => void;
-}
+interface PipelineFlowchartProps { currentLang: Lang; activeStepIndex: number; onNavigateStep?: (stepIdx: number) => void; }
 
 export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavigateStep }: PipelineFlowchartProps) {
   const [selectedNode, setSelectedNode] = useState<PipelineNode | null>(null);
@@ -53,10 +49,7 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
               onClick={() => setSelectedNode(node)}
               variant="ghost"
               size="xs"
-              className={cn(`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer flex-col items-start justify-start gap-1 h-auto w-full shadow-none ${
-                isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-850"
-              }`)}
-            >
+              className={cn(`p-2.5 rounded text-left transition-all duration-300 relative group overflow-hidden cursor-pointer flex-col items-start justify-start gap-1 h-auto w-full shadow-none ${isActiveGroup ? "bg-rose-950/20 border-rose-500 text-rose-100 ring-1 ring-rose-500/30" : isPassedGroup ? "bg-[#0f1d16] border-green-500/30 text-green-300 hover:border-green-400" : "bg-slate-950 border-slate-800 text-slate-500 hover:border-[#444] hover:bg-slate-850"}`)}>
               {isActiveGroup && (
                 <span className="absolute top-1 right-1 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -107,17 +100,11 @@ export default function PipelineFlowchart({ currentLang, activeStepIndex, onNavi
                 variant="primary"
                 size="sm"
                 className="text-[10px] uppercase font-mono font-bold"
-                title={t.Navigate_to_this_stage}
-              >
+                title={t.Navigate_to_this_stage}>
                 {t.Jump_to_this_step}
               </Button>
             )}
-            <Button 
-              onClick={() => setSelectedNode(null)} 
-              variant="secondary"
-              size="sm"
-              className="text-[10px] uppercase font-mono font-bold"
-            >
+            <Button onClick={() => setSelectedNode(null)} variant="secondary" size="sm" className="text-[10px] uppercase font-mono font-bold">
               {t.Close}
             </Button>
           </div>

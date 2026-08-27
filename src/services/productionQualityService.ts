@@ -38,73 +38,41 @@ export const resolveGenreVoiceArc = (genre: string = ""): VoiceArc => {
   return DEFAULT_VOICE_ARC;
 };
 
-export const PRODUCTION_QA_THRESHOLDS = {
-  MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
-  MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
-  MAX_SUBTITLE_LINES: 1,
-  MAX_SUBTITLE_CHARS_PER_LINE: 42,
-  MAX_SUBTITLE_CHARS_PER_SECOND: 21,
-  MIN_SUBTITLE_DURATION_SECONDS: 1.2,
-  MAX_TRANSITION_REPETITION_RATIO: 0.75,
-  MIN_THUMBNAIL_SCORE: 80,
-} as const;
+export const PRODUCTION_QA_THRESHOLDS = { MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, MAX_SUBTITLE_LINES: 1, MAX_SUBTITLE_CHARS_PER_LINE: 42, MAX_SUBTITLE_CHARS_PER_SECOND: 21, MIN_SUBTITLE_DURATION_SECONDS: 1.2, MAX_TRANSITION_REPETITION_RATIO: 0.75, MIN_THUMBNAIL_SCORE: 80, } as const;
 
 export const evaluateAudioTiming = (actual: number, target: number): AudioQualityReport => {
   const durationRatio = target > 0 ? actual / target : 0;
-  const durationFit = target > 0
-    && durationRatio >= PRODUCTION_QA_THRESHOLDS.MINIMUM_DURATION_RATIO
-    && durationRatio <= PRODUCTION_QA_THRESHOLDS.MAXIMUM_DURATION_RATIO;
+  const durationFit = target > 0 && durationRatio >= PRODUCTION_QA_THRESHOLDS.MINIMUM_DURATION_RATIO && durationRatio <= PRODUCTION_QA_THRESHOLDS.MAXIMUM_DURATION_RATIO;
   const hasAudioDuration = actual > 0;
-  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false };
+  return { pronunciationScore: 0, pauseScore: 0, loudnessScore: 0, naturalnessScore: 0, emotionTransitionScore: 0, durationFit, actualDurationSeconds: actual, targetDurationSeconds: target, blockingErrors: hasAudioDuration ? [] : ["tts_audio_missing_or_empty"], warnings: _.compact([!durationFit && "tts_duration_out_of_tolerance", "audio_perceptual_qa_pending"]), passed: false, };
 };
 
 export const evaluateSubtitles = (scenes: StoryboardScene[]): SubtitleQualityReport => {
-  const subtitleCues = _.flatMap(scenes, scene => scene.subtitleCues || []);
-  const lineErrors = _.filter(subtitleCues, cue => _.size(_.split(cue.text, "\n")) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES);
-  const longLines = _.filter(subtitleCues, cue => _.some(
-    _.split(cue.text, "\n"),
-    line => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE,
-  ));
-  const tooFast = _.filter(subtitleCues, cue => (
-    _.size(_.replace(cue.text, /\s/g, ""))
-      / _.max([cue.durationSeconds, PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS])!
-      > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND
-  ));
-  const hasSubtitleContent = _.every(scenes, scene => !_.isEmpty(scene.subtitle || scene.script));
-  const blockingErrors = _.compact([
-    !hasSubtitleContent && "subtitle_content_missing",
-    _.isEmpty(subtitleCues) && "subtitle_cues_missing",
-  ]) as string[];
+  const subtitleCues = _.flatMap(scenes, (scene) => scene.subtitleCues || []);
+  const lineErrors = _.filter(subtitleCues, (cue) => _.size(_.split(cue.text, "\n")) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES);
+  const longLines = _.filter(subtitleCues, (cue) => _.some(_.split(cue.text, "\n"), (line) => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE));
+  const tooFast = _.filter(subtitleCues, (cue) => _.size(_.replace(cue.text, /\s/g, "")) / _.max([cue.durationSeconds, PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS])! > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND);
+  const hasSubtitleContent = _.every(scenes, (scene) => !_.isEmpty(scene.subtitle || scene.script));
+  const blockingErrors = _.compact([!hasSubtitleContent && "subtitle_content_missing", _.isEmpty(subtitleCues) && "subtitle_cues_missing"]) as string[];
   const warnings = _.compact([!_.isEmpty(lineErrors) && "subtitle_more_than_one_line", !_.isEmpty(longLines) && "subtitle_line_too_long", !_.isEmpty(tooFast) && "subtitle_reading_time_insufficient", "subtitle_focal_position_requires_preview_qc"]);
   return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 
 export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => {
-  const assetsApproved = _.every(scenes, scene => scene.assetStatus === SceneAssetStatus.Approved && scene.acceptance !== AssetAcceptance.Rejected);
-  const transitionsIntentional = _.every(scenes, scene => !_.isEmpty(scene.cameraMotion) && !_.isEmpty(scene.transition));
-  const editPatterns = _.map(scenes, scene => _.join([
-    _.toLower(scene.cameraMotion || ""),
-    _.toLower(scene.transition || ""),
-  ], ":"));
+  const assetsApproved = _.every(scenes, (scene) => scene.assetStatus === SceneAssetStatus.Approved && scene.acceptance !== AssetAcceptance.Rejected);
+  const transitionsIntentional = _.every(scenes, (scene) => !_.isEmpty(scene.cameraMotion) && !_.isEmpty(scene.transition));
+  const editPatterns = _.map(scenes, (scene) => _.join([_.toLower(scene.cameraMotion || ""), _.toLower(scene.transition || "")], ":"));
   const dominantEditPatternCount = _.max(_.values(_.countBy(editPatterns))) || 0;
   const editPatternRepetitionRatio = _.isEmpty(editPatterns) ? 1 : dominantEditPatternCount / editPatterns.length;
-  const blockingErrors = _.compact([
-    !assetsApproved && "unapproved_asset_on_timeline",
-    !transitionsIntentional && "missing_camera_or_transition_intent",
-    editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive",
-  ]);
-  const warnings = _.compact([
-    !transitionsIntentional && "missing_camera_or_transition_intent",
-    editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive",
-    "motion_safe_crop_requires_preview_qc",
-  ]);
+  const blockingErrors = _.compact([!assetsApproved && "unapproved_asset_on_timeline", !transitionsIntentional && "missing_camera_or_transition_intent", editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive"]);
+  const warnings = _.compact([!transitionsIntentional && "missing_camera_or_transition_intent", editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && "edit_pattern_too_repetitive", "motion_safe_crop_requires_preview_qc"]);
   return { approvedAssetsOnly: assetsApproved, intentionalTransitions: transitionsIntentional && editPatternRepetitionRatio <= PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO, blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 
 export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQualityReport => {
   const narrativeAlignment = _.defaultTo(quality.narrativeAlignment, quality.promptAlignment);
-  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])) };
-  const belowTarget = _.compact(_.map(scores, (value, key) => value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? `thumbnail_${key}_below_target` : ""));
+  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])), };
+  const belowTarget = _.compact(_.map(scores, (value, key) => (value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? `thumbnail_${key}_below_target` : "")));
   const blockingErrors = _.uniq(quality.blockingErrors);
   return { ...scores, blockingErrors, warnings: _.uniq([...quality.warnings, ...belowTarget]), passed: quality.usableForVideo && _.isEmpty(blockingErrors) && _.isEmpty(belowTarget) };
 };

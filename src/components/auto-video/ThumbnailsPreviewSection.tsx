@@ -7,17 +7,9 @@ import { AUTO_GENERATOR_CONSTANTS } from "../../constants/config";
 import { ThumbnailItem, VideoProject } from "../../types";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 
-interface ThumbnailsPreviewSectionProps {
-  activeCreatedProject: VideoProject | null | undefined;
-  onThumbnailLoadError?: (thumbnailId: string) => void;
-}
+interface ThumbnailsPreviewSectionProps { activeCreatedProject: VideoProject | null | undefined; onThumbnailLoadError?: (thumbnailId: string) => void; }
 
-interface ThumbnailCardItemProps {
-  thumb: ThumbnailItem;
-  onPreview: (url: string) => void;
-  onDownload: (imageUrl: string, thumbnailId?: string) => void;
-  onLoadError?: (thumbnailId: string) => void;
-}
+interface ThumbnailCardItemProps { thumb: ThumbnailItem; onPreview: (url: string) => void; onDownload: (imageUrl: string, thumbnailId?: string) => void; onLoadError?: (thumbnailId: string) => void; }
 
 const cleanThumbnailText = (text?: string): string => {
   if (!text || _.isEmpty(_.trim(text))) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -32,12 +24,7 @@ const handleDownloadThumbnail = (imageUrl: string, thumbnailId?: string): void =
   downloadLink.click();
 };
 
-const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({
-  thumb,
-  onPreview,
-  onDownload,
-  onLoadError,
-}) => {
+const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({ thumb, onPreview, onDownload, onLoadError }) => {
   const promptText = cleanThumbnailText(thumb.generationPrompt || thumb.prompt);
   const headlineText = cleanThumbnailText(thumb.textText);
   const hasValidHeadline = thumb.hasText && !_.isEmpty(headlineText);
@@ -46,14 +33,7 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({
     <div className="bg-slate-955/90 border border-slate-800/90 rounded-2xl overflow-hidden shadow-md flex flex-col sm:flex-row p-3 gap-3.5">
       <div className="sm:w-1/2 aspect-video relative overflow-hidden bg-slate-900 rounded-xl border border-slate-800/80 shrink-0">
         {thumb.imageUrl ? (
-          <img
-            src={thumb.imageUrl}
-            alt={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_IDEA_FALLBACK}
-            className="w-full h-full object-cover cursor-pointer"
-            onClick={() => onPreview(thumb.imageUrl!)}
-            title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_ZOOM_TOOLTIP}
-            onError={() => onLoadError?.(thumb.id)}
-          />
+          <img src={thumb.imageUrl} alt={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_IDEA_FALLBACK} className="w-full h-full object-cover cursor-pointer" onClick={() => onPreview(thumb.imageUrl!)} title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_ZOOM_TOOLTIP} onError={() => onLoadError?.(thumb.id)} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 text-slate-500 text-[10px] gap-1">
             <Sparkles className="w-4 h-4 text-slate-600 animate-pulse" />
@@ -67,16 +47,10 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({
           {hasValidHeadline && (
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
-              <h4 className="text-purple-300 font-extrabold text-xs uppercase line-clamp-1 tracking-wide">
-                {headlineText}
-              </h4>
+              <h4 className="text-purple-300 font-extrabold text-xs uppercase line-clamp-1 tracking-wide">{headlineText}</h4>
             </div>
           )}
-          {!_.isEmpty(promptText) && (
-            <p className="text-[10.5px] text-slate-400 font-normal line-clamp-3 leading-relaxed">
-              {promptText}
-            </p>
-          )}
+          {!_.isEmpty(promptText) && <p className="text-[10.5px] text-slate-400 font-normal line-clamp-3 leading-relaxed">{promptText}</p>}
         </div>
 
         {thumb.imageUrl && (
@@ -86,8 +60,7 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({
               variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED}
               onClick={() => onDownload(thumb.imageUrl!, thumb.id)}
               className="w-full bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-md shadow-purple-950/40 hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer group/btn"
-              title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD_TOOLTIP}
-            >
+              title={AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD_TOOLTIP}>
               <Download className="w-3.5 h-3.5" />
               <span>{AUTO_GENERATOR_CONSTANTS.UI_THUMBNAILS_DOWNLOAD}</span>
             </Button>
@@ -98,10 +71,7 @@ const ThumbnailCardItem: React.FC<ThumbnailCardItemProps> = ({
   );
 };
 
-export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> = ({
-  activeCreatedProject,
-  onThumbnailLoadError,
-}) => {
+export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> = ({ activeCreatedProject, onThumbnailLoadError }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const thumbnails = (_.get(activeCreatedProject, "thumbnails", []) as ThumbnailItem[]) || [];
   const completedThumbnailCount = _.size(_.filter(thumbnails, (thumbnail) => !_.isEmpty(thumbnail.imageUrl)));
@@ -129,13 +99,7 @@ export const ThumbnailsPreviewSection: React.FC<ThumbnailsPreviewSectionProps> =
 
       <div className="grid grid-cols-1 gap-3.5">
         {_.map(thumbnails, (thumb, idx) => (
-          <ThumbnailCardItem
-            key={thumb.id || idx}
-            thumb={thumb}
-            onPreview={setPreviewImage}
-            onDownload={handleDownloadThumbnail}
-            onLoadError={onThumbnailLoadError}
-          />
+          <ThumbnailCardItem key={thumb.id || idx} thumb={thumb} onPreview={setPreviewImage} onDownload={handleDownloadThumbnail} onLoadError={onThumbnailLoadError} />
         ))}
       </div>
 

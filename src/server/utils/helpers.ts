@@ -1,7 +1,6 @@
 import { appLog } from "../../lib/logger.js";
 import { JSON_CLEANUP_CURLY_REGEX, JSON_CLEANUP_SQUARE_REGEX } from "../../constants/index.js";
-import _ from 'lodash';
-
+import _ from "lodash";
 
 export const extractBalancedJSON = (text: string): string | null => {
   const firstBrace = text.indexOf("{");
@@ -282,5 +281,8 @@ export const extractCharacterListFromParsedJSON = (parsed: unknown, maxCount: nu
       rawList = [obj];
     }
   }
-  return _.take(_.filter(rawList, (c) => Boolean(c && (c.name || c.description || c.prompt))), maxCount);
+  return _.take(
+    _.filter(rawList, (c) => Boolean(c && (c.name || c.description || c.prompt))),
+    maxCount,
+  );
 };
